@@ -41,6 +41,11 @@
 
 ### 安装依赖 / Installation
 
+**Jar:**
+
+直接从右侧的Releases中下载最新的Jar包。Directly download the latest Jar package from the Releases on the right.
+
+
 **Maven:**
 
 ```xml
