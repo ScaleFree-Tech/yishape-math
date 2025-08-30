@@ -34,7 +34,7 @@ public class VectorBasicExample {
         IVector v4 = IVector.zeros(5);
         System.out.println("v4 (zeros 5): " + v4);
         
-        IVector v5 = IVector.random(5);
+        IVector v5 = IVector.rand(5);
         System.out.println("v5 (random 5): " + v5);
         
         // 2. 基本数学运算 / Basic mathematical operations
@@ -263,7 +263,7 @@ public class VectorChainingExample {
         System.out.println("\n=== 数据预处理管道 / Data Preprocessing Pipeline ===");
         
         // 模拟传感器数据 / Simulate sensor data
-        IVector sensorData = IVector.random(1000).multiplyScalar(100.0f).addScala(50.0f);
+        IVector sensorData = IVector.rand(1000).multiplyScalar(100.0f).addScala(50.0f);
         
         // 数据预处理 / Data preprocessing
         IVector processedData = sensorData
@@ -365,8 +365,8 @@ public class RandomVectorGenerationExample {
         System.out.println("=== 随机向量生成示例 / Random Vector Generation Example ===");
         
         // 生成随机向量 / Generate random vectors
-        IVector randomVec = IVector.random(1000);                    // 1000个[0,1)随机数
-        IVector normalVec = IVector.randomNormal(1000, 0.0f, 1.0f); // 1000个标准正态分布随机数
+        IVector randomVec = IVector.rand(1000);                    // 1000个[0,1)随机数
+        IVector normalVec = IVector.randn(1000, 0.0f, 1.0f); // 1000个标准正态分布随机数
         
         // 生成线性空间向量 / Generate linear space vectors
         IVector linVec = IVector.linspace(0.0f, 10.0f, 100);        // 100个等间距值
@@ -409,7 +409,7 @@ public class SignalProcessingExample {
         // 生成复合信号：正弦波 + 噪声 / Generate composite signal: sine wave + noise
         IVector signal = time.multiplyScalar(2 * (float)Math.PI * 10)  // 10Hz正弦波 / 10Hz sine wave
             .sin()
-            .add(IVector.random(signalLength).multiplyScalar(0.1f)); // 添加噪声 / Add noise
+            .add(IVector.rand(signalLength).multiplyScalar(0.1f)); // 添加噪声 / Add noise
         
         System.out.println("信号统计:");
         System.out.println("  长度: " + signal.length());
@@ -518,7 +518,7 @@ public class ImageProcessingExample {
                 float gradient = (x + y) / (float) (width + height);
                 
                 // 添加噪声 / Add noise
-                float noise = (float) (Math.random() - 0.5) * 0.1f;
+                float noise = (float) (Math.rand() - 0.5) * 0.1f;
                 
                 pixels[y * width + x] = Math.max(0, Math.min(1, gradient + noise));
             }
@@ -574,7 +574,7 @@ public class BatchOperationExample {
         System.out.println("数据大小: " + dataSize);
         
         // 生成大量数据 / Generate large amount of data
-        IVector largeData = IVector.random(dataSize);
+        IVector largeData = IVector.rand(dataSize);
         
         // 测量批量操作性能 / Measure batch operation performance
         long startTime = System.currentTimeMillis();
