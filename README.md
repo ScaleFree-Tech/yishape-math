@@ -45,7 +45,7 @@
 
 ```xml
 <dependency>
-    <groupId>com.reremouse</groupId>
+    <groupId>com.reremouse.lab</groupId>
     <artifactId>yishape-math</artifactId>
     <version>0.1</version>
 </dependency>
