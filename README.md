@@ -2,7 +2,7 @@
 
 [![Java](https://img.shields.io/badge/Java-24+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1-blue.svg)]()
 
 ## 项目简介 / Project Introduction
 
