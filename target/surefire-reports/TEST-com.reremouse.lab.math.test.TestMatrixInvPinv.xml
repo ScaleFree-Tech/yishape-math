@@ -15,7 +15,7 @@
     <property name="user.country" value="CN"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="sun.boot.library.path" value="D:\Program Files\Apache NetBeans\jdk\bin"/>
-    <property name="sun.java.command" value="C:\Users\lteb2\AppData\Local\Temp\surefire2651813359786713918\surefirebooter-20250830175316616_3.jar C:\Users\lteb2\AppData\Local\Temp\surefire2651813359786713918 2025-08-30T17-53-15_004-jvmRun1 surefire-20250830175316616_1tmp surefire_0-20250830175316616_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\lteb2\AppData\Local\Temp\surefire16152021875177420502\surefirebooter-20250830190048486_3.jar C:\Users\lteb2\AppData\Local\Temp\surefire16152021875177420502 2025-08-30T19-00-48_357-jvmRun1 surefire-20250830190048486_1tmp surefire_0-20250830190048486_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="E:\work\yishape-math\target\test-classes;E:\work\yishape-math\target\classes;"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +30,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\lteb2\AppData\Local\Temp\surefire2651813359786713918\surefirebooter-20250830175316616_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\lteb2\AppData\Local\Temp\surefire16152021875177420502\surefirebooter-20250830190048486_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="24.0.1+9"/>

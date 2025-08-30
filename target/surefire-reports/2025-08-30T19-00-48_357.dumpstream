@@ -1,4 +1,4 @@
-# Created at 2025-08-30T17:53:16.643
+# Created at 2025-08-30T19:00:48.519
 Boot Manifest-JAR contains absolute paths in classpath 'E:\work\yishape-math\target\test-classes'
 Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 'other' has different root

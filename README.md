@@ -1,4 +1,4 @@
-# YiShape-Math **易形空间** 数学计算库
+# YiShape-Math 易形空间数学
 
 [![Java](https://img.shields.io/badge/Java-24+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
