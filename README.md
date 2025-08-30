@@ -6,7 +6,7 @@
 
 ## 项目简介 / Project Introduction
 
-**易形空间数学（YiShape-Math）** 是一个基于Java开发的数学计算库，提供向量、矩阵运算、机器学习算法、优化算法、统计学和降维算法等核心功能。本库的API设计最大程度拟合了Python NumPy API，使用简单、性能优异，适用于科学计算、数据分析和机器学习应用。本库也是 [易形空间 向量数据库管理系统（YiShape VecDB）](https://github.com/ScaleFree-Tech/yishape) 的底层数学基础设施。
+**易形空间数学（YiShape-Math）** 是一个基于Java开发的数学计算库，提供向量运算、矩阵运算、机器学习算法、优化算法、统计学方法和降维算法等核心功能。本库的API设计最大程度拟合了Python NumPy API，使用简单、性能优异，适用于科学计算、数据分析和机器学习应用。本库也是 [易形空间 向量数据库管理系统（YiShape VecDB）](https://github.com/ScaleFree-Tech/yishape) 的底层数学基础设施。
 
 **YiShape-Math** is a Java-based mathematical computing library that provides core functionalities including vector and matrix operations, machine learning algorithms, optimization algorithms, statistical methods, and dimensionality reduction techniques. The API design of this library closely mirrors that of the Python NumPy API, offering ease of use and excellent performance, making it suitable for scientific computing, data analysis, and machine learning applications. This library also serves as the underlying mathematical infrastructure for the [YiShape Vector DataBase](https://github.com/ScaleFree-Tech/yishape).
 
