@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.reremouse.lab.math.test.UMAPTest
--------------------------------------------------------------------------------
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s -- in com.reremouse.lab.math.test.UMAPTest
