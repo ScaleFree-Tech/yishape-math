@@ -169,7 +169,7 @@ src/main/java/com/reremouse/lab/math/
 
 ## 联系方式 / Contact
 
-- 项目维护者 / Project Maintainer: lteb2
+- 项目维护者 / Project Maintainer: Big Data and Decision Analytics Research Center of UESTC, Scale-Free Tech.
 - 项目地址 / Project URL: [https://github.com/ScaleFree-Tech/yishape-math](https://github.com/ScaleFree-Tech/yishape-math)
 - 问题反馈 / Issues: [https://github.com/ScaleFree-Tech/yishape-math/issues](https://github.com/ScaleFree-Tech/yishape-math/issues)
 
