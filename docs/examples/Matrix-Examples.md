@@ -135,7 +135,7 @@ public class EigendecompositionExample {
         float[][] data = {{4, -2}, {-2, 4}};
         IMatrix matrix = IMatrix.of(data);
         
-        Tuple2<IVector, IMatrix> eigenResult = matrix.eigenDecomposition();
+        Tuple2<IVector, IMatrix> eigenResult = matrix.eigen();
         IVector eigenValues = eigenResult._1;
         IMatrix eigenVectors = eigenResult._2;
         

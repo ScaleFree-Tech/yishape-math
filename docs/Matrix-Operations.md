@@ -113,7 +113,7 @@ IMatrix pseudoInverse = matrix1.pinv();
 
 ```java
 // 特征分解 / Eigendecomposition
-Tuple2<IVector, IMatrix> eigenResult = matrix1.eigenDecomposition();
+Tuple2<IVector, IMatrix> eigenResult = matrix1.eigen();
 IVector eigenValues = eigenResult._1;      // 特征值 / Eigenvalues
 IMatrix eigenVectors = eigenResult._2;     // 特征向量 / Eigenvectors
 
@@ -135,7 +135,7 @@ IMatrix V = svdResult._3;                  // 右奇异向量 / Right singular v
 
 ```java
 // QR分解 / QR decomposition
-Tuple2<IMatrix, IMatrix> qrResult = matrix1.qrDecomposition();
+Tuple2<IMatrix, IMatrix> qrResult = matrix1.qr();
 IMatrix Q = qrResult._1;                   // 正交矩阵 / Orthogonal matrix
 IMatrix R = qrResult._2;                   // 上三角矩阵 / Upper triangular matrix
 
