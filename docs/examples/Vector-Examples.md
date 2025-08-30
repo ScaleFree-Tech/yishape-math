@@ -45,7 +45,7 @@ public class VectorBasicExample {
         System.out.println("v1 + v3 = " + sum);
         
         // 向量减法 / Vector subtraction
-        IVector diff = v1.minus(v3);
+        IVector diff = v1.sub(v3);
         System.out.println("v1 - v3 = " + diff);
         
         // 向量乘法 / Vector multiplication
@@ -229,7 +229,7 @@ public class VectorUniversalFunctionsExample {
         System.out.println("\n=== 统计函数 / Statistical Functions ===");
         
         // 标准化 / Standardization
-        IVector standardized = vector.minus(vector.mean()).divideByScalar(vector.std());
+        IVector standardized = vector.sub(vector.mean()).divideByScalar(vector.std());
         System.out.println("标准化: " + standardized);
         
         // 验证标准化结果 / Verify standardization results
@@ -267,7 +267,7 @@ public class VectorChainingExample {
         
         // 数据预处理 / Data preprocessing
         IVector processedData = sensorData
-            .minus(sensorData.mean())                           // 中心化
+            .sub(sensorData.mean())                           // 中心化
             .divideByScalar(sensorData.std())                    // 标准化
             .abs()                                              // 取绝对值
             .multiplyScalar(10.0f);                             // 放大10倍
@@ -457,7 +457,7 @@ public class SignalProcessingExample {
     
     // 计算信噪比 / Calculate signal-to-noise ratio
     private static float calculateSNR(IVector original, IVector filtered) {
-        IVector noise = original.minus(filtered);
+        IVector noise = original.sub(filtered);
         float signalPower = filtered.squre().mean();
         float noisePower = noise.squre().mean();
         
@@ -534,7 +534,7 @@ public class ImageProcessingExample {
         float range = max - min;
         
         if (range > 0) {
-            return image.minus(min).divideByScalar(range);
+            return image.sub(min).divideByScalar(range);
         }
         return image;
     }
@@ -630,7 +630,6 @@ public class BatchOperationExample {
 - 合理使用链式操作提高代码可读性
 - 注意内存使用，避免创建过多临时对象
 - 根据具体需求选择合适的向量创建方法
-- 注意方法名称与NumPy的差异（如`minus` vs `subtract`）
 
 ---
 

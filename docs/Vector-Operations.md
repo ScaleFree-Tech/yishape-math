@@ -58,7 +58,7 @@ IVector v13 = IVector.logspace(0.0f, 2.0f, 4);     // [1.0, 10.0, 100.0, 1000.0]
 IVector sum = v1.add(v2);
 
 // 减法 / Subtraction
-IVector diff = v1.minus(v2);
+IVector diff = v1.sub(v2);
 
 // 元素级乘法 / Element-wise multiplication
 IVector product = v1.multiply(v2);
@@ -77,7 +77,7 @@ IMatrix result = v1.dot(matrix);
 IVector result1 = v1.addScalar(5.0f);
 
 // 标量减法 / Scalar subtraction
-IVector result2 = v1.minusScalar(2.0f);
+IVector result2 = v1.subScalar(2.0f);
 
 // 标量乘法 / Scalar multiplication
 IVector result3 = v1.multiplyScalar(3.0f);
@@ -300,7 +300,6 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 3. **精度** / **Precision**: 使用float类型，注意精度限制
 4. **内存** / **Memory**: 大量向量操作时注意内存使用
 5. **就地操作** / **In-place Operations**: 某些方法会修改原向量，注意是否需要复制
-6. **方法命名** / **Method Naming**: 注意方法名称与NumPy的差异（如`minus` vs `subtract`）
 
 ## 扩展性 / Extensibility
 
@@ -328,11 +327,11 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 | `IVector.linspace(start, stop, num)` | `np.linspace(start, stop, num)` | 创建线性空间向量 / Create linear space vector |
 | `IVector.logspace(start, stop, num)` | `np.logspace(start, stop, num)` | 创建对数空间向量 / Create logarithmic space vector |
 | `v1.add(v2)` | `v1 + v2` | 向量加法 / Vector addition |
-| `v1.minus(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
+| `v1.sub(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
 | `v1.multiply(v2)` | `v1 * v2` | 元素级乘法 / Element-wise multiplication |
 | `v1.innerProduct(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
 | `v1.addScalar(s)` | `v1 + s` | 标量加法 / Scalar addition |
-| `v1.minusScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
+| `v1.subScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
 | `v1.multiplyScalar(s)` | `v1 * s` | 标量乘法 / Scalar multiplication |
 | `v1.divideByScalar(s)` | `v1 / s` | 标量除法 / Scalar division |
 | `v1.sum()` | `np.sum(v1)` | 求和 / Sum |

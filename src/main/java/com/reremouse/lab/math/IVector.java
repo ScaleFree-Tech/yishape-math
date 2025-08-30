@@ -343,7 +343,7 @@ public interface IVector {
     public boolean[] greaterThan(IVector other);
 
     /**
-     * 向量减标量 / Vector minus scalar
+     * 向量减标量 / Vector sub scalar
      * <p>
      * 向量中每个元素减去标量值
      * Subtracts a scalar value from each element in the vector
@@ -352,7 +352,7 @@ public interface IVector {
      * @param p 标量值 / Scalar value
      * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
      */
-    public IVector minusScalar(float p);
+    public IVector subScalar(float p);
 
     /**
      * 向量加标量 / Vector plus scalar

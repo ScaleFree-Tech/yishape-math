@@ -302,7 +302,7 @@ public class RereVector implements IVector {
     }
 
     /**
-     * 向量减标量 / Vector minus scalar
+     * 向量减标量 / Vector sub scalar
      * <p>
      * 向量中每个元素减去标量值
      * Subtracts a scalar value from each element in the vector
@@ -312,7 +312,7 @@ public class RereVector implements IVector {
      * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
      */
     @Override
-    public IVector minusScalar(float p) {
+    public IVector subScalar(float p) {
         float[] v = new float[this.data.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[i] - p;
@@ -519,7 +519,7 @@ public class RereVector implements IVector {
      */
     @Override
     public float var() {
-        return this.minusScalar(this.mean()).pow(2).sum() / (float) this.length();
+        return this.subScalar(this.mean()).pow(2).sum() / (float) this.length();
     }
 
     /**
@@ -534,7 +534,7 @@ public class RereVector implements IVector {
      */
     @Override
     public float var(int ddof) {
-        return this.minusScalar(this.mean()).pow(2).sum() / (float) (this.length() - ddof);
+        return this.subScalar(this.mean()).pow(2).sum() / (float) (this.length() - ddof);
     }
 
     /**
