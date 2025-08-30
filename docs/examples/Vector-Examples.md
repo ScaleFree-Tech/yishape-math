@@ -252,7 +252,7 @@ public class VectorChainingExample {
         IVector result = IVector.range(100)                    // 创建0-99的向量
             .slice(10, 90)                                      // 取10-89
             .multiplyScalar(0.1f)                               // 乘以0.1
-            .addScala(5.0f)                                    // 加5
+            .addScalar(5.0f)                                    // 加5
             .squre()                                            // 平方
             .sqrt()                                             // 开方
             .multiplyScalar(2.0f);                              // 乘以2
@@ -263,7 +263,7 @@ public class VectorChainingExample {
         System.out.println("\n=== 数据预处理管道 / Data Preprocessing Pipeline ===");
         
         // 模拟传感器数据 / Simulate sensor data
-        IVector sensorData = IVector.rand(1000).multiplyScalar(100.0f).addScala(50.0f);
+        IVector sensorData = IVector.rand(1000).multiplyScalar(100.0f).addScalar(50.0f);
         
         // 数据预处理 / Data preprocessing
         IVector processedData = sensorData
