@@ -43,7 +43,7 @@
 
 **Jar:**
 
-直接从右侧的Releases中下载最新的Jar包。Directly download the latest Jar package from the Releases on the right.
+直接从右侧的Releases中下载最新的[Jar包](https://github.com/ScaleFree-Tech/yishape-math/releases)。Directly download the latest [Jar package](https://github.com/ScaleFree-Tech/yishape-math/releases) from the Releases on the right.
 
 
 **Maven:**
