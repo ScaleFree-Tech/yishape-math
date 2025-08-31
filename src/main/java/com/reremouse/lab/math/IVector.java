@@ -289,6 +289,15 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
      */
     public float innerProduct(IVector vec);
+    
+    /**
+     * 向量内积运算 / Vector inner product
+     * innerProduct的别名（适配NumPy名称）
+     * @param vec 另一个向量 / The other vector
+     * @return 内积结果 / Inner product result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     */
+    public float dot(IVector vec);
 
     /**
      * 向量与矩阵的点积 / Vector-matrix dot product

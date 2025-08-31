@@ -329,7 +329,7 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 | `v1.add(v2)` | `v1 + v2` | 向量加法 / Vector addition |
 | `v1.sub(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
 | `v1.multiply(v2)` | `v1 * v2` | 元素级乘法 / Element-wise multiplication |
-| `v1.innerProduct(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
+| `v1.innerProduct(v2)、v1.dot(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
 | `v1.addScalar(s)` | `v1 + s` | 标量加法 / Scalar addition |
 | `v1.subScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
 | `v1.multiplyScalar(s)` | `v1 * s` | 标量乘法 / Scalar multiplication |
