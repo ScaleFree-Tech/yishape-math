@@ -14,11 +14,13 @@ The dimensionality reduction algorithms package provides implementations of vari
 
 PCA是一种线性降维技术，通过找到数据的主要变化方向来减少维度。PCA的核心思想是：
 
-- **数据中心化** / **Data Centering**: 减去每列的均值，使数据以原点为中心
-- **协方差矩阵** / **Covariance Matrix**: 计算特征间的协方差关系
-- **特征分解** / **Eigendecomposition**: 对协方差矩阵进行特征值分解
-- **主成分选择** / **Principal Component Selection**: 选择前k个最大特征值对应的特征向量
-- **数据投影** / **Data Projection**: 将原始数据投影到主成分空间
+PCA is a linear dimensionality reduction technique that reduces dimensions by finding the main directions of data variation. The core idea of PCA is:
+
+- **数据中心化** / **Data Centering**: 减去每列的均值，使数据以原点为中心 / Subtract the mean of each column to center the data around the origin
+- **协方差矩阵** / **Covariance Matrix**: 计算特征间的协方差关系 / Calculate covariance relationships between features
+- **特征分解** / **Eigendecomposition**: 对协方差矩阵进行特征值分解 / Perform eigendecomposition on the covariance matrix
+- **主成分选择** / **Principal Component Selection**: 选择前k个最大特征值对应的特征向量 / Select the eigenvectors corresponding to the k largest eigenvalues
+- **数据投影** / **Data Projection**: 将原始数据投影到主成分空间 / Project original data onto the principal component space
 
 #### 数学原理 / Mathematical Principles
 
