@@ -244,6 +244,7 @@ src/main/java/com/reremouse/lab/math/
 - [向量操作 (Vector Operations)](./docs/Vector-Operations.md) / [Vector Operations Documentation](./docs/Vector-Operations.md)
 - [矩阵操作 (Matrix Operations)](./docs/Matrix-Operations.md) / [Matrix Operations Documentation](./docs/Matrix-Operations.md)
 - [数学工具类 (Math Utilities)](./docs/Math-Utilities.md) / [Math Utilities Documentation](./docs/Math-Utilities.md)
+- [统计操作 (Statistics Operations)](./docs/Statistics-Operations.md) / [Statistics Operations Documentation](./docs/Statistics-Operations.md)
 - [线性回归 (Linear Regression)](./docs/Linear-Regression.md) / [Linear Regression Documentation](./docs/Linear-Regression.md)
 - [优化算法 (Optimization Algorithms)](./docs/Optimization-Algorithms.md) / [Optimization Algorithms Documentation](./docs/Optimization-Algorithms.md)
 - [降维算法 (Dimensionality Reduction)](./docs/Dimensionality-Reduction.md) / [Dimensionality Reduction Documentation](./docs/Dimensionality-Reduction.md)
@@ -259,16 +260,6 @@ These documents provide detailed API references and usage guides:
 - **使用指南** / **Usage Guides**: 详细的代码示例和最佳实践 / Detailed code examples and best practices
 - **算法说明** / **Algorithm Descriptions**: 数学原理和实现细节 / Mathematical principles and implementation details
 
-#### 统计学分布文档 / Statistical Distribution Documentation
-
-- **分布理论** / **Distribution Theory**: 详细的概率分布数学原理和公式
-  - *Detailed mathematical principles and formulas for probability distributions*
-- **使用示例** / **Usage Examples**: 完整的代码示例展示各种分布的使用方法
-  - *Complete code examples demonstrating usage of various distributions*
-- **性能优化** / **Performance Optimization**: 分布计算的性能优化技巧和最佳实践
-  - *Performance optimization techniques and best practices for distribution calculations*
-- **数值精度** / **Numerical Precision**: 高精度数值计算的实现细节和注意事项
-  - *Implementation details and considerations for high-precision numerical calculations*
 
 
 
@@ -277,6 +268,7 @@ These documents provide detailed API references and usage guides:
 - [向量运算示例](./docs/examples/Vector-Examples.md) / [Vector Operations Examples](./docs/examples/Vector-Examples.md)
 - [矩阵运算示例](./docs/examples/Matrix-Examples.md) / [Matrix Operations Examples](./docs/examples/Matrix-Examples.md)
 - [数学工具类示例](./docs/examples/Math-Utilities-Examples.md) / [Math Utilities Examples](./docs/examples/Math-Utilities-Examples.md)
+- [统计操作示例](./docs/examples/Statistics-Examples.md) / [Statistics Operations Examples](./docs/examples/Statistics-Examples.md)
 - [机器学习示例](./docs/examples/Machine-Learning-Examples.md) / [Machine Learning Examples](./docs/examples/Machine-Learning-Examples.md)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
 - [降维算法示例](./docs/examples/Dimensionality-Reduction-Examples.md) / [Dimensionality Reduction Examples](./docs/examples/Dimensionality-Reduction-Examples.md)
@@ -292,35 +284,6 @@ These example documents provide detailed usage guides and code examples to help 
 - **机器学习实践** / **Machine Learning Practice**: 回归和分类算法的实际应用 / Real-world applications of regression and classification algorithms
 - **高级功能** / **Advanced Features**: 优化算法和降维技术的使用 / Usage of optimization algorithms and dimensionality reduction techniques
 
-#### 统计学分布快速入门 / Statistical Distribution Quick Start
-
-**基础使用 / Basic Usage:**
-```java
-// 创建分布实例 / Create distribution instances
-NormalDistribution normal = Stat.norm(0, 1);           // 标准正态分布 / Standard normal
-StudentDistribution tDist = Stat.t(10);                // t分布 / t-distribution
-Chi2Distribution chi2 = Stat.chi2(5);                  // 卡方分布 / Chi-squared distribution
-FDistribution fDist = Stat.f(3, 7);                    // F分布 / F-distribution
-UniformDistribution uniform = Stat.uniform(0, 1);      // 均匀分布 / Uniform distribution
-ExponentialDistribution exp = Stat.exponential(2.0f);  // 指数分布 / Exponential distribution
-```
-
-**常用操作 / Common Operations:**
-```java
-// 概率计算 / Probability calculations
-float pdf = normal.pdf(1.0f);    // 概率密度 / Probability density
-float cdf = normal.cdf(1.0f);    // 累积概率 / Cumulative probability
-float ppf = normal.ppf(0.95f);   // 95%分位数 / 95th percentile
-
-// 统计描述 / Statistical descriptions
-float mean = normal.mean();      // 均值 / Mean
-float var = normal.var();        // 方差 / Variance
-float std = normal.std();        // 标准差 / Standard deviation
-
-// 随机采样 / Random sampling
-float sample = normal.sample();           // 单个样本 / Single sample
-float[] samples = normal.sample(1000);    // 1000个样本 / 1000 samples
-```
 
 ## 性能特性 / Performance Features
 
@@ -337,18 +300,6 @@ float[] samples = normal.sample(1000);    // 1000个样本 / 1000 samples
 - **并行计算支持** / **Parallel Computing Support**: 支持多线程并行计算，提高大规模数据处理效率
   - *Multi-threaded parallel computing support, improving efficiency for large-scale data processing*
 
-### 统计学分布性能特点 / Statistical Distribution Performance Features
-
-- **高效计算** / **Efficient Computation**: 优化的概率密度函数和累积分布函数计算
-  - *Optimized probability density function and cumulative distribution function calculations*
-- **数值精度** / **Numerical Precision**: 采用高精度数值算法，确保统计计算的准确性
-  - *High-precision numerical algorithms ensuring accuracy of statistical calculations*
-- **内存效率** / **Memory Efficiency**: 预计算常数和缓存机制，减少重复计算
-  - *Precomputed constants and caching mechanisms to reduce redundant calculations*
-- **随机数生成** / **Random Number Generation**: 高效的伪随机数生成器，支持多种分布
-  - *Efficient pseudo-random number generators supporting multiple distributions*
-- **统计矩计算** / **Statistical Moment Calculation**: 快速计算均值、方差、偏度、峰度等统计量
-  - *Fast calculation of statistical moments: mean, variance, skewness, kurtosis, etc.*
 
 ## 贡献指南 / Contributing
 
