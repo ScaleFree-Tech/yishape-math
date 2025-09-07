@@ -347,16 +347,18 @@ If you encounter any issues while using the library, you can get help through th
 
 ## 更新日志 / Changelog
 
+### v0.1.1 (2025-09)
+- 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)
+- 🔢 完整的概率密度函数和累积分布函数 / Complete probability density and cumulative distribution functions
+- 📋 丰富的统计描述功能（均值、方差、中位数、众数等） / Rich statistical description functions (mean, variance, median, mode, etc.)
+
 ### v0.1 (2025-08)
 - ✨ 初始版本发布 / Initial release
 - 🚀 核心向量和矩阵运算功能 / Core vector and matrix operations
-- 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)
 - 🤖 线性回归和逻辑回归机器学习算法 / Linear regression and logistic regression machine learning algorithms
 - 🔧 L-BFGS优化器和线搜索算法 / L-BFGS optimizer and line search algorithms
 - 📈 PCA、SVD、t-SNE、UMAP降维算法 / PCA, SVD, t-SNE, UMAP dimensionality reduction algorithms
 - 🎯 支持L1、L2、ElasticNet正则化 / Support for L1, L2, ElasticNet regularization
-- 🔢 完整的概率密度函数和累积分布函数 / Complete probability density and cumulative distribution functions
-- 📋 丰富的统计描述功能（均值、方差、中位数、众数等） / Rich statistical description functions (mean, variance, median, mode, etc.)
 
 ---
 
