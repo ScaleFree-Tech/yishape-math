@@ -11,9 +11,10 @@ The `RereLinearRegression` class implements the standard linear regression algor
 ### RereLinearRegression 类 / RereLinearRegression Class
 
 主要的线性回归实现类，实现了以下接口：
-- `IRegression`: 回归模型接口
-- `IGradientFunction`: 梯度计算接口
-- `IObjectiveFunction`: 目标函数接口
+The main linear regression implementation class that implements the following interfaces:
+- `IRegression`: 回归模型接口 / Regression model interface
+- `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
+- `IObjectiveFunction`: 目标函数接口 / Objective function interface
 
 ### IRegression 接口 / IRegression Interface
 
@@ -55,59 +56,65 @@ public class RegressionResult {
 ### 数学模型 / Mathematical Model
 
 线性回归模型的形式为：
+The linear regression model has the form:
 ```
 y = w₁x₁ + w₂x₂ + ... + wₙxₙ + b
 ```
 
 其中：
-- `wᵢ` 是第i个特征的权重系数
-- `xᵢ` 是第i个特征值
-- `b` 是偏置项（截距）
-- `y` 是预测值
+Where:
+- `wᵢ` 是第i个特征的权重系数 / is the weight coefficient for the i-th feature
+- `xᵢ` 是第i个特征值 / is the i-th feature value
+- `b` 是偏置项（截距）/ is the bias term (intercept)
+- `y` 是预测值 / is the predicted value
 
 ### 目标函数 / Objective Function
 
 使用均方误差损失函数加正则化项：
+Using mean squared error loss function with regularization term:
 ```
 J(w) = (1/2n) * ||Xw - y||² + R(w)
 ```
 
 其中R(w)是正则化项：
+Where R(w) is the regularization term:
 
-#### L1正则化（Lasso）
+#### L1正则化（Lasso）/ L1 Regularization (Lasso)
 ```
 R(w) = λ₁ * ||w||₁ = λ₁ * Σ|wᵢ|
 ```
-- 特点：产生稀疏解，有助于特征选择
-- 适用场景：特征数量多，需要特征选择
-- 参数：λ₁ > 0
+- 特点：产生稀疏解，有助于特征选择 / Characteristics: produces sparse solutions, helps with feature selection
+- 适用场景：特征数量多，需要特征选择 / Use cases: many features, need feature selection
+- 参数：λ₁ > 0 / Parameters: λ₁ > 0
 
-#### L2正则化（Ridge）
+#### L2正则化（Ridge）/ L2 Regularization (Ridge)
 ```
 R(w) = (λ₂/2) * ||w||² = (λ₂/2) * Σwᵢ²
 ```
-- 特点：防止过拟合，权重衰减
-- 适用场景：防止过拟合，提高泛化能力
-- 参数：λ₂ > 0
+- 特点：防止过拟合，权重衰减 / Characteristics: prevents overfitting, weight decay
+- 适用场景：防止过拟合，提高泛化能力 / Use cases: prevent overfitting, improve generalization
+- 参数：λ₂ > 0 / Parameters: λ₂ > 0
 
-#### ElasticNet正则化
+#### ElasticNet正则化 / ElasticNet Regularization
 ```
 R(w) = λ₁ * ||w||₁ + (λ₂/2) * ||w||²
 ```
-- 特点：结合L1和L2的优点
-- 适用场景：需要特征选择的同时防止过拟合
-- 参数：λ₁ > 0, λ₂ > 0
+- 特点：结合L1和L2的优点 / Characteristics: combines advantages of L1 and L2
+- 适用场景：需要特征选择的同时防止过拟合 / Use cases: need feature selection while preventing overfitting
+- 参数：λ₁ > 0, λ₂ > 0 / Parameters: λ₁ > 0, λ₂ > 0
 
 ### 梯度计算 / Gradient Calculation
 
 目标函数的梯度为：
+The gradient of the objective function is:
 ```
 ∇J(w) = (1/n) * X^T * (Xw - y) + ∇R(w)
 ```
 
 其中∇R(w)是正则化项的梯度：
+Where ∇R(w) is the gradient of the regularization term:
 
-#### L1正则化梯度
+#### L1正则化梯度 / L1 Regularization Gradient
 ```
 ∇||w||₁ = sign(w)
 ```
@@ -115,12 +122,12 @@ R(w) = λ₁ * ||w||₁ + (λ₂/2) * ||w||²
 - sign(wᵢ) = -1 if wᵢ < 0  
 - sign(wᵢ) = 0 if wᵢ = 0
 
-#### L2正则化梯度
+#### L2正则化梯度 / L2 Regularization Gradient
 ```
 ∇||w||² = 2w
 ```
 
-#### ElasticNet梯度
+#### ElasticNet梯度 / ElasticNet Gradient
 ```
 ∇R(w) = λ₁ * sign(w) + λ₂ * w
 ```
@@ -362,19 +369,19 @@ System.out.println("平均R²: " + (totalR2 / foldCount));
 ## 性能特性 / Performance Features
 
 ### 优化算法 / Optimization Algorithm
-- 使用L-BFGS优化器，收敛速度快
-- 支持线搜索，提高优化稳定性
-- 自动梯度计算，无需手动实现
+- 使用L-BFGS优化器，收敛速度快 / Uses L-BFGS optimizer with fast convergence
+- 支持线搜索，提高优化稳定性 / Supports line search to improve optimization stability
+- 自动梯度计算，无需手动实现 / Automatic gradient calculation, no manual implementation needed
 
 ### 内存优化 / Memory Optimization
-- 高效的矩阵运算
-- 智能的内存管理
-- 支持大规模数据集
+- 高效的矩阵运算 / Efficient matrix operations
+- 智能的内存管理 / Smart memory management
+- 支持大规模数据集 / Supports large-scale datasets
 
 ### 数值稳定性 / Numerical Stability
-- 正则化防止过拟合
-- 梯度裁剪避免梯度爆炸
-- 条件数检查提高稳定性
+- 正则化防止过拟合 / Regularization prevents overfitting
+- 梯度裁剪避免梯度爆炸 / Gradient clipping prevents gradient explosion
+- 条件数检查提高稳定性 / Condition number checking improves stability
 
 ## 注意事项 / Notes
 
@@ -386,27 +393,28 @@ System.out.println("平均R²: " + (totalR2 / foldCount));
 ## 扩展性 / Extensibility
 
 `RereLinearRegression` 类设计支持扩展：
-- 自定义损失函数
-- 新的正则化方法
-- 不同的优化器
-- 在线学习支持
+The `RereLinearRegression` class is designed to support extensions:
+- 自定义损失函数 / Custom loss functions
+- 新的正则化方法 / New regularization methods
+- 不同的优化器 / Different optimizers
+- 在线学习支持 / Online learning support
 
 ## 应用场景 / Application Scenarios
 
 ### 预测分析 / Predictive Analytics
-- 房价预测
-- 销售预测
-- 风险评估
+- 房价预测 / House price prediction
+- 销售预测 / Sales forecasting
+- 风险评估 / Risk assessment
 
 ### 科学研究 / Scientific Research
-- 实验数据分析
-- 统计建模
-- 相关性研究
+- 实验数据分析 / Experimental data analysis
+- 统计建模 / Statistical modeling
+- 相关性研究 / Correlation studies
 
 ### 机器学习 / Machine Learning
-- 基线模型
-- 特征工程
-- 模型集成
+- 基线模型 / Baseline models
+- 特征工程 / Feature engineering
+- 模型集成 / Model ensemble
 
 ---
 

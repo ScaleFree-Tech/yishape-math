@@ -279,31 +279,32 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 ## 性能特性 / Performance Features
 
 ### 内存优化 / Memory Optimization
-- 使用基本类型数组，避免装箱拆箱开销
-- 高效的数组复制和切片操作
-- 最小化临时对象创建
+- 使用基本类型数组，避免装箱拆箱开销 / Use primitive type arrays to avoid boxing/unboxing overhead
+- 高效的数组复制和切片操作 / Efficient array copying and slicing operations
+- 最小化临时对象创建 / Minimize temporary object creation
 
 ### 算法优化 / Algorithm Optimization
-- 优化的数学函数实现
-- 高效的统计计算算法
-- 智能的索引计算
+- 优化的数学函数实现 / Optimized mathematical function implementations
+- 高效的统计计算算法 / Efficient statistical computation algorithms
+- 智能的索引计算 / Smart index calculations
 
 ### 类型安全 / Type Safety
-- 强类型系统，避免运行时错误
-- 参数验证和异常处理
-- 清晰的接口契约
+- 强类型系统，避免运行时错误 / Strong type system to avoid runtime errors
+- 参数验证和异常处理 / Parameter validation and exception handling
+- 清晰的接口契约 / Clear interface contracts
 
 ## 注意事项 / Notes
 
-1. **索引范围** / **Index Range**: 所有索引操作都会进行边界检查
-2. **空值处理** / **Null Handling**: 输入参数不能为null
-3. **精度** / **Precision**: 使用float类型，注意精度限制
-4. **内存** / **Memory**: 大量向量操作时注意内存使用
-5. **就地操作** / **In-place Operations**: 某些方法会修改原向量，注意是否需要复制
+1. **索引范围** / **Index Range**: 所有索引操作都会进行边界检查 / All index operations perform boundary checking
+2. **空值处理** / **Null Handling**: 输入参数不能为null / Input parameters cannot be null
+3. **精度** / **Precision**: 使用float类型，注意精度限制 / Uses float type, pay attention to precision limitations
+4. **内存** / **Memory**: 大量向量操作时注意内存使用 / Pay attention to memory usage for large vector operations
+5. **就地操作** / **In-place Operations**: 某些方法会修改原向量，注意是否需要复制 / Some methods modify the original vector, pay attention to whether copying is needed
 
 ## 扩展性 / Extensibility
 
 `IVector` 接口设计支持扩展，可以轻松添加新的向量类型实现：
+The `IVector` interface is designed to support extensions, making it easy to add new vector type implementations:
 - 稀疏向量 / Sparse vectors
 - GPU加速向量 / GPU-accelerated vectors
 - 分布式向量 / Distributed vectors
@@ -402,13 +403,15 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 ## 与NumPy的兼容性 / NumPy Compatibility
 
 YiShape的向量操作设计参考了NumPy的API设计，提供了类似的接口和功能：
+YiShape's vector operations design references NumPy's API design, providing similar interfaces and functionality:
 
-- **语法相似性** / **Syntax Similarity**: 方法命名和参数设计与NumPy保持一致
-- **功能对等性** / **Functional Equivalence**: 核心功能与NumPy向量操作完全对等
-- **性能优化** / **Performance Optimization**: 针对Java环境进行了性能优化
-- **类型安全** / **Type Safety**: 提供比NumPy更强的类型安全保障
+- **语法相似性** / **Syntax Similarity**: 方法命名和参数设计与NumPy保持一致 / Method naming and parameter design consistent with NumPy
+- **功能对等性** / **Functional Equivalence**: 核心功能与NumPy向量操作完全对等 / Core functionality is completely equivalent to NumPy vector operations
+- **性能优化** / **Performance Optimization**: 针对Java环境进行了性能优化 / Performance optimized for Java environment
+- **类型安全** / **Type Safety**: 提供比NumPy更强的类型安全保障 / Provides stronger type safety guarantees than NumPy
 
 这使得从Python/NumPy迁移到Java/YiShape变得相对容易，同时保持了Java的类型安全和性能优势。
+This makes migration from Python/NumPy to Java/YiShape relatively easy while maintaining Java's type safety and performance advantages.
 
 ---
 

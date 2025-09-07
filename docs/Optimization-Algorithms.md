@@ -347,51 +347,52 @@ Tuple2<Float, IVector> result = optimizer.optimize(initW, objFun, objFun);
 ## 性能特性 / Performance Features
 
 ### 收敛性能 / Convergence Performance
-- **L-BFGS**: 超线性收敛，适合大规模问题
-- **线搜索**: 保证函数值下降，提高优化稳定性
-- **内存效率**: 有限内存实现，适合高维问题
+- **L-BFGS**: 超线性收敛，适合大规模问题 / **L-BFGS**: Superlinear convergence, suitable for large-scale problems
+- **线搜索**: 保证函数值下降，提高优化稳定性 / **Line search**: Ensures function value decrease, improves optimization stability
+- **内存效率**: 有限内存实现，适合高维问题 / **Memory efficiency**: Limited memory implementation, suitable for high-dimensional problems
 
 ### 数值稳定性 / Numerical Stability
-- 梯度裁剪防止梯度爆炸
-- 步长控制保证收敛性
-- 条件数检查提高稳定性
+- 梯度裁剪防止梯度爆炸 / Gradient clipping prevents gradient explosion
+- 步长控制保证收敛性 / Step size control ensures convergence
+- 条件数检查提高稳定性 / Condition number checking improves stability
 
 ### 并行化支持 / Parallelization Support
-- 向量运算并行化
-- 矩阵运算优化
-- 多线程支持（未来版本）
+- 向量运算并行化 / Vector operation parallelization
+- 矩阵运算优化 / Matrix operation optimization
+- 多线程支持（未来版本）/ Multi-threading support (future version)
 
 ## 注意事项 / Notes
 
-1. **初始点选择** / **Initial Point Selection**: 选择合适的初始点有助于快速收敛
-2. **参数调优** / **Parameter Tuning**: 根据问题特点调整优化参数
-3. **收敛判断** / **Convergence Judgment**: 合理设置收敛条件
-4. **数值精度** / **Numerical Precision**: 注意浮点数精度问题
+1. **初始点选择** / **Initial Point Selection**: 选择合适的初始点有助于快速收敛 / Choosing appropriate initial points helps with fast convergence
+2. **参数调优** / **Parameter Tuning**: 根据问题特点调整优化参数 / Adjust optimization parameters based on problem characteristics
+3. **收敛判断** / **Convergence Judgment**: 合理设置收敛条件 / Reasonably set convergence conditions
+4. **数值精度** / **Numerical Precision**: 注意浮点数精度问题 / Pay attention to floating-point precision issues
 
 ## 扩展性 / Extensibility
 
 优化算法包设计支持扩展：
-- 新的优化算法（如Adam、RMSprop等）
-- 自适应参数调整
-- 分布式优化支持
-- GPU加速优化
+The optimization algorithms package is designed to support extensions:
+- 新的优化算法（如Adam、RMSprop等）/ New optimization algorithms (such as Adam, RMSprop, etc.)
+- 自适应参数调整 / Adaptive parameter adjustment
+- 分布式优化支持 / Distributed optimization support
+- GPU加速优化 / GPU-accelerated optimization
 
 ## 应用场景 / Application Scenarios
 
 ### 机器学习 / Machine Learning
-- 模型参数优化
-- 损失函数最小化
-- 特征选择优化
+- 模型参数优化 / Model parameter optimization
+- 损失函数最小化 / Loss function minimization
+- 特征选择优化 / Feature selection optimization
 
 ### 科学计算 / Scientific Computing
-- 函数最优化
-- 参数估计
-- 数值求解
+- 函数最优化 / Function optimization
+- 参数估计 / Parameter estimation
+- 数值求解 / Numerical solving
 
 ### 工程优化 / Engineering Optimization
-- 设计参数优化
-- 控制系统优化
-- 资源分配优化
+- 设计参数优化 / Design parameter optimization
+- 控制系统优化 / Control system optimization
+- 资源分配优化 / Resource allocation optimization
 
 ---
 
