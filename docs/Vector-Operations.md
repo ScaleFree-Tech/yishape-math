@@ -392,10 +392,10 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 | `v1.cumprod()` | `np.cumprod(v1)` | 累积乘积 / Cumulative product |
 | `v1.diff()` | `np.diff(v1)` | 差分 / Difference |
 | `v1.diff(n)` | `np.diff(v1, n)` | n阶差分 / n-th order difference |
-| `v1.logicalAnd(v2)` | `v1 & v2` | 逻辑与 / Logical AND |
-| `v1.logicalOr(v2)` | `v1 \| v2` | 逻辑或 / Logical OR |
-| `v1.logicalNot()` | `~v1` | 逻辑非 / Logical NOT |
-| `v1.logicalXor(v2)` | `v1 ^ v2` | 逻辑异或 / Logical XOR |
+| `v1.logicalAnd(v2)` | `np.logical_and(v1, v2)` | 逻辑与 / Logical AND |
+| `v1.logicalOr(v2)` | `np.logical_or(v1, v2)` | 逻辑或 / Logical OR |
+| `v1.logicalNot()` | `np.logical_not(v1, v2)` | 逻辑非 / Logical NOT |
+| `v1.logicalXor(v2)` | `np.logical_xor(v1, v2)` | 逻辑异或 / Logical XOR |
 | `v1.normalize()` | `v1 / np.linalg.norm(v1)` | 向量归一化 / Vector normalization |
 
 
