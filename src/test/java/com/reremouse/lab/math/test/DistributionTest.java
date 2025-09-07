@@ -482,6 +482,7 @@ public class DistributionTest {
             failedTests++;
             System.err.println("测试失败 / Test failed: " + message);
             System.err.println("期望值 / Expected: " + expected + ", 实际值 / Actual: " + actual);
+            System.err.println("差异 / Difference: " + Math.abs(expected - actual));
         }
     }
     

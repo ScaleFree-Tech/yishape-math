@@ -1,5 +1,7 @@
 package com.reremouse.lab.math.stat.distribution;
 
+import com.reremouse.lab.math.RereMathUtil;
+import com.reremouse.lab.math.IVector;
 import java.io.Serializable;
 
 /**
@@ -43,7 +45,7 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
         
         // 计算归一化常数
         // Calculate normalization constant
-        this.normalizationConstant = (float) (1.0 / (Math.pow(2.0, halfDof) * gamma(halfDof)));
+        this.normalizationConstant = (float) (1.0 / (Math.pow(2.0, halfDof) * RereMathUtil.gamma(halfDof)));
     }
     
     /**
@@ -79,7 +81,7 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
         
         // 使用不完全伽马函数
         // Using incomplete gamma function
-        return (float) incompleteGamma(halfDof, x / 2.0f);
+        return (float) RereMathUtil.incompleteGamma(halfDof, x / 2.0f);
     }
     
     /**
@@ -193,94 +195,11 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
         return 0.0f;
     }
     
-    /**
-     * 伽马函数的近似实现
-     * Approximation implementation of gamma function
-     * 
-     * @param x 输入值 / Input value
-     * @return 伽马函数值 / Gamma function value
-     */
-    private double gamma(float x) {
-        // Stirling's approximation for gamma function
-        if (x < 0.5f) {
-            return Math.PI / (Math.sin(Math.PI * x) * gamma(1.0f - x));
-        }
-        
-        x = x - 1.0f;
-        double result = 0.99999999999980993;
-        double[] coefficients = {
-            676.5203681218851, -1259.1392167224028, 771.32342877765313,
-            -176.61502916214059, 12.507343278686905, -0.13857109526572012,
-            9.9843695780195716e-6, 1.5056327351493116e-7
-        };
-        
-        for (int i = 0; i < coefficients.length; i++) {
-            result += coefficients[i] / (x + i + 1);
-        }
-        
-        double t = x + coefficients.length - 0.5;
-        return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * result;
-    }
+    // 使用RereMathUtil中的gamma函数
+    // Using gamma function from RereMathUtil
     
-    /**
-     * 不完全伽马函数的近似实现
-     * Approximation implementation of incomplete gamma function
-     * 
-     * @param a 形状参数 / Shape parameter
-     * @param x 输入值 / Input value
-     * @return 不完全伽马函数值 / Incomplete gamma function value
-     */
-    private double incompleteGamma(float a, float x) {
-        if (x < 0) {
-            return 0.0;
-        }
-        
-        if (x == 0) {
-            return 0.0;
-        }
-        
-        if (a == 0) {
-            return 1.0;
-        }
-        
-        // 使用连分数展开
-        // Using continued fraction expansion
-        double bt = Math.exp(a * Math.log(x) - x - gamma(a));
-        
-        if (x < a + 1.0) {
-            // 使用级数展开
-            // Using series expansion
-            double sum = 1.0;
-            double term = 1.0;
-            for (int n = 1; n < 100; n++) {
-                term *= x / (a + n - 1);
-                sum += term;
-                if (Math.abs(term) < 1e-10) break;
-            }
-            return sum * bt / a;
-        } else {
-            // 使用连分数
-            // Using continued fraction
-            double b = x + 1.0 - a;
-            double c = 1e30;
-            double d = 1.0 / b;
-            double h = d;
-            
-            for (int i = 1; i < 100; i++) {
-                double an = -i * (i - a);
-                b += 2.0;
-                d = an * d + b;
-                if (Math.abs(d) < 1e-30) d = 1e-30;
-                c = b + an / c;
-                if (Math.abs(c) < 1e-30) c = 1e-30;
-                d = 1.0 / d;
-                double del = d * c;
-                h *= del;
-                if (Math.abs(del - 1.0) < 1e-10) break;
-            }
-            return 1.0 - bt * h;
-        }
-    }
+    // 使用RereMathUtil中的incompleteGamma函数
+    // Using incompleteGamma function from RereMathUtil
     
     /**
      * 逆卡方分布累积分布函数的数值求解
@@ -300,6 +219,12 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
             right *= 2.0f;
         }
         
+        // 确保左边界CDF值小于p
+        // Ensure left boundary CDF value is less than p
+        while (cdf(left) >= p && left > 1e-10f) {
+            left /= 2.0f;
+        }
+        
         for (int i = 0; i < maxIter; i++) {
             float mid = (left + right) / 2.0f;
             float cdfMid = cdf(mid);
@@ -312,6 +237,12 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
                 left = mid;
             } else {
                 right = mid;
+            }
+            
+            // 检查收敛性
+            // Check convergence
+            if (Math.abs(right - left) < tolerance) {
+                break;
             }
         }
         
@@ -455,11 +386,13 @@ public class Chi2Distribution implements IContinuousDistribution, Serializable {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
-        float[] samples = new float[n];
+        // 使用IVector进行数组操作
+        // Using IVector for array operations
+        IVector samples = IVector.zeros(n);
         for (int i = 0; i < n; i++) {
-            samples[i] = sample();
+            samples.set(i, sample());
         }
-        return samples;
+        return samples.getData();
     }
     
     /**

@@ -1,5 +1,7 @@
 package com.reremouse.lab.math.stat.distribution;
 
+import com.reremouse.lab.math.RereMathUtil;
+import com.reremouse.lab.math.IVector;
 import java.io.Serializable;
 
 /**
@@ -45,8 +47,8 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         
         // 计算归一化常数
         // Calculate normalization constant
-        this.normalizationConstant = (float) (gamma(halfDofPlusHalf) / 
-            (Math.sqrt(degreesOfFreedom * Math.PI) * gamma(halfDof)));
+        this.normalizationConstant = (float) (RereMathUtil.gamma(halfDofPlusHalf) / 
+            (Math.sqrt(degreesOfFreedom * Math.PI) * RereMathUtil.gamma(halfDof)));
     }
     
     /**
@@ -75,13 +77,13 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return 0.5f * (1.0f + erf(x / (float) Math.sqrt(2.0)));
+            return 0.5f * (1.0f + (float) RereMathUtil.erf(x / (float) Math.sqrt(2.0)));
         }
         
         // 使用不完全贝塔函数
         // Using incomplete beta function
         float t = x / (float) Math.sqrt(degreesOfFreedom + x * x);
-        return 0.5f + 0.5f * sign(x) * incompleteBeta(halfDof, 0.5f, t * t);
+        return 0.5f + 0.5f * sign(x) * (float) RereMathUtil.incompleteBeta(halfDof, 0.5f, t * t);
     }
     
     /**
@@ -103,7 +105,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return inverseNormalCDF(p);
+            return (float) RereMathUtil.inverseNormalCDF(p);
         }
         
         // 使用数值方法求解
@@ -145,145 +147,17 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         return degreesOfFreedom;
     }
     
-    /**
-     * 伽马函数的近似实现
-     * Approximation implementation of gamma function
-     * 
-     * @param x 输入值 / Input value
-     * @return 伽马函数值 / Gamma function value
-     */
-    private double gamma(float x) {
-        // Stirling's approximation for gamma function
-        if (x < 0.5f) {
-            return Math.PI / (Math.sin(Math.PI * x) * gamma(1.0f - x));
-        }
-        
-        x = x - 1.0f;
-        double result = 0.99999999999980993;
-        double[] coefficients = {
-            676.5203681218851, -1259.1392167224028, 771.32342877765313,
-            -176.61502916214059, 12.507343278686905, -0.13857109526572012,
-            9.9843695780195716e-6, 1.5056327351493116e-7
-        };
-        
-        for (int i = 0; i < coefficients.length; i++) {
-            result += coefficients[i] / (x + i + 1);
-        }
-        
-        double t = x + coefficients.length - 0.5;
-        return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * result;
-    }
+    // 使用RereMathUtil中的gamma函数
+    // Using gamma function from RereMathUtil
     
-    /**
-     * 不完全贝塔函数的近似实现
-     * Approximation implementation of incomplete beta function
-     * 
-     * @param a 参数a / Parameter a
-     * @param b 参数b / Parameter b
-     * @param x 输入值 / Input value
-     * @return 不完全贝塔函数值 / Incomplete beta function value
-     */
-    private float incompleteBeta(float a, float b, float x) {
-        if (x < 0.0f || x > 1.0f) {
-            throw new IllegalArgumentException("x必须在[0,1]范围内 / x must be in range [0,1]");
-        }
-        
-        if (x == 0.0f) return 0.0f;
-        if (x == 1.0f) return 1.0f;
-        
-        // 使用连分数展开
-        // Using continued fraction expansion
-        float bt = (float) (Math.exp(gamma(a + b) - gamma(a) - gamma(b) + 
-            a * Math.log(x) + b * Math.log(1.0 - x)));
-        
-        if (x < (a + 1.0f) / (a + b + 2.0f)) {
-            return bt * betaCF(a, b, x) / a;
-        } else {
-            return 1.0f - bt * betaCF(b, a, 1.0f - x) / b;
-        }
-    }
+    // 使用RereMathUtil中的incompleteBeta函数
+    // Using incompleteBeta function from RereMathUtil
     
-    /**
-     * 贝塔函数的连分数展开
-     * Continued fraction expansion for beta function
-     */
-    private float betaCF(float a, float b, float x) {
-        int maxIter = 100;
-        float eps = 1e-10f;
-        
-        float qab = a + b;
-        float qap = a + 1.0f;
-        float qam = a - 1.0f;
-        float c = 1.0f;
-        float d = 1.0f - qab * x / qap;
-        
-        if (Math.abs(d) < eps) d = eps;
-        d = 1.0f / d;
-        float h = d;
-        
-        for (int m = 1; m <= maxIter; m++) {
-            int m2 = 2 * m;
-            float aa = m * (b - m) * x / ((qam + m2) * (a + m2));
-            d = 1.0f + aa * d;
-            if (Math.abs(d) < eps) d = eps;
-            c = 1.0f + aa / c;
-            if (Math.abs(c) < eps) c = eps;
-            d = 1.0f / d;
-            h *= d * c;
-            
-            aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
-            d = 1.0f + aa * d;
-            if (Math.abs(d) < eps) d = eps;
-            c = 1.0f + aa / c;
-            if (Math.abs(c) < eps) c = eps;
-            d = 1.0f / d;
-            float del = d * c;
-            h *= del;
-            
-            if (Math.abs(del - 1.0f) < eps) break;
-        }
-        
-        return h;
-    }
+    // 使用RereMathUtil中的betaCF函数
+    // Using betaCF function from RereMathUtil
     
-    /**
-     * 误差函数的近似实现
-     * Approximation implementation of error function
-     */
-    private float erf(float x) {
-        float a1 = 0.254829592f;
-        float a2 = -0.284496736f;
-        float a3 = 1.421413741f;
-        float a4 = -1.453152027f;
-        float a5 = 1.061405429f;
-        float p = 0.3275911f;
-        
-        int sign = x >= 0 ? 1 : -1;
-        x = Math.abs(x);
-        
-        float t = 1.0f / (1.0f + p * x);
-        float y = 1.0f - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (float) Math.exp(-x * x);
-        
-        return sign * y;
-    }
-    
-    /**
-     * 逆正态累积分布函数的近似实现
-     * Approximation implementation of inverse normal CDF
-     */
-    private float inverseNormalCDF(float p) {
-        // 简化的逆正态CDF近似
-        // Simplified inverse normal CDF approximation
-        float[] a = {0.0f, -3.969683028665376e+01f, 2.209460984245205e+02f, -2.759285104469687e+02f, 1.383577518672690e+02f, -3.066479806614201e+01f, 2.506628277459239f};
-        float[] b = {0.0f, -5.447609879822406e+01f, 1.615858368580409e+02f, -1.556989798598866e+02f, 6.680131188771972e+01f, -1.328068155288572e+01f};
-        
-        float q = p - 0.5f;
-        float r = q * q;
-        float x = (((((a[1] * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * r + a[6]) * q / 
-            (((((b[1] * r + b[2]) * r + b[3]) * r + b[4]) * r + b[5]) * r + 1.0f);
-        
-        return x;
-    }
+    // 使用RereMathUtil中的erf和inverseNormalCDF函数
+    // Using erf and inverseNormalCDF functions from RereMathUtil
     
     /**
      * 逆t分布累积分布函数的数值求解
@@ -476,11 +350,13 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
-        float[] samples = new float[n];
+        // 使用IVector进行数组操作
+        // Using IVector for array operations
+        IVector samples = IVector.zeros(n);
         for (int i = 0; i < n; i++) {
-            samples[i] = sample();
+            samples.set(i, sample());
         }
-        return samples;
+        return samples.getData();
     }
     
     @Override

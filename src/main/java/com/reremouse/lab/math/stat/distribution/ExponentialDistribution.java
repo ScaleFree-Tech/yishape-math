@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.stat.distribution;
 
+import com.reremouse.lab.math.IVector;
 import java.io.Serializable;
 
 /**
@@ -360,11 +361,13 @@ public class ExponentialDistribution implements IContinuousDistribution, Seriali
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
-        float[] samples = new float[n];
+        // 使用IVector进行数组操作
+        // Using IVector for array operations
+        IVector samples = IVector.zeros(n);
         for (int i = 0; i < n; i++) {
-            samples[i] = sample();
+            samples.set(i, sample());
         }
-        return samples;
+        return samples.getData();
     }
     
     @Override

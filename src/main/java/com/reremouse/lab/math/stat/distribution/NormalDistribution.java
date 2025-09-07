@@ -1,5 +1,7 @@
 package com.reremouse.lab.math.stat.distribution;
 
+import com.reremouse.lab.math.RereMathUtil;
+import com.reremouse.lab.math.IVector;
 import java.io.Serializable;
 
 /**
@@ -83,7 +85,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         // 使用误差函数的近似公式
         // Using approximation formula for error function
         float z = (x - mean) / stdDev;
-        return 0.5f * (1.0f + erf(z / (float) Math.sqrt(2.0)));
+        return 0.5f * (1.0f + (float) RereMathUtil.erf(z / (float) Math.sqrt(2.0)));
     }
     
     /**
@@ -104,7 +106,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         
         // 使用近似方法计算逆正态分布
         // Using approximation method to calculate inverse normal distribution
-        float z = inverseNormalCDF(p);
+        float z = (float) RereMathUtil.inverseNormalCDF(p);
         return mean + stdDev * z;
     }
     
@@ -162,66 +164,11 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         return variance;
     }
     
-    /**
-     * 误差函数的近似实现
-     * Approximation implementation of error function
-     * 
-     * @param x 输入值 / Input value
-     * @return 误差函数值 / Error function value
-     */
-    private float erf(float x) {
-        // Abramowitz and Stegun approximation
-        float a1 = 0.254829592f;
-        float a2 = -0.284496736f;
-        float a3 = 1.421413741f;
-        float a4 = -1.453152027f;
-        float a5 = 1.061405429f;
-        float p = 0.3275911f;
-        
-        int sign = x >= 0 ? 1 : -1;
-        x = Math.abs(x);
-        
-        float t = 1.0f / (1.0f + p * x);
-        float y = 1.0f - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (float) Math.exp(-x * x);
-        
-        return sign * y;
-    }
+    // 使用RereMathUtil中的erf函数
+    // Using erf function from RereMathUtil
     
-    /**
-     * 逆正态累积分布函数的近似实现
-     * Approximation implementation of inverse normal CDF
-     * 
-     * @param p 概率值 / Probability value
-     * @return 逆正态CDF值 / Inverse normal CDF value
-     */
-    private float inverseNormalCDF(float p) {
-        // Beasley-Springer-Moro algorithm approximation
-        float[] a = {0.0f, -3.969683028665376e+01f, 2.209460984245205e+02f, -2.759285104469687e+02f, 1.383577518672690e+02f, -3.066479806614201e+01f, 2.506628277459239f};
-        float[] b = {0.0f, -5.447609879822406e+01f, 1.615858368580409e+02f, -1.556989798598866e+02f, 6.680131188771972e+01f, -1.328068155288572e+01f};
-        float[] c = {0.0f, -7.784894002430293e-03f, -3.223964580411365e-01f, -2.400758277161838f, -2.549732539343734f, 4.374664141464968f, 2.938163982698783f};
-        float[] d = {0.0f, 7.784695709041462e-03f, 3.224671290700398e-01f, 2.445134137142996f, 3.754408661907416f};
-        
-        float x;
-        if (p < 0.02425f) {
-            // 左尾 / Left tail
-            float q = (float) Math.sqrt(-2.0 * Math.log(p));
-            x = (((((c[1] * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) * q + c[6]) / 
-                ((((d[1] * q + d[2]) * q + d[3]) * q + d[4]) * q + 1.0f);
-        } else if (p <= 0.97575f) {
-            // 中心区域 / Central region
-            float q = p - 0.5f;
-            float r = q * q;
-            x = (((((a[1] * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * r + a[6]) * q / 
-                (((((b[1] * r + b[2]) * r + b[3]) * r + b[4]) * r + b[5]) * r + 1.0f);
-        } else {
-            // 右尾 / Right tail
-            float q = (float) Math.sqrt(-2.0 * Math.log(1.0 - p));
-            x = -(((((c[1] * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) * q + c[6]) / 
-                 ((((d[1] * q + d[2]) * q + d[3]) * q + d[4]) * q + 1.0f);
-        }
-        
-        return x;
-    }
+    // 使用RereMathUtil中的inverseNormalCDF函数
+    // Using inverseNormalCDF function from RereMathUtil
     
     /**
      * 获取均值
@@ -358,11 +305,13 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
-        float[] samples = new float[n];
+        // 使用IVector进行数组操作
+        // Using IVector for array operations
+        IVector samples = IVector.zeros(n);
         for (int i = 0; i < n; i++) {
-            samples[i] = sample();
+            samples.set(i, sample());
         }
-        return samples;
+        return samples.getData();
     }
     
     // Box-Muller变换的辅助变量
