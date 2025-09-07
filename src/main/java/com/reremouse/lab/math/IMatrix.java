@@ -162,6 +162,34 @@ public interface IMatrix {
     /**
      * 创建随机矩阵 / Create random matrix
      * <p>
+     * 创建一个指定大小的随机矩阵，元素值服从均匀分布 Creates a random matrix of specified size with
+     * elements following uniform distribution
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are
+     * less than or equal to 0
+     */
+    public static IMatrix rand(int rows, int cols) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("行数和列数必须大于0 / Rows and columns must be greater than 0");
+        }
+        
+        Random random = new Random();
+        float[][] data = new float[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                data[i][j] = (float) random.nextFloat(); // 生成均匀分布随机数 / Generate uniform distribution random numbers
+            }
+        }
+        return new RereMatrix(data);
+    }
+    
+    /**
+     * 创建随机矩阵 / Create random matrix
+     * <p>
      * 创建一个指定大小的随机矩阵，元素值服从标准正态分布 Creates a random matrix of specified size with
      * elements following standard normal distribution
      * </p>
@@ -172,12 +200,50 @@ public interface IMatrix {
      * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are
      * less than or equal to 0
      */
-    public static IMatrix rand(int rows, int cols) {
+    public static IMatrix randn(int rows, int cols) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("行数和列数必须大于0 / Rows and columns must be greater than 0");
+        }
+        
         Random random = new Random();
         float[][] data = new float[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 data[i][j] = (float) random.nextGaussian(); // 生成标准正态分布随机数 / Generate standard normal distribution random numbers
+            }
+        }
+        return new RereMatrix(data);
+    }
+    
+    /**
+     * 创建随机矩阵（指定正态分布的均值和标准差） / Create random matrix with specified mean and standard deviation
+     * <p>
+     * 创建一个指定大小的随机矩阵，元素值服从正态分布，具有指定的均值和标准差
+     * Creates a random matrix of specified size with elements following normal distribution with specified mean and standard deviation
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param mean 正态分布的均值 / Mean of normal distribution
+     * @param std 正态分布的标准差 / Standard deviation of normal distribution
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0，或标准差小于0 / if rows or columns are less than or equal to 0, or standard deviation is negative
+     */
+    public static IMatrix randn(int rows, int cols, float mean, float std) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("行数和列数必须大于0 / Rows and columns must be greater than 0");
+        }
+        if (std < 0) {
+            throw new IllegalArgumentException("标准差不能为负数 / Standard deviation cannot be negative");
+        }
+        
+        Random random = new Random();
+        float[][] data = new float[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                // 生成标准正态分布随机数，然后按公式 X = mean + std * Z 转换为指定均值和标准差的正态分布
+                // Generate standard normal distribution random number, then convert to normal distribution with specified mean and std using formula X = mean + std * Z
+                data[i][j] = mean + std * (float) random.nextGaussian();
             }
         }
         return new RereMatrix(data);
@@ -924,7 +990,7 @@ public interface IMatrix {
     /**
      * 创建随机矩阵（指定种子） / Create random matrix with specified seed
      * <p>
-     * 创建一个指定大小的随机矩阵，使用指定的种子值确保结果可重现
+     * 创建一个指定大小的随机矩阵（均匀分布），使用指定的种子值确保结果可重现
      * Creates a random matrix of specified size using the specified seed value to ensure reproducible results
      * </p>
      *
@@ -935,6 +1001,34 @@ public interface IMatrix {
      * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
      */
     public static IMatrix rand(int rows, int cols, long seed) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("行数和列数必须大于0 / Rows and columns must be greater than 0");
+        }
+        
+        Random random = new Random(seed);
+        float[][] data = new float[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                data[i][j] = (float) random.nextFloat();
+            }
+        }
+        return new RereMatrix(data);
+    }
+    
+    /**
+     * 创建随机矩阵（指定种子） / Create random matrix with specified seed
+     * <p>
+     * 创建一个指定大小的随机矩阵（正态分布），使用指定的种子值确保结果可重现
+     * Creates a random matrix of specified size using the specified seed value to ensure reproducible results
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param seed 随机数种子 / Random number seed
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
+    public static IMatrix randn(int rows, int cols, long seed) {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("行数和列数必须大于0 / Rows and columns must be greater than 0");
         }

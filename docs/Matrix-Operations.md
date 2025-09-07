@@ -41,8 +41,10 @@ IMatrix matrix3 = IMatrix.of(vectors);
 IMatrix ones = IMatrix.ones(3, 3);        // 全1矩阵 / Matrix of ones
 IMatrix zeros = IMatrix.zeros(3, 3);      // 零矩阵 / Zero matrix
 IMatrix identity = IMatrix.eye(3);        // 单位矩阵 / Identity matrix
-IMatrix random = IMatrix.rand(3, 3);      // 随机矩阵 / Random matrix
-IMatrix randomSeeded = IMatrix.rand(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed
+IMatrix random = IMatrix.rand(3, 3);      // 随机矩阵（均匀分布） / Random matrix (uniform distribution)
+IMatrix random = IMatrix.randn(3, 3);      // 随机矩阵（正态分布） / Random matrix (normal distribution)
+IMatrix randomSeeded = IMatrix.rand(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed(uniform distribution)
+IMatrix randomSeeded = IMatrix.randn(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed(normal distribution)
 
 // 创建对角矩阵 / Create diagonal matrix
 IMatrix diagonal = IMatrix.diag(new float[]{1, 2, 3});

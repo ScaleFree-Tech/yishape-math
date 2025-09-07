@@ -34,6 +34,7 @@
 - **方差分析** / **ANOVA**: Analysis of Variance （待实现）
   - *Analysis of Variance (to be implemented)*
 
+
 ### 🤖 机器学习算法 / Machine Learning Algorithms
 - **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化
   - *Support for L1, L2, ElasticNet regularization with LBFGS optimization*
@@ -97,7 +98,7 @@ IVector v2 = IVector.range(10);
 
 // 基本运算 / Basic operations
 IVector sum = v1.add(v2.slice(4));
-float dotProduct = v1.innerProduct(v2.slice(4));
+float dotProduct = v1.dot(v2.slice(4));
 
 // 统计运算 / Statistical operations
 float mean = v1.mean();
@@ -132,22 +133,40 @@ float prediction = lr.predict(newFeatureVector);
 #### 统计学分布 / Statistical Distributions
 ```java
 // 创建正态分布 / Create normal distribution
-NormalDistribution normal = Stat.norm(0, 1);  // 均值0，标准差1
-NormalDistribution standardNormal = Stat.norm();  // 标准正态分布
+NormalDistribution normal = Stat.norm(0, 1);  // 均值0，标准差1 / Mean=0, std=1
+NormalDistribution standardNormal = Stat.norm();  // 标准正态分布 / Standard normal distribution
 
 // 计算概率密度和累积分布函数 / Calculate PDF and CDF
-float pdf = normal.pdf(1.0f);  // 概率密度函数
-float cdf = normal.cdf(1.0f);  // 累积分布函数
+float pdf = normal.pdf(1.0f);  // 概率密度函数 / Probability density function
+float cdf = normal.cdf(1.0f);  // 累积分布函数 / Cumulative distribution function
 
 // 生成随机数 / Generate random numbers
-float[] randomSamples = normal.sample(1000);  // 生成1000个随机样本
+float[] randomSamples = normal.sample(1000);  // 生成1000个随机样本 / Generate 1000 random samples
 
 // 其他分布 / Other distributions
-StudentDistribution tDist = Stat.t(10);  // t分布，自由度10
-Chi2Distribution chi2Dist = Stat.chi2(5);  // 卡方分布，自由度5
-FDistribution fDist = Stat.f(3, 7);  // F分布，自由度(3,7)
-UniformDistribution uniform = Stat.uniform(0, 1);  // 均匀分布[0,1]
-ExponentialDistribution exp = Stat.exponential(2.0f);  // 指数分布，参数2
+StudentDistribution tDist = Stat.t(10);  // t分布，自由度10 / t-distribution with 10 degrees of freedom
+Chi2Distribution chi2Dist = Stat.chi2(5);  // 卡方分布，自由度5 / Chi-squared distribution with 5 degrees of freedom
+FDistribution fDist = Stat.f(3, 7);  // F分布，自由度(3,7) / F-distribution with degrees of freedom (3,7)
+UniformDistribution uniform = Stat.uniform(0, 1);  // 均匀分布[0,1] / Uniform distribution [0,1]
+ExponentialDistribution exp = Stat.exponential(2.0f);  // 指数分布，参数2 / Exponential distribution with rate 2
+
+// 统计描述 / Statistical descriptions
+float mean = normal.mean();        // 均值 / Mean
+float variance = normal.var();     // 方差 / Variance
+float stdDev = normal.std();       // 标准差 / Standard deviation
+float median = normal.median();    // 中位数 / Median
+float mode = normal.mode();        // 众数 / Mode
+float skewness = normal.skewness(); // 偏度 / Skewness
+float kurtosis = normal.kurtosis(); // 峰度 / Kurtosis
+
+// 分位数计算 / Quantile calculations
+float q1 = normal.q1();            // 第一四分位数 / First quartile
+float q3 = normal.q3();            // 第三四分位数 / Third quartile
+float ppf = normal.ppf(0.95f);     // 95%分位数 / 95th percentile
+
+// 生存函数 / Survival function
+float sf = normal.sf(1.0f);        // 生存函数值 / Survival function value
+float isf = normal.isf(0.05f);     // 逆生存函数值 / Inverse survival function value
 ```
 
 #### PCA降维 / PCA Dimensionality Reduction
@@ -172,6 +191,9 @@ int prediction = lr.predict(newFeatureVector);
 float[] probabilities = lr.predictProbabilities(newFeatureVector);
 ```
 
+
+
+
 ## 项目结构 / Project Structure
 
 ```
@@ -192,7 +214,8 @@ src/main/java/com/reremouse/lab/math/
 │       ├── UniformDistribution.java     # 均匀分布 / Uniform Distribution
 │       ├── ExponentialDistribution.java # 指数分布 / Exponential Distribution
 │       ├── IContinuousDistribution.java # 连续分布接口 / Continuous Distribution Interface
-│       └── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│       ├── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│       └── IStatisticDistribution.java  # 统计分布基础接口 / Statistical Distribution Base Interface
 ├── ml/                       # 机器学习算法 / Machine Learning Algorithms
 │   ├── lr/                   # 线性回归 / Linear Regression
 │   │   ├── IRegression.java             # 回归接口 / Regression Interface
@@ -236,38 +259,18 @@ These documents provide detailed API references and usage guides:
 - **使用指南** / **Usage Guides**: 详细的代码示例和最佳实践 / Detailed code examples and best practices
 - **算法说明** / **Algorithm Descriptions**: 数学原理和实现细节 / Mathematical principles and implementation details
 
-## 统计学功能 / Statistical Functions
+#### 统计学分布文档 / Statistical Distribution Documentation
 
-### 概率分布 / Probability Distributions
+- **分布理论** / **Distribution Theory**: 详细的概率分布数学原理和公式
+  - *Detailed mathematical principles and formulas for probability distributions*
+- **使用示例** / **Usage Examples**: 完整的代码示例展示各种分布的使用方法
+  - *Complete code examples demonstrating usage of various distributions*
+- **性能优化** / **Performance Optimization**: 分布计算的性能优化技巧和最佳实践
+  - *Performance optimization techniques and best practices for distribution calculations*
+- **数值精度** / **Numerical Precision**: 高精度数值计算的实现细节和注意事项
+  - *Implementation details and considerations for high-precision numerical calculations*
 
-本库提供了完整的概率分布实现，支持以下分布：
 
-This library provides comprehensive probability distribution implementations supporting the following distributions:
-
-- **正态分布 (Normal Distribution)**: `Stat.norm(mean, std)` 或 `Stat.norm()` 标准正态分布
-  - *Normal distribution with specified mean and standard deviation, or standard normal distribution*
-- **t分布 (Student's t-Distribution)**: `Stat.t(degreesOfFreedom)`
-  - *Student's t-distribution with specified degrees of freedom*
-- **卡方分布 (Chi-squared Distribution)**: `Stat.chi2(degreesOfFreedom)`
-  - *Chi-squared distribution with specified degrees of freedom*
-- **F分布 (F-Distribution)**: `Stat.f(df1, df2)`
-  - *F-distribution with specified degrees of freedom*
-- **均匀分布 (Uniform Distribution)**: `Stat.uniform(lower, upper)`
-  - *Uniform distribution over the interval [lower, upper]*
-- **指数分布 (Exponential Distribution)**: `Stat.exponential(rate)`
-  - *Exponential distribution with specified rate parameter*
-
-### 分布功能 / Distribution Features
-
-每个分布都提供以下功能：
-
-Each distribution provides the following functionalities:
-
-- `pdf(x)`: 概率密度函数 / Probability Density Function
-- `cdf(x)`: 累积分布函数 / Cumulative Distribution Function
-- `quantile(p)`: 分位数函数 / Quantile Function
-- `sample(n)`: 生成n个随机样本 / Generate n random samples
-- `mean()`, `variance()`, `stdDev()`: 统计量计算 / Statistical measures calculation
 
 ## 使用示例 / Usage Examples
 
@@ -289,14 +292,63 @@ These example documents provide detailed usage guides and code examples to help 
 - **机器学习实践** / **Machine Learning Practice**: 回归和分类算法的实际应用 / Real-world applications of regression and classification algorithms
 - **高级功能** / **Advanced Features**: 优化算法和降维技术的使用 / Usage of optimization algorithms and dimensionality reduction techniques
 
+#### 统计学分布快速入门 / Statistical Distribution Quick Start
+
+**基础使用 / Basic Usage:**
+```java
+// 创建分布实例 / Create distribution instances
+NormalDistribution normal = Stat.norm(0, 1);           // 标准正态分布 / Standard normal
+StudentDistribution tDist = Stat.t(10);                // t分布 / t-distribution
+Chi2Distribution chi2 = Stat.chi2(5);                  // 卡方分布 / Chi-squared distribution
+FDistribution fDist = Stat.f(3, 7);                    // F分布 / F-distribution
+UniformDistribution uniform = Stat.uniform(0, 1);      // 均匀分布 / Uniform distribution
+ExponentialDistribution exp = Stat.exponential(2.0f);  // 指数分布 / Exponential distribution
+```
+
+**常用操作 / Common Operations:**
+```java
+// 概率计算 / Probability calculations
+float pdf = normal.pdf(1.0f);    // 概率密度 / Probability density
+float cdf = normal.cdf(1.0f);    // 累积概率 / Cumulative probability
+float ppf = normal.ppf(0.95f);   // 95%分位数 / 95th percentile
+
+// 统计描述 / Statistical descriptions
+float mean = normal.mean();      // 均值 / Mean
+float var = normal.var();        // 方差 / Variance
+float std = normal.std();        // 标准差 / Standard deviation
+
+// 随机采样 / Random sampling
+float sample = normal.sample();           // 单个样本 / Single sample
+float[] samples = normal.sample(1000);    // 1000个样本 / 1000 samples
+```
+
 ## 性能特性 / Performance Features
 
 - **内存优化** / **Memory Optimization**: 高效的数组操作和内存管理，支持大矩阵运算
+  - *Efficient array operations and memory management, supporting large matrix operations*
 - **算法优化** / **Algorithm Optimization**: 优化的数学算法实现，包括LBFGS优化器
+  - *Optimized mathematical algorithm implementations, including LBFGS optimizer*
 - **类型安全** / **Type Safety**: 强类型系统，避免运行时错误，提供完整的类型检查
+  - *Strong type system, avoiding runtime errors, providing complete type checking*
 - **接口设计** / **Interface Design**: 清晰的接口设计，易于扩展和自定义实现
+  - *Clear interface design, easy to extend and customize implementations*
 - **数值稳定性** / **Numerical Stability**: 采用数值稳定的算法实现，确保计算精度
+  - *Numerically stable algorithm implementations, ensuring computational accuracy*
 - **并行计算支持** / **Parallel Computing Support**: 支持多线程并行计算，提高大规模数据处理效率
+  - *Multi-threaded parallel computing support, improving efficiency for large-scale data processing*
+
+### 统计学分布性能特点 / Statistical Distribution Performance Features
+
+- **高效计算** / **Efficient Computation**: 优化的概率密度函数和累积分布函数计算
+  - *Optimized probability density function and cumulative distribution function calculations*
+- **数值精度** / **Numerical Precision**: 采用高精度数值算法，确保统计计算的准确性
+  - *High-precision numerical algorithms ensuring accuracy of statistical calculations*
+- **内存效率** / **Memory Efficiency**: 预计算常数和缓存机制，减少重复计算
+  - *Precomputed constants and caching mechanisms to reduce redundant calculations*
+- **随机数生成** / **Random Number Generation**: 高效的伪随机数生成器，支持多种分布
+  - *Efficient pseudo-random number generators supporting multiple distributions*
+- **统计矩计算** / **Statistical Moment Calculation**: 快速计算均值、方差、偏度、峰度等统计量
+  - *Fast calculation of statistical moments: mean, variance, skewness, kurtosis, etc.*
 
 ## 贡献指南 / Contributing
 
@@ -351,6 +403,9 @@ If you encounter any issues while using the library, you can get help through th
 - 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)
 - 🔢 完整的概率密度函数和累积分布函数 / Complete probability density and cumulative distribution functions
 - 📋 丰富的统计描述功能（均值、方差、中位数、众数等） / Rich statistical description functions (mean, variance, median, mode, etc.)
+- 🎯 支持统计矩计算（偏度、峰度、分位数等） / Support for statistical moment calculations (skewness, kurtosis, quantiles, etc.)
+- ⚡ 优化的随机数生成器，支持多种分布 / Optimized random number generators supporting multiple distributions
+- 🔧 完整的分布接口设计，易于扩展 / Complete distribution interface design for easy extension
 
 ### v0.1 (2025-08)
 - ✨ 初始版本发布 / Initial release
