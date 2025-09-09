@@ -13,14 +13,28 @@
 ## 主要特性 / Key Features
 
 ### 🚀 核心数学运算 / Core Mathematical Operations
-- **向量运算** / **Vector Operations**: 完整的向量数学运算、统计运算、切片索引
-  - *Complete vector mathematical operations, statistical operations, and slicing/indexing*
-- **矩阵运算** / **Matrix Operations**: 矩阵变换、线性代数运算、特征分解
-  - *Matrix transformations, linear algebra operations, and eigendecomposition*
-- **数据框操作** / **DataFrame Operations**: 结构化数据处理、CSV读写、数据切片
-  - *Structured data processing, CSV read/write, data slicing*
+- **向量运算** / **Vector Operations**: 完整的向量数学运算和统计功能
+  - *Complete vector mathematical operations and statistical functions*
+  - 向量创建：支持多种数据类型、范围向量、特殊向量（全1、全0、随机） / Vector creation: multiple data types, range vectors, special vectors (ones, zeros, random)
+  - 数学运算：向量间运算、标量运算、内积、外积、叉积 / Mathematical operations: vector-to-vector, scalar operations, inner product, outer product, cross product
+  - 统计运算：均值、方差、标准差、中位数、众数、偏度、峰度等 / Statistical operations: mean, variance, standard deviation, median, mode, skewness, kurtosis
+  - 切片索引：支持NumPy风格切片、布尔索引、条件筛选 / Slicing and indexing: NumPy-style slicing, boolean indexing, conditional filtering
+  - 通用函数：数学函数、三角函数、对数函数、指数函数 / Universal functions: mathematical, trigonometric, logarithmic, exponential functions
+- **矩阵运算** / **Matrix Operations**: 完整的矩阵数学运算和线性代数功能
+  - *Complete matrix mathematical operations and linear algebra functions*
+  - 矩阵创建：多种构造方式、特殊矩阵（单位、对角、随机）、文件加载 / Matrix creation: multiple construction methods, special matrices (identity, diagonal, random), file loading
+  - 基本运算：矩阵加减乘除、标量运算、元素级运算 / Basic operations: matrix addition/subtraction/multiplication/division, scalar operations, element-wise operations
+  - 线性代数：矩阵分解、特征值分解、奇异值分解、QR分解 / Linear algebra: matrix decomposition, eigenvalue decomposition, SVD, QR decomposition
+  - 矩阵变换：转置、幂运算、逆矩阵、伪逆矩阵、行列式 / Matrix transformations: transpose, power, inverse, pseudo-inverse, determinant
+  - 统计功能：协方差矩阵、相关系数矩阵、矩阵范数 / Statistical functions: covariance matrix, correlation matrix, matrix norms
 - **数学工具** / **Math Utilities**: 类型转换、随机数生成、数学函数
   - *Type conversion, random number generation, and mathematical functions*
+
+### 📊 数据框操作 / DataFrame Operations
+- **结构化数据处理** / **Structured Data Processing**: 完整的DataFrame数据处理功能
+  - *Complete DataFrame data processing functionality*
+  - CSV文件读写：支持自定义分隔符、表头、编码设置 / CSV file read/write: custom delimiters, headers, encoding settings
+  - 灵活数据切片：行切片、列切片、通用切片，支持负数索引和步长 / Flexible data slicing: row, column, general slicing with negative indices and steps
 
 ### 📊 统计学运算 / Statistical Methods
 - **分布函数** / **Statistical Distributions**: 正态分布、t分布、卡方分布、F分布、均匀分布、指数分布等
@@ -511,15 +525,27 @@ If you encounter any issues while using the library, you can get help through th
 
 ## 更新日志 / Changelog
 
-### v0.1.2 (2025-01)
-- 📊 DataFrame 数据框操作 / DataFrame Operations: 结构化数据处理、CSV读写、数据切片
-  - *Structured data processing, CSV read/write, data slicing*
+### v0.1.2 (2025-09)
+- 📊 DataFrame 数据框操作 / DataFrame Operations: 完整的结构化数据处理功能
+  - *Complete structured data processing functionality*
+  - CSV文件读写支持，支持自定义分隔符和表头 / CSV file read/write support with custom delimiters and headers
+  - 灵活的数据切片操作，支持行切片、列切片和通用切片 / Flexible data slicing operations supporting row, column, and general slicing
 - 🔧 切片表达式解析器 / Slice Expression Parser: 支持类似NumPy的切片语法
   - *Support for NumPy-like slicing syntax*
-- 📋 数据类型支持 / Data Type Support: String和Float类型列支持
-  - *String and Float column type support*
-- 🔄 数据转换功能 / Data Conversion: DataFrame与IMatrix互转换
-  - *Mutual conversion between DataFrame and IMatrix*
+  - 支持负数索引、步长切片、范围切片 / Support for negative indices, step slicing, range slicing
+  - 通用切片表达式：`df.slice("1:3", "0:2")` 支持行列同时切片 / General slicing expressions: `df.slice("1:3", "0:2")` supporting simultaneous row and column slicingefficiency
+- 📊 数据可视化功能 / Data Visualization Features: 丰富的图表绘制能力
+  - *Rich charting capabilities*
+  - 基础图表：线图、散点图、饼图、柱状图、直方图 / Basic charts: line, scatter, pie, bar, histogram charts
+  - 统计图表：箱线图、K线图、热力图、雷达图、仪表盘 / Statistical charts: boxplot, candlestick, heatmap, radar, gauge charts
+  - 特殊图表：漏斗图、桑基图、旭日图、主题河流图、树图等 / Special charts: funnel, Sankey, sunburst, theme river, tree charts
+  - ECharts集成：基于ECharts-Java的流式API和主题支持 / ECharts integration: fluent API and theme support based on ECharts-Java
+- 📈 统计学功能增强 / Enhanced Statistical Features: 完整的概率分布和统计计算
+  - *Complete probability distributions and statistical computations*
+  - 14种概率分布：8种连续分布和6种离散分布 / 14 probability distributions: 8 continuous and 6 discrete distributions
+  - 统计描述：均值、方差、中位数、众数、偏度、峰度等 / Statistical descriptions: mean, variance, median, mode, skewness, kurtosis
+  - 假设检验：均值检验、方差检验、参数估计 / Hypothesis testing: mean tests, variance tests, parameter estimation
+  - 随机数生成：支持各种分布的随机采样 / Random number generation: random sampling for various distributions
 
 ### v0.1.1 (2025-09)
 - 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)
