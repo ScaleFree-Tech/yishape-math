@@ -153,6 +153,16 @@ public class VectorSlicingExample {
         IVector fancy1 = vector.fancyGet(indices);
         System.out.println("fancyGet([0, 3, 7, 12, 18]): " + fancy1);
         
+        // 负数索引 / Negative indexing
+        int[] negativeIndices = {-1, -5, -10, -15, -20}; // 倒数第1,5,10,15,20个元素
+        IVector fancy3 = vector.fancyGet(negativeIndices);
+        System.out.println("fancyGet([-1, -5, -10, -15, -20]): " + fancy3);
+        
+        // 混合索引 / Mixed indexing
+        int[] mixedIndices = {0, -1, 5, -5, 10, -10}; // 正数和负数索引混合
+        IVector fancy4 = vector.fancyGet(mixedIndices);
+        System.out.println("fancyGet([0, -1, 5, -5, 10, -10]): " + fancy4);
+        
         // 布尔索引 / Boolean indexing
         boolean[] mask = new boolean[20];
         for (int i = 0; i < 20; i++) {
@@ -175,7 +185,124 @@ public class VectorSlicingExample {
 }
 ```
 
-### 示例4：通用函数应用 / Example 4: Universal Function Applications
+### 示例4：切片表达式和负数索引 / Example 4: Slice Expressions and Negative Indexing
+
+```java
+public class VectorSliceExpressionExample {
+    public static void main(String[] args) {
+        // 创建测试向量 / Create test vector
+        IVector vector = IVector.of(new float[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        System.out.println("原始向量: " + vector);
+        System.out.println("向量长度: " + vector.length());
+        
+        System.out.println("\n=== 基本切片表达式 / Basic Slice Expressions ===");
+        
+        // 基本切片 / Basic slicing
+        IVector slice1 = vector.slice("1:5");      // 从索引1到4（不包含5）
+        System.out.println("slice(\"1:5\"): " + slice1);
+        
+        IVector slice2 = vector.slice("2:");       // 从索引2到末尾
+        System.out.println("slice(\"2:\"): " + slice2);
+        
+        IVector slice3 = vector.slice(":5");       // 从开始到索引4（不包含5）
+        System.out.println("slice(\":5\"): " + slice3);
+        
+        IVector slice4 = vector.slice("::2");      // 从开始到末尾，步长为2
+        System.out.println("slice(\"::2\"): " + slice4);
+        
+        IVector slice5 = vector.slice("1:8:2");    // 从索引1到7，步长为2
+        System.out.println("slice(\"1:8:2\"): " + slice5);
+        
+        System.out.println("\n=== 负数索引切片 / Negative Indexing Slicing ===");
+        
+        // 负数索引切片 / Negative indexing slicing
+        IVector slice6 = vector.slice("-3:");      // 从倒数第3个到末尾
+        System.out.println("slice(\"-3:\"): " + slice6);
+        
+        IVector slice7 = vector.slice(":-2");      // 从开始到倒数第2个（不包含）
+        System.out.println("slice(\":-2\"): " + slice7);
+        
+        IVector slice8 = vector.slice("-5:-1");    // 从倒数第5个到倒数第1个（不包含）
+        System.out.println("slice(\"-5:-1\"): " + slice8);
+        
+        IVector slice9 = vector.slice("-6:-1:2");  // 从倒数第6个到倒数第1个，步长为2
+        System.out.println("slice(\"-6:-1:2\"): " + slice9);
+        
+        IVector slice10 = vector.slice("::-1");    // 反转向量
+        System.out.println("slice(\"::-1\"): " + slice10);
+        
+        System.out.println("\n=== 负数索引访问 / Negative Indexing Access ===");
+        
+        // 负数索引访问 / Negative indexing access
+        System.out.println("vector.get(0): " + vector.get(0));     // 第一个元素
+        System.out.println("vector.get(-1): " + vector.get(-1));   // 最后一个元素
+        System.out.println("vector.get(-2): " + vector.get(-2));   // 倒数第二个元素
+        System.out.println("vector.get(-5): " + vector.get(-5));   // 倒数第五个元素
+        
+        System.out.println("\n=== 切片表达式边界情况 / Slice Expression Edge Cases ===");
+        
+        // 边界情况 / Edge cases
+        IVector slice11 = vector.slice("0:0");     // 空切片
+        System.out.println("slice(\"0:0\"): " + slice11 + " (长度: " + slice11.length() + ")");
+        
+        IVector slice12 = vector.slice("5:5");     // 空切片
+        System.out.println("slice(\"5:5\"): " + slice12 + " (长度: " + slice12.length() + ")");
+        
+        IVector slice13 = vector.slice("1:1");     // 空切片
+        System.out.println("slice(\"1:1\"): " + slice13 + " (长度: " + slice13.length() + ")");
+        
+        IVector slice14 = vector.slice("-1:-1");   // 空切片
+        System.out.println("slice(\"-1:-1\"): " + slice14 + " (长度: " + slice14.length() + ")");
+        
+        System.out.println("\n=== 切片表达式错误处理 / Slice Expression Error Handling ===");
+        
+        try {
+            // 无效的切片表达式 / Invalid slice expression
+            vector.slice("1:2:3:4");  // 超过3个冒号
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        try {
+            // 无效的步长 / Invalid step
+            vector.slice("1:5:0");    // 步长为0
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        try {
+            // 索引超出范围 / Index out of bounds
+            vector.slice("1:20");     // 结束索引超出范围
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        System.out.println("\n=== 实际应用示例 / Practical Application Examples ===");
+        
+        // 获取前一半和后一半 / Get first half and second half
+        IVector firstHalf = vector.slice(":" + (vector.length() / 2));
+        IVector secondHalf = vector.slice((vector.length() / 2) + ":");
+        System.out.println("前一半: " + firstHalf);
+        System.out.println("后一半: " + secondHalf);
+        
+        // 获取奇数位置和偶数位置的元素 / Get odd and even positioned elements
+        IVector oddPositions = vector.slice("1::2");  // 奇数位置（索引1,3,5,7,9）
+        IVector evenPositions = vector.slice("::2");  // 偶数位置（索引0,2,4,6,8）
+        System.out.println("奇数位置: " + oddPositions);
+        System.out.println("偶数位置: " + evenPositions);
+        
+        // 获取中间部分（去除首尾） / Get middle part (excluding first and last)
+        IVector middle = vector.slice("1:-1");
+        System.out.println("中间部分: " + middle);
+        
+        // 获取最后几个元素 / Get last few elements
+        IVector lastThree = vector.slice("-3:");
+        System.out.println("最后三个: " + lastThree);
+    }
+}
+```
+
+### 示例5：通用函数应用 / Example 5: Universal Function Applications
 
 ```java
 public class VectorUniversalFunctionsExample {

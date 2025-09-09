@@ -1404,4 +1404,58 @@ public interface IMatrix {
      */
     public float var();
 
+    /**
+     * 矩阵切片操作 / Matrix slice operation
+     * <p>
+     * 根据行和列的切片表达式对矩阵进行切片操作，支持负数索引
+     * Performs matrix slicing based on row and column slice expressions, supports negative indexing
+     * </p>
+     * 
+     * @param rowSlice 行切片表达式，如 "1:3", ":-1", "::2" / Row slice expression, e.g. "1:3", ":-1", "::2"
+     * @param colSlice 列切片表达式，如 "0:2", ":-1", "::2" / Column slice expression, e.g. "0:2", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expressions are invalid
+     */
+    public IMatrix slice(String rowSlice, String colSlice);
+
+    /**
+     * 矩阵行切片操作 / Matrix row slice operation
+     * <p>
+     * 根据行切片表达式对矩阵进行行切片操作，支持负数索引
+     * Performs row slicing based on row slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param rowSlice 行切片表达式，如 "1:3", ":-1", "::2" / Row slice expression, e.g. "1:3", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    public IMatrix sliceRows(String rowSlice);
+
+    /**
+     * 矩阵列切片操作 / Matrix column slice operation
+     * <p>
+     * 根据列切片表达式对矩阵进行列切片操作，支持负数索引
+     * Performs column slicing based on column slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param colSlice 列切片表达式，如 "0:2", ":-1", "::2" / Column slice expression, e.g. "0:2", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    public IMatrix sliceColumns(String colSlice);
+
+    /**
+     * 花式索引获取矩阵元素 / Fancy indexing for matrix elements
+     * <p>
+     * 根据行和列索引数组获取对应位置的元素组成新矩阵，支持负数索引
+     * Gets elements at specified row and column positions to form a new matrix, supports negative indexing
+     * </p>
+     * 
+     * @param rowIndices 行索引数组 / Array of row indices
+     * @param colIndices 列索引数组 / Array of column indices
+     * @return 新的矩阵对象，包含指定位置的元素 / New matrix object containing elements at specified positions
+     * @throws IndexOutOfBoundsException 如果任何索引超出范围 / if any index is out of bounds
+     */
+    public IMatrix fancyGet(int[] rowIndices, int[] colIndices);
+
 }

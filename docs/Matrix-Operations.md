@@ -204,6 +204,78 @@ int rowsAlt = matrix1.getRows();           // 行数（替代方法）
 int colsAlt = matrix1.getColumns();        // 列数（替代方法）
 ```
 
+#### 矩阵切片操作 / Matrix Slicing Operations
+
+```java
+// 基本切片 / Basic slicing
+IMatrix slice1 = matrix1.slice(1, 3, 0, 2);  // 行1-2，列0-1 / Rows 1-2, columns 0-1
+
+// 字符串切片表达式 / String slice expressions
+IMatrix slice2 = matrix1.slice("1:3", "0:2");  // 行1-2，列0-1 / Rows 1-2, columns 0-1
+IMatrix slice3 = matrix1.slice(":-1", "1:");   // 除最后一行外的所有行，从第1列到末尾 / All rows except last, from column 1 to end
+IMatrix slice4 = matrix1.slice("::2", "::2");  // 每隔一行一列 / Every other row and column
+
+// 负数索引切片 / Negative indexing slicing
+IMatrix slice5 = matrix1.slice("-2:", "-1:");  // 最后两行，最后一列 / Last two rows, last column
+IMatrix slice6 = matrix1.slice("1:-1", "1:-1"); // 中间部分（除边界） / Middle part (excluding boundaries)
+
+// 行切片 / Row slicing
+IMatrix rowSlice1 = matrix1.sliceRows("1:3");   // 行1-2 / Rows 1-2
+IMatrix rowSlice2 = matrix1.sliceRows("-2:");   // 最后两行 / Last two rows
+IMatrix rowSlice3 = matrix1.sliceRows("::2");   // 每隔一行 / Every other row
+
+// 列切片 / Column slicing
+IMatrix colSlice1 = matrix1.sliceColumns("0:2"); // 列0-1 / Columns 0-1
+IMatrix colSlice2 = matrix1.sliceColumns("-1:"); // 最后一列 / Last column
+IMatrix colSlice3 = matrix1.sliceColumns("::2"); // 每隔一列 / Every other column
+```
+
+#### 切片表达式语法 / Slice Expression Syntax
+
+矩阵切片支持类似NumPy的切片表达式语法，支持负数索引：
+
+Matrix slicing supports NumPy-like slice expression syntax with negative indexing:
+
+```java
+// 基本格式：rowSlice, colSlice / Basic format: rowSlice, colSlice
+// 其中每个切片表达式格式为：start:end:step / Where each slice expression format is: start:end:step
+
+// 完整格式示例 / Complete format examples
+matrix1.slice("1:5:2", "0:3:1");  // 行1,3，列0,1,2 / Rows 1,3, columns 0,1,2
+matrix1.slice("1:5", "0:3");      // 行1-4，列0-2 / Rows 1-4, columns 0-2
+matrix1.slice("1:", ":3");        // 从行1到末尾，从开始到列2 / From row 1 to end, from start to column 2
+matrix1.slice("::2", "::2");      // 每隔一行一列 / Every other row and column
+matrix1.slice(":", ":");          // 整个矩阵 / Entire matrix
+
+// 负数索引示例 / Negative indexing examples
+matrix1.slice("-3:", "-2:");      // 最后三行，最后两列 / Last three rows, last two columns
+matrix1.slice(":-2", ":-1");      // 除最后两行外的所有行，除最后一列外的所有列 / All rows except last two, all columns except last
+matrix1.slice("-4:-1", "-3:-1");  // 倒数第4-2行，倒数第3-2列 / 4th to 2nd to last rows, 3rd to 2nd to last columns
+matrix1.slice("::-1", "::-1");    // 反转向量（行列都反转） / Reverse matrix (both rows and columns reversed)
+```
+
+#### 负数索引规则 / Negative Indexing Rules
+
+负数索引从-1开始，表示最后一个元素：
+
+Negative indexing starts from -1, representing the last element:
+
+```java
+// 对于3x4矩阵 / For a 3x4 matrix
+// 行索引 / Row indices: 0, 1, 2 (正数) / 0, 1, 2 (positive)
+// 行索引 / Row indices: -3, -2, -1 (负数) / -3, -2, -1 (negative)
+// 列索引 / Column indices: 0, 1, 2, 3 (正数) / 0, 1, 2, 3 (positive)
+// 列索引 / Column indices: -4, -3, -2, -1 (负数) / -4, -3, -2, -1 (negative)
+
+matrix1.get(0, 0);    // 获取第一个元素 / Get first element
+matrix1.get(-1, -1);  // 获取最后一个元素 / Get last element
+matrix1.get(-1, 0);   // 获取最后一行的第一个元素 / Get first element of last row
+matrix1.get(0, -1);   // 获取第一行的最后一个元素 / Get last element of first row
+
+matrix1.slice("1:-1", "1:-1");  // 中间部分（除边界） / Middle part (excluding boundaries)
+matrix1.slice("-2:", "-2:");    // 右下角2x2子矩阵 / Bottom-right 2x2 submatrix
+```
+
 #### 元素操作 / Element Operations
 
 ```java
@@ -212,6 +284,10 @@ float element = matrix1.get(1, 2);
 
 // 设置元素 / Set element
 matrix1.put(1, 2, 10.0f);
+
+// 负数索引访问 / Negative indexing access
+float lastElement = matrix1.get(-1, -1);  // 获取最后一个元素 / Get last element
+matrix1.put(-1, -1, 100.0f);             // 设置最后一个元素 / Set last element
 ```
 
 ### 6. 统计运算 / Statistical Operations
@@ -413,9 +489,18 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 | **数据访问 / Data Access** | | | |
 | 获取元素 / Get element | `matrix.get(row, col)` | `matrix[row, col]` | 获取指定位置元素 / Get element at specified position |
 | 设置元素 / Set element | `matrix.put(row, col, value)` | `matrix[row, col] = value` | 设置指定位置元素 / Set element at specified position |
+| 负数索引访问 / Negative indexing | `matrix.get(-1, -1)` | `matrix[-1, -1]` | 负数索引访问 / Negative indexing access |
 | 获取行 / Get row | `matrix.getRow(row)` | `matrix[row, :]` | 获取指定行 / Get specified row |
 | 获取列 / Get column | `matrix.getColumn(col)` | `matrix[:, col]` | 获取指定列 / Get specified column |
 | 获取形状 / Get shape | `matrix.shape()` | `matrix.shape` | 获取矩阵维度 / Get matrix dimensions |
+| **矩阵切片 / Matrix Slicing** | | | |
+| 基本切片 / Basic slicing | `matrix.slice(startRow, endRow, startCol, endCol)` | `matrix[startRow:endRow, startCol:endCol]` | 基本矩阵切片 / Basic matrix slicing |
+| 字符串切片 / String slicing | `matrix.slice("1:3", "0:2")` | `matrix[1:3, 0:2]` | 字符串切片表达式 / String slice expression |
+| 负数索引切片 / Negative indexing | `matrix.slice("-2:", "-1:")` | `matrix[-2:, -1:]` | 负数索引切片 / Negative indexing slicing |
+| 步长切片 / Step slicing | `matrix.slice("::2", "::2")` | `matrix[::2, ::2]` | 步长切片 / Step slicing |
+| 反转向量 / Reverse matrix | `matrix.slice("::-1", "::-1")` | `matrix[::-1, ::-1]` | 反转向量 / Reverse matrix |
+| 行切片 / Row slicing | `matrix.sliceRows("1:3")` | `matrix[1:3, :]` | 行切片 / Row slicing |
+| 列切片 / Column slicing | `matrix.sliceColumns("0:2")` | `matrix[:, 0:2]` | 列切片 / Column slicing |
 | **矩阵范数 / Matrix Norms** | | | |
 | Frobenius范数 / Frobenius norm | `matrix.frobeniusNorm()` | `np.linalg.norm(matrix, 'fro')` | Frobenius范数 / Frobenius norm |
 | **数据转换 / Data Conversion** | | | |

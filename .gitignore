@@ -1,1 +1,6 @@
 target/
+ECharts-Java-1.1.0/
+book/
+temp/
+.vscode/
+backups/

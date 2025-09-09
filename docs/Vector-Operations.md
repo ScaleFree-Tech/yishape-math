@@ -158,12 +158,72 @@ IVector slice1 = v1.slice(2);          // 从索引2到末尾 / From index 2 to 
 IVector slice2 = v1.slice(1, 4);       // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
 IVector slice3 = v1.slice(0, 6, 2);    // 从索引0到6，步长为2 / From index 0 to 6 with step 2
 
+// 负数索引切片 / Negative indexing slicing
+IVector slice4 = v1.slice(-3);         // 从倒数第3个到末尾 / From 3rd to last to end
+IVector slice5 = v1.slice(1, -1);      // 从索引1到倒数第1个（不包含） / From index 1 to 2nd to last (exclusive)
+IVector slice6 = v1.slice(-4, -1, 2);  // 从倒数第4个到倒数第1个，步长为2 / From 4th to last to 2nd to last with step 2
+
+// 字符串切片表达式 / String slice expressions
+IVector slice7 = v1.slice("1:4");      // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
+IVector slice8 = v1.slice(":-1");      // 从开始到倒数第1个（不包含） / From start to 2nd to last (exclusive)
+IVector slice9 = v1.slice("::2");      // 从开始到末尾，步长为2 / From start to end with step 2
+IVector slice10 = v1.slice("1:-1:2");  // 从索引1到倒数第1个，步长为2 / From index 1 to 2nd to last with step 2
+
 // 花式索引 / Fancy indexing
 IVector fancy1 = v1.fancyGet(new int[]{0, 2, 3});  // 获取索引0, 2, 3的元素
+IVector fancy2 = v1.fancyGet(new int[]{-1, -2, 0}); // 获取倒数第1、2个和第一个元素
 
 // 布尔索引 / Boolean indexing
 boolean[] mask = {true, false, true, false};
-IVector fancy2 = v1.booleanGet(mask);  // 获取mask为true的元素
+IVector fancy3 = v1.booleanGet(mask);  // 获取mask为true的元素
+```
+
+#### 切片表达式语法 / Slice Expression Syntax
+
+YiShape支持类似NumPy的切片表达式语法，支持负数索引：
+
+YiShape supports NumPy-like slice expression syntax with negative indexing:
+
+```java
+// 基本格式：start:end:step / Basic format: start:end:step
+// 其中start、end、step都可以省略，支持负数索引
+// Where start, end, step can be omitted, supports negative indexing
+
+// 完整格式示例 / Complete format examples
+v1.slice("1:5:2");     // 从索引1到5，步长为2 / From index 1 to 5 with step 2
+v1.slice("1:5");       // 从索引1到5，步长为1 / From index 1 to 5 with step 1
+v1.slice("1:");        // 从索引1到末尾 / From index 1 to end
+v1.slice(":5");        // 从开始到索引5 / From start to index 5
+v1.slice("::2");       // 从开始到末尾，步长为2 / From start to end with step 2
+v1.slice(":");         // 整个向量 / Entire vector
+
+// 负数索引示例 / Negative indexing examples
+v1.slice("-3:");       // 从倒数第3个到末尾 / From 3rd to last to end
+v1.slice(":-2");       // 从开始到倒数第2个（不包含） / From start to 2nd to last (exclusive)
+v1.slice("-4:-1");     // 从倒数第4个到倒数第1个（不包含） / From 4th to last to 2nd to last (exclusive)
+v1.slice("-4:-1:2");   // 从倒数第4个到倒数第1个，步长为2 / From 4th to last to 2nd to last with step 2
+v1.slice("::-1");      // 反转向量 / Reverse vector
+```
+
+#### 负数索引规则 / Negative Indexing Rules
+
+负数索引从-1开始，表示最后一个元素：
+
+Negative indexing starts from -1, representing the last element:
+
+```java
+// 对于长度为5的向量 [0, 1, 2, 3, 4]
+// For a vector of length 5 [0, 1, 2, 3, 4]
+
+// 正数索引 / Positive indices: 0, 1, 2, 3, 4
+// 负数索引 / Negative indices: -5, -4, -3, -2, -1
+
+v1.get(0);    // 获取第一个元素 / Get first element
+v1.get(-1);   // 获取最后一个元素 / Get last element
+v1.get(-2);   // 获取倒数第二个元素 / Get second to last element
+
+v1.slice("1:-1");  // 从索引1到倒数第1个（不包含），即[1, 2, 3]
+v1.slice("-3:-1"); // 从倒数第3个到倒数第1个（不包含），即[2, 3]
 ```
 
 ### 6. 比较运算 / Comparison Operations
@@ -368,9 +428,16 @@ The `IVector` interface is designed to support extensions, making it easy to add
 | `v1.floor()` | `np.floor(v1)` | 向下取整 / Floor |
 | `v1.ceil()` | `np.ceil(v1)` | 向上取整 / Ceiling |
 | `v1.trunc()` | `np.trunc(v1)` | 截断取整 / Truncate |
+| `v1.slice(start)` | `v1[start:]` | 切片 / Slicing |
 | `v1.slice(start, end)` | `v1[start:end]` | 切片 / Slicing |
 | `v1.slice(start, end, step)` | `v1[start:end:step]` | 带步长切片 / Slicing with step |
+| `v1.slice("1:5")` | `v1[1:5]` | 字符串切片表达式 / String slice expression |
+| `v1.slice(":-1")` | `v1[:-1]` | 负数索引切片 / Negative indexing slicing |
+| `v1.slice("::2")` | `v1[::2]` | 步长切片 / Step slicing |
+| `v1.slice("::-1")` | `v1[::-1]` | 反转向量 / Reverse vector |
+| `v1.get(-1)` | `v1[-1]` | 负数索引访问 / Negative indexing access |
 | `v1.fancyGet(indices)` | `v1[indices]` | 花式索引 / Fancy indexing |
+| `v1.fancyGet([-1, -2, 0])` | `v1[[-1, -2, 0]]` | 负数花式索引 / Negative fancy indexing |
 | `v1.booleanGet(mask)` | `v1[mask]` | 布尔索引 / Boolean indexing |
 | `v1.greaterThan(v2)` | `v1 > v2` | 大于比较 / Greater than comparison |
 | `v1.lessThan(v2)` | `v1 < v2` | 小于比较 / Less than comparison |

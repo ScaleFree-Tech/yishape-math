@@ -561,18 +561,25 @@ public class RereVector implements IVector {
     /**
      * 获取指定位置的元素 / Get element at specified position
      * <p>
-     * 返回向量中指定位置的元素值 Returns the element value at the specified position in the
-     * vector
+     * 返回向量中指定位置的元素值，支持负数索引
+     * Returns the element value at the specified position in the vector, supports negative indexing
      * </p>
      *
-     * @param position 位置索引（从0开始） / Position index (0-based)
+     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports negative indexing)
      * @return 指定位置的元素值 / Element value at the specified position
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
      * of bounds
      */
     @Override
     public float get(int position) {
-        return data[position];
+        int actualPosition = position;
+        if (position < 0) {
+            actualPosition = data.length + position;
+        }
+        if (actualPosition < 0 || actualPosition >= data.length) {
+            throw new IndexOutOfBoundsException("位置索引超出范围: " + position + " / Position index out of bounds: " + position);
+        }
+        return data[actualPosition];
     }
 
     /**
@@ -582,14 +589,14 @@ public class RereVector implements IVector {
      * position
      * </p>
      *
-     * @param end 结束位置（不包含） / End position (exclusive)
+     * @param start 开始位置（包含） / Start position (inclusive)
      * @return 切片向量 / Sliced vector
      * @throws IndexOutOfBoundsException 如果结束位置超出范围 / if end position is out of
      * bounds
      */
     @Override
-    public IVector slice(int end) {
-        return this.slice(0, end, 1);
+    public IVector slice(int start) {
+        return this.slice(start, this.length(), 1);
     }
 
     /**
@@ -614,12 +621,12 @@ public class RereVector implements IVector {
      * 向量切片（指定开始、结束位置和步长） / Vector slice (specified start, end positions and
      * step)
      * <p>
-     * 返回从指定开始位置到结束位置、指定步长的向量切片 Returns a vector slice from specified start
-     * position to end position with specified step
+     * 返回从指定开始位置到结束位置、指定步长的向量切片，支持负数索引
+     * Returns a vector slice from specified start position to end position with specified step, supports negative indexing
      * </p>
      *
-     * @param start 开始位置 / Start position
-     * @param end 结束位置（不包含） / End position (exclusive)
+     * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
      * @param step 步长 / Step size
      * @return 切片向量 / Sliced vector
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
@@ -629,6 +636,29 @@ public class RereVector implements IVector {
      */
     @Override
     public IVector slice(int start, int end, int step) {
+        // 处理负数索引
+        if (start < 0) {
+            start = data.length + start;
+        }
+        if (end < 0) {
+            end = data.length + end;
+        }
+        
+        // 验证参数
+        if (step <= 0) {
+            throw new IllegalArgumentException("步长必须大于0: " + step + " / Step must be greater than 0: " + step);
+        }
+        if (start < 0 || start >= data.length) {
+            throw new IndexOutOfBoundsException("起始位置超出范围: " + start + " / Start position out of bounds: " + start);
+        }
+        if (end < 0 || end > data.length) {
+            throw new IndexOutOfBoundsException("结束位置超出范围: " + end + " / End position out of bounds: " + end);
+        }
+        
+        if (start >= end) {
+            return IVector.of(new float[0]); // 返回空向量
+        }
+        
         int[] inds = IVector.range(start, end, step).asIntArray();
         float[] v = new float[inds.length];
         for (int i = 0; i < v.length; i++) {
@@ -638,13 +668,40 @@ public class RereVector implements IVector {
     }
 
     /**
+     * 向量切片（字符串表达式） / Vector slice (string expression)
+     * <p>
+     * 根据切片表达式对向量进行切片操作，支持负数索引
+     * Performs vector slicing based on slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression, e.g. "1:3", ":-1", "::2"
+     * @return 切片向量 / Sliced vector
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    @Override
+    public IVector slice(String sliceExpression) {
+        if (sliceExpression == null || sliceExpression.trim().isEmpty()) {
+            throw new IllegalArgumentException("切片表达式不能为空 / Slice expression cannot be empty");
+        }
+        
+        // 使用统一的切片表达式解析器
+        SliceExpressionParser.SliceResult result = SliceExpressionParser.parse(sliceExpression, data.length);
+        
+        if (result.actualStart >= result.actualEnd) {
+            return IVector.of(new float[0]);
+        }
+        
+        return slice(result.actualStart, result.actualEnd, result.step);
+    }
+
+    /**
      * 花式索引 / Fancy indexing
      * <p>
-     * 根据给定的位置数组获取对应位置的元素组成新向量 Gets elements at specified positions to form a
-     * new vector
+     * 根据给定的位置数组获取对应位置的元素组成新向量，支持负数索引
+     * Gets elements at specified positions to form a new vector, supports negative indexing
      * </p>
      *
-     * @param positions 位置索引数组 / Array of position indices
+     * @param positions 位置索引数组（支持负数索引） / Array of position indices (supports negative indexing)
      * @return 新的向量对象，包含指定位置的元素 / New vector object containing elements at
      * specified positions
      * @throws IndexOutOfBoundsException 如果任何位置索引超出范围 / if any position index is
@@ -654,7 +711,14 @@ public class RereVector implements IVector {
     public IVector fancyGet(int[] positions) {
         float[] v = new float[positions.length];
         for (int i = 0; i < v.length; i++) {
-            v[i] = data[positions[i]];
+            int actualPosition = positions[i];
+            if (actualPosition < 0) {
+                actualPosition = data.length + actualPosition;
+            }
+            if (actualPosition < 0 || actualPosition >= data.length) {
+                throw new IndexOutOfBoundsException("位置索引超出范围: " + positions[i] + " / Position index out of bounds: " + positions[i]);
+            }
+            v[i] = data[actualPosition];
         }
         return IVector.of(v);
     }
@@ -695,11 +759,11 @@ public class RereVector implements IVector {
     /**
      * 设置指定位置的元素 / Set element at specified position
      * <p>
-     * 设置向量中指定位置的元素值 Sets the element value at the specified position in the
-     * vector
+     * 设置向量中指定位置的元素值，支持负数索引
+     * Sets the element value at the specified position in the vector, supports negative indexing
      * </p>
      *
-     * @param position 位置索引（从0开始） / Position index (0-based)
+     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports negative indexing)
      * @param value 要设置的值 / Value to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
@@ -707,19 +771,26 @@ public class RereVector implements IVector {
      */
     @Override
     public IVector set(int position, float value) {
-        data[position] = value;
+        int actualPosition = position;
+        if (position < 0) {
+            actualPosition = data.length + position;
+        }
+        if (actualPosition < 0 || actualPosition >= data.length) {
+            throw new IndexOutOfBoundsException("位置索引超出范围: " + position + " / Position index out of bounds: " + position);
+        }
+        data[actualPosition] = value;
         return this;
     }
 
     /**
      * 范围设置值（带步长） / Range set values (with step)
      * <p>
-     * 设置指定范围内、指定步长位置的元素值 Sets element values at positions within specified
-     * range with specified step
+     * 设置指定范围内、指定步长位置的元素值，支持负数索引
+     * Sets element values at positions within specified range with specified step, supports negative indexing
      * </p>
      *
-     * @param start 开始位置 / Start position
-     * @param end 结束位置（不包含） / End position (exclusive)
+     * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
      * @param step 步长 / Step size
      * @param values 要设置的值数组 / Array of values to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
@@ -730,8 +801,21 @@ public class RereVector implements IVector {
      */
     @Override
     public IVector setFromTo(int start, int end, int step, float[] values) {
-        int[] inds = IVector.range(start, end, step).asIntArray();
+        // 处理负数索引
+        int actualStart = start;
+        int actualEnd = end;
+        if (start < 0) {
+            actualStart = data.length + start;
+        }
+        if (end < 0) {
+            actualEnd = data.length + end;
+        }
+        
+        int[] inds = IVector.range(actualStart, actualEnd, step).asIntArray();
         for (int i = 0; i < inds.length; i++) {
+            if (inds[i] < 0 || inds[i] >= data.length) {
+                throw new IndexOutOfBoundsException("位置索引超出范围: " + inds[i] + " / Position index out of bounds: " + inds[i]);
+            }
             data[inds[i]] = values[i];
         }
         return this;
@@ -740,12 +824,12 @@ public class RereVector implements IVector {
     /**
      * 范围设置值 / Range set values
      * <p>
-     * 设置指定范围内的元素值（步长为1） Sets element values within specified range (step size
-     * 1)
+     * 设置指定范围内的元素值（步长为1），支持负数索引
+     * Sets element values within specified range (step size 1), supports negative indexing
      * </p>
      *
-     * @param start 开始位置 / Start position
-     * @param end 结束位置（不包含） / End position (exclusive)
+     * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
      * @param values 要设置的值数组 / Array of values to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are

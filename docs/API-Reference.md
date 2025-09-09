@@ -457,6 +457,93 @@ public class RegressionResult {
 }
 ```
 
+## 数据结构类 / Data Structure Classes
+
+### DataFrame 类 / DataFrame Class
+
+数据框类，用于处理结构化数据，支持从CSV文件读取数据并与IMatrix进行转换。
+
+DataFrame class for handling structured data, supports reading from CSV files and conversion with IMatrix.
+
+```java
+public class DataFrame implements Serializable {
+    // 构造函数 / Constructors
+    public DataFrame();                                    // 创建空DataFrame / Create empty DataFrame
+    public DataFrame(List<Column> columns);               // 从列列表创建 / Create from column list
+    
+    // 静态工厂方法 / Static factory methods
+    static DataFrame readCsv(String filePath, String separator, boolean ifHasHead); // 从CSV读取 / Read from CSV
+    
+    // 数据访问 / Data access
+    Column get(int position);                             // 按位置获取列 / Get column by position
+    Column getColumnByName(String columnName);           // 按名称获取列 / Get column by name
+    List<Column> getColumns();                           // 获取所有列 / Get all columns
+    List<String> getColumnNames();                       // 获取列名列表 / Get column names
+    List<ColumnType> getColumnTypes();                   // 获取列类型列表 / Get column types
+    
+    // 数据操作 / Data operations
+    void addColumn(Column column);                        // 添加列 / Add column
+    Column removeColumn(int position);                    // 删除列 / Remove column
+    void setColumns(List<Column> columns);               // 设置列列表 / Set columns list
+    void clear();                                         // 清空DataFrame / Clear DataFrame
+    DataFrame copy();                                     // 复制DataFrame / Copy DataFrame
+    
+    // 切片操作 / Slicing operations
+    DataFrame sliceColumn(int start, int end, int step); // 列切片（带步长）/ Column slicing with step
+    DataFrame sliceColumn(int start, int end);           // 列切片（步长为1）/ Column slicing step=1
+    DataFrame sliceColumn(int start);                    // 列切片（到末尾）/ Column slicing to end
+    DataFrame slice(String rowExp, String colExp);       // 通用切片 / General slicing
+    
+    // 数据转换 / Data conversion
+    IMatrix toMatrix();                                   // 转换为IMatrix / Convert to IMatrix
+    void toCsv(String filePath);                         // 保存为CSV / Save to CSV
+    
+    // 基本属性 / Basic properties
+    int getRowCount();                                    // 获取行数 / Get row count
+    int getColumnCount();                                 // 获取列数 / Get column count
+    int[] shape();                                        // 获取形状 / Get shape
+    boolean isEmpty();                                    // 是否为空 / Check if empty
+}
+```
+
+### Column 类 / Column Class
+
+列类，表示数据框中的一列，包含列名、数据类型和数据。
+
+Column class representing a column in the data frame, containing column name, data type, and data.
+
+```java
+public class Column implements Serializable {
+    // 构造函数 / Constructors
+    public Column();                                      // 默认构造函数 / Default constructor
+    
+    // 属性访问 / Property access
+    String getName();                                     // 获取列名 / Get column name
+    void setName(String name);                           // 设置列名 / Set column name
+    ColumnType getColumnType();                          // 获取列类型 / Get column type
+    void setColumnType(ColumnType columnType);           // 设置列类型 / Set column type
+    List<Object> getData();                              // 获取数据 / Get data
+    void setData(List<Object> data);                     // 设置数据 / Set data
+    
+    // 数据转换 / Data conversion
+    IVector toVec();                                     // 转换为向量（仅Float类型）/ Convert to vector (Float only)
+    List<String> toStringList();                         // 转换为字符串列表 / Convert to string list
+}
+```
+
+### ColumnType 枚举 / ColumnType Enum
+
+列类型枚举，定义支持的数据类型。
+
+Column type enum defining supported data types.
+
+```java
+public enum ColumnType {
+    String,    // 字符串类型 / String type
+    Float      // 浮点数类型 / Float type
+}
+```
+
 ## 数学工具类 / Math Utilities
 
 ### RereMathUtil 类 / RereMathUtil Class

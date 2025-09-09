@@ -93,10 +93,10 @@ public class FDistribution implements IContinuousDistribution, Serializable {
             return 0.0f;
         }
         
-        // 使用不完全贝塔函数
-        // Using incomplete beta function
+        // 使用正则化不完全贝塔函数
+        // Using regularized incomplete beta function
         float t = (numeratorDof * x) / (denominatorDof + numeratorDof * x);
-        return (float) RereMathUtil.incompleteBeta(halfNumeratorDof, halfDenominatorDof, t);
+        return (float) RereMathUtil.regularizedIncompleteBeta(halfNumeratorDof, halfDenominatorDof, t);
     }
     
     /**
@@ -233,17 +233,32 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * Numerical solution for inverse F-distribution CDF
      */
     private float inverseFCDF(float p) {
-        // 使用二分法求解
-        // Using bisection method to solve
+        // 使用改进的二分法求解
+        // Using improved bisection method to solve
         float left = 0.0f;
-        float right = 10.0f; // 初始右边界
-        float tolerance = 1e-6f;
-        int maxIter = 100;
+        float right = 1.0f; // 从较小的初始值开始
+        float tolerance = 1e-8f;
+        int maxIter = 200;
         
         // 调整右边界直到CDF(right) >= p
         // Adjust right boundary until CDF(right) >= p
-        while (cdf(right) < p && right < 1000.0f) {
+        int attempts = 0;
+        while (cdf(right) < p && attempts < 20) {
             right *= 2.0f;
+            attempts++;
+        }
+        
+        // 如果右边界调整失败，使用更大的初始值
+        if (cdf(right) < p) {
+            right = 100.0f;
+            while (cdf(right) < p && right < 10000.0f) {
+                right *= 2.0f;
+            }
+        }
+        
+        // 确保左边界CDF < p
+        while (cdf(left) >= p && left > 1e-10f) {
+            left /= 2.0f;
         }
         
         for (int i = 0; i < maxIter; i++) {
@@ -258,6 +273,11 @@ public class FDistribution implements IContinuousDistribution, Serializable {
                 left = mid;
             } else {
                 right = mid;
+            }
+            
+            // 检查收敛
+            if (right - left < tolerance) {
+                break;
             }
         }
         

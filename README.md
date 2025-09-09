@@ -1,6 +1,6 @@
 # YiShape-Math 易形数学
 
-[![Java](https://img.shields.io/badge/Java-24+-blue.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-0.1-blue.svg)]()
 
@@ -17,6 +17,8 @@
   - *Complete vector mathematical operations, statistical operations, and slicing/indexing*
 - **矩阵运算** / **Matrix Operations**: 矩阵变换、线性代数运算、特征分解
   - *Matrix transformations, linear algebra operations, and eigendecomposition*
+- **数据框操作** / **DataFrame Operations**: 结构化数据处理、CSV读写、数据切片
+  - *Structured data processing, CSV read/write, data slicing*
 - **数学工具** / **Math Utilities**: 类型转换、随机数生成、数学函数
   - *Type conversion, random number generation, and mathematical functions*
 
@@ -29,10 +31,30 @@
   - *Random number generators for various distributions*
 - **统计描述** / **Statistical Descriptions**: 均值、方差、标准差、中位数、众数等
   - *Mean, variance, standard deviation, median, mode, and more*
-- **假设检验** / **Hypothesis Testing**: 假设检验、参数估计 （待实现）
-  - *Hypothesis testing and parameter estimation (to be implemented)*
+- **假设检验** / **Hypothesis Testing**: 假设检验、参数估计
+  - *Hypothesis testing and parameter estimation*
 - **方差分析** / **ANOVA**: Analysis of Variance （待实现）
   - *Analysis of Variance (to be implemented)*
+
+### 📈 数据可视化 / Data Visualization
+- **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图
+  - *Line, scatter, pie, bar, histogram charts*
+- **极坐标图表** / **Polar Charts**: 极坐标柱状图、极坐标线图、极坐标散点图
+  - *Polar bar, polar line, polar scatter charts*
+- **统计图表** / **Statistical Charts**: 箱线图、K线图
+  - *Boxplot, candlestick charts*
+- **特殊图表** / **Special Charts**: 漏斗图、桑基图、旭日图、主题河流图、树图、矩形树图、关系图、平行坐标图
+  - *Funnel, Sankey, Sunburst, Theme River, Tree, Treemap, Graph, Parallel charts*
+- **完善图表** / **Enhanced Charts**: 热力图、雷达图、仪表盘
+  - *Heatmap, radar, gauge charts*
+- **ECharts集成** / **ECharts Integration**: 基于ECharts-Java的丰富可视化功能
+  - *Rich visualization capabilities based on ECharts-Java*
+- **流式API** / **Fluent API**: 支持链式调用的简洁API设计
+  - *Fluent API design supporting chained method calls*
+- **主题支持** / **Theme Support**: 多种内置主题和自定义主题
+  - *Multiple built-in themes and custom theme support*
+- **交互功能** / **Interactive Features**: 缩放、平移、悬停、图例交互等
+  - *Zoom, pan, hover, legend interaction and more*
 
 
 ### 🤖 机器学习算法 / Machine Learning Algorithms
@@ -116,18 +138,19 @@ IMatrix result = matrix1.add(matrix2).mmul(2.0f);
 IMatrix transposed = matrix2.transpose();
 ```
 
-#### 线性回归 / Linear Regression
+#### DataFrame 数据框操作 / DataFrame Operations
 ```java
-// 创建线性回归模型 / Create linear regression model
-RereLinearRegression lr = new RereLinearRegression();
-lr.setRegularizationType(RegularizationType.L2);
-lr.setLambda2(0.1f);
+// 从CSV文件读取数据 / Read data from CSV file
+DataFrame df = DataFrame.readCsv("data.csv", ",", true);
 
-// 训练模型 / Train model
-RegressionResult result = lr.fit(featureMatrix, labelVector);
+// 数据切片 / Data slicing
+DataFrame sliced = df.slice("1:3", "0:2");  // 行1-2，列0-1
 
-// 预测 / Predict
-float prediction = lr.predict(newFeatureVector);
+// 转换为矩阵 / Convert to matrix
+IMatrix matrix = df.toMatrix();
+
+// 保存数据 / Save data
+df.toCsv("output.csv");
 ```
 
 #### 统计学分布 / Statistical Distributions
@@ -169,6 +192,102 @@ float sf = normal.sf(1.0f);        // 生存函数值 / Survival function value
 float isf = normal.isf(0.05f);     // 逆生存函数值 / Inverse survival function value
 ```
 
+#### 数据可视化 / Data Visualization
+```java
+// 基础线图 / Basic line chart
+IPlot plot = Plots.of(800, 600);
+IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
+IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
+plot.line(x, y)
+    .title("销售趋势图", "2024年各月销售数据")
+    .xlabel("月份")
+    .ylabel("销售额（万元）")
+    .saveAsHtml("line_chart.html");
+
+// 散点图 / Scatter chart
+Plots.scatter(x, y)
+    .title("身高体重关系图")
+    .xlabel("身高（cm）")
+    .ylabel("体重（kg）")
+    .saveAsHtml("scatter_chart.html");
+
+// 饼图 / Pie chart
+IVector data = IVector.of(new float[]{30, 25, 20, 15, 10});
+Plots.pie(data)
+    .title("市场份额分布")
+    .saveAsHtml("pie_chart.html");
+
+// 柱状图 / Bar chart
+Plots.bar(data)
+    .title("销售业绩对比")
+    .xlabel("季度")
+    .ylabel("销售额（万元）")
+    .saveAsHtml("bar_chart.html");
+
+// 直方图 / Histogram
+IVector histData = IVector.of(new float[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
+Plots.hist(histData, true)  // true表示显示拟合线
+    .title("数据分布直方图")
+    .xlabel("数值区间")
+    .ylabel("频次")
+    .saveAsHtml("histogram_chart.html");
+
+// 热力图 / Heatmap
+float[][] heatmapArray = {{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}};
+IMatrix heatmapData = IMatrix.of(heatmapArray);
+List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
+List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
+Plots.heatmap(heatmapData, xLabels, yLabels)
+    .title("相关性热力图")
+    .saveAsHtml("heatmap_chart.html");
+
+// 雷达图 / Radar chart
+IVector radarData = IVector.of(new float[]{80, 90, 70, 85, 95, 75});
+List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
+Plots.radar(radarData, indicators)
+    .title("能力雷达图")
+    .saveAsHtml("radar_chart.html");
+
+// 箱线图 / Box plot
+IVector boxData = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+List<String> labels = Arrays.asList("数据集");
+Plots.boxplot(boxData, labels)
+    .title("数据分布箱线图")
+    .xlabel("指标")
+    .ylabel("数值")
+    .saveAsHtml("boxplot_chart.html");
+
+// K线图 / Candlestick chart
+float[][] candlestickArray = {{100, 110, 95, 115}, {110, 120, 105, 125}, {120, 115, 110, 130}};
+IMatrix candlestickData = IMatrix.of(candlestickArray);
+List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
+Plots.candlestick(candlestickData, dates)
+    .title("股票价格K线图")
+    .xlabel("日期")
+    .ylabel("价格（元）")
+    .saveAsHtml("candlestick_chart.html");
+
+// 仪表盘 / Gauge chart
+Plots.gauge(75.5f, 100.0f, 0.0f)
+    .title("系统性能监控", "CPU使用率实时监控")
+    .saveAsHtml("gauge_chart.html");
+```
+
+
+#### 线性回归 / Linear Regression
+```java
+// 创建线性回归模型 / Create linear regression model
+RereLinearRegression lr = new RereLinearRegression();
+lr.setRegularizationType(RegularizationType.L2);
+lr.setLambda2(0.1f);
+
+// 训练模型 / Train model
+RegressionResult result = lr.fit(featureMatrix, labelVector);
+
+// 预测 / Predict
+float prediction = lr.predict(newFeatureVector);
+```
+
 #### PCA降维 / PCA Dimensionality Reduction
 ```java
 // 创建PCA降维器 / Create PCA reducer
@@ -193,58 +312,97 @@ float[] probabilities = lr.predictProbabilities(newFeatureVector);
 
 
 
-
 ## 项目结构 / Project Structure
 
 ```
-src/main/java/com/reremouse/lab/math/
-├── IVector.java              # 向量操作接口 / Vector Operations Interface
-├── RereVector.java           # 向量实现类 / Vector Implementation Class
-├── IMatrix.java              # 矩阵操作接口 / Matrix Operations Interface
-├── RereMatrix.java           # 矩阵实现类 / Matrix Implementation Class
-├── RereMathUtil.java         # 数学工具类 / Math Utilities Class
-├── YishapeMath.java          # 主入口类 / Main Entry Class
-├── stat/                     # 统计学模块 / Statistics Module
-│   ├── Stat.java             # 统计分布工厂类 / Statistical Distribution Factory Class
-│   └── distribution/         # 概率分布实现 / Probability Distribution Implementations
-│       ├── NormalDistribution.java      # 正态分布 / Normal Distribution
-│       ├── StudentDistribution.java     # t分布 / Student's t-Distribution
-│       ├── Chi2Distribution.java        # 卡方分布 / Chi-squared Distribution
-│       ├── FDistribution.java           # F分布 / F-Distribution
-│       ├── UniformDistribution.java     # 均匀分布 / Uniform Distribution
-│       ├── ExponentialDistribution.java # 指数分布 / Exponential Distribution
-│       ├── IContinuousDistribution.java # 连续分布接口 / Continuous Distribution Interface
-│       ├── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
-│       └── IStatisticDistribution.java  # 统计分布基础接口 / Statistical Distribution Base Interface
-├── ml/                       # 机器学习算法 / Machine Learning Algorithms
-│   ├── lr/                   # 线性回归 / Linear Regression
-│   │   ├── IRegression.java             # 回归接口 / Regression Interface
-│   │   ├── RereLinearRegression.java    # 线性回归实现 / Linear Regression Implementation
-│   │   └── RegressionResult.java        # 回归结果 / Regression Result
-│   └── cls/                  # 分类算法 / Classification Algorithms
-│       ├── IClassification.java         # 分类接口 / Classification Interface
-│       ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
-│       ├── ClassificationResult.java    # 分类结果 / Classification Result
-│       └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
-├── optimize/                 # 优化算法 / Optimization Algorithms
-│   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
-│   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
-│   ├── IGradientFunction.java  # 梯度函数接口 / Gradient Function Interface
-│   ├── RereLBFGS.java        # L-BFGS优化器 / L-BFGS Optimizer
-│   └── RereLineSearch.java   # 线搜索 / Line Search
-└── dimreduce/                # 降维算法 / Dimensionality Reduction Algorithms
-    ├── RerePCA.java          # PCA降维 / PCA Dimensionality Reduction
-    ├── RereSVD.java          # SVD降维 / SVD Dimensionality Reduction
-    ├── RereTSNE.java         # t-SNE降维 / t-SNE Dimensionality Reduction
-    └── RereUMAP.java         # UMAP降维 / UMAP Dimensionality Reduction
+src/main/java/com/reremouse/lab/
+├── math/                     # 数学计算模块 / Mathematical Computing Module
+│   ├── IVector.java          # 向量操作接口 / Vector Operations Interface
+│   ├── RereVector.java       # 向量实现类 / Vector Implementation Class
+│   ├── IMatrix.java          # 矩阵操作接口 / Matrix Operations Interface
+│   ├── RereMatrix.java       # 矩阵实现类 / Matrix Implementation Class
+│   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
+│   ├── YishapeMath.java      # 主入口类 / Main Entry Class
+│   ├── SliceExpressionParser.java # 切片表达式解析器 / Slice Expression Parser
+│   ├── stat/                 # 统计学模块 / Statistics Module
+│   │   ├── Stat.java         # 统计分布工厂类 / Statistical Distribution Factory Class
+│   │   ├── distribution/     # 概率分布实现 / Probability Distribution Implementations
+│   │   │   ├── NormalDistribution.java      # 正态分布 / Normal Distribution
+│   │   │   ├── StudentDistribution.java     # t分布 / Student's t-Distribution
+│   │   │   ├── Chi2Distribution.java        # 卡方分布 / Chi-squared Distribution
+│   │   │   ├── FDistribution.java           # F分布 / F-Distribution
+│   │   │   ├── UniformDistribution.java     # 均匀分布 / Uniform Distribution
+│   │   │   ├── ExponentialDistribution.java # 指数分布 / Exponential Distribution
+│   │   │   ├── BetaDistribution.java        # Beta分布 / Beta Distribution
+│   │   │   ├── GammaDistribution.java       # Gamma分布 / Gamma Distribution
+│   │   │   ├── BinomialDistribution.java    # 二项分布 / Binomial Distribution
+│   │   │   ├── PoissonDistribution.java     # 泊松分布 / Poisson Distribution
+│   │   │   ├── GeometricDistribution.java   # 几何分布 / Geometric Distribution
+│   │   │   ├── NegativeBinomialDistribution.java # 负二项分布 / Negative Binomial Distribution
+│   │   │   ├── BernoulliDistribution.java   # 伯努利分布 / Bernoulli Distribution
+│   │   │   ├── DiscreteUniformDistribution.java # 离散均匀分布 / Discrete Uniform Distribution
+│   │   │   ├── IContinuousDistribution.java # 连续分布接口 / Continuous Distribution Interface
+│   │   │   ├── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│   │   │   └── IStatisticDistribution.java  # 统计分布基础接口 / Statistical Distribution Base Interface
+│   │   └── testing/          # 假设检验模块 / Hypothesis Testing Module
+│   │       ├── HypothesisTesting.java      # 假设检验 / Hypothesis Testing
+│   │       ├── ParameterEstimation.java    # 参数估计 / Parameter Estimation
+│   │       └── TestingResult.java          # 检验结果 / Testing Result
+│   ├── ml/                   # 机器学习算法 / Machine Learning Algorithms
+│   │   ├── lr/               # 线性回归 / Linear Regression
+│   │   │   ├── IRegression.java             # 回归接口 / Regression Interface
+│   │   │   ├── RereLinearRegression.java    # 线性回归实现 / Linear Regression Implementation
+│   │   │   └── RegressionResult.java        # 回归结果 / Regression Result
+│   │   └── cls/              # 分类算法 / Classification Algorithms
+│   │       ├── IClassification.java         # 分类接口 / Classification Interface
+│   │       ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
+│   │       ├── ClassificationResult.java    # 分类结果 / Classification Result
+│   │       └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
+│   ├── optimize/             # 优化算法 / Optimization Algorithms
+│   │   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
+│   │   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
+│   │   ├── IGradientFunction.java  # 梯度函数接口 / Gradient Function Interface
+│   │   ├── RereLBFGS.java        # L-BFGS优化器 / L-BFGS Optimizer
+│   │   └── RereLineSearch.java   # 线搜索 / Line Search
+│   ├── dimreduce/            # 降维算法 / Dimensionality Reduction Algorithms
+│   │   ├── RerePCA.java          # PCA降维 / PCA Dimensionality Reduction
+│   │   ├── RereSVD.java          # SVD降维 / SVD Dimensionality Reduction
+│   │   ├── RereTSNE.java         # t-SNE降维 / t-SNE Dimensionality Reduction
+│   │   └── RereUMAP.java         # UMAP降维 / UMAP Dimensionality Reduction
+│   └── viz/                  # 数据可视化模块 / Data Visualization Module
+│       ├── IPlot.java            # 绘图接口 / Plotting Interface
+│       ├── RerePlot.java         # 绘图实现类 / Plotting Implementation Class
+│       ├── Plots.java            # 绘图工厂类 / Plotting Factory Class
+│       ├── AxisTicks.java        # 坐标轴刻度类 / Axis Ticks Class
+│       └── PlotException.java    # 绘图异常类 / Plotting Exception Class
+├── data/                     # 数据结构模块 / Data Structure Module
+│   ├── DataFrame.java        # 数据框类 / DataFrame Class
+│   ├── Column.java           # 列类 / Column Class
+│   └── ColumnType.java       # 列类型枚举 / Column Type Enum
+└── util/                     # 工具类模块 / Utility Module
+    ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class
+    ├── RereExecutor.java         # 执行器工具类 / Executor Utility Class
+    ├── RereTree.java             # 树结构工具类 / Tree Structure Utility Class
+    ├── RereTreeNode.java         # 树节点工具类 / Tree Node Utility Class
+    ├── StringUtils.java          # 字符串工具类 / String Utility Class
+    ├── Tuple2.java               # 二元组 / Tuple2
+    ├── Tuple3.java               # 三元组 / Tuple3
+    ├── Tuple4.java               # 四元组 / Tuple4
+    ├── Tuple5.java               # 五元组 / Tuple5
+    ├── Tuple6.java               # 六元组 / Tuple6
+    ├── Tuple7.java               # 七元组 / Tuple7
+    ├── Tuple8.java               # 八元组 / Tuple8
+    └── Tuple9.java               # 九元组 / Tuple9
 ```
 
 ## 核心类文档 / Core Classes Documentation
 
 - [向量操作 (Vector Operations)](./docs/Vector-Operations.md) / [Vector Operations Documentation](./docs/Vector-Operations.md)
 - [矩阵操作 (Matrix Operations)](./docs/Matrix-Operations.md) / [Matrix Operations Documentation](./docs/Matrix-Operations.md)
+- [DataFrame 数据框操作 (DataFrame Operations)](./docs/DataFrame-Operations.md) / [DataFrame Operations Documentation](./docs/DataFrame-Operations.md)
 - [数学工具类 (Math Utilities)](./docs/Math-Utilities.md) / [Math Utilities Documentation](./docs/Math-Utilities.md)
 - [统计操作 (Statistics Operations)](./docs/Statistics-Operations.md) / [Statistics Operations Documentation](./docs/Statistics-Operations.md)
+- [数据可视化 (Data Visualization)](./docs/Visualization-Plotting.md) / [Data Visualization Documentation](./docs/Visualization-Plotting.md)
 - [线性回归 (Linear Regression)](./docs/Linear-Regression.md) / [Linear Regression Documentation](./docs/Linear-Regression.md)
 - [优化算法 (Optimization Algorithms)](./docs/Optimization-Algorithms.md) / [Optimization Algorithms Documentation](./docs/Optimization-Algorithms.md)
 - [降维算法 (Dimensionality Reduction)](./docs/Dimensionality-Reduction.md) / [Dimensionality Reduction Documentation](./docs/Dimensionality-Reduction.md)
@@ -267,8 +425,10 @@ These documents provide detailed API references and usage guides:
 
 - [向量运算示例](./docs/examples/Vector-Examples.md) / [Vector Operations Examples](./docs/examples/Vector-Examples.md)
 - [矩阵运算示例](./docs/examples/Matrix-Examples.md) / [Matrix Operations Examples](./docs/examples/Matrix-Examples.md)
+- [DataFrame 数据框示例](./docs/examples/DataFrame-Examples.md) / [DataFrame Examples](./docs/examples/DataFrame-Examples.md)
 - [数学工具类示例](./docs/examples/Math-Utilities-Examples.md) / [Math Utilities Examples](./docs/examples/Math-Utilities-Examples.md)
 - [统计操作示例](./docs/examples/Statistics-Examples.md) / [Statistics Operations Examples](./docs/examples/Statistics-Examples.md)
+- [数据可视化示例](./docs/examples/Visualization-Plotting-Examples.md) / [Data Visualization Examples](./docs/examples/Visualization-Plotting-Examples.md)
 - [机器学习示例](./docs/examples/Machine-Learning-Examples.md) / [Machine Learning Examples](./docs/examples/Machine-Learning-Examples.md)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
 - [降维算法示例](./docs/examples/Dimensionality-Reduction-Examples.md) / [Dimensionality Reduction Examples](./docs/examples/Dimensionality-Reduction-Examples.md)
@@ -281,6 +441,7 @@ These example documents provide detailed usage guides and code examples to help 
 
 - **基础数学运算** / **Basic Mathematical Operations**: 向量和矩阵的基本操作 / Basic vector and matrix operations
 - **统计学应用** / **Statistical Applications**: 概率分布和统计分析的实践 / Practical probability distributions and statistical analysis
+- **数据可视化** / **Data Visualization**: 丰富的图表类型和可视化功能 / Rich chart types and visualization capabilities
 - **机器学习实践** / **Machine Learning Practice**: 回归和分类算法的实际应用 / Real-world applications of regression and classification algorithms
 - **高级功能** / **Advanced Features**: 优化算法和降维技术的使用 / Usage of optimization algorithms and dimensionality reduction techniques
 
@@ -349,6 +510,16 @@ If you encounter any issues while using the library, you can get help through th
 - **社区**: 参与讨论和分享经验 / Participate in discussions and share experiences
 
 ## 更新日志 / Changelog
+
+### v0.1.2 (2025-01)
+- 📊 DataFrame 数据框操作 / DataFrame Operations: 结构化数据处理、CSV读写、数据切片
+  - *Structured data processing, CSV read/write, data slicing*
+- 🔧 切片表达式解析器 / Slice Expression Parser: 支持类似NumPy的切片语法
+  - *Support for NumPy-like slicing syntax*
+- 📋 数据类型支持 / Data Type Support: String和Float类型列支持
+  - *String and Float column type support*
+- 🔄 数据转换功能 / Data Conversion: DataFrame与IMatrix互转换
+  - *Mutual conversion between DataFrame and IMatrix*
 
 ### v0.1.1 (2025-09)
 - 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)

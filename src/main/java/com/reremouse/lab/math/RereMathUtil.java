@@ -219,16 +219,78 @@ public class RereMathUtil {
         if (x == 0.0f) return 0.0;
         if (x == 1.0f) return 1.0;
         
-        // 使用连分数展开
-        // Using continued fraction expansion
-        double bt = Math.exp(gamma(a + b) - gamma(a) - gamma(b) + 
-            a * Math.log(x) + b * Math.log(1.0 - x));
-        
-        if (x < (a + 1.0f) / (a + b + 2.0f)) {
-            return bt * betaCF(a, b, x) / a;
-        } else {
-            return 1.0 - bt * betaCF(b, a, 1.0f - x) / b;
+        // 使用简单的数值积分方法
+        // Using simple numerical integration method
+        return incompleteBetaIntegral(a, b, x);
+    }
+    
+    /**
+     * 使用数值积分计算不完全贝塔函数
+     * Calculate incomplete beta function using numerical integration
+     */
+    private static double incompleteBetaIntegral(float a, float b, float x) {
+        // 使用自适应辛普森法则进行数值积分
+        // Using adaptive Simpson's rule for numerical integration
+        return adaptiveSimpson(a, b, 0.0, x, 1e-8, 100);
+    }
+    
+    /**
+     * 自适应辛普森法则积分
+     * Adaptive Simpson's rule integration
+     */
+    private static double adaptiveSimpson(float a, float b, double x1, double x2, double tolerance, int maxDepth) {
+        if (maxDepth <= 0) {
+            return simpson(a, b, x1, x2);
         }
+        
+        double mid = (x1 + x2) / 2.0;
+        double left = simpson(a, b, x1, mid);
+        double right = simpson(a, b, mid, x2);
+        double whole = simpson(a, b, x1, x2);
+        
+        if (Math.abs(left + right - whole) < tolerance) {
+            return left + right;
+        }
+        
+        return adaptiveSimpson(a, b, x1, mid, tolerance / 2, maxDepth - 1) +
+               adaptiveSimpson(a, b, mid, x2, tolerance / 2, maxDepth - 1);
+    }
+    
+    /**
+     * 辛普森法则积分
+     * Simpson's rule integration
+     */
+    private static double simpson(float a, float b, double x1, double x2) {
+        double h = (x2 - x1) / 2.0;
+        double x0 = x1;
+        double x1_mid = x1 + h;
+        double x2_mid = x2;
+        
+        double f0 = betaIntegrand(a, b, x0);
+        double f1 = betaIntegrand(a, b, x1_mid);
+        double f2 = betaIntegrand(a, b, x2_mid);
+        
+        return h * (f0 + 4.0 * f1 + f2) / 3.0;
+    }
+    
+    /**
+     * 贝塔函数被积函数
+     * Beta function integrand
+     */
+    private static double betaIntegrand(float a, float b, double t) {
+        if (t <= 0.0 || t >= 1.0) {
+            return 0.0;
+        }
+        
+        // 处理奇点
+        if (t == 0.0 && a <= 1.0) {
+            return 0.0;
+        }
+        if (t == 1.0 && b <= 1.0) {
+            return 0.0;
+        }
+        
+        return Math.pow(t, a - 1.0) * Math.pow(1.0 - t, b - 1.0);
     }
     
     /**
@@ -472,6 +534,179 @@ public class RereMathUtil {
         return result;
     }
 
+    // ========== 组合数学和统计函数 / Combinatorics and Statistical Functions ==========
+    
+    /**
+     * 计算组合数C(n,k)
+     * Calculate combination C(n,k)
+     * 
+     * @param n 总数 / Total number
+     * @param k 选择数 / Number of choices
+     * @return 组合数 / Combination number
+     */
+    public static long combination(int n, int k) {
+        if (k < 0 || k > n) return 0;
+        if (k == 0 || k == n) return 1;
+        
+        // 使用对称性减少计算量
+        if (k > n - k) k = n - k;
+        
+        long result = 1;
+        for (int i = 0; i < k; i++) {
+            result = result * (n - i) / (i + 1);
+        }
+        return result;
+    }
+    
+    /**
+     * 计算组合数的对数（避免溢出）
+     * Calculate logarithm of combination (avoid overflow)
+     * 
+     * @param n 总数 / Total number
+     * @param k 选择数 / Number of choices
+     * @return 组合数的对数 / Logarithm of combination
+     */
+    public static double logCombination(int n, int k) {
+        if (k < 0 || k > n) return Double.NEGATIVE_INFINITY;
+        if (k == 0 || k == n) return 0.0;
+        
+        return logFactorial(n) - logFactorial(k) - logFactorial(n - k);
+    }
+    
+    /**
+     * 计算阶乘的对数
+     * Calculate logarithm of factorial
+     * 
+     * @param n 输入值 / Input value
+     * @return 阶乘的对数 / Logarithm of factorial
+     */
+    public static double logFactorial(int n) {
+        if (n < 0) return Double.NaN;
+        if (n <= 1) return 0.0;
+        
+        // 使用Stirling近似
+        if (n > 20) {
+            return 0.5 * Math.log(2 * Math.PI * n) + n * Math.log(n) - n;
+        }
+        
+        // 对于小的n，直接计算
+        double result = 0.0;
+        for (int i = 2; i <= n; i++) {
+            result += Math.log(i);
+        }
+        return result;
+    }
+    
+    /**
+     * 计算阶乘
+     * Calculate factorial
+     * 
+     * @param n 输入值 / Input value
+     * @return 阶乘值 / Factorial value
+     */
+    public static long factorial(int n) {
+        if (n < 0) return 0;
+        if (n <= 1) return 1;
+        
+        long result = 1;
+        for (int i = 2; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+    
+    /**
+     * 计算Stirling数S(n,k)
+     * Calculate Stirling number S(n,k)
+     * 
+     * @param n 第一个参数 / First parameter
+     * @param k 第二个参数 / Second parameter
+     * @return Stirling数 / Stirling number
+     */
+    public static double stirlingNumber2(int n, int k) {
+        if (k < 0 || k > n) return 0.0;
+        if (k == 0) return n == 0 ? 1.0 : 0.0;
+        if (k == 1 || k == n) return 1.0;
+        
+        // 使用递推公式 S(n,k) = k*S(n-1,k) + S(n-1,k-1)
+        double[][] dp = new double[n + 1][k + 1];
+        dp[0][0] = 1.0;
+        
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= Math.min(i, k); j++) {
+                dp[i][j] = j * dp[i - 1][j] + dp[i - 1][j - 1];
+            }
+        }
+        
+        return dp[n][k];
+    }
+    
+    /**
+     * 正则化不完全Beta函数
+     * Regularized incomplete beta function
+     * 
+     * @param a 参数a / Parameter a
+     * @param b 参数b / Parameter b
+     * @param x 输入值 / Input value
+     * @return 正则化不完全Beta函数值 / Regularized incomplete beta function value
+     */
+    public static double regularizedIncompleteBeta(int a, int b, float x) {
+        return incompleteBeta(a, b, x) / beta(a, b);
+    }
+    
+    /**
+     * 正则化不完全Beta函数（float参数版本）
+     * Regularized incomplete beta function (float parameter version)
+     * 
+     * @param a 参数a / Parameter a
+     * @param b 参数b / Parameter b
+     * @param x 输入值 / Input value
+     * @return 正则化不完全Beta函数值 / Regularized incomplete beta function value
+     */
+    public static double regularizedIncompleteBeta(float a, float b, float x) {
+        return incompleteBeta(a, b, x) / beta(a, b);
+    }
+    
+    /**
+     * 正则化不完全Gamma函数
+     * Regularized incomplete gamma function
+     * 
+     * @param a 参数a / Parameter a
+     * @param x 输入值 / Input value
+     * @return 正则化不完全Gamma函数值 / Regularized incomplete gamma function value
+     */
+    public static double regularizedIncompleteGamma(int a, float x) {
+        return incompleteGamma(a, x) / gamma(a);
+    }
+    
+    /**
+     * Beta函数
+     * Beta function
+     * 
+     * @param a 参数a / Parameter a
+     * @param b 参数b / Parameter b
+     * @return Beta函数值 / Beta function value
+     */
+    public static double beta(float a, float b) {
+        return gamma(a) * gamma(b) / gamma(a + b);
+    }
+    
+    /**
+     * 生成正态分布随机数
+     * Generate normal distribution random number
+     * 
+     * @param mean 均值 / Mean
+     * @param stdDev 标准差 / Standard deviation
+     * @return 正态分布随机数 / Normal distribution random number
+     */
+    public static double normalSample(float mean, float stdDev) {
+        // Box-Muller变换
+        double u1 = Math.random();
+        double u2 = Math.random();
+        double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+        return mean + stdDev * z0;
+    }
+    
     public static void main(String args[]) {
         var r1 = RereMathUtil.generateRandomInts(0, 0, 10, 5);
         for (var i : r1) {

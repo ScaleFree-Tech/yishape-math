@@ -360,17 +360,25 @@ public class RereMatrix implements IMatrix {
     /**
      * 获取指定位置的元素值 / Get element value at specified position
      * <p>
-     * 返回矩阵中指定行列位置的元素值
-     * Returns the element value at the specified row and column position in the matrix
+     * 返回矩阵中指定行列位置的元素值，支持负数索引
+     * Returns the element value at the specified row and column position in the matrix, supports negative indexing
      * </p>
      * 
-     * @param row 行索引（从0开始） / Row index (0-based)
-     * @param col 列索引（从0开始） / Column index (0-based)
+     * @param row 行索引（从0开始，支持负数索引） / Row index (0-based, supports negative indexing)
+     * @param col 列索引（从0开始，支持负数索引） / Column index (0-based, supports negative indexing)
      * @return 指定位置的元素值 / Element value at the specified position
      * @throws IndexOutOfBoundsException 如果行列索引超出范围 / if row or column index is out of bounds
      */
     @Override
     public float get(int row, int col) {
+        // 处理负数索引
+        if (row < 0) {
+            row = data.length + row;
+        }
+        if (col < 0) {
+            col = data[0].length + col;
+        }
+        
         if (row < 0 || row >= data.length) {
             throw new IndexOutOfBoundsException("行索引超出范围: " + row + " / Row index out of bounds: " + row);
         }
@@ -384,17 +392,25 @@ public class RereMatrix implements IMatrix {
     /**
      * 设置指定位置的元素值 / Set element value at specified position
      * <p>
-     * 设置矩阵中指定行列位置的元素值
-     * Sets the element value at the specified row and column position in the matrix
+     * 设置矩阵中指定行列位置的元素值，支持负数索引
+     * Sets the element value at the specified row and column position in the matrix, supports negative indexing
      * </p>
      * 
-     * @param row 行索引（从0开始） / Row index (0-based)
-     * @param col 列索引（从0开始） / Column index (0-based)
+     * @param row 行索引（从0开始，支持负数索引） / Row index (0-based, supports negative indexing)
+     * @param col 列索引（从0开始，支持负数索引） / Column index (0-based, supports negative indexing)
      * @param value 要设置的值 / Value to set
      * @throws IndexOutOfBoundsException 如果行列索引超出范围 / if row or column index is out of bounds
      */
     @Override
     public void put(int row, int col, float value) {
+        // 处理负数索引
+        if (row < 0) {
+            row = data.length + row;
+        }
+        if (col < 0) {
+            col = data[0].length + col;
+        }
+        
         if (row < 0 || row >= data.length) {
             throw new IndexOutOfBoundsException("行索引超出范围: " + row + " / Row index out of bounds: " + row);
         }
@@ -2495,6 +2511,197 @@ public class RereMatrix implements IMatrix {
         }
         
         return sumSquaredDiff / totalElements;
+    }
+
+    /**
+     * 解析切片表达式 / Parse slice expression
+     * <p>
+     * 解析类似numpy的切片表达式，支持负数索引
+     * Parses numpy-like slice expressions with negative indexing support
+     * </p>
+     * 
+     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression, e.g. "1:3", ":-1", "::2"
+     * @param maxSize 最大尺寸 / Maximum size
+     * @return 包含start、end、step的数组 / Array containing start, end, step
+     * @throws IllegalArgumentException 如果表达式无效 / if expression is invalid
+     */
+    private int[] parseSliceExpression(String sliceExpression, int maxSize) {
+        if (sliceExpression == null || sliceExpression.trim().isEmpty()) {
+            throw new IllegalArgumentException("切片表达式不能为空 / Slice expression cannot be empty");
+        }
+        
+        // 支持负数索引的切片表达式解析
+        // 格式: start:end:step 或 start:end 或 :end 或 start: 或 : 或 ::step
+        String[] parts = sliceExpression.split(":");
+        if (parts.length > 3) {
+            throw new IllegalArgumentException("切片表达式格式错误: " + sliceExpression + " / Invalid slice expression format: " + sliceExpression);
+        }
+        
+        int start = 0;
+        int end = maxSize;
+        int step = 1;
+        
+        // 解析start
+        if (parts.length > 0 && !parts[0].isEmpty()) {
+            start = Integer.parseInt(parts[0]);
+            if (start < 0) {
+                start = maxSize + start;
+            }
+        }
+        
+        // 解析end
+        if (parts.length > 1 && !parts[1].isEmpty()) {
+            end = Integer.parseInt(parts[1]);
+            if (end < 0) {
+                end = maxSize + end;
+            }
+        }
+        
+        // 解析step
+        if (parts.length > 2 && !parts[2].isEmpty()) {
+            step = Integer.parseInt(parts[2]);
+            if (step <= 0) {
+                throw new IllegalArgumentException("步长必须大于0: " + step + " / Step must be greater than 0: " + step);
+            }
+        }
+        
+        // 验证范围
+        if (start < 0 || start >= maxSize) {
+            throw new IllegalArgumentException("起始位置超出范围: " + start + " / Start position out of bounds: " + start);
+        }
+        if (end < 0 || end > maxSize) {
+            throw new IllegalArgumentException("结束位置超出范围: " + end + " / End position out of bounds: " + end);
+        }
+        if (start >= end) {
+            return new int[]{0, 0, 1}; // 返回空切片
+        }
+        
+        return new int[]{start, end, step};
+    }
+
+    /**
+     * 矩阵切片操作 / Matrix slice operation
+     * <p>
+     * 根据行和列的切片表达式对矩阵进行切片操作，支持负数索引
+     * Performs matrix slicing based on row and column slice expressions, supports negative indexing
+     * </p>
+     * 
+     * @param rowSlice 行切片表达式，如 "1:3", ":-1", "::2" / Row slice expression, e.g. "1:3", ":-1", "::2"
+     * @param colSlice 列切片表达式，如 "0:2", ":-1", "::2" / Column slice expression, e.g. "0:2", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expressions are invalid
+     */
+    @Override
+    public IMatrix slice(String rowSlice, String colSlice) {
+        SliceExpressionParser.SliceResult rowResult = SliceExpressionParser.parse(rowSlice, data.length);
+        SliceExpressionParser.SliceResult colResult = SliceExpressionParser.parse(colSlice, data[0].length);
+        
+        int startRow = rowResult.actualStart;
+        int endRow = rowResult.actualEnd;
+        int stepRow = rowResult.step;
+        
+        int startCol = colResult.actualStart;
+        int endCol = colResult.actualEnd;
+        int stepCol = colResult.step;
+        
+        // 计算结果矩阵的尺寸
+        int resultRows = (endRow - startRow + stepRow - 1) / stepRow;
+        int resultCols = (endCol - startCol + stepCol - 1) / stepCol;
+        
+        if (resultRows <= 0 || resultCols <= 0) {
+            return new RereMatrix(new float[0][0]);
+        }
+        
+        float[][] result = new float[resultRows][resultCols];
+        
+        int resultRow = 0;
+        for (int i = startRow; i < endRow; i += stepRow) {
+            int resultCol = 0;
+            for (int j = startCol; j < endCol; j += stepCol) {
+                result[resultRow][resultCol] = data[i][j];
+                resultCol++;
+            }
+            resultRow++;
+        }
+        
+        return new RereMatrix(result);
+    }
+
+    /**
+     * 矩阵行切片操作 / Matrix row slice operation
+     * <p>
+     * 根据行切片表达式对矩阵进行行切片操作，支持负数索引
+     * Performs row slicing based on row slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param rowSlice 行切片表达式，如 "1:3", ":-1", "::2" / Row slice expression, e.g. "1:3", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    @Override
+    public IMatrix sliceRows(String rowSlice) {
+        return slice(rowSlice, ":");
+    }
+
+    /**
+     * 矩阵列切片操作 / Matrix column slice operation
+     * <p>
+     * 根据列切片表达式对矩阵进行列切片操作，支持负数索引
+     * Performs column slicing based on column slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param colSlice 列切片表达式，如 "0:2", ":-1", "::2" / Column slice expression, e.g. "0:2", ":-1", "::2"
+     * @return 切片后的矩阵 / Sliced matrix
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    @Override
+    public IMatrix sliceColumns(String colSlice) {
+        return slice(":", colSlice);
+    }
+
+    /**
+     * 花式索引获取矩阵元素 / Fancy indexing for matrix elements
+     * <p>
+     * 根据行和列索引数组获取对应位置的元素组成新矩阵，支持负数索引
+     * Gets elements at specified row and column positions to form a new matrix, supports negative indexing
+     * </p>
+     * 
+     * @param rowIndices 行索引数组 / Array of row indices
+     * @param colIndices 列索引数组 / Array of column indices
+     * @return 新的矩阵对象，包含指定位置的元素 / New matrix object containing elements at specified positions
+     * @throws IndexOutOfBoundsException 如果任何索引超出范围 / if any index is out of bounds
+     */
+    @Override
+    public IMatrix fancyGet(int[] rowIndices, int[] colIndices) {
+        if (rowIndices == null || colIndices == null) {
+            throw new IllegalArgumentException("索引数组不能为null / Index arrays cannot be null");
+        }
+        
+        float[][] result = new float[rowIndices.length][colIndices.length];
+        
+        for (int i = 0; i < rowIndices.length; i++) {
+            int row = rowIndices[i];
+            if (row < 0) {
+                row = data.length + row;
+            }
+            if (row < 0 || row >= data.length) {
+                throw new IndexOutOfBoundsException("行索引超出范围: " + rowIndices[i] + " / Row index out of bounds: " + rowIndices[i]);
+            }
+            
+            for (int j = 0; j < colIndices.length; j++) {
+                int col = colIndices[j];
+                if (col < 0) {
+                    col = data[0].length + col;
+                }
+                if (col < 0 || col >= data[0].length) {
+                    throw new IndexOutOfBoundsException("列索引超出范围: " + colIndices[j] + " / Column index out of bounds: " + colIndices[j]);
+                }
+                
+                result[i][j] = data[row][col];
+            }
+        }
+        
+        return new RereMatrix(result);
     }
 
 }

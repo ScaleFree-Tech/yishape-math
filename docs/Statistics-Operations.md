@@ -2,23 +2,37 @@
 
 ## 概述 / Overview
 
-`Stat` 类和相关的概率分布类提供了完整的统计计算功能，包括各种概率分布的概率密度函数、累积分布函数、随机采样等。该模块支持正态分布、t分布、均匀分布、指数分布、卡方分布、F分布等常用统计分布。
+`Stat` 类和相关的概率分布类提供了完整的统计计算功能，包括各种概率分布的概率密度函数、累积分布函数、随机采样等。该模块支持连续型分布和离散型分布两大类，包括正态分布、t分布、均匀分布、指数分布、卡方分布、F分布、Beta分布、Gamma分布等连续分布，以及伯努利分布、二项分布、泊松分布、几何分布、负二项分布、离散均匀分布等离散分布。此外，还提供了假设检验和参数估计等高级统计功能。
 
-The `Stat` class and related probability distribution classes provide comprehensive statistical computation functionality, including probability density functions, cumulative distribution functions, random sampling for various probability distributions. This module supports common statistical distributions such as normal distribution, t-distribution, uniform distribution, exponential distribution, chi-squared distribution, F-distribution, etc.
+The `Stat` class and related probability distribution classes provide comprehensive statistical computation functionality, including probability density functions, cumulative distribution functions, random sampling for various probability distributions. This module supports both continuous and discrete distributions, including continuous distributions such as normal, t-distribution, uniform, exponential, chi-squared, F-distribution, Beta, Gamma distributions, and discrete distributions such as Bernoulli, binomial, Poisson, geometric, negative binomial, discrete uniform distributions. Additionally, it provides advanced statistical functions such as hypothesis testing and parameter estimation.
 
 ## 核心类 / Core Classes
 
 ### Stat 类 / Stat Class
 
-`Stat` 是统计操作的核心工厂类，提供了创建各种概率分布对象的静态方法。
+`Stat` 是统计操作的核心工厂类，提供了创建各种概率分布对象的静态方法。该类支持14种重要的概率分布，包括8种连续型分布和6种离散型分布。
 
-`Stat` is the core factory class for statistical operations, providing static methods to create various probability distribution objects.
+`Stat` is the core factory class for statistical operations, providing static methods to create various probability distribution objects. This class supports 14 important probability distributions, including 8 continuous distributions and 6 discrete distributions.
+
+### 假设检验类 / Hypothesis Testing Class
+
+`HypothesisTesting` 类提供了常用的假设检验功能，包括均值检验和方差检验。
+
+`HypothesisTesting` class provides common hypothesis testing functionality, including mean tests and variance tests.
+
+### 参数估计类 / Parameter Estimation Class
+
+`ParameterEstimation` 类提供了参数估计功能，包括均值和方差的置信区间估计。
+
+`ParameterEstimation` class provides parameter estimation functionality, including confidence interval estimation for means and variances.
 
 ## 主要功能 / Main Features
 
 ### 1. 概率分布创建 / Probability Distribution Creation
 
-#### 正态分布 / Normal Distribution
+#### 1.1 连续型分布 / Continuous Distributions
+
+##### 正态分布 / Normal Distribution
 
 ```java
 // 标准正态分布（均值为0，标准差为1）/ Standard normal distribution (mean=0, stdDev=1)
@@ -28,46 +42,108 @@ NormalDistribution standardNormal = Stat.norm();
 NormalDistribution normal = Stat.norm(5.0f, 2.0f); // 均值=5，标准差=2
 ```
 
-#### t分布 / Student's t-Distribution
+##### t分布 / Student's t-Distribution
 
 ```java
 // 创建t分布 / Create t-distribution
 StudentDistribution tDist = Stat.t(10.0f); // 自由度为10
 ```
 
-#### 均匀分布 / Uniform Distribution
+##### 均匀分布 / Uniform Distribution
 
 ```java
 // 创建均匀分布 / Create uniform distribution
 UniformDistribution uniform = Stat.uniform(0.0f, 10.0f); // 区间[0, 10]
 ```
 
-#### 指数分布 / Exponential Distribution
+##### 指数分布 / Exponential Distribution
 
 ```java
 // 创建指数分布 / Create exponential distribution
 ExponentialDistribution exp = Stat.exponential(2.0f); // 速率参数=2
 ```
 
-#### 卡方分布 / Chi-Squared Distribution
+##### 卡方分布 / Chi-Squared Distribution
 
 ```java
 // 创建卡方分布 / Create chi-squared distribution
 Chi2Distribution chi2 = Stat.chi2(5.0f); // 自由度为5
 ```
 
-#### F分布 / F-Distribution
+##### F分布 / F-Distribution
 
 ```java
 // 创建F分布 / Create F-distribution
 FDistribution fDist = Stat.f(5.0f, 10.0f); // 分子自由度=5，分母自由度=10
 ```
 
+##### Beta分布 / Beta Distribution
+
+```java
+// 创建Beta分布 / Create Beta distribution
+BetaDistribution beta = Stat.beta(2.0f, 3.0f); // 形状参数α=2，β=3
+```
+
+##### Gamma分布 / Gamma Distribution
+
+```java
+// 创建Gamma分布 / Create Gamma distribution
+GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度参数β=1
+```
+
+#### 1.2 离散型分布 / Discrete Distributions
+
+##### 伯努利分布 / Bernoulli Distribution
+
+```java
+// 创建伯努利分布 / Create Bernoulli distribution
+BernoulliDistribution bernoulli = Stat.bernoulli(0.3f); // 成功概率=0.3
+```
+
+##### 二项分布 / Binomial Distribution
+
+```java
+// 创建二项分布 / Create binomial distribution
+BinomialDistribution binomial = Stat.binomial(10, 0.5f); // 试验次数=10，成功概率=0.5
+```
+
+##### 泊松分布 / Poisson Distribution
+
+```java
+// 创建泊松分布 / Create Poisson distribution
+PoissonDistribution poisson = Stat.poisson(2.5f); // 平均发生率λ=2.5
+```
+
+##### 几何分布 / Geometric Distribution
+
+```java
+// 创建几何分布 / Create geometric distribution
+GeometricDistribution geometric = Stat.geometric(0.2f); // 成功概率=0.2
+```
+
+##### 负二项分布 / Negative Binomial Distribution
+
+```java
+// 创建负二项分布 / Create negative binomial distribution
+NegativeBinomialDistribution negBin = Stat.negativeBinomial(3, 0.4f); // 成功次数=3，成功概率=0.4
+```
+
+##### 离散均匀分布 / Discrete Uniform Distribution
+
+```java
+// 创建离散均匀分布 / Create discrete uniform distribution
+DiscreteUniformDistribution discreteUniform = Stat.discreteUniform(1, 6); // 区间[1,6]
+```
+
 ### 2. 概率分布接口 / Probability Distribution Interface
 
-所有连续概率分布都实现了 `IContinuousDistribution` 接口，提供统一的统计计算方法。
+所有概率分布都实现了相应的接口，提供统一的统计计算方法：
+- 连续型分布实现 `IContinuousDistribution` 接口
+- 离散型分布实现 `IDiscreteDistribution` 接口
 
-All continuous probability distributions implement the `IContinuousDistribution` interface, providing unified statistical computation methods.
+All probability distributions implement corresponding interfaces, providing unified statistical computation methods:
+- Continuous distributions implement the `IContinuousDistribution` interface
+- Discrete distributions implement the `IDiscreteDistribution` interface
 
 #### 基本统计量 / Basic Statistics
 
@@ -86,6 +162,7 @@ float kurtosis = distribution.kurtosis();   // 峰度 / Kurtosis
 
 #### 概率函数 / Probability Functions
 
+**连续型分布 / Continuous Distributions:**
 ```java
 // 概率密度函数 / Probability Density Function
 float pdfValue = distribution.pdf(x);
@@ -103,14 +180,42 @@ float sfValue = distribution.sf(x);
 float isfValue = distribution.isf(probability);
 ```
 
+**离散型分布 / Discrete Distributions:**
+```java
+// 概率质量函数 / Probability Mass Function
+float pmfValue = distribution.pmf(x);
+
+// 累积分布函数 / Cumulative Distribution Function
+float cdfValue = distribution.cdf(x);
+
+// 百分点函数（分位数函数）/ Percent Point Function (Quantile Function)
+int ppfValue = distribution.ppf(probability);
+
+// 生存函数 / Survival Function
+float sfValue = distribution.sf(x);
+
+// 逆生存函数 / Inverse Survival Function
+int isfValue = distribution.isf(probability);
+```
+
 #### 随机采样 / Random Sampling
 
+**连续型分布 / Continuous Distributions:**
 ```java
 // 生成单个随机样本 / Generate single random sample
 float sample = distribution.sample();
 
 // 生成多个随机样本 / Generate multiple random samples
 float[] samples = distribution.sample(1000); // 生成1000个样本
+```
+
+**离散型分布 / Discrete Distributions:**
+```java
+// 生成单个随机样本 / Generate single random sample
+int sample = distribution.sample();
+
+// 生成多个随机样本 / Generate multiple random samples
+int[] samples = distribution.sample(1000); // 生成1000个样本
 ```
 
 ### 3. 具体分布类详解 / Detailed Distribution Classes
@@ -232,6 +337,232 @@ F-distribution is the distribution of the ratio of two independent chi-squared r
 - 方差分析
 - 回归分析
 
+#### Beta分布 (BetaDistribution)
+
+Beta分布是定义在区间[0,1]上的连续概率分布，由两个形状参数α和β控制。
+
+Beta distribution is a continuous probability distribution defined on the interval [0,1], controlled by two shape parameters α and β.
+
+**概率密度函数** / **Probability Density Function**:
+```
+f(x) = (1/B(α,β)) * x^(α-1) * (1-x)^(β-1)
+```
+
+**特性** / **Properties**:
+- 均值: α/(α+β)
+- 方差: αβ/((α+β)²(α+β+1))
+- 支持区间: [0,1]
+
+**应用场景** / **Application Scenarios**:
+- 贝叶斯统计
+- 比例建模
+- 先验分布
+- 机器学习
+
+#### Gamma分布 (GammaDistribution)
+
+Gamma分布是连续概率分布，由形状参数α和尺度参数β控制。
+
+Gamma distribution is a continuous probability distribution controlled by shape parameter α and scale parameter β.
+
+**概率密度函数** / **Probability Density Function**:
+```
+f(x) = (β^α / Γ(α)) * x^(α-1) * e^(-βx)
+```
+
+**特性** / **Properties**:
+- 均值: α/β
+- 方差: α/β²
+- 支持区间: [0,∞)
+
+**应用场景** / **Application Scenarios**:
+- 等待时间建模
+- 可靠性分析
+- 贝叶斯统计
+- 机器学习
+
+#### 伯努利分布 (BernoulliDistribution)
+
+伯努利分布是只有两个可能结果的离散概率分布：成功（1）和失败（0）。
+
+Bernoulli distribution is a discrete probability distribution with only two possible outcomes: success (1) and failure (0).
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=1) = p, P(X=0) = 1-p
+```
+
+**特性** / **Properties**:
+- 均值: p
+- 方差: p(1-p)
+- 支持区间: {0,1}
+
+**应用场景** / **Application Scenarios**:
+- 二分类问题
+- 成功/失败事件建模
+- 随机试验
+- 质量控制
+
+#### 二项分布 (BinomialDistribution)
+
+二项分布是n次独立伯努利试验中成功次数的离散概率分布。
+
+Binomial distribution is the discrete probability distribution of the number of successes in a sequence of n independent Bernoulli trials.
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=k) = C(n,k) * p^k * (1-p)^(n-k)
+```
+
+**特性** / **Properties**:
+- 均值: np
+- 方差: np(1-p)
+- 支持区间: {0,1,2,...,n}
+
+**应用场景** / **Application Scenarios**:
+- 重复试验建模
+- 质量控制
+- 市场调研
+- 医学试验
+
+#### 泊松分布 (PoissonDistribution)
+
+泊松分布是描述在固定时间间隔内发生随机事件次数的离散概率分布。
+
+Poisson distribution is a discrete probability distribution that expresses the probability of a given number of events occurring in a fixed interval of time.
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=k) = (λ^k * e^(-λ)) / k!
+```
+
+**特性** / **Properties**:
+- 均值: λ
+- 方差: λ
+- 支持区间: {0,1,2,...}
+
+**应用场景** / **Application Scenarios**:
+- 事件计数建模
+- 排队论
+- 可靠性分析
+- 生物学建模
+
+#### 几何分布 (GeometricDistribution)
+
+几何分布是在一系列独立伯努利试验中，第一次成功所需的试验次数的概率分布。
+
+Geometric distribution is the probability distribution of the number of trials needed to get the first success in a sequence of independent Bernoulli trials.
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=k) = (1-p)^(k-1) * p, k = 1,2,3,...
+```
+
+**特性** / **Properties**:
+- 均值: 1/p
+- 方差: (1-p)/p²
+- 支持区间: {1,2,3,...}
+
+**应用场景** / **Application Scenarios**:
+- 等待时间建模
+- 可靠性分析
+- 首次成功时间
+- 排队论
+
+#### 负二项分布 (NegativeBinomialDistribution)
+
+负二项分布是在一系列独立伯努利试验中，第r次成功所需的试验次数的概率分布。
+
+Negative binomial distribution is the probability distribution of the number of trials needed to get the r-th success in a sequence of independent Bernoulli trials.
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=k) = C(k-1, r-1) * p^r * (1-p)^(k-r), k = r,r+1,r+2,...
+```
+
+**特性** / **Properties**:
+- 均值: r/p
+- 方差: r(1-p)/p²
+- 支持区间: {r,r+1,r+2,...}
+
+**应用场景** / **Application Scenarios**:
+- 重复试验建模
+- 可靠性分析
+- 计数数据建模
+- 过度分散数据
+
+#### 离散均匀分布 (DiscreteUniformDistribution)
+
+离散均匀分布是在有限个离散值上等概率的分布。
+
+Discrete uniform distribution is a probability distribution where each value in a finite set of discrete values has equal probability.
+
+**概率质量函数** / **Probability Mass Function**:
+```
+P(X=k) = 1/n, k = a,a+1,...,b
+```
+
+**特性** / **Properties**:
+- 均值: (a+b)/2
+- 方差: ((b-a+1)²-1)/12
+- 支持区间: {a,a+1,...,b}
+
+**应用场景** / **Application Scenarios**:
+- 随机数生成
+- 等概率选择
+- 模拟实验
+- 游戏设计
+
+### 4. 假设检验功能 / Hypothesis Testing Features
+
+#### 均值检验 / Mean Testing
+
+```java
+// 创建假设检验对象 / Create hypothesis testing object
+HypothesisTesting tester = new HypothesisTesting();
+
+// t检验：检验样本均值是否等于指定值 / t-test: test if sample mean equals specified value
+TestingResult result = tester.testMeanEqualWithT(h0, sample, confidence);
+
+// 检查检验结果 / Check test results
+if (result.pass) {
+    System.out.println("接受原假设 / Accept null hypothesis");
+} else {
+    System.out.println("拒绝原假设 / Reject null hypothesis");
+}
+System.out.println("p值: " + result.p);
+System.out.println("置信区间: [" + result.criticalInteval._1 + ", " + result.criticalInteval._2 + "]");
+```
+
+#### 方差检验 / Variance Testing
+
+```java
+// 卡方检验：检验样本方差是否等于指定值 / Chi-squared test: test if sample variance equals specified value
+TestingResult result = tester.testVarEqualWithChi2(h0, sample, confidence);
+```
+
+### 5. 参数估计功能 / Parameter Estimation Features
+
+#### 均值估计 / Mean Estimation
+
+```java
+// 创建参数估计对象 / Create parameter estimation object
+ParameterEstimation estimator = new ParameterEstimation();
+
+// 使用Z分布估计均值（已知总体标准差）/ Estimate mean using Z-distribution (known population std)
+Tuple2<Float, Float> meanIntervalZ = estimator.estimateMeanIntevalWithZ(sample, sigma, confidence);
+
+// 使用t分布估计均值（未知总体标准差）/ Estimate mean using t-distribution (unknown population std)
+Tuple2<Float, Float> meanIntervalT = estimator.estimateMeanIntevalWithT(sample, confidence);
+```
+
+#### 方差估计 / Variance Estimation
+
+```java
+// 使用卡方分布估计方差 / Estimate variance using chi-squared distribution
+Tuple2<Float, Float> varInterval = estimator.estimateVarIntevalWithChi2(sample, confidence);
+```
+
 ## 使用示例 / Usage Examples
 
 详细的代码示例请参考 [Statistics-Examples.md](examples/Statistics-Examples.md) 文档。
@@ -254,6 +585,9 @@ For detailed code examples, please refer to the [Statistics-Examples.md](example
 - **指数分布** / **Exponential Distribution**: 使用逆变换采样
 - **卡方分布** / **Chi-Squared Distribution**: 使用Gamma函数近似
 - **F分布** / **F-Distribution**: 基于Beta分布实现
+- **Beta分布** / **Beta Distribution**: 使用Gamma函数和数值积分
+- **Gamma分布** / **Gamma Distribution**: 使用近似算法和查找表
+- **离散分布** / **Discrete Distributions**: 使用逆变换采样和拒绝采样
 
 ## 性能特性 / Performance Features
 
@@ -287,7 +621,7 @@ For detailed code examples, please refer to the [Statistics-Examples.md](example
 
 ### 添加新分布 / Adding New Distributions
 
-1. 实现 `IContinuousDistribution` 接口
+1. 实现 `IContinuousDistribution` 或 `IDiscreteDistribution` 接口
 2. 在 `Stat` 类中添加工厂方法
 3. 添加相应的测试用例
 
@@ -341,6 +675,15 @@ public class CustomDistribution implements IContinuousDistribution {
 | 指数分布 / Exponential distribution | `Stat.exponential(rate)` | `scipy.stats.expon(scale=1/rate)` | 创建指数分布 / Create exponential distribution |
 | 卡方分布 / Chi-squared distribution | `Stat.chi2(df)` | `scipy.stats.chi2(df)` | 创建卡方分布 / Create chi-squared distribution |
 | F分布 / F-distribution | `Stat.f(df1, df2)` | `scipy.stats.f(df1, df2)` | 创建F分布 / Create F-distribution |
+| Beta分布 / Beta distribution | `Stat.beta(α, β)` | `scipy.stats.beta(α, β)` | 创建Beta分布 / Create Beta distribution |
+| Gamma分布 / Gamma distribution | `Stat.gamma(α, β)` | `scipy.stats.gamma(α, scale=1/β)` | 创建Gamma分布 / Create Gamma distribution |
+| **离散型分布 / Discrete Distributions** | | | |
+| 伯努利分布 / Bernoulli distribution | `Stat.bernoulli(p)` | `scipy.stats.bernoulli(p)` | 创建伯努利分布 / Create Bernoulli distribution |
+| 二项分布 / Binomial distribution | `Stat.binomial(n, p)` | `scipy.stats.binom(n, p)` | 创建二项分布 / Create binomial distribution |
+| 泊松分布 / Poisson distribution | `Stat.poisson(λ)` | `scipy.stats.poisson(λ)` | 创建泊松分布 / Create Poisson distribution |
+| 几何分布 / Geometric distribution | `Stat.geometric(p)` | `scipy.stats.geom(p)` | 创建几何分布 / Create geometric distribution |
+| 负二项分布 / Negative binomial distribution | `Stat.negativeBinomial(r, p)` | `scipy.stats.nbinom(r, p)` | 创建负二项分布 / Create negative binomial distribution |
+| 离散均匀分布 / Discrete uniform distribution | `Stat.discreteUniform(a, b)` | `scipy.stats.randint(a, b+1)` | 创建离散均匀分布 / Create discrete uniform distribution |
 | **基本统计量 / Basic Statistics** | | | |
 | 均值 / Mean | `dist.mean()` | `dist.mean()` | 分布均值 / Distribution mean |
 | 方差 / Variance | `dist.var()` | `dist.var()` | 分布方差 / Distribution variance |
@@ -351,6 +694,7 @@ public class CustomDistribution implements IContinuousDistribution {
 | 峰度 / Kurtosis | `dist.kurtosis()` | `dist.stats(moments='k')` | 分布峰度 / Distribution kurtosis |
 | **概率函数 / Probability Functions** | | | |
 | 概率密度函数 / PDF | `dist.pdf(x)` | `dist.pdf(x)` | 概率密度函数 / Probability density function |
+| 概率质量函数 / PMF | `dist.pmf(x)` | `dist.pmf(x)` | 概率质量函数（离散分布）/ Probability mass function (discrete) |
 | 累积分布函数 / CDF | `dist.cdf(x)` | `dist.cdf(x)` | 累积分布函数 / Cumulative distribution function |
 | 百分点函数 / PPF | `dist.ppf(p)` | `dist.ppf(p)` | 百分点函数 / Percent point function |
 | 生存函数 / Survival function | `dist.sf(x)` | `dist.sf(x)` | 生存函数 / Survival function |
@@ -362,6 +706,13 @@ public class CustomDistribution implements IContinuousDistribution {
 | 第一四分位数 / First quartile | `dist.q1()` | `dist.ppf(0.25)` | 25%分位数 / 25th percentile |
 | 第三四分位数 / Third quartile | `dist.q3()` | `dist.ppf(0.75)` | 75%分位数 / 75th percentile |
 | 自定义分位数 / Custom quantile | `dist.ppf(p)` | `dist.ppf(p)` | 自定义概率的分位数 / Quantile for custom probability |
+| **假设检验 / Hypothesis Testing** | | | |
+| 均值t检验 / Mean t-test | `tester.testMeanEqualWithT(h0, sample, conf)` | `scipy.stats.ttest_1samp(sample, h0)` | 单样本均值检验 / One-sample mean test |
+| 方差卡方检验 / Variance chi-squared test | `tester.testVarEqualWithChi2(h0, sample, conf)` | `scipy.stats.chisquare(observed, expected)` | 方差检验 / Variance test |
+| **参数估计 / Parameter Estimation** | | | |
+| 均值Z估计 / Mean Z-estimation | `estimator.estimateMeanIntevalWithZ(sample, conf, σ)` | `scipy.stats.norm.interval(conf, loc=mean, scale=σ/√n)` | 已知方差的均值估计 / Mean estimation with known variance |
+| 均值t估计 / Mean t-estimation | `estimator.estimateMeanIntevalWithT(sample, conf)` | `scipy.stats.t.interval(conf, df, loc=mean, scale=s/√n)` | 未知方差的均值估计 / Mean estimation with unknown variance |
+| 方差估计 / Variance estimation | `estimator.estimateVarIntevalWithChi2(sample, conf)` | `scipy.stats.chi2.interval(conf, df, scale=s²)` | 方差置信区间估计 / Variance confidence interval estimation |
 
 ## 最佳实践建议 / Best Practices Recommendations
 
@@ -373,6 +724,14 @@ public class CustomDistribution implements IContinuousDistribution {
 4. **指数分布** / **Exponential Distribution**: 适用于等待时间、寿命数据
 5. **卡方分布** / **Chi-Squared Distribution**: 适用于方差检验、拟合优度
 6. **F分布** / **F-Distribution**: 适用于方差比较、回归分析
+7. **Beta分布** / **Beta Distribution**: 适用于比例建模、贝叶斯统计
+8. **Gamma分布** / **Gamma Distribution**: 适用于等待时间、可靠性分析
+9. **伯努利分布** / **Bernoulli Distribution**: 适用于二分类问题
+10. **二项分布** / **Binomial Distribution**: 适用于重复试验
+11. **泊松分布** / **Poisson Distribution**: 适用于事件计数
+12. **几何分布** / **Geometric Distribution**: 适用于首次成功时间
+13. **负二项分布** / **Negative Binomial Distribution**: 适用于过度分散计数数据
+14. **离散均匀分布** / **Discrete Uniform Distribution**: 适用于等概率离散选择
 
 ### 数值计算建议 / Numerical Computation Recommendations
 

@@ -685,18 +685,31 @@ public interface IVector {
     /**
      * 向量切片（指定开始、结束位置和步长） / Vector slice (specified start, end positions and step)
      * <p>
-     * 返回从指定开始位置到结束位置、指定步长的向量切片
-     * Returns a vector slice from specified start position to end position with specified step
+     * 返回从指定开始位置到结束位置、指定步长的向量切片，支持负数索引
+     * Returns a vector slice from specified start position to end position with specified step, supports negative indexing
      * </p>
      * 
-     * @param start 开始位置 / Start position
-     * @param end 结束位置（不包含） / End position (exclusive)
+     * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
      * @param step 步长 / Step size
      * @return 切片向量 / Sliced vector
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are out of bounds
      * @throws IllegalArgumentException 如果步长小于等于0 / if step is less than or equal to 0
      */
     public IVector slice(int start, int end, int step);
+
+    /**
+     * 向量切片（字符串表达式） / Vector slice (string expression)
+     * <p>
+     * 根据切片表达式对向量进行切片操作，支持负数索引
+     * Performs vector slicing based on slice expression, supports negative indexing
+     * </p>
+     * 
+     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression, e.g. "1:3", ":-1", "::2"
+     * @return 切片向量 / Sliced vector
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     */
+    public IVector slice(String sliceExpression);
 
     /**
      * 花式索引 / Fancy indexing

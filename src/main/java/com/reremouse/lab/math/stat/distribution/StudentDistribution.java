@@ -164,12 +164,21 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * Numerical solution for inverse t-distribution CDF
      */
     private float inverseTCDF(float p) {
-        // 使用二分法求解
-        // Using bisection method to solve
+        // 使用改进的二分法求解
+        // Using improved bisection method to solve
         float left = -10.0f;
         float right = 10.0f;
-        float tolerance = 1e-6f;
-        int maxIter = 100;
+        float tolerance = 1e-8f;
+        int maxIter = 200;
+        
+        // 调整边界以确保包含解
+        // Adjust boundaries to ensure solution is included
+        while (cdf(left) > p && left > -1000.0f) {
+            left *= 2.0f;
+        }
+        while (cdf(right) < p && right < 1000.0f) {
+            right *= 2.0f;
+        }
         
         for (int i = 0; i < maxIter; i++) {
             float mid = (left + right) / 2.0f;
@@ -183,6 +192,11 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
                 left = mid;
             } else {
                 right = mid;
+            }
+            
+            // 检查收敛
+            if (right - left < tolerance) {
+                break;
             }
         }
         

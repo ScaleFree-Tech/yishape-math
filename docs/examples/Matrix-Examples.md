@@ -326,9 +326,190 @@ public class DataAccessExample {
         float element = matrix.get(1, 2);
         matrix.put(1, 2, 10.0f);
         
+        // 负数索引访问 / Negative indexing access
+        float lastElement = matrix.get(-1, -1);  // 获取最后一个元素
+        matrix.put(-1, -1, 100.0f);             // 设置最后一个元素
+        
         System.out.println("第0行: " + row);
         System.out.println("第0列: " + column);
         System.out.println("矩阵形状: " + Arrays.toString(shape));
+        System.out.println("最后一个元素: " + lastElement);
+    }
+}
+```
+
+### 矩阵切片表达式和负数索引 / Matrix Slice Expressions and Negative Indexing
+
+```java
+public class MatrixSliceExpressionExample {
+    public static void main(String[] args) {
+        // 创建测试矩阵 / Create test matrix
+        IMatrix matrix = IMatrix.of(new float[][]{
+            {1, 2, 3, 4, 5},
+            {6, 7, 8, 9, 10},
+            {11, 12, 13, 14, 15},
+            {16, 17, 18, 19, 20},
+            {21, 22, 23, 24, 25}
+        });
+        
+        System.out.println("原始矩阵:");
+        System.out.println(matrix);
+        System.out.println("矩阵形状: " + Arrays.toString(matrix.shape()));
+        
+        System.out.println("\n=== 基本切片表达式 / Basic Slice Expressions ===");
+        
+        // 基本切片 / Basic slicing
+        IMatrix slice1 = matrix.slice("1:3", "1:3");  // 行1-2，列1-2
+        System.out.println("slice(\"1:3\", \"1:3\"):");
+        System.out.println(slice1);
+        
+        IMatrix slice2 = matrix.slice("2:", "2:");    // 从行2到末尾，从列2到末尾
+        System.out.println("slice(\"2:\", \"2:\"):");
+        System.out.println(slice2);
+        
+        IMatrix slice3 = matrix.slice(":3", ":3");    // 从开始到行2，从开始到列2
+        System.out.println("slice(\":3\", \":3\"):");
+        System.out.println(slice3);
+        
+        IMatrix slice4 = matrix.slice("::2", "::2");  // 每隔一行一列
+        System.out.println("slice(\"::2\", \"::2\"):");
+        System.out.println(slice4);
+        
+        IMatrix slice5 = matrix.slice("1:4:2", "1:4:2"); // 行1,3，列1,3
+        System.out.println("slice(\"1:4:2\", \"1:4:2\"):");
+        System.out.println(slice5);
+        
+        System.out.println("\n=== 负数索引切片 / Negative Indexing Slicing ===");
+        
+        // 负数索引切片 / Negative indexing slicing
+        IMatrix slice6 = matrix.slice("-2:", "-2:");  // 最后两行，最后两列
+        System.out.println("slice(\"-2:\", \"-2:\"):");
+        System.out.println(slice6);
+        
+        IMatrix slice7 = matrix.slice(":-2", ":-2");  // 除最后两行外的所有行，除最后两列外的所有列
+        System.out.println("slice(\":-2\", \":-2\"):");
+        System.out.println(slice7);
+        
+        IMatrix slice8 = matrix.slice("-3:-1", "-3:-1"); // 倒数第3-2行，倒数第3-2列
+        System.out.println("slice(\"-3:-1\", \"-3:-1\"):");
+        System.out.println(slice8);
+        
+        IMatrix slice9 = matrix.slice("-4:-1:2", "-4:-1:2"); // 倒数第4-2行，倒数第4-2列，步长为2
+        System.out.println("slice(\"-4:-1:2\", \"-4:-1:2\"):");
+        System.out.println(slice9);
+        
+        IMatrix slice10 = matrix.slice("::-1", "::-1"); // 反转向量（行列都反转）
+        System.out.println("slice(\"::-1\", \"::-1\"):");
+        System.out.println(slice10);
+        
+        System.out.println("\n=== 行切片和列切片 / Row and Column Slicing ===");
+        
+        // 行切片 / Row slicing
+        IMatrix rowSlice1 = matrix.sliceRows("1:3");   // 行1-2
+        System.out.println("sliceRows(\"1:3\"):");
+        System.out.println(rowSlice1);
+        
+        IMatrix rowSlice2 = matrix.sliceRows("-2:");   // 最后两行
+        System.out.println("sliceRows(\"-2:\"):");
+        System.out.println(rowSlice2);
+        
+        IMatrix rowSlice3 = matrix.sliceRows("::2");   // 每隔一行
+        System.out.println("sliceRows(\"::2\"):");
+        System.out.println(rowSlice3);
+        
+        // 列切片 / Column slicing
+        IMatrix colSlice1 = matrix.sliceColumns("1:3"); // 列1-2
+        System.out.println("sliceColumns(\"1:3\"):");
+        System.out.println(colSlice1);
+        
+        IMatrix colSlice2 = matrix.sliceColumns("-2:"); // 最后两列
+        System.out.println("sliceColumns(\"-2:\"):");
+        System.out.println(colSlice2);
+        
+        IMatrix colSlice3 = matrix.sliceColumns("::2"); // 每隔一列
+        System.out.println("sliceColumns(\"::2\"):");
+        System.out.println(colSlice3);
+        
+        System.out.println("\n=== 负数索引访问 / Negative Indexing Access ===");
+        
+        // 负数索引访问 / Negative indexing access
+        System.out.println("matrix.get(0, 0): " + matrix.get(0, 0));     // 第一个元素
+        System.out.println("matrix.get(-1, -1): " + matrix.get(-1, -1)); // 最后一个元素
+        System.out.println("matrix.get(-1, 0): " + matrix.get(-1, 0));   // 最后一行的第一个元素
+        System.out.println("matrix.get(0, -1): " + matrix.get(0, -1));   // 第一行的最后一个元素
+        System.out.println("matrix.get(-2, -2): " + matrix.get(-2, -2)); // 倒数第二行倒数第二列
+        
+        System.out.println("\n=== 切片表达式边界情况 / Slice Expression Edge Cases ===");
+        
+        // 边界情况 / Edge cases
+        IMatrix slice11 = matrix.slice("0:0", "0:0"); // 空切片
+        System.out.println("slice(\"0:0\", \"0:0\"): " + slice11 + " (形状: " + Arrays.toString(slice11.shape()) + ")");
+        
+        IMatrix slice12 = matrix.slice("2:2", "2:2"); // 空切片
+        System.out.println("slice(\"2:2\", \"2:2\"): " + slice12 + " (形状: " + Arrays.toString(slice12.shape()) + ")");
+        
+        IMatrix slice13 = matrix.slice("-1:-1", "-1:-1"); // 空切片
+        System.out.println("slice(\"-1:-1\", \"-1:-1\"): " + slice13 + " (形状: " + Arrays.toString(slice13.shape()) + ")");
+        
+        System.out.println("\n=== 切片表达式错误处理 / Slice Expression Error Handling ===");
+        
+        try {
+            // 无效的切片表达式 / Invalid slice expression
+            matrix.slice("1:2:3:4", "1:2");  // 超过3个冒号
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        try {
+            // 无效的步长 / Invalid step
+            matrix.slice("1:3:0", "1:3");    // 步长为0
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        try {
+            // 索引超出范围 / Index out of bounds
+            matrix.slice("1:10", "1:10");    // 结束索引超出范围
+        } catch (IllegalArgumentException e) {
+            System.out.println("捕获异常: " + e.getMessage());
+        }
+        
+        System.out.println("\n=== 实际应用示例 / Practical Application Examples ===");
+        
+        // 获取中心部分（去除边界） / Get center part (excluding boundaries)
+        IMatrix center = matrix.slice("1:-1", "1:-1");
+        System.out.println("中心部分（去除边界）:");
+        System.out.println(center);
+        
+        // 获取四个角落 / Get four corners
+        IMatrix topLeft = matrix.slice(":2", ":2");
+        IMatrix topRight = matrix.slice(":2", "-2:");
+        IMatrix bottomLeft = matrix.slice("-2:", ":2");
+        IMatrix bottomRight = matrix.slice("-2:", "-2:");
+        
+        System.out.println("左上角:");
+        System.out.println(topLeft);
+        System.out.println("右上角:");
+        System.out.println(topRight);
+        System.out.println("左下角:");
+        System.out.println(bottomLeft);
+        System.out.println("右下角:");
+        System.out.println(bottomRight);
+        
+        // 获取对角线元素 / Get diagonal elements
+        IMatrix diagonal = matrix.slice("::1", "::1"); // 这里需要特殊处理对角线
+        System.out.println("对角线（需要特殊处理）:");
+        System.out.println(diagonal);
+        
+        // 获取奇数行和偶数列 / Get odd rows and even columns
+        IMatrix oddRowsEvenCols = matrix.slice("1::2", "::2");
+        System.out.println("奇数行和偶数列:");
+        System.out.println(oddRowsEvenCols);
+        
+        // 获取最后几行和最后几列 / Get last few rows and columns
+        IMatrix lastFew = matrix.slice("-3:", "-3:");
+        System.out.println("最后三行三列:");
+        System.out.println(lastFew);
     }
 }
 ```
