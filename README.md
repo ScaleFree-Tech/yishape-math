@@ -2,7 +2,7 @@
 
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.1-blue.svg)]()
 
 ## 项目简介 / Project Introduction
 
@@ -496,7 +496,7 @@ The MIT License is a permissive open-source license that allows you to freely us
 ## 联系方式 / Contact
 
 - 项目维护者 / Project Maintainer: Big Data and Decision Analytics Research Center of UESTC, Scale-Free Tech.
-- 项目地址 / Project URL: [https://github.com/ScaleFree-Tech/yishape-math](https://github.com/ScaleFree-Tech/yishape-math)
+- 项目地址 / Project URL: [https://github.com/ScaleFree-Tech/yishape-math](https://github.com/ScaleFree-Tech/yishape-math), [https://gitee.com/scalefree-tech/yishape-math](https://gitee.com/scalefree-tech/yishape-math).
 - 问题反馈 / Issues: [https://github.com/ScaleFree-Tech/yishape-math/issues](https://github.com/ScaleFree-Tech/yishape-math/issues)
 
 ### 获取帮助 / Getting Help
