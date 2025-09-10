@@ -47,19 +47,19 @@
   - *Mean, variance, standard deviation, median, mode, and more*
 - **假设检验** / **Hypothesis Testing**: 假设检验、参数估计
   - *Hypothesis testing and parameter estimation*
-- **方差分析** / **ANOVA**: Analysis of Variance （待实现）
-  - *Analysis of Variance (to be implemented)*
+- **方差分析** / **ANOVA**: Analysis of Variance
+  - *Analysis of Variance*
 
 ### 📈 数据可视化 / Data Visualization
 - **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图
   - *Line, scatter, pie, bar, histogram charts*
 - **极坐标图表** / **Polar Charts**: 极坐标柱状图、极坐标线图、极坐标散点图
   - *Polar bar, polar line, polar scatter charts*
-- **统计图表** / **Statistical Charts**: 箱线图、K线图
-  - *Boxplot, candlestick charts*
+- **统计图表** / **Statistical Charts**: 箱线图、K线图、小提琴图
+  - *Boxplot, candlestick charts, violinplot*
 - **特殊图表** / **Special Charts**: 漏斗图、桑基图、旭日图、主题河流图、树图、矩形树图、关系图、平行坐标图
   - *Funnel, Sankey, Sunburst, Theme River, Tree, Treemap, Graph, Parallel charts*
-- **完善图表** / **Enhanced Charts**: 热力图、雷达图、仪表盘
+- **扩展图表** / **Enhanced Charts**: 热力图、雷达图、仪表盘
   - *Heatmap, radar, gauge charts*
 - **ECharts集成** / **ECharts Integration**: 基于ECharts-Java的丰富可视化功能
   - *Rich visualization capabilities based on ECharts-Java*
