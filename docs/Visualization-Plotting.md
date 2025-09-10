@@ -64,9 +64,9 @@ plot.show();
 
 // 链式调用 / Chained calls
 Plots.of(800, 600)
-    .setTitle("线图演示")
-    .setXlabel("X轴")
-    .setYlabel("Y轴")
+    .title("线图演示")
+    .xlabel("X轴")
+    .ylabel("Y轴")
     .line(x, y)
     .show();
 
