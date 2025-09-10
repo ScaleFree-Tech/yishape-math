@@ -546,6 +546,76 @@ public class RereVector implements IVector {
     }
 
     /**
+     * 向量偏度 / Vector skewness
+     * <p>
+     * 计算向量的偏度，衡量数据分布的不对称性 偏度 = E[(X-μ)³] / σ³，其中μ是均值，σ是标准差 Calculates the
+     * skewness of the vector, measuring the asymmetry of data distribution
+     * Skewness = E[(X-μ)³] / σ³, where μ is mean and σ is standard deviation
+     * </p>
+     *
+     * @return 偏度值 / Skewness value
+     * @throws ArithmeticException 如果向量长度小于3或标准差为0 / if vector length is less
+     * than 3 or standard deviation is 0
+     */
+    @Override
+    public float skewness() {
+        if (this.length() < 3) {
+            throw new ArithmeticException("向量长度必须大于等于3才能计算偏度 / Vector length must be at least 3 to calculate skewness");
+        }
+
+        float mean = this.mean();
+        float std = this.std();
+
+        if (std == 0) {
+            throw new ArithmeticException("标准差为0，无法计算偏度 / Standard deviation is 0, cannot calculate skewness");
+        }
+
+        float sum = 0.0f;
+        for (int i = 0; i < this.length(); i++) {
+            float diff = data[i] - mean;
+            sum += diff * diff * diff; // (x - μ)³
+        }
+
+        return sum / (this.length() * std * std * std);
+    }
+
+    /**
+     * 向量峰度 / Vector kurtosis
+     * <p>
+     * 计算向量的峰度，衡量数据分布的尖锐程度 峰度 = E[(X-μ)⁴] / σ⁴ - 3，其中μ是均值，σ是标准差 减去3是为了使正态分布的峰度为0
+     * Calculates the kurtosis of the vector, measuring the peakedness of data
+     * distribution Kurtosis = E[(X-μ)⁴] / σ⁴ - 3, where μ is mean and σ is
+     * standard deviation Subtracting 3 makes normal distribution kurtosis equal
+     * to 0
+     * </p>
+     *
+     * @return 峰度值 / Kurtosis value
+     * @throws ArithmeticException 如果向量长度小于4或标准差为0 / if vector length is less
+     * than 4 or standard deviation is 0
+     */
+    @Override
+    public float kurtosis() {
+        if (this.length() < 4) {
+            throw new ArithmeticException("向量长度必须大于等于4才能计算峰度 / Vector length must be at least 4 to calculate kurtosis");
+        }
+
+        float mean = this.mean();
+        float std = this.std();
+
+        if (std == 0) {
+            throw new ArithmeticException("标准差为0，无法计算峰度 / Standard deviation is 0, cannot calculate kurtosis");
+        }
+
+        float sum = 0.0f;
+        for (int i = 0; i < this.length(); i++) {
+            float diff = data[i] - mean;
+            sum += diff * diff * diff * diff; // (x - μ)⁴
+        }
+
+        return (sum / (this.length() * std * std * std * std)) - 3.0f;
+    }
+
+    /**
      * 获取向量长度 / Get vector length
      * <p>
      * 返回向量的长度（元素个数） Returns the length (number of elements) of the vector
@@ -558,14 +628,19 @@ public class RereVector implements IVector {
         return data.length;
     }
 
+    public int size() {
+        return this.length();
+    }
+
     /**
      * 获取指定位置的元素 / Get element at specified position
      * <p>
-     * 返回向量中指定位置的元素值，支持负数索引
-     * Returns the element value at the specified position in the vector, supports negative indexing
+     * 返回向量中指定位置的元素值，支持负数索引 Returns the element value at the specified position
+     * in the vector, supports negative indexing
      * </p>
      *
-     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports negative indexing)
+     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports
+     * negative indexing)
      * @return 指定位置的元素值 / Element value at the specified position
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
      * of bounds
@@ -621,12 +696,14 @@ public class RereVector implements IVector {
      * 向量切片（指定开始、结束位置和步长） / Vector slice (specified start, end positions and
      * step)
      * <p>
-     * 返回从指定开始位置到结束位置、指定步长的向量切片，支持负数索引
-     * Returns a vector slice from specified start position to end position with specified step, supports negative indexing
+     * 返回从指定开始位置到结束位置、指定步长的向量切片，支持负数索引 Returns a vector slice from specified
+     * start position to end position with specified step, supports negative
+     * indexing
      * </p>
      *
      * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
-     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
+     * indexing)
      * @param step 步长 / Step size
      * @return 切片向量 / Sliced vector
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
@@ -643,7 +720,7 @@ public class RereVector implements IVector {
         if (end < 0) {
             end = data.length + end;
         }
-        
+
         // 验证参数
         if (step <= 0) {
             throw new IllegalArgumentException("步长必须大于0: " + step + " / Step must be greater than 0: " + step);
@@ -654,11 +731,11 @@ public class RereVector implements IVector {
         if (end < 0 || end > data.length) {
             throw new IndexOutOfBoundsException("结束位置超出范围: " + end + " / End position out of bounds: " + end);
         }
-        
+
         if (start >= end) {
             return IVector.of(new float[0]); // 返回空向量
         }
-        
+
         int[] inds = IVector.range(start, end, step).asIntArray();
         float[] v = new float[inds.length];
         for (int i = 0; i < v.length; i++) {
@@ -670,38 +747,41 @@ public class RereVector implements IVector {
     /**
      * 向量切片（字符串表达式） / Vector slice (string expression)
      * <p>
-     * 根据切片表达式对向量进行切片操作，支持负数索引
-     * Performs vector slicing based on slice expression, supports negative indexing
+     * 根据切片表达式对向量进行切片操作，支持负数索引 Performs vector slicing based on slice
+     * expression, supports negative indexing
      * </p>
-     * 
-     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression, e.g. "1:3", ":-1", "::2"
+     *
+     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression,
+     * e.g. "1:3", ":-1", "::2"
      * @return 切片向量 / Sliced vector
-     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is
+     * invalid
      */
     @Override
     public IVector slice(String sliceExpression) {
         if (sliceExpression == null || sliceExpression.trim().isEmpty()) {
             throw new IllegalArgumentException("切片表达式不能为空 / Slice expression cannot be empty");
         }
-        
+
         // 使用统一的切片表达式解析器
         SliceExpressionParser.SliceResult result = SliceExpressionParser.parse(sliceExpression, data.length);
-        
+
         if (result.actualStart >= result.actualEnd) {
             return IVector.of(new float[0]);
         }
-        
+
         return slice(result.actualStart, result.actualEnd, result.step);
     }
 
     /**
      * 花式索引 / Fancy indexing
      * <p>
-     * 根据给定的位置数组获取对应位置的元素组成新向量，支持负数索引
-     * Gets elements at specified positions to form a new vector, supports negative indexing
+     * 根据给定的位置数组获取对应位置的元素组成新向量，支持负数索引 Gets elements at specified positions to
+     * form a new vector, supports negative indexing
      * </p>
      *
-     * @param positions 位置索引数组（支持负数索引） / Array of position indices (supports negative indexing)
+     * @param positions 位置索引数组（支持负数索引） / Array of position indices (supports
+     * negative indexing)
      * @return 新的向量对象，包含指定位置的元素 / New vector object containing elements at
      * specified positions
      * @throws IndexOutOfBoundsException 如果任何位置索引超出范围 / if any position index is
@@ -759,11 +839,12 @@ public class RereVector implements IVector {
     /**
      * 设置指定位置的元素 / Set element at specified position
      * <p>
-     * 设置向量中指定位置的元素值，支持负数索引
-     * Sets the element value at the specified position in the vector, supports negative indexing
+     * 设置向量中指定位置的元素值，支持负数索引 Sets the element value at the specified position in
+     * the vector, supports negative indexing
      * </p>
      *
-     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports negative indexing)
+     * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports
+     * negative indexing)
      * @param value 要设置的值 / Value to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
@@ -785,12 +866,13 @@ public class RereVector implements IVector {
     /**
      * 范围设置值（带步长） / Range set values (with step)
      * <p>
-     * 设置指定范围内、指定步长位置的元素值，支持负数索引
-     * Sets element values at positions within specified range with specified step, supports negative indexing
+     * 设置指定范围内、指定步长位置的元素值，支持负数索引 Sets element values at positions within
+     * specified range with specified step, supports negative indexing
      * </p>
      *
      * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
-     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
+     * indexing)
      * @param step 步长 / Step size
      * @param values 要设置的值数组 / Array of values to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
@@ -810,7 +892,7 @@ public class RereVector implements IVector {
         if (end < 0) {
             actualEnd = data.length + end;
         }
-        
+
         int[] inds = IVector.range(actualStart, actualEnd, step).asIntArray();
         for (int i = 0; i < inds.length; i++) {
             if (inds[i] < 0 || inds[i] >= data.length) {
@@ -824,12 +906,13 @@ public class RereVector implements IVector {
     /**
      * 范围设置值 / Range set values
      * <p>
-     * 设置指定范围内的元素值（步长为1），支持负数索引
-     * Sets element values within specified range (step size 1), supports negative indexing
+     * 设置指定范围内的元素值（步长为1），支持负数索引 Sets element values within specified range (step
+     * size 1), supports negative indexing
      * </p>
      *
      * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
-     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative indexing)
+     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
+     * indexing)
      * @param values 要设置的值数组 / Array of values to set
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are

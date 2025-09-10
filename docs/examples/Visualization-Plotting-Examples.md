@@ -274,6 +274,51 @@ public class BoxPlotExample {
 }
 ```
 
+### 3.5 小提琴图 / Violin Plot
+
+```java
+public class ViolinPlotExample {
+    public static void main(String[] args) {
+        // 创建图表
+        IPlot plot = Plots.of(800, 600);
+        
+        // 生成示例数据
+        IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+        
+        // 绘制小提琴图
+        plot.violinplot(data);
+        plot.setTitle("数据分布小提琴图", "展示数据的分布形状和统计特征");
+        plot.setXlabel("数值");
+        plot.setYlabel("密度");
+        plot.saveAsHtml("violin_plot.html");
+    }
+}
+```
+
+### 3.6 多组小提琴图 / Multi-group Violin Plot
+
+```java
+public class MultiGroupViolinPlotExample {
+    public static void main(String[] args) {
+        // 创建图表
+        IPlot plot = Plots.of(800, 600);
+        
+        // 生成示例数据
+        IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
+                                             2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+        List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A",
+                                           "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B");
+        
+        // 绘制多组小提琴图
+        plot.violinplot(data, labels);
+        plot.setTitle("多组数据分布对比", "不同组别的数据分布对比分析");
+        plot.setXlabel("组别");
+        plot.setYlabel("密度");
+        plot.saveAsHtml("multi_violin_plot.html");
+    }
+}
+```
+
 ---
 
 ## 第四部分：高级应用 (Level 4 - 高级应用)
@@ -385,7 +430,26 @@ public class RadarChartExample {
 }
 ```
 
-### 4.6 K线图 / Candlestick Chart
+### 4.6 小提琴图流式API / Violin Plot Fluent API
+
+```java
+public class ViolinPlotFluentAPIExample {
+    public static void main(String[] args) {
+        // 生成示例数据
+        IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+        
+        // 使用流式API创建小提琴图
+        Plots.of(800, 600)
+            .title("数据分布分析", "小提琴图展示数据分布特征")
+            .xlabel("数值")
+            .ylabel("密度")
+            .violinplot(data)
+            .saveAsHtml("violin_plot_fluent.html");
+    }
+}
+```
+
+### 4.7 K线图 / Candlestick Chart
 
 ```java
 public class CandlestickChartExample {
@@ -644,6 +708,51 @@ public class GaugeChartExample {
 }
 ```
 
+### 5.8 综合小提琴图分析 / Comprehensive Violin Plot Analysis
+
+```java
+public class ComprehensiveViolinAnalysisExample {
+    public static void main(String[] args) {
+        // 创建图表
+        IPlot plot = Plots.of(1000, 600);
+        
+        // 生成多组对比数据
+        float[] groupA = new float[50];
+        float[] groupB = new float[50];
+        float[] groupC = new float[50];
+        
+        // 生成不同分布的数据
+        for (int i = 0; i < 50; i++) {
+            groupA[i] = (float) (Math.random() * 10 + 5); // 正态分布
+            groupB[i] = (float) (Math.random() * 15 + 10); // 右偏分布
+            groupC[i] = (float) (Math.random() * 8 + 8); // 左偏分布
+        }
+        
+        // 合并数据
+        float[] allData = new float[150];
+        String[] allLabels = new String[150];
+        
+        System.arraycopy(groupA, 0, allData, 0, 50);
+        System.arraycopy(groupB, 0, allData, 50, 50);
+        System.arraycopy(groupC, 0, allData, 100, 50);
+        
+        Arrays.fill(allLabels, 0, 50, "组A");
+        Arrays.fill(allLabels, 50, 100, "组B");
+        Arrays.fill(allLabels, 100, 150, "组C");
+        
+        IVector data = IVector.of(allData);
+        List<String> labels = Arrays.asList(allLabels);
+        
+        // 绘制多组小提琴图
+        plot.violinplot(data, labels);
+        plot.setTitle("多组数据分布对比分析", "不同组别的数据分布特征对比");
+        plot.setXlabel("组别");
+        plot.setYlabel("数值密度");
+        plot.saveAsHtml("comprehensive_violin_analysis.html");
+    }
+}
+```
+
 ---
 
 ## 高级配置和自定义 / Advanced Configuration and Customization
@@ -777,6 +886,8 @@ public class LargeDatasetExample {
 1. 掌握多组数据对比和分组图表
 2. 学习数据分布分析方法
 3. 理解不同图表类型的适用场景
+4. 掌握箱线图和小提琴图的使用
+5. 学习统计图表的应用
 
 ### 高级用户路径 / Advanced Path
 1. 掌握复杂图表和特殊可视化
@@ -796,8 +907,9 @@ public class LargeDatasetExample {
 
 - **掌握基础**：从最简单的图表开始，逐步建立可视化基础
 - **应用实践**：通过实际案例学习不同图表的使用场景
-- **进阶提升**：掌握高级功能和专业应用
+- **进阶提升**：掌握高级功能和专业应用，包括小提琴图等统计图表
 - **灵活运用**：根据实际需求选择合适的可视化方案
+- **数据分析**：掌握数据分布分析和统计可视化方法
 
 This document systematically introduces various functions of the data visualization package in order from simple to complex. Through progressive learning, you can:
 

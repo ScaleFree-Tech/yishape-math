@@ -18,13 +18,13 @@ public interface IPlot {
      * @param x X轴数据
      * @param y Y轴数据
      */
-    void line(IVector x, IVector y);
+    IPlot line(IVector x, IVector y);
     
     /**
      * 绘制单向量线图
      * @param x 数据向量
      */
-    void line(IVector x);
+    IPlot line(IVector x);
     
     /**
      * 绘制多线图
@@ -32,14 +32,14 @@ public interface IPlot {
      * @param y Y轴数据
      * @param hue 分组标签
      */
-    void line(IVector x, IVector y, List<String> hue);
+    IPlot line(IVector x, IVector y, List<String> hue);
     
     /**
      * 绘制散点图
      * @param x X轴数据
      * @param y Y轴数据
      */
-    void scatter(IVector x, IVector y);
+    IPlot scatter(IVector x, IVector y);
     
     /**
      * 绘制多组散点图
@@ -47,33 +47,33 @@ public interface IPlot {
      * @param y Y轴数据
      * @param hue 分组标签
      */
-    void scatter(IVector x, IVector y, List<String> hue);
+    IPlot scatter(IVector x, IVector y, List<String> hue);
     
     /**
      * 绘制饼图
      * @param x 数据向量
      */
-    void pie(IVector x);
+    IPlot pie(IVector x);
     
     /**
      * 绘制柱状图
      * @param x 数据向量
      */
-    void bar(IVector x);
+    IPlot bar(IVector x);
     
     /**
      * 绘制分组柱状图
      * @param x 数据向量
      * @param hue 分组标签
      */
-    void bar(IVector x, List<String> hue);
+    IPlot bar(IVector x, List<String> hue);
     
     /**
      * 绘制直方图
      * @param x 数据向量
      * @param fittingLine 是否显示拟合线
      */
-    void hist(IVector x, boolean fittingLine);
+    IPlot hist(IVector x, boolean fittingLine);
     
     // ========== 极坐标图表方法 ==========
     
@@ -82,37 +82,62 @@ public interface IPlot {
      * @param data 数据向量
      * @param categories 类别标签
      */
-    void polarBar(IVector data, List<String> categories);
+    IPlot polarBar(IVector data, List<String> categories);
     
     /**
      * 绘制极坐标线图
      * @param data 数据向量
      * @param categories 类别标签
      */
-    void polarLine(IVector data, List<String> categories);
+    IPlot polarLine(IVector data, List<String> categories);
     
     /**
      * 绘制极坐标散点图
      * @param data 数据向量
      * @param categories 类别标签
      */
-    void polarScatter(IVector data, List<String> categories);
+    IPlot polarScatter(IVector data, List<String> categories);
     
     // ========== 统计图表方法 ==========
+    
+    /**
+     * 
+     * @param data
+     * @return 
+     */
+    IPlot boxplot(IVector data);
     
     /**
      * 绘制箱线图
      * @param data 数据向量
      * @param labels 标签
+     * @return 
      */
-    void boxplot(IVector data, List<String> labels);
+    IPlot boxplot(IVector data, List<String> labels);
+    
+    /**
+     * 
+     * @param data
+     * @return 
+     */
+    IPlot violinplot(IVector data);
+    
+    /**
+     * 
+     * @param data
+     * @param labels
+     * @return 
+     */
+    IPlot violinplot(IVector data, List<String> labels);
+    
     
     /**
      * 绘制K线图
      * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价]
      * @param dates 日期标签
+     * @return 
      */
-    void candlestick(IMatrix data, List<String> dates);
+    IPlot candlestick(IMatrix data, List<String> dates);
     
     // ========== 特殊图表方法 ==========
     
@@ -121,53 +146,53 @@ public interface IPlot {
      * @param data 数据向量
      * @param labels 标签
      */
-    void funnel(IVector data, List<String> labels);
+    IPlot funnel(IVector data, List<String> labels);
     
     /**
      * 绘制桑基图
      * @param nodes 节点数据
      * @param links 连接数据
      */
-    void sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
+    IPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
     
     /**
      * 绘制旭日图
      * @param data 层次数据
      */
-    void sunburst(List<Map<String, Object>> data);
+    IPlot sunburst(List<Map<String, Object>> data);
     
     /**
      * 绘制主题河流图
      * @param data 时间序列数据
      * @param categories 类别
      */
-    void themeRiver(List<Map<String, Object>> data, List<String> categories);
+    IPlot themeRiver(List<Map<String, Object>> data, List<String> categories);
     
     /**
      * 绘制树图
      * @param data 树形数据
      */
-    void tree(List<Map<String, Object>> data);
+    IPlot tree(List<Map<String, Object>> data);
     
     /**
      * 绘制矩形树图
      * @param data 层次数据
      */
-    void treemap(List<Map<String, Object>> data);
+    IPlot treemap(List<Map<String, Object>> data);
     
     /**
      * 绘制关系图
      * @param nodes 节点数据
      * @param links 连接数据
      */
-    void graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
+    IPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
     
     /**
      * 绘制平行坐标图
      * @param data 数据矩阵
      * @param dimensions 维度名称
      */
-    void parallel(IMatrix data, List<String> dimensions);
+    IPlot parallel(IMatrix data, List<String> dimensions);
     
     // ========== 完善图表方法 ==========
     
@@ -177,14 +202,14 @@ public interface IPlot {
      * @param xLabels X轴标签
      * @param yLabels Y轴标签
      */
-    void heatmap(IMatrix data, List<String> xLabels, List<String> yLabels);
+    IPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels);
     
     /**
      * 绘制雷达图
      * @param data 数据向量
      * @param indicators 指标名称
      */
-    void radar(IVector data, List<String> indicators);
+    IPlot radar(IVector data, List<String> indicators);
     
     /**
      * 绘制仪表盘
@@ -192,7 +217,7 @@ public interface IPlot {
      * @param max 最大值
      * @param min 最小值
      */
-    void gauge(float value, float max, float min);
+    IPlot gauge(float value, float max, float min);
     
     // ========== 流式API方法 ==========
     

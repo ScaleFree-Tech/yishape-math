@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.test;
+package com.reremouse.lab.math.viz;
 
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.RereVector;

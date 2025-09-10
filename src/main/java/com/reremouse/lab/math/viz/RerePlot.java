@@ -2,7 +2,6 @@ package com.reremouse.lab.math.viz;
 
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.IMatrix;
-import java.util.List;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import org.icepear.echarts.Graph;
 import org.icepear.echarts.Parallel;
 import org.icepear.echarts.charts.bar.BarSeries;
 import org.icepear.echarts.charts.line.LineSeries;
-import org.icepear.echarts.charts.pie.PieSeries;
 import org.icepear.echarts.charts.scatter.ScatterSeries;
 import org.icepear.echarts.components.legend.Legend;
 import org.icepear.echarts.components.title.Title;
@@ -110,7 +108,7 @@ public class RerePlot  implements Serializable,IPlot{
 
     
     
-    public void line(IVector x, IVector y) {
+    public RerePlot line(IVector x, IVector y) {
         try {
             // 创建线图
             Line lineChart = new Line();
@@ -136,11 +134,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建线图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void line(IVector x) {
+    public RerePlot line(IVector x) {
         try {
             // 创建线图（单向量，使用索引作为X轴）
             Line lineChart = new Line();
@@ -171,11 +170,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建线图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void line(IVector x, IVector y, List<String> hue) {
+    public RerePlot line(IVector x, IVector y, List<String> hue) {
         try {
             // 创建多条线图
             Line lineChart = new Line();
@@ -215,11 +215,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建多条线图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void scatter(IVector x, IVector y) {
+    public RerePlot scatter(IVector x, IVector y) {
         try {
             // 创建散点图
             Scatter scatterChart = new Scatter();
@@ -244,11 +245,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建散点图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void scatter(IVector x, IVector y, List<String> hue) {
+    public RerePlot scatter(IVector x, IVector y, List<String> hue) {
         try {
             // 创建多组散点图
             Scatter scatterChart = new Scatter();
@@ -288,11 +290,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建多组散点图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void pie(IVector x) {
+    public RerePlot pie(IVector x) {
         try {
             // 创建饼图
             Pie pieChart = new Pie();
@@ -318,11 +321,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建饼图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void bar(IVector x) {
+    public RerePlot bar(IVector x) {
         try {
             // 创建柱状图
             Bar barChart = new Bar();
@@ -357,11 +361,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建柱状图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void bar(IVector x, List<String> hue) {
+    public RerePlot bar(IVector x, List<String> hue) {
         try {
             // 创建分组柱状图
             Bar barChart = new Bar();
@@ -407,11 +412,12 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建分组柱状图失败: " + e.getMessage(), e);
         }
+        return this;
     }
 
     
     
-    public void hist(IVector x, boolean fittingLine) {
+    public RerePlot hist(IVector x, boolean fittingLine) {
         try {
             // 计算直方图数据
             int bins = Math.min(20, (int) Math.sqrt(x.length())); // 自动确定bin数量
@@ -478,6 +484,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             throw new PlotException("创建直方图失败: " + e.getMessage(), e);
         }
+        return this;
     }
     
     /**
@@ -926,7 +933,7 @@ public class RerePlot  implements Serializable,IPlot{
      * @param yLabels Y轴标签
      */
     
-    public void heatmap(IMatrix data, List<String> xLabels, List<String> yLabels) {
+    public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels) {
         try {
             Heatmap heatmapChart = new Heatmap();
             
@@ -968,6 +975,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建热力图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -976,7 +984,7 @@ public class RerePlot  implements Serializable,IPlot{
      * @param indicators 指标名称
      */
     
-    public void radar(IVector data, List<String> indicators) {
+    public RerePlot radar(IVector data, List<String> indicators) {
         try {
             Radar radarChart = new Radar();
             
@@ -1008,6 +1016,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建雷达图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1017,7 +1026,7 @@ public class RerePlot  implements Serializable,IPlot{
      * @param min 最小值
      */
     
-    public void gauge(float value, float max, float min) {
+    public RerePlot gauge(float value, float max, float min) {
         try {
             Gauge gaugeChart = new Gauge();
             
@@ -1031,6 +1040,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建仪表盘时出错: " + e.getMessage());
         }
+        return this;
     }
     
     
@@ -1043,7 +1053,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void polarBar(IVector data, List<String> categories) {
+    public RerePlot polarBar(IVector data, List<String> categories) {
         try {
             PolarBar polarBarChart = new PolarBar();
             
@@ -1074,6 +1084,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建极坐标柱状图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1083,7 +1094,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void polarLine(IVector data, List<String> categories) {
+    public RerePlot polarLine(IVector data, List<String> categories) {
         try {
             PolarLine polarLineChart = new PolarLine();
             
@@ -1108,6 +1119,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建极坐标线图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1117,7 +1129,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void polarScatter(IVector data, List<String> categories) {
+    public RerePlot polarScatter(IVector data, List<String> categories) {
         try {
             PolarScatter polarScatterChart = new PolarScatter();
             
@@ -1142,6 +1154,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建极坐标散点图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     // ========== 统计图表 ==========
@@ -1153,7 +1166,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void boxplot(IVector data, List<String> labels) {
+    public RerePlot boxplot(IVector data, List<String> labels) {
         try {
             Boxplot boxplotChart = new Boxplot();
             
@@ -1193,7 +1206,184 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建箱线图时出错: " + e.getMessage());
         }
+        return this;
     }
+
+    @Override
+    public IPlot boxplot(IVector data) {
+        try {
+            Boxplot boxplotChart = new Boxplot();
+            
+            // 计算箱线图统计量
+            float[] sortedData = new float[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                sortedData[i] = data.get(i);
+            }
+            java.util.Arrays.sort(sortedData);
+            
+            int n = sortedData.length;
+            float q1 = sortedData[n / 4];
+            float q2 = sortedData[n / 2];
+            float q3 = sortedData[3 * n / 4];
+            
+            // 创建箱线图数据 [min, Q1, median, Q3, max]
+            Object[] boxData = new Object[1];
+            boxData[0] = new Object[]{data.min(), q1, q2, q3, data.max()};
+            
+            boxplotChart.addSeries("箱线图", boxData);
+            
+            // 配置坐标轴
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setName(xlabel.isEmpty() ? "数据" : xlabel);
+            xAxis.setData(new String[]{"数据集"});
+            
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
+            
+            this.option = boxplotChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+            
+        } catch (Exception e) {
+            throw new PlotException("创建箱线图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public IPlot violinplot(IVector data) {
+        try {
+            // 创建组合图表，包含箱线图和密度图
+            Line lineChart = new Line();
+            
+            // 计算核密度估计
+            List<double[]> kdeData = kernelDensityEstimation(data, 2.5);
+            
+            // 添加密度曲线（左右对称）
+            addViolinDensitySeries(lineChart, kdeData, "小提琴图", "#5470c6");
+            
+            // 添加箱线图数据
+            addBoxplotToViolin(lineChart, data, "箱线图", "#5470c6");
+            
+            // 配置坐标轴 - 显示坐标轴作为边框
+        ValueAxis xAxis = new ValueAxis();
+        xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
+        xAxis.setType("value");
+        xAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+        xAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+        xAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+
+        ValueAxis yAxis = new ValueAxis();
+        yAxis.setName(ylabel.isEmpty() ? "密度" : ylabel);
+        yAxis.setType("value");
+        yAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+        yAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+        yAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+            
+            this.option = lineChart.getOption();
+            this.option.setTitle(title);
+            // 设置legend只显示主要系列，过滤掉箱线图的详细部分
+            Legend filteredLegend = new Legend();
+            filteredLegend.setData(new String[]{"小提琴图"});
+            this.option.setLegend(filteredLegend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+            
+        } catch (Exception e) {
+            throw new PlotException("创建小提琴图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public IPlot violinplot(IVector data, List<String> labels) {
+        try {
+            if (data.length() != labels.size()) {
+                throw new PlotException("数据向量和标签列表长度必须相等");
+            }
+            
+            // 使用Line图表来模拟小提琴图
+            Line lineChart = new Line();
+            
+            // 按标签分组数据
+            Map<String, List<Float>> groupedData = new HashMap<>();
+            for (int i = 0; i < data.length(); i++) {
+                String label = labels.get(i);
+                if (!groupedData.containsKey(label)) {
+                    groupedData.put(label, new ArrayList<>());
+                }
+                groupedData.get(label).add(data.get(i));
+            }
+            
+            // 为每个组计算核密度估计并添加密度曲线
+            String[] colors = {"#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"};
+            int colorIndex = 0;
+            
+            for (Map.Entry<String, List<Float>> entry : groupedData.entrySet()) {
+                String groupName = entry.getKey();
+                List<Float> groupData = entry.getValue();
+                
+                // 转换为IVector格式进行计算
+                float[] groupArray = new float[groupData.size()];
+                for (int i = 0; i < groupData.size(); i++) {
+                    groupArray[i] = groupData.get(i);
+                }
+                IVector groupVector = new com.reremouse.lab.math.RereVector(groupArray);
+                
+                // 计算核密度估计
+                List<double[]> kdeData = kernelDensityEstimation(groupVector, 2.5);
+                
+                // 添加小提琴密度曲线（左右对称）
+                String color = colors[colorIndex % colors.length];
+                addViolinDensitySeries(lineChart, kdeData, groupName, color);
+                
+                // 添加箱线图数据（多组模式）
+                addBoxplotToViolin(lineChart, groupVector, groupName + "_箱线", color, true);
+                colorIndex++;
+            }
+            
+            // 配置坐标轴 - 显示坐标轴作为边框
+        ValueAxis xAxis = new ValueAxis();
+        xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
+        xAxis.setType("value");
+        xAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+        xAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+        xAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+
+        ValueAxis yAxis = new ValueAxis();
+        yAxis.setName(ylabel.isEmpty() ? "密度" : ylabel);
+        yAxis.setType("value");
+        yAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+        yAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+        yAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+            
+            this.option = lineChart.getOption();
+            this.option.setTitle(title);
+            // 设置legend只显示主要系列，过滤掉箱线图的详细部分
+            Legend filteredLegend = new Legend();
+            // 只显示每个组的主要系列名称
+            Set<String> groupNames = new HashSet<>();
+            for (Map.Entry<String, List<Float>> entry : groupedData.entrySet()) {
+                groupNames.add(entry.getKey());
+            }
+            filteredLegend.setData(groupNames.toArray(new String[0]));
+            this.option.setLegend(filteredLegend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+            
+        } catch (Exception e) {
+            throw new PlotException("创建多组小提琴图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+    
+    
+    
     
     /**
      * K线图（蜡烛图）
@@ -1202,7 +1392,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void candlestick(IMatrix data, List<String> dates) {
+    public RerePlot candlestick(IMatrix data, List<String> dates) {
         try {
             Candlestick candlestickChart = new Candlestick();
             
@@ -1239,6 +1429,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建K线图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     // ========== 特殊图表 ==========
@@ -1250,7 +1441,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void funnel(IVector data, List<String> labels) {
+    public RerePlot funnel(IVector data, List<String> labels) {
         try {
             Funnel funnelChart = new Funnel();
             
@@ -1273,6 +1464,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建漏斗图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1282,7 +1474,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+    public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
         try {
             Sankey sankeyChart = new Sankey();
             
@@ -1334,6 +1526,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建桑基图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1342,7 +1535,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void sunburst(List<Map<String, Object>> data) {
+    public RerePlot sunburst(List<Map<String, Object>> data) {
         try {
             Sunburst sunburstChart = new Sunburst();
             
@@ -1357,6 +1550,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建旭日图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1366,7 +1560,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void themeRiver(List<Map<String, Object>> data, List<String> categories) {
+    public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories) {
         try {
             ThemeRiver themeRiverChart = new ThemeRiver();
             
@@ -1406,6 +1600,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建主题河流图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1414,7 +1609,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void tree(List<Map<String, Object>> data) {
+    public RerePlot tree(List<Map<String, Object>> data) {
         try {
             Tree treeChart = new Tree();
             
@@ -1533,6 +1728,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建树图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1564,7 +1760,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void treemap(List<Map<String, Object>> data) {
+    public RerePlot treemap(List<Map<String, Object>> data) {
         try {
             Treemap treemapChart = new Treemap();
             
@@ -1579,6 +1775,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建矩形树图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1588,7 +1785,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+    public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
         try {
             Graph graphChart = new Graph();
             
@@ -1667,6 +1864,7 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建关系图时出错: " + e.getMessage());
         }
+        return this;
     }
     
     /**
@@ -1676,7 +1874,7 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     
-    public void parallel(IMatrix data, List<String> dimensions) {
+    public RerePlot parallel(IMatrix data, List<String> dimensions) {
         try {
             Parallel parallelChart = new Parallel();
             
@@ -1705,7 +1903,268 @@ public class RerePlot  implements Serializable,IPlot{
         } catch (Exception e) {
             System.err.println("创建平行坐标图时出错: " + e.getMessage());
         }
+        return this;
     }
+    
+    // ========== 小提琴图辅助方法 ==========
+    
+    /**
+     * 核密度估计
+     * @param data 数据向量
+     * @param bandwidth 带宽参数
+     * @return 密度估计点列表
+     */
+    private List<double[]> kernelDensityEstimation(IVector data, double bandwidth) {
+        List<double[]> points = new ArrayList<>();
+        double min = data.min();
+        double max = data.max();
+        double range = max - min;
+        double step = range / 100.0;
+        
+        for (double x = min - range * 0.2; x <= max + range * 0.2; x += step) {
+            double density = 0;
+            for (int i = 0; i < data.length(); i++) {
+                double u = (x - data.get(i)) / bandwidth;
+                density += Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+            }
+            density /= (data.length() * bandwidth);
+            points.add(new double[]{x, density});
+        }
+        
+        return points;
+    }
+    
+    /**
+     * 添加小提琴密度曲线系列（左右对称）
+     * @param chart 图表对象
+     * @param kdeData 核密度估计数据
+     * @param name 系列名称
+     * @param color 颜色
+     */
+    private void addViolinDensitySeries(Line chart, List<double[]> kdeData, String name, String color) {
+        // 创建小提琴形状的数据：先左半边（从右到左），再右半边（从左到右）
+        List<Number[]> violinData = new ArrayList<>();
+        
+        // 添加左半边数据（从右到左，负密度值）
+        for (int i = kdeData.size() - 1; i >= 0; i--) {
+            double[] point = kdeData.get(i);
+            double x = point[0];
+            double density = point[1] * 100; // 放大密度值以便更好显示
+            violinData.add(new Number[]{x, -density});
+        }
+        
+        // 添加右半边数据（从左到右，正密度值）
+        for (double[] point : kdeData) {
+            double x = point[0];
+            double density = point[1] * 100; // 放大密度值以便更好显示
+            violinData.add(new Number[]{x, density});
+        }
+        
+        // 创建小提琴系列，使用面积填充
+        org.icepear.echarts.charts.line.LineSeries violinSeries = new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name)
+                .setData(violinData.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2))
+                .setAreaStyle(new org.icepear.echarts.charts.line.LineAreaStyle()
+                        .setColor(color)
+                        .setOpacity(0.3));
+        
+        chart.addSeries(violinSeries);
+    }
+    
+    /**
+     * 添加箱线图到小提琴图中
+     * @param chart 图表对象
+     * @param data 数据向量
+     * @param name 系列名称
+     * @param color 箱线图颜色
+     */
+    private void addBoxplotToViolin(Line chart, IVector data, String name, String color) {
+        addBoxplotToViolin(chart, data, name, color, false);
+    }
+    
+    /**
+     * 添加箱线图到小提琴图中（支持多组模式）
+     * @param chart 图表对象
+     * @param data 数据向量
+     * @param name 系列名称
+     * @param color 箱线图颜色
+     * @param isMultiGroup 是否为多组模式
+     */
+    private void addBoxplotToViolin(Line chart, IVector data, String name, String color, boolean isMultiGroup) {
+        // 计算箱线图统计量
+        float[] sortedData = new float[data.length()];
+        for (int i = 0; i < data.length(); i++) {
+            sortedData[i] = data.get(i);
+        }
+        java.util.Arrays.sort(sortedData);
+        
+        int n = sortedData.length;
+        float q1 = sortedData[n / 4];
+        float q2 = sortedData[n / 2];
+        float q3 = sortedData[3 * n / 4];
+        float min = data.min();
+        float max = data.max();
+        
+        // 计算密度曲线的实际高度范围，用于调整箱线图高度
+        List<double[]> kdeData = kernelDensityEstimation(data, 2.5);
+        double maxDensity = 0;
+        for (double[] point : kdeData) {
+            maxDensity = Math.max(maxDensity, point[1]);
+        }
+        // 将密度值放大100倍（与密度曲线保持一致）
+        float densityHeight = (float) (maxDensity * 100);
+        
+        // 根据密度曲线高度自动调整箱线图高度
+        float boxHeight;
+        
+        if (isMultiGroup) {
+            // 多组模式：概率密度大的组应该有更高的箱线图
+            if (densityHeight > 30) {
+                // 高密度：使用较高比例，箱线图更高
+                boxHeight = Math.max(2.0f, densityHeight * 0.20f);
+            } else if (densityHeight > 15) {
+                // 中高密度：使用中等比例
+                boxHeight = Math.max(1.5f, densityHeight * 0.15f);
+            } else if (densityHeight > 8) {
+                // 中等密度：使用标准比例
+                boxHeight = Math.max(1.2f, densityHeight * 0.12f);
+            } else if (densityHeight > 3) {
+                // 中低密度：使用较低比例
+                boxHeight = Math.max(1.0f, densityHeight * 0.10f);
+            } else {
+                // 低密度：使用最低比例，箱线图最低
+                boxHeight = Math.max(0.8f, densityHeight * 0.08f);
+            }
+            // 多组模式：允许更大的高度范围以突出差异
+            boxHeight = Math.min(boxHeight, 4.0f);
+        } else {
+            // 单组模式：使用更保守的比例计算
+            if (densityHeight > 20) {
+                boxHeight = Math.max(0.8f, densityHeight * 0.08f);
+            } else if (densityHeight > 10) {
+                boxHeight = Math.max(0.6f, densityHeight * 0.06f);
+            } else if (densityHeight > 5) {
+                boxHeight = Math.max(0.5f, densityHeight * 0.05f);
+            } else {
+                boxHeight = Math.max(0.4f, densityHeight * 0.04f);
+            }
+            // 单组模式：严格限制高度
+            boxHeight = Math.min(boxHeight, 1.2f);
+        }
+        
+        // 1. 左须线
+        List<Number[]> leftWhisker = new ArrayList<>();
+        leftWhisker.add(new Number[]{min, 0});
+        leftWhisker.add(new Number[]{q1, 0});
+        
+        // 2. 右须线
+        List<Number[]> rightWhisker = new ArrayList<>();
+        rightWhisker.add(new Number[]{q3, 0});
+        rightWhisker.add(new Number[]{max, 0});
+        
+        // 3. 箱体（矩形）- 分别绘制四条边，确保每条线都清晰可见
+        // 底部线
+        List<Number[]> bottomLine = new ArrayList<>();
+        bottomLine.add(new Number[]{q1, -boxHeight});
+        bottomLine.add(new Number[]{q3, -boxHeight});
+        
+        // 顶部线
+        List<Number[]> topLine = new ArrayList<>();
+        topLine.add(new Number[]{q1, boxHeight});
+        topLine.add(new Number[]{q3, boxHeight});
+        
+        // 左侧竖线
+        List<Number[]> leftLine = new ArrayList<>();
+        leftLine.add(new Number[]{q1, -boxHeight});
+        leftLine.add(new Number[]{q1, boxHeight});
+        
+        // 右侧竖线
+        List<Number[]> rightLine = new ArrayList<>();
+        rightLine.add(new Number[]{q3, -boxHeight});
+        rightLine.add(new Number[]{q3, boxHeight});
+        
+        // 4. 中位数线
+        List<Number[]> median = new ArrayList<>();
+        median.add(new Number[]{q2, -boxHeight});
+        median.add(new Number[]{q2, boxHeight});
+        
+        // 添加各个部分到图表，隐藏详细部分避免legend过多
+        // 左须线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_左须")
+                .setData(leftWhisker.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 右须线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_右须")
+                .setData(rightWhisker.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 箱体底部线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱底")
+                .setData(bottomLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 箱体顶部线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱顶")
+                .setData(topLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 箱体左侧竖线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱左")
+                .setData(leftLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 箱体右侧竖线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱右")
+                .setData(rightLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+        
+        // 中位数线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_中位数")
+                .setData(median.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(3)));
+    }
+    
+    
 
 }
             

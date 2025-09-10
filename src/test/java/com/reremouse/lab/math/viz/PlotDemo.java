@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.test;
+package com.reremouse.lab.math.viz;
 
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.viz.AxisTicks;
@@ -13,7 +13,7 @@ import com.reremouse.lab.math.viz.IPlot;
  * 
  * @author lteb2
  */
-public class RerePlotDemo {
+public class PlotDemo {
     
     public static void main(String[] args) {
         System.out.println("=== IPlot 画图功能演示 ===\n");
