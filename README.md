@@ -133,23 +133,24 @@ IVector v1 = IVector.of(new float[]{1, 2, 3, 4});
 IVector v2 = IVector.range(10);
 
 // 基本运算 / Basic operations
-IVector sum = v1.add(v2.slice(6));
-float dotProduct = v1.dot(v2.slice(6));
+IVector sum = v1.add(v2.slice("1:10:2"));
+float dotProduct = v1.dot(v2.slice(5, -1, 1));
 
 // 统计运算 / Statistical operations
 float mean = v1.mean();
-float std = v1.std();
+float std = v1.std(ddof = 1);//计算样本标准差
 ```
 
 #### 矩阵运算 / Matrix Operations
 ```java
 // 创建矩阵 / Create matrices
 IMatrix matrix1 = IMatrix.ones(3, 3);
-IMatrix matrix2 = IMatrix.rand(3, 3);
+IMatrix matrix2 = IMatrix.eye(3, 3);
+IMatrix matrix3 = IMatrix.rand(3, 3);
 
 // 矩阵运算 / Matrix operations
 IMatrix result = matrix1.add(matrix2).mmul(2.0f);
-IMatrix transposed = matrix2.transpose();
+IMatrix transposed = matrix2.t();
 ```
 
 #### DataFrame 数据框操作 / DataFrame Operations
