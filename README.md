@@ -133,8 +133,8 @@ IVector v1 = IVector.of(new float[]{1, 2, 3, 4});
 IVector v2 = IVector.range(10);
 
 // 基本运算 / Basic operations
-IVector sum = v1.add(v2.slice(4));
-float dotProduct = v1.dot(v2.slice(4));
+IVector sum = v1.add(v2.slice(6));
+float dotProduct = v1.dot(v2.slice(6));
 
 // 统计运算 / Statistical operations
 float mean = v1.mean();
