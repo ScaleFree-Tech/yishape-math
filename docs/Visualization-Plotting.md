@@ -68,7 +68,7 @@ Plots.of(800, 600)
     .setXlabel("X轴")
     .setYlabel("Y轴")
     .line(x, y)
-    .saveAsHtml("line_chart.html");
+    .show();
 
 // 直接创建特定图表 / Direct creation of specific charts
 Plots.line(x, y).saveAsHtml("line_chart.html");
