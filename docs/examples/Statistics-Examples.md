@@ -1,4 +1,4 @@
-# 统计操作示例 - 系统性编排版 (Statistics Examples - Systematic Organization)
+# 统计操作示例 (Statistics Examples)
 
 ## 概述 / Overview
 
