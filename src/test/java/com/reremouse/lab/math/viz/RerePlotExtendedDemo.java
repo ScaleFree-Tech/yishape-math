@@ -5,6 +5,7 @@ import com.reremouse.lab.math.RereMatrix;
 import com.reremouse.lab.math.viz.Plots;
 import com.reremouse.lab.math.viz.IPlot;
 import java.util.*;
+import java.util.Random;
 
 /**
  * IPlot扩展功能演示
@@ -42,7 +43,32 @@ public class RerePlotExtendedDemo {
         
         // 2. 统计图表
         System.out.println("4. 测试箱线图...");
-        plot.boxplot(data1, labels);
+        // 创建多组箱线图测试数据
+        List<Float> boxplotData = new ArrayList<>();
+        List<String> boxplotLabels = new ArrayList<>();
+        
+        // 生成三组有明显差异的数据
+        Random random = new Random(42);
+        for (int i = 0; i < 50; i++) {
+            boxplotData.add((float)(10 + random.nextGaussian() * 5)); // 均值10，标准差5
+            boxplotLabels.add("数据集A");
+        }
+        for (int i = 0; i < 50; i++) {
+            boxplotData.add((float)(30 + random.nextGaussian() * 8)); // 均值30，标准差8
+            boxplotLabels.add("数据集B");
+        }
+        for (int i = 0; i < 50; i++) {
+            boxplotData.add((float)(50 + random.nextGaussian() * 10)); // 均值50，标准差10
+            boxplotLabels.add("数据集C");
+        }
+        
+        float[] boxplotArray = new float[boxplotData.size()];
+        for (int i = 0; i < boxplotData.size(); i++) {
+            boxplotArray[i] = boxplotData.get(i);
+        }
+        RereVector boxplotVector = new RereVector(boxplotArray);
+        
+        plot.boxplot(boxplotVector, boxplotLabels);
         plot.saveAsHtml("boxplot_demo.html");
         
         // 创建K线图数据

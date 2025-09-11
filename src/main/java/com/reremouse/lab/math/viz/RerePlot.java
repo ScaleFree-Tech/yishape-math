@@ -460,6 +460,10 @@ public class RerePlot  implements Serializable,IPlot{
             BarSeries barSeries = new BarSeries();
             barSeries.setData(data);
             barSeries.setName("直方图");
+            
+            // 设置条形图的美观颜色
+            barSeries.setColor("#91cc75");  // 清新的绿色
+            
             barChart.addSeries(barSeries);
             
             // 配置坐标轴 - 使用ValueAxis而不是CategoryAxis以支持拟合线
@@ -476,9 +480,9 @@ public class RerePlot  implements Serializable,IPlot{
             this.option.setXAxis(xAxis);
             this.option.setYAxis(yAxis);
             
-            // 如果需要拟合线，添加正态分布拟合
+            // 如果需要拟合线，添加核密度估计曲线
             if (fittingLine) {
-                addNormalDistributionFit(x, min, max, bins, binCenters, counts);
+                addKernelDensityFit(x, min, max, bins, binCenters, counts);
             }
             
         } catch (Exception e) {
@@ -488,7 +492,7 @@ public class RerePlot  implements Serializable,IPlot{
     }
     
     /**
-     * 添加正态分布拟合线
+     * 添加核密度估计拟合线
      * @param x 原始数据
      * @param min 最小值
      * @param max 最大值
@@ -496,37 +500,51 @@ public class RerePlot  implements Serializable,IPlot{
      * @param binCenters bin中心点
      * @param counts bin计数
      */
-    private void addNormalDistributionFit(IVector x, float min, float max, int bins, float[] binCenters, int[] counts) {
+    private void addKernelDensityFit(IVector x, float min, float max, int bins, float[] binCenters, int[] counts) {
         try {
-            // 计算均值和标准差
-            float mean = x.mean();
-            float std = x.std();
+            // 使用核密度估计计算密度曲线
+            List<double[]> kdeData = kernelDensityEstimation(x, 2.5);
             
-            // 生成拟合曲线数据
-            int points = 100;
-            float[] xFit = new float[points];
-            float[] yFit = new float[points];
-            
-            for (int i = 0; i < points; i++) {
-                xFit[i] = min + (max - min) * i / (points - 1);
-                // 正态分布概率密度函数
-                float exponent = -(xFit[i] - mean) * (xFit[i] - mean) / (2 * std * std);
-                yFit[i] = (float) (x.length() * (max - min) / bins * 
-                    (1.0 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(exponent));
+            // 计算最大频次，用于缩放密度曲线
+            int maxCount = 0;
+            for (int count : counts) {
+                maxCount = Math.max(maxCount, count);
             }
             
+            // 计算密度曲线的最大密度值
+            double maxDensity = 0;
+            for (double[] point : kdeData) {
+                maxDensity = Math.max(maxDensity, point[1]);
+            }
+            
+            // 缩放因子：将密度值转换为频次
+            double scaleFactor = maxCount / maxDensity;
+            
             // 创建拟合线数据
-            Object[] fitData = new Object[points];
-            for (int i = 0; i < points; i++) {
-                fitData[i] = new Number[]{xFit[i], yFit[i]};
+            Object[] fitData = new Object[kdeData.size()];
+            for (int i = 0; i < kdeData.size(); i++) {
+                double[] point = kdeData.get(i);
+                double xVal = point[0];
+                double density = point[1] * scaleFactor;  // 缩放到频次范围
+                fitData[i] = new Number[]{xVal, density};
             }
             
             LineSeries fitSeries = new LineSeries();
             fitSeries.setData(fitData);
-            fitSeries.setName("正态分布拟合");
+            fitSeries.setName("核密度拟合");
             fitSeries.setType("line");
             fitSeries.setYAxisIndex(0);
             fitSeries.setXAxisIndex(0);
+            fitSeries.setShowSymbol(false);  // 不显示圆圈点
+            
+            // 添加透明填充效果，与条形图形成协调的同色系配色
+            fitSeries.setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                    .setColor("#3ba272")  // 深绿色线条，与条形图形成同色系渐变
+                    .setWidth(3)  // 稍粗的线条更突出
+                    .setType("solid"));  // 实线
+            fitSeries.setAreaStyle(new org.icepear.echarts.charts.line.LineAreaStyle()
+                    .setColor("#73c0de")  // 浅蓝色填充，形成清新的对比
+                    .setOpacity(0.3));  // 适中的透明度
             
             // 获取现有的系列数组并添加拟合线
             Object existingSeriesObj = this.option.getSeries();
@@ -547,7 +565,7 @@ public class RerePlot  implements Serializable,IPlot{
             }
             
         } catch (Exception e) {
-            throw new PlotException("添加正态分布拟合失败: " + e.getMessage(), e);
+            throw new PlotException("添加核密度拟合失败: " + e.getMessage(), e);
         }
     }
 
@@ -1168,30 +1186,79 @@ public class RerePlot  implements Serializable,IPlot{
     
     public RerePlot boxplot(IVector data, List<String> labels) {
         try {
+            if (data.length() != labels.size()) {
+                throw new PlotException("数据向量和标签列表长度必须相等");
+            }
+            
             Boxplot boxplotChart = new Boxplot();
             
-            // 计算箱线图统计量
-            float[] sortedData = new float[data.length()];
+            // 按标签分组数据
+            Map<String, List<Float>> groupedData = new HashMap<>();
             for (int i = 0; i < data.length(); i++) {
-                sortedData[i] = data.get(i);
+                String label = labels.get(i);
+                if (!groupedData.containsKey(label)) {
+                    groupedData.put(label, new ArrayList<>());
+                }
+                groupedData.get(label).add(data.get(i));
             }
-            java.util.Arrays.sort(sortedData);
             
-            int n = sortedData.length;
-            float q1 = sortedData[n / 4];
-            float q2 = sortedData[n / 2];
-            float q3 = sortedData[3 * n / 4];
+            // 获取所有唯一的标签，保持顺序
+            List<String> uniqueLabels = new ArrayList<>();
+            for (String label : labels) {
+                if (!uniqueLabels.contains(label)) {
+                    uniqueLabels.add(label);
+                }
+            }
             
-            // 创建箱线图数据 [min, Q1, median, Q3, max]
-            Object[] boxData = new Object[1];
-            boxData[0] = new Object[]{data.min(), q1, q2, q3, data.max()};
+            // 为每个组计算箱线图统计量
+            Object[][] boxData = new Object[uniqueLabels.size()][];
+            for (int i = 0; i < uniqueLabels.size(); i++) {
+                String label = uniqueLabels.get(i);
+                List<Float> groupData = groupedData.get(label);
+                
+                // 转换为数组并排序
+                float[] groupArray = new float[groupData.size()];
+                for (int j = 0; j < groupData.size(); j++) {
+                    groupArray[j] = groupData.get(j);
+                }
+                java.util.Arrays.sort(groupArray);
+                
+                // 计算统计量 - 使用更准确的分位数计算
+                int n = groupArray.length;
+                if (n == 0) {
+                    // 空数据组，使用默认值
+                    boxData[i] = new Object[]{0, 0, 0, 0, 0};
+                    continue;
+                }
+                
+                float min = groupArray[0];
+                float max = groupArray[n - 1];
+                
+                // 计算Q1 (25%分位数)
+                int q1Index = (int) Math.ceil(n * 0.25) - 1;
+                q1Index = Math.max(0, Math.min(q1Index, n - 1));
+                float q1 = groupArray[q1Index];
+                
+                // 计算中位数 (50%分位数)
+                int q2Index = (int) Math.ceil(n * 0.5) - 1;
+                q2Index = Math.max(0, Math.min(q2Index, n - 1));
+                float q2 = groupArray[q2Index];
+                
+                // 计算Q3 (75%分位数)
+                int q3Index = (int) Math.ceil(n * 0.75) - 1;
+                q3Index = Math.max(0, Math.min(q3Index, n - 1));
+                float q3 = groupArray[q3Index];
+                
+                // 创建箱线图数据 [min, Q1, median, Q3, max]
+                boxData[i] = new Object[]{min, q1, q2, q3, max};
+            }
             
             boxplotChart.addSeries("箱线图", boxData);
             
             // 配置坐标轴
             CategoryAxis xAxis = new CategoryAxis();
             xAxis.setName(xlabel.isEmpty() ? "类别" : xlabel);
-            xAxis.setData(labels.toArray(new String[0]));
+            xAxis.setData(uniqueLabels.toArray(new String[0]));
             
             ValueAxis yAxis = new ValueAxis();
             yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
@@ -1204,7 +1271,7 @@ public class RerePlot  implements Serializable,IPlot{
             this.option.setYAxis(yAxis);
             
         } catch (Exception e) {
-            System.err.println("创建箱线图时出错: " + e.getMessage());
+            throw new PlotException("创建箱线图失败: " + e.getMessage(), e);
         }
         return this;
     }
@@ -1222,13 +1289,31 @@ public class RerePlot  implements Serializable,IPlot{
             java.util.Arrays.sort(sortedData);
             
             int n = sortedData.length;
-            float q1 = sortedData[n / 4];
-            float q2 = sortedData[n / 2];
-            float q3 = sortedData[3 * n / 4];
+            if (n == 0) {
+                throw new PlotException("数据向量不能为空");
+            }
+            
+            float min = sortedData[0];
+            float max = sortedData[n - 1];
+            
+            // 计算Q1 (25%分位数)
+            int q1Index = (int) Math.ceil(n * 0.25) - 1;
+            q1Index = Math.max(0, Math.min(q1Index, n - 1));
+            float q1 = sortedData[q1Index];
+            
+            // 计算中位数 (50%分位数)
+            int q2Index = (int) Math.ceil(n * 0.5) - 1;
+            q2Index = Math.max(0, Math.min(q2Index, n - 1));
+            float q2 = sortedData[q2Index];
+            
+            // 计算Q3 (75%分位数)
+            int q3Index = (int) Math.ceil(n * 0.75) - 1;
+            q3Index = Math.max(0, Math.min(q3Index, n - 1));
+            float q3 = sortedData[q3Index];
             
             // 创建箱线图数据 [min, Q1, median, Q3, max]
             Object[] boxData = new Object[1];
-            boxData[0] = new Object[]{data.min(), q1, q2, q3, data.max()};
+            boxData[0] = new Object[]{min, q1, q2, q3, max};
             
             boxplotChart.addSeries("箱线图", boxData);
             
@@ -1531,7 +1616,7 @@ public class RerePlot  implements Serializable,IPlot{
     
     /**
      * 旭日图
-     * @param data 层次数据
+     * @param data 层次数据，每个Map应包含id、name、value字段，可选parent字段
      */
     
     
@@ -1539,8 +1624,11 @@ public class RerePlot  implements Serializable,IPlot{
         try {
             Sunburst sunburstChart = new Sunburst();
             
+            // 将平级数据转换为层次结构
+            Object[] sunburstData = buildSunburstHierarchy(data);
+            
             // 设置数据
-            sunburstChart.addSeries(data.toArray(new Object[0]));
+            sunburstChart.addSeries(sunburstData);
             
             this.option = sunburstChart.getOption();
             this.option.setTitle(title);
@@ -1551,6 +1639,102 @@ public class RerePlot  implements Serializable,IPlot{
             System.err.println("创建旭日图时出错: " + e.getMessage());
         }
         return this;
+    }
+    
+    /**
+     * 构建旭日图的层次结构
+     * @param data 平级数据列表
+     * @return 层次结构数据
+     */
+    private Object[] buildSunburstHierarchy(List<Map<String, Object>> data) {
+        if (data == null || data.isEmpty()) {
+            return new Object[0];
+        }
+        
+        // 检查是否已经包含parent字段
+        boolean hasParentField = data.stream().anyMatch(item -> item.containsKey("parent"));
+        
+        if (hasParentField) {
+            // 使用parent字段构建层次结构
+            return buildHierarchyFromParent(data);
+        } else {
+            // 如果没有parent字段，检查是否有children字段
+            boolean hasChildrenField = data.stream().anyMatch(item -> item.containsKey("children"));
+            if (hasChildrenField) {
+                // 直接使用现有的层次结构
+                return data.toArray(new Object[0]);
+            } else {
+                // 创建默认的根节点包含所有子节点
+                Map<String, Object> rootNode = new HashMap<>();
+                rootNode.put("name", "根节点");
+                rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
+                rootNode.put("children", data);
+                return new Object[]{rootNode};
+            }
+        }
+    }
+    
+    /**
+     * 根据parent字段构建层次结构
+     * @param data 包含parent字段的数据
+     * @return 层次结构数据
+     */
+    private Object[] buildHierarchyFromParent(List<Map<String, Object>> data) {
+        Map<String, Map<String, Object>> nodeMap = new HashMap<>();
+        Map<String, Object> rootNode = null;
+        
+        // 首先创建所有节点
+        for (Map<String, Object> item : data) {
+            String id = (String) item.get("id");
+            String name = (String) item.get("name");
+            if (id != null && name != null) {
+                Map<String, Object> node = new HashMap<>();
+                node.put("name", name);
+                if (item.containsKey("value")) {
+                    node.put("value", item.get("value"));
+                }
+                nodeMap.put(id, node);
+            }
+        }
+        
+        // 然后建立父子关系
+        for (Map<String, Object> item : data) {
+            String id = (String) item.get("id");
+            String parent = (String) item.get("parent");
+            
+            if (id != null && nodeMap.containsKey(id)) {
+                Map<String, Object> node = nodeMap.get(id);
+                
+                if (parent == null || parent.isEmpty()) {
+                    // 这是根节点
+                    rootNode = node;
+                } else if (nodeMap.containsKey(parent)) {
+                    // 这是子节点，添加到父节点的children中
+                    Map<String, Object> parentNode = nodeMap.get(parent);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode.get("children");
+                    if (children == null) {
+                        children = new ArrayList<>();
+                        parentNode.put("children", children);
+                    }
+                    children.add(node);
+                }
+            }
+        }
+        
+        if (rootNode != null) {
+            return new Object[]{rootNode};
+        } else {
+            // 如果没有找到根节点，创建一个默认的根节点
+            Map<String, Object> defaultRoot = new HashMap<>();
+            defaultRoot.put("name", "根节点");
+            List<Map<String, Object>> children = new ArrayList<>();
+            for (Map<String, Object> node : nodeMap.values()) {
+                children.add(node);
+            }
+            defaultRoot.put("children", children);
+            return new Object[]{defaultRoot};
+        }
     }
     
     /**
@@ -1756,7 +1940,7 @@ public class RerePlot  implements Serializable,IPlot{
     
     /**
      * 矩形树图
-     * @param data 层次数据
+     * @param data 层次数据，每个Map应包含id、name、value字段，可选parent字段
      */
     
     
@@ -1764,8 +1948,11 @@ public class RerePlot  implements Serializable,IPlot{
         try {
             Treemap treemapChart = new Treemap();
             
+            // 将平级数据转换为层次结构
+            Object[] treemapData = buildTreemapHierarchy(data);
+            
             // 设置数据
-            treemapChart.addSeries(data.toArray(new Object[0]));
+            treemapChart.addSeries(treemapData);
             
             this.option = treemapChart.getOption();
             this.option.setTitle(title);
@@ -1776,6 +1963,39 @@ public class RerePlot  implements Serializable,IPlot{
             System.err.println("创建矩形树图时出错: " + e.getMessage());
         }
         return this;
+    }
+    
+    /**
+     * 构建矩形树图的层次结构
+     * @param data 平级数据列表
+     * @return 层次结构数据
+     */
+    private Object[] buildTreemapHierarchy(List<Map<String, Object>> data) {
+        if (data == null || data.isEmpty()) {
+            return new Object[0];
+        }
+        
+        // 检查是否已经包含parent字段
+        boolean hasParentField = data.stream().anyMatch(item -> item.containsKey("parent"));
+        
+        if (hasParentField) {
+            // 使用parent字段构建层次结构
+            return buildHierarchyFromParent(data);
+        } else {
+            // 如果没有parent字段，检查是否有children字段
+            boolean hasChildrenField = data.stream().anyMatch(item -> item.containsKey("children"));
+            if (hasChildrenField) {
+                // 直接使用现有的层次结构
+                return data.toArray(new Object[0]);
+            } else {
+                // 创建默认的根节点包含所有子节点
+                Map<String, Object> rootNode = new HashMap<>();
+                rootNode.put("name", "根节点");
+                rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
+                rootNode.put("children", data);
+                return new Object[]{rootNode};
+            }
+        }
     }
     
     /**

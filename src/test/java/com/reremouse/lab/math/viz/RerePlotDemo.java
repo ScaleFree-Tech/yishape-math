@@ -20,8 +20,8 @@ public class RerePlotDemo {
         
         // 创建测试数据
         float[] xData = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        float[] yData = {2.1f, 3.9f, 6.1f, 8.0f, 10.2f, 12.1f, 14.0f, 16.1f, 18.0f, 20.1f};
-        float[] y2Data = {1.5f, 2.8f, 4.2f, 5.9f, 7.1f, 8.8f, 10.5f, 12.2f, 13.9f, 15.6f};
+        float[] yData = {20.1f, 3.9f, 16.1f, 8.0f, 20.2f, 12.1f, 14.0f, 6.1f, 18.0f, 2.1f};
+        float[] y2Data = {11.5f, 22.8f, 4.2f, 15.9f, 7.1f, 8.8f, 10.5f, 2.2f, 3.9f, 5.6f};
         
         IVector x = IVector.of(xData);
         IVector y = IVector.of(yData);

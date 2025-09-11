@@ -662,6 +662,8 @@ Line charts are used to display data trends over time or other continuous variab
 
 Using index as X-axis, suitable for displaying trends of a single data series.
 
+![单向量线图示例](images/line.png)
+
 ```java
 // 创建线图（使用索引作为X轴）/ Create line chart (using index as X-axis)
 IPlot plot = Plots.of(800, 600);
@@ -694,6 +696,8 @@ plot.saveAsHtml("chart.html");
 使用hue参数分组显示多条线，适用于比较不同组别的数据趋势。
 
 Use hue parameter to group multiple lines, suitable for comparing data trends across different groups.
+
+![多组线图示例](images/line_multi.png)
 
 ```java
 // 创建多组线图 / Create multi-group line chart
@@ -731,6 +735,8 @@ Scatter charts are used to display relationships between two continuous variable
 
 Display basic relationships between two variables, suitable for correlation analysis.
 
+![散点图示例](images/scatter.png)
+
 ```java
 // 创建散点图 / Create scatter chart
 IPlot plot = Plots.of(800, 600);
@@ -746,6 +752,8 @@ plot.saveAsHtml("chart.html");
 使用不同颜色或形状区分不同组别的数据点，适用于比较分析。
 
 Use different colors or shapes to distinguish data points from different groups, suitable for comparative analysis.
+
+![多组散点图示例](images/scatter_multi.png)
 
 ```java
 // 创建多组散点图 / Create multi-group scatter chart
@@ -776,6 +784,8 @@ IPlot plot = Plots.of(800, 600)
 饼图用于展示各部分占整体的比例，适用于分类数据的可视化。
 
 Pie charts are used to display the proportion of each part to the whole, suitable for visualizing categorical data.
+
+![饼图示例](images/pie.png)
 
 ```java
 // 创建饼图 / Create pie chart
@@ -808,6 +818,8 @@ Bar charts are used to compare numerical values across different categories, and
 
 Display single-dimensional data comparison, suitable for visualizing categorical data.
 
+![柱状图示例](images/bar.png)
+
 ```java
 // 创建柱状图 / Create bar chart
 IPlot plot = Plots.of(800, 600);
@@ -822,6 +834,8 @@ plot.saveAsHtml("chart.html");
 使用hue参数分组显示多个系列的数据，适用于多维度比较分析。
 
 Use hue parameter to group multiple series of data, suitable for multi-dimensional comparative analysis.
+
+![分组柱状图示例](images/grouped_bar.png)
 
 ```java
 // 创建分组柱状图 / Create grouped bar chart
@@ -850,6 +864,8 @@ IPlot plot = Plots.of(800, 600)
 直方图用于展示数据的分布情况，能够直观地显示数据的集中趋势和离散程度。
 
 Histograms are used to display data distribution, providing intuitive visualization of data central tendency and dispersion.
+
+![直方图示例](images/hist.png)
 
 ```java
 // 创建直方图（带拟合线）/ Create histogram (with fitting line)
@@ -893,6 +909,8 @@ Polar coordinate charts use polar coordinate system to display data, suitable fo
 
 Display bar charts in polar coordinate system, suitable for visualizing periodic data.
 
+![极坐标柱状图示例](images/polar_bar.png)
+
 ```java
 // 创建极坐标柱状图 / Create polar bar chart
 IPlot plot = Plots.of(800, 600);
@@ -919,6 +937,8 @@ IPlot plot = Plots.of(600, 600)
 
 Display line charts in polar coordinate system, suitable for visualizing periodic trend data.
 
+![极坐标线图示例](images/polar_line.png)
+
 ```java
 // 创建极坐标线图 / Create polar line chart
 IPlot plot = Plots.of(800, 600);
@@ -934,6 +954,8 @@ plot.saveAsHtml("chart.html");
 在极坐标系中展示散点图，适用于极坐标数据的分布可视化。
 
 Display scatter charts in polar coordinate system, suitable for visualizing polar coordinate data distribution.
+
+![极坐标散点图示例](images/polar_scatter.png)
 
 ```java
 // 创建极坐标散点图 / Create polar scatter chart
@@ -964,6 +986,8 @@ Statistical charts are used to display statistical characteristics of data, incl
 
 Box plots are used to display data distribution characteristics, including median, quartiles, outliers, and other statistical information.
 
+![箱线图示例](images/boxplot.png)
+
 ```java
 // 创建箱线图 / Create box plot
 IPlot plot = Plots.of(800, 600);
@@ -991,6 +1015,8 @@ IPlot plot = Plots.of(800, 600)
 小提琴图结合了箱线图和密度图的特点，能够同时展示数据的分布形状和统计特征，适用于数据分布的可视化分析。
 
 Violin plots combine the characteristics of box plots and density plots, displaying both data distribution shape and statistical features, suitable for data distribution visualization analysis.
+
+![小提琴图示例](images/violinplot_multi.png)
 
 #### 单组小提琴图 / Single Group Violin Plot
 
@@ -1047,6 +1073,8 @@ K线图用于展示金融数据的开盘价、收盘价、最高价、最低价�
 
 Candlestick charts are used to display financial data including opening, closing, highest, and lowest prices, commonly used in financial analysis.
 
+![K线图示例](images/candlestick.png)
+
 ```java
 // 创建K线图 / Create candlestick chart
 IPlot plot = Plots.of(800, 600);
@@ -1096,6 +1124,8 @@ Special charts are used to display complex data relationships and hierarchical s
 
 Funnel charts are used to display conversion rates at each stage of a process, suitable for analyzing user behavior paths.
 
+![漏斗图示例](images/funnel.png)
+
 ```java
 // 创建漏斗图 / Create funnel chart
 IPlot plot = Plots.of(800, 600);
@@ -1121,6 +1151,8 @@ IPlot plot = Plots.of(800, 600)
 桑基图用于展示数据在多个节点之间的流动情况，适用于分析数据流向和转换关系。
 
 Sankey diagrams are used to display data flow between multiple nodes, suitable for analyzing data flow and transformation relationships.
+
+![桑基图示例](images/sankey.png)
 
 ```java
 // 创建桑基图 / Create Sankey diagram
@@ -1177,6 +1209,8 @@ IPlot plot = Plots.of(1000, 600)
 
 Sunburst charts are used to display proportional relationships in hierarchical data, suitable for showing distribution of tree-structured data.
 
+![旭日图示例](images/sunburst.png)
+
 ```java
 // 创建旭日图 / Create sunburst chart
 IPlot plot = Plots.of(800, 600);
@@ -1219,6 +1253,8 @@ IPlot plot = Plots.of(800, 800)
 
 Theme river charts are used to display trends of different themes in time series data, suitable for analyzing multi-dimensional time data.
 
+![主题河流图示例](images/theme_river.png)
+
 ```java
 // 创建主题河流图 / Create theme river chart
 IPlot plot = Plots.of(800, 600);
@@ -1259,6 +1295,8 @@ IPlot plot = Plots.of(1200, 600)
 树图用于展示层次结构数据，适用于展示组织结构、分类体系等树形数据。
 
 Tree charts are used to display hierarchical structure data, suitable for showing organizational structures, classification systems, and other tree-structured data.
+
+![树图示例](images/tree.png)
 
 ```java
 // 创建树图 / Create tree chart
@@ -1301,6 +1339,8 @@ IPlot plot = Plots.of(1000, 800)
 
 Treemap charts are used to display proportional relationships in hierarchical data, with rectangle sizes representing data volumes, suitable for showing distribution of categorical data.
 
+![矩形树图示例](images/treemap.png)
+
 ```java
 // 创建矩形树图 / Create treemap chart
 IPlot plot = Plots.of(800, 600);
@@ -1340,6 +1380,8 @@ IPlot plot = Plots.of(800, 600)
 关系图用于展示节点之间的连接关系，适用于网络分析、社交网络等场景。
 
 Graph charts are used to display connections between nodes, suitable for network analysis, social networks, and other scenarios.
+
+![关系图示例](images/graph.png)
 
 ```java
 // 创建关系图 / Create graph chart
@@ -1394,6 +1436,8 @@ IPlot plot = Plots.of(1000, 800)
 
 Parallel coordinates charts are used to display distribution and relationships of multi-dimensional data, suitable for visualization analysis of high-dimensional data.
 
+![平行坐标图示例](images/parallel.png)
+
 ```java
 // 创建平行坐标图 / Create parallel coordinates chart
 IPlot plot = Plots.of(800, 600);
@@ -1442,6 +1486,8 @@ Enhanced charts provide more advanced visualization capabilities, including heat
 
 Heatmaps are used to display distribution of two-dimensional data, with color intensity representing data magnitude, suitable for correlation analysis.
 
+![热力图示例](images/heatmap.png)
+
 ```java
 // 创建热力图 / Create heatmap
 IPlot plot = Plots.of(800, 600);
@@ -1478,6 +1524,8 @@ IPlot plot = Plots.of(800, 600)
 
 Radar charts are used to display distribution of multi-dimensional data, suitable for multi-indicator comparative analysis.
 
+![雷达图示例](images/radar.png)
+
 ```java
 // 创建雷达图 / Create radar chart
 IPlot plot = Plots.of(800, 600);
@@ -1505,6 +1553,8 @@ IPlot plot = Plots.of(600, 600)
 仪表盘用于展示单一指标的当前值，适用于监控面板和KPI展示。
 
 Gauge charts are used to display current values of single indicators, suitable for monitoring dashboards and KPI display.
+
+![仪表盘示例](images/gauge.png)
 
 ```java
 // 创建仪表盘 / Create gauge chart
