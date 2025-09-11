@@ -89,56 +89,56 @@ Encapsulates repeated measures ANOVA results, including statistics for time effe
 NormalDistribution standardNormal = Stat.norm();
 
 // 自定义参数的正态分布 / Custom parameter normal distribution
-NormalDistribution normal = Stat.norm(5.0f, 2.0f); // 均值=5，标准差=2
+NormalDistribution normal = Stat.norm(5.0f, 2.0f); // 均值=5，标准差=2 / Mean=5, stdDev=2
 ```
 
 ##### t分布 / Student's t-Distribution
 
 ```java
 // 创建t分布 / Create t-distribution
-StudentDistribution tDist = Stat.t(10.0f); // 自由度为10
+StudentDistribution tDist = Stat.t(10.0f); // 自由度为10 / Degrees of freedom=10
 ```
 
 ##### 均匀分布 / Uniform Distribution
 
 ```java
 // 创建均匀分布 / Create uniform distribution
-UniformDistribution uniform = Stat.uniform(0.0f, 10.0f); // 区间[0, 10]
+UniformDistribution uniform = Stat.uniform(0.0f, 10.0f); // 区间[0, 10] / Interval [0, 10]
 ```
 
 ##### 指数分布 / Exponential Distribution
 
 ```java
 // 创建指数分布 / Create exponential distribution
-ExponentialDistribution exp = Stat.exponential(2.0f); // 速率参数=2
+ExponentialDistribution exp = Stat.exponential(2.0f); // 速率参数=2 / Rate parameter=2
 ```
 
 ##### 卡方分布 / Chi-Squared Distribution
 
 ```java
 // 创建卡方分布 / Create chi-squared distribution
-Chi2Distribution chi2 = Stat.chi2(5.0f); // 自由度为5
+Chi2Distribution chi2 = Stat.chi2(5.0f); // 自由度为5 / Degrees of freedom=5
 ```
 
 ##### F分布 / F-Distribution
 
 ```java
 // 创建F分布 / Create F-distribution
-FDistribution fDist = Stat.f(5.0f, 10.0f); // 分子自由度=5，分母自由度=10
+FDistribution fDist = Stat.f(5.0f, 10.0f); // 分子自由度=5，分母自由度=10 / Numerator df=5, denominator df=10
 ```
 
 ##### Beta分布 / Beta Distribution
 
 ```java
 // 创建Beta分布 / Create Beta distribution
-BetaDistribution beta = Stat.beta(2.0f, 3.0f); // 形状参数α=2，β=3
+BetaDistribution beta = Stat.beta(2.0f, 3.0f); // 形状参数α=2，β=3 / Shape parameters α=2, β=3
 ```
 
 ##### Gamma分布 / Gamma Distribution
 
 ```java
 // 创建Gamma分布 / Create Gamma distribution
-GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度参数β=1
+GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度参数β=1 / Shape parameter α=2, scale parameter β=1
 ```
 
 #### 1.2 离散型分布 / Discrete Distributions
@@ -147,42 +147,42 @@ GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度�
 
 ```java
 // 创建伯努利分布 / Create Bernoulli distribution
-BernoulliDistribution bernoulli = Stat.bernoulli(0.3f); // 成功概率=0.3
+BernoulliDistribution bernoulli = Stat.bernoulli(0.3f); // 成功概率=0.3 / Success probability=0.3
 ```
 
 ##### 二项分布 / Binomial Distribution
 
 ```java
 // 创建二项分布 / Create binomial distribution
-BinomialDistribution binomial = Stat.binomial(10, 0.5f); // 试验次数=10，成功概率=0.5
+BinomialDistribution binomial = Stat.binomial(10, 0.5f); // 试验次数=10，成功概率=0.5 / Number of trials=10, success probability=0.5
 ```
 
 ##### 泊松分布 / Poisson Distribution
 
 ```java
 // 创建泊松分布 / Create Poisson distribution
-PoissonDistribution poisson = Stat.poisson(2.5f); // 平均发生率λ=2.5
+PoissonDistribution poisson = Stat.poisson(2.5f); // 平均发生率λ=2.5 / Mean rate λ=2.5
 ```
 
 ##### 几何分布 / Geometric Distribution
 
 ```java
 // 创建几何分布 / Create geometric distribution
-GeometricDistribution geometric = Stat.geometric(0.2f); // 成功概率=0.2
+GeometricDistribution geometric = Stat.geometric(0.2f); // 成功概率=0.2 / Success probability=0.2
 ```
 
 ##### 负二项分布 / Negative Binomial Distribution
 
 ```java
 // 创建负二项分布 / Create negative binomial distribution
-NegativeBinomialDistribution negBin = Stat.negativeBinomial(3, 0.4f); // 成功次数=3，成功概率=0.4
+NegativeBinomialDistribution negBin = Stat.negativeBinomial(3, 0.4f); // 成功次数=3，成功概率=0.4 / Number of successes=3, success probability=0.4
 ```
 
 ##### 离散均匀分布 / Discrete Uniform Distribution
 
 ```java
 // 创建离散均匀分布 / Create discrete uniform distribution
-DiscreteUniformDistribution discreteUniform = Stat.discreteUniform(1, 6); // 区间[1,6]
+DiscreteUniformDistribution discreteUniform = Stat.discreteUniform(1, 6); // 区间[1,6] / Interval [1,6]
 ```
 
 ### 2. 概率分布接口 / Probability Distribution Interface
@@ -194,6 +194,7 @@ DiscreteUniformDistribution discreteUniform = Stat.discreteUniform(1, 6); // 区
 All probability distributions implement corresponding interfaces, providing unified statistical computation methods:
 - Continuous distributions implement the `IContinuousDistribution` interface
 - Discrete distributions implement the `IDiscreteDistribution` interface
+
 
 #### 基本统计量 / Basic Statistics
 
@@ -256,7 +257,7 @@ int isfValue = distribution.isf(probability);
 float sample = distribution.sample();
 
 // 生成多个随机样本 / Generate multiple random samples
-float[] samples = distribution.sample(1000); // 生成1000个样本
+float[] samples = distribution.sample(1000); // 生成1000个样本 / Generate 1000 samples
 ```
 
 **离散型分布 / Discrete Distributions:**
@@ -265,7 +266,7 @@ float[] samples = distribution.sample(1000); // 生成1000个样本
 int sample = distribution.sample();
 
 // 生成多个随机样本 / Generate multiple random samples
-int[] samples = distribution.sample(1000); // 生成1000个样本
+int[] samples = distribution.sample(1000); // 生成1000个样本 / Generate 1000 samples
 ```
 
 ### 3. 具体分布类详解 / Detailed Distribution Classes
@@ -276,23 +277,24 @@ int[] samples = distribution.sample(1000); // 生成1000个样本
 
 Normal distribution is one of the most important continuous probability distributions in statistics, also known as Gaussian distribution.
 
+
 **概率密度函数** / **Probability Density Function**:
 ```
 f(x) = (1/σ√(2π)) * e^(-(x-μ)²/(2σ²))
 ```
 
 **特性** / **Properties**:
-- 均值: μ
-- 方差: σ²
-- 标准差: σ
-- 偏度: 0（对称分布）
-- 峰度: 0（超额峰度）
+- 均值: μ / Mean: μ
+- 方差: σ² / Variance: σ²
+- 标准差: σ / Standard deviation: σ
+- 偏度: 0（对称分布） / Skewness: 0 (symmetric distribution)
+- 峰度: 0（超额峰度） / Kurtosis: 0 (excess kurtosis)
 
 **应用场景** / **Application Scenarios**:
-- 中心极限定理
-- 假设检验
-- 质量控制
-- 金融建模
+- 中心极限定理 / Central limit theorem
+- 假设检验 / Hypothesis testing
+- 质量控制 / Quality control
+- 金融建模 / Financial modeling
 
 #### t分布 (StudentDistribution)
 
@@ -300,15 +302,16 @@ t分布用于小样本的统计推断，当总体方差未知时特别有用。
 
 t-distribution is used for statistical inference with small samples, especially useful when population variance is unknown.
 
+
 **特性** / **Properties**:
-- 均值: 0（当自由度 > 1）
-- 方差: df/(df-2)（当自由度 > 2）
-- 自由度越大，越接近正态分布
+- 均值: 0（当自由度 > 1） / Mean: 0 (when df > 1)
+- 方差: df/(df-2)（当自由度 > 2） / Variance: df/(df-2) (when df > 2)
+- 自由度越大，越接近正态分布 / The larger the degrees of freedom, the closer to normal distribution
 
 **应用场景** / **Application Scenarios**:
-- t检验
-- 置信区间估计
-- 回归分析
+- t检验 / t-test
+- 置信区间估计 / Confidence interval estimation
+- 回归分析 / Regression analysis
 
 #### 均匀分布 (UniformDistribution)
 
@@ -316,21 +319,22 @@ t-distribution is used for statistical inference with small samples, especially 
 
 Uniform distribution has equal probability for all values within a specified interval.
 
+
 **概率密度函数** / **Probability Density Function**:
 ```
-f(x) = 1/(b-a) 当 a ≤ x ≤ b，否则为0
+f(x) = 1/(b-a) 当 a ≤ x ≤ b，否则为0 / f(x) = 1/(b-a) when a ≤ x ≤ b, otherwise 0
 ```
 
 **特性** / **Properties**:
-- 均值: (a+b)/2
-- 方差: (b-a)²/12
-- 偏度: 0（对称分布）
-- 峰度: -1.2
+- 均值: (a+b)/2 / Mean: (a+b)/2
+- 方差: (b-a)²/12 / Variance: (b-a)²/12
+- 偏度: 0（对称分布） / Skewness: 0 (symmetric distribution)
+- 峰度: -1.2 / Kurtosis: -1.2
 
 **应用场景** / **Application Scenarios**:
-- 随机数生成
-- 蒙特卡洛模拟
-- 质量控制
+- 随机数生成 / Random number generation
+- 蒙特卡洛模拟 / Monte Carlo simulation
+- 质量控制 / Quality control
 
 #### 指数分布 (ExponentialDistribution)
 
@@ -338,22 +342,23 @@ f(x) = 1/(b-a) 当 a ≤ x ≤ b，否则为0
 
 Exponential distribution describes the time intervals between events in a Poisson process.
 
+
 **概率密度函数** / **Probability Density Function**:
 ```
 f(x) = λe^(-λx) 当 x ≥ 0，否则为0
 ```
 
 **特性** / **Properties**:
-- 均值: 1/λ
-- 方差: 1/λ²
-- 标准差: 1/λ
-- 偏度: 2
-- 峰度: 6
+- 均值: 1/λ / Mean: 1/λ
+- 方差: 1/λ² / Variance: 1/λ²
+- 标准差: 1/λ / Standard deviation: 1/λ
+- 偏度: 2 / Skewness: 2
+- 峰度: 6 / Kurtosis: 6
 
 **应用场景** / **Application Scenarios**:
-- 可靠性分析
-- 排队论
-- 生存分析
+- 可靠性分析 / Reliability analysis
+- 排队论 / Queueing theory
+- 生存分析 / Survival analysis
 
 #### 卡方分布 (Chi2Distribution)
 
@@ -361,16 +366,17 @@ f(x) = λe^(-λx) 当 x ≥ 0，否则为0
 
 Chi-squared distribution is the distribution of the sum of squares of normal random variables.
 
+
 **特性** / **Properties**:
-- 均值: df（自由度）
-- 方差: 2df
-- 偏度: √(8/df)
-- 峰度: 12/df
+- 均值: df（自由度） / Mean: df (degrees of freedom)
+- 方差: 2df / Variance: 2df
+- 偏度: √(8/df) / Skewness: √(8/df)
+- 峰度: 12/df / Kurtosis: 12/df
 
 **应用场景** / **Application Scenarios**:
-- 卡方检验
-- 方差分析
-- 拟合优度检验
+- 卡方检验 / Chi-squared test
+- 方差分析 / Analysis of variance
+- 拟合优度检验 / Goodness of fit test
 
 #### F分布 (FDistribution)
 
@@ -378,14 +384,15 @@ F分布是两个独立卡方分布随机变量比值的分布。
 
 F-distribution is the distribution of the ratio of two independent chi-squared random variables.
 
+
 **特性** / **Properties**:
-- 均值: d2/(d2-2)（当d2 > 2）
-- 方差: 2d2²(d1+d2-2)/(d1(d2-2)²(d2-4))（当d2 > 4）
+- 均值: d2/(d2-2)（当d2 > 2） / Mean: d2/(d2-2) (when d2 > 2)
+- 方差: 2d2²(d1+d2-2)/(d1(d2-2)²(d2-4))（当d2 > 4） / Variance: 2d2²(d1+d2-2)/(d1(d2-2)²(d2-4)) (when d2 > 4)
 
 **应用场景** / **Application Scenarios**:
-- F检验
-- 方差分析
-- 回归分析
+- F检验 / F-test
+- 方差分析 / Analysis of variance
+- 回归分析 / Regression analysis
 
 #### Beta分布 (BetaDistribution)
 
@@ -393,21 +400,22 @@ Beta分布是定义在区间[0,1]上的连续概率分布，由两个形状参�
 
 Beta distribution is a continuous probability distribution defined on the interval [0,1], controlled by two shape parameters α and β.
 
+
 **概率密度函数** / **Probability Density Function**:
 ```
 f(x) = (1/B(α,β)) * x^(α-1) * (1-x)^(β-1)
 ```
 
 **特性** / **Properties**:
-- 均值: α/(α+β)
-- 方差: αβ/((α+β)²(α+β+1))
-- 支持区间: [0,1]
+- 均值: α/(α+β) / Mean: α/(α+β)
+- 方差: αβ/((α+β)²(α+β+1)) / Variance: αβ/((α+β)²(α+β+1))
+- 支持区间: [0,1] / Support: [0,1]
 
 **应用场景** / **Application Scenarios**:
-- 贝叶斯统计
-- 比例建模
-- 先验分布
-- 机器学习
+- 贝叶斯统计 / Bayesian statistics
+- 比例建模 / Proportion modeling
+- 先验分布 / Prior distribution
+- 机器学习 / Machine learning
 
 #### Gamma分布 (GammaDistribution)
 
@@ -415,21 +423,22 @@ Gamma分布是连续概率分布，由形状参数α和尺度参数β控制。
 
 Gamma distribution is a continuous probability distribution controlled by shape parameter α and scale parameter β.
 
+
 **概率密度函数** / **Probability Density Function**:
 ```
 f(x) = (β^α / Γ(α)) * x^(α-1) * e^(-βx)
 ```
 
 **特性** / **Properties**:
-- 均值: α/β
-- 方差: α/β²
-- 支持区间: [0,∞)
+- 均值: α/β / Mean: α/β
+- 方差: α/β² / Variance: α/β²
+- 支持区间: [0,∞) / Support: [0,∞)
 
 **应用场景** / **Application Scenarios**:
-- 等待时间建模
-- 可靠性分析
-- 贝叶斯统计
-- 机器学习
+- 等待时间建模 / Waiting time modeling
+- 可靠性分析 / Reliability analysis
+- 贝叶斯统计 / Bayesian statistics
+- 机器学习 / Machine learning
 
 #### 伯努利分布 (BernoulliDistribution)
 
@@ -437,21 +446,22 @@ f(x) = (β^α / Γ(α)) * x^(α-1) * e^(-βx)
 
 Bernoulli distribution is a discrete probability distribution with only two possible outcomes: success (1) and failure (0).
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=1) = p, P(X=0) = 1-p
 ```
 
 **特性** / **Properties**:
-- 均值: p
-- 方差: p(1-p)
-- 支持区间: {0,1}
+- 均值: p / Mean: p
+- 方差: p(1-p) / Variance: p(1-p)
+- 支持区间: {0,1} / Support: {0,1}
 
 **应用场景** / **Application Scenarios**:
-- 二分类问题
-- 成功/失败事件建模
-- 随机试验
-- 质量控制
+- 二分类问题 / Binary classification problems
+- 成功/失败事件建模 / Success/failure event modeling
+- 随机试验 / Random trials
+- 质量控制 / Quality control
 
 #### 二项分布 (BinomialDistribution)
 
@@ -459,21 +469,22 @@ P(X=1) = p, P(X=0) = 1-p
 
 Binomial distribution is the discrete probability distribution of the number of successes in a sequence of n independent Bernoulli trials.
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=k) = C(n,k) * p^k * (1-p)^(n-k)
 ```
 
 **特性** / **Properties**:
-- 均值: np
-- 方差: np(1-p)
-- 支持区间: {0,1,2,...,n}
+- 均值: np / Mean: np
+- 方差: np(1-p) / Variance: np(1-p)
+- 支持区间: {0,1,2,...,n} / Support: {0,1,2,...,n}
 
 **应用场景** / **Application Scenarios**:
-- 重复试验建模
-- 质量控制
-- 市场调研
-- 医学试验
+- 重复试验建模 / Repeated trials modeling
+- 质量控制 / Quality control
+- 市场调研 / Market research
+- 医学试验 / Medical trials
 
 #### 泊松分布 (PoissonDistribution)
 
@@ -481,21 +492,22 @@ P(X=k) = C(n,k) * p^k * (1-p)^(n-k)
 
 Poisson distribution is a discrete probability distribution that expresses the probability of a given number of events occurring in a fixed interval of time.
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=k) = (λ^k * e^(-λ)) / k!
 ```
 
 **特性** / **Properties**:
-- 均值: λ
-- 方差: λ
-- 支持区间: {0,1,2,...}
+- 均值: λ / Mean: λ
+- 方差: λ / Variance: λ
+- 支持区间: {0,1,2,...} / Support: {0,1,2,...}
 
 **应用场景** / **Application Scenarios**:
-- 事件计数建模
-- 排队论
-- 可靠性分析
-- 生物学建模
+- 事件计数建模 / Event counting modeling
+- 排队论 / Queueing theory
+- 可靠性分析 / Reliability analysis
+- 生物学建模 / Biological modeling
 
 #### 几何分布 (GeometricDistribution)
 
@@ -503,21 +515,22 @@ P(X=k) = (λ^k * e^(-λ)) / k!
 
 Geometric distribution is the probability distribution of the number of trials needed to get the first success in a sequence of independent Bernoulli trials.
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=k) = (1-p)^(k-1) * p, k = 1,2,3,...
 ```
 
 **特性** / **Properties**:
-- 均值: 1/p
-- 方差: (1-p)/p²
-- 支持区间: {1,2,3,...}
+- 均值: 1/p / Mean: 1/p
+- 方差: (1-p)/p² / Variance: (1-p)/p²
+- 支持区间: {1,2,3,...} / Support: {1,2,3,...}
 
 **应用场景** / **Application Scenarios**:
-- 等待时间建模
-- 可靠性分析
-- 首次成功时间
-- 排队论
+- 等待时间建模 / Waiting time modeling
+- 可靠性分析 / Reliability analysis
+- 首次成功时间 / First success time
+- 排队论 / Queueing theory
 
 #### 负二项分布 (NegativeBinomialDistribution)
 
@@ -525,21 +538,22 @@ P(X=k) = (1-p)^(k-1) * p, k = 1,2,3,...
 
 Negative binomial distribution is the probability distribution of the number of trials needed to get the r-th success in a sequence of independent Bernoulli trials.
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=k) = C(k-1, r-1) * p^r * (1-p)^(k-r), k = r,r+1,r+2,...
 ```
 
 **特性** / **Properties**:
-- 均值: r/p
-- 方差: r(1-p)/p²
-- 支持区间: {r,r+1,r+2,...}
+- 均值: r/p / Mean: r/p
+- 方差: r(1-p)/p² / Variance: r(1-p)/p²
+- 支持区间: {r,r+1,r+2,...} / Support: {r,r+1,r+2,...}
 
 **应用场景** / **Application Scenarios**:
-- 重复试验建模
-- 可靠性分析
-- 计数数据建模
-- 过度分散数据
+- 重复试验建模 / Repeated trials modeling
+- 可靠性分析 / Reliability analysis
+- 计数数据建模 / Count data modeling
+- 过度分散数据 / Over-dispersed data
 
 #### 离散均匀分布 (DiscreteUniformDistribution)
 
@@ -547,21 +561,22 @@ P(X=k) = C(k-1, r-1) * p^r * (1-p)^(k-r), k = r,r+1,r+2,...
 
 Discrete uniform distribution is a probability distribution where each value in a finite set of discrete values has equal probability.
 
+
 **概率质量函数** / **Probability Mass Function**:
 ```
 P(X=k) = 1/n, k = a,a+1,...,b
 ```
 
 **特性** / **Properties**:
-- 均值: (a+b)/2
-- 方差: ((b-a+1)²-1)/12
-- 支持区间: {a,a+1,...,b}
+- 均值: (a+b)/2 / Mean: (a+b)/2
+- 方差: ((b-a+1)²-1)/12 / Variance: ((b-a+1)²-1)/12
+- 支持区间: {a,a+1,...,b} / Support: {a,a+1,...,b}
 
 **应用场景** / **Application Scenarios**:
-- 随机数生成
-- 等概率选择
-- 模拟实验
-- 游戏设计
+- 随机数生成 / Random number generation
+- 等概率选择 / Equal probability selection
+- 模拟实验 / Simulation experiments
+- 游戏设计 / Game design
 
 ### 4. 假设检验功能 / Hypothesis Testing Features
 
@@ -580,8 +595,8 @@ if (result.pass) {
 } else {
     System.out.println("拒绝原假设 / Reject null hypothesis");
 }
-System.out.println("p值: " + result.p);
-System.out.println("置信区间: [" + result.criticalInteval._1 + ", " + result.criticalInteval._2 + "]");
+System.out.println("p值: " + result.p + " / p-value: " + result.p);
+System.out.println("置信区间: [" + result.criticalInteval._1 + ", " + result.criticalInteval._2 + "] / Confidence interval: [" + result.criticalInteval._1 + ", " + result.criticalInteval._2 + "]");
 ```
 
 #### 方差检验 / Variance Testing
@@ -627,10 +642,10 @@ IVector group3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
 ANOVAResult result = ANOVA.performOneWayANOVA(group1, group2, group3);
 
 // 查看结果 / View results
-System.out.println("F统计量: " + result.fStatistic);
-System.out.println("p值: " + result.pValue);
-System.out.println("组间平方和: " + result.ssBetween);
-System.out.println("组内平方和: " + result.ssWithin);
+System.out.println("F统计量: " + result.fStatistic + " / F-statistic: " + result.fStatistic);
+System.out.println("p值: " + result.pValue + " / p-value: " + result.pValue);
+System.out.println("组间平方和: " + result.ssBetween + " / Sum of squares between groups: " + result.ssBetween);
+System.out.println("组内平方和: " + result.ssWithin + " / Sum of squares within groups: " + result.ssWithin);
 ```
 
 #### 两因素方差分析 / Two-Way ANOVA
@@ -638,17 +653,17 @@ System.out.println("组内平方和: " + result.ssWithin);
 ```java
 // 创建三维数据数组 [因素A][因素B][观测值] / Create 3D data array [FactorA][FactorB][Observations]
 float[][][] data = {
-    {{1.2f, 1.5f, 1.8f}, {2.1f, 2.4f, 2.7f}},  // 因素A=1
-    {{2.3f, 2.6f, 2.9f}, {3.2f, 3.5f, 3.8f}}   // 因素A=2
+    {{1.2f, 1.5f, 1.8f}, {2.1f, 2.4f, 2.7f}},  // 因素A=1 / Factor A=1
+    {{2.3f, 2.6f, 2.9f}, {3.2f, 3.5f, 3.8f}}   // 因素A=2 / Factor A=2
 };
 
 // 执行两因素方差分析 / Perform two-way ANOVA
 TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
 
 // 查看结果 / View results
-System.out.println("因素A F统计量: " + result.factorAF + ", p值: " + result.factorAP);
-System.out.println("因素B F统计量: " + result.factorBF + ", p值: " + result.factorBP);
-System.out.println("交互效应 F统计量: " + result.interactionF + ", p值: " + result.interactionP);
+System.out.println("因素A F统计量: " + result.factorAF + ", p值: " + result.factorAP + " / Factor A F-statistic: " + result.factorAF + ", p-value: " + result.factorAP);
+System.out.println("因素B F统计量: " + result.factorBF + ", p值: " + result.factorBP + " / Factor B F-statistic: " + result.factorBF + ", p-value: " + result.factorBP);
+System.out.println("交互效应 F统计量: " + result.interactionF + ", p值: " + result.interactionP + " / Interaction F-statistic: " + result.interactionF + ", p-value: " + result.interactionP);
 ```
 
 #### 重复测量方差分析 / Repeated Measures ANOVA
@@ -656,17 +671,17 @@ System.out.println("交互效应 F统计量: " + result.interactionF + ", p值: 
 ```java
 // 创建重复测量数据 [被试][时间点] / Create repeated measures data [Subject][TimePoint]
 float[][] data = {
-    {1.2f, 1.8f, 2.1f, 2.5f},  // 被试1
-    {1.5f, 2.0f, 2.3f, 2.7f},  // 被试2
-    {1.8f, 2.2f, 2.5f, 2.9f}   // 被试3
+    {1.2f, 1.8f, 2.1f, 2.5f},  // 被试1 / Subject 1
+    {1.5f, 2.0f, 2.3f, 2.7f},  // 被试2 / Subject 2
+    {1.8f, 2.2f, 2.5f, 2.9f}   // 被试3 / Subject 3
 };
 
 // 执行重复测量方差分析 / Perform repeated measures ANOVA
 RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(data);
 
 // 查看结果 / View results
-System.out.println("时间效应 F统计量: " + result.timeF + ", p值: " + result.timeP);
-System.out.println("被试效应 F统计量: " + result.subjectF + ", p值: " + result.subjectP);
+System.out.println("时间效应 F统计量: " + result.timeF + ", p值: " + result.timeP + " / Time effect F-statistic: " + result.timeF + ", p-value: " + result.timeP);
+System.out.println("被试效应 F统计量: " + result.subjectF + ", p值: " + result.subjectP + " / Subject effect F-statistic: " + result.subjectF + ", p-value: " + result.subjectP);
 ```
 
 #### 正态性检验 / Normality Test
@@ -674,7 +689,7 @@ System.out.println("被试效应 F统计量: " + result.subjectF + ", p值: " + 
 ```java
 // 检验数据是否服从正态分布 / Test if data follows normal distribution
 boolean isNormal = ANOVA.testNormality(sample);
-System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过"));
+System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过") + " / Data normality: " + (isNormal ? "Pass" : "Fail"));
 ```
 
 #### 方差齐性检验 / Homogeneity of Variance Test
@@ -682,7 +697,7 @@ System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过"));
 ```java
 // 检验各组方差是否相等 / Test if variances are equal across groups
 boolean isHomogeneous = ANOVA.testHomogeneityOfVariance(group1, group2, group3);
-System.out.println("方差齐性: " + (isHomogeneous ? "通过" : "未通过"));
+System.out.println("方差齐性: " + (isHomogeneous ? "通过" : "未通过") + " / Variance homogeneity: " + (isHomogeneous ? "Pass" : "Fail"));
 ```
 
 #### Tukey HSD多重比较 / Tukey HSD Multiple Comparisons
@@ -702,57 +717,57 @@ For detailed code examples, please refer to the [Statistics-Examples.md](example
 
 ### 正态分布算法 / Normal Distribution Algorithms
 
-- **PDF计算** / **PDF Calculation**: 直接使用数学公式
-- **CDF计算** / **CDF Calculation**: 使用误差函数的近似公式（Abramowitz and Stegun）
-- **PPF计算** / **PPF Calculation**: 使用Beasley-Springer-Moro算法近似
-- **随机采样** / **Random Sampling**: 使用Box-Muller变换
+- **PDF计算** / **PDF Calculation**: 直接使用数学公式 / Direct mathematical formula
+- **CDF计算** / **CDF Calculation**: 使用误差函数的近似公式（Abramowitz and Stegun） / Approximation using error function (Abramowitz and Stegun)
+- **PPF计算** / **PPF Calculation**: 使用Beasley-Springer-Moro算法近似 / Beasley-Springer-Moro algorithm approximation
+- **随机采样** / **Random Sampling**: 使用Box-Muller变换 / Box-Muller transformation
 
 ### 其他分布算法 / Other Distribution Algorithms
 
-- **t分布** / **t-Distribution**: 使用数值积分和近似方法
-- **均匀分布** / **Uniform Distribution**: 直接使用数学公式
-- **指数分布** / **Exponential Distribution**: 使用逆变换采样
-- **卡方分布** / **Chi-Squared Distribution**: 使用Gamma函数近似
-- **F分布** / **F-Distribution**: 基于Beta分布实现
-- **Beta分布** / **Beta Distribution**: 使用Gamma函数和数值积分
-- **Gamma分布** / **Gamma Distribution**: 使用近似算法和查找表
-- **离散分布** / **Discrete Distributions**: 使用逆变换采样和拒绝采样
+- **t分布** / **t-Distribution**: 使用数值积分和近似方法 / Numerical integration and approximation methods
+- **均匀分布** / **Uniform Distribution**: 直接使用数学公式 / Direct mathematical formula
+- **指数分布** / **Exponential Distribution**: 使用逆变换采样 / Inverse transform sampling
+- **卡方分布** / **Chi-Squared Distribution**: 使用Gamma函数近似 / Gamma function approximation
+- **F分布** / **F-Distribution**: 基于Beta分布实现 / Based on Beta distribution implementation
+- **Beta分布** / **Beta Distribution**: 使用Gamma函数和数值积分 / Gamma function and numerical integration
+- **Gamma分布** / **Gamma Distribution**: 使用近似算法和查找表 / Approximation algorithms and lookup tables
+- **离散分布** / **Discrete Distributions**: 使用逆变换采样和拒绝采样 / Inverse transform sampling and rejection sampling
 
 ## 性能特性 / Performance Features
 
 ### 计算效率 / Computational Efficiency
 
-- 高效的数值算法实现
-- 预计算常量和查找表
-- 优化的随机数生成算法
+- 高效的数值算法实现 / Efficient numerical algorithm implementation
+- 预计算常量和查找表 / Precomputed constants and lookup tables
+- 优化的随机数生成算法 / Optimized random number generation algorithms
 
 ### 内存使用 / Memory Usage
 
-- 最小化临时对象创建
-- 高效的数组操作
-- 智能的缓存策略
+- 最小化临时对象创建 / Minimize temporary object creation
+- 高效的数组操作 / Efficient array operations
+- 智能的缓存策略 / Intelligent caching strategies
 
 ### 数值稳定性 / Numerical Stability
 
-- 稳定的数值算法
-- 边界情况处理
-- 精度控制
+- 稳定的数值算法 / Stable numerical algorithms
+- 边界情况处理 / Boundary case handling
+- 精度控制 / Precision control
 
 ## 注意事项 / Notes
 
-1. **参数验证** / **Parameter Validation**: 所有分布类都会验证输入参数的有效性
-2. **数值精度** / **Numerical Precision**: 使用float类型，注意精度限制
-3. **边界情况** / **Edge Cases**: 特殊值（如无穷大、NaN）的处理
-4. **随机性** / **Randomness**: 随机采样使用Java的Math.random()，可考虑使用更高质量的随机数生成器
-5. **异常处理** / **Exception Handling**: 无效参数会抛出IllegalArgumentException
+1. **参数验证** / **Parameter Validation**: 所有分布类都会验证输入参数的有效性 / All distribution classes validate input parameter validity
+2. **数值精度** / **Numerical Precision**: 使用float类型，注意精度限制 / Uses float type, note precision limitations
+3. **边界情况** / **Edge Cases**: 特殊值（如无穷大、NaN）的处理 / Handling of special values (such as infinity, NaN)
+4. **随机性** / **Randomness**: 随机采样使用Java的Math.random()，可考虑使用更高质量的随机数生成器 / Random sampling uses Java's Math.random(), consider using higher quality random number generators
+5. **异常处理** / **Exception Handling**: 无效参数会抛出IllegalArgumentException / Invalid parameters will throw IllegalArgumentException
 
 ## 扩展性 / Extensibility
 
 ### 添加新分布 / Adding New Distributions
 
-1. 实现 `IContinuousDistribution` 或 `IDiscreteDistribution` 接口
-2. 在 `Stat` 类中添加工厂方法
-3. 添加相应的测试用例
+1. 实现 `IContinuousDistribution` 或 `IDiscreteDistribution` 接口 / Implement `IContinuousDistribution` or `IDiscreteDistribution` interface
+2. 在 `Stat` 类中添加工厂方法 / Add factory methods in the `Stat` class
+3. 添加相应的测试用例 / Add corresponding test cases
 
 ### 自定义分布 / Custom Distributions
 
@@ -767,31 +782,31 @@ public class CustomDistribution implements IContinuousDistribution {
 
 ### 统计分析 / Statistical Analysis
 
-- 描述性统计
-- 假设检验
-- 置信区间估计
-- 回归分析
+- 描述性统计 / Descriptive statistics
+- 假设检验 / Hypothesis testing
+- 置信区间估计 / Confidence interval estimation
+- 回归分析 / Regression analysis
 
 ### 数据科学 / Data Science
 
-- 数据建模
-- 蒙特卡洛模拟
-- 风险评估
-- 质量控制
+- 数据建模 / Data modeling
+- 蒙特卡洛模拟 / Monte Carlo simulation
+- 风险评估 / Risk assessment
+- 质量控制 / Quality control
 
 ### 机器学习 / Machine Learning
 
-- 特征分布分析
-- 数据预处理
-- 模型验证
-- 不确定性量化
+- 特征分布分析 / Feature distribution analysis
+- 数据预处理 / Data preprocessing
+- 模型验证 / Model validation
+- 不确定性量化 / Uncertainty quantification
 
 ### 金融工程 / Financial Engineering
 
-- 风险建模
-- 期权定价
-- 投资组合优化
-- 压力测试
+- 风险建模 / Risk modeling
+- 期权定价 / Option pricing
+- 投资组合优化 / Portfolio optimization
+- 压力测试 / Stress testing
 
 ## 与SciPy功能对照表 / SciPy Functionality Comparison Table
 
@@ -855,34 +870,34 @@ public class CustomDistribution implements IContinuousDistribution {
 
 ### 选择合适分布 / Choosing Appropriate Distributions
 
-1. **正态分布** / **Normal Distribution**: 适用于中心极限定理、对称数据
-2. **t分布** / **t-Distribution**: 适用于小样本、未知方差
-3. **均匀分布** / **Uniform Distribution**: 适用于等概率事件
-4. **指数分布** / **Exponential Distribution**: 适用于等待时间、寿命数据
-5. **卡方分布** / **Chi-Squared Distribution**: 适用于方差检验、拟合优度
-6. **F分布** / **F-Distribution**: 适用于方差比较、回归分析
-7. **Beta分布** / **Beta Distribution**: 适用于比例建模、贝叶斯统计
-8. **Gamma分布** / **Gamma Distribution**: 适用于等待时间、可靠性分析
-9. **伯努利分布** / **Bernoulli Distribution**: 适用于二分类问题
-10. **二项分布** / **Binomial Distribution**: 适用于重复试验
-11. **泊松分布** / **Poisson Distribution**: 适用于事件计数
-12. **几何分布** / **Geometric Distribution**: 适用于首次成功时间
-13. **负二项分布** / **Negative Binomial Distribution**: 适用于过度分散计数数据
-14. **离散均匀分布** / **Discrete Uniform Distribution**: 适用于等概率离散选择
+1. **正态分布** / **Normal Distribution**: 适用于中心极限定理、对称数据 / Suitable for central limit theorem, symmetric data
+2. **t分布** / **t-Distribution**: 适用于小样本、未知方差 / Suitable for small samples, unknown variance
+3. **均匀分布** / **Uniform Distribution**: 适用于等概率事件 / Suitable for equal probability events
+4. **指数分布** / **Exponential Distribution**: 适用于等待时间、寿命数据 / Suitable for waiting times, lifetime data
+5. **卡方分布** / **Chi-Squared Distribution**: 适用于方差检验、拟合优度 / Suitable for variance testing, goodness of fit
+6. **F分布** / **F-Distribution**: 适用于方差比较、回归分析 / Suitable for variance comparison, regression analysis
+7. **Beta分布** / **Beta Distribution**: 适用于比例建模、贝叶斯统计 / Suitable for proportion modeling, Bayesian statistics
+8. **Gamma分布** / **Gamma Distribution**: 适用于等待时间、可靠性分析 / Suitable for waiting times, reliability analysis
+9. **伯努利分布** / **Bernoulli Distribution**: 适用于二分类问题 / Suitable for binary classification problems
+10. **二项分布** / **Binomial Distribution**: 适用于重复试验 / Suitable for repeated trials
+11. **泊松分布** / **Poisson Distribution**: 适用于事件计数 / Suitable for event counting
+12. **几何分布** / **Geometric Distribution**: 适用于首次成功时间 / Suitable for first success time
+13. **负二项分布** / **Negative Binomial Distribution**: 适用于过度分散计数数据 / Suitable for over-dispersed count data
+14. **离散均匀分布** / **Discrete Uniform Distribution**: 适用于等概率离散选择 / Suitable for equal probability discrete selection
 
 ### 数值计算建议 / Numerical Computation Recommendations
 
-1. **精度控制** / **Precision Control**: 注意float类型的精度限制
-2. **边界处理** / **Boundary Handling**: 正确处理极值和特殊值
-3. **参数验证** / **Parameter Validation**: 确保输入参数的有效性
-4. **异常处理** / **Exception Handling**: 适当处理可能的异常情况
+1. **精度控制** / **Precision Control**: 注意float类型的精度限制 / Note float type precision limitations
+2. **边界处理** / **Boundary Handling**: 正确处理极值和特殊值 / Properly handle extreme values and special values
+3. **参数验证** / **Parameter Validation**: 确保输入参数的有效性 / Ensure input parameter validity
+4. **异常处理** / **Exception Handling**: 适当处理可能的异常情况 / Properly handle possible exception cases
 
 ### 性能优化建议 / Performance Optimization Recommendations
 
-1. **批量采样** / **Batch Sampling**: 使用`sample(n)`而不是多次调用`sample()`
-2. **缓存结果** / **Cache Results**: 对于重复计算，考虑缓存结果
-3. **内存管理** / **Memory Management**: 及时释放不需要的大数组
-4. **算法选择** / **Algorithm Selection**: 根据精度要求选择合适的算法
+1. **批量采样** / **Batch Sampling**: 使用`sample(n)`而不是多次调用`sample()` / Use `sample(n)` instead of multiple calls to `sample()`
+2. **缓存结果** / **Cache Results**: 对于重复计算，考虑缓存结果 / For repeated calculations, consider caching results
+3. **内存管理** / **Memory Management**: 及时释放不需要的大数组 / Timely release of unnecessary large arrays
+4. **算法选择** / **Algorithm Selection**: 根据精度要求选择合适的算法 / Choose appropriate algorithms based on precision requirements
 
 ---
 
