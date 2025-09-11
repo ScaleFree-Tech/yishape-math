@@ -138,7 +138,7 @@ float dotProduct = v1.dot(v2.slice(5, -1, 1));
 
 // 统计运算 / Statistical operations
 float mean = v1.mean();
-float std = v1.std(ddof = 1);//计算样本标准差
+float std = v1.std(1);//ddof = 1, 计算样本标准差/ sample std
 ```
 
 #### 矩阵运算 / Matrix Operations
