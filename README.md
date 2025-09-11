@@ -70,51 +70,6 @@
 - **交互功能** / **Interactive Features**: 缩放、平移、悬停、图例交互等
   - *Zoom, pan, hover, legend interaction and more*
 
-#### 图表展示 / Chart Gallery
-
-以下展示了YiShape-Math支持的各种图表类型，点击图片可查看详细的使用示例：
-
-The following showcases various chart types supported by YiShape-Math. Click on the images to view detailed usage examples:
-
-##### 基础图表 / Basic Charts
-
-| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
-|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
-| **线图 / Line Chart** | [![单向量线图示例](docs/images/line.png)](./docs/Visualization-Plotting.md#单向量线图--single-vector-line-chart) | 展示数据随时间的变化趋势 / Display data trends over time | **多组线图 / Multi-group Line Chart** | [![多组线图示例](docs/images/line_multi.png)](./docs/Visualization-Plotting.md#多组线图--multi-group-line-chart) | 比较不同组别的数据趋势 / Compare data trends across different groups |
-| **散点图 / Scatter Chart** | [![散点图示例](docs/images/scatter.png)](./docs/Visualization-Plotting.md#基础散点图--basic-scatter-chart) | 展示两个变量之间的关系 / Display relationships between two variables | **多组散点图 / Multi-group Scatter Chart** | [![多组散点图示例](docs/images/scatter_multi.png)](./docs/Visualization-Plotting.md#多组散点图--multi-group-scatter-chart) | 比较不同组别的数据分布 / Compare data distributions across different groups |
-| **饼图 / Pie Chart** | [![饼图示例](docs/images/pie.png)](./docs/Visualization-Plotting.md#饼图--pie-charts) | 展示各部分占整体的比例 / Display proportion of each part to the whole | **柱状图 / Bar Chart** | [![柱状图示例](docs/images/bar.png)](./docs/Visualization-Plotting.md#基础柱状图--basic-bar-chart) | 比较不同类别的数值大小 / Compare numerical values across different categories |
-| **分组柱状图 / Grouped Bar Chart** | [![分组柱状图示例](docs/images/grouped_bar.png)](./docs/Visualization-Plotting.md#分组柱状图--grouped-bar-chart) | 多维度比较分析 / Multi-dimensional comparative analysis | **直方图 / Histogram** | [![直方图示例](docs/images/hist.png)](./docs/Visualization-Plotting.md#直方图--histograms) | 展示数据的分布情况 / Display data distribution |
-
-##### 极坐标图表 / Polar Coordinate Charts
-
-| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
-|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
-| **极坐标柱状图 / Polar Bar Chart** | [![极坐标柱状图示例](docs/images/polar_bar.png)](./docs/Visualization-Plotting.md#极坐标柱状图--polar-bar-chart) | 在极坐标系中展示柱状图 / Display bar charts in polar coordinate system | **极坐标线图 / Polar Line Chart** | [![极坐标线图示例](docs/images/polar_line.png)](./docs/Visualization-Plotting.md#极坐标线图--polar-line-chart) | 在极坐标系中展示线图 / Display line charts in polar coordinate system |
-| **极坐标散点图 / Polar Scatter Chart** | [![极坐标散点图示例](docs/images/polar_scatter.png)](./docs/Visualization-Plotting.md#极坐标散点图--polar-scatter-chart) | 在极坐标系中展示散点图 / Display scatter charts in polar coordinate system | | | |
-
-##### 统计图表 / Statistical Charts
-
-| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
-|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
-| **箱线图 / Box Plot** | [![箱线图示例](docs/images/boxplot.png)](./docs/Visualization-Plotting.md#箱线图--box-plot) | 展示数据的分布特征和异常值 / Display data distribution characteristics and outliers | **小提琴图 / Violin Plot** | [![小提琴图示例](docs/images/violinplot_multi.png)](./docs/Visualization-Plotting.md#小提琴图--violin-plot) | 结合箱线图和密度图的特点 / Combine characteristics of box plots and density plots |
-| **K线图 / Candlestick Chart** | [![K线图示例](docs/images/candlestick.png)](./docs/Visualization-Plotting.md#k线图蜡烛图--candlestick-chart) | 展示金融数据的开盘价、收盘价等 / Display financial data including opening, closing prices | | | |
-
-##### 特殊图表 / Special Charts
-
-| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
-|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
-| **漏斗图 / Funnel Chart** | [![漏斗图示例](docs/images/funnel.png)](./docs/Visualization-Plotting.md#漏斗图--funnel-chart) | 展示流程中各个阶段的转化情况 / Display conversion rates at each stage of a process | **桑基图 / Sankey Diagram** | [![桑基图示例](docs/images/sankey.png)](./docs/Visualization-Plotting.md#桑基图--sankey-diagram) | 展示数据在多个节点之间的流动 / Display data flow between multiple nodes |
-| **旭日图 / Sunburst Chart** | [![旭日图示例](docs/images/sunburst.png)](./docs/Visualization-Plotting.md#旭日图--sunburst-chart) | 展示层次数据的比例关系 / Display proportional relationships in hierarchical data | **主题河流图 / Theme River Chart** | [![主题河流图示例](docs/images/theme_river.png)](./docs/Visualization-Plotting.md#主题河流图--theme-river-chart) | 展示时间序列数据中不同主题的变化 / Display trends of different themes in time series data |
-| **树图 / Tree Chart** | [![树图示例](docs/images/tree.png)](./docs/Visualization-Plotting.md#树图--tree-chart) | 展示层次结构数据 / Display hierarchical structure data | **矩形树图 / Treemap Chart** | [![矩形树图示例](docs/images/treemap.png)](./docs/Visualization-Plotting.md#矩形树图--treemap-chart) | 通过矩形面积大小表示数据量 / Represent data volumes through rectangle sizes |
-| **关系图 / Graph Chart** | [![关系图示例](docs/images/graph.png)](./docs/Visualization-Plotting.md#关系图--graph-chart) | 展示节点之间的连接关系 / Display connections between nodes | **平行坐标图 / Parallel Coordinates Chart** | [![平行坐标图示例](docs/images/parallel.png)](./docs/Visualization-Plotting.md#平行坐标图--parallel-coordinates-chart) | 展示多维数据的分布和关系 / Display distribution and relationships of multi-dimensional data |
-
-##### 扩展图表 / Enhanced Charts
-
-| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
-|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
-| **热力图 / Heatmap** | [![热力图示例](docs/images/heatmap.png)](./docs/Visualization-Plotting.md#热力图--heatmap) | 通过颜色深浅表示二维数据大小 / Represent two-dimensional data magnitude through color intensity | **雷达图 / Radar Chart** | [![雷达图示例](docs/images/radar.png)](./docs/Visualization-Plotting.md#雷达图--radar-chart) | 展示多维数据的分布情况 / Display distribution of multi-dimensional data |
-| **仪表盘 / Gauge Chart** | [![仪表盘示例](docs/images/gauge.png)](./docs/Visualization-Plotting.md#仪表盘--gauge-chart) | 展示单一指标的当前值 / Display current values of single indicators | | | |
-
 
 ### 🤖 机器学习算法 / Machine Learning Algorithms
 - **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化
@@ -332,6 +287,55 @@ Plots.gauge(75.5f, 100.0f, 0.0f)
     .title("系统性能监控", "CPU使用率实时监控")
     .saveAsHtml("gauge_chart.html");
 ```
+
+#### 图表展示 / Chart Gallery
+
+以下展示了YiShape-Math支持的各种图表类型，点击图片可查看详细的使用示例：
+
+The following showcases various chart types supported by YiShape-Math. Click on the images to view detailed usage examples:
+
+##### 基础图表 / Basic Charts
+
+| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
+|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
+| **线图 / Line Chart** | [![单向量线图示例](docs/images/line.png)](./docs/Visualization-Plotting.md#单向量线图--single-vector-line-chart) | 展示数据随时间的变化趋势 / Display data trends over time | **多组线图 / Multi-group Line Chart** | [![多组线图示例](docs/images/line_multi.png)](./docs/Visualization-Plotting.md#多组线图--multi-group-line-chart) | 比较不同组别的数据趋势 / Compare data trends across different groups |
+| **散点图 / Scatter Chart** | [![散点图示例](docs/images/scatter.png)](./docs/Visualization-Plotting.md#基础散点图--basic-scatter-chart) | 展示两个变量之间的关系 / Display relationships between two variables | **多组散点图 / Multi-group Scatter Chart** | [![多组散点图示例](docs/images/scatter_multi.png)](./docs/Visualization-Plotting.md#多组散点图--multi-group-scatter-chart) | 比较不同组别的数据分布 / Compare data distributions across different groups |
+| **饼图 / Pie Chart** | [![饼图示例](docs/images/pie.png)](./docs/Visualization-Plotting.md#饼图--pie-charts) | 展示各部分占整体的比例 / Display proportion of each part to the whole | **柱状图 / Bar Chart** | [![柱状图示例](docs/images/bar.png)](./docs/Visualization-Plotting.md#基础柱状图--basic-bar-chart) | 比较不同类别的数值大小 / Compare numerical values across different categories |
+| **分组柱状图 / Grouped Bar Chart** | [![分组柱状图示例](docs/images/grouped_bar.png)](./docs/Visualization-Plotting.md#分组柱状图--grouped-bar-chart) | 多维度比较分析 / Multi-dimensional comparative analysis | **直方图 / Histogram** | [![直方图示例](docs/images/hist.png)](./docs/Visualization-Plotting.md#直方图--histograms) | 展示数据的分布情况 / Display data distribution |
+
+##### 极坐标图表 / Polar Coordinate Charts
+
+| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
+|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
+| **极坐标柱状图 / Polar Bar Chart** | [![极坐标柱状图示例](docs/images/polar_bar.png)](./docs/Visualization-Plotting.md#极坐标柱状图--polar-bar-chart) | 在极坐标系中展示柱状图 / Display bar charts in polar coordinate system | **极坐标线图 / Polar Line Chart** | [![极坐标线图示例](docs/images/polar_line.png)](./docs/Visualization-Plotting.md#极坐标线图--polar-line-chart) | 在极坐标系中展示线图 / Display line charts in polar coordinate system |
+| **极坐标散点图 / Polar Scatter Chart** | [![极坐标散点图示例](docs/images/polar_scatter.png)](./docs/Visualization-Plotting.md#极坐标散点图--polar-scatter-chart) | 在极坐标系中展示散点图 / Display scatter charts in polar coordinate system | | | |
+
+##### 统计图表 / Statistical Charts
+
+| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
+|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
+| **单组箱线图 / Single Box Plot** | [![单组箱线图示例](docs/images/boxplot.png)](./docs/Visualization-Plotting.md#单组箱线图--single-box-plot) | 展示单个数据集的分布特征和异常值 / Display distribution characteristics and outliers of a single dataset | **多组箱线图 / Multi-group Box Plot** | [![多组箱线图示例](docs/images/boxplot_multi.png)](./docs/Visualization-Plotting.md#多组箱线图--multi-group-box-plot) | 比较多个数据集的分布特征 / Compare distribution characteristics across multiple datasets |
+| **单组小提琴图 / Single Violin Plot** | [![单组小提琴图示例](docs/images/violinplot.png)](./docs/Visualization-Plotting.md#单组小提琴图--single-violin-plot) | 结合箱线图和密度图的特点，展示单个数据集 / Combine characteristics of box plots and density plots for a single dataset | **多组小提琴图 / Multi-group Violin Plot** | [![多组小提琴图示例](docs/images/violinplot_multi.png)](./docs/Visualization-Plotting.md#多组小提琴图--multi-group-violin-plot) | 比较多个数据集的分布密度 / Compare distribution densities across multiple datasets |
+| **K线图 / Candlestick Chart** | [![K线图示例](docs/images/candlestick.png)](./docs/Visualization-Plotting.md#k线图蜡烛图--candlestick-chart) | 展示金融数据的开盘价、收盘价等 / Display financial data including opening, closing prices | | | |
+
+##### 特殊图表 / Special Charts
+
+| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
+|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
+| **漏斗图 / Funnel Chart** | [![漏斗图示例](docs/images/funnel.png)](./docs/Visualization-Plotting.md#漏斗图--funnel-chart) | 展示流程中各个阶段的转化情况 / Display conversion rates at each stage of a process | **桑基图 / Sankey Diagram** | [![桑基图示例](docs/images/sankey.png)](./docs/Visualization-Plotting.md#桑基图--sankey-diagram) | 展示数据在多个节点之间的流动 / Display data flow between multiple nodes |
+| **旭日图 / Sunburst Chart** | [![旭日图示例](docs/images/sunburst.png)](./docs/Visualization-Plotting.md#旭日图--sunburst-chart) | 展示层次数据的比例关系 / Display proportional relationships in hierarchical data | **主题河流图 / Theme River Chart** | [![主题河流图示例](docs/images/theme_river.png)](./docs/Visualization-Plotting.md#主题河流图--theme-river-chart) | 展示时间序列数据中不同主题的变化 / Display trends of different themes in time series data |
+| **树图 / Tree Chart** | [![树图示例](docs/images/tree.png)](./docs/Visualization-Plotting.md#树图--tree-chart) | 展示层次结构数据 / Display hierarchical structure data | **矩形树图 / Treemap Chart** | [![矩形树图示例](docs/images/treemap.png)](./docs/Visualization-Plotting.md#矩形树图--treemap-chart) | 通过矩形面积大小表示数据量 / Represent data volumes through rectangle sizes |
+| **关系图 / Graph Chart** | [![关系图示例](docs/images/graph.png)](./docs/Visualization-Plotting.md#关系图--graph-chart) | 展示节点之间的连接关系 / Display connections between nodes | **平行坐标图 / Parallel Coordinates Chart** | [![平行坐标图示例](docs/images/parallel.png)](./docs/Visualization-Plotting.md#平行坐标图--parallel-coordinates-chart) | 展示多维数据的分布和关系 / Display distribution and relationships of multi-dimensional data |
+
+##### 扩展图表 / Enhanced Charts
+
+| 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
+|---------------------|------------------|-------------------|---------------------|------------------|-------------------|
+| **热力图 / Heatmap** | [![热力图示例](docs/images/heatmap.png)](./docs/Visualization-Plotting.md#热力图--heatmap) | 通过颜色深浅表示二维数据大小 / Represent two-dimensional data magnitude through color intensity | **雷达图 / Radar Chart** | [![雷达图示例](docs/images/radar.png)](./docs/Visualization-Plotting.md#雷达图--radar-chart) | 展示多维数据的分布情况 / Display distribution of multi-dimensional data |
+| **仪表盘 / Gauge Chart** | [![仪表盘示例](docs/images/gauge.png)](./docs/Visualization-Plotting.md#仪表盘--gauge-chart) | 展示单一指标的当前值 / Display current values of single indicators | | | |
+
+
+
 
 
 #### 线性回归 / Linear Regression

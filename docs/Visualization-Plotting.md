@@ -38,8 +38,10 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 
 | 图表类型 / Chart Type | 示例图片 / Example | 描述 / Description |
 |---------------------|------------------|-------------------|
-| **箱线图 / Box Plot** | [![箱线图示例](docs/images/boxplot.png)](./docs/Visualization-Plotting.md#箱线图--box-plot) | 展示数据的分布特征和异常值 / Display data distribution characteristics and outliers |
-| **小提琴图 / Violin Plot** | [![小提琴图示例](docs/images/violinplot_multi.png)](./docs/Visualization-Plotting.md#小提琴图--violin-plot) | 结合箱线图和密度图的特点 / Combine characteristics of box plots and density plots |
+| **单组箱线图 / Single Group Box Plot** | [![单组箱线图示例](docs/images/boxplot.png)](./docs/Visualization-Plotting.md#单组箱线图--single-group-box-plot) | 展示单一数据集的分布特征和异常值 / Display distribution characteristics and outliers of a single dataset |
+| **多组箱线图 / Multi-group Box Plot** | [![多组箱线图示例](docs/images/boxplot_multi.png)](./docs/Visualization-Plotting.md#多组箱线图--multi-group-box-plot) | 比较多个数据组的分布特征和异常值 / Compare distribution characteristics and outliers across multiple data groups |
+| **单组小提琴图 / Single Group Violin Plot** | [![单组小提琴图示例](docs/images/violinplot.png)](./docs/Visualization-Plotting.md#单组小提琴图--single-group-violin-plot) | 展示单一数据集的分布形状和统计特征 / Display distribution shape and statistical features of a single dataset |
+| **多组小提琴图 / Multi-group Violin Plot** | [![多组小提琴图示例](docs/images/violinplot_multi.png)](./docs/Visualization-Plotting.md#多组小提琴图--multi-group-violin-plot) | 比较多个数据组的分布形状和统计特征 / Compare distribution shapes and statistical features across multiple data groups |
 | **K线图 / Candlestick Chart** | [![K线图示例](docs/images/candlestick.png)](./docs/Visualization-Plotting.md#k线图蜡烛图--candlestick-chart) | 展示金融数据的开盘价、收盘价等 / Display financial data including opening, closing prices |
 
 ##### 特殊图表 / Special Charts
@@ -1045,25 +1047,62 @@ Statistical charts are used to display statistical characteristics of data, incl
 
 Box plots are used to display data distribution characteristics, including median, quartiles, outliers, and other statistical information.
 
-![箱线图示例](images/boxplot.png)
+#### 单组箱线图 / Single Group Box Plot
+
+展示单一数据集的分布情况，包含中位数、四分位数、异常值等关键统计信息。
+
+Display distribution of a single dataset, including median, quartiles, outliers, and other key statistical information.
+
+![单组箱线图示例](images/boxplot.png)
 
 ```java
-// 创建箱线图 / Create box plot
+// 创建单组箱线图 / Create single group box plot
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-List<String> labels = Arrays.asList("数据集");
+plot.boxplot(data);
+plot.setTitle("单组箱线图", "数据分布统计特征分析");
+plot.setXlabel("数据集");
+plot.setYlabel("数值");
+plot.saveAsHtml("single_boxplot.html");
+```
+
+#### 多组箱线图 / Multi-group Box Plot
+
+比较多个数据组的分布情况，适用于对比分析不同组别的统计特征。
+
+Compare distributions of multiple data groups, suitable for comparative analysis of statistical characteristics across different groups.
+
+![多组箱线图示例](images/boxplot_multi.png)
+
+```java
+// 创建多组箱线图 / Create multi-group box plot
+IPlot plot = Plots.of(800, 600);
+IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
+                                     2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A",
+                                   "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B");
 plot.boxplot(data, labels);
-plot.setTitle("箱线图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("多组箱线图对比", "不同组别的数据分布对比分析");
+plot.setXlabel("组别");
+plot.setYlabel("数值");
+plot.saveAsHtml("multi_boxplot.html");
 ```
 
 #### 流式API示例 / Fluent API Example
 
 ```java
-// 使用流式API创建箱线图 / Create box plot using fluent API
+// 使用流式API创建单组箱线图 / Create single group box plot using fluent API
 IPlot plot = Plots.of(800, 600)
     .title("数据分布箱线图", "各指标的数据分布情况")
     .xlabel("指标")
+    .ylabel("数值")
+    .boxplot(data)
+    .show();
+
+// 使用流式API创建多组箱线图 / Create multi-group box plot using fluent API
+IPlot multiPlot = Plots.of(800, 600)
+    .title("多组数据分布对比", "不同组别的统计特征对比")
+    .xlabel("组别")
     .ylabel("数值")
     .boxplot(data, labels)
     .show();
@@ -1075,13 +1114,14 @@ IPlot plot = Plots.of(800, 600)
 
 Violin plots combine the characteristics of box plots and density plots, displaying both data distribution shape and statistical features, suitable for data distribution visualization analysis.
 
-![小提琴图示例](images/violinplot_multi.png)
 
 #### 单组小提琴图 / Single Group Violin Plot
 
 展示单一数据集的分布情况，包含密度曲线和箱线图信息。
 
 Display distribution of a single dataset, including density curves and box plot information.
+
+![单组小提琴图示例](images/violinplot.png)
 
 ```java
 // 创建小提琴图 / Create violin plot
@@ -1099,6 +1139,8 @@ plot.saveAsHtml("violin_plot.html");
 比较多个数据组的分布情况，适用于对比分析。
 
 Compare distributions of multiple data groups, suitable for comparative analysis.
+
+![多组小提琴图示例](images/violinplot_multi.png)
 
 ```java
 // 创建多组小提琴图 / Create multi-group violin plot
