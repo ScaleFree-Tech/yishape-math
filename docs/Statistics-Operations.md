@@ -26,6 +26,56 @@ The `Stat` class and related probability distribution classes provide comprehens
 
 `ParameterEstimation` class provides parameter estimation functionality, including confidence interval estimation for means and variances.
 
+### 方差分析类 / Analysis of Variance (ANOVA) Classes
+
+`ANOVA` 类提供了完整的方差分析功能，包括单因素方差分析、两因素方差分析、重复测量方差分析等。
+
+`ANOVA` class provides comprehensive analysis of variance functionality, including one-way ANOVA, two-way ANOVA, repeated measures ANOVA, etc.
+
+#### 单因素方差分析 / One-Way ANOVA
+
+用于比较三个或更多组之间的均值差异，检验是否存在显著差异。
+
+Used to compare mean differences between three or more groups, testing for significant differences.
+
+#### 两因素方差分析 / Two-Way ANOVA
+
+用于分析两个因素对因变量的影响，包括主效应和交互效应。
+
+Used to analyze the effects of two factors on the dependent variable, including main effects and interaction effects.
+
+#### 重复测量方差分析 / Repeated Measures ANOVA
+
+用于分析同一被试在不同时间点或条件下的测量数据。
+
+Used to analyze measurement data from the same subjects at different time points or conditions.
+
+### 检验结果类 / Testing Result Classes
+
+#### TestingResult 类 / TestingResult Class
+
+封装假设检验的结果，包括检验是否通过、p值和置信区间。
+
+Encapsulates hypothesis testing results, including whether the test passes, p-value, and confidence interval.
+
+#### ANOVAResult 类 / ANOVAResult Class
+
+封装单因素方差分析的结果，包括平方和、F统计量和p值。
+
+Encapsulates one-way ANOVA results, including sum of squares, F-statistic, and p-value.
+
+#### TwoWayANOVAResult 类 / TwoWayANOVAResult Class
+
+封装两因素方差分析的结果，包括各因素的F统计量和p值。
+
+Encapsulates two-way ANOVA results, including F-statistics and p-values for each factor.
+
+#### RepeatedMeasuresANOVAResult 类 / RepeatedMeasuresANOVAResult Class
+
+封装重复测量方差分析的结果，包括时间效应和被试效应的统计量。
+
+Encapsulates repeated measures ANOVA results, including statistics for time effects and subject effects.
+
 ## 主要功能 / Main Features
 
 ### 1. 概率分布创建 / Probability Distribution Creation
@@ -563,6 +613,85 @@ Tuple2<Float, Float> meanIntervalT = estimator.estimateMeanIntevalWithT(sample, 
 Tuple2<Float, Float> varInterval = estimator.estimateVarIntevalWithChi2(sample, confidence);
 ```
 
+### 6. 方差分析功能 / Analysis of Variance (ANOVA) Features
+
+#### 单因素方差分析 / One-Way ANOVA
+
+```java
+// 创建样本数据 / Create sample data
+IVector group1 = IVector.of(new float[]{1.2f, 2.3f, 1.8f, 3.1f, 2.7f});
+IVector group2 = IVector.of(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
+IVector group3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
+
+// 执行单因素方差分析 / Perform one-way ANOVA
+ANOVAResult result = ANOVA.performOneWayANOVA(group1, group2, group3);
+
+// 查看结果 / View results
+System.out.println("F统计量: " + result.fStatistic);
+System.out.println("p值: " + result.pValue);
+System.out.println("组间平方和: " + result.ssBetween);
+System.out.println("组内平方和: " + result.ssWithin);
+```
+
+#### 两因素方差分析 / Two-Way ANOVA
+
+```java
+// 创建三维数据数组 [因素A][因素B][观测值] / Create 3D data array [FactorA][FactorB][Observations]
+float[][][] data = {
+    {{1.2f, 1.5f, 1.8f}, {2.1f, 2.4f, 2.7f}},  // 因素A=1
+    {{2.3f, 2.6f, 2.9f}, {3.2f, 3.5f, 3.8f}}   // 因素A=2
+};
+
+// 执行两因素方差分析 / Perform two-way ANOVA
+TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
+
+// 查看结果 / View results
+System.out.println("因素A F统计量: " + result.factorAF + ", p值: " + result.factorAP);
+System.out.println("因素B F统计量: " + result.factorBF + ", p值: " + result.factorBP);
+System.out.println("交互效应 F统计量: " + result.interactionF + ", p值: " + result.interactionP);
+```
+
+#### 重复测量方差分析 / Repeated Measures ANOVA
+
+```java
+// 创建重复测量数据 [被试][时间点] / Create repeated measures data [Subject][TimePoint]
+float[][] data = {
+    {1.2f, 1.8f, 2.1f, 2.5f},  // 被试1
+    {1.5f, 2.0f, 2.3f, 2.7f},  // 被试2
+    {1.8f, 2.2f, 2.5f, 2.9f}   // 被试3
+};
+
+// 执行重复测量方差分析 / Perform repeated measures ANOVA
+RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(data);
+
+// 查看结果 / View results
+System.out.println("时间效应 F统计量: " + result.timeF + ", p值: " + result.timeP);
+System.out.println("被试效应 F统计量: " + result.subjectF + ", p值: " + result.subjectP);
+```
+
+#### 正态性检验 / Normality Test
+
+```java
+// 检验数据是否服从正态分布 / Test if data follows normal distribution
+boolean isNormal = ANOVA.testNormality(sample);
+System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过"));
+```
+
+#### 方差齐性检验 / Homogeneity of Variance Test
+
+```java
+// 检验各组方差是否相等 / Test if variances are equal across groups
+boolean isHomogeneous = ANOVA.testHomogeneityOfVariance(group1, group2, group3);
+System.out.println("方差齐性: " + (isHomogeneous ? "通过" : "未通过"));
+```
+
+#### Tukey HSD多重比较 / Tukey HSD Multiple Comparisons
+
+```java
+// 执行Tukey HSD多重比较 / Perform Tukey HSD multiple comparisons
+ANOVA.performTukeyHSD(group1, group2, group3);
+```
+
 ## 使用示例 / Usage Examples
 
 详细的代码示例请参考 [Statistics-Examples.md](examples/Statistics-Examples.md) 文档。
@@ -713,6 +842,14 @@ public class CustomDistribution implements IContinuousDistribution {
 | 均值Z估计 / Mean Z-estimation | `estimator.estimateMeanIntevalWithZ(sample, conf, σ)` | `scipy.stats.norm.interval(conf, loc=mean, scale=σ/√n)` | 已知方差的均值估计 / Mean estimation with known variance |
 | 均值t估计 / Mean t-estimation | `estimator.estimateMeanIntevalWithT(sample, conf)` | `scipy.stats.t.interval(conf, df, loc=mean, scale=s/√n)` | 未知方差的均值估计 / Mean estimation with unknown variance |
 | 方差估计 / Variance estimation | `estimator.estimateVarIntevalWithChi2(sample, conf)` | `scipy.stats.chi2.interval(conf, df, scale=s²)` | 方差置信区间估计 / Variance confidence interval estimation |
+
+|| **方差分析 / Analysis of Variance** | | | |
+|| 单因素方差分析 / One-way ANOVA | `ANOVA.performOneWayANOVA(groups...)` | `scipy.stats.f_oneway(*groups)` | 单因素方差分析 / One-way analysis of variance |
+|| 两因素方差分析 / Two-way ANOVA | `ANOVA.performTwoWayANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 两因素方差分析 / Two-way analysis of variance |
+|| 重复测量方差分析 / Repeated measures ANOVA | `ANOVA.performRepeatedMeasuresANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 重复测量方差分析 / Repeated measures analysis of variance |
+|| 正态性检验 / Normality test | `ANOVA.testNormality(sample)` | `scipy.stats.normaltest(sample)` | 正态性检验 / Normality test |
+|| 方差齐性检验 / Homogeneity of variance test | `ANOVA.testHomogeneityOfVariance(groups...)` | `scipy.stats.levene(*groups)` | 方差齐性检验 / Homogeneity of variance test |
+|| Tukey HSD多重比较 / Tukey HSD multiple comparisons | `ANOVA.performTukeyHSD(groups...)` | `scipy.stats.tukey_hsd(*groups)` | Tukey HSD多重比较 / Tukey HSD multiple comparisons |
 
 ## 最佳实践建议 / Best Practices Recommendations
 

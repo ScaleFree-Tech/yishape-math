@@ -8,7 +8,7 @@ This document systematically organizes detailed usage examples for the statistic
 
 ---
 
-## 第一部分：入门基础 (Level 1 - 基础入门)
+## 第一部分：入门基础 (Level 1 - 基础入门) / Part 1: Beginner Level (Level 1 - Basic Introduction)
 
 ### 1.1 环境准备和基本概念 / Environment Setup and Basic Concepts
 
@@ -105,7 +105,7 @@ public class UniformDistributionBasicExample {
 
 ---
 
-## 第二部分：基础应用 (Level 2 - 基础应用)
+## 第二部分：基础应用 (Level 2 - 基础应用) / Part 2: Basic Applications (Level 2 - Basic Applications)
 
 ### 2.1 正态分布应用 / Normal Distribution Applications
 
@@ -196,7 +196,7 @@ public class ExponentialDistributionBasicExample {
 
 ---
 
-## 第三部分：中级应用 (Level 3 - 中级应用)
+## 第三部分：中级应用 (Level 3 - 中级应用) / Part 3: Intermediate Applications (Level 3 - Intermediate Applications)
 
 ### 3.1 t分布应用 / t-Distribution Applications
 
@@ -338,7 +338,7 @@ public class PoissonDistributionApplicationExample {
 
 ---
 
-## 第四部分：高级应用 (Level 4 - 高级应用)
+## 第四部分：高级应用 (Level 4 - 高级应用) / Part 4: Advanced Applications (Level 4 - Advanced Applications)
 
 ### 4.1 参数估计 / Parameter Estimation
 
@@ -457,7 +457,7 @@ public class BinomialDistributionApplicationExample {
 
 ---
 
-## 第五部分：专业应用 (Level 5 - 专业应用)
+## 第五部分：专业应用 (Level 5 - 专业应用) / Part 5: Professional Applications (Level 5 - Professional Applications)
 
 ### 5.1 质量控制分析 / Quality Control Analysis
 
@@ -729,7 +729,173 @@ public class ExperimentalDesignAnalysisExample {
 }
 ```
 
-### 5.5 蒙特卡洛模拟 / Monte Carlo Simulation
+### 5.5 方差分析应用 / Analysis of Variance (ANOVA) Applications
+
+```java
+public class ANOVAApplicationExample {
+    public static void main(String[] args) {
+        System.out.println("=== 方差分析应用示例 ===");
+        
+        // 单因素方差分析示例
+        demonstrateOneWayANOVA();
+        
+        // 两因素方差分析示例
+        demonstrateTwoWayANOVA();
+        
+        // 重复测量方差分析示例
+        demonstrateRepeatedMeasuresANOVA();
+        
+        // 假设检验示例
+        demonstrateAssumptionTests();
+    }
+    
+    public static void demonstrateOneWayANOVA() {
+        System.out.println("\n--- 单因素方差分析示例 / One-Way ANOVA Example ---");
+        
+        // 创建三个组的数据
+        // 假设研究不同教学方法对学生成绩的影响
+        IVector traditionalMethod = IVector.of(new float[]{75, 78, 82, 85, 88, 90, 92, 95});
+        IVector onlineMethod = IVector.of(new float[]{70, 73, 76, 79, 82, 85, 87, 90});
+        IVector hybridMethod = IVector.of(new float[]{80, 83, 86, 89, 92, 95, 97, 100});
+        
+        System.out.println("教学方法数据:");
+        System.out.println("  传统方法: " + traditionalMethod.mean() + " ± " + traditionalMethod.std());
+        System.out.println("  在线方法: " + onlineMethod.mean() + " ± " + onlineMethod.std());
+        System.out.println("  混合方法: " + hybridMethod.mean() + " ± " + hybridMethod.std());
+        
+        // 执行单因素方差分析
+        ANOVAResult result = ANOVA.performOneWayANOVA(traditionalMethod, onlineMethod, hybridMethod);
+        
+        System.out.println("\n单因素方差分析结果:");
+        System.out.println("  F统计量: " + result.fStatistic);
+        System.out.println("  p值: " + result.pValue);
+        System.out.println("  组间平方和: " + result.ssBetween);
+        System.out.println("  组内平方和: " + result.ssWithin);
+        System.out.println("  总平方和: " + result.ssTotal);
+        
+        // 解释结果
+        if (result.pValue < 0.05) {
+            System.out.println("  结论: 不同教学方法对学生成绩有显著影响 (p < 0.05)");
+        } else {
+            System.out.println("  结论: 不同教学方法对学生成绩无显著影响 (p ≥ 0.05)");
+        }
+        
+        // 执行Tukey HSD多重比较
+        ANOVA.performTukeyHSD(traditionalMethod, onlineMethod, hybridMethod);
+    }
+    
+    public static void demonstrateTwoWayANOVA() {
+        System.out.println("\n--- 两因素方差分析示例 / Two-Way ANOVA Example ---");
+        
+        // 创建两因素数据 [教学方法][学习风格]
+        // 因素A: 教学方法 (传统 vs 在线)
+        // 因素B: 学习风格 (视觉型 vs 听觉型)
+        float[][][] data = {
+            // 传统方法
+            {{85, 87, 89, 91}, {78, 80, 82, 84}},  // 视觉型, 听觉型
+            // 在线方法
+            {{88, 90, 92, 94}, {81, 83, 85, 87}}   // 视觉型, 听觉型
+        };
+        
+        System.out.println("两因素实验设计:");
+        System.out.println("  因素A: 教学方法 (传统 vs 在线)");
+        System.out.println("  因素B: 学习风格 (视觉型 vs 听觉型)");
+        
+        // 执行两因素方差分析
+        TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
+        
+        System.out.println("\n两因素方差分析结果:");
+        System.out.println("  教学方法主效应: F=" + result.factorAF + ", p=" + result.factorAP);
+        System.out.println("  学习风格主效应: F=" + result.factorBF + ", p=" + result.factorBP);
+        System.out.println("  交互效应: F=" + result.interactionF + ", p=" + result.interactionP);
+        
+        // 解释结果
+        System.out.println("\n结果解释:");
+        if (result.factorAP < 0.05) {
+            System.out.println("  教学方法有显著主效应");
+        }
+        if (result.factorBP < 0.05) {
+            System.out.println("  学习风格有显著主效应");
+        }
+        if (result.interactionP < 0.05) {
+            System.out.println("  教学方法与学习风格存在显著交互效应");
+        }
+    }
+    
+    public static void demonstrateRepeatedMeasuresANOVA() {
+        System.out.println("\n--- 重复测量方差分析示例 / Repeated Measures ANOVA Example ---");
+        
+        // 创建重复测量数据 [被试][时间点]
+        // 研究训练前后和训练后的技能水平变化
+        float[][] data = {
+            {60, 65, 70, 75},  // 被试1: 训练前, 训练中, 训练后, 随访
+            {55, 62, 68, 72},  // 被试2
+            {58, 64, 69, 74},  // 被试3
+            {62, 67, 72, 77},  // 被试4
+            {57, 63, 68, 73}   // 被试5
+        };
+        
+        System.out.println("重复测量实验设计:");
+        System.out.println("  被试数: " + data.length);
+        System.out.println("  测量时间点: " + data[0].length);
+        System.out.println("  时间点: 训练前, 训练中, 训练后, 随访");
+        
+        // 执行重复测量方差分析
+        RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(data);
+        
+        System.out.println("\n重复测量方差分析结果:");
+        System.out.println("  时间效应: F=" + result.timeF + ", p=" + result.timeP);
+        System.out.println("  被试效应: F=" + result.subjectF + ", p=" + result.subjectP);
+        
+        // 解释结果
+        System.out.println("\n结果解释:");
+        if (result.timeP < 0.05) {
+            System.out.println("  时间因素有显著效应，技能水平随时间显著变化");
+        } else {
+            System.out.println("  时间因素无显著效应，技能水平随时间无显著变化");
+        }
+        if (result.subjectP < 0.05) {
+            System.out.println("  被试间存在显著差异");
+        }
+    }
+    
+    public static void demonstrateAssumptionTests() {
+        System.out.println("\n--- 假设检验示例 / Assumption Tests Example ---");
+        
+        // 创建示例数据
+        IVector sample1 = IVector.of(new float[]{1.2f, 2.3f, 1.8f, 3.1f, 2.7f});
+        IVector sample2 = IVector.of(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
+        IVector sample3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
+        
+        System.out.println("假设检验:");
+        
+        // 正态性检验
+        System.out.println("\n1. 正态性检验 / Normality Test:");
+        boolean isNormal1 = ANOVA.testNormality(sample1);
+        boolean isNormal2 = ANOVA.testNormality(sample2);
+        boolean isNormal3 = ANOVA.testNormality(sample3);
+        
+        System.out.println("  样本1正态性: " + (isNormal1 ? "通过" : "未通过"));
+        System.out.println("  样本2正态性: " + (isNormal2 ? "通过" : "未通过"));
+        System.out.println("  样本3正态性: " + (isNormal3 ? "通过" : "未通过"));
+        
+        // 方差齐性检验
+        System.out.println("\n2. 方差齐性检验 / Homogeneity of Variance Test:");
+        boolean isHomogeneous = ANOVA.testHomogeneityOfVariance(sample1, sample2, sample3);
+        System.out.println("  方差齐性: " + (isHomogeneous ? "通过" : "未通过"));
+        
+        // 给出建议
+        System.out.println("\n3. 分析建议 / Analysis Recommendations:");
+        if (isNormal1 && isNormal2 && isNormal3 && isHomogeneous) {
+            System.out.println("  所有假设均满足，可以使用参数检验方法");
+        } else {
+            System.out.println("  部分假设未满足，建议使用非参数检验方法");
+        }
+    }
+}
+```
+
+### 5.6 蒙特卡洛模拟 / Monte Carlo Simulation
 
 ```java
 public class MonteCarloSimulationExample {
@@ -890,24 +1056,24 @@ public class MonteCarloSimulationExample {
 ## 学习路径建议 / Learning Path Recommendations
 
 ### 初学者路径 / Beginner Path
-1. 从第一部分开始，掌握基本统计量计算
-2. 理解正态分布和均匀分布的基本概念
-3. 学习简单的随机采样和概率计算
+1. 从第一部分开始，掌握基本统计量计算 / Start with Part 1, master basic statistical calculations
+2. 理解正态分布和均匀分布的基本概念 / Understand basic concepts of normal and uniform distributions
+3. 学习简单的随机采样和概率计算 / Learn simple random sampling and probability calculations
 
 ### 中级用户路径 / Intermediate Path
-1. 掌握t分布、卡方分布、F分布等统计分布
-2. 学习参数估计和假设检验方法
-3. 理解不同分布的应用场景
+1. 掌握t分布、卡方分布、F分布等统计分布 / Master statistical distributions like t-distribution, chi-squared, F-distribution
+2. 学习参数估计和假设检验方法 / Learn parameter estimation and hypothesis testing methods
+3. 理解不同分布的应用场景 / Understand application scenarios of different distributions
 
 ### 高级用户路径 / Advanced Path
-1. 掌握复杂的统计分析方法
-2. 学习实际业务场景的应用
-3. 理解统计推断的原理和实践
+1. 掌握复杂的统计分析方法 / Master complex statistical analysis methods
+2. 学习实际业务场景的应用 / Learn applications in real business scenarios
+3. 理解统计推断的原理和实践 / Understand principles and practice of statistical inference
 
 ### 专业用户路径 / Professional Path
-1. 掌握蒙特卡洛模拟等高级方法
-2. 能够设计复杂的统计分析方案
-3. 能够处理实际业务中的复杂统计问题
+1. 掌握蒙特卡洛模拟等高级方法 / Master advanced methods like Monte Carlo simulation
+2. 能够设计复杂的统计分析方案 / Be able to design complex statistical analysis solutions
+3. 能够处理实际业务中的复杂统计问题 / Be able to handle complex statistical problems in real business
 
 ---
 
@@ -915,17 +1081,19 @@ public class MonteCarloSimulationExample {
 
 本文档按照从简单到复杂的顺序，系统性地介绍了统计操作包的各种功能。通过循序渐进的学习，您可以：
 
-- **掌握基础**：从基本统计量开始，逐步建立统计基础
-- **应用实践**：通过实际案例学习不同统计方法的使用场景
-- **进阶提升**：掌握高级统计方法和专业应用
-- **灵活运用**：根据实际需求选择合适的统计分析方法
-
 This document systematically introduces various functions of the statistics package in order from simple to complex. Through progressive learning, you can:
 
-- **Master the basics**: Start with basic statistics and gradually build statistical foundations
-- **Apply in practice**: Learn usage scenarios of different statistical methods through real cases
-- **Advance and improve**: Master advanced statistical methods and professional applications
-- **Use flexibly**: Choose appropriate statistical analysis methods based on actual needs
+- **掌握基础**：从基本统计量开始，逐步建立统计基础 / **Master the basics**: Start with basic statistics and gradually build statistical foundations
+- **应用实践**：通过实际案例学习不同统计方法的使用场景 / **Apply in practice**: Learn usage scenarios of different statistical methods through real cases
+- **进阶提升**：掌握高级统计方法和专业应用 / **Advance and improve**: Master advanced statistical methods and professional applications
+- **灵活运用**：根据实际需求选择合适的统计分析方法 / **Use flexibly**: Choose appropriate statistical analysis methods based on actual needs
+
+### 新增功能亮点 / New Feature Highlights
+
+- **方差分析 (ANOVA)**：完整的单因素、两因素和重复测量方差分析功能 / **Analysis of Variance (ANOVA)**: Complete one-way, two-way, and repeated measures ANOVA functionality
+- **假设检验**：正态性检验和方差齐性检验 / **Assumption Testing**: Normality tests and homogeneity of variance tests
+- **多重比较**：Tukey HSD多重比较方法 / **Multiple Comparisons**: Tukey HSD multiple comparison methods
+- **中英文对照**：完整的双语文档支持 / **Bilingual Support**: Complete bilingual documentation support
 
 ---
 

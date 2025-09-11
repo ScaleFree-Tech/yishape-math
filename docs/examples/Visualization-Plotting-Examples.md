@@ -27,17 +27,15 @@ import java.util.List;
 ```java
 public class FirstChartExample {
     public static void main(String[] args) {
-        // 创建图表对象
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成简单的数据
         float[] data = {1, 2, 3, 4, 5};
         IVector y = IVector.of(data);
         
-        // 绘制最简单的线图
-        plot.line(y);
-        plot.setTitle("我的第一个图表");
-        plot.saveAsHtml("first_chart.html");
+        // 使用流式API创建图表
+        Plots.of(800, 600)
+            .line(y)
+            .title("我的第一个图表")
+            .show();
         
         System.out.println("图表已保存为 first_chart.html");
     }
@@ -49,18 +47,16 @@ public class FirstChartExample {
 ```java
 public class SingleVectorLineExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 35, 40, 45, 50, 55});
         
-        // 绘制线图
-        plot.line(y);
-        plot.setTitle("销售趋势图");
-        plot.setXlabel("时间（月）");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("single_line_chart.html");
+        // 使用流式API创建线图
+        Plots.of(800, 600)
+            .line(y)
+            .title("销售趋势图")
+            .xlabel("时间（月）")
+            .ylabel("销售额（万元）")
+            .show();
     }
 }
 ```
@@ -70,19 +66,17 @@ public class SingleVectorLineExample {
 ```java
 public class BasicScatterExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 35, 40, 45, 50, 55});
         
-        // 绘制散点图
-        plot.scatter(x, y);
-        plot.setTitle("身高体重关系图");
-        plot.setXlabel("身高（cm）");
-        plot.setYlabel("体重（kg）");
-        plot.saveAsHtml("basic_scatter_chart.html");
+        // 使用流式API创建散点图
+        Plots.of(800, 600)
+            .scatter(x, y)
+            .title("身高体重关系图")
+            .xlabel("身高（cm）")
+            .ylabel("体重（kg）")
+            .show();
     }
 }
 ```
@@ -96,19 +90,17 @@ public class BasicScatterExample {
 ```java
 public class TwoVectorLineExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 35, 40, 45, 50, 55});
         
-        // 绘制双向量线图
-        plot.line(x, y);
-        plot.setTitle("销售趋势图", "2024年各月销售数据");
-        plot.setXlabel("月份");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("two_vector_line_chart.html");
+        // 使用流式API创建双向量线图
+        Plots.of(800, 600)
+            .line(x, y)
+            .title("销售趋势图", "2024年各月销售数据")
+            .xlabel("月份")
+            .ylabel("销售额（万元）")
+            .show();
     }
 }
 ```
@@ -118,21 +110,19 @@ public class TwoVectorLineExample {
 ```java
 public class MultiGroupScatterExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
         List<String> hue = Arrays.asList("产品A", "产品A", "产品A", "产品A", "产品A",
                                         "产品B", "产品B", "产品B", "产品B", "产品B");
         
-        // 绘制多组散点图
-        plot.scatter(x, y, hue);
-        plot.setTitle("产品对比分析", "2024年各月产品销售对比");
-        plot.setXlabel("月份");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("multi_group_scatter_chart.html");
+        // 使用流式API创建多组散点图
+        Plots.of(800, 600)
+            .scatter(x, y, hue)
+            .title("产品对比分析", "2024年各月产品销售对比")
+            .xlabel("月份")
+            .ylabel("销售额（万元）")
+            .show();
     }
 }
 ```
@@ -142,16 +132,14 @@ public class MultiGroupScatterExample {
 ```java
 public class PieChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(600, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{30, 25, 20, 15, 10});
         
-        // 绘制饼图
-        plot.pie(data);
-        plot.setTitle("市场份额分布", "2024年各产品线市场份额");
-        plot.saveAsHtml("pie_chart.html");
+        // 使用流式API创建饼图
+        Plots.of(600, 600)
+            .pie(data)
+            .title("市场份额分布", "2024年各产品线市场份额")
+            .show();
     }
 }
 ```
@@ -161,18 +149,16 @@ public class PieChartExample {
 ```java
 public class BarChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
         
-        // 绘制柱状图
-        plot.bar(data);
-        plot.setTitle("销售业绩对比", "2024年各季度销售数据");
-        plot.setXlabel("季度");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("bar_chart.html");
+        // 使用流式API创建柱状图
+        Plots.of(800, 600)
+            .bar(data)
+            .title("销售业绩对比", "2024年各季度销售数据")
+            .xlabel("季度")
+            .ylabel("销售额（万元）")
+            .show();
     }
 }
 ```
@@ -186,19 +172,17 @@ public class BarChartExample {
 ```java
 public class GroupedBarChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
         List<String> hue = Arrays.asList("组A", "组B", "组A", "组B", "组A");
         
-        // 绘制分组柱状图
-        plot.bar(data, hue);
-        plot.setTitle("分组柱状图", "对比不同组别的数据");
-        plot.setXlabel("类别");
-        plot.setYlabel("数值");
-        plot.saveAsHtml("grouped_bar_chart.html");
+        // 使用流式API创建分组柱状图
+        Plots.of(800, 600)
+            .bar(data, hue)
+            .title("分组柱状图", "对比不同组别的数据")
+            .xlabel("类别")
+            .ylabel("数值")
+            .show();
     }
 }
 ```
@@ -208,21 +192,19 @@ public class GroupedBarChartExample {
 ```java
 public class MultiGroupLineChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
         List<String> hue = Arrays.asList("产品A", "产品A", "产品A", "产品A", "产品A",
                                         "产品B", "产品B", "产品B", "产品B", "产品B");
         
-        // 绘制多组线图
-        plot.line(x, y, hue);
-        plot.setTitle("产品对比分析", "2024年各月产品销售对比");
-        plot.setXlabel("月份");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("multi_group_line_chart.html");
+        // 使用流式API创建多组线图
+        Plots.of(800, 600)
+            .line(x, y, hue)
+            .title("产品对比分析", "2024年各月产品销售对比")
+            .xlabel("月份")
+            .ylabel("销售额（万元）")
+            .show();
     }
 }
 ```
@@ -232,9 +214,6 @@ public class MultiGroupLineChartExample {
 ```java
 public class HistogramExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         float[] histData = new float[100];
         for (int i = 0; i < 100; i++) {
@@ -242,12 +221,13 @@ public class HistogramExample {
         }
         IVector histVector = IVector.of(histData);
         
-        // 绘制直方图（带拟合线）
-        plot.hist(histVector, true);
-        plot.setTitle("数据分布直方图", "样本数据的正态分布拟合");
-        plot.setXlabel("数值区间");
-        plot.setYlabel("频次");
-        plot.saveAsHtml("histogram_chart.html");
+        // 使用流式API创建直方图（带拟合线）
+        Plots.of(800, 600)
+            .hist(histVector, true)
+            .title("数据分布直方图", "样本数据的正态分布拟合")
+            .xlabel("数值区间")
+            .ylabel("频次")
+            .show();
     }
 }
 ```
@@ -257,19 +237,17 @@ public class HistogramExample {
 ```java
 public class BoxPlotExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
         List<String> labels = Arrays.asList("数据集");
         
-        // 绘制箱线图
-        plot.boxplot(data, labels);
-        plot.setTitle("数据分布箱线图", "各指标的数据分布情况");
-        plot.setXlabel("指标");
-        plot.setYlabel("数值");
-        plot.saveAsHtml("boxplot_chart.html");
+        // 使用流式API创建箱线图
+        Plots.of(800, 600)
+            .boxplot(data, labels)
+            .title("数据分布箱线图", "各指标的数据分布情况")
+            .xlabel("指标")
+            .ylabel("数值")
+            .show();
     }
 }
 ```
@@ -279,18 +257,16 @@ public class BoxPlotExample {
 ```java
 public class ViolinPlotExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
         
-        // 绘制小提琴图
-        plot.violinplot(data);
-        plot.setTitle("数据分布小提琴图", "展示数据的分布形状和统计特征");
-        plot.setXlabel("数值");
-        plot.setYlabel("密度");
-        plot.saveAsHtml("violin_plot.html");
+        // 使用流式API创建小提琴图
+        Plots.of(800, 600)
+            .violinplot(data)
+            .title("数据分布小提琴图", "展示数据的分布形状和统计特征")
+            .xlabel("数值")
+            .ylabel("密度")
+            .show();
     }
 }
 ```
@@ -300,21 +276,19 @@ public class ViolinPlotExample {
 ```java
 public class MultiGroupViolinPlotExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
                                              2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
         List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A",
                                            "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B");
         
-        // 绘制多组小提琴图
-        plot.violinplot(data, labels);
-        plot.setTitle("多组数据分布对比", "不同组别的数据分布对比分析");
-        plot.setXlabel("组别");
-        plot.setYlabel("密度");
-        plot.saveAsHtml("multi_violin_plot.html");
+        // 使用流式API创建多组小提琴图
+        Plots.of(800, 600)
+            .violinplot(data, labels)
+            .title("多组数据分布对比", "不同组别的数据分布对比分析")
+            .xlabel("组别")
+            .ylabel("密度")
+            .show();
     }
 }
 ```
@@ -328,17 +302,15 @@ public class MultiGroupViolinPlotExample {
 ```java
 public class PolarBarChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(600, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
         List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
         
-        // 绘制极坐标柱状图
-        plot.polarBar(data, categories);
-        plot.setTitle("极坐标柱状图");
-        plot.saveAsHtml("polar_bar_chart.html");
+        // 使用流式API创建极坐标柱状图
+        Plots.of(600, 600)
+            .polarBar(data, categories)
+            .title("极坐标柱状图")
+            .show();
     }
 }
 ```
@@ -348,17 +320,15 @@ public class PolarBarChartExample {
 ```java
 public class PolarLineChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(600, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
         List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
         
-        // 绘制极坐标线图
-        plot.polarLine(data, categories);
-        plot.setTitle("极坐标线图");
-        plot.saveAsHtml("polar_line_chart.html");
+        // 使用流式API创建极坐标线图
+        Plots.of(600, 600)
+            .polarLine(data, categories)
+            .title("极坐标线图")
+            .show();
     }
 }
 ```
@@ -368,17 +338,15 @@ public class PolarLineChartExample {
 ```java
 public class PolarScatterChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(600, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
         List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
         
-        // 绘制极坐标散点图
-        plot.polarScatter(data, categories);
-        plot.setTitle("极坐标散点图");
-        plot.saveAsHtml("polar_scatter_chart.html");
+        // 使用流式API创建极坐标散点图
+        Plots.of(600, 600)
+            .polarScatter(data, categories)
+            .title("极坐标散点图")
+            .show();
     }
 }
 ```
@@ -388,9 +356,6 @@ public class PolarScatterChartExample {
 ```java
 public class HeatmapExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 创建二维数据矩阵
         float[][] heatmapArray = {
             {1, 2, 3, 4},
@@ -402,10 +367,11 @@ public class HeatmapExample {
         List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
         List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
         
-        // 绘制热力图
-        plot.heatmap(data, xLabels, yLabels);
-        plot.setTitle("相关性热力图", "各指标间的相关性分析");
-        plot.saveAsHtml("heatmap_chart.html");
+        // 使用流式API创建热力图
+        Plots.of(800, 600)
+            .heatmap(data, xLabels, yLabels)
+            .title("相关性热力图", "各指标间的相关性分析")
+            .show();
     }
 }
 ```
@@ -415,17 +381,15 @@ public class HeatmapExample {
 ```java
 public class RadarChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(600, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{80, 90, 70, 85, 95, 75});
         List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
         
-        // 绘制雷达图
-        plot.radar(data, indicators);
-        plot.setTitle("能力雷达图", "各项技能能力评估");
-        plot.saveAsHtml("radar_chart.html");
+        // 使用流式API创建雷达图
+        Plots.of(600, 600)
+            .radar(data, indicators)
+            .title("能力雷达图", "各项技能能力评估")
+            .show();
     }
 }
 ```
@@ -440,11 +404,11 @@ public class ViolinPlotFluentAPIExample {
         
         // 使用流式API创建小提琴图
         Plots.of(800, 600)
+            .violinplot(data)
             .title("数据分布分析", "小提琴图展示数据分布特征")
             .xlabel("数值")
             .ylabel("密度")
-            .violinplot(data)
-            .saveAsHtml("violin_plot_fluent.html");
+            .show();
     }
 }
 ```
@@ -454,9 +418,6 @@ public class ViolinPlotFluentAPIExample {
 ```java
 public class CandlestickChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1000, 600);
-        
         // 生成示例数据（开盘价, 收盘价, 最低价, 最高价）
         float[][] candlestickArray = {
             {100, 110, 95, 115},
@@ -468,12 +429,13 @@ public class CandlestickChartExample {
         IMatrix candlestickData = IMatrix.of(candlestickArray);
         List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05");
         
-        // 绘制K线图
-        plot.candlestick(candlestickData, dates);
-        plot.setTitle("股票价格K线图", "2024年1月股价走势");
-        plot.setXlabel("日期");
-        plot.setYlabel("价格（元）");
-        plot.saveAsHtml("candlestick_chart.html");
+        // 使用流式API创建K线图
+        Plots.of(1000, 600)
+            .candlestick(candlestickData, dates)
+            .title("股票价格K线图", "2024年1月股价走势")
+            .xlabel("日期")
+            .ylabel("价格（元）")
+            .show();
     }
 }
 ```
@@ -487,17 +449,15 @@ public class CandlestickChartExample {
 ```java
 public class FunnelChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector data = IVector.of(new float[]{100, 80, 60, 40, 20});
         List<String> labels = Arrays.asList("访问", "注册", "购买", "支付", "完成");
         
-        // 绘制漏斗图
-        plot.funnel(data, labels);
-        plot.setTitle("用户转化漏斗", "从访问到购买的转化流程");
-        plot.saveAsHtml("funnel_chart.html");
+        // 使用流式API创建漏斗图
+        Plots.of(800, 600)
+            .funnel(data, labels)
+            .title("用户转化漏斗", "从访问到购买的转化流程")
+            .show();
     }
 }
 ```
@@ -507,9 +467,6 @@ public class FunnelChartExample {
 ```java
 public class SankeyChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1000, 600);
-        
         // 创建节点数据
         List<Map<String, Object>> nodes = new ArrayList<>();
         nodes.add(createNode("source1", "源1"));
@@ -524,10 +481,11 @@ public class SankeyChartExample {
         links.add(createLink("source2", "target1", 15));
         links.add(createLink("source2", "target2", 25));
         
-        // 绘制桑基图
-        plot.sankey(nodes, links);
-        plot.setTitle("数据流向图", "各系统间的数据流转情况");
-        plot.saveAsHtml("sankey_chart.html");
+        // 使用流式API创建桑基图
+        Plots.of(1000, 600)
+            .sankey(nodes, links)
+            .title("数据流向图", "各系统间的数据流转情况")
+            .show();
     }
     
     private static Map<String, Object> createNode(String id, String name) {
@@ -552,9 +510,6 @@ public class SankeyChartExample {
 ```java
 public class SunburstChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 800);
-        
         // 创建层次数据
         List<Map<String, Object>> sunburstData = new ArrayList<>();
         sunburstData.add(createSunburstNode("root", "根节点", 100));
@@ -563,10 +518,11 @@ public class SunburstChartExample {
         sunburstData.add(createSunburstNode("grandchild1", "孙节点1", 30, "child1"));
         sunburstData.add(createSunburstNode("grandchild2", "孙节点2", 30, "child1"));
         
-        // 绘制旭日图
-        plot.sunburst(sunburstData);
-        plot.setTitle("组织架构图", "公司各部门人员分布");
-        plot.saveAsHtml("sunburst_chart.html");
+        // 使用流式API创建旭日图
+        Plots.of(800, 800)
+            .sunburst(sunburstData)
+            .title("组织架构图", "公司各部门人员分布")
+            .show();
     }
     
     private static Map<String, Object> createSunburstNode(String id, String name, int value) {
@@ -590,9 +546,6 @@ public class SunburstChartExample {
 ```java
 public class ThemeRiverChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1200, 600);
-        
         // 创建时间序列数据
         List<Map<String, Object>> themeRiverData = new ArrayList<>();
         themeRiverData.add(createThemeRiverNode("2024-01-01", "类别A", 10));
@@ -602,10 +555,11 @@ public class ThemeRiverChartExample {
         
         List<String> categories = Arrays.asList("类别A", "类别B");
         
-        // 绘制主题河流图
-        plot.themeRiver(themeRiverData, categories);
-        plot.setTitle("新闻热度趋势", "各主题新闻的热度变化");
-        plot.saveAsHtml("theme_river_chart.html");
+        // 使用流式API创建主题河流图
+        Plots.of(1200, 600)
+            .themeRiver(themeRiverData, categories)
+            .title("新闻热度趋势", "各主题新闻的热度变化")
+            .show();
     }
     
     private static Map<String, Object> createThemeRiverNode(String time, String category, int value) {
@@ -623,9 +577,6 @@ public class ThemeRiverChartExample {
 ```java
 public class GraphChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1000, 800);
-        
         // 创建节点数据
         List<Map<String, Object>> nodes = new ArrayList<>();
         nodes.add(createGraphNode("node1", "节点1"));
@@ -638,10 +589,11 @@ public class GraphChartExample {
         links.add(createGraphLink("node2", "node3", 15));
         links.add(createGraphLink("node1", "node3", 20));
         
-        // 绘制关系图
-        plot.graph(nodes, links);
-        plot.setTitle("社交网络图", "用户关系网络分析");
-        plot.saveAsHtml("graph_chart.html");
+        // 使用流式API创建关系图
+        Plots.of(1000, 800)
+            .graph(nodes, links)
+            .title("社交网络图", "用户关系网络分析")
+            .show();
     }
     
     private static Map<String, Object> createGraphNode(String id, String name) {
@@ -666,9 +618,6 @@ public class GraphChartExample {
 ```java
 public class ParallelCoordinatesChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1200, 600);
-        
         // 创建数据矩阵
         float[][] dataArray = {
             {1, 2, 3, 4},
@@ -679,10 +628,11 @@ public class ParallelCoordinatesChartExample {
         IMatrix data = IMatrix.of(dataArray);
         List<String> dimensions = Arrays.asList("维度1", "维度2", "维度3", "维度4");
         
-        // 绘制平行坐标图
-        plot.parallel(data, dimensions);
-        plot.setTitle("多维数据分布", "各维度数据的分布情况");
-        plot.saveAsHtml("parallel_coordinates_chart.html");
+        // 使用流式API创建平行坐标图
+        Plots.of(1200, 600)
+            .parallel(data, dimensions)
+            .title("多维数据分布", "各维度数据的分布情况")
+            .show();
     }
 }
 ```
@@ -692,18 +642,16 @@ public class ParallelCoordinatesChartExample {
 ```java
 public class GaugeChartExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(400, 400);
-        
         // 设置参数
         float value = 75.5f;
         float max = 100.0f;
         float min = 0.0f;
         
-        // 绘制仪表盘
-        plot.gauge(value, max, min);
-        plot.setTitle("系统性能监控", "CPU使用率实时监控");
-        plot.saveAsHtml("gauge_chart.html");
+        // 使用流式API创建仪表盘
+        Plots.of(400, 400)
+            .gauge(value, max, min)
+            .title("系统性能监控", "CPU使用率实时监控")
+            .show();
     }
 }
 ```
@@ -713,9 +661,6 @@ public class GaugeChartExample {
 ```java
 public class ComprehensiveViolinAnalysisExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1000, 600);
-        
         // 生成多组对比数据
         float[] groupA = new float[50];
         float[] groupB = new float[50];
@@ -743,12 +688,13 @@ public class ComprehensiveViolinAnalysisExample {
         IVector data = IVector.of(allData);
         List<String> labels = Arrays.asList(allLabels);
         
-        // 绘制多组小提琴图
-        plot.violinplot(data, labels);
-        plot.setTitle("多组数据分布对比分析", "不同组别的数据分布特征对比");
-        plot.setXlabel("组别");
-        plot.setYlabel("数值密度");
-        plot.saveAsHtml("comprehensive_violin_analysis.html");
+        // 使用流式API创建多组小提琴图
+        Plots.of(1000, 600)
+            .violinplot(data, labels)
+            .title("多组数据分布对比分析", "不同组别的数据分布特征对比")
+            .xlabel("组别")
+            .ylabel("数值密度")
+            .show();
     }
 }
 ```
@@ -762,19 +708,17 @@ public class ComprehensiveViolinAnalysisExample {
 ```java
 public class CustomThemeExample {
     public static void main(String[] args) {
-        // 创建带自定义主题的图表
-        IPlot plot = Plots.of(800, 600, "dark");
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
         
-        // 绘制图表
-        plot.line(x, y);
-        plot.setTitle("自定义主题图表", "使用深色主题");
-        plot.setXlabel("X轴");
-        plot.setYlabel("Y轴");
-        plot.saveAsHtml("custom_theme_chart.html");
+        // 使用流式API创建带自定义主题的图表
+        Plots.of(800, 600, "dark")
+            .line(x, y)
+            .title("自定义主题图表", "使用深色主题")
+            .xlabel("X轴")
+            .ylabel("Y轴")
+            .show();
     }
 }
 ```
@@ -784,9 +728,6 @@ public class CustomThemeExample {
 ```java
 public class CustomAxisExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(800, 600);
-        
         // 生成示例数据
         IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
         IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
@@ -795,18 +736,19 @@ public class CustomAxisExample {
         AxisTicks xTicks = new AxisTicks();
         xTicks.setTickValues(IVector.of(new float[]{1, 2, 3, 4, 5}));
         xTicks.setTickLabels(Arrays.asList("一月", "二月", "三月", "四月", "五月"));
-        plot.setXticks(xTicks);
         
         AxisTicks yTicks = new AxisTicks();
         yTicks.setTickValues(IVector.of(new float[]{0, 10, 20, 30, 40}));
-        plot.setYticks(yTicks);
         
-        // 绘制图表
-        plot.line(x, y);
-        plot.setTitle("自定义坐标轴图表");
-        plot.setXlabel("月份");
-        plot.setYlabel("销售额（万元）");
-        plot.saveAsHtml("custom_axis_chart.html");
+        // 使用流式API创建自定义坐标轴图表
+        Plots.of(800, 600)
+            .line(x, y)
+            .title("自定义坐标轴图表")
+            .xlabel("月份")
+            .ylabel("销售额（万元）")
+            .setXticks(xTicks)
+            .setYticks(yTicks)
+            .show();
     }
 }
 ```
@@ -821,18 +763,16 @@ public class CustomAxisExample {
 public class DataValidationExample {
     public static void main(String[] args) {
         try {
-            // 创建图表
-            IPlot plot = Plots.of(800, 600);
-            
             // 检查数据是否为空
             IVector data = IVector.of(new float[]{1, 2, 3, 4, 5});
             if (data.length() == 0) {
                 throw new IllegalArgumentException("数据不能为空");
             }
             
-            // 绘制图表
-            plot.line(data);
-            plot.saveAsHtml("chart.html");
+            // 使用流式API绘制图表
+            Plots.of(800, 600)
+                .line(data)
+                .show();
             
         } catch (IllegalArgumentException e) {
             System.err.println("数据验证错误: " + e.getMessage());
@@ -848,9 +788,6 @@ public class DataValidationExample {
 ```java
 public class LargeDatasetExample {
     public static void main(String[] args) {
-        // 创建图表
-        IPlot plot = Plots.of(1200, 800);
-        
         // 生成大数据集
         float[] dataArray = new float[10000];
         for (int i = 0; i < 10000; i++) {
@@ -863,12 +800,13 @@ public class LargeDatasetExample {
             System.out.println("大数据集，建议进行数据采样");
         }
         
-        // 绘制图表
-        plot.line(data);
-        plot.setTitle("大数据集示例", "包含10000个数据点");
-        plot.setXlabel("索引");
-        plot.setYlabel("数值");
-        plot.saveAsHtml("large_dataset_chart.html");
+        // 使用流式API绘制图表
+        Plots.of(1200, 800)
+            .line(data)
+            .title("大数据集示例", "包含10000个数据点")
+            .xlabel("索引")
+            .ylabel("数值")
+            .show();
     }
 }
 ```
