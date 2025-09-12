@@ -412,7 +412,7 @@ graph TB
         VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot]
         ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression]
         DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA]
-        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stat, 概率分布]
+        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stat, Distributions]
     end
     
     subgraph "中间层 (Middle Layer)"
