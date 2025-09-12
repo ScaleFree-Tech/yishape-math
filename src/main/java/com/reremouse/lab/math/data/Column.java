@@ -1,4 +1,4 @@
-package com.reremouse.lab.data;
+package com.reremouse.lab.math.data;
 
 import com.reremouse.lab.math.IVector;
 import java.io.Serializable;

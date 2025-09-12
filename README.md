@@ -448,6 +448,10 @@ src/main/java/com/reremouse/lab/
 │   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
 │   ├── YishapeMath.java      # 主入口类 / Main Entry Class
 │   ├── SliceExpressionParser.java # 切片表达式解析器 / Slice Expression Parser
+│   ├── data/                 # 数据结构模块 / Data Structure Module
+│   │   ├── DataFrame.java    # 数据框类 / DataFrame Class
+│   │   ├── Column.java       # 列类 / Column Class
+│   │   └── ColumnType.java   # 列类型枚举 / Column Type Enum
 │   ├── stat/                 # 统计学模块 / Statistics Module
 │   │   ├── Stat.java         # 统计分布工厂类 / Statistical Distribution Factory Class
 │   │   ├── distribution/     # 概率分布实现 / Probability Distribution Implementations
@@ -504,10 +508,6 @@ src/main/java/com/reremouse/lab/
 │       ├── Plots.java            # 绘图工厂类 / Plotting Factory Class
 │       ├── AxisTicks.java        # 坐标轴刻度类 / Axis Ticks Class
 │       └── PlotException.java    # 绘图异常类 / Plotting Exception Class
-├── data/                     # 数据结构模块 / Data Structure Module
-│   ├── DataFrame.java        # 数据框类 / DataFrame Class
-│   ├── Column.java           # 列类 / Column Class
-│   └── ColumnType.java       # 列类型枚举 / Column Type Enum
 └── util/                     # 工具类模块 / Utility Module
     ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class
     ├── RereExecutor.java         # 执行器工具类 / Executor Utility Class

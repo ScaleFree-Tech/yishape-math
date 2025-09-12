@@ -1,5 +1,8 @@
 package com.reremouse.lab.data;
 
+import com.reremouse.lab.math.data.Column;
+import com.reremouse.lab.math.data.DataFrame;
+import com.reremouse.lab.math.data.ColumnType;
 import java.util.ArrayList;
 import java.util.List;
 
