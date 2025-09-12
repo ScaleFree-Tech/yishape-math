@@ -130,8 +130,8 @@ Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
 float optimalValue = result._1;
 IVector optimalPoint = result._2;
 
-System.out.println("最优值: " + optimalValue);
-System.out.println("最优点: " + optimalPoint);
+        System.out.println("最优值: " + optimalValue); // Optimal value
+        System.out.println("最优点: " + optimalPoint); // Optimal point
 ```
 
 ### 2. 线搜索 / Line Search
@@ -205,7 +205,7 @@ IVector searchDir = IVector.of(new float[]{-1.0f, -1.0f});
 // 执行线搜索 / Execute line search
 float optimalStep = optimizer.lineSearch(initX, searchDir, objFun, grdFun);
 
-System.out.println("最优步长: " + optimalStep);
+        System.out.println("最优步长: " + optimalStep); // Optimal step size
 ```
 
 ## 高级特性 / Advanced Features

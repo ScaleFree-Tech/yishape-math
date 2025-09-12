@@ -2,7 +2,7 @@
 
 ## 概述 / Overview
 
-`DataFrame` 类提供了类似pandas DataFrame的功能，用于处理结构化数据。它支持从CSV文件读取数据、列切片和行切片操作、数据类型转换、与IMatrix的互转换等功能。
+`DataFrame` 类提供了类似pandas DataFrame的功能，用于处理结构化数据。它支持从CSV文件读取数据、列切片和行切片操作、数据类型转换、与IMatrix的互转换等功能。 / The `DataFrame` class provides functionality similar to pandas DataFrame for handling structured data. It supports reading data from CSV files, column and row slicing operations, data type conversion, mutual conversion with IMatrix, and more.
 
 The `DataFrame` class provides functionality similar to pandas DataFrame for handling structured data. It supports reading data from CSV files, column and row slicing operations, data type conversion, mutual conversion with IMatrix, and more.
 
@@ -10,19 +10,19 @@ The `DataFrame` class provides functionality similar to pandas DataFrame for han
 
 ### DataFrame 类 / DataFrame Class
 
-`DataFrame` 是数据框操作的核心类，提供了完整的数据处理功能。
+`DataFrame` 是数据框操作的核心类，提供了完整的数据处理功能。 / `DataFrame` is the core class for data frame operations, providing comprehensive data processing functionality.
 
 `DataFrame` is the core class for data frame operations, providing comprehensive data processing functionality.
 
 ### Column 类 / Column Class
 
-`Column` 类表示数据框中的一列，包含列名、数据类型和数据。
+`Column` 类表示数据框中的一列，包含列名、数据类型和数据。 / `Column` class represents a column in the data frame, containing column name, data type, and data.
 
 `Column` class represents a column in the data frame, containing column name, data type, and data.
 
 ### ColumnType 枚举 / ColumnType Enum
 
-`ColumnType` 枚举定义了支持的数据类型：String 和 Float。
+`ColumnType` 枚举定义了支持的数据类型：String 和 Float。 / `ColumnType` enum defines supported data types: String and Float.
 
 `ColumnType` enum defines supported data types: String and Float.
 
@@ -210,10 +210,10 @@ public class DataFrameBasicExample {
         df.addColumn(salaryColumn);
         
         // 显示DataFrame信息 / Display DataFrame information
-        System.out.println("DataFrame形状: " + Arrays.toString(df.shape()));
-        System.out.println("列名: " + df.getColumnNames());
-        System.out.println("列类型: " + df.getColumnTypes());
-        System.out.println("DataFrame内容:\n" + df);
+        System.out.println("DataFrame形状: " + Arrays.toString(df.shape())); // DataFrame shape
+        System.out.println("列名: " + df.getColumnNames()); // Column names
+        System.out.println("列类型: " + df.getColumnTypes()); // Column types
+        System.out.println("DataFrame内容:\n" + df); // DataFrame content
     }
 }
 ```
@@ -230,10 +230,10 @@ public class CSVReadingExample {
             // 从CSV文件读取 / Read from CSV file
             DataFrame df = DataFrame.readCsv("data.csv", ",", true);
             
-            System.out.println("从CSV读取的DataFrame:");
-            System.out.println("形状: " + Arrays.toString(df.shape()));
-            System.out.println("列名: " + df.getColumnNames());
-            System.out.println("内容:\n" + df);
+            System.out.println("从CSV读取的DataFrame:"); // DataFrame read from CSV
+            System.out.println("形状: " + Arrays.toString(df.shape())); // Shape
+            System.out.println("列名: " + df.getColumnNames()); // Column names
+            System.out.println("内容:\n" + df); // Content
             
         } catch (IOException e) {
             System.err.println("读取CSV文件失败: " + e.getMessage());
@@ -259,7 +259,7 @@ public class SlicingExample {
         DataFrame sliced1 = df.slice("1:3", "0:2");     // 行1-2，列0-1
         DataFrame sliced2 = df.slice("0:5:2", "1:4");  // 行0,2,4，列1-3
         
-        System.out.println("列切片结果1:\n" + colSlice1);
+        System.out.println("列切片结果1:\n" + colSlice1); // Column slice result 1
         System.out.println("通用切片结果1:\n" + sliced1);
     }
     
@@ -485,6 +485,6 @@ public class MLDataPreparationExample {
 
 ---
 
-**DataFrame 数据框操作** - 结构化数据处理的核心，让数据分析更简单！
+**DataFrame 数据框操作** - 结构化数据处理的核心，让数据分析更简单！ / **DataFrame Operations** - The core of structured data processing, making data analysis simpler!
 
 **DataFrame Operations** - The core of structured data processing, making data analysis simpler!

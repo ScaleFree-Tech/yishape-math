@@ -205,14 +205,14 @@ IVector weights = result.getWeights();
 float loss = result.getLoss();
 float r2Score = result.getR2Score();
 
-System.out.println("权重: " + weights);
-System.out.println("损失: " + loss);
-System.out.println("R²分数: " + r2Score);
+        System.out.println("权重: " + weights); // Weights
+        System.out.println("损失: " + loss); // Loss
+        System.out.println("R²分数: " + r2Score); // R² score
 
 // 预测新样本 / Predict new sample
 IVector newFeatures = IVector.of(new float[]{2, 3, 4});
 float prediction = lr.predict(newFeatures);
-System.out.println("预测值: " + prediction);
+System.out.println("预测值: " + prediction); // Prediction
 ```
 
 ### 示例2：带正则化的线性回归 / Example 2: Linear Regression with Regularization
@@ -227,8 +227,8 @@ lr.setLambda2(0.1f);
 RegressionResult result = lr.fit(features, labels);
 
 // 查看正则化效果 / View regularization effects
-System.out.println("L2正则化系数: " + lr.getLambda2());
-System.out.println("最终损失: " + result.getLoss());
+        System.out.println("L2正则化系数: " + lr.getLambda2()); // L2 regularization coefficient
+        System.out.println("最终损失: " + result.getLoss()); // Final loss
 ```
 
 ### 示例3：ElasticNet正则化 / Example 3: ElasticNet Regularization
@@ -244,9 +244,9 @@ lr.setLambda2(0.1f);   // L2正则化系数 / L2 regularization coefficient
 RegressionResult result = lr.fit(features, labels);
 
 // 查看结果 / View results
-System.out.println("L1正则化系数: " + lr.getLambda1());
-System.out.println("L2正则化系数: " + lr.getLambda2());
-System.out.println("最终损失: " + result.getLoss());
+        System.out.println("L1正则化系数: " + lr.getLambda1()); // L1 regularization coefficient
+        System.out.println("L2正则化系数: " + lr.getLambda2()); // L2 regularization coefficient
+        System.out.println("最终损失: " + result.getLoss()); // Final loss
 ```
 
 ### 示例4：模型评估 / Example 4: Model Evaluation

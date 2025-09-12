@@ -61,33 +61,33 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 
 `Plots` 类提供了创建各种图表类型的静态工厂方法，是绘图功能的主要入口点。该类提供了简洁的API来快速创建和配置图表。
 
-`Plots` class provides static factory methods for creating various chart types, serving as the main entry point for plotting functionality. This class provides a concise API for quickly creating and configuring charts.
+The `Plots` class provides static factory methods for creating various chart types, serving as the main entry point for plotting functionality. This class provides a concise API for quickly creating and configuring charts.
 
 #### 主要工厂方法 / Main Factory Methods
 
 ```java
 // 基础工厂方法 / Basic factory methods
-RerePlot of();                                      // 创建默认绘图对象
-RerePlot of(int width, int height);                 // 创建指定尺寸的绘图对象
-RerePlot of(int width, int height, String theme);   // 创建指定尺寸和主题的绘图对象
+RerePlot of();                                      // 创建默认绘图对象 / Create default plot object
+RerePlot of(int width, int height);                 // 创建指定尺寸的绘图对象 / Create plot object with specified size
+RerePlot of(int width, int height, String theme);   // 创建指定尺寸和主题的绘图对象 / Create plot object with specified size and theme
 
 // 图表类型专用工厂方法 / Chart-specific factory methods
-RerePlot line(IVector x, IVector y);                // 创建线图
-RerePlot line(IVector x);                           // 创建单向量线图
-RerePlot line(IVector x, IVector y, List<String> hue); // 创建多线图
-RerePlot scatter(IVector x, IVector y);             // 创建散点图
-RerePlot scatter(IVector x, IVector y, List<String> hue); // 创建多组散点图
-RerePlot pie(IVector data);                         // 创建饼图
-RerePlot bar(IVector data);                         // 创建柱状图
-RerePlot bar(IVector data, List<String> hue);       // 创建分组柱状图
-RerePlot hist(IVector data, boolean fittingLine);   // 创建直方图
-RerePlot boxplot(IVector data);                     // 创建箱线图
-RerePlot boxplot(IVector data, List<String> labels); // 创建带标签的箱线图
-RerePlot violinplot(IVector data);                  // 创建小提琴图
-RerePlot violinplot(IVector data, List<String> labels); // 创建带标签的小提琴图
-RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels); // 创建热力图
-RerePlot radar(IVector data, List<String> indicators); // 创建雷达图
-RerePlot gauge(float value, float max, float min);  // 创建仪表盘
+RerePlot line(IVector x, IVector y);                // 创建线图 / Create line chart
+RerePlot line(IVector x);                           // 创建单向量线图 / Create single vector line chart
+RerePlot line(IVector x, IVector y, List<String> hue); // 创建多线图 / Create multi-line chart
+RerePlot scatter(IVector x, IVector y);             // 创建散点图 / Create scatter plot
+RerePlot scatter(IVector x, IVector y, List<String> hue); // 创建多组散点图 / Create multi-group scatter plot
+RerePlot pie(IVector data);                         // 创建饼图 / Create pie chart
+RerePlot bar(IVector data);                         // 创建柱状图 / Create bar chart
+RerePlot bar(IVector data, List<String> hue);       // 创建分组柱状图 / Create grouped bar chart
+RerePlot hist(IVector data, boolean fittingLine);   // 创建直方图 / Create histogram
+RerePlot boxplot(IVector data);                     // 创建箱线图 / Create box plot
+RerePlot boxplot(IVector data, List<String> labels); // 创建带标签的箱线图 / Create labeled box plot
+RerePlot violinplot(IVector data);                  // 创建小提琴图 / Create violin plot
+RerePlot violinplot(IVector data, List<String> labels); // 创建带标签的小提琴图 / Create labeled violin plot
+RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels); // 创建热力图 / Create heatmap
+RerePlot radar(IVector data, List<String> indicators); // 创建雷达图 / Create radar chart
+RerePlot gauge(float value, float max, float min);  // 创建仪表盘 / Create gauge chart
 
 // 带尺寸的工厂方法 / Factory methods with dimensions
 RerePlot line(IVector x, IVector y, int width, int height);
@@ -113,18 +113,18 @@ plot.show();
 
 // 链式调用 / Chained calls
 Plots.of(800, 600)
-    .title("线图演示")
-    .xlabel("X轴")
-    .ylabel("Y轴")
+    .title("线图演示") // Line Chart Demo
+    .xlabel("X轴") // X-axis
+    .ylabel("Y轴") // Y-axis
     .line(x, y)
     .show();
 
 // 直接创建特定图表 / Direct creation of specific charts
-Plots.line(x, y).saveAsHtml("line_chart.html");
-Plots.scatter(x, y).saveAsHtml("scatter_chart.html");
-Plots.pie(data).saveAsHtml("pie_chart.html");
-Plots.boxplot(data).saveAsHtml("boxplot_chart.html");
-Plots.violinplot(data).saveAsHtml("violin_chart.html");
+Plots.line(x, y).saveAsHtml("line_chart.html"); // 线图 / Line chart
+Plots.scatter(x, y).saveAsHtml("scatter_chart.html"); // 散点图 / Scatter chart
+Plots.pie(data).saveAsHtml("pie_chart.html"); // 饼图 / Pie chart
+Plots.boxplot(data).saveAsHtml("boxplot_chart.html"); // 箱线图 / Box plot
+Plots.violinplot(data).saveAsHtml("violin_chart.html"); // 小提琴图 / Violin plot
 ```
 
 ### 2. IPlot 接口 / IPlot Interface
@@ -135,363 +135,363 @@ Plots.violinplot(data).saveAsHtml("violin_chart.html");
 
 ```java
 public interface IPlot {
-    // ========== 基础图表方法 ==========
+    // ========== 基础图表方法 / Basic Chart Methods ==========
     
     /**
-     * 绘制线图
-     * @param x X轴数据
-     * @param y Y轴数据
-     * @return 当前实例，支持链式调用
+     * 绘制线图 / Draw line chart
+     * @param x X轴数据 / X-axis data
+     * @param y Y轴数据 / Y-axis data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector x, IVector y);
     
     /**
-     * 绘制单向量线图
-     * @param x 数据向量
-     * @return 当前实例，支持链式调用
+     * 绘制单向量线图 / Draw single vector line chart
+     * @param x 数据向量 / Data vector
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector x);
     
     /**
-     * 绘制多线图
-     * @param x X轴数据
-     * @param y Y轴数据
-     * @param hue 分组标签
-     * @return 当前实例，支持链式调用
+     * 绘制多线图 / Draw multi-line chart
+     * @param x X轴数据 / X-axis data
+     * @param y Y轴数据 / Y-axis data
+     * @param hue 分组标签 / Group labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector x, IVector y, List<String> hue);
     
     /**
-     * 绘制散点图
-     * @param x X轴数据
-     * @param y Y轴数据
-     * @return 当前实例，支持链式调用
+     * 绘制散点图 / Draw scatter plot
+     * @param x X轴数据 / X-axis data
+     * @param y Y轴数据 / Y-axis data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot scatter(IVector x, IVector y);
     
     /**
-     * 绘制多组散点图
-     * @param x X轴数据
-     * @param y Y轴数据
-     * @param hue 分组标签
-     * @return 当前实例，支持链式调用
+     * 绘制多组散点图 / Draw multi-group scatter plot
+     * @param x X轴数据 / X-axis data
+     * @param y Y轴数据 / Y-axis data
+     * @param hue 分组标签 / Group labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot scatter(IVector x, IVector y, List<String> hue);
     
     /**
-     * 绘制饼图
-     * @param x 数据向量
-     * @return 当前实例，支持链式调用
+     * 绘制饼图 / Draw pie chart
+     * @param x 数据向量 / Data vector
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot pie(IVector x);
     
     /**
-     * 绘制柱状图
-     * @param x 数据向量
-     * @return 当前实例，支持链式调用
+     * 绘制柱状图 / Draw bar chart
+     * @param x 数据向量 / Data vector
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot bar(IVector x);
     
     /**
-     * 绘制分组柱状图
-     * @param x 数据向量
-     * @param hue 分组标签
-     * @return 当前实例，支持链式调用
+     * 绘制分组柱状图 / Draw grouped bar chart
+     * @param x 数据向量 / Data vector
+     * @param hue 分组标签 / Group labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot bar(IVector x, List<String> hue);
     
     /**
-     * 绘制直方图
-     * @param x 数据向量
-     * @param fittingLine 是否显示拟合线
-     * @return 当前实例，支持链式调用
+     * 绘制直方图 / Draw histogram
+     * @param x 数据向量 / Data vector
+     * @param fittingLine 是否显示拟合线 / Whether to show fitting line
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot hist(IVector x, boolean fittingLine);
     
-    // ========== 极坐标图表方法 ==========
+    // ========== 极坐标图表方法 / Polar Chart Methods ==========
     
     /**
-     * 绘制极坐标柱状图
-     * @param data 数据向量
-     * @param categories 类别标签
-     * @return 当前实例，支持链式调用
+     * 绘制极坐标柱状图 / Draw polar bar chart
+     * @param data 数据向量 / Data vector
+     * @param categories 类别标签 / Category labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarBar(IVector data, List<String> categories);
     
     /**
-     * 绘制极坐标线图
-     * @param data 数据向量
-     * @param categories 类别标签
-     * @return 当前实例，支持链式调用
+     * 绘制极坐标线图 / Draw polar line chart
+     * @param data 数据向量 / Data vector
+     * @param categories 类别标签 / Category labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarLine(IVector data, List<String> categories);
     
     /**
-     * 绘制极坐标散点图
-     * @param data 数据向量
-     * @param categories 类别标签
-     * @return 当前实例，支持链式调用
+     * 绘制极坐标散点图 / Draw polar scatter chart
+     * @param data 数据向量 / Data vector
+     * @param categories 类别标签 / Category labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarScatter(IVector data, List<String> categories);
     
-    // ========== 统计图表方法 ==========
+    // ========== 统计图表方法 / Statistical Chart Methods ==========
     
     /**
-     * 绘制箱线图
-     * @param data 数据向量
-     * @return 当前实例，支持链式调用
+     * 绘制箱线图 / Draw box plot
+     * @param data 数据向量 / Data vector
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot boxplot(IVector data);
     
     /**
-     * 绘制箱线图
-     * @param data 数据向量
-     * @param labels 标签
-     * @return 当前实例，支持链式调用
+     * 绘制箱线图 / Draw box plot
+     * @param data 数据向量 / Data vector
+     * @param labels 标签 / Labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot boxplot(IVector data, List<String> labels);
     
     /**
-     * 绘制小提琴图
-     * @param data 数据向量
-     * @return 当前实例，支持链式调用
+     * 绘制小提琴图 / Draw violin plot
+     * @param data 数据向量 / Data vector
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot violinplot(IVector data);
     
     /**
-     * 绘制小提琴图
-     * @param data 数据向量
-     * @param labels 标签
-     * @return 当前实例，支持链式调用
+     * 绘制小提琴图 / Draw violin plot
+     * @param data 数据向量 / Data vector
+     * @param labels 标签 / Labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot violinplot(IVector data, List<String> labels);
     
     /**
-     * 绘制K线图
-     * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价]
-     * @param dates 日期标签
-     * @return 当前实例，支持链式调用
+     * 绘制K线图 / Draw candlestick chart
+     * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价] / Data matrix, each row contains [open, close, low, high]
+     * @param dates 日期标签 / Date labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot candlestick(IMatrix data, List<String> dates);
     
-    // ========== 特殊图表方法 ==========
+    // ========== 特殊图表方法 / Special Chart Methods ==========
     
     /**
-     * 绘制漏斗图
-     * @param data 数据向量
-     * @param labels 标签
-     * @return 当前实例，支持链式调用
+     * 绘制漏斗图 / Draw funnel chart
+     * @param data 数据向量 / Data vector
+     * @param labels 标签 / Labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot funnel(IVector data, List<String> labels);
     
     /**
-     * 绘制桑基图
-     * @param nodes 节点数据
-     * @param links 连接数据
-     * @return 当前实例，支持链式调用
+     * 绘制桑基图 / Draw sankey diagram
+     * @param nodes 节点数据 / Node data
+     * @param links 连接数据 / Link data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
     
     /**
-     * 绘制旭日图
-     * @param data 层次数据
-     * @return 当前实例，支持链式调用
+     * 绘制旭日图 / Draw sunburst chart
+     * @param data 层次数据 / Hierarchical data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot sunburst(List<Map<String, Object>> data);
     
     /**
-     * 绘制主题河流图
-     * @param data 时间序列数据
-     * @param categories 类别
-     * @return 当前实例，支持链式调用
+     * 绘制主题河流图 / Draw theme river chart
+     * @param data 时间序列数据 / Time series data
+     * @param categories 类别 / Categories
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot themeRiver(List<Map<String, Object>> data, List<String> categories);
     
     /**
-     * 绘制树图
-     * @param data 树形数据
-     * @return 当前实例，支持链式调用
+     * 绘制树图 / Draw tree chart
+     * @param data 树形数据 / Tree data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot tree(List<Map<String, Object>> data);
     
     /**
-     * 绘制矩形树图
-     * @param data 层次数据
-     * @return 当前实例，支持链式调用
+     * 绘制矩形树图 / Draw treemap chart
+     * @param data 层次数据 / Hierarchical data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot treemap(List<Map<String, Object>> data);
     
     /**
-     * 绘制关系图
-     * @param nodes 节点数据
-     * @param links 连接数据
-     * @return 当前实例，支持链式调用
+     * 绘制关系图 / Draw graph chart
+     * @param nodes 节点数据 / Node data
+     * @param links 连接数据 / Link data
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
     
     /**
-     * 绘制平行坐标图
-     * @param data 数据矩阵
-     * @param dimensions 维度名称
-     * @return 当前实例，支持链式调用
+     * 绘制平行坐标图 / Draw parallel coordinates chart
+     * @param data 数据矩阵 / Data matrix
+     * @param dimensions 维度名称 / Dimension names
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot parallel(IMatrix data, List<String> dimensions);
     
-    // ========== 完善图表方法 ==========
+    // ========== 完善图表方法 / Chart Completion Methods ==========
     
     /**
-     * 绘制热力图
-     * @param data 二维数据矩阵
-     * @param xLabels X轴标签
-     * @param yLabels Y轴标签
-     * @return 当前实例，支持链式调用
+     * 绘制热力图 / Draw heatmap
+     * @param data 二维数据矩阵 / 2D data matrix
+     * @param xLabels X轴标签 / X-axis labels
+     * @param yLabels Y轴标签 / Y-axis labels
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels);
     
     /**
-     * 绘制雷达图
-     * @param data 数据向量
-     * @param indicators 指标名称
-     * @return 当前实例，支持链式调用
+     * 绘制雷达图 / Draw radar chart
+     * @param data 数据向量 / Data vector
+     * @param indicators 指标名称 / Indicator names
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot radar(IVector data, List<String> indicators);
     
     /**
-     * 绘制仪表盘
-     * @param value 数值
-     * @param max 最大值
-     * @param min 最小值
-     * @return 当前实例，支持链式调用
+     * 绘制仪表盘 / Draw gauge chart
+     * @param value 数值 / Value
+     * @param max 最大值 / Maximum value
+     * @param min 最小值 / Minimum value
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot gauge(float value, float max, float min);
     
-    // ========== 流式API方法 ==========
+    // ========== 流式API方法 / Fluent API Methods ==========
     
     /**
-     * 设置图表标题（流式API）
-     * @param titleText 标题文本
-     * @return 当前实例，支持链式调用
+     * 设置图表标题（流式API） / Set chart title (Fluent API)
+     * @param titleText 标题文本 / Title text
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot title(String titleText);
     
     /**
-     * 设置图表标题和副标题（流式API）
-     * @param titleText 标题文本
-     * @param subtitleText 副标题文本
-     * @return 当前实例，支持链式调用
+     * 设置图表标题和副标题（流式API） / Set chart title and subtitle (Fluent API)
+     * @param titleText 标题文本 / Title text
+     * @param subtitleText 副标题文本 / Subtitle text
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot title(String titleText, String subtitleText);
     
     /**
-     * 设置X轴标签（流式API）
-     * @param name X轴标签名称
-     * @return 当前实例，支持链式调用
+     * 设置X轴标签（流式API） / Set X-axis label (Fluent API)
+     * @param name X轴标签名称 / X-axis label name
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot xlabel(String name);
     
     /**
-     * 设置Y轴标签（流式API）
-     * @param name Y轴标签名称
-     * @return 当前实例，支持链式调用
+     * 设置Y轴标签（流式API） / Set Y-axis label (Fluent API)
+     * @param name Y轴标签名称 / Y-axis label name
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot ylabel(String name);
     
     /**
-     * 设置图表尺寸（流式API）
-     * @param width 图表宽度
-     * @param height 图表高度
-     * @return 当前实例，支持链式调用
+     * 设置图表尺寸（流式API） / Set chart size (Fluent API)
+     * @param width 图表宽度 / Chart width
+     * @param height 图表高度 / Chart height
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot size(int width, int height);
     
     /**
-     * 设置图表主题（流式API）
-     * @param theme 主题名称
-     * @return 当前实例，支持链式调用
+     * 设置图表主题（流式API） / Set chart theme (Fluent API)
+     * @param theme 主题名称 / Theme name
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot theme(String theme);
     
     /**
-     * 显示图表（流式API）
-     * @return 当前实例，支持链式调用
+     * 显示图表（流式API） / Show chart (Fluent API)
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot show();
     
     /**
-     * 保存图表为HTML文件（流式API）
-     * @param filename 文件名
-     * @return 当前实例，支持链式调用
+     * 保存图表为HTML文件（流式API） / Save chart as HTML file (Fluent API)
+     * @param filename 文件名 / Filename
+     * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot saveAsHtml(String filename);
     
-    // ========== 工具方法 ==========
+    // ========== 工具方法 / Utility Methods ==========
     
     /**
-     * 获取图表的HTML内容
-     * @return HTML字符串
+     * 获取图表的HTML内容 / Get chart HTML content
+     * @return HTML字符串 / HTML string
      */
     String toHtml();
     
     /**
-     * 获取图表的JSON配置
-     * @return JSON字符串
+     * 获取图表的JSON配置 / Get chart JSON configuration
+     * @return JSON字符串 / JSON string
      */
     String toJson();
     
-    // ========== 配置方法 ==========
+    // ========== 配置方法 / Configuration Methods ==========
     
     /**
-     * 设置图表标题
-     * @param titleText 标题文本
+     * 设置图表标题 / Set chart title
+     * @param titleText 标题文本 / Title text
      */
     void setTitle(String titleText);
     
     /**
-     * 设置图表标题和副标题
-     * @param titleText 标题文本
-     * @param subtitleText 副标题文本
+     * 设置图表标题和副标题 / Set chart title and subtitle
+     * @param titleText 标题文本 / Title text
+     * @param subtitleText 副标题文本 / Subtitle text
      */
     void setTitle(String titleText, String subtitleText);
     
     /**
-     * 设置X轴标签
-     * @param name X轴标签名称
+     * 设置X轴标签 / Set X-axis label
+     * @param name X轴标签名称 / X-axis label name
      */
     void setXlabel(String name);
     
     /**
-     * 设置Y轴标签
-     * @param name Y轴标签名称
+     * 设置Y轴标签 / Set Y-axis label
+     * @param name Y轴标签名称 / Y-axis label name
      */
     void setYlabel(String name);
     
     /**
-     * 设置X轴刻度
-     * @param xticks X轴刻度配置
+     * 设置X轴刻度 / Set X-axis ticks
+     * @param xticks X轴刻度配置 / X-axis tick configuration
      */
     void setXticks(com.reremouse.lab.math.viz.AxisTicks xticks);
     
     /**
-     * 设置Y轴刻度
-     * @param yticks Y轴刻度配置
+     * 设置Y轴刻度 / Set Y-axis ticks
+     * @param yticks Y轴刻度配置 / Y-axis tick configuration
      */
     void setYticks(com.reremouse.lab.math.viz.AxisTicks yticks);
     
     /**
-     * 获取图表宽度
-     * @return 图表宽度
+     * 获取图表宽度 / Get chart width
+     * @return 图表宽度 / Chart width
      */
     int getWidth();
     
     /**
-     * 获取图表高度
-     * @return 图表高度
+     * 获取图表高度 / Get chart height
+     * @return 图表高度 / Chart height
      */
     int getHeight();
     
     /**
-     * 获取图表主题
-     * @return 主题名称
+     * 获取图表主题 / Get chart theme
+     * @return 主题名称 / Theme name
      */
     String getTheme();
 }
@@ -501,7 +501,7 @@ public interface IPlot {
 
 `AxisTicks` 类用于配置坐标轴的刻度和标签，提供灵活的坐标轴定制功能。
 
-`AxisTicks` class is used to configure axis ticks and labels, providing flexible axis customization functionality.
+The `AxisTicks` class is used to configure axis ticks and labels, providing flexible axis customization functionality.
 
 ```java
 public class AxisTicks {
@@ -527,7 +527,7 @@ public class AxisTicks {
 
 `PlotException` 是绘图过程中使用的专用异常类，用于处理各种绘图错误和异常情况。
 
-`PlotException` is a specialized exception class used in the plotting process to handle various plotting errors and exceptional situations.
+`PlotException` is a specialized exception class used during the plotting process to handle various plotting errors and exceptional situations.
 
 ```java
 public class PlotException extends RuntimeException {
@@ -540,10 +540,10 @@ public class PlotException extends RuntimeException {
 
 #### 异常类型 / Exception Types
 
-- **数据验证异常** / **Data Validation Exceptions**: 当输入数据不符合要求时抛出
-- **渲染异常** / **Rendering Exceptions**: 当图表渲染过程中出现错误时抛出
-- **配置异常** / **Configuration Exceptions**: 当图表配置参数无效时抛出
-- **文件操作异常** / **File Operation Exceptions**: 当保存或读取文件时出现错误时抛出
+- **数据验证异常** / **Data Validation Exceptions**: 当输入数据不符合要求时抛出 / Thrown when input data does not meet requirements
+- **渲染异常** / **Rendering Exceptions**: 当图表渲染过程中出现错误时抛出 / Thrown when errors occur during chart rendering
+- **配置异常** / **Configuration Exceptions**: 当图表配置参数无效时抛出 / Thrown when chart configuration parameters are invalid
+- **文件操作异常** / **File Operation Exceptions**: 当保存或读取文件时出现错误时抛出 / Thrown when errors occur during file save or read operations
 
 #### 使用示例 / Usage Example
 
@@ -553,11 +553,11 @@ try {
     plot.line(x, y);
     plot.saveAsHtml("chart.html");
 } catch (PlotException e) {
-    System.err.println("绘图错误: " + e.getMessage());
-    // 处理绘图异常
+    System.err.println("绘图错误: " + e.getMessage()); // Plotting error
+    // 处理绘图异常 / Handle plotting exceptions
 } catch (Exception e) {
-    System.err.println("未知错误: " + e.getMessage());
-    // 处理其他异常
+    System.err.println("未知错误: " + e.getMessage()); // Unknown error
+    // 处理其他异常 / Handle other exceptions
 }
 ```
 
@@ -571,13 +571,13 @@ try {
 
 #### 核心特性 / Core Features
 
-- **多图表类型支持** / **Multiple Chart Type Support**: 支持25+种图表类型，包括基础图表、极坐标图表、统计图表和特殊图表
-- **ECharts集成** / **ECharts Integration**: 基于ECharts-Java，提供丰富的交互功能和动画效果
-- **灵活配置** / **Flexible Configuration**: 支持标题、图例、工具提示、坐标轴等全面配置
-- **多种输出格式** / **Multiple Output Formats**: 支持HTML、JSON等输出格式
-- **主题支持** / **Theme Support**: 支持多种内置主题和自定义主题
-- **流式API** / **Fluent API**: 支持链式调用，代码简洁易读
-- **异常处理** / **Exception Handling**: 完善的异常处理机制
+- **多图表类型支持** / **Multiple Chart Type Support**: 支持25+种图表类型，包括基础图表、极坐标图表、统计图表和特殊图表 / Supports 25+ chart types including basic charts, polar charts, statistical charts, and special charts
+- **ECharts集成** / **ECharts Integration**: 基于ECharts-Java，提供丰富的交互功能和动画效果 / Based on ECharts-Java, provides rich interactive features and animation effects
+- **灵活配置** / **Flexible Configuration**: 支持标题、图例、工具提示、坐标轴等全面配置 / Supports comprehensive configuration of titles, legends, tooltips, axes, etc.
+- **多种输出格式** / **Multiple Output Formats**: 支持HTML、JSON等输出格式 / Supports HTML, JSON and other output formats
+- **主题支持** / **Theme Support**: 支持多种内置主题和自定义主题 / Supports multiple built-in themes and custom themes
+- **流式API** / **Fluent API**: 支持链式调用，代码简洁易读 / Supports method chaining for concise and readable code
+- **异常处理** / **Exception Handling**: 完善的异常处理机制 / Comprehensive exception handling mechanism
 
 #### 构造函数 / Constructors
 
@@ -596,18 +596,18 @@ public RerePlot(int width, int height, String theme);
 
 ```java
 // 图表配置 / Chart configuration
-private Title title;                    // 标题配置
-private Legend legend;                  // 图例配置
-private Tooltip tooltip;                // 工具提示配置
-private AxisTicks xticks;               // X轴刻度配置
-private AxisTicks yticks;               // Y轴刻度配置
-private String xlabel;                  // X轴标签
-private String ylabel;                  // Y轴标签
-private Engine engine;                  // ECharts渲染引擎
-private Option option;                  // 图表选项
-private int width;                      // 图表宽度
-private int height;                     // 图表高度
-private String theme;                   // 主题名称
+private Title title;                    // 标题配置 / Title configuration
+private Legend legend;                  // 图例配置 / Legend configuration
+private Tooltip tooltip;                // 工具提示配置 / Tooltip configuration
+private AxisTicks xticks;               // X轴刻度配置 / X-axis ticks configuration
+private AxisTicks yticks;               // Y轴刻度配置 / Y-axis ticks configuration
+private String xlabel;                  // X轴标签 / X-axis label
+private String ylabel;                  // Y轴标签 / Y-axis label
+private Engine engine;                  // ECharts渲染引擎 / ECharts rendering engine
+private Option option;                  // 图表选项 / Chart options
+private int width;                      // 图表宽度 / Chart width
+private int height;                     // 图表高度 / Chart height
+private String theme;                   // 主题名称 / Theme name
 ```
 
 #### 核心方法 / Core Methods
@@ -765,9 +765,9 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建线图 / Create line chart using fluent API
 IPlot plot = Plots.of(800, 600, "dark")
-    .title("销售趋势图", "2024年各月销售数据")
-    .xlabel("月份")
-    .ylabel("销售额（万元）")
+    .title("销售趋势图", "2024年各月销售数据") // Sales Trend Chart, Monthly Sales Data for 2024
+    .xlabel("月份") // Month
+    .ylabel("销售额（万元）") // Sales Amount (10k RMB)
     .line(x, y)
     .show();
 ```
@@ -792,8 +792,8 @@ IPlot plot = Plots.of(800, 600);
 IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
 IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
 plot.scatter(x, y);
-plot.setTitle("散点图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("散点图"); // Scatter Chart
+plot.saveAsHtml("chart.html"); // 散点图 / Scatter chart
 ```
 
 #### 多组散点图 / Multi-group Scatter Chart
@@ -809,11 +809,11 @@ Use different colors or shapes to distinguish data points from different groups,
 IPlot plot = Plots.of(800, 600);
 IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
 IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
-List<String> hue = Arrays.asList("类别A", "类别A", "类别A", "类别A", "类别A",
-                                "类别B", "类别B", "类别B", "类别B", "类别B");
+List<String> hue = Arrays.asList("类别A", "类别A", "类别A", "类别A", "类别A", // Category A
+                                "类别B", "类别B", "类别B", "类别B", "类别B"); // Category B
 plot.scatter(x, y, hue);
-plot.setTitle("多组散点图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("多组散点图"); // Multi-group Scatter Chart
+plot.saveAsHtml("chart.html"); // 多组散点图 / Multi-group scatter chart
 ```
 
 #### 流式API示例 / Fluent API Example
@@ -821,9 +821,9 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建散点图 / Create scatter chart using fluent API
 IPlot plot = Plots.of(800, 600)
-    .title("身高体重关系图", "不同年龄段的身高体重分布")
-    .xlabel("身高（cm）")
-    .ylabel("体重（kg）")
+    .title("身高体重关系图", "不同年龄段的身高体重分布") // Height-Weight Relationship, Height-Weight Distribution by Age Group
+    .xlabel("身高（cm）") // Height (cm)
+    .ylabel("体重（kg）") // Weight (kg)
     .scatter(height, weight)
     .show();
 ```
@@ -841,8 +841,8 @@ Pie charts are used to display the proportion of each part to the whole, suitabl
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{30, 25, 20, 15, 10});
 plot.pie(data);
-plot.setTitle("饼图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("饼图"); // Pie Chart
+plot.saveAsHtml("chart.html"); // 饼图 / Pie chart
 ```
 
 #### 流式API示例 / Fluent API Example
@@ -850,7 +850,7 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建饼图 / Create pie chart using fluent API
 IPlot plot = Plots.of(600, 600)
-    .title("市场份额分布", "2024年各产品线市场份额")
+    .title("市场份额分布", "2024年各产品线市场份额") // Market Share Distribution, Market Share by Product Line in 2024
     .pie(marketShare)
     .show();
 ```
@@ -874,8 +874,8 @@ Display single-dimensional data comparison, suitable for visualizing categorical
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
 plot.bar(data);
-plot.setTitle("柱状图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("柱状图"); // Bar Chart
+plot.saveAsHtml("chart.html"); // 柱状图 / Bar chart
 ```
 
 #### 分组柱状图 / Grouped Bar Chart
@@ -901,9 +901,9 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建柱状图 / Create bar chart using fluent API
 IPlot plot = Plots.of(800, 600)
-    .title("销售业绩对比", "2024年各季度销售数据")
-    .xlabel("季度")
-    .ylabel("销售额（万元）")
+    .title("销售业绩对比", "2024年各季度销售数据") // Sales Performance Comparison, Quarterly Sales Data for 2024
+    .xlabel("季度") // Quarter
+    .ylabel("销售额（万元）") // Sales Amount (10k RMB)
     .bar(salesData)
     .show();
 ```
@@ -920,10 +920,10 @@ Histograms are used to display data distribution, providing intuitive visualizat
 // 创建直方图（带拟合线）/ Create histogram (with fitting line)
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
-plot.hist(data, true); // true表示显示正态分布拟合线
-plot.setTitle("直方图");
-plot.setXlabel("数值区间");
-plot.setYlabel("频次");
+plot.hist(data, true); // true表示显示正态分布拟合线 / true means show normal distribution fitting line
+plot.setTitle("直方图"); // Histogram
+plot.setXlabel("数值区间"); // Value range
+plot.setYlabel("频次"); // Frequency
 plot.saveAsHtml("chart.html");
 ```
 
@@ -932,9 +932,9 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建直方图 / Create histogram using fluent API
 IPlot plot = Plots.of(800, 600)
-    .title("数据分布直方图", "样本数据的正态分布拟合")
-    .xlabel("数值区间")
-    .ylabel("频次")
+    .title("数据分布直方图", "样本数据的正态分布拟合") // Data Distribution Histogram, Normal Distribution Fitting of Sample Data
+    .xlabel("数值区间") // Value Range
+    .ylabel("频次") // Frequency
     .hist(data, true)
     .show();
 ```
@@ -947,10 +947,10 @@ Polar coordinate charts use polar coordinate system to display data, suitable fo
 
 ### 极坐标图表特点 / Polar Chart Features
 
-- **角度轴** / **Angle Axis**: 表示数据的分类或时间维度
-- **半径轴** / **Radius Axis**: 表示数据的大小或数值
-- **周期性展示** / **Periodic Display**: 适合展示具有周期性特征的数据
-- **视觉冲击力** / **Visual Impact**: 提供独特的视觉效果，增强数据表现力
+- **角度轴** / **Angle Axis**: 表示数据的分类或时间维度 / Represents data categories or time dimensions
+- **半径轴** / **Radius Axis**: 表示数据的大小或数值 / Represents data magnitude or values
+- **周期性展示** / **Periodic Display**: 适合展示具有周期性特征的数据 / Suitable for displaying data with periodic characteristics
+- **视觉冲击力** / **Visual Impact**: 提供独特的视觉效果，增强数据表现力 / Provides unique visual effects to enhance data expression
 
 ### 1. 极坐标柱状图 / Polar Bar Chart
 
@@ -964,10 +964,10 @@ Display bar charts in polar coordinate system, suitable for visualizing periodic
 // 创建极坐标柱状图 / Create polar bar chart
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
-List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
+List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E"); // Category A, B, C, D, E
 plot.polarBar(data, categories);
-plot.setTitle("极坐标柱状图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("极坐标柱状图"); // Polar Bar Chart
+plot.saveAsHtml("chart.html"); // 极坐标柱状图 / Polar bar chart
 ```
 
 #### 流式API示例 / Fluent API Example
@@ -975,7 +975,7 @@ plot.saveAsHtml("chart.html");
 ```java
 // 使用流式API创建极坐标柱状图 / Create polar bar chart using fluent API
 IPlot plot = Plots.of(600, 600)
-    .title("风向玫瑰图", "24小时风向分布")
+    .title("风向玫瑰图", "24小时风向分布") // Wind Rose Chart, 24-hour Wind Direction Distribution
     .polarBar(windData, directions)
     .show();
 ```
@@ -1010,10 +1010,10 @@ Display scatter charts in polar coordinate system, suitable for visualizing pola
 // 创建极坐标散点图 / Create polar scatter chart
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
-List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
+List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E"); // Category A, B, C, D, E
 plot.polarScatter(data, categories);
-plot.setTitle("极坐标散点图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("极坐标散点图"); // Polar Scatter Chart
+plot.saveAsHtml("chart.html"); // 极坐标散点图 / Polar scatter chart
 ```
 
 ## 统计图表 / Statistical Charts
@@ -1024,10 +1024,10 @@ Statistical charts are used to display statistical characteristics of data, incl
 
 ### 统计图表特点 / Statistical Chart Features
 
-- **数据分布** / **Data Distribution**: 展示数据的分布特征和集中趋势
-- **异常值检测** / **Outlier Detection**: 识别数据中的异常值和离群点
-- **统计指标** / **Statistical Indicators**: 显示均值、中位数、四分位数等统计指标
-- **比较分析** / **Comparative Analysis**: 支持多组数据的统计比较
+- **数据分布** / **Data Distribution**: 展示数据的分布特征和集中趋势 / Display data distribution characteristics and central tendency
+- **异常值检测** / **Outlier Detection**: 识别数据中的异常值和离群点 / Identify outliers and anomalous values in data
+- **统计指标** / **Statistical Indicators**: 显示均值、中位数、四分位数等统计指标 / Display statistical indicators such as mean, median, quartiles
+- **比较分析** / **Comparative Analysis**: 支持多组数据的统计比较 / Support statistical comparison of multiple data groups
 
 ### 1. 箱线图 / Box Plot
 
@@ -1048,10 +1048,10 @@ Display distribution of a single dataset, including median, quartiles, outliers,
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 plot.boxplot(data);
-plot.setTitle("单组箱线图", "数据分布统计特征分析");
-plot.setXlabel("数据集");
-plot.setYlabel("数值");
-plot.saveAsHtml("single_boxplot.html");
+plot.setTitle("单组箱线图", "数据分布统计特征分析"); // Single Group Box Plot, Statistical Feature Analysis of Data Distribution
+plot.setXlabel("数据集"); // Dataset
+plot.setYlabel("数值"); // Value
+plot.saveAsHtml("single_boxplot.html"); // 单组箱线图 / Single group box plot
 ```
 
 #### 多组箱线图 / Multi-group Box Plot
@@ -1067,13 +1067,13 @@ Compare distributions of multiple data groups, suitable for comparative analysis
 IPlot plot = Plots.of(800, 600);
 IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
                                      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A",
-                                   "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B");
+List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", // Group A
+                                   "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B"); // Group B
 plot.boxplot(data, labels);
-plot.setTitle("多组箱线图对比", "不同组别的数据分布对比分析");
-plot.setXlabel("组别");
-plot.setYlabel("数值");
-plot.saveAsHtml("multi_boxplot.html");
+plot.setTitle("多组箱线图对比", "不同组别的数据分布对比分析"); // Multi-group Box Plot Comparison, Comparative Analysis of Data Distribution by Groups
+plot.setXlabel("组别"); // Group
+plot.setYlabel("数值"); // Value
+plot.saveAsHtml("multi_boxplot.html"); // 多组箱线图 / Multi-group box plot
 ```
 
 #### 流式API示例 / Fluent API Example
@@ -1081,17 +1081,17 @@ plot.saveAsHtml("multi_boxplot.html");
 ```java
 // 使用流式API创建单组箱线图 / Create single group box plot using fluent API
 IPlot plot = Plots.of(800, 600)
-    .title("数据分布箱线图", "各指标的数据分布情况")
-    .xlabel("指标")
-    .ylabel("数值")
+    .title("数据分布箱线图", "各指标的数据分布情况") // Data Distribution Box Plot, Data Distribution of Various Indicators
+    .xlabel("指标") // Indicator
+    .ylabel("数值") // Value
     .boxplot(data)
     .show();
 
 // 使用流式API创建多组箱线图 / Create multi-group box plot using fluent API
 IPlot multiPlot = Plots.of(800, 600)
-    .title("多组数据分布对比", "不同组别的统计特征对比")
-    .xlabel("组别")
-    .ylabel("数值")
+    .title("多组数据分布对比", "不同组别的统计特征对比") // Multi-group Data Distribution Comparison, Statistical Feature Comparison by Groups
+    .xlabel("组别") // Group
+    .ylabel("数值") // Value
     .boxplot(data, labels)
     .show();
 ```
@@ -1167,7 +1167,7 @@ Candlestick charts are used to display financial data including opening, closing
 ```java
 // 创建K线图 / Create candlestick chart
 IPlot plot = Plots.of(800, 600);
-// 数据格式：[开盘价, 收盘价, 最低价, 最高价]
+// 数据格式：[开盘价, 收盘价, 最低价, 最高价] / Data format: [open, close, low, high]
 float[][] candlestickArray = {
     {100, 110, 95, 115},
     {110, 120, 105, 125},
@@ -1202,10 +1202,10 @@ Special charts are used to display complex data relationships and hierarchical s
 
 ### 特殊图表特点 / Special Chart Features
 
-- **复杂关系** / **Complex Relationships**: 展示数据之间的复杂关联关系
-- **层次结构** / **Hierarchical Structure**: 支持多层次的树形和嵌套结构
-- **流程展示** / **Process Display**: 清晰展示数据流转和转换过程
-- **交互性强** / **High Interactivity**: 提供丰富的交互功能和动态效果
+- **复杂关系** / **Complex Relationships**: 展示数据之间的复杂关联关系 / Display complex relationships between data
+- **层次结构** / **Hierarchical Structure**: 支持多层次的树形和嵌套结构 / Support multi-level tree and nested structures
+- **流程展示** / **Process Display**: 清晰展示数据流转和转换过程 / Clearly display data flow and transformation processes
+- **交互性强** / **High Interactivity**: 提供丰富的交互功能和动态效果 / Provide rich interactive features and dynamic effects
 
 ### 1. 漏斗图 / Funnel Chart
 
@@ -1247,14 +1247,14 @@ Sankey diagrams are used to display data flow between multiple nodes, suitable f
 // 创建桑基图 / Create Sankey diagram
 IPlot plot = Plots.of(800, 600);
 
-// 创建节点数据
+// 创建节点数据 / Create node data
 List<Map<String, Object>> nodes = new ArrayList<>();
 nodes.add(createNode("source1", "源1"));
 nodes.add(createNode("source2", "源2"));
 nodes.add(createNode("target1", "目标1"));
 nodes.add(createNode("target2", "目标2"));
 
-// 创建连接数据
+// 创建连接数据 / Create link data
 List<Map<String, Object>> links = new ArrayList<>();
 links.add(createLink("source1", "target1", 10));
 links.add(createLink("source1", "target2", 20));
@@ -1398,8 +1398,8 @@ treeData.add(createTreeNode("child2", "子节点2", 40, "root"));
 treeData.add(createTreeNode("grandchild1", "孙节点1", 30, "child1"));
 
 plot.tree(treeData);
-plot.setTitle("树图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("树图"); // Tree Chart
+plot.saveAsHtml("chart.html"); // 树图 / Tree chart
 
 // 辅助方法 / Helper method
 private static Map<String, Object> createTreeNode(String id, String name, int value, String parent) {
@@ -1417,7 +1417,7 @@ private static Map<String, Object> createTreeNode(String id, String name, int va
 ```java
 // 使用流式API创建树图 / Create tree chart using fluent API
 IPlot plot = Plots.of(1000, 800)
-    .title("决策树", "机器学习决策树模型")
+    .title("决策树", "机器学习决策树模型") // Decision Tree, Machine Learning Decision Tree Model
     .tree(decisionTreeData)
     .show();
 ```
@@ -1435,13 +1435,13 @@ Treemap charts are used to display proportional relationships in hierarchical da
 IPlot plot = Plots.of(800, 600);
 
 List<Map<String, Object>> treemapData = new ArrayList<>();
-treemapData.add(createTreemapNode("root", "根节点", 100));
-treemapData.add(createTreemapNode("child1", "子节点1", 60, "root"));
-treemapData.add(createTreemapNode("child2", "子节点2", 40, "root"));
+treemapData.add(createTreemapNode("root", "根节点", 100)); // Root Node
+treemapData.add(createTreemapNode("child1", "子节点1", 60, "root")); // Child Node 1
+treemapData.add(createTreemapNode("child2", "子节点2", 40, "root")); // Child Node 2
 
 plot.treemap(treemapData);
-plot.setTitle("矩形树图");
-plot.saveAsHtml("chart.html");
+plot.setTitle("矩形树图"); // Treemap Chart
+plot.saveAsHtml("chart.html"); // 矩形树图 / Treemap chart
 
 // 辅助方法 / Helper method
 private static Map<String, Object> createTreemapNode(String id, String name, int value, String parent) {
@@ -1459,7 +1459,7 @@ private static Map<String, Object> createTreemapNode(String id, String name, int
 ```java
 // 使用流式API创建矩形树图 / Create treemap chart using fluent API
 IPlot plot = Plots.of(800, 600)
-    .title("市场份额分布", "各产品线市场份额对比")
+    .title("市场份额分布", "各产品线市场份额对比") // Market Share Distribution, Market Share Comparison by Product Line
     .treemap(marketShareData)
     .show();
 ```
@@ -1476,20 +1476,20 @@ Graph charts are used to display connections between nodes, suitable for network
 // 创建关系图 / Create graph chart
 IPlot plot = Plots.of(800, 600);
 
-// 创建节点数据
+// 创建节点数据 / Create node data
 List<Map<String, Object>> nodes = new ArrayList<>();
-nodes.add(createGraphNode("node1", "节点1"));
-nodes.add(createGraphNode("node2", "节点2"));
-nodes.add(createGraphNode("node3", "节点3"));
+nodes.add(createGraphNode("node1", "节点1")); // Node 1
+nodes.add(createGraphNode("node2", "节点2")); // Node 2
+nodes.add(createGraphNode("node3", "节点3")); // Node 3
 
-// 创建连接数据
+// 创建连接数据 / Create link data
 List<Map<String, Object>> links = new ArrayList<>();
 links.add(createGraphLink("node1", "node2", 10));
 links.add(createGraphLink("node2", "node3", 15));
 links.add(createGraphLink("node1", "node3", 20));
 
 plot.graph(nodes, links);
-plot.setTitle("关系图");
+plot.setTitle("关系图"); // Relationship Chart
 plot.saveAsHtml("chart.html");
 
 // 辅助方法 / Helper methods
@@ -1531,7 +1531,7 @@ Parallel coordinates charts are used to display distribution and relationships o
 // 创建平行坐标图 / Create parallel coordinates chart
 IPlot plot = Plots.of(800, 600);
 
-// 创建数据矩阵
+// 创建数据矩阵 / Create data matrix
 float[][] dataArray = {
     {1, 2, 3, 4},
     {2, 3, 4, 5},
@@ -1542,7 +1542,7 @@ IMatrix data = IMatrix.of(dataArray);
 List<String> dimensions = Arrays.asList("维度1", "维度2", "维度3", "维度4");
 
 plot.parallel(data, dimensions);
-plot.setTitle("平行坐标图");
+plot.setTitle("平行坐标图"); // Parallel Coordinates Chart
 plot.saveAsHtml("chart.html");
 ```
 
@@ -1564,10 +1564,10 @@ Enhanced charts provide more advanced visualization capabilities, including heat
 
 ### 完善图表特点 / Enhanced Chart Features
 
-- **专业分析** / **Professional Analysis**: 提供专业级的数据分析功能
-- **多维展示** / **Multi-dimensional Display**: 支持多维数据的可视化展示
-- **实时监控** / **Real-time Monitoring**: 支持实时数据监控和KPI展示
-- **交互丰富** / **Rich Interaction**: 提供丰富的交互功能和自定义选项
+- **专业分析** / **Professional Analysis**: 提供专业级的数据分析功能 / Provides professional-level data analysis capabilities
+- **多维展示** / **Multi-dimensional Display**: 支持多维数据的可视化展示 / Supports visualization of multi-dimensional data
+- **实时监控** / **Real-time Monitoring**: 支持实时数据监控和KPI展示 / Supports real-time data monitoring and KPI display
+- **交互丰富** / **Rich Interaction**: 提供丰富的交互功能和自定义选项 / Provides rich interaction features and customization options
 
 ### 1. 热力图 / Heatmap
 
@@ -1581,7 +1581,7 @@ Heatmaps are used to display distribution of two-dimensional data, with color in
 // 创建热力图 / Create heatmap
 IPlot plot = Plots.of(800, 600);
 
-// 创建二维数据矩阵
+// 创建二维数据矩阵 / Create 2D data matrix
 float[][] heatmapArray = {
     {1, 2, 3, 4},
     {2, 3, 4, 5},
@@ -1593,7 +1593,7 @@ List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
 List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
 
 plot.heatmap(data, xLabels, yLabels);
-plot.setTitle("热力图");
+plot.setTitle("热力图"); // Heatmap
 plot.saveAsHtml("chart.html");
 ```
 
@@ -1623,7 +1623,7 @@ IVector data = IVector.of(new float[]{80, 90, 70, 85, 95, 75});
 List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
 
 plot.radar(data, indicators);
-plot.setTitle("雷达图");
+plot.setTitle("雷达图"); // Radar Chart
 plot.saveAsHtml("chart.html");
 ```
 
@@ -1654,7 +1654,7 @@ float max = 100.0f;
 float min = 0.0f;
 
 plot.gauge(value, max, min);
-plot.setTitle("仪表盘");
+plot.setTitle("仪表盘"); // Gauge Chart
 plot.saveAsHtml("chart.html");
 ```
 
@@ -1673,17 +1673,17 @@ IPlot plot = Plots.of(400, 400)
 ### 1. 基本配置 / Basic Configuration
 
 ```java
-IPlot plot = Plots.of(800, 600, "dark"); // 设置尺寸和主题
+IPlot plot = Plots.of(800, 600, "dark"); // 设置尺寸和主题 / Set size and theme
 
-// 设置标题
-plot.setTitle("图表标题");
-plot.setTitle("主标题", "副标题");
+// 设置标题 / Set title
+plot.setTitle("图表标题"); // Chart title
+plot.setTitle("主标题", "副标题"); // Main title, subtitle
 
-// 设置坐标轴标签
-plot.setXlabel("X轴标签");
-plot.setYlabel("Y轴标签");
+// 设置坐标轴标签 / Set axis labels
+plot.setXlabel("X轴标签"); // X-axis label
+plot.setYlabel("Y轴标签"); // Y-axis label
 
-// 设置坐标轴刻度
+// 设置坐标轴刻度 / Set axis ticks
 AxisTicks xTicks = new AxisTicks();
 xTicks.setTickValues(IVector.of(new float[]{0, 1, 2, 3, 4, 5}));
 xTicks.setTickLabels(Arrays.asList("0", "1", "2", "3", "4", "5"));
@@ -1696,30 +1696,30 @@ plot.setYticks(yTicks);
 
 ### 2. 坐标轴刻度配置 / Axis Ticks Configuration
 
-`AxisTicks` 类提供了灵活的坐标轴刻度配置功能：
+`AxisTicks` 类提供了灵活的坐标轴刻度配置功能： / The `AxisTicks` class provides flexible axis tick configuration functionality:
 
 ```java
-// 创建刻度配置
+// 创建刻度配置 / Create tick configuration
 AxisTicks ticks = new AxisTicks();
 
-// 设置刻度值
+// 设置刻度值 / Set tick values
 ticks.setTickValues(IVector.of(new float[]{0, 25, 50, 75, 100}));
 
-// 设置刻度标签
+// 设置刻度标签 / Set tick labels
 ticks.setTickLabels(Arrays.asList("0%", "25%", "50%", "75%", "100%"));
 
-// 添加单个标签
-ticks.addTickLabel("自定义标签");
+// 添加单个标签 / Add single label
+ticks.addTickLabel("自定义标签"); // Custom label
 
-// 检查配置
+// 检查配置 / Check configuration
 if (ticks.hasTickValues()) {
-    System.out.println("已设置刻度值");
+    System.out.println("已设置刻度值"); // Tick values have been set
 }
 if (ticks.hasTickLabels()) {
-    System.out.println("已设置刻度标签");
+    System.out.println("已设置刻度标签"); // Tick labels have been set
 }
 
-// 应用到图表
+// 应用到图表 / Apply to chart
 plot.setXticks(ticks);
 plot.setYticks(ticks);
 ```
@@ -1730,25 +1730,25 @@ plot.setYticks(ticks);
 try {
     IPlot plot = Plots.of(800, 600);
     
-    // 数据验证
+    // 数据验证 / Data validation
     if (x == null || y == null) {
-        throw new PlotException("数据不能为null");
+        throw new PlotException("数据不能为null"); // Data cannot be null
     }
     if (x.length() != y.length()) {
-        throw new PlotException("X和Y向量长度必须相等");
+        throw new PlotException("X和Y向量长度必须相等"); // X and Y vector lengths must be equal
     }
     
-    // 创建图表
+    // 创建图表 / Create chart
     plot.line(x, y)
-        .title("数据图表")
+        .title("数据图表") // Data chart
         .saveAsHtml("chart.html");
         
 } catch (PlotException e) {
-    System.err.println("绘图异常: " + e.getMessage());
-    // 处理绘图相关异常
+    System.err.println("绘图异常: " + e.getMessage()); // Plotting exception
+    // 处理绘图相关异常 / Handle plotting-related exceptions
 } catch (Exception e) {
-    System.err.println("未知异常: " + e.getMessage());
-    // 处理其他异常
+    System.err.println("未知异常: " + e.getMessage()); // Unknown exception
+    // 处理其他异常 / Handle other exceptions
 }
 ```
 
@@ -1757,20 +1757,20 @@ try {
 ```java
 IPlot plot = Plots.of(800, 600);
 
-// 获取并配置标题
+// 获取并配置标题 / Get and configure title
 Title title = plot.getTitle();
-title.setText("自定义标题");
-title.setSubtext("自定义副标题");
+title.setText("自定义标题"); // Custom title
+title.setSubtext("自定义副标题"); // Custom subtitle
 title.setLeft("center");
 title.setTop("top");
 
-// 获取并配置图例
+// 获取并配置图例 / Get and configure legend
 Legend legend = plot.getLegend();
 legend.setOrient("horizontal");
 legend.setLeft("center");
 legend.setTop("bottom");
 
-// 获取并配置工具提示
+// 获取并配置工具提示 / Get and configure tooltip
 Tooltip tooltip = plot.getTooltip();
 tooltip.setTrigger("axis");
 tooltip.setAxisPointer("cross");
@@ -1782,24 +1782,24 @@ tooltip.setAxisPointer("cross");
 
 ```java
 IPlot plot = Plots.of(800, 600);
-// ... 配置图表数据 ...
-plot.show(); // 在浏览器中打开图表
+// ... 配置图表数据 ... / ... configure chart data ...
+plot.show(); // 在浏览器中打开图表 / Open chart in browser
 ```
 
 ### 2. 保存为HTML / Save as HTML
 
 ```java
 IPlot plot = Plots.of(800, 600);
-// ... 配置图表数据 ...
-plot.saveAsHtml("chart.html"); // 保存为HTML文件
+// ... 配置图表数据 ... / ... configure chart data ...
+plot.saveAsHtml("chart.html"); // 保存为HTML文件 / Save as HTML file
 ```
 
 ### 3. 获取HTML内容 / Get HTML Content
 
 ```java
 IPlot plot = Plots.of(800, 600);
-// ... 配置图表数据 ...
-String html = plot.toHtml(); // 获取HTML字符串
+// ... 配置图表数据 ... / ... configure chart data ...
+String html = plot.toHtml(); // 获取HTML字符串 / Get HTML string
 System.out.println(html);
 ```
 
@@ -1807,28 +1807,28 @@ System.out.println(html);
 
 ```java
 IPlot plot = Plots.of(800, 600);
-// ... 配置图表数据 ...
-String json = plot.toJson(); // 获取JSON配置
+// ... 配置图表数据 ... / ... configure chart data ...
+String json = plot.toJson(); // 获取JSON配置 / Get JSON configuration
 System.out.println(json);
 ```
 
 ## 性能特性 / Performance Features
 
 ### 数据处理能力 / Data Processing Capabilities
-- **大规模数据支持** / **Large-scale Data Support**: 支持处理大量数据点
-- **内存优化** / **Memory Optimization**: 高效的数据结构设计
-- **渲染性能** / **Rendering Performance**: 基于ECharts的高性能渲染
+- **大规模数据支持** / **Large-scale Data Support**: 支持处理大量数据点 / Supports processing large amounts of data points
+- **内存优化** / **Memory Optimization**: 高效的数据结构设计 / Efficient data structure design
+- **渲染性能** / **Rendering Performance**: 基于ECharts的高性能渲染 / High-performance rendering based on ECharts
 
 ### 交互功能 / Interactive Features
-- **缩放和平移** / **Zoom and Pan**: 支持图表的缩放和平移操作
-- **数据点悬停** / **Data Point Hover**: 鼠标悬停显示详细信息
-- **图例交互** / **Legend Interaction**: 点击图例显示/隐藏数据系列
-- **工具提示** / **Tooltip**: 丰富的工具提示信息
+- **缩放和平移** / **Zoom and Pan**: 支持图表的缩放和平移操作 / Supports zoom and pan operations on charts
+- **数据点悬停** / **Data Point Hover**: 鼠标悬停显示详细信息 / Mouse hover displays detailed information
+- **图例交互** / **Legend Interaction**: 点击图例显示/隐藏数据系列 / Click legend to show/hide data series
+- **工具提示** / **Tooltip**: 丰富的工具提示信息 / Rich tooltip information
 
 ### 主题和样式 / Themes and Styles
-- **内置主题** / **Built-in Themes**: 支持多种内置主题
-- **自定义样式** / **Custom Styles**: 支持自定义颜色、字体等样式
-- **响应式设计** / **Responsive Design**: 支持不同屏幕尺寸的适配
+- **内置主题** / **Built-in Themes**: 支持多种内置主题 / Supports multiple built-in themes
+- **自定义样式** / **Custom Styles**: 支持自定义颜色、字体等样式 / Supports custom colors, fonts and other styles
+- **响应式设计** / **Responsive Design**: 支持不同屏幕尺寸的适配 / Supports adaptation to different screen sizes
 
 ## 最佳实践 / Best Practices
 
@@ -1838,13 +1838,13 @@ System.out.println(json);
 // 确保数据质量 / Ensure data quality
 IVector data = IVector.of(new float[]{1, 2, 3, 4, 5});
 if (data.length() == 0) {
-    throw new IllegalArgumentException("数据不能为空");
+    throw new IllegalArgumentException("数据不能为空"); // Data cannot be empty
 }
 
 // 处理缺失值 / Handle missing values
 for (int i = 0; i < data.length(); i++) {
     if (Float.isNaN(data.get(i))) {
-        data.set(i, 0.0f); // 用0替换NaN值
+        data.set(i, 0.0f); // 用0替换NaN值 / Replace NaN values with 0
     }
 }
 ```
@@ -1854,11 +1854,11 @@ for (int i = 0; i < data.length(); i++) {
 ```java
 // 根据数据类型选择合适的图表 / Choose appropriate chart based on data type
 if (isTimeSeriesData(data)) {
-    plot.line(x, y); // 时间序列数据使用线图
+    plot.line(x, y); // 时间序列数据使用线图 / Use line chart for time series data
 } else if (isCategoricalData(data)) {
-    plot.bar(data); // 分类数据使用柱状图
+    plot.bar(data); // 分类数据使用柱状图 / Use bar chart for categorical data
 } else if (isDistributionData(data)) {
-    plot.hist(data, true); // 分布数据使用直方图
+    plot.hist(data, true); // 分布数据使用直方图 / Use histogram for distribution data
 }
 ```
 
@@ -1867,11 +1867,11 @@ if (isTimeSeriesData(data)) {
 ```java
 // 对于大数据集，考虑数据采样 / For large datasets, consider data sampling
 if (data.length() > 10000) {
-    data = data.sample(1000); // 随机采样1000个数据点
+    data = data.sample(1000); // 随机采样1000个数据点 / Randomly sample 1000 data points
 }
 
 // 使用合适的数据结构 / Use appropriate data structures
-IVector optimizedData = data.copy(); // 避免不必要的数据复制
+IVector optimizedData = data.copy(); // 避免不必要的数据复制 / Avoid unnecessary data copying
 ```
 
 ### 4. 错误处理 / Error Handling
@@ -1882,28 +1882,27 @@ try {
     plot.line(x, y);
     plot.saveAsHtml("chart.html");
 } catch (Exception e) {
-    System.err.println("创建图表时出错: " + e.getMessage());
-    // 处理错误情况
+    System.err.println("创建图表时出错: " + e.getMessage()); // Error creating chart
+    // 处理错误情况 / Handle error cases
 }
 ```
 
 ## 注意事项 / Notes
 
-1. **ECharts依赖** / **ECharts Dependency**: 确保项目中包含ECharts-Java依赖
-2. **浏览器兼容性** / **Browser Compatibility**: 生成的HTML文件需要现代浏览器支持
-3. **数据格式** / **Data Format**: 确保输入数据格式正确，避免空值或无效值
-4. **内存使用** / **Memory Usage**: 对于大数据集，注意内存使用情况
-5. **文件权限** / **File Permissions**: 确保有足够的文件写入权限
+1. **ECharts依赖** / **ECharts Dependency**: 确保项目中包含ECharts-Java依赖 / Ensure the project includes ECharts-Java dependency
+2. **浏览器兼容性** / **Browser Compatibility**: 生成的HTML文件需要现代浏览器支持 / Generated HTML files require modern browser support
+3. **数据格式** / **Data Format**: 确保输入数据格式正确，避免空值或无效值 / Ensure input data format is correct, avoid null or invalid values
+4. **内存使用** / **Memory Usage**: 对于大数据集，注意内存使用情况 / For large datasets, pay attention to memory usage
+5. **文件权限** / **File Permissions**: 确保有足够的文件写入权限 / Ensure sufficient file write permissions
 
 ## 扩展性 / Extensibility
 
-可视化包设计支持扩展：
-The visualization package is designed to support extensions:
+可视化包设计支持扩展： / The visualization package is designed to support extensions:
 
-- **新图表类型** / **New Chart Types**: 可以轻松添加新的图表类型
-- **自定义主题** / **Custom Themes**: 支持自定义主题和样式
-- **插件系统** / **Plugin System**: 支持插件扩展功能
-- **导出格式** / **Export Formats**: 支持更多导出格式（PNG、SVG等）
+- **新图表类型** / **New Chart Types**: 可以轻松添加新的图表类型 / New chart types can be easily added
+- **自定义主题** / **Custom Themes**: 支持自定义主题和样式 / Supports custom themes and styles
+- **插件系统** / **Plugin System**: 支持插件扩展功能 / Supports plugin extension functionality
+- **导出格式** / **Export Formats**: 支持更多导出格式（PNG、SVG等） / Supports more export formats (PNG, SVG, etc.)
 
 ## 应用场景 / Application Scenarios
 
@@ -1933,6 +1932,4 @@ The visualization package is designed to support extensions:
 
 ---
 
-**数据可视化** - 让数据说话，让洞察更清晰！
-
-**Data Visualization** - Let data speak, make insights clearer!
+**数据可视化** - 让数据说话，让洞察更清晰！ / **Data Visualization** - Let data speak, make insights clearer!
