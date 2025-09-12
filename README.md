@@ -404,6 +404,40 @@ float[] probabilities = lr.predictProbabilities(newFeatureVector);
 
 ## 项目结构 / Project Structure
 
+### 整体架构图 / Overall Architecture
+
+```mermaid
+graph TB
+    subgraph "应用层 (Application Layer)"
+        VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot]
+        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression]
+        DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA]
+        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stat, 概率分布]
+    end
+    
+    subgraph "中间层 (Middle Layer)"
+        DATA[数据处理层<br/>Data Processing Layer<br/>DataFrame, Column]
+        OPT[优化算法层<br/>Optimization Layer<br/>RereLBFGS, IOptimizer]
+    end
+    
+    subgraph "基础层 (Foundation Layer)"
+        MATH[基础数学层<br/>Core Math Layer<br/>IMatrix, IVector<br/>RereMatrix, RereVector]
+        UTIL[工具类层<br/>Utility Layer<br/>RereMathUtil<br/>SliceExpressionParser<br/>Tuple2, Tuple3]
+    end
+    
+    VIZ --> MATH
+    VIZ --> DATA
+    ML --> MATH
+    ML --> OPT
+    DIM --> MATH
+    STAT --> MATH
+    DATA --> MATH
+    DATA --> UTIL
+    OPT --> MATH
+```
+
+### 文件结构 / File Structure
+
 ```
 src/main/java/com/reremouse/lab/
 ├── math/                     # 数学计算模块 / Mathematical Computing Module
@@ -432,8 +466,13 @@ src/main/java/com/reremouse/lab/
 │   │   │   ├── BernoulliDistribution.java   # 伯努利分布 / Bernoulli Distribution
 │   │   │   ├── DiscreteUniformDistribution.java # 离散均匀分布 / Discrete Uniform Distribution
 │   │   │   ├── IContinuousDistribution.java # 连续分布接口 / Continuous Distribution Interface
-│   │   │   ├── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
-│   │   │   └── IStatisticDistribution.java  # 统计分布基础接口 / Statistical Distribution Base Interface
+│   │   │   └── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│   │   ├── anova/            # 方差分析模块 / ANOVA Module
+│   │   │   ├── ANOVA.java                   # 方差分析 / ANOVA
+│   │   │   ├── ANOVAResult.java             # 方差分析结果 / ANOVA Result
+│   │   │   ├── ANOVATest.java               # 方差分析测试 / ANOVA Test
+│   │   │   ├── RepeatedMeasuresANOVAResult.java # 重复测量方差分析结果 / Repeated Measures ANOVA Result
+│   │   │   └── TwoWayANOVAResult.java       # 双因素方差分析结果 / Two-Way ANOVA Result
 │   │   └── testing/          # 假设检验模块 / Hypothesis Testing Module
 │   │       ├── HypothesisTesting.java      # 假设检验 / Hypothesis Testing
 │   │       ├── ParameterEstimation.java    # 参数估计 / Parameter Estimation
