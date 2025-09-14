@@ -12,20 +12,20 @@
     </properties>
     
     <dependencies>
-        
+        <!-- Support for OpenCL GPUs -->
         <dependency>
             <groupId>com.aparapi</groupId>
             <artifactId>aparapi</artifactId>
             <version>3.0.2</version>
         </dependency>
-        
+        <!-- Support for CSV files reading -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.10.0</version>
             <optional>true</optional>
         </dependency>
-        
+        <!-- Support for ECharts.js plotting -->
         <dependency>
             <groupId>org.icepear.echarts</groupId>
             <artifactId>echarts-java</artifactId>
