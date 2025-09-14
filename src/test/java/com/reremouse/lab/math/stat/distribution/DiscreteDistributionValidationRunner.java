@@ -1,5 +1,11 @@
 package com.reremouse.lab.math.stat.distribution;
 
+import com.reremouse.lab.math.stats.distribution.DiscreteUniformDistribution;
+import com.reremouse.lab.math.stats.distribution.PoissonDistribution;
+import com.reremouse.lab.math.stats.distribution.BinomialDistribution;
+import com.reremouse.lab.math.stats.distribution.BernoulliDistribution;
+import com.reremouse.lab.math.stats.distribution.NegativeBinomialDistribution;
+import com.reremouse.lab.math.stats.distribution.GeometricDistribution;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.optimize;
 
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  *

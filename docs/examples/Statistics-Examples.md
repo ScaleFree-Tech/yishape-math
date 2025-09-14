@@ -1,4 +1,4 @@
-# 统计操作示例 (Statistics Examples)
+# 统计操作示例 (Statsistics Examples)
 
 ## 概述 / Overview
 
@@ -15,7 +15,7 @@ This document systematically organizes detailed usage examples for the statistic
 #### 导入必要的类 / Import Required Classes
 
 ```java
-import com.reremouse.lab.math.stat.Stat;
+import com.reremouse.lab.math.stat.Stats;
 import com.reremouse.lab.math.stat.distribution.*;
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.RereVector;
@@ -23,17 +23,17 @@ import java.util.Arrays;
 import java.util.List;
 ```
 
-#### 基本统计量计算 / Basic Statistics Calculation
+#### 基本统计量计算 / Basic Statsistics Calculation
 
 ```java
-public class BasicStatisticsExample {
+public class BasicStatsisticsExample {
     public static void main(String[] args) {
         // 创建示例数据 / Create sample data
         float[] data = {1.2f, 2.3f, 1.8f, 3.1f, 2.7f, 1.5f, 2.9f, 3.2f, 2.1f, 2.8f};
         IVector vector = IVector.of(data);
         
         // 计算基本统计量 / Calculate basic statistics
-        System.out.println("=== 基本统计量 / Basic Statistics ===");
+        System.out.println("=== 基本统计量 / Basic Statsistics ===");
         System.out.println("数据: " + Arrays.toString(data) + " / Data: " + Arrays.toString(data));
         System.out.println("均值: " + vector.mean() + " / Mean: " + vector.mean());
         System.out.println("中位数: " + vector.median() + " / Median: " + vector.median());
@@ -52,7 +52,7 @@ public class BasicStatisticsExample {
 public class NormalDistributionBasicExample {
     public static void main(String[] args) {
         // 创建标准正态分布（均值为0，标准差为1） / Create standard normal distribution (mean=0, std=1)
-        NormalDistribution standardNormal = Stat.norm();
+        NormalDistribution standardNormal = Stats.norm();
         System.out.println("标准正态分布: " + standardNormal + " / Standard normal distribution: " + standardNormal);
         
         // 基本统计量 / Basic statistics
@@ -82,7 +82,7 @@ public class NormalDistributionBasicExample {
 public class UniformDistributionBasicExample {
     public static void main(String[] args) {
         // 创建均匀分布 [0, 1] / Create uniform distribution [0, 1]
-        UniformDistribution uniform = Stat.uniform(0.0f, 1.0f);
+        UniformDistribution uniform = Stats.uniform(0.0f, 1.0f);
         System.out.println("均匀分布[0,1]: " + uniform + " / Uniform distribution [0,1]: " + uniform);
         
         // 基本统计量 / Basic statistics
@@ -113,7 +113,7 @@ public class UniformDistributionBasicExample {
 public class NormalDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建自定义正态分布（均值=10，标准差=2） / Create custom normal distribution (mean=10, std=2)
-        NormalDistribution normal = Stat.norm(10.0f, 2.0f);
+        NormalDistribution normal = Stats.norm(10.0f, 2.0f);
         System.out.println("正态分布(μ=10, σ=2): " + normal + " / Normal distribution (μ=10, σ=2): " + normal);
         
         // 基本统计量 / Basic statistics
@@ -143,7 +143,7 @@ public class NormalDistributionApplicationExample {
 public class RandomSamplingBasicExample {
     public static void main(String[] args) {
         // 正态分布采样 / Normal distribution sampling
-        NormalDistribution normal = Stat.norm(5.0f, 2.0f);
+        NormalDistribution normal = Stats.norm(5.0f, 2.0f);
         
         // 生成单个随机样本 / Generate single random sample
         float sample = normal.sample();
@@ -169,7 +169,7 @@ public class RandomSamplingBasicExample {
 public class ExponentialDistributionBasicExample {
     public static void main(String[] args) {
         // 创建指数分布（λ = 0.5） / Create exponential distribution (λ = 0.5)
-        ExponentialDistribution exp = Stat.exponential(0.5f);
+        ExponentialDistribution exp = Stats.exponential(0.5f);
         System.out.println("指数分布(λ=0.5): " + exp + " / Exponential distribution (λ=0.5): " + exp);
         
         // 基本统计量 / Basic statistics
@@ -204,17 +204,17 @@ public class ExponentialDistributionBasicExample {
 public class TDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建不同自由度的t分布 / Create t-distributions with different degrees of freedom
-        StudentDistribution t5 = Stat.t(5.0f);
-        StudentDistribution t10 = Stat.t(10.0f);
-        StudentDistribution t30 = Stat.t(30.0f);
+        StudentDistribution t5 = Stats.t(5.0f);
+        StudentDistribution t10 = Stats.t(10.0f);
+        StudentDistribution t30 = Stats.t(30.0f);
         
         System.out.println("=== t分布比较 / t-Distribution Comparison ===");
         System.out.println("t分布(5自由度): " + t5 + " / t-distribution (5 df): " + t5);
         System.out.println("t分布(10自由度): " + t10 + " / t-distribution (10 df): " + t10);
         System.out.println("t分布(30自由度): " + t30 + " / t-distribution (30 df): " + t30);
         
-        // 统计量比较 / Statistics comparison
-        System.out.println("\n统计量比较: / Statistics comparison:");
+        // 统计量比较 / Statsistics comparison
+        System.out.println("\n统计量比较: / Statsistics comparison:");
         System.out.printf("自由度5 - 均值: %.4f, 标准差: %.4f / df=5 - Mean: %.4f, Std: %.4f%n", t5.mean(), t5.std(), t5.mean(), t5.std());
         System.out.printf("自由度10 - 均值: %.4f, 标准差: %.4f / df=10 - Mean: %.4f, Std: %.4f%n", t10.mean(), t10.std(), t10.mean(), t10.std());
         System.out.printf("自由度30 - 均值: %.4f, 标准差: %.4f / df=30 - Mean: %.4f, Std: %.4f%n", t30.mean(), t30.std(), t30.mean(), t30.std());
@@ -235,17 +235,17 @@ public class TDistributionApplicationExample {
 public class ChiSquaredDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建不同自由度的卡方分布 / Create chi-squared distributions with different degrees of freedom
-        Chi2Distribution chi2_1 = Stat.chi2(1.0f);
-        Chi2Distribution chi2_5 = Stat.chi2(5.0f);
-        Chi2Distribution chi2_10 = Stat.chi2(10.0f);
+        Chi2Distribution chi2_1 = Stats.chi2(1.0f);
+        Chi2Distribution chi2_5 = Stats.chi2(5.0f);
+        Chi2Distribution chi2_10 = Stats.chi2(10.0f);
         
         System.out.println("=== 卡方分布比较 / Chi-Squared Distribution Comparison ===");
         System.out.println("卡方分布(1自由度): " + chi2_1 + " / Chi-squared distribution (1 df): " + chi2_1);
         System.out.println("卡方分布(5自由度): " + chi2_5 + " / Chi-squared distribution (5 df): " + chi2_5);
         System.out.println("卡方分布(10自由度): " + chi2_10 + " / Chi-squared distribution (10 df): " + chi2_10);
         
-        // 统计量比较 / Statistics comparison
-        System.out.println("\n统计量比较: / Statistics comparison:");
+        // 统计量比较 / Statsistics comparison
+        System.out.println("\n统计量比较: / Statsistics comparison:");
         System.out.printf("自由度1 - 均值: %.4f, 标准差: %.4f / df=1 - Mean: %.4f, Std: %.4f%n", chi2_1.mean(), chi2_1.std(), chi2_1.mean(), chi2_1.std());
         System.out.printf("自由度5 - 均值: %.4f, 标准差: %.4f / df=5 - Mean: %.4f, Std: %.4f%n", chi2_5.mean(), chi2_5.std(), chi2_5.mean(), chi2_5.std());
         System.out.printf("自由度10 - 均值: %.4f, 标准差: %.4f / df=10 - Mean: %.4f, Std: %.4f%n", chi2_10.mean(), chi2_10.std(), chi2_10.mean(), chi2_10.std());
@@ -266,17 +266,17 @@ public class ChiSquaredDistributionApplicationExample {
 public class FDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建不同自由度的F分布 / Create F-distributions with different degrees of freedom
-        FDistribution f1 = Stat.f(5.0f, 10.0f);
-        FDistribution f2 = Stat.f(10.0f, 5.0f);
-        FDistribution f3 = Stat.f(20.0f, 20.0f);
+        FDistribution f1 = Stats.f(5.0f, 10.0f);
+        FDistribution f2 = Stats.f(10.0f, 5.0f);
+        FDistribution f3 = Stats.f(20.0f, 20.0f);
         
         System.out.println("=== F分布比较 / F-Distribution Comparison ===");
         System.out.println("F分布(5,10自由度): " + f1 + " / F-distribution (5,10 df): " + f1);
         System.out.println("F分布(10,5自由度): " + f2 + " / F-distribution (10,5 df): " + f2);
         System.out.println("F分布(20,20自由度): " + f3 + " / F-distribution (20,20 df): " + f3);
         
-        // 统计量比较 / Statistics comparison
-        System.out.println("\n统计量比较: / Statistics comparison:");
+        // 统计量比较 / Statsistics comparison
+        System.out.println("\n统计量比较: / Statsistics comparison:");
         System.out.printf("F(5,10) - 均值: %.4f / F(5,10) - Mean: %.4f%n", f1.mean(), f1.mean());
         System.out.printf("F(10,5) - 均值: %.4f / F(10,5) - Mean: %.4f%n", f2.mean(), f2.mean());
         System.out.printf("F(20,20) - 均值: %.4f / F(20,20) - Mean: %.4f%n", f3.mean(), f3.mean());
@@ -297,7 +297,7 @@ public class FDistributionApplicationExample {
 public class PoissonDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建泊松分布（λ = 3） / Create Poisson distribution (λ = 3)
-        PoissonDistribution poisson = Stat.poisson(3.0f);
+        PoissonDistribution poisson = Stats.poisson(3.0f);
         System.out.println("泊松分布(λ=3): " + poisson + " / Poisson distribution (λ=3): " + poisson);
         
         // 基本统计量 / Basic statistics
@@ -346,7 +346,7 @@ public class PoissonDistributionApplicationExample {
 public class ParameterEstimationExample {
     public static void main(String[] args) {
         // 生成样本数据 / Generate sample data
-        NormalDistribution trueDist = Stat.norm(10.0f, 2.0f);
+        NormalDistribution trueDist = Stats.norm(10.0f, 2.0f);
         float[] samples = trueDist.sample(100);
         IVector sampleVector = IVector.of(samples);
         
@@ -381,7 +381,7 @@ public class ParameterEstimationExample {
 public class HypothesisTestingExample {
     public static void main(String[] args) {
         // 生成样本数据 / Generate sample data
-        NormalDistribution trueDist = Stat.norm(10.0f, 2.0f);
+        NormalDistribution trueDist = Stats.norm(10.0f, 2.0f);
         float[] samples = trueDist.sample(50);
         IVector sampleVector = IVector.of(samples);
         
@@ -416,7 +416,7 @@ public class HypothesisTestingExample {
 public class BinomialDistributionApplicationExample {
     public static void main(String[] args) {
         // 创建二项分布（n=100, p=0.3） / Create binomial distribution (n=100, p=0.3)
-        BinomialDistribution binomial = Stat.binomial(100, 0.3f);
+        BinomialDistribution binomial = Stats.binomial(100, 0.3f);
         System.out.println("二项分布(n=100, p=0.3): " + binomial + " / Binomial distribution (n=100, p=0.3): " + binomial);
         
         // 基本统计量 / Basic statistics
@@ -464,11 +464,11 @@ public class BinomialDistributionApplicationExample {
 ```java
 public class QualityControlAnalysisExample {
     public static void main(String[] args) {
-        System.out.println("=== 质量控制统计分析示例 / Quality Control Statistical Analysis Example ===");
+        System.out.println("=== 质量控制统计分析示例 / Quality Control Statsistical Analysis Example ===");
         
         // 模拟生产过程中的产品重量数据 / Simulate product weight data in production process
         // 假设产品重量应该服从正态分布，均值为100g，标准差为2g / Assume product weight follows normal distribution with mean=100g, std=2g
-        NormalDistribution targetDist = Stat.norm(100.0f, 2.0f);
+        NormalDistribution targetDist = Stats.norm(100.0f, 2.0f);
         
         // 生成样本数据（模拟实际测量结果） / Generate sample data (simulate actual measurement results)
         float[] measurements = targetDist.sample(50);
@@ -506,7 +506,7 @@ public class QualityControlAnalysisExample {
         System.out.println("  p值: " + varTest.p + " / p-value: " + varTest.p);
         
         // 计算不合格品概率 / Calculate defective product probability
-        NormalDistribution estimatedDist = Stat.norm(sample.mean(), sample.std());
+        NormalDistribution estimatedDist = Stats.norm(sample.mean(), sample.std());
         float lowerLimit = 95.0f;  // 下限
         float upperLimit = 105.0f; // 上限
         
@@ -530,7 +530,7 @@ public class FinancialRiskAssessmentExample {
         System.out.println("=== 金融风险评估示例 / Financial Risk Assessment Example ===");
         
         // 模拟股票收益率数据（假设服从正态分布） / Simulate stock return data (assume normal distribution)
-        NormalDistribution returnDist = Stat.norm(0.001f, 0.02f); // 日收益率：均值0.1%，标准差2% / Daily return: mean 0.1%, std 2%
+        NormalDistribution returnDist = Stats.norm(0.001f, 0.02f); // 日收益率：均值0.1%，标准差2% / Daily return: mean 0.1%, std 2%
         float[] dailyReturns = returnDist.sample(252); // 一年的交易日数据 / One year of trading day data
         IVector returns = IVector.of(dailyReturns);
         
@@ -556,7 +556,7 @@ public class FinancialRiskAssessmentExample {
         System.out.println("  VaR 99%: " + (var99 * 100) + "% / VaR 99%: " + (var99 * 100) + "%");
         
         // 使用正态分布计算理论VaR / Calculate theoretical VaR using normal distribution
-        NormalDistribution estimatedDist = Stat.norm(returns.mean(), returns.std());
+        NormalDistribution estimatedDist = Stats.norm(returns.mean(), returns.std());
         float theoreticalVar95 = estimatedDist.ppf(0.05f);
         float theoreticalVar99 = estimatedDist.ppf(0.01f);
         
@@ -603,7 +603,7 @@ public class ReliabilityAnalysisExample {
         System.out.println("=== 可靠性分析示例 / Reliability Analysis Example ===");
         
         // 模拟设备故障时间数据（假设服从指数分布） / Simulate equipment failure time data (assume exponential distribution)
-        ExponentialDistribution failureDist = Stat.exponential(0.01f); // 故障率λ=0.01/小时 / Failure rate λ=0.01/hour
+        ExponentialDistribution failureDist = Stats.exponential(0.01f); // 故障率λ=0.01/小时 / Failure rate λ=0.01/hour
         float[] failureTimes = failureDist.sample(100); // 100个故障时间样本 / 100 failure time samples
         IVector failures = IVector.of(failureTimes);
         
@@ -658,11 +658,11 @@ public class ExperimentalDesignAnalysisExample {
         
         // 模拟A/B测试数据 / Simulate A/B test data
         // 对照组：转化率5% / Control group: 5% conversion rate
-        BinomialDistribution controlDist = Stat.binomial(1000, 0.05f);
+        BinomialDistribution controlDist = Stats.binomial(1000, 0.05f);
         int controlConversions = (int) controlDist.sample();
         
         // 实验组：转化率6% / Treatment group: 6% conversion rate
-        BinomialDistribution treatmentDist = Stat.binomial(1000, 0.06f);
+        BinomialDistribution treatmentDist = Stats.binomial(1000, 0.06f);
         int treatmentConversions = (int) treatmentDist.sample();
         
         System.out.println("A/B测试结果: / A/B test results:");
@@ -684,7 +684,7 @@ public class ExperimentalDesignAnalysisExample {
         float diffStdError = (float) Math.sqrt(controlStdError * controlStdError + treatmentStdError * treatmentStdError);
         
         // 使用正态分布近似 / Use normal distribution approximation
-        NormalDistribution diffDist = Stat.norm(rateDifference, diffStdError);
+        NormalDistribution diffDist = Stats.norm(rateDifference, diffStdError);
         float lowerBound = diffDist.ppf(0.025f);
         float upperBound = diffDist.ppf(0.975f);
         
@@ -767,7 +767,7 @@ public class ANOVAApplicationExample {
         ANOVAResult result = ANOVA.performOneWayANOVA(traditionalMethod, onlineMethod, hybridMethod);
         
         System.out.println("\n单因素方差分析结果: / One-way ANOVA results:");
-        System.out.println("  F统计量: " + result.fStatistic + " / F-statistic: " + result.fStatistic);
+        System.out.println("  F统计量: " + result.fStatsistic + " / F-statistic: " + result.fStatsistic);
         System.out.println("  p值: " + result.pValue + " / p-value: " + result.pValue);
         System.out.println("  组间平方和: " + result.ssBetween + " / Sum of squares between groups: " + result.ssBetween);
         System.out.println("  组内平方和: " + result.ssWithin + " / Sum of squares within groups: " + result.ssWithin);
@@ -924,7 +924,7 @@ public class MonteCarloSimulationExample {
         int nSimulations = 100000;
         
         // 创建正态分布 / Create normal distribution
-        NormalDistribution normal = Stat.norm();
+        NormalDistribution normal = Stats.norm();
         
         float[] payoffs = new float[nSimulations];
         
@@ -956,7 +956,7 @@ public class MonteCarloSimulationExample {
         // 创建正态分布 / Create normal distribution
         NormalDistribution[] distributions = new NormalDistribution[3];
         for (int i = 0; i < 3; i++) {
-            distributions[i] = Stat.norm(means[i], stds[i]);
+            distributions[i] = Stats.norm(means[i], stds[i]);
         }
         
         float[] portfolioReturns = new float[nSimulations];
@@ -995,7 +995,7 @@ public class MonteCarloSimulationExample {
         int sampleSize = 30;
         
         // 创建正态分布 / Create normal distribution
-        NormalDistribution normal = Stat.norm(targetMean, targetStd);
+        NormalDistribution normal = Stats.norm(targetMean, targetStd);
         
         int defectCount = 0;
         
@@ -1099,4 +1099,4 @@ This document systematically introduces various functions of the statistics pack
 
 **统计操作示例** - 让统计分析更简单！
 
-**Statistics Examples** - Make statistical analysis simpler!
+**Statsistics Examples** - Make statistical analysis simpler!

@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.stat.distribution.BetaDistribution;
-import com.reremouse.lab.math.stat.distribution.GammaDistribution;
-import com.reremouse.lab.math.stat.distribution.IContinuousDistribution;
+import com.reremouse.lab.math.stats.distribution.BetaDistribution;
+import com.reremouse.lab.math.stats.distribution.GammaDistribution;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 
 /**
  * Beta分布和Gamma分布简化测试类

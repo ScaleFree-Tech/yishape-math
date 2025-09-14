@@ -1,6 +1,12 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.stat.distribution.*;
+import com.reremouse.lab.math.stats.distribution.NormalDistribution;
+import com.reremouse.lab.math.stats.distribution.FDistribution;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
+import com.reremouse.lab.math.stats.distribution.Chi2Distribution;
+import com.reremouse.lab.math.stats.distribution.UniformDistribution;
+import com.reremouse.lab.math.stats.distribution.ExponentialDistribution;
+import com.reremouse.lab.math.stats.distribution.StudentDistribution;
 
 /**
  * 概率分布类综合测试

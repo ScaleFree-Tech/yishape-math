@@ -1,7 +1,7 @@
 package com.reremouse.lab.data;
 
 import com.reremouse.lab.math.data.DataFrame;
-import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.linalg.IMatrix;
 import java.io.IOException;
 
 /**

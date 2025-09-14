@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.optimize;
 
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 各种最优化求解器的通用接口

@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize;
 import com.reremouse.lab.util.Tuple2;
 import java.util.ArrayList;
 import java.util.List;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * LBFGS优化器

@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.data;
 
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.RereMatrix;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.RereMatrix;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.reremouse.lab.math.SliceExpressionParser;
+import com.reremouse.lab.math.linalg.SliceExpressionParser;
 import org.apache.commons.csv.CSVPrinter;
 
 /**

@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.dimreduce.RereTSNE;
-import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * t-SNE算法测试类

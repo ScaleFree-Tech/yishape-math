@@ -2,8 +2,8 @@ package com.reremouse.lab.math.dimreduce;
 
 import java.util.*;
 import java.util.stream.IntStream;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * UMAP (Uniform Manifold Approximation and Projection) 降维算法实现类

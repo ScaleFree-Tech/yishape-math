@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.ml.cls;
 
 
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  *

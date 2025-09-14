@@ -1,18 +1,18 @@
-# 统计操作 (Statistics Operations)
+# 统计操作 (Statsistics Operations)
 
 ## 概述 / Overview
 
-`Stat` 类和相关的概率分布类提供了完整的统计计算功能，包括各种概率分布的概率密度函数、累积分布函数、随机采样等。该模块支持连续型分布和离散型分布两大类，包括正态分布、t分布、均匀分布、指数分布、卡方分布、F分布、Beta分布、Gamma分布等连续分布，以及伯努利分布、二项分布、泊松分布、几何分布、负二项分布、离散均匀分布等离散分布。此外，还提供了假设检验和参数估计等高级统计功能。
+`Stats` 类和相关的概率分布类提供了完整的统计计算功能，包括各种概率分布的概率密度函数、累积分布函数、随机采样等。该模块支持连续型分布和离散型分布两大类，包括正态分布、t分布、均匀分布、指数分布、卡方分布、F分布、Beta分布、Gamma分布等连续分布，以及伯努利分布、二项分布、泊松分布、几何分布、负二项分布、离散均匀分布等离散分布。此外，还提供了假设检验和参数估计等高级统计功能。
 
-The `Stat` class and related probability distribution classes provide comprehensive statistical computation functionality, including probability density functions, cumulative distribution functions, random sampling for various probability distributions. This module supports both continuous and discrete distributions, including continuous distributions such as normal, t-distribution, uniform, exponential, chi-squared, F-distribution, Beta, Gamma distributions, and discrete distributions such as Bernoulli, binomial, Poisson, geometric, negative binomial, discrete uniform distributions. Additionally, it provides advanced statistical functions such as hypothesis testing and parameter estimation.
+The `Stats` class and related probability distribution classes provide comprehensive statistical computation functionality, including probability density functions, cumulative distribution functions, random sampling for various probability distributions. This module supports both continuous and discrete distributions, including continuous distributions such as normal, t-distribution, uniform, exponential, chi-squared, F-distribution, Beta, Gamma distributions, and discrete distributions such as Bernoulli, binomial, Poisson, geometric, negative binomial, discrete uniform distributions. Additionally, it provides advanced statistical functions such as hypothesis testing and parameter estimation.
 
 ## 核心类 / Core Classes
 
-### Stat 类 / Stat Class
+### Stats 类 / Stats Class
 
-`Stat` 是统计操作的核心工厂类，提供了创建各种概率分布对象的静态方法。该类支持14种重要的概率分布，包括8种连续型分布和6种离散型分布。
+`Stats` 是统计操作的核心工厂类，提供了创建各种概率分布对象的静态方法。该类支持14种重要的概率分布，包括8种连续型分布和6种离散型分布。
 
-`Stat` is the core factory class for statistical operations, providing static methods to create various probability distribution objects. This class supports 14 important probability distributions, including 8 continuous distributions and 6 discrete distributions.
+`Stats` is the core factory class for statistical operations, providing static methods to create various probability distribution objects. This class supports 14 important probability distributions, including 8 continuous distributions and 6 discrete distributions.
 
 ### 假设检验类 / Hypothesis Testing Class
 
@@ -86,59 +86,59 @@ Encapsulates repeated measures ANOVA results, including statistics for time effe
 
 ```java
 // 标准正态分布（均值为0，标准差为1）/ Standard normal distribution (mean=0, stdDev=1)
-NormalDistribution standardNormal = Stat.norm();
+NormalDistribution standardNormal = Stats.norm();
 
 // 自定义参数的正态分布 / Custom parameter normal distribution
-NormalDistribution normal = Stat.norm(5.0f, 2.0f); // 均值=5，标准差=2 / Mean=5, stdDev=2
+NormalDistribution normal = Stats.norm(5.0f, 2.0f); // 均值=5，标准差=2 / Mean=5, stdDev=2
 ```
 
 ##### t分布 / Student's t-Distribution
 
 ```java
 // 创建t分布 / Create t-distribution
-StudentDistribution tDist = Stat.t(10.0f); // 自由度为10 / Degrees of freedom=10
+StudentDistribution tDist = Stats.t(10.0f); // 自由度为10 / Degrees of freedom=10
 ```
 
 ##### 均匀分布 / Uniform Distribution
 
 ```java
 // 创建均匀分布 / Create uniform distribution
-UniformDistribution uniform = Stat.uniform(0.0f, 10.0f); // 区间[0, 10] / Interval [0, 10]
+UniformDistribution uniform = Stats.uniform(0.0f, 10.0f); // 区间[0, 10] / Interval [0, 10]
 ```
 
 ##### 指数分布 / Exponential Distribution
 
 ```java
 // 创建指数分布 / Create exponential distribution
-ExponentialDistribution exp = Stat.exponential(2.0f); // 速率参数=2 / Rate parameter=2
+ExponentialDistribution exp = Stats.exponential(2.0f); // 速率参数=2 / Rate parameter=2
 ```
 
 ##### 卡方分布 / Chi-Squared Distribution
 
 ```java
 // 创建卡方分布 / Create chi-squared distribution
-Chi2Distribution chi2 = Stat.chi2(5.0f); // 自由度为5 / Degrees of freedom=5
+Chi2Distribution chi2 = Stats.chi2(5.0f); // 自由度为5 / Degrees of freedom=5
 ```
 
 ##### F分布 / F-Distribution
 
 ```java
 // 创建F分布 / Create F-distribution
-FDistribution fDist = Stat.f(5.0f, 10.0f); // 分子自由度=5，分母自由度=10 / Numerator df=5, denominator df=10
+FDistribution fDist = Stats.f(5.0f, 10.0f); // 分子自由度=5，分母自由度=10 / Numerator df=5, denominator df=10
 ```
 
 ##### Beta分布 / Beta Distribution
 
 ```java
 // 创建Beta分布 / Create Beta distribution
-BetaDistribution beta = Stat.beta(2.0f, 3.0f); // 形状参数α=2，β=3 / Shape parameters α=2, β=3
+BetaDistribution beta = Stats.beta(2.0f, 3.0f); // 形状参数α=2，β=3 / Shape parameters α=2, β=3
 ```
 
 ##### Gamma分布 / Gamma Distribution
 
 ```java
 // 创建Gamma分布 / Create Gamma distribution
-GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度参数β=1 / Shape parameter α=2, scale parameter β=1
+GammaDistribution gamma = Stats.gamma(2.0f, 1.0f); // 形状参数α=2，尺度参数β=1 / Shape parameter α=2, scale parameter β=1
 ```
 
 #### 1.2 离散型分布 / Discrete Distributions
@@ -147,42 +147,42 @@ GammaDistribution gamma = Stat.gamma(2.0f, 1.0f); // 形状参数α=2，尺度�
 
 ```java
 // 创建伯努利分布 / Create Bernoulli distribution
-BernoulliDistribution bernoulli = Stat.bernoulli(0.3f); // 成功概率=0.3 / Success probability=0.3
+BernoulliDistribution bernoulli = Stats.bernoulli(0.3f); // 成功概率=0.3 / Success probability=0.3
 ```
 
 ##### 二项分布 / Binomial Distribution
 
 ```java
 // 创建二项分布 / Create binomial distribution
-BinomialDistribution binomial = Stat.binomial(10, 0.5f); // 试验次数=10，成功概率=0.5 / Number of trials=10, success probability=0.5
+BinomialDistribution binomial = Stats.binomial(10, 0.5f); // 试验次数=10，成功概率=0.5 / Number of trials=10, success probability=0.5
 ```
 
 ##### 泊松分布 / Poisson Distribution
 
 ```java
 // 创建泊松分布 / Create Poisson distribution
-PoissonDistribution poisson = Stat.poisson(2.5f); // 平均发生率λ=2.5 / Mean rate λ=2.5
+PoissonDistribution poisson = Stats.poisson(2.5f); // 平均发生率λ=2.5 / Mean rate λ=2.5
 ```
 
 ##### 几何分布 / Geometric Distribution
 
 ```java
 // 创建几何分布 / Create geometric distribution
-GeometricDistribution geometric = Stat.geometric(0.2f); // 成功概率=0.2 / Success probability=0.2
+GeometricDistribution geometric = Stats.geometric(0.2f); // 成功概率=0.2 / Success probability=0.2
 ```
 
 ##### 负二项分布 / Negative Binomial Distribution
 
 ```java
 // 创建负二项分布 / Create negative binomial distribution
-NegativeBinomialDistribution negBin = Stat.negativeBinomial(3, 0.4f); // 成功次数=3，成功概率=0.4 / Number of successes=3, success probability=0.4
+NegativeBinomialDistribution negBin = Stats.negativeBinomial(3, 0.4f); // 成功次数=3，成功概率=0.4 / Number of successes=3, success probability=0.4
 ```
 
 ##### 离散均匀分布 / Discrete Uniform Distribution
 
 ```java
 // 创建离散均匀分布 / Create discrete uniform distribution
-DiscreteUniformDistribution discreteUniform = Stat.discreteUniform(1, 6); // 区间[1,6] / Interval [1,6]
+DiscreteUniformDistribution discreteUniform = Stats.discreteUniform(1, 6); // 区间[1,6] / Interval [1,6]
 ```
 
 ### 2. 概率分布接口 / Probability Distribution Interface
@@ -196,7 +196,7 @@ All probability distributions implement corresponding interfaces, providing unif
 - Discrete distributions implement the `IDiscreteDistribution` interface
 
 
-#### 基本统计量 / Basic Statistics
+#### 基本统计量 / Basic Statsistics
 
 ```java
 // 获取分布的基本统计量 / Get basic statistics of distribution
@@ -642,7 +642,7 @@ IVector group3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
 ANOVAResult result = ANOVA.performOneWayANOVA(group1, group2, group3);
 
 // 查看结果 / View results
-System.out.println("F统计量: " + result.fStatistic + " / F-statistic: " + result.fStatistic);
+System.out.println("F统计量: " + result.fStatsistic + " / F-statistic: " + result.fStatsistic);
 System.out.println("p值: " + result.pValue + " / p-value: " + result.pValue);
 System.out.println("组间平方和: " + result.ssBetween + " / Sum of squares between groups: " + result.ssBetween);
 System.out.println("组内平方和: " + result.ssWithin + " / Sum of squares within groups: " + result.ssWithin);
@@ -709,9 +709,9 @@ ANOVA.performTukeyHSD(group1, group2, group3);
 
 ## 使用示例 / Usage Examples
 
-详细的代码示例请参考 [Statistics-Examples.md](examples/Statistics-Examples.md) 文档。
+详细的代码示例请参考 [Statsistics-Examples.md](examples/Statsistics-Examples.md) 文档。
 
-For detailed code examples, please refer to the [Statistics-Examples.md](examples/Statistics-Examples.md) document.
+For detailed code examples, please refer to the [Statsistics-Examples.md](examples/Statsistics-Examples.md) document.
 
 ## 数值精度和算法 / Numerical Precision and Algorithms
 
@@ -766,7 +766,7 @@ For detailed code examples, please refer to the [Statistics-Examples.md](example
 ### 添加新分布 / Adding New Distributions
 
 1. 实现 `IContinuousDistribution` 或 `IDiscreteDistribution` 接口 / Implement `IContinuousDistribution` or `IDiscreteDistribution` interface
-2. 在 `Stat` 类中添加工厂方法 / Add factory methods in the `Stat` class
+2. 在 `Stats` 类中添加工厂方法 / Add factory methods in the `Stats` class
 3. 添加相应的测试用例 / Add corresponding test cases
 
 ### 自定义分布 / Custom Distributions
@@ -780,7 +780,7 @@ public class CustomDistribution implements IContinuousDistribution {
 
 ## 应用场景 / Application Scenarios
 
-### 统计分析 / Statistical Analysis
+### 统计分析 / Statsistical Analysis
 
 - 描述性统计 / Descriptive statistics
 - 假设检验 / Hypothesis testing
@@ -810,25 +810,25 @@ public class CustomDistribution implements IContinuousDistribution {
 
 ## 与SciPy功能对照表 / SciPy Functionality Comparison Table
 
-| 功能类别 / Function Category | Stat/分布类 / Stat/Distribution Classes | SciPy | 说明 / Description |
+| 功能类别 / Function Category | Stats/分布类 / Stats/Distribution Classes | SciPy | 说明 / Description |
 |---------|-------------------|-------|------|
 | **分布创建 / Distribution Creation** | | | |
-| 正态分布 / Normal distribution | `Stat.norm(mean, std)` | `scipy.stats.norm(mean, std)` | 创建正态分布 / Create normal distribution |
-| t分布 / t-distribution | `Stat.t(df)` | `scipy.stats.t(df)` | 创建t分布 / Create t-distribution |
-| 均匀分布 / Uniform distribution | `Stat.uniform(a, b)` | `scipy.stats.uniform(a, b-a)` | 创建均匀分布 / Create uniform distribution |
-| 指数分布 / Exponential distribution | `Stat.exponential(rate)` | `scipy.stats.expon(scale=1/rate)` | 创建指数分布 / Create exponential distribution |
-| 卡方分布 / Chi-squared distribution | `Stat.chi2(df)` | `scipy.stats.chi2(df)` | 创建卡方分布 / Create chi-squared distribution |
-| F分布 / F-distribution | `Stat.f(df1, df2)` | `scipy.stats.f(df1, df2)` | 创建F分布 / Create F-distribution |
-| Beta分布 / Beta distribution | `Stat.beta(α, β)` | `scipy.stats.beta(α, β)` | 创建Beta分布 / Create Beta distribution |
-| Gamma分布 / Gamma distribution | `Stat.gamma(α, β)` | `scipy.stats.gamma(α, scale=1/β)` | 创建Gamma分布 / Create Gamma distribution |
+| 正态分布 / Normal distribution | `Stats.norm(mean, std)` | `scipy.stats.norm(mean, std)` | 创建正态分布 / Create normal distribution |
+| t分布 / t-distribution | `Stats.t(df)` | `scipy.stats.t(df)` | 创建t分布 / Create t-distribution |
+| 均匀分布 / Uniform distribution | `Stats.uniform(a, b)` | `scipy.stats.uniform(a, b-a)` | 创建均匀分布 / Create uniform distribution |
+| 指数分布 / Exponential distribution | `Stats.exponential(rate)` | `scipy.stats.expon(scale=1/rate)` | 创建指数分布 / Create exponential distribution |
+| 卡方分布 / Chi-squared distribution | `Stats.chi2(df)` | `scipy.stats.chi2(df)` | 创建卡方分布 / Create chi-squared distribution |
+| F分布 / F-distribution | `Stats.f(df1, df2)` | `scipy.stats.f(df1, df2)` | 创建F分布 / Create F-distribution |
+| Beta分布 / Beta distribution | `Stats.beta(α, β)` | `scipy.stats.beta(α, β)` | 创建Beta分布 / Create Beta distribution |
+| Gamma分布 / Gamma distribution | `Stats.gamma(α, β)` | `scipy.stats.gamma(α, scale=1/β)` | 创建Gamma分布 / Create Gamma distribution |
 | **离散型分布 / Discrete Distributions** | | | |
-| 伯努利分布 / Bernoulli distribution | `Stat.bernoulli(p)` | `scipy.stats.bernoulli(p)` | 创建伯努利分布 / Create Bernoulli distribution |
-| 二项分布 / Binomial distribution | `Stat.binomial(n, p)` | `scipy.stats.binom(n, p)` | 创建二项分布 / Create binomial distribution |
-| 泊松分布 / Poisson distribution | `Stat.poisson(λ)` | `scipy.stats.poisson(λ)` | 创建泊松分布 / Create Poisson distribution |
-| 几何分布 / Geometric distribution | `Stat.geometric(p)` | `scipy.stats.geom(p)` | 创建几何分布 / Create geometric distribution |
-| 负二项分布 / Negative binomial distribution | `Stat.negativeBinomial(r, p)` | `scipy.stats.nbinom(r, p)` | 创建负二项分布 / Create negative binomial distribution |
-| 离散均匀分布 / Discrete uniform distribution | `Stat.discreteUniform(a, b)` | `scipy.stats.randint(a, b+1)` | 创建离散均匀分布 / Create discrete uniform distribution |
-| **基本统计量 / Basic Statistics** | | | |
+| 伯努利分布 / Bernoulli distribution | `Stats.bernoulli(p)` | `scipy.stats.bernoulli(p)` | 创建伯努利分布 / Create Bernoulli distribution |
+| 二项分布 / Binomial distribution | `Stats.binomial(n, p)` | `scipy.stats.binom(n, p)` | 创建二项分布 / Create binomial distribution |
+| 泊松分布 / Poisson distribution | `Stats.poisson(λ)` | `scipy.stats.poisson(λ)` | 创建泊松分布 / Create Poisson distribution |
+| 几何分布 / Geometric distribution | `Stats.geometric(p)` | `scipy.stats.geom(p)` | 创建几何分布 / Create geometric distribution |
+| 负二项分布 / Negative binomial distribution | `Stats.negativeBinomial(r, p)` | `scipy.stats.nbinom(r, p)` | 创建负二项分布 / Create negative binomial distribution |
+| 离散均匀分布 / Discrete uniform distribution | `Stats.discreteUniform(a, b)` | `scipy.stats.randint(a, b+1)` | 创建离散均匀分布 / Create discrete uniform distribution |
+| **基本统计量 / Basic Statsistics** | | | |
 | 均值 / Mean | `dist.mean()` | `dist.mean()` | 分布均值 / Distribution mean |
 | 方差 / Variance | `dist.var()` | `dist.var()` | 分布方差 / Distribution variance |
 | 标准差 / Standard deviation | `dist.std()` | `dist.std()` | 分布标准差 / Distribution standard deviation |
@@ -903,4 +903,4 @@ public class CustomDistribution implements IContinuousDistribution {
 
 **统计操作** - 概率论与数理统计的Java实现，让数据分析更简单！
 
-**Statistics Operations** - Java implementation of probability theory and mathematical statistics, making data analysis simpler!
+**Statsistics Operations** - Java implementation of probability theory and mathematical statistics, making data analysis simpler!

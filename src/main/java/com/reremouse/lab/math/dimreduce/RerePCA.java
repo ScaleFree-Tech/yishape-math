@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.dimreduce;
 
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * PCA (主成分分析) 降维算法实现类 / PCA (Principal Component Analysis) Dimensionality Reduction Algorithm Implementation

@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.dimreduce;
 
 import java.util.Random;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * t-SNE降维算法实现类 / t-SNE Dimensionality Reduction Algorithm Implementation

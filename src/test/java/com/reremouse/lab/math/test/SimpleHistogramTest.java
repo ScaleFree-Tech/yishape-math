@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.RereVector;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.RereVector;
 import com.reremouse.lab.math.viz.Plots;
 
 /**

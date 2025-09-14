@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.RereVector;
-import com.reremouse.lab.math.RereMatrix;
+import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereMatrix;
 import com.reremouse.lab.math.viz.Plots;
 import com.reremouse.lab.math.viz.IPlot;
 import java.util.*;

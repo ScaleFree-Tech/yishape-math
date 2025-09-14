@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.dimreduce.RereSVD;
-import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * SVD降维算法测试类 / SVD Dimensionality Reduction Test Class

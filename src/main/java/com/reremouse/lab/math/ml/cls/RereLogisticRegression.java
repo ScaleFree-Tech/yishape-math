@@ -1,9 +1,9 @@
 package com.reremouse.lab.math.ml.cls;
 
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.RereMatrix;
-import com.reremouse.lab.math.RereVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.linalg.RereVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;

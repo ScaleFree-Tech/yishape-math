@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  *

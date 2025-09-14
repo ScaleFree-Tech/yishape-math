@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.data;
 
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;

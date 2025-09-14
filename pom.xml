@@ -8,9 +8,17 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
+        <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</maven.surefire.argLine>
     </properties>
     
     <dependencies>
+        
+        <dependency>
+            <groupId>com.aparapi</groupId>
+            <artifactId>aparapi</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
@@ -22,6 +30,17 @@
             <groupId>org.icepear.echarts</groupId>
             <artifactId>echarts-java</artifactId>
             <version>1.1.0</version>
+            <optional>true</optional>
+        </dependency>
+        
+
+        
+        <!-- JUnit 5 for testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
             <optional>true</optional>
         </dependency>
         <!--
@@ -43,7 +62,5 @@
         </dependency>
         -->
     </dependencies>
-
-    
     
 </project>

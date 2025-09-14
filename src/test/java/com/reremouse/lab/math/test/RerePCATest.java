@@ -3,8 +3,8 @@ package com.reremouse.lab.math.test;
 import com.reremouse.lab.math.dimreduce.RerePCA;
 import com.reremouse.lab.math.dimreduce.RerePCA;
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * PCA算法测试类

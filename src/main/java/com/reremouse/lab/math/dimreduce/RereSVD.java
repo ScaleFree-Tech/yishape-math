@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.dimreduce;
 
 import com.reremouse.lab.util.Tuple3;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * SVD降维算法实现类 / SVD Dimensionality Reduction Algorithm Implementation

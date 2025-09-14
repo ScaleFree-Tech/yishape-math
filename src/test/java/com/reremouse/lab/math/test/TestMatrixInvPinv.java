@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.RereMatrix;
-import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * 测试矩阵逆和伪逆的实现

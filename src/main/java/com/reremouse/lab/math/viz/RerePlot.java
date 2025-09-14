@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1417,7 +1417,7 @@ public class RerePlot  implements Serializable,IPlot{
                 for (int i = 0; i < groupData.size(); i++) {
                     groupArray[i] = groupData.get(i);
                 }
-                IVector groupVector = new com.reremouse.lab.math.RereVector(groupArray);
+                IVector groupVector = new com.reremouse.lab.math.linalg.RereVector(groupArray);
                 
                 // 计算核密度估计
                 List<double[]> kdeData = kernelDensityEstimation(groupVector, 2.5);

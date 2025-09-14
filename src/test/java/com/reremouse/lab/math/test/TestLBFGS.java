@@ -2,7 +2,7 @@ package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.optimize.*;
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * LBFGS算法测试类

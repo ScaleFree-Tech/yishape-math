@@ -1,9 +1,9 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.RereMatrix;
+import com.reremouse.lab.math.linalg.RereMatrix;
 import com.reremouse.lab.util.Tuple3;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 public class DebugPinv3x2 {
     public static void main(String[] args) {

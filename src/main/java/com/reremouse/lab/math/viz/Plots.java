@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 import java.util.List;
 
 /**
