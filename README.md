@@ -105,7 +105,6 @@
   - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
   - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
   - GPU高级运算：特征分解、奇异值分解、伪逆矩阵计算等 / GPU advanced operations: eigenvalue decomposition, SVD decomposition, pseudo-inverse computation
-  - 智能阈值控制：根据数据大小自动选择CPU或GPU计算 / Smart threshold control: automatically choose CPU or GPU based on data size
   - 自动回退机制：GPU计算失败时自动切换到CPU计算 / Automatic fallback: automatically switch to CPU when GPU computation fails
 
 
@@ -620,6 +619,14 @@ If you encounter any issues while using the library, you can get help through th
 - **社区**: 参与讨论和分享经验 / Participate in discussions and share experiences
 
 ## 更新日志 / Changelog
+
+### v0.2.0 (2025-09)
+- ⚡ GPU加速计算 / GPU-Accelerated Computing
+  - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
+  - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
+  - GPU高级运算：特征分解、奇异值分解、伪逆矩阵计算等 / GPU advanced operations: eigenvalue decomposition, SVD decomposition, pseudo-inverse computation
+  - 智能阈值控制：根据数据大小自动选择CPU或GPU计算 / Smart threshold control: automatically choose CPU or GPU based on data size
+  - 自动回退机制：GPU计算失败时自动切换到CPU计算 / Automatic fallback: automatically switch to CPU when GPU computation fails
 
 ### v0.1.2 (2025-09)
 - 📊 DataFrame 数据框操作 / DataFrame Operations: 完整的结构化数据处理功能
