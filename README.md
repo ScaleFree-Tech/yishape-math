@@ -2,7 +2,7 @@
 
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.1.2-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.2.0-blue.svg)]()
 
 ## 项目简介 / Project Introduction
 
@@ -100,8 +100,7 @@
   - *Manifold learning for dimensionality reduction*
 
 ### ⚡ GPU加速计算 / GPU-Accelerated Computing
-- **GPU并行计算** / **GPU Parallel Computing**: 基于Aparapi框架的高性能GPU加速
-  - *High-performance GPU acceleration based on Aparapi framework*
+- **GPU并行计算** / **GPU Parallel Computing**: 
   - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
   - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
   - GPU高级运算：特征分解、奇异值分解、伪逆矩阵计算等 / GPU advanced operations: eigenvalue decomposition, SVD decomposition, pseudo-inverse computation
