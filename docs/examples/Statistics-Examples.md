@@ -764,7 +764,7 @@ public class ANOVAApplicationExample {
         System.out.println("  混合方法: " + hybridMethod.mean() + " ± " + hybridMethod.std() + " / Hybrid method: " + hybridMethod.mean() + " ± " + hybridMethod.std());
         
         // 执行单因素方差分析 / Perform one-way ANOVA
-        ANOVAResult result = ANOVA.performOneWayANOVA(traditionalMethod, onlineMethod, hybridMethod);
+        ANOVAResult result = Stats.anova.performOneWayANOVA(traditionalMethod, onlineMethod, hybridMethod);
         
         System.out.println("\n单因素方差分析结果: / One-way ANOVA results:");
         System.out.println("  F统计量: " + result.fStatsistic + " / F-statistic: " + result.fStatsistic);
@@ -802,7 +802,7 @@ public class ANOVAApplicationExample {
         System.out.println("  因素B: 学习风格 (视觉型 vs 听觉型) / Factor B: Learning style (Visual vs Auditory)");
         
         // 执行两因素方差分析 / Perform two-way ANOVA
-        TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
+        TwoWayANOVAResult result = Stats.anova.performTwoWayANOVA(data);
         
         System.out.println("\n两因素方差分析结果: / Two-way ANOVA results:");
         System.out.println("  教学方法主效应: F=" + result.factorAF + ", p=" + result.factorAP + " / Teaching method main effect: F=" + result.factorAF + ", p=" + result.factorAP);
@@ -841,7 +841,7 @@ public class ANOVAApplicationExample {
         System.out.println("  时间点: 训练前, 训练中, 训练后, 随访 / Time points: Pre-training, During training, Post-training, Follow-up");
         
         // 执行重复测量方差分析 / Perform repeated measures ANOVA
-        RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(data);
+        RepeatedMeasuresANOVAResult result = Stats.anova.performRepeatedMeasuresANOVA(data);
         
         System.out.println("\n重复测量方差分析结果: / Repeated measures ANOVA results:");
         System.out.println("  时间效应: F=" + result.timeF + ", p=" + result.timeP + " / Time effect: F=" + result.timeF + ", p=" + result.timeP);
@@ -871,9 +871,9 @@ public class ANOVAApplicationExample {
         
         // 正态性检验 / Normality test
         System.out.println("\n1. 正态性检验 / Normality Test:");
-        boolean isNormal1 = ANOVA.testNormality(sample1);
-        boolean isNormal2 = ANOVA.testNormality(sample2);
-        boolean isNormal3 = ANOVA.testNormality(sample3);
+        boolean isNormal1 = Stats.anova.testNormality(sample1);
+        boolean isNormal2 = Stats.anova.testNormality(sample2);
+        boolean isNormal3 = Stats.anova.testNormality(sample3);
         
         System.out.println("  样本1正态性: " + (isNormal1 ? "通过" : "未通过") + " / Sample 1 normality: " + (isNormal1 ? "Pass" : "Fail"));
         System.out.println("  样本2正态性: " + (isNormal2 ? "通过" : "未通过") + " / Sample 2 normality: " + (isNormal2 ? "Pass" : "Fail"));
@@ -881,7 +881,7 @@ public class ANOVAApplicationExample {
         
         // 方差齐性检验 / Homogeneity of variance test
         System.out.println("\n2. 方差齐性检验 / Homogeneity of Variance Test:");
-        boolean isHomogeneous = ANOVA.testHomogeneityOfVariance(sample1, sample2, sample3);
+        boolean isHomogeneous = Stats.anova.testHomogeneityOfVariance(sample1, sample2, sample3);
         System.out.println("  方差齐性: " + (isHomogeneous ? "通过" : "未通过") + " / Variance homogeneity: " + (isHomogeneous ? "Pass" : "Fail"));
         
         // 给出建议 / Provide recommendations

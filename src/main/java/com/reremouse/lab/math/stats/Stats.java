@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.stats;
 
+import com.reremouse.lab.math.stats.anova.ANOVA;
 import com.reremouse.lab.math.stats.testing.ParameterEstimation;
 import com.reremouse.lab.math.stats.testing.HypothesisTesting;
 import com.reremouse.lab.math.stats.distribution.NormalDistribution;
@@ -193,6 +194,11 @@ public class Stats {
      * Hypothesis testing
      */
     public static HypothesisTesting testor = new HypothesisTesting();//假设检验
+    
+    /**
+     * 方差分析/ANAVA
+     */
+    public static ANOVA anova = new ANOVA();
     
 
     /**

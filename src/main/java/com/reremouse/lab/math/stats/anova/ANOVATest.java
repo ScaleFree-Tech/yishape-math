@@ -40,7 +40,7 @@ public class ANOVATest {
         // performOneWayANOVA(vectors...) - 执行单因素方差分析
         // 参数：可变参数，每个IVector代表一个组的数据
         // 返回值：ANOVAResult对象，包含ANOVA分析结果
-        ANOVAResult result = ANOVA.performOneWayANOVA(vector1, vector2, vector3);
+        ANOVAResult result = Stats.anova.performOneWayANOVA(vector1, vector2, vector3);
 
         System.out.println("组别统计量 / Group statistics:");
         // IDoubleVector.mean() - 计算组均值
@@ -79,7 +79,7 @@ public class ANOVATest {
         }
 
         // 计算两因素ANOVA / Calculate two-way ANOVA
-        TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
+        TwoWayANOVAResult result = Stats.anova.performTwoWayANOVA(data);
 
         System.out.println("两因素ANOVA结果 / Two-way ANOVA results:");
         System.out.println("  因素A主效应F值 / Factor A main effect F-value: " + result.factorAF);
@@ -105,7 +105,7 @@ public class ANOVATest {
         }
 
         // 计算重复测量ANOVA
-        RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(repeatedData);
+        RepeatedMeasuresANOVAResult result = Stats.anova.performRepeatedMeasuresANOVA(repeatedData);
 
         System.out.println("重复测量ANOVA结果 / Repeated Measures ANOVA results:");
         System.out.println("  时间效应F值 / Time effect F-value: " + result.timeF);

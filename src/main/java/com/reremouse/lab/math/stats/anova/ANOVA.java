@@ -5,12 +5,12 @@ import com.reremouse.lab.math.stats.distribution.FDistribution;
 import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
- *
+ * 用户方差分析的类
  * @author lteb2
  */
 public class ANOVA {
 
-    public static ANOVAResult performOneWayANOVA(IDoubleVector... groups) {
+    public ANOVAResult performOneWayANOVA(IDoubleVector... groups) {
         // 单因素方差分析的核心计算方法
         // 参数：groups - 可变参数，每个IVector代表一个组的数据
         // 返回值：ANOVAResult对象，包含ANOVA分析结果
@@ -72,7 +72,7 @@ public class ANOVA {
         return new ANOVAResult(ssBetween, ssWithin, ssBetween + ssWithin, fStatistic, pValue);
     }
 
-    public static TwoWayANOVAResult performTwoWayANOVA(double[][][] data) {
+    public TwoWayANOVAResult performTwoWayANOVA(double[][][] data) {
         int a = data.length; // 因素A的水平数
         int b = data[0].length; // 因素B的水平数
         int n = data[0][0].length; // 每组观测数
@@ -155,7 +155,7 @@ public class ANOVA {
         return new TwoWayANOVAResult(fA, pA, fB, pB, fAB, pAB);
     }
 
-    public static RepeatedMeasuresANOVAResult performRepeatedMeasuresANOVA(double[][] data) {
+    public RepeatedMeasuresANOVAResult performRepeatedMeasuresANOVA(double[][] data) {
         int n = data.length; // 被试数
         int k = data[0].length; // 时间点数
 
@@ -244,7 +244,7 @@ public class ANOVA {
         return Math.abs(skewness) < 1.0f && Math.abs(kurtosis) < 1.0f;
     }
 
-    public static boolean testHomogeneityOfVariance(IDoubleVector... groups) {
+    public boolean testHomogeneityOfVariance(IDoubleVector... groups) {
         System.out.println("\n=== 方差齐性检验 / Homogeneity of Variance Test ===");
 
         // 计算各组的方差
@@ -273,7 +273,7 @@ public class ANOVA {
         return ratio < 4.0f;
     }
 
-    public static void performTukeyHSD(IDoubleVector... groups) {
+    public void performTukeyHSD(IDoubleVector... groups) {
         System.out.println("=== Tukey HSD多重比较 / Tukey HSD Multiple Comparisons ===");
 
         // Tukey HSD多重比较的核心计算方法
@@ -331,7 +331,7 @@ public class ANOVA {
         }
     }
 
-    private static double calculateTukeyCritical(int k, int df, double alpha) {
+    private double calculateTukeyCritical(int k, int df, double alpha) {
         // 简化的Tukey临界值计算
         // 参数说明：
         //   - k: 组数

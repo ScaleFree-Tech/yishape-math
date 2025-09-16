@@ -2,9 +2,274 @@
 
 ## 概述 / Overview
 
-本文档提供了 `yishape-math` 包中所有公共类和方法的详细API参考。
+本文档提供了 `yishape-math` 包中所有公共类和方法的详细API参考。yishape-math是一个功能强大的Java数学计算库，提供线性代数、统计分析、机器学习、数据可视化、优化算法、降维算法等全面的数学计算功能。
 
-This document provides detailed API reference for all public classes and methods in the `yishape-math` package.
+This document provides detailed API reference for all public classes and methods in the `yishape-math` package. yishape-math is a powerful Java mathematical computing library that provides comprehensive mathematical computing capabilities including linear algebra, statistical analysis, machine learning, data visualization, optimization algorithms, and dimensionality reduction algorithms.
+
+## 用户指南 / User Guide
+
+### 🎯 推荐使用的公开API / Recommended Public APIs
+
+#### 核心工厂类 / Core Factory Classes
+- **`Linalg`** - 线性代数工厂类，创建矩阵和向量（**推荐使用**）
+- **`Stats`** - 统计工厂类，创建概率分布和统计工具（**推荐使用**）
+- **`Plots`** - 绘图工厂类，创建各种图表（**推荐使用**）
+- **`RereMathUtil`** - 数学工具类，提供常用数学函数
+
+#### 核心接口 / Core Interfaces
+- **`IMatrix<T>`** - 矩阵操作接口，用户操作矩阵的主要接口
+- **`IVector<T>`** - 向量操作接口，用户操作向量的主要接口
+- **`IPlot`** - 绘图接口，用户创建图表的主要接口
+- **`IRegression`** - 回归算法接口
+- **`IClassification`** - 分类算法接口
+
+#### 算法实现类 / Algorithm Implementation Classes
+- **`RereLinearRegression`** - 线性回归
+- **`RereLogisticRegression`** - 逻辑回归
+- **`RereLBFGS`** - LBFGS优化器
+- **`RerePCA`** - 主成分分析
+- **`RereSVD`** - 奇异值分解
+- **`RereTSNE`** - t-SNE降维
+- **`RereUMAP`** - UMAP降维
+
+#### 数据结构 / Data Structures
+- **`DataFrame`** - 数据框类
+- **`Column`** - 列数据结构
+- **`Tuple2` 到 `Tuple9`** - 元组类
+
+#### 可视化类 / Visualization Classes
+- **`RerePlot`** - 绘图实现类
+- **`ColorPalette`** - 颜色调色板
+- **`ThemeManager`** - 主题管理器
+
+### ⚠️ 内部实现类 / Internal Implementation Classes
+
+以下类为内部实现类，用户通常不需要直接使用：
+
+The following classes are internal implementation classes that users typically don't need to use directly:
+
+- **具体实现类**: `RereFloatMatrix`, `RereDoubleMatrix`, `RereFloatVector`, `RereDoubleVector`
+- **类型特定接口**: `IFloatMatrix`, `IDoubleMatrix`, `IFloatVector`, `IDoubleVector`
+- **计算工具类**: `GPUComputeFloatUtils`, `GPUComputeDoubleUtils`, `CPUComputeFloatUtils`, `CPUComputeDoubleUtils`, `GPUConfig`
+- **分布实现类**: `NormalDistribution`, `StudentDistribution`, `UniformDistribution` 等
+- **内部工具类**: `SliceExpressionParser`, `StyleConverter`, `UniversalStyleApplier` 等
+
+这些类由框架内部自动调用，用户通过公开API使用功能时，框架会自动选择合适的实现。
+
+These classes are automatically called by the framework internally. When users use features through public APIs, the framework automatically selects the appropriate implementation.
+
+## 主要功能模块 / Main Functional Modules
+
+### 1. 线性代数 (Linear Algebra)
+- **Linalg**: 线性代数工厂类，提供矩阵和向量的创建方法（推荐使用）
+- **IMatrix/IVector**: 矩阵和向量的核心接口，用户操作的主要接口
+
+### 2. 统计分析 (Statistical Analysis)
+- **Stats**: 统计工厂类，提供概率分布创建方法（推荐使用）
+- **概率分布**: 支持14种重要概率分布（正态、t分布、卡方、F分布、Beta、Gamma、泊松等）
+- **假设检验**: 参数估计和假设检验功能
+- **方差分析**: 支持常见的方差分析功能
+
+### 3. 机器学习 (Machine Learning)
+- **RereLinearRegression**: 线性回归实现，支持L1/L2/ElasticNet正则化
+- **RereLogisticRegression**: 逻辑回归实现，支持二分类和多分类
+- **IClassification/IRegression**: 分类和回归的统一接口
+
+### 4. 数据可视化 (Data Visualization)
+- **Plots**: 绘图静态工厂类（推荐使用）
+- **RerePlot**: 基于ECharts的绘图实现类
+- **IPlot**: 绘图接口，支持20+种图表类型
+- **ColorPalette**: 颜色调色板管理
+- **ThemeManager**: 主题管理器
+
+### 5. 优化算法 (Optimization Algorithms)
+- **RereLBFGS**: 有限内存BFGS优化算法
+- **IOptimizer**: 优化器接口
+
+### 6. 降维算法 (Dimensionality Reduction)
+- **RerePCA**: 主成分分析
+- **RereSVD**: 奇异值分解
+- **RereTSNE**: t分布随机邻域嵌入
+- **RereUMAP**: 均匀流形近似和投影
+
+### 7. 数据结构 (Data Structures)
+- **DataFrame**: 数据框类，支持CSV读写和矩阵转换
+- **Column**: 列数据结构
+- **Tuple系列**: 泛型元组类（Tuple2-Tuple9）
+
+### 8. 数学工具 (Mathematical Utilities)
+- **RereMathUtil**: 数学工具类，提供类型转换、随机数生成、统计函数等
+
+## 核心工厂类 / Core Factory Classes
+
+### Linalg 线性代数工厂类 / Linalg Linear Algebra Factory Class
+
+线性代数工厂类，提供创建各种矩阵和向量的静态工厂方法，通过委托给IMatrix和IVector的统一接口实现。
+
+Linear algebra factory class providing static factory methods for creating matrices and vectors, implemented by delegating to unified IMatrix and IVector interfaces.
+
+```java
+public class Linalg {
+    // ========== 矩阵创建方法 / Matrix Creation Methods ==========
+    
+    // 从数组创建矩阵 / Create matrix from arrays
+    static IMatrix matrix(float[][] array);      // Create matrix from 2D float array
+    static IMatrix matrix(double[][] array);     // Create matrix from 2D double array
+    static IMatrix matrix(int[][] array);        // Create matrix from 2D int array
+    
+    // 特殊矩阵创建 / Special matrix creation
+    static IMatrix zeros(int rows, int cols);    // Create zero matrix
+    static IMatrix ones(int rows, int cols);     // Create matrix of ones
+    static IMatrix eye(int size);                // Create identity matrix
+    static IMatrix rand(int rows, int cols);     // Create random matrix
+    static IMatrix randn(int rows, int cols);    // Create normal random matrix
+    static IMatrix diag(IVector diagonal);       // Create diagonal matrix
+    
+    // ========== 向量创建方法 / Vector Creation Methods ==========
+    
+    // 从数组创建向量 / Create vector from arrays
+    static IVector vector(float[] array);        // Create vector from float array
+    static IVector vector(double[] array);       // Create vector from double array
+    static IVector vector(int[] array);          // Create vector from int array
+    
+    // 特殊向量创建 / Special vector creation
+    static IVector zeros(int length);            // Create zero vector
+    static IVector ones(int length);             // Create vector of ones
+    static IVector rand(int length);             // Create random vector
+    static IVector randn(int length);            // Create normal random vector
+    static IVector range(int start, int end);    // Create range vector
+    static IVector range(int start, int end, int step); // Create range vector with step
+    static IVector linspace(float start, float stop, int num); // Create linear space vector
+    static IVector logspace(float start, float stop, int num); // Create logarithmic space vector
+}
+```
+
+### Stats 统计工厂类 / Stats Statistical Factory Class
+
+统计工厂类，提供创建各种常用概率分布对象的静态工厂方法。该类是统计学计算的核心入口点，支持连续型分布和离散型分布两大类。
+
+Statistical factory class providing static factory methods for creating various common probability distribution objects. This class is the core entry point for statistical calculations, supporting continuous and discrete distributions.
+
+```java
+public class Stats {
+    // ========== 连续型分布 / Continuous Distributions ==========
+    
+    // 正态分布 / Normal distribution
+    static NormalDistribution norm();                    // Standard normal distribution (mean=0, stdDev=1)
+    static NormalDistribution norm(double mean, double stdDev); // Custom normal distribution
+    
+    // t分布 / Student's t-distribution
+    static StudentDistribution t(double degreesOfFreedom); // t-distribution
+    
+    // 均匀分布 / Uniform distribution
+    static UniformDistribution uniform(double min, double max); // Uniform distribution
+    
+    // 指数分布 / Exponential distribution
+    static ExponentialDistribution exponential(double lambda); // Exponential distribution
+    
+    // 卡方分布 / Chi-squared distribution
+    static Chi2Distribution chi2(double degreesOfFreedom); // Chi-squared distribution
+    
+    // F分布 / F-distribution
+    static FDistribution f(double df1, double df2); // F-distribution
+    
+    // Beta分布 / Beta distribution
+    static BetaDistribution beta(double alpha, double beta); // Beta distribution
+    
+    // Gamma分布 / Gamma distribution
+    static GammaDistribution gamma(double shape, double scale); // Gamma distribution
+    
+    // ========== 离散型分布 / Discrete Distributions ==========
+    
+    // 伯努利分布 / Bernoulli distribution
+    static BernoulliDistribution bernoulli(double p); // Bernoulli distribution
+    
+    // 二项分布 / Binomial distribution
+    static BinomialDistribution binomial(int n, double p); // Binomial distribution
+    
+    // 离散均匀分布 / Discrete uniform distribution
+    static DiscreteUniformDistribution discreteUniform(int min, int max); // Discrete uniform distribution
+    
+    // 几何分布 / Geometric distribution
+    static GeometricDistribution geometric(double p); // Geometric distribution
+    
+    // 负二项分布 / Negative binomial distribution
+    static NegativeBinomialDistribution negativeBinomial(int r, double p); // Negative binomial distribution
+    
+    // 泊松分布 / Poisson distribution
+    static PoissonDistribution poisson(double lambda); // Poisson distribution
+    
+    // ========== 统计工具 / Statistical Tools ==========
+    
+    // 参数估计 / Parameter estimation
+    static ParameterEstimation estimator; // Parameter estimation tool
+    
+    // 假设检验 / Hypothesis testing
+    static HypothesisTesting testor; // Hypothesis testing tool
+
+    // 方差分析/ Analysis of variance
+    static ANOVA anova; // ANOVA testing tool
+}
+```
+
+### Plots 绘图工厂类 / Plots Visualization Factory Class
+
+绘图静态工厂类，提供创建各种图表类型的静态方法。
+
+Static factory class for creating various chart types.
+
+```java
+public final class Plots {
+    // ========== 基础工厂方法 / Basic Factory Methods ==========
+    
+    // 创建绘图对象 / Create plot objects
+    static RerePlot of();                           // Create default plot
+    static RerePlot of(int width, int height);      // Create plot with specified size
+    static RerePlot of(int width, int height, String theme); // Create plot with size and theme
+    
+    // ========== 图表类型专用工厂方法 / Chart Type Specific Factory Methods ==========
+    
+    // 线图 / Line charts
+    static RerePlot line(IDoubleVector x, IDoubleVector y); // Line chart
+    static RerePlot line(IDoubleVector x);                  // Single vector line chart
+    static RerePlot line(IDoubleVector x, IDoubleVector y, List<String> hue); // Multi-line chart
+    
+    // 散点图 / Scatter plots
+    static RerePlot scatter(IDoubleVector x, IDoubleVector y); // Scatter plot
+    static RerePlot scatter(IDoubleVector x, IDoubleVector y, List<String> hue); // Multi-group scatter plot
+    
+    // 饼图 / Pie charts
+    static RerePlot pie(IDoubleVector x); // Pie chart
+    
+    // 柱状图 / Bar charts
+    static RerePlot bar(IDoubleVector x); // Bar chart
+    static RerePlot bar(IDoubleVector x, List<String> hue); // Grouped bar chart
+    
+    // 直方图 / Histograms
+    static RerePlot hist(IDoubleVector x, boolean fittingLine); // Histogram
+    
+    // 极坐标图 / Polar charts
+    static RerePlot polarBar(IDoubleVector data, List<String> categories); // Polar bar chart
+    static RerePlot polarLine(IDoubleVector data, List<String> categories); // Polar line chart
+    static RerePlot polarScatter(IDoubleVector data, List<String> categories); // Polar scatter chart
+    
+    // 高级图表 / Advanced charts
+    static RerePlot heatmap(IDoubleMatrix data, List<String> xLabels, List<String> yLabels); // Heatmap
+    static RerePlot radar(IDoubleVector data, List<String> indicators); // Radar chart
+    static RerePlot gauge(double value, double max, double min); // Gauge chart
+    static RerePlot boxplot(IDoubleVector data); // Box plot
+    static RerePlot violin(IDoubleVector data); // Violin plot
+    static RerePlot candlestick(List<Map<String, Object>> data); // Candlestick chart
+    static RerePlot funnel(List<Map<String, Object>> data); // Funnel chart
+    static RerePlot sankey(List<Map<String, Object>> data); // Sankey diagram
+    static RerePlot sunburst(List<Map<String, Object>> data); // Sunburst chart
+    static RerePlot treemap(List<Map<String, Object>> data); // Treemap chart
+    static RerePlot tree(List<Map<String, Object>> data); // Tree chart
+    static RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links); // Graph chart
+    static RerePlot parallel(IDoubleMatrix data, List<String> dimensions); // Parallel coordinates
+    static RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories); // Theme river chart
+}
+```
 
 ## 核心接口 / Core Interfaces
 
@@ -390,6 +655,23 @@ public interface IRegression {
 }
 ```
 
+### IClassification 接口 / IClassification Interface
+
+The core interface for classification algorithms, providing methods for training and prediction.
+
+分类算法的核心接口，提供训练和预测方法。
+
+```java
+public interface IClassification {
+    // 训练方法 / Training methods
+    ClassificationResult fit(IMatrix features, String[] labels); // Train classification model
+    
+    // 预测方法 / Prediction methods
+    String predict(IVector features);        // Predict single sample class
+    String[] predict(IMatrix features);      // Predict multiple sample classes
+}
+```
+
 ### RereLinearRegression 类 / RereLinearRegression Class
 
 Implementation of linear regression with support for various regularization techniques.
@@ -400,28 +682,72 @@ Implementation of linear regression with support for various regularization tech
 public class RereLinearRegression implements IRegression {
     // 构造函数 / Constructors
     public RereLinearRegression();                    // Create linear regression with default settings
-    public RereLinearRegression(RegularizationType regularization); // Create with regularization type
+    public RereLinearRegression(boolean includeBias, double lambda1, double lambda2); // Create with parameters
+    
+    // 正则化类型枚举 / Regularization type enum
+    public enum RegularizationType {
+        NONE,        // 无正则化 / No regularization
+        L1,          // L1正则化 (Lasso) / L1 regularization (Lasso)
+        L2,          // L2正则化 (Ridge) / L2 regularization (Ridge)
+        ELASTIC_NET  // 弹性网络 / Elastic Net
+    }
     
     // 参数设置 / Parameter settings
-    void setRegularizationType(RegularizationType type); // Set regularization type (L1, L2, ElasticNet)
-    void setLambda1(float lambda1);                  // Set L1 regularization strength
-    void setLambda2(float lambda2);                  // Set L2 regularization strength
-    void setFitIntercept(boolean fitIntercept);      // Set whether to fit intercept
-    void setNormalize(boolean normalize);            // Set whether to normalize features
-    void setMaxIterations(int maxIterations);        // Set maximum iterations
-    void setTolerance(float tolerance);              // Set convergence tolerance
-    
-    // 优化器设置 / Optimizer settings
+    void setRegularizationType(RegularizationType type); // Set regularization type
+    void setLambda1(double lambda1);                  // Set L1 regularization strength
+    void setLambda2(double lambda2);                  // Set L2 regularization strength
+    void setIncludeBias(boolean includeBias);        // Set whether to fit intercept
     void setOptimizer(IOptimizer optimizer);         // Set optimization algorithm
     
     // 模型参数 / Model parameters
     IVector getWeights();                            // Get regression coefficients
-    float getIntercept();                            // Get intercept term
+    double getIntercept();                           // Get intercept term
     RegressionResult getLastResult();                // Get last training result
     
     // 特征重要性 / Feature importance
     IVector getFeatureImportance();                  // Get feature importance scores
-    IVector getFeatureImportanceRank();              // Get feature importance ranking
+}
+```
+
+### RereLogisticRegression 类 / RereLogisticRegression Class
+
+Implementation of logistic regression supporting both binary and multi-class classification.
+
+支持二分类和多分类的逻辑回归实现。
+
+```java
+public class RereLogisticRegression implements IClassification {
+    // 构造函数 / Constructors
+    public RereLogisticRegression();                    // Create logistic regression with default settings
+    public RereLogisticRegression(double learningRate, int maxIterations); // Create with parameters
+    
+    // 正则化类型枚举 / Regularization type enum
+    public enum RegularizationType {
+        NONE,        // 无正则化 / No regularization
+        L1,          // L1正则化 (Lasso) / L1 regularization (Lasso)
+        L2,          // L2正则化 (Ridge) / L2 regularization (Ridge)
+        ELASTIC_NET  // 弹性网络 / Elastic Net
+    }
+    
+    // 参数设置 / Parameter settings
+    void setLearningRate(double learningRate);       // Set learning rate
+    void setMaxIterations(int maxIterations);        // Set maximum iterations
+    void setTolerance(double tolerance);              // Set convergence tolerance
+    void setRegularizationType(RegularizationType type); // Set regularization type
+    void setLambda1(double lambda1);                 // Set L1 regularization strength
+    void setLambda2(double lambda2);                 // Set L2 regularization strength
+    
+    // 训练和预测 / Training and prediction
+    ClassificationResult fit(IMatrix features, String[] labels); // Train model
+    String predict(IVector features);                // Predict single sample
+    String[] predict(IMatrix features);              // Predict multiple samples
+    
+    // 模型参数 / Model parameters
+    IMatrix getWeights();                            // Get weight matrix
+    IVector getBias();                               // Get bias vector
+    boolean isBinaryClassification();               // Check if binary classification
+    int getNumClasses();                            // Get number of classes
+    Map<String, Integer> getLabelMapping();          // Get label mapping
 }
 ```
 
@@ -434,26 +760,58 @@ Container class for regression analysis results, including model parameters and 
 ```java
 public class RegressionResult {
     // 构造函数 / Constructors
-    public RegressionResult(IVector weights, float intercept, float loss); // Create result with parameters
+    public RegressionResult(IVector weights, double intercept, double loss); // Create result with parameters
     
     // 结果访问 / Result access
     IVector getWeights();                            // Get regression coefficients
-    float getIntercept();                            // Get intercept term
-    float getLoss();                                 // Get training loss
-    float getR2Score();                             // Get R² score
-    float getMSE();                                  // Get mean squared error
-    float getRMSE();                                 // Get root mean squared error
-    float getMAE();                                  // Get mean absolute error
+    double getIntercept();                           // Get intercept term
+    double getLoss();                                // Get training loss
+    double getR2Score();                            // Get R² score
+    double getMSE();                                 // Get mean squared error
+    double getRMSE();                                // Get root mean squared error
+    double getMAE();                                 // Get mean absolute error
     
     // 统计信息 / Statistical information
-    float getExplainedVariance();                    // Get explained variance
-    float getUnexplainedVariance();                  // Get unexplained variance
-    float getTotalVariance();                        // Get total variance
+    double getExplainedVariance();                   // Get explained variance
+    double getUnexplainedVariance();                 // Get unexplained variance
+    double getTotalVariance();                       // Get total variance
     int getDegreesOfFreedom();                       // Get degrees of freedom
     
     // 置信区间 / Confidence intervals
-    Tuple2<Float, Float> getWeightConfidenceInterval(int index, float alpha); // Get weight confidence interval
-    Tuple2<Float, Float> getInterceptConfidenceInterval(float alpha);         // Get intercept confidence interval
+    Tuple2<Double, Double> getWeightConfidenceInterval(int index, double alpha); // Get weight confidence interval
+    Tuple2<Double, Double> getInterceptConfidenceInterval(double alpha);         // Get intercept confidence interval
+}
+```
+
+### ClassificationResult 类 / ClassificationResult Class
+
+Container class for classification analysis results, including model parameters and evaluation metrics.
+
+分类分析结果的容器类，包含模型参数和评估指标。
+
+```java
+public class ClassificationResult {
+    // 构造函数 / Constructors
+    public ClassificationResult(IMatrix weights, IVector bias, double loss); // Create result with parameters
+    
+    // 结果访问 / Result access
+    IMatrix getWeights();                            // Get weight matrix
+    IVector getBias();                               // Get bias vector
+    double getLoss();                                // Get training loss
+    double getAccuracy();                            // Get accuracy score
+    double getPrecision();                           // Get precision score
+    double getRecall();                              // Get recall score
+    double getF1Score();                            // Get F1 score
+    
+    // 分类信息 / Classification information
+    boolean isBinaryClassification();               // Check if binary classification
+    int getNumClasses();                            // Get number of classes
+    Map<String, Integer> getLabelMapping();         // Get label mapping
+    String[] getClassLabels();                      // Get class labels
+    
+    // 混淆矩阵 / Confusion matrix
+    int[][] getConfusionMatrix();                   // Get confusion matrix
+    double[][] getConfusionMatrixNormalized();      // Get normalized confusion matrix
 }
 ```
 
@@ -544,6 +902,218 @@ public enum ColumnType {
 }
 ```
 
+## 高性能计算 / High-Performance Computing
+
+> **注意**: 以下GPU/CPU计算工具类为内部实现类，用户通常不需要直接使用。这些类由框架内部自动调用，以提供GPU加速和CPU回退功能。
+
+> **Note**: The following GPU/CPU computing utility classes are internal implementation classes that users typically don't need to use directly. These classes are automatically called by the framework internally to provide GPU acceleration and CPU fallback functionality.
+
+### GPU计算工具类 / GPU Computing Utility Classes
+
+- **GPUComputeFloatUtils**: Float类型GPU计算工具（内部实现）
+- **GPUComputeDoubleUtils**: Double类型GPU计算工具（内部实现）
+- **CPUComputeFloatUtils**: Float类型CPU计算工具（内部实现）
+- **CPUComputeDoubleUtils**: Double类型CPU计算工具（内部实现）
+- **GPUConfig**: GPU配置管理（内部实现）
+
+这些类提供了基于Aparapi框架的OpenCL GPU加速计算和CPU回退功能，支持矩阵运算、向量运算、统计运算和通用函数。用户通过`IMatrix`和`IVector`接口使用这些功能时，框架会自动选择合适的计算方式。
+
+These classes provide OpenCL GPU acceleration based on Aparapi framework and CPU fallback functionality, supporting matrix operations, vector operations, statistical operations, and universal functions. When users use these features through `IMatrix` and `IVector` interfaces, the framework automatically selects the appropriate computation method.
+
+## 数据可视化 / Data Visualization
+
+### RerePlot 类 / RerePlot Class
+
+基于ECharts的绘图实现类，提供丰富的数据可视化功能。
+
+ECharts-based plotting implementation class providing rich data visualization capabilities.
+
+```java
+public class RerePlot implements IPlot {
+    // ========== 构造函数 / Constructors ==========
+    
+    // 基础构造函数 / Basic constructors
+    public RerePlot();                               // Create default plot
+    public RerePlot(int width, int height);          // Create plot with specified size
+    public RerePlot(int width, int height, String theme); // Create plot with size and theme
+    
+    // ========== 基础图表方法 / Basic Chart Methods ==========
+    
+    // 线图 / Line charts
+    IPlot line(IVector x, IVector y);                // Line chart
+    IPlot line(IVector x);                           // Single vector line chart
+    IPlot line(IVector x, IVector y, List<String> hue); // Multi-line chart
+    
+    // 散点图 / Scatter plots
+    IPlot scatter(IVector x, IVector y);             // Scatter plot
+    IPlot scatter(IVector x, IVector y, List<String> hue); // Multi-group scatter plot
+    
+    // 饼图 / Pie charts
+    IPlot pie(IVector x);                            // Pie chart
+    
+    // 柱状图 / Bar charts
+    IPlot bar(IVector x);                            // Bar chart
+    IPlot bar(IVector x, List<String> hue);          // Grouped bar chart
+    
+    // 直方图 / Histograms
+    IPlot hist(IVector x, boolean fittingLine);     // Histogram
+    
+    // ========== 极坐标图表方法 / Polar Chart Methods ==========
+    
+    // 极坐标图 / Polar charts
+    IPlot polarBar(IVector data, List<String> categories); // Polar bar chart
+    IPlot polarLine(IVector data, List<String> categories); // Polar line chart
+    IPlot polarScatter(IVector data, List<String> categories); // Polar scatter chart
+    
+    // ========== 高级图表方法 / Advanced Chart Methods ==========
+    
+    // 热力图 / Heatmap
+    IPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels); // Heatmap
+    
+    // 雷达图 / Radar chart
+    IPlot radar(IVector data, List<String> indicators); // Radar chart
+    
+    // 仪表盘 / Gauge chart
+    IPlot gauge(double value, double max, double min); // Gauge chart
+    
+    // 箱线图 / Box plot
+    IPlot boxplot(IVector data);                     // Box plot
+    IPlot violin(IVector data);                      // Violin plot
+    
+    // 金融图表 / Financial charts
+    IPlot candlestick(List<Map<String, Object>> data); // Candlestick chart
+    
+    // 漏斗图 / Funnel chart
+    IPlot funnel(List<Map<String, Object>> data);     // Funnel chart
+    
+    // 桑基图 / Sankey diagram
+    IPlot sankey(List<Map<String, Object>> data);    // Sankey diagram
+    
+    // 旭日图 / Sunburst chart
+    IPlot sunburst(List<Map<String, Object>> data);   // Sunburst chart
+    
+    // 矩形树图 / Treemap chart
+    IPlot treemap(List<Map<String, Object>> data);    // Treemap chart
+    
+    // 树图 / Tree chart
+    IPlot tree(List<Map<String, Object>> data);       // Tree chart
+    
+    // 关系图 / Graph chart
+    IPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links); // Graph chart
+    
+    // 平行坐标图 / Parallel coordinates
+    IPlot parallel(IMatrix data, List<String> dimensions); // Parallel coordinates
+    
+    // 主题河流图 / Theme river chart
+    IPlot themeRiver(List<Map<String, Object>> data, List<String> categories); // Theme river chart
+    
+    // ========== 流式API方法 / Fluent API Methods ==========
+    
+    // 图表设置 / Chart settings
+    IPlot title(String titleText);                   // Set chart title
+    IPlot title(String titleText, String subtitleText); // Set title and subtitle
+    IPlot xlabel(String name);                       // Set X-axis label
+    IPlot ylabel(String name);                       // Set Y-axis label
+    
+    // 样式设置 / Style settings
+    IPlot style(String styleName);                   // Set chart style
+    IPlot theme(String themeName);                    // Set chart theme
+    IPlot color(String colorScheme);                 // Set color scheme
+    
+    // 输出方法 / Output methods
+    String toHtml();                                 // Export to HTML
+    void saveToFile(String filePath);                // Save to file
+    void show();                                      // Display chart
+}
+```
+
+### ColorPalette 类 / ColorPalette Class
+
+颜色调色板管理类，提供丰富的颜色方案。
+
+Color palette management class providing rich color schemes.
+
+```java
+public class ColorPalette {
+    // ========== 预定义调色板 / Predefined Palettes ==========
+    
+    // 基础调色板 / Basic palettes
+    static String[] getDefaultPalette();             // Get default color palette
+    static String[] getPrimaryPalette();             // Get primary color palette
+    static String[] getSecondaryPalette();           // Get secondary color palette
+    
+    // 专业调色板 / Professional palettes
+    static String[] getSeabornPalette();             // Get Seaborn-style palette
+    static String[] getMatplotlibPalette();           // Get Matplotlib-style palette
+    static String[] getTableauPalette();             // Get Tableau-style palette
+    
+    // 主题调色板 / Thematic palettes
+    static String[] getWarmPalette();                 // Get warm color palette
+    static String[] getCoolPalette();                // Get cool color palette
+    static String[] getPastelPalette();              // Get pastel color palette
+    static String[] getVibrantPalette();             // Get vibrant color palette
+    
+    // ========== 调色板生成 / Palette Generation ==========
+    
+    // 自定义调色板 / Custom palette generation
+    static String[] generatePalette(int numColors);   // Generate palette with specified number of colors
+    static String[] generatePalette(String baseColor, int numColors); // Generate palette from base color
+    static String[] generateGradientPalette(String startColor, String endColor, int numColors); // Generate gradient palette
+    
+    // ========== 调色板管理 / Palette Management ==========
+    
+    // 调色板注册 / Palette registration
+    static void registerPalette(String name, String[] colors); // Register custom palette
+    static String[] getPalette(String name);          // Get palette by name
+    static List<String> getAvailablePalettes();      // Get list of available palettes
+    
+    // 调色板验证 / Palette validation
+    static boolean isValidColor(String color);        // Validate color format
+    static boolean isValidPalette(String[] colors);   // Validate palette
+}
+```
+
+### ThemeManager 类 / ThemeManager Class
+
+主题管理器，提供图表主题的统一管理。
+
+Theme manager providing unified management of chart themes.
+
+```java
+public class ThemeManager {
+    // ========== 预定义主题 / Predefined Themes ==========
+    
+    // 基础主题 / Basic themes
+    static String getDefaultTheme();                 // Get default theme
+    static String getLightTheme();                   // Get light theme
+    static String getDarkTheme();                    // Get dark theme
+    
+    // 专业主题 / Professional themes
+    static String getSeabornTheme();                 // Get Seaborn-style theme
+    static String getMatplotlibTheme();              // Get Matplotlib-style theme
+    static String getTableauTheme();                 // Get Tableau-style theme
+    
+    // ========== 主题管理 / Theme Management ==========
+    
+    // 主题设置 / Theme settings
+    static void setDefaultTheme(String themeName);   // Set default theme
+    static String getCurrentTheme();                 // Get current theme
+    static void applyTheme(String themeName);        // Apply theme
+    
+    // 主题注册 / Theme registration
+    static void registerTheme(String name, Map<String, Object> themeConfig); // Register custom theme
+    static Map<String, Object> getTheme(String name); // Get theme configuration
+    static List<String> getAvailableThemes();        // Get list of available themes
+    
+    // ========== 主题配置 / Theme Configuration ==========
+    
+    // 主题属性 / Theme properties
+    static void setThemeProperty(String themeName, String property, Object value); // Set theme property
+    static Object getThemeProperty(String themeName, String property); // Get theme property
+    static Map<String, Object> getThemeProperties(String themeName); // Get all theme properties
+}
+```
+
 ## 数学工具类 / Math Utilities
 
 ### RereMathUtil 类 / RereMathUtil Class
@@ -554,84 +1124,69 @@ Utility class providing mathematical functions, type conversions, and statistica
 
 ```java
 public final class RereMathUtil {
-    // 类型转换 / Type conversion
-    static float[] doubleToFloat(double[] array);     // Convert double array to float array
+    // ========== 类型转换 / Type Conversion ==========
+    
+    // 数组类型转换 / Array type conversion
     static double[] floatToDouble(float[] array);     // Convert float array to double array
+    static float[] doubleToFloat(double[] array);     // Convert double array to float array
     static float[] intToFloat(int[] array);           // Convert int array to float array
     static int[] floatToInt(float[] array);           // Convert float array to int array
-    static double[] vectorToDoubleArray(IVector vector); // Convert vector to double array
-    static int[] vectorToIntArray(IVector vector);    // Convert vector to int array
-    static double[][] matrixToDoubleArray(IMatrix matrix); // Convert matrix to double array
-    static int[][] matrixToIntArray(IMatrix matrix);  // Convert matrix to int array
+    static double[] intToDouble(int[] array);         // Convert int array to double array
+    static int[] doubleToInt(double[] array);         // Convert double array to int array
     
-    // 随机数生成 / Random number generation
-    static void setSeed(long seed);                   // Set random seed
-    static float rand();                              // Generate random float [0,1)
-    static float rand(float min, float max);          // Generate random float in range
-    static IVector rand(int length);                  // Generate random vector
-    static IVector rand(int length, float min, float max); // Generate random vector in range
-    static IMatrix rand(int rows, int cols);          // Generate random matrix
-    static IMatrix rand(int rows, int cols, float min, float max); // Generate random matrix in range
-    static float randn();                             // Generate normal random float
-    static IVector randn(int length);                 // Generate normal random vector
-    static IMatrix randn(int rows, int cols);         // Generate normal random matrix
+    // 包装类转换 / Wrapper class conversion
+    static float[] toPrimitive(Float[] array);        // Convert Float array to float array
+    static double[] toPrimitive(Double[] array);      // Convert Double array to double array
+    static int[] toPrimitive(Integer[] array);        // Convert Integer array to int array
+    static Float[] toClassArray(float[] array);       // Convert float array to Float array
+    static Double[] toClassArray(double[] array);     // Convert double array to Double array
+    static Integer[] toClassArray(int[] array);       // Convert int array to Integer array
     
-    // 基本数学函数 / Basic mathematical functions
-    static float sin(float x);                        // Sine function
-    static float cos(float x);                        // Cosine function
-    static float tan(float x);                        // Tangent function
-    static float asin(float x);                       // Arcsine function
-    static float acos(float x);                       // Arccosine function
-    static float atan(float x);                       // Arctangent function
-    static float atan2(float y, float x);             // Two-argument arctangent
-    static float exp(float x);                        // Exponential function
-    static float log(float x);                        // Natural logarithm
-    static float log10(float x);                      // Base-10 logarithm
-    static float pow(float base, float exponent);     // Power function
-    static float sqrt(float x);                       // Square root function
-    static float abs(float x);                        // Absolute value
-    static float floor(float x);                      // Floor function
-    static float ceil(float x);                       // Ceiling function
-    static float round(float x);                      // Round function
-    static float min(float a, float b);               // Minimum of two values
-    static float max(float a, float b);               // Maximum of two values
+    // ========== 随机数生成 / Random Number Generation ==========
     
-    // 统计函数 / Statistical functions
-    static float sum(float[] array);                  // Sum of array elements
-    static float mean(float[] array);                 // Mean of array elements
-    static float variance(float[] array);             // Variance of array elements
-    static float std(float[] array);                  // Standard deviation of array elements
-    static float min(float[] array);                  // Minimum value in array
-    static float max(float[] array);                  // Maximum value in array
-    static int argmin(float[] array);                 // Index of minimum value
-    static int argmax(float[] array);                 // Index of maximum value
-    static float median(float[] array);               // Median of array elements
-    static float quantile(float[] array, float q);    // Quantile of array elements
-    static float skewness(float[] array);             // Skewness of array elements
-    static float kurtosis(float[] array);             // Kurtosis of array elements
-    static float correlation(float[] x, float[] y);   // Correlation coefficient
-    static float covariance(float[] x, float[] y);    // Covariance
+    // 随机整数生成 / Random integer generation
+    static int[] generateRandomInts(int start, int end, int num); // Generate random integers
+    static int[] generateRandomInts(int seed, int start, int end, int num); // Generate random integers with seed
     
-    // 数组操作 / Array operations
-    static float[] sort(float[] array, boolean ascending); // Sort array
-    static int[] argsort(float[] array, boolean ascending); // Get sort indices
-    static int indexOf(float[] array, float value);   // Find index of value
-    static boolean contains(float[] array, float value); // Check if array contains value
-    static float[] standardize(float[] array);        // Standardize array (z-score)
-    static float[] normalize(float[] array);          // Normalize array to [0,1]
-    static float[] linspace(float start, float stop, int num); // Generate linear space
-    static float[] logspace(float start, float stop, int num); // Generate logarithmic space
-    static Tuple2<float[][], float[][]> meshgrid(float[] x, float[] y); // Generate meshgrid
-    static float[] sample(float[] array, int sampleSize); // Random sampling
-    static float[] stratifiedSample(float[] array, int strata, int sampleSize); // Stratified sampling
+    // 随机浮点数生成 / Random float generation
+    static float[] generateRandomFloats(int n);       // Generate random floats
+    static float[] generateRandomFloats(int seed, int n); // Generate random floats with seed
     
-    // 常用常数 / Common constants
-    static final float PI = (float) Math.PI;          // Pi constant
-    static final float E = (float) Math.E;            // Euler's number
-    static final float EPS = 1e-8f;                   // Machine epsilon
-    static final float INF = Float.POSITIVE_INFINITY; // Positive infinity
-    static final float NEG_INF = Float.NEGATIVE_INFINITY; // Negative infinity
-    static final float NAN = Float.NaN;               // Not a number
+    // 正态分布随机数 / Normal distribution random numbers
+    static double normalSample(double mean, double stdDev); // Generate normal random number
+    
+    // ========== 概率分布相关数学函数 / Probability Distribution Mathematical Functions ==========
+    
+    // 特殊函数 / Special functions
+    static double gamma(double x);                    // Gamma function
+    static double beta(double a, double b);          // Beta function
+    static double incompleteBeta(double a, double b, double x); // Incomplete beta function
+    static double incompleteGamma(double a, double x); // Incomplete gamma function
+    static double regularizedIncompleteBeta(double a, double b, double x); // Regularized incomplete beta function
+    static double regularizedIncompleteGamma(double a, double x); // Regularized incomplete gamma function
+    
+    // 误差函数 / Error functions
+    static double erf(double x);                      // Error function
+    static double inverseNormalCDF(double p);         // Inverse normal CDF
+    
+    // ========== 组合数学和统计函数 / Combinatorics and Statistical Functions ==========
+    
+    // 组合数学 / Combinatorics
+    static long combination(int n, int k);            // Combination C(n,k)
+    static double logCombination(int n, int k);      // Logarithm of combination
+    static long factorial(int n);                     // Factorial
+    static double logFactorial(int n);                // Logarithm of factorial
+    static double stirlingNumber2(int n, int k);     // Stirling number of second kind
+    
+    // ========== 常用常数 / Common Constants ==========
+    
+    // 数学常数 / Mathematical constants
+    static final double PI = Math.PI;                // Pi constant
+    static final double E = Math.E;                  // Euler's number
+    static final double EPS = 1e-8;                  // Machine epsilon
+    static final double INF = Double.POSITIVE_INFINITY; // Positive infinity
+    static final double NEG_INF = Double.NEGATIVE_INFINITY; // Negative infinity
+    static final double NAN = Double.NaN;            // Not a number
 }
 ```
 
@@ -752,6 +1307,78 @@ Recommended practices for effective use of the library:
 2. **参数调优**: 根据具体问题调整算法参数 / **Parameter Tuning**: Adjust algorithm parameters based on specific problems
 3. **结果验证**: 使用交叉验证评估模型性能 / **Result Validation**: Use cross-validation to evaluate model performance
 4. **错误处理**: 检查输入数据的有效性 / **Error Handling**: Validate input data for correctness
+
+## 快速开始指南 / Quick Start Guide
+
+### 基本使用示例 / Basic Usage Examples
+
+#### 1. 线性代数 / Linear Algebra
+```java
+// 创建矩阵和向量 / Create matrices and vectors
+IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+IVector<Double> vector = Linalg.vector(new double[]{1, 2, 3});
+
+// 矩阵运算 / Matrix operations
+IMatrix<Double> result = matrix.add(matrix).multiplyScalar(2.0);
+Double norm = vector.norm2();
+```
+
+#### 2. 统计分析 / Statistical Analysis
+```java
+// 创建概率分布 / Create probability distributions
+NormalDistribution normal = Stats.norm(0, 1);  // 标准正态分布
+StudentDistribution tDist = Stats.t(10);       // t分布
+PoissonDistribution poisson = Stats.poisson(2.5); // 泊松分布
+
+// 分布操作 / Distribution operations
+double prob = normal.pdf(0);           // 概率密度
+double cdf = normal.cdf(1.96);         // 累积分布
+double sample = normal.sample();       // 随机采样
+```
+
+#### 3. 机器学习 / Machine Learning
+```java
+// 线性回归 / Linear regression
+RereLinearRegression lr = new RereLinearRegression();
+RegressionResult result = lr.fit(X, y);
+IVector<Double> predictions = lr.predict(X_test);
+
+// 逻辑回归 / Logistic regression
+RereLogisticRegression logReg = new RereLogisticRegression();
+ClassificationResult result = logReg.fit(X, labels);
+String prediction = logReg.predict(newSample);
+```
+
+#### 4. 数据可视化 / Data Visualization
+```java
+// 创建图表 / Create plots
+RerePlot plot = Plots.of(800, 600);
+plot.line(x, y).title("Line Chart").show();
+
+// 多种图表类型 / Multiple chart types
+plot.scatter(x, y).title("Scatter Plot");
+plot.bar(categories, values).title("Bar Chart");
+plot.pie(data).title("Pie Chart");
+```
+
+#### 5. 降维算法 / Dimensionality Reduction
+```java
+// 主成分分析 / Principal Component Analysis
+RerePCA pca = new RerePCA();
+IMatrix<Double> reduced = pca.fitTransform(data, 2); // 降到2维
+
+// t-SNE降维 / t-SNE dimensionality reduction
+RereTSNE tsne = new RereTSNE();
+IMatrix<Double> embedded = tsne.fitTransform(data);
+```
+
+### 最佳实践 / Best Practices
+
+1. **使用工厂类**: 优先使用 `Linalg`、`Stats`、`Plots` 工厂类创建对象
+2. **接口编程**: 使用 `IMatrix`、`IVector`、`IPlot` 接口进行编程
+3. **错误处理**: 检查输入数据的有效性，处理可能的异常
+4. **性能优化**: 对于大规模数据，框架会自动选择GPU加速
+5. **内存管理**: 及时释放不需要的大型矩阵和向量对象
 
 ---
 

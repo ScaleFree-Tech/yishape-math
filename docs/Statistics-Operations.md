@@ -639,7 +639,7 @@ IVector group2 = IVector.of(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
 IVector group3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
 
 // 执行单因素方差分析 / Perform one-way ANOVA
-ANOVAResult result = ANOVA.performOneWayANOVA(group1, group2, group3);
+ANOVAResult result = Stats.anova.performOneWayANOVA(group1, group2, group3);
 
 // 查看结果 / View results
 System.out.println("F统计量: " + result.fStatsistic + " / F-statistic: " + result.fStatsistic);
@@ -658,7 +658,7 @@ float[][][] data = {
 };
 
 // 执行两因素方差分析 / Perform two-way ANOVA
-TwoWayANOVAResult result = ANOVA.performTwoWayANOVA(data);
+TwoWayANOVAResult result = Stats.anova.performTwoWayANOVA(data);
 
 // 查看结果 / View results
 System.out.println("因素A F统计量: " + result.factorAF + ", p值: " + result.factorAP + " / Factor A F-statistic: " + result.factorAF + ", p-value: " + result.factorAP);
@@ -677,7 +677,7 @@ float[][] data = {
 };
 
 // 执行重复测量方差分析 / Perform repeated measures ANOVA
-RepeatedMeasuresANOVAResult result = ANOVA.performRepeatedMeasuresANOVA(data);
+RepeatedMeasuresANOVAResult result = Stats.anova.performRepeatedMeasuresANOVA(data);
 
 // 查看结果 / View results
 System.out.println("时间效应 F统计量: " + result.timeF + ", p值: " + result.timeP + " / Time effect F-statistic: " + result.timeF + ", p-value: " + result.timeP);
@@ -688,7 +688,7 @@ System.out.println("被试效应 F统计量: " + result.subjectF + ", p值: " + 
 
 ```java
 // 检验数据是否服从正态分布 / Test if data follows normal distribution
-boolean isNormal = ANOVA.testNormality(sample);
+boolean isNormal = Stats.anova.testNormality(sample);
 System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过") + " / Data normality: " + (isNormal ? "Pass" : "Fail"));
 ```
 
@@ -696,7 +696,7 @@ System.out.println("数据正态性: " + (isNormal ? "通过" : "未通过") + "
 
 ```java
 // 检验各组方差是否相等 / Test if variances are equal across groups
-boolean isHomogeneous = ANOVA.testHomogeneityOfVariance(group1, group2, group3);
+boolean isHomogeneous = Stats.anova.testHomogeneityOfVariance(group1, group2, group3);
 System.out.println("方差齐性: " + (isHomogeneous ? "通过" : "未通过") + " / Variance homogeneity: " + (isHomogeneous ? "Pass" : "Fail"));
 ```
 
@@ -704,7 +704,7 @@ System.out.println("方差齐性: " + (isHomogeneous ? "通过" : "未通过") +
 
 ```java
 // 执行Tukey HSD多重比较 / Perform Tukey HSD multiple comparisons
-ANOVA.performTukeyHSD(group1, group2, group3);
+Stats.anova.performTukeyHSD(group1, group2, group3);
 ```
 
 ## 使用示例 / Usage Examples
@@ -859,12 +859,12 @@ public class CustomDistribution implements IContinuousDistribution {
 | 方差估计 / Variance estimation | `estimator.estimateVarIntevalWithChi2(sample, conf)` | `scipy.stats.chi2.interval(conf, df, scale=s²)` | 方差置信区间估计 / Variance confidence interval estimation |
 
 || **方差分析 / Analysis of Variance** | | | |
-|| 单因素方差分析 / One-way ANOVA | `ANOVA.performOneWayANOVA(groups...)` | `scipy.stats.f_oneway(*groups)` | 单因素方差分析 / One-way analysis of variance |
-|| 两因素方差分析 / Two-way ANOVA | `ANOVA.performTwoWayANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 两因素方差分析 / Two-way analysis of variance |
-|| 重复测量方差分析 / Repeated measures ANOVA | `ANOVA.performRepeatedMeasuresANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 重复测量方差分析 / Repeated measures analysis of variance |
-|| 正态性检验 / Normality test | `ANOVA.testNormality(sample)` | `scipy.stats.normaltest(sample)` | 正态性检验 / Normality test |
-|| 方差齐性检验 / Homogeneity of variance test | `ANOVA.testHomogeneityOfVariance(groups...)` | `scipy.stats.levene(*groups)` | 方差齐性检验 / Homogeneity of variance test |
-|| Tukey HSD多重比较 / Tukey HSD multiple comparisons | `ANOVA.performTukeyHSD(groups...)` | `scipy.stats.tukey_hsd(*groups)` | Tukey HSD多重比较 / Tukey HSD multiple comparisons |
+|| 单因素方差分析 / One-way ANOVA | `Stats.anova.performOneWayANOVA(groups...)` | `scipy.stats.f_oneway(*groups)` | 单因素方差分析 / One-way analysis of variance |
+|| 两因素方差分析 / Two-way ANOVA | `Stats.anova.performTwoWayANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 两因素方差分析 / Two-way analysis of variance |
+|| 重复测量方差分析 / Repeated measures ANOVA | `Stats.anova.performRepeatedMeasuresANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 重复测量方差分析 / Repeated measures analysis of variance |
+|| 正态性检验 / Normality test | `Stats.anova.testNormality(sample)` | `scipy.stats.normaltest(sample)` | 正态性检验 / Normality test |
+|| 方差齐性检验 / Homogeneity of variance test | `Stats.anova.testHomogeneityOfVariance(groups...)` | `scipy.stats.levene(*groups)` | 方差齐性检验 / Homogeneity of variance test |
+|| Tukey HSD多重比较 / Tukey HSD multiple comparisons | `Stats.anova.performTukeyHSD(groups...)` | `scipy.stats.tukey_hsd(*groups)` | Tukey HSD多重比较 / Tukey HSD multiple comparisons |
 
 ## 最佳实践建议 / Best Practices Recommendations
 
