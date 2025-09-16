@@ -20,8 +20,8 @@ import java.util.List;
  */
 public class DiscreteDistributionValidationRunner {
     
-    private static final float TOLERANCE = 1e-4f;
-    private static final float HIGH_TOLERANCE = 1e-2f;
+    private static final double TOLERANCE = 1e-4f;
+    private static final double HIGH_TOLERANCE = 1e-2f;
     private static final int SAMPLE_SIZE = 10000;
     
     private static int totalTests = 0;
@@ -140,7 +140,7 @@ public class DiscreteDistributionValidationRunner {
             assertTrue(dist.isBounded(), "二项分布应该是有界的");
             
             // 测试PMF归一化
-            float pmfSum = 0.0f;
+            double pmfSum = 0.0f;
             for (int x = 0; x <= 10; x++) {
                 pmfSum += dist.pmf(x);
             }
@@ -176,8 +176,8 @@ public class DiscreteDistributionValidationRunner {
             
             // 测试无记忆性
             int s = 3, t = 2;
-            float conditionalProb = dist.sf(s + t) / dist.sf(s);
-            float unconditionalProb = dist.sf(t);
+            double conditionalProb = dist.sf(s + t) / dist.sf(s);
+            double unconditionalProb = dist.sf(t);
             assertEqual(unconditionalProb, conditionalProb, TOLERANCE, "无记忆性");
             
             System.out.println("✓ 几何分布基本功能测试通过");
@@ -220,9 +220,9 @@ public class DiscreteDistributionValidationRunner {
             assertFalse(dist.isBounded(), "泊松分布应该是无界的");
             
             // 测试PMF公式：P(X=k) = (λ^k * e^(-λ)) / k!
-            float expectedPMF0 = (float) Math.exp(-2.5f);
-            float expectedPMF1 = 2.5f * (float) Math.exp(-2.5f);
-            float expectedPMF2 = 2.5f * 2.5f * (float) Math.exp(-2.5f) / 2.0f;
+            double expectedPMF0 = (double) Math.exp(-2.5f);
+            double expectedPMF1 = 2.5f * (double) Math.exp(-2.5f);
+            double expectedPMF2 = 2.5f * 2.5f * (double) Math.exp(-2.5f) / 2.0f;
             
             assertEqual(expectedPMF0, dist.pmf(0), TOLERANCE, "P(X=0)");
             assertEqual(expectedPMF1, dist.pmf(1), TOLERANCE, "P(X=1)");
@@ -247,7 +247,7 @@ public class DiscreteDistributionValidationRunner {
             assertTrue(dist.isSymmetric(), "离散均匀分布应该是对称的");
             
             // 测试PMF：每个值概率相等
-            float expectedPMF = 1.0f / 6.0f; // n = 7 - 2 + 1 = 6
+            double expectedPMF = 1.0f / 6.0f; // n = 7 - 2 + 1 = 6
             for (int x = 2; x <= 7; x++) {
                 assertEqual(expectedPMF, dist.pmf(x), TOLERANCE, "P(X=" + x + ")");
             }
@@ -267,9 +267,9 @@ public class DiscreteDistributionValidationRunner {
     
     private static void testBernoulliDistributionMathFormulas() {
         try {
-            float p = 0.4f;
+            double p = 0.4f;
             BernoulliDistribution dist = new BernoulliDistribution(p);
-            float q = 1.0f - p;
+            double q = 1.0f - p;
             
             // 验证均值公式：E[X] = p
             assertEqual(p, dist.mean(), TOLERANCE, "均值公式 E[X] = p");
@@ -278,7 +278,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual(p * q, dist.var(), TOLERANCE, "方差公式 Var[X] = p(1-p)");
             
             // 验证偏度公式：Skew[X] = (1-2p)/√(p(1-p))
-            float expectedSkewness = (1.0f - 2.0f * p) / (float) Math.sqrt(p * q);
+            double expectedSkewness = (1.0f - 2.0f * p) / (double) Math.sqrt(p * q);
             assertEqual(expectedSkewness, dist.skewness(), TOLERANCE, "偏度公式");
             
             System.out.println("✓ 伯努利分布数学公式验证通过");
@@ -290,9 +290,9 @@ public class DiscreteDistributionValidationRunner {
     private static void testBinomialDistributionMathFormulas() {
         try {
             int n = 10;
-            float p = 0.3f;
+            double p = 0.3f;
             BinomialDistribution dist = new BinomialDistribution(n, p);
-            float q = 1.0f - p;
+            double q = 1.0f - p;
             
             // 验证均值公式：E[X] = np
             assertEqual(n * p, dist.mean(), TOLERANCE, "均值公式 E[X] = np");
@@ -301,7 +301,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual(n * p * q, dist.var(), TOLERANCE, "方差公式 Var[X] = np(1-p)");
             
             // 验证偏度公式：Skew[X] = (1-2p)/√(np(1-p))
-            float expectedSkewness = (1.0f - 2.0f * p) / (float) Math.sqrt(n * p * q);
+            double expectedSkewness = (1.0f - 2.0f * p) / (double) Math.sqrt(n * p * q);
             assertEqual(expectedSkewness, dist.skewness(), TOLERANCE, "偏度公式");
             
             System.out.println("✓ 二项分布数学公式验证通过");
@@ -312,9 +312,9 @@ public class DiscreteDistributionValidationRunner {
     
     private static void testGeometricDistributionMathFormulas() {
         try {
-            float p = 0.3f;
+            double p = 0.3f;
             GeometricDistribution dist = new GeometricDistribution(p);
-            float q = 1.0f - p;
+            double q = 1.0f - p;
             
             // 验证均值公式：E[X] = 1/p
             assertEqual(1.0f / p, dist.mean(), TOLERANCE, "均值公式 E[X] = 1/p");
@@ -323,7 +323,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual(q / (p * p), dist.var(), TOLERANCE, "方差公式 Var[X] = (1-p)/p²");
             
             // 验证偏度公式：Skew[X] = (2-p)/√(1-p)
-            float expectedSkewness = (2.0f - p) / (float) Math.sqrt(q);
+            double expectedSkewness = (2.0f - p) / (double) Math.sqrt(q);
             assertEqual(expectedSkewness, dist.skewness(), TOLERANCE, "偏度公式");
             
             System.out.println("✓ 几何分布数学公式验证通过");
@@ -334,7 +334,7 @@ public class DiscreteDistributionValidationRunner {
     
     private static void testPoissonDistributionMathFormulas() {
         try {
-            float lambda = 2.5f;
+            double lambda = 2.5f;
             PoissonDistribution dist = new PoissonDistribution(lambda);
             
             // 验证均值公式：E[X] = λ
@@ -344,7 +344,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual(lambda, dist.var(), TOLERANCE, "方差公式 Var[X] = λ");
             
             // 验证偏度公式：Skew[X] = 1/√λ
-            float expectedSkewness = 1.0f / (float) Math.sqrt(lambda);
+            double expectedSkewness = 1.0f / (double) Math.sqrt(lambda);
             assertEqual(expectedSkewness, dist.skewness(), TOLERANCE, "偏度公式");
             
             System.out.println("✓ 泊松分布数学公式验证通过");
@@ -363,7 +363,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual((a + b) / 2.0f, dist.mean(), TOLERANCE, "均值公式 E[X] = (a+b)/2");
             
             // 验证方差公式：Var[X] = (n²-1)/12
-            float expectedVar = (n * n - 1) / 12.0f;
+            double expectedVar = (n * n - 1) / 12.0f;
             assertEqual(expectedVar, dist.var(), TOLERANCE, "方差公式 Var[X] = (n²-1)/12");
             
             // 验证偏度公式：Skew[X] = 0（对称分布）
@@ -378,9 +378,9 @@ public class DiscreteDistributionValidationRunner {
     private static void testNegativeBinomialDistributionMathFormulas() {
         try {
             int r = 3;
-            float p = 0.4f;
+            double p = 0.4f;
             NegativeBinomialDistribution dist = new NegativeBinomialDistribution(r, p);
-            float q = 1.0f - p;
+            double q = 1.0f - p;
             
             // 验证均值公式：E[X] = r/p
             assertEqual(r / p, dist.mean(), TOLERANCE, "均值公式 E[X] = r/p");
@@ -389,7 +389,7 @@ public class DiscreteDistributionValidationRunner {
             assertEqual(r * q / (p * p), dist.var(), TOLERANCE, "方差公式 Var[X] = r(1-p)/p²");
             
             // 验证偏度公式：Skew[X] = (2-p)/√(r(1-p))
-            float expectedSkewness = (2.0f - p) / (float) Math.sqrt(r * q);
+            double expectedSkewness = (2.0f - p) / (double) Math.sqrt(r * q);
             assertEqual(expectedSkewness, dist.skewness(), TOLERANCE, "偏度公式");
             
             System.out.println("✓ 负二项分布数学公式验证通过");
@@ -406,14 +406,14 @@ public class DiscreteDistributionValidationRunner {
             int[] samples = dist.sample(SAMPLE_SIZE);
             
             // 计算样本均值
-            float sampleMean = 0.0f;
+            double sampleMean = 0.0f;
             for (int sample : samples) {
                 sampleMean += sample;
             }
             sampleMean /= samples.length;
             
             // 验证样本均值接近理论均值
-            float meanError = Math.abs(sampleMean - dist.mean()) / dist.mean();
+            double meanError = Math.abs(sampleMean - dist.mean()) / dist.mean();
             assertTrue(meanError < HIGH_TOLERANCE, "样本均值误差过大: " + meanError);
             
             System.out.println("✓ 采样统计验证通过");
@@ -447,20 +447,20 @@ public class DiscreteDistributionValidationRunner {
             BernoulliDistribution dist2 = new BernoulliDistribution(0.7f);
             
             // 测试KL散度
-            float kl = dist1.klDivergence(dist2);
+            double kl = dist1.klDivergence(dist2);
             assertTrue(kl > 0, "KL散度应该为正");
             
             // 测试相同分布的KL散度
-            float klSame = dist1.klDivergence(dist1);
+            double klSame = dist1.klDivergence(dist1);
             assertEqual(0.0f, klSame, TOLERANCE, "相同分布的KL散度应该为0");
             
             // 测试JS散度
-            float js = dist1.jsDivergence(dist2);
+            double js = dist1.jsDivergence(dist2);
             assertTrue(js > 0, "JS散度应该为正");
             assertTrue(js <= 1.0f, "JS散度应该小于等于1");
             
             // 测试Wasserstein距离
-            float wasserstein = dist1.wassersteinDistance(dist2);
+            double wasserstein = dist1.wassersteinDistance(dist2);
             assertTrue(wasserstein > 0, "Wasserstein距离应该为正");
             
             System.out.println("✓ 分布比较验证通过");
@@ -513,18 +513,18 @@ public class DiscreteDistributionValidationRunner {
             long startTime = System.currentTimeMillis();
             
             // 计算各种统计量
-            float mean = dist.mean();
-            float var = dist.var();
-            float std = dist.std();
-            float skewness = dist.skewness();
-            float kurtosis = dist.kurtosis();
-            float entropy = dist.entropy();
+            double mean = dist.mean();
+            double var = dist.var();
+            double std = dist.std();
+            double skewness = dist.skewness();
+            double kurtosis = dist.kurtosis();
+            double entropy = dist.entropy();
             
             long duration = System.currentTimeMillis() - startTime;
             
             assertTrue(duration < 100, "统计量计算应该在100ms内完成: " + duration + "ms");
-            assertFalse(Float.isNaN(mean), "均值计算产生NaN");
-            assertFalse(Float.isNaN(var), "方差计算产生NaN");
+            assertFalse(Double.isNaN(mean), "均值计算产生NaN");
+            assertFalse(Double.isNaN(var), "方差计算产生NaN");
             
             System.out.println("✓ 统计量计算性能测试通过 (" + duration + "ms)");
         } catch (Exception e) {
@@ -561,10 +561,10 @@ public class DiscreteDistributionValidationRunner {
             
             // 验证PMF值在合理范围内
             for (int x = 0; x <= 1000; x += 100) {
-                float pmf = dist.pmf(x);
+                double pmf = dist.pmf(x);
                 assertTrue(pmf >= 0.0f && pmf <= 1.0f, "PMF值应该在[0,1]范围内: P(X=" + x + ")=" + pmf);
-                assertFalse(Float.isNaN(pmf), "PMF值不应该是NaN: P(X=" + x + ")=" + pmf);
-                assertFalse(Float.isInfinite(pmf), "PMF值不应该是无穷大: P(X=" + x + ")=" + pmf);
+                assertFalse(Double.isNaN(pmf), "PMF值不应该是NaN: P(X=" + x + ")=" + pmf);
+                assertFalse(Double.isInfinite(pmf), "PMF值不应该是无穷大: P(X=" + x + ")=" + pmf);
             }
             
             System.out.println("✓ 数值稳定性测试通过");
@@ -613,7 +613,7 @@ public class DiscreteDistributionValidationRunner {
     
     // ==================== 辅助方法 / Helper Methods ====================
     
-    private static void assertEqual(float expected, float actual, float tolerance, String message) {
+    private static void assertEqual(double expected, double actual, double tolerance, String message) {
         totalTests++;
         if (Math.abs(expected - actual) <= tolerance) {
             passedTests++;

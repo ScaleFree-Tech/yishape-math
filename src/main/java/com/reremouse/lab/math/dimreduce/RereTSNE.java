@@ -64,17 +64,17 @@ public class RereTSNE {
         
         // 为每个点寻找合适的sigma（方差）
         for (int i = 0; i < n; i++) {
-            IVector xi = X.getRow(i);
+            IVector xi = (IVector)X.getRow(i);
             double sigma = findOptimalSigma(xi, X, i);
             
             // 计算第i行的概率分布
             double sum = 0.0;
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    IVector xj = X.getRow(j);
+                    IVector xj = (IVector)X.getRow(j);
                     double distance = computeEuclideanDistance(xi, xj);
                     double prob = Math.exp(-distance * distance / (2 * sigma * sigma));
-                    P.put(i, j, (float) prob);
+                    P.put(i, j, (double) prob);
                     sum += prob;
                 }
             }
@@ -83,7 +83,7 @@ public class RereTSNE {
             if (sum > 0) {
                 for (int j = 0; j < n; j++) {
                     if (i != j) {
-                        P.put(i, j, (float) (P.get(i, j) / sum));
+                        P.put(i, j, ((double) (P.get(i, j)) / sum));
                     }
                 }
             }
@@ -94,8 +94,8 @@ public class RereTSNE {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    double symmetric_prob = (P.get(i, j) + P.get(j, i)) / (2.0 * n);
-                    P_symmetric.put(i, j, (float) Math.max(symmetric_prob, 1e-12)); // 避免概率为0
+                    double symmetric_prob = ((double)P.get(i, j) + (double)P.get(j, i)) / (2.0d * n);
+                    P_symmetric.put(i, j, (double) Math.max(symmetric_prob, 1e-12)); // 避免概率为0
                 }
             }
         }
@@ -143,7 +143,7 @@ public class RereTSNE {
         
         for (int j = 0; j < n; j++) {
             if (i != j) {
-                IVector xj = X.getRow(j);
+                IVector xj = (IVector)X.getRow(j);
                 double distance = computeEuclideanDistance(xi, xj);
                 double prob = Math.exp(-distance * distance / (2 * sigma * sigma));
                 sum += prob;
@@ -153,7 +153,7 @@ public class RereTSNE {
         if (sum > 0) {
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    IVector xj = X.getRow(j);
+                    IVector xj = (IVector)X.getRow(j);
                     double distance = computeEuclideanDistance(xi, xj);
                     double prob = Math.exp(-distance * distance / (2 * sigma * sigma)) / sum;
                     if (prob > 1e-12) {
@@ -170,8 +170,8 @@ public class RereTSNE {
      * 计算两个向量之间的欧几里得距离
      */
     private double computeEuclideanDistance(IVector v1, IVector v2) {
-        IVector diff = v1.sub(v2);
-        return Math.sqrt(diff.innerProduct(diff));
+        IVector diff = (IVector)v1.sub(v2);
+        return Math.sqrt((double)diff.innerProduct(diff));
     }
     
     /**
@@ -179,12 +179,12 @@ public class RereTSNE {
      */
     private IMatrix initializeLowDimEmbedding(int n, int dim) {
         Random random = new Random();
-        float[][] data = new float[n][dim];
+        double[][] data = new double[n][dim];
         
         // 使用小的随机值初始化
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < dim; j++) {
-                data[i][j] = (float) (random.nextGaussian() * 1e-4);
+                data[i][j] = (double) (random.nextGaussian() * 1e-4);
             }
         }
         
@@ -207,10 +207,10 @@ public class RereTSNE {
             IMatrix gradient = computeGradient(P, Q, Y);
             
             // 更新速度（应用动量）
-            velocity = velocity.mmul(momentum).sub(gradient.mmul(learningRate));
+            velocity = (IMatrix)velocity.mmul(momentum).sub(gradient.mmul(learningRate));
             
             // 更新Y
-            Y = Y.add(velocity);
+            Y = (IMatrix)Y.add(velocity);
             
             // 每50次迭代输出一次进度
             if (iter % 50 == 0) {
@@ -220,7 +220,7 @@ public class RereTSNE {
             
             // 检查收敛性
             if (iter > 100) {
-                IMatrix Q_prev = computeLowDimSimilarities(Y.sub(velocity));
+                IMatrix Q_prev = computeLowDimSimilarities((IMatrix)Y.sub(velocity));
                 double cost_current = computeKLDivergence(P, Q);
                 double cost_prev = computeKLDivergence(P, Q_prev);
                 
@@ -246,11 +246,11 @@ public class RereTSNE {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    IVector yi = Y.getRow(i);
-                    IVector yj = Y.getRow(j);
+                    IVector yi = (IVector)Y.getRow(i);
+                    IVector yj = (IVector)Y.getRow(j);
                     double distance = computeEuclideanDistance(yi, yj);
                     double similarity = 1.0 / (1.0 + distance * distance); // t分布
-                    Q.put(i, j, (float) similarity);
+                    Q.put(i, j, (double) similarity);
                     sum += similarity;
                 }
             }
@@ -261,7 +261,7 @@ public class RereTSNE {
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     if (i != j) {
-                        Q.put(i, j, (float) Math.max(Q.get(i, j) / sum, 1e-12));
+                        Q.put(i, j,  Math.max((double)Q.get(i, j) / sum, 1e-12));
                     }
                 }
             }
@@ -279,26 +279,26 @@ public class RereTSNE {
         IMatrix gradient = IMatrix.zeros(n, dim);
         
         for (int i = 0; i < n; i++) {
-            IVector yi = Y.getRow(i);
+            IVector yi = (IVector)Y.getRow(i);
             
             for (int d = 0; d < dim; d++) {
                 double gradSum = 0.0;
                 
                 for (int j = 0; j < n; j++) {
                     if (i != j) {
-                        IVector yj = Y.getRow(j);
+                        IVector yj = (IVector)Y.getRow(j);
                         double distance_sq = computeEuclideanDistance(yi, yj);
                         distance_sq = distance_sq * distance_sq;
                         
-                        double pij = P.get(i, j);
-                        double qij = Q.get(i, j);
+                        double pij = (double)P.get(i, j);
+                        double qij = (double)Q.get(i, j);
                         
                         double coefficient = (pij - qij) / (1.0 + distance_sq);
-                        gradSum += coefficient * (yi.get(d) - yj.get(d));
+                        gradSum += coefficient * ((double)yi.get(d) - (double)yj.get(d));
                     }
                 }
                 
-                gradient.put(i, d, (float) (4.0 * gradSum));
+                gradient.put(i, d, (double) (4.0 * gradSum));
             }
         }
         
@@ -315,8 +315,8 @@ public class RereTSNE {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    double pij = P.get(i, j);
-                    double qij = Q.get(i, j);
+                    double pij = (double)P.get(i, j);
+                    double qij = (double)Q.get(i, j);
                     
                     if (pij > 1e-12 && qij > 1e-12) {
                         kl += pij * Math.log(pij / qij);

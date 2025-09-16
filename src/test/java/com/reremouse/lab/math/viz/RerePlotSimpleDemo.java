@@ -1,11 +1,11 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.viz.RerePlot;
 import com.reremouse.lab.math.viz.AxisTicks;
 import java.util.Arrays;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * RerePlot 简化演示类
@@ -20,11 +20,11 @@ public class RerePlotSimpleDemo {
         
         try {
             // 创建测试数据
-            float[] xData = {1, 2, 3, 4, 5};
-            float[] yData = {2.1f, 3.9f, 6.1f, 8.0f, 10.2f};
+            double[] xData = {1, 2, 3, 4, 5};
+            double[] yData = {2.1f, 3.9f, 6.1f, 8.0f, 10.2f};
             
-            IVector x = IVector.of(xData);
-            IVector y = IVector.of(yData);
+            IDoubleVector x = new RereDoubleVector(xData);
+            IDoubleVector y = new RereDoubleVector(yData);
             
             // 1. 基础线图演示
             System.out.println("1. 基础线图演示");
@@ -65,8 +65,8 @@ public class RerePlotSimpleDemo {
             System.out.println("\n4. 饼图演示");
             RerePlot plot4 = new RerePlot(600, 400);
             plot4.setTitle("饼图", "数据占比");
-            float[] pieData = {30, 25, 20, 15, 10};
-            IVector pieVector = IVector.of(pieData);
+            double[] pieData = {30, 25, 20, 15, 10};
+            IDoubleVector pieVector = new RereDoubleVector(pieData);
             plot4.pie(pieVector);
             
             String html4 = plot4.toHtml();
@@ -80,11 +80,11 @@ public class RerePlotSimpleDemo {
             plot5.setYlabel("频次");
             
             // 生成测试数据
-            float[] histData = new float[50];
+            double[] histData = new double[50];
             for (int i = 0; i < 50; i++) {
                 histData[i] = (float) (Math.random() * 10 + 5);
             }
-            IVector histVector = IVector.of(histData);
+            IDoubleVector histVector = new RereDoubleVector(histData);
             plot5.hist(histVector, false);
             
             String html5 = plot5.toHtml();
@@ -99,7 +99,7 @@ public class RerePlotSimpleDemo {
             
             // 设置坐标轴刻度
             AxisTicks xTicks = new AxisTicks();
-            xTicks.setTickValues(IVector.of(new float[]{1, 3, 5}));
+            xTicks.setTickValues(new RereDoubleVector(new double[]{1, 3, 5}));
             xTicks.setTickLabels(Arrays.asList("周一", "周三", "周五"));
             plot6.setXticks(xTicks);
             

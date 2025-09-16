@@ -151,7 +151,7 @@ import com.reremouse.lab.math.stats.distribution.PoissonDistribution;
  * 
  * <h3>注意事项 / Notes:</h3>
  * <ul>
- *   <li>所有分布参数都使用float类型，确保计算效率</li>
+ *   <li>所有分布参数都使用double类型，确保计算效率</li>
  *   <li>分布对象是不可变的，创建后参数不能修改</li>
  *   <li>随机数生成使用Java内置的Math.random()方法</li>
  *   <li>某些统计量在特定条件下可能不存在（返回Float.NaN）</li>
@@ -186,13 +186,13 @@ public class Stats {
      * 参数估计 / Parameter estimation
      * Parameter estimation
      */
-    ParameterEstimation estimator = new ParameterEstimation();//参数估计
+    public static ParameterEstimation estimator = new ParameterEstimation();//参数估计
     
     /**
      * 假设检验 / Hypothesis testing
      * Hypothesis testing
      */
-    HypothesisTesting testor = new HypothesisTesting();//假设检验
+    public static HypothesisTesting testor = new HypothesisTesting();//假设检验
     
 
     /**
@@ -223,7 +223,7 @@ public class Stats {
      * @see NormalDistribution
      * @since 1.0
      */
-    public static NormalDistribution norm(float mean, float stdDev) {
+    public static NormalDistribution norm(double mean, double stdDev) {
         return new NormalDistribution(mean, stdDev);
     }
     
@@ -281,7 +281,7 @@ public class Stats {
      * @see StudentDistribution
      * @since 1.0
      */
-    public static StudentDistribution t(float degreesOfFreedom) {
+    public static StudentDistribution t(double degreesOfFreedom) {
         return new StudentDistribution(degreesOfFreedom);
     }
 
@@ -312,7 +312,7 @@ public class Stats {
      * @see UniformDistribution
      * @since 1.0
      */
-    public static UniformDistribution uniform(float lowerBound, float upperBound) {
+    public static UniformDistribution uniform(double lowerBound, double upperBound) {
         return new UniformDistribution(lowerBound, upperBound);
     }
 
@@ -343,7 +343,7 @@ public class Stats {
      * @see ExponentialDistribution
      * @since 1.0
      */
-    public static ExponentialDistribution exponential(float rate) {
+    public static ExponentialDistribution exponential(double rate) {
         return new ExponentialDistribution(rate);
     }
 
@@ -374,7 +374,7 @@ public class Stats {
      * @see Chi2Distribution
      * @since 1.0
      */
-    public static Chi2Distribution chi2(float degreesOfFreedom) {
+    public static Chi2Distribution chi2(double degreesOfFreedom) {
         return new Chi2Distribution(degreesOfFreedom);
     }
 
@@ -407,7 +407,7 @@ public class Stats {
      * @see FDistribution
      * @since 1.0
      */
-    public static FDistribution f(float degreesOfFreedom1, float degreesOfFreedom2) {
+    public static FDistribution f(double degreesOfFreedom1, double degreesOfFreedom2) {
         return new FDistribution(degreesOfFreedom1, degreesOfFreedom2);
     }
 
@@ -438,7 +438,7 @@ public class Stats {
      * @see BernoulliDistribution
      * @since 1.0
      */
-    public static BernoulliDistribution bernoulli(float p) {
+    public static BernoulliDistribution bernoulli(double p) {
         return new BernoulliDistribution(p);
     }
 
@@ -469,7 +469,7 @@ public class Stats {
      * @see BinomialDistribution
      * @since 1.0
      */
-    public static BinomialDistribution binomial(int n, float p) {
+    public static BinomialDistribution binomial(int n, double p) {
         return new BinomialDistribution(n, p);
     }
 
@@ -545,7 +545,7 @@ public class Stats {
      * @see GeometricDistribution
      * @since 1.0
      */
-    public static GeometricDistribution geometric(float p) {
+    public static GeometricDistribution geometric(double p) {
         return new GeometricDistribution(p);
     }
 
@@ -576,7 +576,7 @@ public class Stats {
      * @see NegativeBinomialDistribution
      * @since 1.0
      */
-    public static NegativeBinomialDistribution negativeBinomial(int r, float p) {
+    public static NegativeBinomialDistribution negativeBinomial(int r, double p) {
         return new NegativeBinomialDistribution(r, p);
     }
 
@@ -606,7 +606,7 @@ public class Stats {
      * @see PoissonDistribution
      * @since 1.0
      */
-    public static PoissonDistribution poisson(float lambda) {
+    public static PoissonDistribution poisson(double lambda) {
         return new PoissonDistribution(lambda);
     }
 
@@ -639,7 +639,7 @@ public class Stats {
      * @see BetaDistribution
      * @since 1.0
      */
-    public static BetaDistribution beta(float alpha, float beta) {
+    public static BetaDistribution beta(double alpha, double beta) {
         return new BetaDistribution(alpha, beta);
     }
 
@@ -670,7 +670,7 @@ public class Stats {
      * @see GammaDistribution
      * @since 1.0
      */
-    public static GammaDistribution gamma(float alpha, float beta) {
+    public static GammaDistribution gamma(double alpha, double beta) {
         return new GammaDistribution(alpha, beta);
     }
 }

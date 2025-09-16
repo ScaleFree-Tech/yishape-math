@@ -2,6 +2,7 @@ package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.dimreduce.RereTSNE;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * t-SNE算法测试类
@@ -18,7 +19,7 @@ public class TSNETest {
             {2.0f, 3.0f, 4.0f}    // 样本4
         };
         
-        IMatrix originalData = IMatrix.of(testData);
+        IMatrix<Float> originalData = Linalg.matrix(testData);
         
         System.out.println("原始数据维度: " + originalData.getRowNum() + "x" + originalData.getColNum());
         System.out.println("原始数据:");
@@ -26,15 +27,15 @@ public class TSNETest {
         
         // 创建t-SNE实例并进行降维
         RereTSNE tsne = new RereTSNE();
-        IMatrix reducedData = tsne.dimensionReduction(originalData, 2); // 降至2维
+        IMatrix<Float> reducedData = tsne.dimensionReduction(originalData, 2); // 降至2维
         
         System.out.println("\n降维后数据维度: " + reducedData.getRowNum() + "x" + reducedData.getColNum());
         System.out.println("降维后数据:");
         printMatrix(reducedData);
     }
     
-    private static void printMatrix(IMatrix matrix) {
-        float[][] data = matrix.getData();
+    private static void printMatrix(IMatrix<Float> matrix) {
+        float[][] data = matrix.toFloatArray();
         for (int i = 0; i < data.length; i++) {
             for (int j = 0; j < data[i].length; j++) {
                 System.out.printf("%.4f\t", data[i][j]);

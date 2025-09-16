@@ -1,12 +1,13 @@
 package com.reremouse.lab.math.gpu;
 
 import com.reremouse.lab.math.compute.GPUConfig;
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * GPU伪逆矩阵测试类
@@ -18,27 +19,27 @@ import org.junit.jupiter.api.DisplayName;
  */
 public class GPUPinvTest {
     
-    private IMatrix testMatrix;
-    private IMatrix largeMatrix;
+    private IMatrix<Double> testMatrix;
+    private IMatrix<Double> largeMatrix;
     
     @BeforeEach
     void setUp() {
         // 创建小测试矩阵（小于GPU阈值）
-        float[][] smallData = {
+        double[][] smallData = {
             {1, 2, 3},
             {4, 5, 6}
         };
-        testMatrix = new RereMatrix(smallData);
+        testMatrix = Linalg.matrix(smallData);
         
         // 创建大测试矩阵（超过GPU阈值10000）
         int size = 150; // 150x150 = 22500 > 10000
-        float[][] largeData = new float[size][size];
+        double[][] largeData = new double[size][size];
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                largeData[i][j] = (float) (Math.random() * 10 - 5); // -5到5的随机数
+                largeData[i][j] = (double) (Math.random() * 10 - 5); // -5到5的随机数
             }
         }
-        largeMatrix = new RereMatrix(largeData);
+        largeMatrix = Linalg.matrix(largeData);
     }
     
     @Test
@@ -47,22 +48,22 @@ public class GPUPinvTest {
         System.out.println("\n=== 测试小矩阵pinv（应该使用CPU） ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         long startTime = System.currentTimeMillis();
         IMatrix result = testMatrix.pinv();
         long endTime = System.currentTimeMillis();
         
         System.out.println("小矩阵pinv耗时: " + (endTime - startTime) + "ms");
-        System.out.println("结果矩阵维度: " + result.getRows() + "x" + result.getColumns());
+        System.out.println("结果矩阵维度: " + result.rows() + "x" + result.cols());
         
         // 验证结果正确性：A * A⁺ * A ≈ A
-        IMatrix verification = testMatrix.mmul(result).mmul(testMatrix);
-        float maxError = 0.0f;
-        for (int i = 0; i < testMatrix.getRows(); i++) {
-            for (int j = 0; j < testMatrix.getColumns(); j++) {
-                float error = Math.abs(testMatrix.get(i, j) - verification.get(i, j));
+        IMatrix<Double> verification = testMatrix.mmul(result).mmul(testMatrix);
+        double maxError = 0.0f;
+        for (int i = 0; i < testMatrix.rows(); i++) {
+            for (int j = 0; j < testMatrix.cols(); j++) {
+                double error = Math.abs((testMatrix.get(i, j) - verification.get(i, j)));
                 maxError = Math.max(maxError, error);
             }
         }
@@ -76,23 +77,23 @@ public class GPUPinvTest {
         System.out.println("\n=== 测试大矩阵pinv（应该使用GPU） ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrix.pinv();
+        IMatrix<Double> result = largeMatrix.pinv();
         long endTime = System.currentTimeMillis();
         
         System.out.println("大矩阵pinv耗时: " + (endTime - startTime) + "ms");
-        System.out.println("结果矩阵维度: " + result.getRows() + "x" + result.getColumns());
+        System.out.println("结果矩阵维度: " + result.rows() + "x" + result.cols());
         
         // 验证结果正确性：A * A⁺ * A ≈ A（只验证前几个元素）
-        IMatrix verification = largeMatrix.mmul(result).mmul(largeMatrix);
-        float maxError = 0.0f;
-        int checkSize = Math.min(10, largeMatrix.getRows());
+        IMatrix<Double> verification = largeMatrix.mmul(result).mmul(largeMatrix);
+        double maxError = 0.0f;
+        int checkSize = Math.min(10, largeMatrix.rows());
         for (int i = 0; i < checkSize; i++) {
             for (int j = 0; j < checkSize; j++) {
-                float error = Math.abs(largeMatrix.get(i, j) - verification.get(i, j));
+                double error = Math.abs(largeMatrix.get(i, j) - verification.get(i, j));
                 maxError = Math.max(maxError, error);
             }
         }
@@ -107,40 +108,40 @@ public class GPUPinvTest {
         
         // 创建中等大小的矩阵进行性能测试
         int size = 100; // 100x100 = 10000 = GPU阈值
-        float[][] data = new float[size][size];
+        double[][] data = new double[size][size];
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                data[i][j] = (float) (Math.random() * 10 - 5);
+                data[i][j] = (double) (Math.random() * 10 - 5);
             }
         }
-        IMatrix matrix = new RereMatrix(data);
+        IMatrix matrix = Linalg.matrix(data);
         
         // 测试GPU版本
         System.out.println("测试GPU版本:");
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(false);
         
         long gpuStartTime = System.currentTimeMillis();
-        IMatrix gpuResult = matrix.pinv();
+        IMatrix<Double> gpuResult = matrix.pinv();
         long gpuEndTime = System.currentTimeMillis();
         
         System.out.println("GPU版本耗时: " + (gpuEndTime - gpuStartTime) + "ms");
         
         // 测试CPU版本（通过临时降低阈值）
         System.out.println("\n测试CPU版本:");
-        GPUComputeUtils.setLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(false);
         
         long cpuStartTime = System.currentTimeMillis();
-        IMatrix cpuResult = matrix.pinv();
+        IMatrix<Double> cpuResult = matrix.pinv();
         long cpuEndTime = System.currentTimeMillis();
         
         System.out.println("CPU版本耗时: " + (cpuEndTime - cpuStartTime) + "ms");
         
         // 验证结果一致性
-        float maxDifference = 0.0f;
-        for (int i = 0; i < Math.min(5, gpuResult.getRows()); i++) {
-            for (int j = 0; j < Math.min(5, gpuResult.getColumns()); j++) {
-                float diff = Math.abs(gpuResult.get(i, j) - cpuResult.get(i, j));
+        double maxDifference = 0.0f;
+        for (int i = 0; i < Math.min(5, gpuResult.rows()); i++) {
+            for (int j = 0; j < Math.min(5, gpuResult.cols()); j++) {
+                double diff = Math.abs(gpuResult.get(i, j) - cpuResult.get(i, j));
                 maxDifference = Math.max(maxDifference, diff);
             }
         }
@@ -148,7 +149,7 @@ public class GPUPinvTest {
         assert maxDifference < 1e-5f : "GPU和CPU结果不一致";
         
         // 重新启用日志
-        GPUComputeUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
     }
     
     @Test
@@ -156,28 +157,28 @@ public class GPUPinvTest {
     void testDifferentSizesPinv() {
         System.out.println("\n=== 测试不同大小矩阵的pinv ===");
         
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(false);
         
         int[] sizes = {50, 100, 150, 200};
         
         for (int size : sizes) {
             System.out.println("\n测试 " + size + "x" + size + " 矩阵:");
             
-            float[][] data = new float[size][size];
+            double[][] data = new double[size][size];
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < size; j++) {
-                    data[i][j] = (float) (Math.random() * 10 - 5);
+                    data[i][j] = (double) (Math.random() * 10 - 5);
                 }
             }
-            IMatrix matrix = new RereMatrix(data);
+            IMatrix matrix = Linalg.matrix(data);
             
             long startTime = System.currentTimeMillis();
             IMatrix result = matrix.pinv();
             long endTime = System.currentTimeMillis();
             
             System.out.println("  耗时: " + (endTime - startTime) + "ms");
-            System.out.println("  结果维度: " + result.getRows() + "x" + result.getColumns());
+            System.out.println("  结果维度: " + result.rows() + "x" + result.cols());
             System.out.println("  数据量: " + (size * size) + " (GPU阈值: " + GPUConfig.GPU_THRESHOLD + ")");
         }
     }
@@ -187,15 +188,15 @@ public class GPUPinvTest {
     void testPinvMathematicalProperties() {
         System.out.println("\n=== 测试pinv数学性质 ===");
         
-        GPUComputeUtils.setLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(false);
         
         // 创建测试矩阵
-        float[][] data = {
+        double[][] data = {
             {1, 2, 3},
             {4, 5, 6},
             {7, 8, 9}
         };
-        IMatrix A = new RereMatrix(data);
+        IMatrix A = Linalg.matrix(data);
         
         // 计算伪逆
         IMatrix A_pinv = A.pinv();
@@ -236,8 +237,8 @@ public class GPUPinvTest {
     }
     
     private void printMatrix(IMatrix matrix, int rows, int cols) {
-        for (int i = 0; i < Math.min(rows, matrix.getRows()); i++) {
-            for (int j = 0; j < Math.min(cols, matrix.getColumns()); j++) {
+        for (int i = 0; i < Math.min(rows, matrix.rows()); i++) {
+            for (int j = 0; j < Math.min(cols, matrix.cols()); j++) {
                 System.out.printf("%8.4f ", matrix.get(i, j));
             }
             System.out.println();

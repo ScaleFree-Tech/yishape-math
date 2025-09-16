@@ -28,10 +28,10 @@ public class BinomialDistribution implements IDiscreteDistribution {
     private final int n;
     
     /** 成功概率 / Probability of success */
-    private final float p;
+    private final double p;
     
     /** 失败概率 / Probability of failure */
-    private final float q;
+    private final double q;
     
     /**
      * 构造函数
@@ -41,7 +41,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
      * @param p 成功概率，范围[0,1] / Probability of success, range [0,1]
      * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
      */
-    public BinomialDistribution(int n, float p) {
+    public BinomialDistribution(int n, double p) {
         if (n <= 0) {
             throw new IllegalArgumentException("试验次数必须大于0 / Number of trials must be greater than 0");
         }
@@ -69,58 +69,58 @@ public class BinomialDistribution implements IDiscreteDistribution {
      * 
      * @return 成功概率 / Probability of success
      */
-    public float getP() {
+    public double getP() {
         return p;
     }
     
     // ==================== 基本统计量 / Basic Statistics ====================
     
     @Override
-    public float mean() {
+    public double mean() {
         return n * p;
     }
     
     @Override
-    public float var() {
+    public double var() {
         return n * p * q;
     }
     
     @Override
-    public float std() {
+    public double std() {
         return (float) Math.sqrt(n * p * q);
     }
     
     @Override
-    public float median() {
+    public double median() {
         // 二项分布的中位数近似为 floor(n*p)
         return (float) Math.floor(n * p);
     }
     
     @Override
-    public float mode() {
+    public double mode() {
         if (p == 0.0f) return 0.0f;
         if (p == 1.0f) return (float) n;
         return (float) Math.floor((n + 1) * p);
     }
     
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
     @Override
-    public float skewness() {
+    public double skewness() {
         if (p == 0.0f || p == 1.0f) return 0.0f;
         return (1.0f - 2.0f * p) / (float) Math.sqrt(n * p * q);
     }
     
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         if (p == 0.0f || p == 1.0f) return 0.0f;
         return (1.0f - 6.0f * p * q) / (n * p * q);
     }
@@ -128,7 +128,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
     // ==================== 概率计算 / Probability Calculations ====================
     
     @Override
-    public float pmf(int x) {
+    public double pmf(int x) {
         if (x < 0 || x > n) return 0.0f;
         if (p == 0.0f) return (x == 0) ? 1.0f : 0.0f;
         if (p == 1.0f) return (x == n) ? 1.0f : 0.0f;
@@ -139,16 +139,16 @@ public class BinomialDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float cdf(int x) {
+    public double cdf(int x) {
         if (x < 0) return 0.0f;
         if (x >= n) return 1.0f;
         
         // 使用正则化不完全Beta函数计算CDF
-        return 1.0f - (float) RereMathUtil.regularizedIncompleteBeta(x + 1, n - x, p);
+        return 1.0 - RereMathUtil.regularizedIncompleteBeta(x + 1, n - x, p);
     }
     
     @Override
-    public int ppf(float prob) {
+    public int ppf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -170,12 +170,12 @@ public class BinomialDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float sf(int x) {
+    public double sf(int x) {
         return 1.0f - cdf(x);
     }
     
     @Override
-    public int isf(float prob) {
+    public int isf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -188,7 +188,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
     public int sample() {
         // 使用逆变换采样
         double u = Math.random();
-        float cdf = 0.0f;
+        double cdf = 0.0f;
         
         for (int k = 0; k <= n; k++) {
             cdf += pmf(k);
@@ -237,7 +237,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
     // ==================== 高级统计方法 / Advanced Statistical Methods ====================
     
     @Override
-    public float moment(int k) {
+    public double moment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -245,17 +245,17 @@ public class BinomialDistribution implements IDiscreteDistribution {
         if (k == 1) return mean();
         
         // 使用递推公式计算高阶矩
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float stirling = (float) RereMathUtil.stirlingNumber2(k, i);
-            float factorial = (float) RereMathUtil.factorial(i);
+            double stirling = (float) RereMathUtil.stirlingNumber2(k, i);
+            double factorial = (float) RereMathUtil.factorial(i);
             result += stirling * factorial * (float) Math.pow(n, i) * (float) Math.pow(p, i);
         }
         return result;
     }
     
     @Override
-    public float centralMoment(int k) {
+    public double centralMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -264,16 +264,16 @@ public class BinomialDistribution implements IDiscreteDistribution {
         if (k == 2) return var();
         
         // 对于二项分布，中心矩有递推公式
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
+            double term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
             result += term;
         }
         return result;
     }
     
     @Override
-    public float standardizedMoment(int k) {
+    public double standardizedMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -284,10 +284,10 @@ public class BinomialDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float entropy() {
-        float entropy = 0.0f;
+    public double entropy() {
+        double entropy = 0.0f;
         for (int k = 0; k <= n; k++) {
-            float prob = pmf(k);
+            double prob = pmf(k);
             if (prob > 0.0f) {
                 entropy -= prob * (float) Math.log(prob);
             }
@@ -296,24 +296,24 @@ public class BinomialDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float cgf(float t) {
+    public double cgf(double t) {
         return n * (float) Math.log(q + p * Math.exp(t));
     }
     
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
     @Override
-    public int quantile(float prob) {
+    public int quantile(double prob) {
         return ppf(prob);
     }
     
     @Override
-    public int[] confidenceInterval(float confidence) {
+    public int[] confidenceInterval(double confidence) {
         if (confidence < 0.0f || confidence > 1.0f) {
             throw new IllegalArgumentException("置信水平必须在[0,1]范围内 / Confidence level must be in range [0,1]");
         }
         
-        float alpha = 1.0f - confidence;
+        double alpha = 1.0f - confidence;
         int lower = ppf(alpha / 2.0f);
         int upper = ppf(1.0f - alpha / 2.0f);
         
@@ -323,7 +323,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
     @Override
-    public float klDivergence(IDiscreteDistribution other) {
+    public double klDivergence(IDiscreteDistribution other) {
         if (!(other instanceof BinomialDistribution)) {
             throw new IllegalArgumentException("只能与二项分布计算KL散度 / Can only calculate KL divergence with Binomial distribution");
         }
@@ -333,15 +333,15 @@ public class BinomialDistribution implements IDiscreteDistribution {
             throw new IllegalArgumentException("两个二项分布的试验次数必须相同 / Both binomial distributions must have the same number of trials");
         }
         
-        float kl = 0.0f;
+        double kl = 0.0f;
         
         for (int k = 0; k <= n; k++) {
-            float p1 = pmf(k);
-            float p2 = otherBinomial.pmf(k);
+            double p1 = pmf(k);
+            double p2 = otherBinomial.pmf(k);
             if (p1 > 0.0f && p2 > 0.0f) {
                 kl += p1 * (float) Math.log(p1 / p2);
             } else if (p1 > 0.0f) {
-                return Float.POSITIVE_INFINITY;
+                return Double.POSITIVE_INFINITY;
             }
         }
         
@@ -349,7 +349,7 @@ public class BinomialDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float jsDivergence(IDiscreteDistribution other) {
+    public double jsDivergence(IDiscreteDistribution other) {
         if (!(other instanceof BinomialDistribution)) {
             throw new IllegalArgumentException("只能与二项分布计算JS散度 / Can only calculate JS divergence with Binomial distribution");
         }
@@ -359,20 +359,20 @@ public class BinomialDistribution implements IDiscreteDistribution {
             throw new IllegalArgumentException("两个二项分布的试验次数必须相同 / Both binomial distributions must have the same number of trials");
         }
         
-        float otherP = otherBinomial.getP();
-        float mP = (p + otherP) / 2.0f;
+        double otherP = otherBinomial.getP();
+        double mP = (p + otherP) / 2.0f;
         
         // 创建混合分布
         BinomialDistribution mixed = new BinomialDistribution(n, mP);
         
-        float kl1 = klDivergence(mixed);
-        float kl2 = otherBinomial.klDivergence(mixed);
+        double kl1 = klDivergence(mixed);
+        double kl2 = otherBinomial.klDivergence(mixed);
         
         return 0.5f * kl1 + 0.5f * kl2;
     }
     
     @Override
-    public float wassersteinDistance(IDiscreteDistribution other) {
+    public double wassersteinDistance(IDiscreteDistribution other) {
         if (!(other instanceof BinomialDistribution)) {
             throw new IllegalArgumentException("只能与二项分布计算Wasserstein距离 / Can only calculate Wasserstein distance with Binomial distribution");
         }
@@ -417,11 +417,11 @@ public class BinomialDistribution implements IDiscreteDistribution {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         BinomialDistribution that = (BinomialDistribution) obj;
-        return n == that.n && Float.compare(that.p, p) == 0;
+        return n == that.n && Double.compare(that.p, p) == 0;
     }
     
     @Override
     public int hashCode() {
-        return 31 * n + Float.hashCode(p);
+        return 31 * n + Double.hashCode(p);
     }
 }

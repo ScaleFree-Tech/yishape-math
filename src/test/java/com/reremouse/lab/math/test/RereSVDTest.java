@@ -2,6 +2,7 @@ package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.dimreduce.RereSVD;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * SVD降维算法测试类 / SVD Dimensionality Reduction Test Class
@@ -29,7 +30,7 @@ public class RereSVDTest {
             {2.0f, 3.0f, 4.0f}
         };
         
-        IMatrix originalMatrix = IMatrix.of(testData);
+        IMatrix<Float> originalMatrix = Linalg.matrix(testData);
         RereSVD svd = new RereSVD();
         
         System.out.println("原始数据矩阵 / Original data matrix:");
@@ -38,19 +39,19 @@ public class RereSVDTest {
         try {
             // 测试降维到2维 / Test reduction to 2 dimensions
             System.out.println("\n降维到2维 / Reduce to 2 dimensions:");
-            IMatrix reduced2D = svd.dimensionReduction(originalMatrix, 2);
+            IMatrix<Float> reduced2D = svd.dimensionReduction(originalMatrix, 2);
             printMatrix(reduced2D);
             System.out.println("降维后矩阵形状: " + reduced2D.getRowNum() + "x" + reduced2D.getColNum());
             
             // 测试降维到1维 / Test reduction to 1 dimension
             System.out.println("\n降维到1维 / Reduce to 1 dimension:");
-            IMatrix reduced1D = svd.dimensionReduction(originalMatrix, 1);
+            IMatrix<Float> reduced1D = svd.dimensionReduction(originalMatrix, 1);
             printMatrix(reduced1D);
             System.out.println("降维后矩阵形状: " + reduced1D.getRowNum() + "x" + reduced1D.getColNum());
             
             // 测试边界情况：降维到原始维度 / Test edge case: reduce to original dimension
             System.out.println("\n保持原始维度 / Keep original dimensions:");
-            IMatrix sameSize = svd.dimensionReduction(originalMatrix, 3);
+            IMatrix<Float> sameSize = svd.dimensionReduction(originalMatrix, 3);
             printMatrix(sameSize);
             
             System.out.println("\n✓ SVD降维算法测试成功 / SVD dimensionality reduction test passed!");
@@ -67,7 +68,7 @@ public class RereSVDTest {
     /**
      * 测试异常情况 / Test exception cases
      */
-    private static void testExceptionCases(RereSVD svd, IMatrix matrix) {
+    private static void testExceptionCases(RereSVD svd, IMatrix<Float> matrix) {
         System.out.println("\n=== 异常情况测试 / Exception Cases Test ===");
         
         try {
@@ -98,13 +99,13 @@ public class RereSVDTest {
     /**
      * 打印矩阵 / Print matrix
      */
-    private static void printMatrix(IMatrix matrix) {
-        float[][] data = matrix.getData();
-        for (int i = 0; i < data.length; i++) {
+    private static void printMatrix(IMatrix<Float> matrix) {
+        float[][] data = matrix.toFloatArray();
+        for (float[] data1 : data) {
             System.out.print("[");
-            for (int j = 0; j < data[i].length; j++) {
-                System.out.printf("%8.4f", data[i][j]);
-                if (j < data[i].length - 1) {
+            for (int j = 0; j < data1.length; j++) {
+                System.out.printf("%8.4f", data1[j]);
+                if (j < data1.length - 1) {
                     System.out.print(", ");
                 }
             }

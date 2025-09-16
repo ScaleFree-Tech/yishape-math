@@ -1,10 +1,12 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
+import com.reremouse.lab.math.viz.RerePlot;
+import com.reremouse.lab.math.viz.IPlot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 简单的boxplot和violinplot方法测试
@@ -17,8 +19,8 @@ public class SimpleBoxplotViolinTest {
         
         // 生成测试数据
         Random random = new Random(42);
-        float[] data1 = generateNormalData(50, 15, 100, random);
-        IVector vector1 = new RereVector(data1);
+        double[] data1 = generateNormalData(50, 15, 100, random);
+        IDoubleVector vector1 = new RereDoubleVector(data1);
         
         // 测试方法调用（不实际渲染图表）
         try {
@@ -55,8 +57,8 @@ public class SimpleBoxplotViolinTest {
     /**
      * 生成正态分布数据
      */
-    private static float[] generateNormalData(float mean, float stdDev, int size, Random random) {
-        float[] data = new float[size];
+    private static double[] generateNormalData(float mean, float stdDev, int size, Random random) {
+        double[] data = new double[size];
         for (int i = 0; i < size; i++) {
             double u1 = random.nextDouble();
             double u2 = random.nextDouble();

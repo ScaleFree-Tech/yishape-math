@@ -15,7 +15,7 @@ import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
  */
 public class SimpleBetaGammaTest {
     
-    private static final float TOLERANCE = 1e-2f; // 放宽容差 / Relaxed tolerance
+    private static final double TOLERANCE = 1e-2f; // 放宽容差 / Relaxed tolerance
     private static final int SAMPLE_SIZE = 1000; // 减少采样大小 / Reduced sample size
     private static int testCount = 0;
     private static int passedTests = 0;
@@ -36,7 +36,7 @@ public class SimpleBetaGammaTest {
             System.out.println("总测试数 / Total tests: " + testCount);
             System.out.println("通过测试 / Passed: " + passedTests);
             System.out.println("失败测试 / Failed: " + failedTests);
-            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (float)passedTests / testCount * 100));
+            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (double)passedTests / testCount * 100));
             
             if (failedTests == 0) {
                 System.out.println("所有测试通过！/ All tests passed!");
@@ -72,7 +72,7 @@ public class SimpleBetaGammaTest {
      * 测试Beta分布基本功能
      * Test basic Beta distribution functionality
      */
-    private static void testBetaBasic(float alpha, float beta, String caseName) {
+    private static void testBetaBasic(double alpha, double beta, String caseName) {
         System.out.println("  " + caseName);
         
         try {
@@ -80,8 +80,8 @@ public class SimpleBetaGammaTest {
             
             // 基本统计量测试
             // Basic statistics test
-            float expectedMean = alpha / (alpha + beta);
-            float expectedVar = (alpha * beta) / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1.0f));
+            double expectedMean = alpha / (alpha + beta);
+            double expectedVar = (alpha * beta) / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1.0f));
             
             assertEqual(expectedMean, betaDist.mean(), "均值计算错误 / Mean calculation error");
             assertEqual(expectedVar, betaDist.var(), "方差计算错误 / Variance calculation error");
@@ -134,7 +134,7 @@ public class SimpleBetaGammaTest {
      * 测试Gamma分布基本功能
      * Test basic Gamma distribution functionality
      */
-    private static void testGammaBasic(float alpha, float beta, String caseName) {
+    private static void testGammaBasic(double alpha, double beta, String caseName) {
         System.out.println("  " + caseName);
         
         try {
@@ -142,8 +142,8 @@ public class SimpleBetaGammaTest {
             
             // 基本统计量测试
             // Basic statistics test
-            float expectedMean = alpha / beta;
-            float expectedVar = alpha / (beta * beta);
+            double expectedMean = alpha / beta;
+            double expectedVar = alpha / (beta * beta);
             
             assertEqual(expectedMean, gammaDist.mean(), "均值计算错误 / Mean calculation error");
             assertEqual(expectedVar, gammaDist.var(), "方差计算错误 / Variance calculation error");
@@ -165,8 +165,8 @@ public class SimpleBetaGammaTest {
             
             // 偏度和峰度测试
             // Skewness and kurtosis test
-            float expectedSkewness = 2.0f / (float)Math.sqrt(alpha);
-            float expectedKurtosis = 6.0f / alpha;
+            double expectedSkewness = 2.0f / (double)Math.sqrt(alpha);
+            double expectedKurtosis = 6.0f / alpha;
             
             assertEqual(expectedSkewness, gammaDist.skewness(), "偏度计算错误 / Skewness calculation error");
             assertEqual(expectedKurtosis, gammaDist.kurtosis(), "峰度计算错误 / Kurtosis calculation error");
@@ -207,17 +207,17 @@ public class SimpleBetaGammaTest {
     private static void testBasicPropertiesForDistribution(IContinuousDistribution dist, String distName) {
         // 测试CDF和SF的关系
         // Test relationship between CDF and SF
-        float x = 0.5f;
-        float cdf = dist.cdf(x);
-        float sf = dist.sf(x);
+        double x = 0.5f;
+        double cdf = dist.cdf(x);
+        double sf = dist.sf(x);
         assertEqual(1.0f, cdf + sf, 
             distName + " CDF + SF 应等于1 / CDF + SF should equal 1");
         
         // 测试PPF和ISF的关系
         // Test relationship between PPF and ISF
-        float p = 0.3f;
-        float ppf = dist.ppf(p);
-        float isf = dist.isf(1.0f - p);
+        double p = 0.3f;
+        double ppf = dist.ppf(p);
+        double isf = dist.isf(1.0f - p);
         assertEqual(ppf, isf, 
             distName + " PPF和ISF应相等 / PPF and ISF should be equal");
     }
@@ -258,7 +258,7 @@ public class SimpleBetaGammaTest {
      */
     private static void testBasicSampling(IContinuousDistribution dist, String distName) {
         try {
-            float[] samples = dist.sample(SAMPLE_SIZE);
+            double[] samples = dist.sample(SAMPLE_SIZE);
             
             // 检查样本数量
             // Check sample size
@@ -266,20 +266,20 @@ public class SimpleBetaGammaTest {
             
             // 检查样本是否在合理范围内
             // Check if samples are in reasonable range
-            for (float sample : samples) {
-                assertFalse(Float.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
-                assertFalse(Float.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
+            for (double sample : samples) {
+                assertFalse(Double.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
+                assertFalse(Double.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
             }
             
             // 计算样本均值
             // Calculate sample mean
-            float sampleMean = calculateMean(samples);
+            double sampleMean = calculateMean(samples);
             
             // 检查样本均值是否接近理论均值
             // Check if sample mean is close to theoretical mean
-            if (!Float.isNaN(dist.mean())) {
-                float meanError = Math.abs(sampleMean - dist.mean());
-                float meanThreshold = Math.max(0.2f, Math.abs(dist.mean()) * 0.3f); // 放宽容差
+            if (!Double.isNaN(dist.mean())) {
+                double meanError = Math.abs(sampleMean - dist.mean());
+                double meanThreshold = Math.max(0.2f, Math.abs(dist.mean()) * 0.3f); // 放宽容差
                 assertTrue(meanError < meanThreshold, 
                     distName + " 样本均值与理论均值差异过大 / Sample mean differs too much from theoretical mean");
             }
@@ -295,16 +295,16 @@ public class SimpleBetaGammaTest {
      * 计算数组的均值
      * Calculate mean of array
      */
-    private static float calculateMean(float[] values) {
-        float sum = 0.0f;
-        for (float value : values) {
+    private static double calculateMean(double[] values) {
+        double sum = 0.0f;
+        for (double value : values) {
             sum += value;
         }
         return sum / values.length;
     }
     
     // 测试辅助方法 / Test helper methods
-    private static void assertEqual(float expected, float actual, String message) {
+    private static void assertEqual(double expected, double actual, String message) {
         testCount++;
         if (Math.abs(expected - actual) <= TOLERANCE) {
             passedTests++;

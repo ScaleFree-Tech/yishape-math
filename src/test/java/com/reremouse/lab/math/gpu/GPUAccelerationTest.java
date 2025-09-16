@@ -1,15 +1,16 @@
 package com.reremouse.lab.math.gpu;
 
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.compute.GPUComputeDoubleUtils;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import static org.junit.jupiter.api.Assertions.*;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IDoubleVector;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * GPU加速功能测试类
@@ -21,34 +22,34 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class GPUAccelerationTest {
     
-    private IMatrix largeMatrixA;
-    private IMatrix largeMatrixB;
-    private IVector largeVectorA;
-    private IVector largeVectorB;
+    private IMatrix<Double> largeMatrixA;
+    private IMatrix<Double> largeMatrixB;
+    private IVector<Double> largeVectorA;
+    private IVector<Double> largeVectorB;
     
     @BeforeEach
     void setUp() {
         // 创建大矩阵用于测试GPU加速（超过GPU阈值10000）
         int size = 200; // 200x200 = 40000 > 10000
-        float[][] dataA = new float[size][size];
-        float[][] dataB = new float[size][size];
-        float[] vectorDataA = new float[size * size];
-        float[] vectorDataB = new float[size * size];
+        double[][] dataA = new double[size][size];
+        double[][] dataB = new double[size][size];
+        double[] vectorDataA = new double[size * size];
+        double[] vectorDataB = new double[size * size];
         
         // 初始化测试数据
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                dataA[i][j] = (float) (Math.random() * 10);
-                dataB[i][j] = (float) (Math.random() * 10);
-                vectorDataA[i * size + j] = (float) (Math.random() * 10);
-                vectorDataB[i * size + j] = (float) (Math.random() * 10);
+                dataA[i][j] = (double) (Math.random() * 10);
+                dataB[i][j] = (double) (Math.random() * 10);
+                vectorDataA[i * size + j] = (double) (Math.random() * 10);
+                vectorDataB[i * size + j] = (double) (Math.random() * 10);
             }
         }
         
-        largeMatrixA = new RereMatrix(dataA);
-        largeMatrixB = new RereMatrix(dataB);
-        largeVectorA = new RereVector(vectorDataA);
-        largeVectorB = new RereVector(vectorDataB);
+        largeMatrixA = new RereDoubleMatrix(dataA);
+        largeMatrixB = new RereDoubleMatrix(dataB);
+        largeVectorA = new RereDoubleVector(vectorDataA);
+        largeVectorB = new RereDoubleVector(vectorDataB);
     }
     
     @Test
@@ -57,21 +58,21 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU矩阵加法...");
         
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrixA.add(largeMatrixB);
+        IMatrix<Double> result = largeMatrixA.add(largeMatrixB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵加法耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性
         assertNotNull(result);
-        assertEquals(largeMatrixA.getRows(), result.getRows());
-        assertEquals(largeMatrixA.getColumns(), result.getColumns());
+        assertEquals(largeMatrixA.rows(), result.rows());
+        assertEquals(largeMatrixA.cols(), result.cols());
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                float expected = largeMatrixA.get(i, j) + largeMatrixB.get(i, j);
-                assertEquals(expected, result.get(i, j), 1e-6f);
+                double expected = largeMatrixA.get(i, j) + largeMatrixB.get(i, j);
+                assertEquals(expected, result.get(i, j), 1e-6d);
             }
         }
     }
@@ -82,20 +83,20 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU矩阵减法...");
         
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrixA.sub(largeMatrixB);
+        IMatrix<Double> result = largeMatrixA.sub(largeMatrixB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵减法耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性
         assertNotNull(result);
-        assertEquals(largeMatrixA.getRows(), result.getRows());
-        assertEquals(largeMatrixA.getColumns(), result.getColumns());
+        assertEquals(largeMatrixA.rows(), result.rows());
+        assertEquals(largeMatrixA.cols(), result.cols());
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                float expected = largeMatrixA.get(i, j) - largeMatrixB.get(i, j);
+                double expected = largeMatrixA.get(i, j) - largeMatrixB.get(i, j);
                 assertEquals(expected, result.get(i, j), 1e-6f);
             }
         }
@@ -106,22 +107,22 @@ public class GPUAccelerationTest {
     void testGPUMatrixScalarMultiply() {
         System.out.println("测试GPU矩阵标量乘法...");
         
-        float scalar = 2.5f;
+        double scalar = 2.5f;
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrixA.mmul(scalar);
+        IMatrix<Double> result = largeMatrixA.mmul(scalar);
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵标量乘法耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性
         assertNotNull(result);
-        assertEquals(largeMatrixA.getRows(), result.getRows());
-        assertEquals(largeMatrixA.getColumns(), result.getColumns());
+        assertEquals(largeMatrixA.rows(), result.rows());
+        assertEquals(largeMatrixA.cols(), result.cols());
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                float expected = largeMatrixA.get(i, j) * scalar;
+                double expected = largeMatrixA.get(i, j) * scalar;
                 assertEquals(expected, result.get(i, j), 1e-6f);
             }
         }
@@ -132,22 +133,22 @@ public class GPUAccelerationTest {
     void testGPUMatrixScalarSub() {
         System.out.println("测试GPU矩阵标量减法...");
         
-        float scalar = 1.5f;
+        double scalar = 1.5f;
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrixA.sub(scalar);
+        IMatrix<Double> result = largeMatrixA.sub(scalar);
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵标量减法耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性
         assertNotNull(result);
-        assertEquals(largeMatrixA.getRows(), result.getRows());
-        assertEquals(largeMatrixA.getColumns(), result.getColumns());
+        assertEquals(largeMatrixA.rows(), result.rows());
+        assertEquals(largeMatrixA.cols(), result.cols());
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                float expected = largeMatrixA.get(i, j) - scalar;
+                double expected = largeMatrixA.get(i, j) - scalar;
                 assertEquals(expected, result.get(i, j), 1e-6f);
             }
         }
@@ -159,15 +160,15 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU矩阵转置...");
         
         long startTime = System.currentTimeMillis();
-        IMatrix result = largeMatrixA.transposeNew();
+        IMatrix<Double> result = largeMatrixA.transposeNew();
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵转置耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性
         assertNotNull(result);
-        assertEquals(largeMatrixA.getColumns(), result.getRows());
-        assertEquals(largeMatrixA.getRows(), result.getColumns());
+        assertEquals(largeMatrixA.cols(), result.rows());
+        assertEquals(largeMatrixA.rows(), result.cols());
         
         // 验证转置的正确性
         for (int i = 0; i < 5; i++) {
@@ -183,7 +184,7 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量加法...");
         
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.add(largeVectorB);
+        IVector<Double> result = largeVectorA.add(largeVectorB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量加法耗时: " + (endTime - startTime) + "ms");
@@ -194,7 +195,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) + largeVectorB.get(i);
+            double expected = largeVectorA.get(i) + largeVectorB.get(i);
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -205,7 +206,7 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量减法...");
         
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.sub(largeVectorB);
+        IVector<Double> result = largeVectorA.sub(largeVectorB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量减法耗时: " + (endTime - startTime) + "ms");
@@ -216,7 +217,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) - largeVectorB.get(i);
+            double expected = largeVectorA.get(i) - largeVectorB.get(i);
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -227,7 +228,7 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量乘法...");
         
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.multiply(largeVectorB);
+        IVector<Double> result = largeVectorA.multiply(largeVectorB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量乘法耗时: " + (endTime - startTime) + "ms");
@@ -238,7 +239,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) * largeVectorB.get(i);
+            double expected = largeVectorA.get(i) * largeVectorB.get(i);
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -248,9 +249,9 @@ public class GPUAccelerationTest {
     void testGPUVectorScalarAdd() {
         System.out.println("测试GPU向量标量加法...");
         
-        float scalar = 3.14f;
+        double scalar = 3.14f;
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.addScalar(scalar);
+        IVector<Double> result = largeVectorA.addScalar(scalar);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量标量加法耗时: " + (endTime - startTime) + "ms");
@@ -261,7 +262,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) + scalar;
+            double expected = largeVectorA.get(i) + scalar;
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -271,9 +272,9 @@ public class GPUAccelerationTest {
     void testGPUVectorScalarMultiply() {
         System.out.println("测试GPU向量标量乘法...");
         
-        float scalar = 2.71f;
+        double scalar = 2.71f;
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.multiplyScalar(scalar);
+        IVector<Double> result = largeVectorA.multiplyScalar(scalar);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量标量乘法耗时: " + (endTime - startTime) + "ms");
@@ -284,7 +285,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) * scalar;
+            double expected = largeVectorA.get(i) * scalar;
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -295,13 +296,13 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量内积...");
         
         long startTime = System.currentTimeMillis();
-        float result = largeVectorA.innerProduct(largeVectorB);
+        double result = largeVectorA.innerProduct(largeVectorB);
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量内积耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性（计算整个向量的内积进行验证）
-        float expected = 0.0f;
+        double expected = 0.0f;
         for (int i = 0; i < largeVectorA.length(); i++) {
             expected += largeVectorA.get(i) * largeVectorB.get(i);
         }
@@ -316,13 +317,13 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量求和...");
         
         long startTime = System.currentTimeMillis();
-        float result = largeVectorA.sum();
+        double result = largeVectorA.sum();
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量求和耗时: " + (endTime - startTime) + "ms");
         
         // 验证结果正确性（计算整个向量的和进行验证）
-        float expected = 0.0f;
+        double expected = 0.0f;
         for (int i = 0; i < largeVectorA.length(); i++) {
             expected += largeVectorA.get(i);
         }
@@ -337,7 +338,7 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量平方...");
         
         long startTime = System.currentTimeMillis();
-        IVector result = largeVectorA.squre();
+        IVector<Double> result = largeVectorA.square();
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量平方耗时: " + (endTime - startTime) + "ms");
@@ -348,7 +349,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = largeVectorA.get(i) * largeVectorA.get(i);
+            double expected = largeVectorA.get(i) * largeVectorA.get(i);
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -359,10 +360,10 @@ public class GPUAccelerationTest {
         System.out.println("测试GPU向量开方...");
         
         // 确保向量元素都是正数
-        IVector positiveVector = largeVectorA.multiplyScalar(0.1f).addScalar(1.0f);
+        IVector<Double> positiveVector = largeVectorA.multiplyScalar(0.1).addScalar(1.0);
         
         long startTime = System.currentTimeMillis();
-        IVector result = positiveVector.sqrt();
+        IVector<Double> result = positiveVector.sqrt();
         long endTime = System.currentTimeMillis();
         
         System.out.println("向量开方耗时: " + (endTime - startTime) + "ms");
@@ -373,7 +374,7 @@ public class GPUAccelerationTest {
         
         // 验证几个元素的计算正确性
         for (int i = 0; i < 10; i++) {
-            float expected = (float) Math.sqrt(positiveVector.get(i));
+            double expected = (double) Math.sqrt(positiveVector.get(i));
             assertEquals(expected, result.get(i), 1e-6f);
         }
     }
@@ -382,13 +383,13 @@ public class GPUAccelerationTest {
     @DisplayName("测试GPU信息")
     void testGPUInfo() {
         System.out.println("GPU信息:");
-        System.out.println("GPU可用: " + GPUComputeUtils.isGPUAvailable());
-        System.out.println("GPU信息: " + GPUComputeUtils.getGPUInfo());
-        System.out.println("GPU设备信息: " + GPUComputeUtils.getGPUDeviceInfo());
+        System.out.println("GPU可用: " + GPUComputeDoubleUtils.isGPUAvailable());
+        System.out.println("GPU信息: " + GPUComputeDoubleUtils.getGPUInfo());
+        System.out.println("GPU设备信息: " + GPUComputeDoubleUtils.getGPUDeviceInfo());
         
         // 验证GPU信息不为空
-        assertNotNull(GPUComputeUtils.getGPUInfo());
-        assertNotNull(GPUComputeUtils.getGPUDeviceInfo());
+        assertNotNull(GPUComputeDoubleUtils.getGPUInfo());
+        assertNotNull(GPUComputeDoubleUtils.getGPUDeviceInfo());
     }
     
     @Test
@@ -397,18 +398,18 @@ public class GPUAccelerationTest {
         System.out.println("测试小数据量使用CPU...");
         
         // 创建小矩阵（小于GPU阈值）
-        float[][] smallData = {{1, 2}, {3, 4}};
-        IMatrix smallMatrix = new RereMatrix(smallData);
-        IMatrix smallMatrix2 = new RereMatrix(smallData);
+        double[][] smallData = {{1, 2}, {3, 4}};
+        IMatrix smallMatrix = new RereDoubleMatrix(smallData);
+        IMatrix smallMatrix2 = new RereDoubleMatrix(smallData);
         
         // 创建小向量
-        float[] smallVectorData = {1, 2, 3, 4};
-        IVector smallVector = new RereVector(smallVectorData);
-        IVector smallVector2 = new RereVector(smallVectorData);
+        double[] smallVectorData = {1, 2, 3, 4};
+        IDoubleVector smallVector = new RereDoubleVector(smallVectorData);
+        IDoubleVector smallVector2 = new RereDoubleVector(smallVectorData);
         
         // 这些操作应该使用CPU（因为数据量小）
-        IMatrix matrixResult = smallMatrix.add(smallMatrix2);
-        IVector vectorResult = smallVector.add(smallVector2);
+        IMatrix<Double> matrixResult = smallMatrix.add(smallMatrix2);
+        IVector<Double> vectorResult = smallVector.add(smallVector2);
         
         // 验证结果正确性
         assertNotNull(matrixResult);

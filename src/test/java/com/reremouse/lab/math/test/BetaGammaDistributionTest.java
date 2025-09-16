@@ -38,7 +38,7 @@ import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
  */
 public class BetaGammaDistributionTest {
     
-    private static final float TOLERANCE = 1e-3f; // 测试容差 / Test tolerance
+    private static final double TOLERANCE = 1e-3f; // 测试容差 / Test tolerance
     private static final int SAMPLE_SIZE = 10000; // 采样大小 / Sample size
     private static int testCount = 0;
     private static int passedTests = 0;
@@ -61,7 +61,7 @@ public class BetaGammaDistributionTest {
             System.out.println("总测试数 / Total tests: " + testCount);
             System.out.println("通过测试 / Passed: " + passedTests);
             System.out.println("失败测试 / Failed: " + failedTests);
-            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (float)passedTests / testCount * 100));
+            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (double)passedTests / testCount * 100));
             
             if (failedTests == 0) {
                 System.out.println("所有测试通过！/ All tests passed!");
@@ -98,7 +98,7 @@ public class BetaGammaDistributionTest {
      * 测试特定参数的Beta分布
      * Test Beta distribution with specific parameters
      */
-    private static void testBetaDistributionCase(float alpha, float beta, String caseName) {
+    private static void testBetaDistributionCase(double alpha, double beta, String caseName) {
         System.out.println("\n  " + caseName);
         
         try {
@@ -106,17 +106,17 @@ public class BetaGammaDistributionTest {
         
         // 基本统计量测试
         // Basic statistics test
-        float expectedMean = alpha / (alpha + beta);
-        float expectedVar = (alpha * beta) / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1.0f));
+        double expectedMean = alpha / (alpha + beta);
+        double expectedVar = (alpha * beta) / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1.0f));
         
         assertEqual(expectedMean, betaDist.mean(), "均值计算错误 / Mean calculation error");
         assertEqual(expectedVar, betaDist.var(), "方差计算错误 / Variance calculation error");
-        assertEqual((float)Math.sqrt(expectedVar), betaDist.std(), "标准差计算错误 / Standard deviation calculation error");
+        assertEqual((double)Math.sqrt(expectedVar), betaDist.std(), "标准差计算错误 / Standard deviation calculation error");
         
         // 众数测试
         // Mode test
         if (alpha > 1.0f && beta > 1.0f) {
-            float expectedMode = (alpha - 1.0f) / (alpha + beta - 2.0f);
+            double expectedMode = (alpha - 1.0f) / (alpha + beta - 2.0f);
             assertEqual(expectedMode, betaDist.mode(), "众数计算错误 / Mode calculation error");
         }
         
@@ -142,25 +142,25 @@ public class BetaGammaDistributionTest {
         
         // 测试PPF和CDF的逆关系
         // Test inverse relationship between PPF and CDF
-        float testP = 0.3f;
-        float ppfValue = betaDist.ppf(testP);
-        float cdfValue = betaDist.cdf(ppfValue);
+        double testP = 0.3f;
+        double ppfValue = betaDist.ppf(testP);
+        double cdfValue = betaDist.cdf(ppfValue);
         assertEqual(testP, cdfValue, "PPF和CDF应为逆函数 / PPF and CDF should be inverse functions");
         
         // 四分位数测试
         // Quartiles test
-        float q1 = betaDist.q1();
-        float q3 = betaDist.q3();
+        double q1 = betaDist.q1();
+        double q3 = betaDist.q3();
         assertTrue(q1 >= 0 && q1 <= 1, "Q1应在[0,1]内 / Q1 should be in [0,1]");
         assertTrue(q3 >= 0 && q3 <= 1, "Q3应在[0,1]内 / Q3 should be in [0,1]");
         assertTrue(q1 <= q3, "Q1应小于等于Q3 / Q1 should be less than or equal to Q3");
         
         // 偏度和峰度测试
         // Skewness and kurtosis test
-        float skewness = betaDist.skewness();
-        float kurtosis = betaDist.kurtosis();
-        assertFalse(Float.isNaN(skewness), "偏度不应为NaN / Skewness should not be NaN");
-        assertFalse(Float.isNaN(kurtosis), "峰度不应为NaN / Kurtosis should not be NaN");
+        double skewness = betaDist.skewness();
+        double kurtosis = betaDist.kurtosis();
+        assertFalse(Double.isNaN(skewness), "偏度不应为NaN / Skewness should not be NaN");
+        assertFalse(Double.isNaN(kurtosis), "峰度不应为NaN / Kurtosis should not be NaN");
         
         // 随机采样测试
         // Random sampling test
@@ -196,7 +196,7 @@ public class BetaGammaDistributionTest {
      * 测试特定参数的Gamma分布
      * Test Gamma distribution with specific parameters
      */
-    private static void testGammaDistributionCase(float alpha, float beta, String caseName) {
+    private static void testGammaDistributionCase(double alpha, double beta, String caseName) {
         System.out.println("\n  " + caseName);
         
         try {
@@ -204,17 +204,17 @@ public class BetaGammaDistributionTest {
         
         // 基本统计量测试
         // Basic statistics test
-        float expectedMean = alpha / beta;
-        float expectedVar = alpha / (beta * beta);
+        double expectedMean = alpha / beta;
+        double expectedVar = alpha / (beta * beta);
         
         assertEqual(expectedMean, gammaDist.mean(), "均值计算错误 / Mean calculation error");
         assertEqual(expectedVar, gammaDist.var(), "方差计算错误 / Variance calculation error");
-        assertEqual((float)Math.sqrt(expectedVar), gammaDist.std(), "标准差计算错误 / Standard deviation calculation error");
+        assertEqual((double)Math.sqrt(expectedVar), gammaDist.std(), "标准差计算错误 / Standard deviation calculation error");
         
         // 众数测试
         // Mode test
         if (alpha >= 1.0f) {
-            float expectedMode = (alpha - 1.0f) / beta;
+            double expectedMode = (alpha - 1.0f) / beta;
             assertEqual(expectedMode, gammaDist.mode(), "众数计算错误 / Mode calculation error");
         } else {
             assertEqual(0.0f, gammaDist.mode(), "当α<1时众数应为0 / Mode should be 0 when α<1");
@@ -237,28 +237,28 @@ public class BetaGammaDistributionTest {
         // PPF测试
         // PPF test
         assertEqual(0.0f, gammaDist.ppf(0.0f), "0%分位数应为0 / 0th percentile should be 0");
-        assertTrue(Float.isInfinite(gammaDist.ppf(1.0f)) && gammaDist.ppf(1.0f) > 0, 
+        assertTrue(Double.isInfinite(gammaDist.ppf(1.0f)) && gammaDist.ppf(1.0f) > 0, 
             "100%分位数应为正无穷 / 100th percentile should be positive infinity");
         
         // 测试PPF和CDF的逆关系
         // Test inverse relationship between PPF and CDF
-        float testP = 0.3f;
-        float ppfValue = gammaDist.ppf(testP);
-        float cdfValue = gammaDist.cdf(ppfValue);
+        double testP = 0.3f;
+        double ppfValue = gammaDist.ppf(testP);
+        double cdfValue = gammaDist.cdf(ppfValue);
         assertEqual(testP, cdfValue, "PPF和CDF应为逆函数 / PPF and CDF should be inverse functions");
         
         // 四分位数测试
         // Quartiles test
-        float q1 = gammaDist.q1();
-        float q3 = gammaDist.q3();
+        double q1 = gammaDist.q1();
+        double q3 = gammaDist.q3();
         assertTrue(q1 >= 0, "Q1应非负 / Q1 should be non-negative");
         assertTrue(q3 >= 0, "Q3应非负 / Q3 should be non-negative");
         assertTrue(q1 <= q3, "Q1应小于等于Q3 / Q1 should be less than or equal to Q3");
         
         // 偏度和峰度测试
         // Skewness and kurtosis test
-        float expectedSkewness = 2.0f / (float)Math.sqrt(alpha);
-        float expectedKurtosis = 6.0f / alpha;
+        double expectedSkewness = 2.0f / (double)Math.sqrt(alpha);
+        double expectedKurtosis = 6.0f / alpha;
         
         assertEqual(expectedSkewness, gammaDist.skewness(), "偏度计算错误 / Skewness calculation error");
         assertEqual(expectedKurtosis, gammaDist.kurtosis(), "峰度计算错误 / Kurtosis calculation error");
@@ -300,31 +300,31 @@ public class BetaGammaDistributionTest {
     private static void testDistributionPropertiesForDistribution(IContinuousDistribution dist, String distName) {
         // 测试CDF和SF的关系
         // Test relationship between CDF and SF
-        float x = 0.5f;
-        float cdf = dist.cdf(x);
-        float sf = dist.sf(x);
+        double x = 0.5f;
+        double cdf = dist.cdf(x);
+        double sf = dist.sf(x);
         assertEqual(1.0f, cdf + sf, 
             distName + " CDF + SF 应等于1 / CDF + SF should equal 1");
         
         // 测试PPF和ISF的关系
         // Test relationship between PPF and ISF
-        float p = 0.3f;
-        float ppf = dist.ppf(p);
-        float isf = dist.isf(1.0f - p);
+        double p = 0.3f;
+        double ppf = dist.ppf(p);
+        double isf = dist.isf(1.0f - p);
         assertEqual(ppf, isf, 
             distName + " PPF和ISF应相等 / PPF and ISF should be equal");
         
         // 测试PPF和CDF的逆关系
         // Test inverse relationship between PPF and CDF
-        float ppfValue = dist.ppf(p);
-        float cdfValue = dist.cdf(ppfValue);
+        double ppfValue = dist.ppf(p);
+        double cdfValue = dist.cdf(ppfValue);
         assertEqual(p, cdfValue, 
             distName + " PPF和CDF应为逆函数 / PPF and CDF should be inverse functions");
         
         // 测试中位数
         // Test median
-        float median = dist.median();
-        float medianCdf = dist.cdf(median);
+        double median = dist.median();
+        double medianCdf = dist.cdf(median);
         assertEqual(0.5f, medianCdf, 
             distName + " 中位数的CDF应为0.5 / CDF at median should be 0.5");
     }
@@ -342,19 +342,19 @@ public class BetaGammaDistributionTest {
         
         // 测试极值
         // Test extreme values
-        assertEqual(0.0f, betaDist.pdf(Float.NEGATIVE_INFINITY), 
+        assertEqual(0.0f, betaDist.pdf(Double.NEGATIVE_INFINITY), 
             "负无穷处PDF应为0 / PDF at negative infinity should be 0");
-        assertEqual(0.0f, betaDist.pdf(Float.POSITIVE_INFINITY), 
+        assertEqual(0.0f, betaDist.pdf(Double.POSITIVE_INFINITY), 
             "正无穷处PDF应为0 / PDF at positive infinity should be 0");
-        assertEqual(0.0f, betaDist.cdf(Float.NEGATIVE_INFINITY), 
+        assertEqual(0.0f, betaDist.cdf(Double.NEGATIVE_INFINITY), 
             "负无穷处CDF应为0 / CDF at negative infinity should be 0");
-        assertEqual(1.0f, betaDist.cdf(Float.POSITIVE_INFINITY), 
+        assertEqual(1.0f, betaDist.cdf(Double.POSITIVE_INFINITY), 
             "正无穷处CDF应为1 / CDF at positive infinity should be 1");
         
         // 测试NaN处理
         // Test NaN handling
-        assertTrue(Float.isNaN(betaDist.pdf(Float.NaN)), "NaN处PDF应为NaN / PDF at NaN should be NaN");
-        assertTrue(Float.isNaN(betaDist.cdf(Float.NaN)), "NaN处CDF应为NaN / CDF at NaN should be NaN");
+        assertTrue(Double.isNaN(betaDist.pdf(Double.NaN)), "NaN处PDF应为NaN / PDF at NaN should be NaN");
+        assertTrue(Double.isNaN(betaDist.cdf(Double.NaN)), "NaN处CDF应为NaN / CDF at NaN should be NaN");
         
         // 测试Gamma分布边界情况
         // Test Gamma distribution edge cases
@@ -362,19 +362,19 @@ public class BetaGammaDistributionTest {
         
         // 测试极值
         // Test extreme values
-        assertEqual(0.0f, gammaDist.pdf(Float.NEGATIVE_INFINITY), 
+        assertEqual(0.0f, gammaDist.pdf(Double.NEGATIVE_INFINITY), 
             "负无穷处PDF应为0 / PDF at negative infinity should be 0");
-        assertEqual(0.0f, gammaDist.pdf(Float.POSITIVE_INFINITY), 
+        assertEqual(0.0f, gammaDist.pdf(Double.POSITIVE_INFINITY), 
             "正无穷处PDF应为0 / PDF at positive infinity should be 0");
-        assertEqual(0.0f, gammaDist.cdf(Float.NEGATIVE_INFINITY), 
+        assertEqual(0.0f, gammaDist.cdf(Double.NEGATIVE_INFINITY), 
             "负无穷处CDF应为0 / CDF at negative infinity should be 0");
-        assertEqual(1.0f, gammaDist.cdf(Float.POSITIVE_INFINITY), 
+        assertEqual(1.0f, gammaDist.cdf(Double.POSITIVE_INFINITY), 
             "正无穷处CDF应为1 / CDF at positive infinity should be 1");
         
         // 测试NaN处理
         // Test NaN handling
-        assertTrue(Float.isNaN(gammaDist.pdf(Float.NaN)), "NaN处PDF应为NaN / PDF at NaN should be NaN");
-        assertTrue(Float.isNaN(gammaDist.cdf(Float.NaN)), "NaN处CDF应为NaN / CDF at NaN should be NaN");
+        assertTrue(Double.isNaN(gammaDist.pdf(Double.NaN)), "NaN处PDF应为NaN / PDF at NaN should be NaN");
+        assertTrue(Double.isNaN(gammaDist.cdf(Double.NaN)), "NaN处CDF应为NaN / CDF at NaN should be NaN");
         
         System.out.println("边界情况测试通过 / Edge cases test passed");
     }
@@ -453,7 +453,7 @@ public class BetaGammaDistributionTest {
      * @param distName 分布名称 / Distribution name
      */
     private static void testRandomSampling(IContinuousDistribution dist, String distName) {
-        float[] samples = dist.sample(SAMPLE_SIZE);
+        double[] samples = dist.sample(SAMPLE_SIZE);
         
         // 检查样本数量
         // Check sample size
@@ -461,30 +461,30 @@ public class BetaGammaDistributionTest {
         
         // 检查样本是否在合理范围内
         // Check if samples are in reasonable range
-        for (float sample : samples) {
-            assertFalse(Float.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
-            assertFalse(Float.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
+        for (double sample : samples) {
+            assertFalse(Double.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
+            assertFalse(Double.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
         }
         
         // 计算样本统计量
         // Calculate sample statistics
-        float sampleMean = calculateMean(samples);
-        float sampleVar = calculateVariance(samples, sampleMean);
+        double sampleMean = calculateMean(samples);
+        double sampleVar = calculateVariance(samples, sampleMean);
         
         // 检查样本均值是否接近理论均值
         // Check if sample mean is close to theoretical mean
-        if (!Float.isNaN(dist.mean())) {
-            float meanError = Math.abs(sampleMean - dist.mean());
-            float meanThreshold = Math.max(0.1f, Math.abs(dist.mean()) * 0.2f); // 动态调整容差
+        if (!Double.isNaN(dist.mean())) {
+            double meanError = Math.abs(sampleMean - dist.mean());
+            double meanThreshold = Math.max(0.1f, Math.abs(dist.mean()) * 0.2f); // 动态调整容差
             assertTrue(meanError < meanThreshold, 
                 distName + " 样本均值与理论均值差异过大 / Sample mean differs too much from theoretical mean");
         }
         
         // 检查样本方差是否接近理论方差
         // Check if sample variance is close to theoretical variance
-        if (!Float.isNaN(dist.var())) {
-            float varError = Math.abs(sampleVar - dist.var());
-            float varThreshold = Math.max(0.5f, Math.abs(dist.var()) * 0.3f); // 动态调整容差
+        if (!Double.isNaN(dist.var())) {
+            double varError = Math.abs(sampleVar - dist.var());
+            double varThreshold = Math.max(0.5f, Math.abs(dist.var()) * 0.3f); // 动态调整容差
             assertTrue(varError < varThreshold, 
                 distName + " 样本方差与理论方差差异过大 / Sample variance differs too much from theoretical variance");
         }
@@ -497,9 +497,9 @@ public class BetaGammaDistributionTest {
      * @param values 数值数组 / Array of values
      * @return 均值 / Mean
      */
-    private static float calculateMean(float[] values) {
-        float sum = 0.0f;
-        for (float value : values) {
+    private static double calculateMean(double[] values) {
+        double sum = 0.0f;
+        for (double value : values) {
             sum += value;
         }
         return sum / values.length;
@@ -513,17 +513,17 @@ public class BetaGammaDistributionTest {
      * @param mean 均值 / Mean
      * @return 方差 / Variance
      */
-    private static float calculateVariance(float[] values, float mean) {
-        float sumSquaredDiff = 0.0f;
-        for (float value : values) {
-            float diff = value - mean;
+    private static double calculateVariance(double[] values, double mean) {
+        double sumSquaredDiff = 0.0f;
+        for (double value : values) {
+            double diff = value - mean;
             sumSquaredDiff += diff * diff;
         }
         return sumSquaredDiff / values.length;
     }
     
     // 测试辅助方法 / Test helper methods
-    private static void assertEqual(float expected, float actual, String message) {
+    private static void assertEqual(double expected, double actual, String message) {
         testCount++;
         if (Math.abs(expected - actual) <= TOLERANCE) {
             passedTests++;

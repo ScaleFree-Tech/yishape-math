@@ -6,9 +6,8 @@ import com.aparapi.device.Device;
 import static com.reremouse.lab.math.compute.GPUConfig.GPU_THRESHOLD;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
-import com.reremouse.lab.math.compute.CPUComputeUtils;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
 import com.reremouse.lab.util.Tuple3;
 import com.reremouse.lab.util.Tuple2;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,22 +56,22 @@ import java.util.*;
  * <p>使用示例：</p>
  * <pre>
  * {@code
- * // 检查GPU可用性
- * if (GPUComputeUtils.isGPUAvailable()) {
- *     // 执行GPU加速的矩阵乘法
- *     IMatrix result = GPUComputeUtils.gpuMatrixMultiply(matrixA, matrixB);
- * }
- * 
- * // 执行GPU加速的向量运算
- * IVector sum = GPUComputeUtils.gpuVectorAdd(vectorA, vectorB);
- * }
+ // 检查GPU可用性
+ if (GPUComputeFloatUtils.isGPUAvailable()) {
+     // 执行GPU加速的矩阵乘法
+     IMatrix<Float> result = GPUComputeFloatUtils.gpuMatrixMultiply(matrixA, matrixB);
+ }
+ 
+ // 执行GPU加速的向量运算
+ IVector<Float> sum = GPUComputeFloatUtils.gpuVectorAdd(vectorA, vectorB);
+ }
  * </pre>
  * 
  * @author lteb2
  * @version 1.0
  * @since 1.0
  */
-public class GPUComputeUtils {
+public class GPUComputeFloatUtils {
     
     // GPU状态
     private static volatile boolean gpuAvailable = true;
@@ -209,22 +208,22 @@ public class GPUComputeUtils {
      * GPU向量倒数计算
      * 计算向量的倒数，用于伪逆矩阵计算
      */
-    public static IVector gpuVectorReciprocal(IVector a, float tolerance) {
+    public static IVector<Float> gpuVectorReciprocal(IVector<Float> a, Float tolerance) {
         long startTime = System.currentTimeMillis();
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量倒数", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorReciprocal(a, tolerance);
+            return CPUComputeFloatUtils.vectorReciprocal(a, tolerance);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量倒数", "GPU不可用");
-            return CPUComputeUtils.vectorReciprocal(a, tolerance);
+            return CPUComputeFloatUtils.vectorReciprocal(a, tolerance);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         logGPUOperation("向量倒数", "长度: " + length + ", 容差: " + tolerance);
         
@@ -236,7 +235,7 @@ public class GPUComputeUtils {
             public void run() {
                 int i = getGlobalId(0);
                 if (i < length) {
-                    float value = dataA[i];
+                    Float value = dataA[i];
                     if (Math.abs(value) > tolerance) {
                         result[i] = 1.0f / value;
                     } else {
@@ -253,11 +252,11 @@ public class GPUComputeUtils {
             long endTime = System.currentTimeMillis();
             logPerformance("向量倒数", startTime, endTime, dataSize);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             logCPUFallback("向量倒数", "GPU执行失败: " + e.getMessage());
-            return CPUComputeUtils.vectorReciprocal(a, tolerance);
+            return CPUComputeFloatUtils.vectorReciprocal(a, tolerance);
         } finally {
             kernel.dispose();
         }
@@ -268,69 +267,69 @@ public class GPUComputeUtils {
      * GPU伪逆矩阵计算
      * 使用GPU加速的伪逆矩阵计算，主要加速矩阵乘法部分
      */
-    public static IMatrix gpuPseudoInverse(IMatrix A) {
+    public static IMatrix<Float> gpuPseudoInverse(IMatrix<Float> A) {
         long startTime = System.currentTimeMillis();
-        int dataSize = A.getRows() * A.getColumns();
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("伪逆矩阵", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.pseudoInverse(A);
+            return CPUComputeFloatUtils.pseudoInverse(A);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("伪逆矩阵", "GPU不可用");
-            return CPUComputeUtils.pseudoInverse(A);
+            return CPUComputeFloatUtils.pseudoInverse(A);
         }
         
-        logGPUOperation("伪逆矩阵", "维度: " + A.getRows() + "x" + A.getColumns());
+        logGPUOperation("伪逆矩阵", "维度: " + A.rows() + "x" + A.cols());
         
         try {
-            final float tolerance = 1e-10f;
+            final Float tolerance = 1e-10f;
             
             // 进行奇异值分解：A = U * S * V^T
-            Tuple3<IMatrix, IVector, IMatrix> svdResult = A.svd();
-            IMatrix U = svdResult._1;           // 左奇异向量矩阵
-            IVector singularValues = svdResult._2;  // 奇异值向量
-            IMatrix VT = svdResult._3;          // 右奇异向量转置矩阵
+            var svdResult = A.svd();
+            IMatrix<Float> U = svdResult._1;           // 左奇异向量矩阵
+            IVector<Float> singularValues = svdResult._2;  // 奇异值向量
+            IMatrix<Float> VT = svdResult._3;          // 右奇异向量转置矩阵
             
             // 获取矩阵的维度信息
-            int originalRows = A.getRows();
-            int originalCols = A.getColumns();
+            int originalRows = A.rows();
+            int originalCols = A.cols();
             int singularValuesLength = singularValues.length();
             
             // 使用GPU计算奇异值的伪逆
-            IVector pseudoSingularValues;
+            IVector<Float> pseudoSingularValues;
             if (singularValuesLength >= GPU_THRESHOLD) {
                 pseudoSingularValues = gpuVectorReciprocal(singularValues, tolerance);
             } else {
-                pseudoSingularValues = CPUComputeUtils.vectorReciprocal(singularValues, tolerance);
+                pseudoSingularValues = CPUComputeFloatUtils.vectorReciprocal(singularValues, tolerance);
             }
             
             // 计算伪逆：A⁺ = V * Σ⁺ * U^T
-            IMatrix V = VT.transposeNew();  // V = (V^T)^T
+            IMatrix<Float> V = (IMatrix<Float>)VT.transposeNew();  // V = (V^T)^T
             
             // 创建结果矩阵：A⁺的维度应该是 originalCols x originalRows
-            IMatrix pseudoInverse = IMatrix.zeros(originalCols, originalRows);
+            IMatrix<Float> pseudoInverse = Linalg.zeros(originalCols, originalRows,Float.class);
             
             // 使用GPU加速的矩阵乘法计算伪逆
             // 逐列计算：A⁺[:,j] = V * Σ⁺ * U[j,:]^T
             for (int j = 0; j < originalRows; j++) {
                 // 提取U的第j行
-                IVector uj = U.getRow(j);
+                IVector<Float> uj = (IVector<Float>)U.getRow(j);
                 
                 // 计算 Σ⁺ * U[j,:]^T
-                IVector sigmaUj = pseudoSingularValues.multiply(uj);
+                IVector<Float> sigmaUj = (IVector<Float>)pseudoSingularValues.multiply(uj);
                 
                 // 将向量转换为列矩阵进行矩阵乘法
                 float[][] sigmaUjData = new float[sigmaUj.length()][1];
                 for (int k = 0; k < sigmaUj.length(); k++) {
                     sigmaUjData[k][0] = sigmaUj.get(k);
                 }
-                IMatrix sigmaUjMatrix = IMatrix.of(sigmaUjData);
+                IMatrix<Float> sigmaUjMatrix = Linalg.matrix(sigmaUjData);
                 
                 // 计算 V * (Σ⁺ * U[j,:]^T) - 这是矩阵乘法
-                IMatrix resultColMatrix = V.mmul(sigmaUjMatrix);
+                IMatrix<Float> resultColMatrix = (IMatrix<Float>)V.mmul(sigmaUjMatrix);
                 
                 // 将结果放入伪逆矩阵的第j列
                 for (int i = 0; i < originalCols; i++) {
@@ -345,7 +344,7 @@ public class GPUComputeUtils {
             
         } catch (Exception e) {
             logCPUFallback("伪逆矩阵", "GPU执行失败: " + e.getMessage());
-            return CPUComputeUtils.pseudoInverse(A);
+            return CPUComputeFloatUtils.pseudoInverse(A);
         }
     }
     
@@ -354,23 +353,23 @@ public class GPUComputeUtils {
      * GPU矩阵乘法
      * 使用Aparapi实现OpenCL GPU加速的矩阵乘法
      */
-    public static IMatrix gpuMatrixMultiply(IMatrix A, IMatrix B) {
+    public static IMatrix<Float> gpuMatrixMultiply(IMatrix<Float> A, IMatrix<Float> B) {
         long startTime = System.currentTimeMillis();
-        int dataSize = A.getRows() * A.getColumns() * B.getColumns();
+        int dataSize = A.rows() * A.cols() * B.cols();
         
         // Small data unconditionally uses CPU - use specific threshold for matrix multiplication
         if (dataSize < GPUConfig.GPU_MATRIX_MULTIPLY_THRESHOLD) {
             logCPUFallback("矩阵乘法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixMultiply(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixMultiply(A.toFloatArray(), B.toFloatArray());
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵乘法", "GPU不可用");
-            return CPUComputeUtils.matrixMultiply(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixMultiply(A.toFloatArray(), B.toFloatArray());
         }
         
-        float[][] dataA = A.getData();
-        float[][] dataB = B.getData();
+        float[][] dataA = A.toFloatArray();
+        float[][] dataB = B.toFloatArray();
         
         int m = dataA.length;
         int n = dataA[0].length;
@@ -398,7 +397,7 @@ public class GPUComputeUtils {
                 int j = getGlobalId(1);
                 
                 if (i < m && j < p) {
-                    float sum = 0.0f;
+                    Float sum = 0.0f;
                     for (int k = 0; k < n; k++) {
                         sum += flatA[i * n + k] * flatB[k * p + j];
                     }
@@ -418,12 +417,12 @@ public class GPUComputeUtils {
             long endTime = System.currentTimeMillis();
             logPerformance("矩阵乘法", startTime, endTime, dataSize);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             logCPUFallback("矩阵乘法", "GPU执行失败: " + e.getMessage());
             // 回退到CPU计算
-            return CPUComputeUtils.matrixMultiply(dataA, dataB);
+            return CPUComputeFloatUtils.matrixMultiply(dataA, dataB);
         } finally {
             kernel.dispose();
         }
@@ -474,7 +473,7 @@ public class GPUComputeUtils {
      * @return 新的向量对象，包含加法运算结果
      * @throws IllegalArgumentException 当向量为null或长度不匹配时抛出异常
      */
-    public static IVector gpuVectorAdd(IVector a, IVector b) {
+    public static IVector<Float> gpuVectorAdd(IVector<Float> a, IVector<Float> b) {
         long startTime = System.currentTimeMillis();  // 性能计时开始
         int dataSize = a.length();  // 获取向量长度
         
@@ -482,18 +481,18 @@ public class GPUComputeUtils {
         // 避免GPU设备访问开销，提高小数据计算效率
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量加法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorAdd(a, b);
+            return CPUComputeFloatUtils.vectorAdd(a, b);
         }
         
         // GPU可用性检查：确保GPU环境正常
         if (!gpuAvailable) {
             logCPUFallback("向量加法", "GPU不可用");
-            return CPUComputeUtils.vectorAdd(a, b);
+            return CPUComputeFloatUtils.vectorAdd(a, b);
         }
         
         // 获取向量数据，准备GPU计算
-        float[] dataA = a.getData();
-        float[] dataB = b.getData();
+        float[] dataA = a.toFloatArray();
+        float[] dataB = b.toFloatArray();
         
         // 维度验证：确保两个向量长度相同
         if (dataA.length != dataB.length) {
@@ -528,13 +527,13 @@ public class GPUComputeUtils {
             long endTime = System.currentTimeMillis();  // 性能计时结束
             logPerformance("向量加法", startTime, endTime, dataSize);  // 记录性能日志
             
-            return new RereVector(result);  // 创建并返回结果向量
+            return Linalg.vector(result);  // 创建并返回结果向量
             
         } catch (Exception e) {
             // GPU计算失败时的容错处理
             logCPUFallback("向量加法", "GPU执行失败: " + e.getMessage());
             // 自动回退到CPU计算，确保计算能够完成
-            return CPUComputeUtils.vectorAdd(a, b);
+            return CPUComputeFloatUtils.vectorAdd(a, b);
         } finally {
             // 资源清理：释放GPU Kernel资源，避免内存泄漏
             kernel.dispose();
@@ -545,22 +544,22 @@ public class GPUComputeUtils {
      * GPU向量内积
      * 使用Aparapi实现OpenCL GPU加速的向量内积
      */
-    public static float gpuVectorDot(IVector a, IVector b) {
+    public static Float gpuVectorDot(IVector<Float> a, IVector<Float> b) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量内积", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorDot(a, b);
+            return CPUComputeFloatUtils.vectorDot(a, b);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量内积", "GPU不可用");
-            return CPUComputeUtils.vectorDot(a, b);
+            return CPUComputeFloatUtils.vectorDot(a, b);
         }
         
-        float[] dataA = a.getData();
-        float[] dataB = b.getData();
+        float[] dataA = a.toFloatArray();
+        float[] dataB = b.toFloatArray();
         
         if (dataA.length != dataB.length) {
             throw new IllegalArgumentException("向量长度不匹配");
@@ -586,8 +585,8 @@ public class GPUComputeUtils {
             kernel.execute(range);
             
             // 在CPU上计算最终的和
-            float sum = 0.0f;
-            for (float partialSum : partialSums) {
+            Float sum = 0.0f;
+            for (Float partialSum : partialSums) {
                 sum += partialSum;
             }
             
@@ -596,7 +595,7 @@ public class GPUComputeUtils {
         } catch (Exception e) {
             System.err.println("GPU向量内积失败，回退到CPU计算: " + e.getMessage());
             // 回退到CPU计算
-            return CPUComputeUtils.vectorDot(a, b);
+            return CPUComputeFloatUtils.vectorDot(a, b);
         } finally {
             kernel.dispose();
         }
@@ -659,23 +658,23 @@ public class GPUComputeUtils {
      * GPU矩阵加法
      * 使用Aparapi实现OpenCL GPU加速的矩阵加法
      */
-    public static IMatrix gpuMatrixAdd(IMatrix A, IMatrix B) {
+    public static IMatrix<Float> gpuMatrixAdd(IMatrix<Float> A, IMatrix<Float> B) {
         long startTime = System.currentTimeMillis();
-        int dataSize = A.getRows() * A.getColumns();
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("矩阵加法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixAdd(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixAdd(A.toFloatArray(), B.toFloatArray());
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵加法", "GPU不可用");
-            return CPUComputeUtils.matrixAdd(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixAdd(A.toFloatArray(), B.toFloatArray());
         }
         
-        float[][] dataA = A.getData();
-        float[][] dataB = B.getData();
+        float[][] dataA = A.toFloatArray();
+        float[][] dataB = B.toFloatArray();
         
         int m = dataA.length;
         int n = dataA[0].length;
@@ -717,11 +716,11 @@ public class GPUComputeUtils {
             long endTime = System.currentTimeMillis();
             logPerformance("矩阵加法", startTime, endTime, dataSize);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             logCPUFallback("矩阵加法", "GPU执行失败: " + e.getMessage());
-            return CPUComputeUtils.matrixAdd(dataA, dataB);
+            return CPUComputeFloatUtils.matrixAdd(dataA, dataB);
         } finally {
             kernel.dispose();
         }
@@ -731,22 +730,22 @@ public class GPUComputeUtils {
      * GPU矩阵减法
      * 使用Aparapi实现OpenCL GPU加速的矩阵减法
      */
-    public static IMatrix gpuMatrixSub(IMatrix A, IMatrix B) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static IMatrix<Float> gpuMatrixSub(IMatrix<Float> A, IMatrix<Float> B) {
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("矩阵减法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixSub(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixSub(A.toFloatArray(), B.toFloatArray());
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵减法", "GPU不可用");
-            return CPUComputeUtils.matrixSub(A.getData(), B.getData());
+            return CPUComputeFloatUtils.matrixSub(A.toFloatArray(), B.toFloatArray());
         }
         
-        float[][] dataA = A.getData();
-        float[][] dataB = B.getData();
+        float[][] dataA = A.toFloatArray();
+        float[][] dataB = B.toFloatArray();
         
         int m = dataA.length;
         int n = dataA[0].length;
@@ -783,11 +782,11 @@ public class GPUComputeUtils {
             // 将1D结果转换回2D数组
             resultData = unflattenMatrix(flatResult, m, n);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             System.err.println("GPU矩阵减法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.matrixSub(dataA, dataB);
+            return CPUComputeFloatUtils.matrixSub(dataA, dataB);
         } finally {
             kernel.dispose();
         }
@@ -797,21 +796,21 @@ public class GPUComputeUtils {
      * GPU矩阵标量乘法
      * 使用Aparapi实现OpenCL GPU加速的矩阵标量乘法
      */
-    public static IMatrix gpuMatrixScalarMultiply(IMatrix A, float scalar) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static IMatrix<Float> gpuMatrixScalarMultiply(IMatrix<Float> A, Float scalar) {
+        int dataSize = A.rows() * A.cols();
         
         // Small data unconditionally uses CPU - use specific threshold for scalar operations
         if (dataSize < GPUConfig.GPU_MATRIX_SCALAR_THRESHOLD) {
             logCPUFallback("矩阵标量乘法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixScalarMultiply(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarMultiply(A.toFloatArray(), scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵标量乘法", "GPU不可用");
-            return CPUComputeUtils.matrixScalarMultiply(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarMultiply(A.toFloatArray(), scalar);
         }
         
-        float[][] dataA = A.getData();
+        float[][] dataA = A.toFloatArray();
         int m = dataA.length;
         int n = dataA[0].length;
         
@@ -842,11 +841,11 @@ public class GPUComputeUtils {
             // 将1D结果转换回2D数组
             resultData = unflattenMatrix(flatResult, m, n);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             System.err.println("GPU矩阵标量乘法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.matrixScalarMultiply(dataA, scalar);
+            return CPUComputeFloatUtils.matrixScalarMultiply(dataA, scalar);
         } finally {
             kernel.dispose();
         }
@@ -856,21 +855,21 @@ public class GPUComputeUtils {
      * GPU矩阵标量加法
      * 使用Aparapi实现OpenCL GPU加速的矩阵标量加法
      */
-    public static IMatrix gpuMatrixScalarAdd(IMatrix A, float scalar) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static IMatrix<Float> gpuMatrixScalarAdd(IMatrix<Float> A, Float scalar) {
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("矩阵标量加法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixScalarAdd(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarAdd(A.toFloatArray(), scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵标量加法", "GPU不可用");
-            return CPUComputeUtils.matrixScalarAdd(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarAdd(A.toFloatArray(), scalar);
         }
         
-        float[][] dataA = A.getData();
+        float[][] dataA = A.toFloatArray();
         int m = dataA.length;
         int n = dataA[0].length;
         
@@ -901,11 +900,11 @@ public class GPUComputeUtils {
             // 将1D结果转换回2D数组
             resultData = unflattenMatrix(flatResult, m, n);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             System.err.println("GPU矩阵标量加法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.matrixScalarAdd(dataA, scalar);
+            return CPUComputeFloatUtils.matrixScalarAdd(dataA, scalar);
         } finally {
             kernel.dispose();
         }
@@ -915,21 +914,21 @@ public class GPUComputeUtils {
      * GPU矩阵标量减法
      * 使用Aparapi实现OpenCL GPU加速的矩阵标量减法
      */
-    public static IMatrix gpuMatrixScalarSub(IMatrix A, float scalar) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static IMatrix<Float> gpuMatrixScalarSub(IMatrix<Float> A, Float scalar) {
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("矩阵标量减法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixScalarSub(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarSub(A.toFloatArray(), scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵标量减法", "GPU不可用");
-            return CPUComputeUtils.matrixScalarSub(A.getData(), scalar);
+            return CPUComputeFloatUtils.matrixScalarSub(A.toFloatArray(), scalar);
         }
         
-        float[][] dataA = A.getData();
+        float[][] dataA = A.toFloatArray();
         int m = dataA.length;
         int n = dataA[0].length;
         
@@ -960,11 +959,11 @@ public class GPUComputeUtils {
             // 将1D结果转换回2D数组
             resultData = unflattenMatrix(flatResult, m, n);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             System.err.println("GPU矩阵标量减法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.matrixScalarSub(dataA, scalar);
+            return CPUComputeFloatUtils.matrixScalarSub(dataA, scalar);
         } finally {
             kernel.dispose();
         }
@@ -974,21 +973,21 @@ public class GPUComputeUtils {
      * GPU矩阵转置
      * 使用Aparapi实现OpenCL GPU加速的矩阵转置
      */
-    public static IMatrix gpuMatrixTranspose(IMatrix A) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static IMatrix<Float> gpuMatrixTranspose(IMatrix<Float> A) {
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("矩阵转置", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.matrixTranspose(A.getData());
+            return CPUComputeFloatUtils.matrixTranspose(A.toFloatArray());
         }
         
         if (!gpuAvailable) {
             logCPUFallback("矩阵转置", "GPU不可用");
-            return CPUComputeUtils.matrixTranspose(A.getData());
+            return CPUComputeFloatUtils.matrixTranspose(A.toFloatArray());
         }
         
-        float[][] dataA = A.getData();
+        float[][] dataA = A.toFloatArray();
         int m = dataA.length;
         int n = dataA[0].length;
         
@@ -1019,11 +1018,11 @@ public class GPUComputeUtils {
             // 将1D结果转换回2D数组
             resultData = unflattenMatrix(flatResult, n, m);
             
-            return new RereMatrix(resultData);
+            return new RereFloatMatrix(resultData);
             
         } catch (Exception e) {
             System.err.println("GPU矩阵转置失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.matrixTranspose(dataA);
+            return CPUComputeFloatUtils.matrixTranspose(dataA);
         } finally {
             kernel.dispose();
         }
@@ -1033,22 +1032,22 @@ public class GPUComputeUtils {
      * GPU向量减法
      * 使用Aparapi实现OpenCL GPU加速的向量减法
      */
-    public static IVector gpuVectorSub(IVector a, IVector b) {
+    public static IVector<Float> gpuVectorSub(IVector<Float> a, IVector<Float> b) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量减法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorSub(a, b);
+            return CPUComputeFloatUtils.vectorSub(a, b);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量减法", "GPU不可用");
-            return CPUComputeUtils.vectorSub(a, b);
+            return CPUComputeFloatUtils.vectorSub(a, b);
         }
         
-        float[] dataA = a.getData();
-        float[] dataB = b.getData();
+        float[] dataA = a.toFloatArray();
+        float[] dataB = b.toFloatArray();
         
         if (dataA.length != dataB.length) {
             throw new IllegalArgumentException("向量长度不匹配");
@@ -1072,11 +1071,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量减法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorSub(a, b);
+            return CPUComputeFloatUtils.vectorSub(a, b);
         } finally {
             kernel.dispose();
         }
@@ -1086,22 +1085,22 @@ public class GPUComputeUtils {
      * GPU向量乘法
      * 使用Aparapi实现OpenCL GPU加速的向量乘法
      */
-    public static IVector gpuVectorMultiply(IVector a, IVector b) {
+    public static IVector<Float> gpuVectorMultiply(IVector<Float> a, IVector<Float> b) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量乘法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorMultiply(a, b);
+            return CPUComputeFloatUtils.vectorMultiply(a, b);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量乘法", "GPU不可用");
-            return CPUComputeUtils.vectorMultiply(a, b);
+            return CPUComputeFloatUtils.vectorMultiply(a, b);
         }
         
-        float[] dataA = a.getData();
-        float[] dataB = b.getData();
+        float[] dataA = a.toFloatArray();
+        float[] dataB = b.toFloatArray();
         
         if (dataA.length != dataB.length) {
             throw new IllegalArgumentException("向量长度不匹配");
@@ -1125,11 +1124,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量乘法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorMultiply(a, b);
+            return CPUComputeFloatUtils.vectorMultiply(a, b);
         } finally {
             kernel.dispose();
         }
@@ -1139,21 +1138,21 @@ public class GPUComputeUtils {
      * GPU向量标量加法
      * 使用Aparapi实现OpenCL GPU加速的向量标量加法
      */
-    public static IVector gpuVectorScalarAdd(IVector a, float scalar) {
+    public static IVector<Float> gpuVectorScalarAdd(IVector<Float> a, Float scalar) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量标量加法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorScalarAdd(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarAdd(a, scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量标量加法", "GPU不可用");
-            return CPUComputeUtils.vectorScalarAdd(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarAdd(a, scalar);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1172,11 +1171,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量标量加法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorScalarAdd(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarAdd(a, scalar);
         } finally {
             kernel.dispose();
         }
@@ -1186,21 +1185,21 @@ public class GPUComputeUtils {
      * GPU向量标量减法
      * 使用Aparapi实现OpenCL GPU加速的向量标量减法
      */
-    public static IVector gpuVectorScalarSub(IVector a, float scalar) {
+    public static IVector<Float> gpuVectorScalarSub(IVector<Float> a, Float scalar) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量标量减法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorScalarSub(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarSub(a, scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量标量减法", "GPU不可用");
-            return CPUComputeUtils.vectorScalarSub(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarSub(a, scalar);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1219,11 +1218,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量标量减法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorScalarSub(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarSub(a, scalar);
         } finally {
             kernel.dispose();
         }
@@ -1233,21 +1232,21 @@ public class GPUComputeUtils {
      * GPU向量标量乘法
      * 使用Aparapi实现OpenCL GPU加速的向量标量乘法
      */
-    public static IVector gpuVectorScalarMultiply(IVector a, float scalar) {
+    public static IVector<Float> gpuVectorScalarMultiply(IVector<Float> a, Float scalar) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量标量乘法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorScalarMultiply(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarMultiply(a, scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量标量乘法", "GPU不可用");
-            return CPUComputeUtils.vectorScalarMultiply(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarMultiply(a, scalar);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1266,11 +1265,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量标量乘法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorScalarMultiply(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarMultiply(a, scalar);
         } finally {
             kernel.dispose();
         }
@@ -1280,25 +1279,25 @@ public class GPUComputeUtils {
      * GPU向量标量除法
      * 使用Aparapi实现OpenCL GPU加速的向量标量除法
      */
-    public static IVector gpuVectorScalarDivide(IVector a, float scalar) {
+    public static IVector<Float> gpuVectorScalarDivide(IVector<Float> a, Float scalar) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量标量除法", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorScalarDivide(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarDivide(a, scalar);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量标量除法", "GPU不可用");
-            return CPUComputeUtils.vectorScalarDivide(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarDivide(a, scalar);
         }
         
         if (scalar == 0.0f) {
             throw new ArithmeticException("除数不能为零");
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1317,11 +1316,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量标量除法失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorScalarDivide(a, scalar);
+            return CPUComputeFloatUtils.vectorScalarDivide(a, scalar);
         } finally {
             kernel.dispose();
         }
@@ -1331,21 +1330,21 @@ public class GPUComputeUtils {
      * GPU向量平方
      * 使用Aparapi实现OpenCL GPU加速的向量平方
      */
-    public static IVector gpuVectorSquare(IVector a) {
+    public static IVector<Float> gpuVectorSquare(IVector<Float> a) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量平方", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorSquare(a);
+            return CPUComputeFloatUtils.vectorSquare(a);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量平方", "GPU不可用");
-            return CPUComputeUtils.vectorSquare(a);
+            return CPUComputeFloatUtils.vectorSquare(a);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1355,7 +1354,7 @@ public class GPUComputeUtils {
             public void run() {
                 int i = getGlobalId(0);
                 if (i < length) {
-                    float val = dataA[i];
+                    Float val = dataA[i];
                     result[i] = val * val;
                 }
             }
@@ -1365,11 +1364,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量平方失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorSquare(a);
+            return CPUComputeFloatUtils.vectorSquare(a);
         } finally {
             kernel.dispose();
         }
@@ -1379,21 +1378,21 @@ public class GPUComputeUtils {
      * GPU向量开方
      * 使用Aparapi实现OpenCL GPU加速的向量开方
      */
-    public static IVector gpuVectorSqrt(IVector a) {
+    public static IVector<Float> gpuVectorSqrt(IVector<Float> a) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量开方", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorSqrt(a);
+            return CPUComputeFloatUtils.vectorSqrt(a);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量开方", "GPU不可用");
-            return CPUComputeUtils.vectorSqrt(a);
+            return CPUComputeFloatUtils.vectorSqrt(a);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] result = new float[length];
         
@@ -1412,11 +1411,11 @@ public class GPUComputeUtils {
             Range range = Range.create(length);
             kernel.execute(range);
             
-            return new RereVector(result);
+            return Linalg.vector(result);
             
         } catch (Exception e) {
             System.err.println("GPU向量开方失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorSqrt(a);
+            return CPUComputeFloatUtils.vectorSqrt(a);
         } finally {
             kernel.dispose();
         }
@@ -1426,21 +1425,21 @@ public class GPUComputeUtils {
      * GPU向量求和
      * 使用Aparapi实现OpenCL GPU加速的向量求和
      */
-    public static float gpuVectorSum(IVector a) {
+    public static Float gpuVectorSum(IVector<Float> a) {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("向量求和", "数据量小于阈值，使用CPU");
-            return CPUComputeUtils.vectorSum(a);
+            return CPUComputeFloatUtils.vectorSum(a);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("向量求和", "GPU不可用");
-            return CPUComputeUtils.vectorSum(a);
+            return CPUComputeFloatUtils.vectorSum(a);
         }
         
-        float[] dataA = a.getData();
+        float[] dataA = a.toFloatArray();
         int length = dataA.length;
         float[] partialSums = new float[length];
         
@@ -1460,8 +1459,8 @@ public class GPUComputeUtils {
             kernel.execute(range);
             
             // 在CPU上计算最终的和
-            float sum = 0.0f;
-            for (float partialSum : partialSums) {
+            Float sum = 0.0f;
+            for (Float partialSum : partialSums) {
                 sum += partialSum;
             }
             
@@ -1469,7 +1468,7 @@ public class GPUComputeUtils {
             
         } catch (Exception e) {
             System.err.println("GPU向量求和失败，回退到CPU计算: " + e.getMessage());
-            return CPUComputeUtils.vectorSum(a);
+            return CPUComputeFloatUtils.vectorSum(a);
         } finally {
             kernel.dispose();
         }
@@ -1508,30 +1507,32 @@ public class GPUComputeUtils {
      * @throws IllegalArgumentException 如果矩阵不是方阵
      * @throws RuntimeException 如果GPU计算失败
      */
-    public static Tuple2<IVector, IMatrix> gpuEigenDecomposition(IMatrix A) {
+    public static Tuple2<IVector<Float>, IMatrix<Float>> gpuEigenDecomposition(IMatrix<Float> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        if (A.getRows() != A.getColumns()) {
+        if (A.rows() != A.cols()) {
             throw new IllegalArgumentException("特征分解需要方阵");
         }
         
         if (!gpuAvailable) {
             logCPUFallback("特征分解", "GPU不可用");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
         
-        logGPUOperation("特征分解", "维度: " + A.getRows() + "x" + A.getColumns());
+        logGPUOperation("特征分解", "维度: " + A.rows() + "x" + A.cols());
         
         try {
-            int n = A.getRows();
+            int n = A.rows();
             long complexity = (long) n * n * n;
             
             // 对于小矩阵，直接使用CPU实现
             if (complexity < GPU_THRESHOLD) {
                 logCPUFallback("特征分解", "数据量小于阈值，使用CPU");
-                return A.eigen();
+                var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
             }
             
             // 检查是否为对称矩阵
@@ -1547,16 +1548,17 @@ public class GPUComputeUtils {
             
         } catch (Exception e) {
             logCPUFallback("特征分解", "GPU执行失败: " + e.getMessage());
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
     }
     
     /**
      * GPU检查矩阵是否对称
      */
-    private static boolean gpuIsSymmetricMatrix(IMatrix A) {
-        int n = A.getRows();
-        float tolerance = 1e-10f;
+    private static boolean gpuIsSymmetricMatrix(IMatrix<Float> A) {
+        int n = A.rows();
+        Float tolerance = 1e-10f;
         
         // 对于小矩阵，直接使用CPU检查
         if (n <= 100) {
@@ -1573,10 +1575,10 @@ public class GPUComputeUtils {
         // 对于大矩阵，使用GPU并行检查
         try {
             // 创建A和A^T的差值矩阵
-            IMatrix diff = A.sub(A.transposeNew());
+            IMatrix<Float> diff = (IMatrix<Float>)A.sub(A.transposeNew());
             
             // 计算最大绝对差值
-            float maxDiff = 0.0f;
+            Float maxDiff = 0.0f;
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     maxDiff = Math.max(maxDiff, Math.abs(diff.get(i, j)));
@@ -1601,15 +1603,16 @@ public class GPUComputeUtils {
      * GPU对称矩阵特征分解 - 借鉴CPU优化算法
      * 使用CPU的高效QR算法作为基础，结合GPU加速的矩阵运算
      */
-    private static Tuple2<IVector, IMatrix> gpuSymmetricEigenDecomposition(IMatrix A) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuSymmetricEigenDecomposition(IMatrix<Float> A) {
         // 对于中等大小的矩阵，直接使用CPU的优化算法，因为CPU版本已经高度优化
         // 而且GPU在这种复杂迭代算法上没有明显优势
-        int n = A.getRows();
+        int n = A.rows();
         long complexity = (long) n * n * n;
         
         if (complexity < MEDIUM_MATRIX_THRESHOLD) {
             logCPUFallback("GPU对称特征分解", "使用CPU优化算法获得更好性能");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
         
         // 对于大矩阵，使用GPU辅助的混合方法
@@ -1620,14 +1623,15 @@ public class GPUComputeUtils {
      * GPU一般矩阵特征分解 - 借鉴CPU优化算法
      * 使用CPU的高效QR算法作为基础，结合GPU加速的矩阵运算
      */
-    private static Tuple2<IVector, IMatrix> gpuGeneralEigenDecomposition(IMatrix A) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuGeneralEigenDecomposition(IMatrix<Float> A) {
         // 对于中等大小的矩阵，直接使用CPU的优化算法
-        int n = A.getRows();
+        int n = A.rows();
         long complexity = (long) n * n * n;
         
         if (complexity < MEDIUM_MATRIX_THRESHOLD) {
             logCPUFallback("GPU一般特征分解", "使用CPU优化算法获得更好性能");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
         
         // 对于大矩阵，使用GPU辅助的混合方法
@@ -1637,41 +1641,41 @@ public class GPUComputeUtils {
     /**
      * GPU三对角化 - 对称矩阵的特殊化简
      */
-    private static Tuple2<IMatrix, IMatrix> gpuTridiagonalReduction(IMatrix A) {
-        int n = A.getRows();
-        IMatrix T = A.copy();
-        IMatrix Q = IMatrix.eye(n);
+    private static Tuple2<IMatrix<Float>, IMatrix<Float>> gpuTridiagonalReduction(IMatrix<Float> A) {
+        int n = A.rows();
+        IMatrix<Float> T = A.copy();
+        IMatrix<Float> Q = Linalg.eye(n,Float.class);
         
         // 对每一列进行Householder变换
         for (int k = 0; k < n - 2; k++) {
             // 计算Householder向量
-            IVector x = T.getColunm(k).slice(k + 1, n);
+            IVector<Float> x = T.getColumn(k).slice(k + 1, n);
             
-            float norm = x.norm2();
+            Float norm = x.norm2();
             if (norm < 1e-10) continue;
             
             // 构造Householder向量
-            IVector v = x.copy();
+            IVector<Float> v = (IVector<Float>)x.copy();
             v.set(0, v.get(0) + Math.signum(v.get(0)) * norm);
-            v = v.divideByScalar(v.norm2());
+            v = (IVector<Float>)v.divideByScalar(v.norm2());
             
             // 构造Householder矩阵 P = I - 2*v*v^T
-            IMatrix outer = IMatrix.zeros(n - k - 1, n - k - 1);
+            IMatrix<Float> outer = Linalg.zeros(n - k - 1, n - k - 1,Float.class);
             for (int i = 0; i < n - k - 1; i++) {
                 for (int j = 0; j < n - k - 1; j++) {
                     outer.set(i, j, v.get(i) * v.get(j));
                 }
             }
-            IMatrix P = IMatrix.eye(n - k - 1).sub(outer.mmul(2.0f));
+            IMatrix<Float> P = Linalg.eye(n - k - 1,Float.class).sub(outer.mmul(2.0f));
             
             // 应用变换到T的子矩阵
-            IMatrix subT = T.subMatrix(k + 1, n, k, n);
-            IMatrix PsubT = P.mmul(subT);
+            IMatrix<Float> subT = T.subMatrix(k + 1, n, k, n);
+            IMatrix<Float> PsubT = P.mmul(subT);
             T.setSubMatrix(k + 1, n, k, n, PsubT);
             
             // 更新Q
-            IMatrix subQ = Q.subMatrix(0, n, k + 1, n);
-            IMatrix subQP = subQ.mmul(P);
+            IMatrix<Float> subQ = Q.subMatrix(0, n, k + 1, n);
+            IMatrix<Float> subQP = subQ.mmul(P);
             Q.setSubMatrix(0, n, k + 1, n, subQP);
         }
         
@@ -1681,41 +1685,41 @@ public class GPUComputeUtils {
     /**
      * GPU海森伯格化简
      */
-    private static Tuple2<IMatrix, IMatrix> gpuHessenbergReduction(IMatrix A) {
-        int n = A.getRows();
-        IMatrix H = A.copy();
-        IMatrix Q = IMatrix.eye(n);
+    private static Tuple2<IMatrix<Float>, IMatrix<Float>> gpuHessenbergReduction(IMatrix<Float> A) {
+        int n = A.rows();
+        IMatrix<Float> H = A.copy();
+        IMatrix<Float> Q = Linalg.eye(n,Float.class);
         
         // 对每一列进行Householder变换
         for (int k = 0; k < n - 2; k++) {
             // 计算Householder向量
-            IVector x = H.getColunm(k).slice(k + 1, n);
+            IVector<Float> x = H.getColumn(k).slice(k + 1, n);
             
-            float norm = x.norm2();
+            Float norm = x.norm2();
             if (norm < 1e-10) continue;
             
             // 构造Householder向量
-            IVector v = x.copy();
+            IVector<Float> v = x.copy();
             v.set(0, v.get(0) + Math.signum(v.get(0)) * norm);
             v = v.divideByScalar(v.norm2());
             
             // 构造Householder矩阵 P = I - 2*v*v^T
-            IMatrix outer = IMatrix.zeros(n - k - 1, n - k - 1);
+            IMatrix<Float> outer = Linalg.zeros(n - k - 1, n - k - 1,Float.class);
             for (int i = 0; i < n - k - 1; i++) {
                 for (int j = 0; j < n - k - 1; j++) {
                     outer.set(i, j, v.get(i) * v.get(j));
                 }
             }
-            IMatrix P = IMatrix.eye(n - k - 1).sub(outer.mmul(2.0f));
+            IMatrix<Float> P = Linalg.eye(n - k - 1,Float.class).sub(outer.mmul(2.0f));
             
             // 应用变换到H的子矩阵
-            IMatrix subH = H.subMatrix(k + 1, n, k, n);
-            IMatrix PsubH = P.mmul(subH);
+            IMatrix<Float> subH = H.subMatrix(k + 1, n, k, n);
+            IMatrix<Float> PsubH = P.mmul(subH);
             H.setSubMatrix(k + 1, n, k, n, PsubH);
             
             // 更新Q
-            IMatrix subQ = Q.subMatrix(0, n, k + 1, n);
-            IMatrix subQP = subQ.mmul(P);
+            IMatrix<Float> subQ = Q.subMatrix(0, n, k + 1, n);
+            IMatrix<Float> subQP = subQ.mmul(P);
             Q.setSubMatrix(0, n, k + 1, n, subQP);
         }
         
@@ -1725,25 +1729,25 @@ public class GPUComputeUtils {
     /**
      * GPU三对角矩阵QR算法 - 带Wilkinson位移
      */
-    private static Tuple2<IVector, IMatrix> gpuQRAlgorithmForTridiagonal(IMatrix T) {
-        int n = T.getRows();
-        IMatrix A = T.copy();
-        IMatrix eigenvectors = IMatrix.eye(n);
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuQRAlgorithmForTridiagonal(IMatrix<Float> T) {
+        int n = T.rows();
+        IMatrix<Float> A = T.copy();
+        IMatrix<Float> eigenvectors = Linalg.eye(n,Float.class);
         
         final int maxIterations = 50;
-        final float tolerance = 1e-8f;
-        float previousOffDiagonalSum = Float.MAX_VALUE;
+        final Float tolerance = 1e-8f;
+        Float previousOffDiagonalSum = Float.MAX_VALUE;
         int stagnationCount = 0;
         
         // QR迭代 - 带自适应收敛检查
         for (int iter = 0; iter < maxIterations; iter++) {
             // 对三对角矩阵进行QR分解
-            Tuple2<IMatrix, IMatrix> qr = gpuQRDecompositionTridiagonal(A);
-            IMatrix Q = qr._1;
-            IMatrix R = qr._2;
+            Tuple2<IMatrix<Float>, IMatrix<Float>> qr = gpuQRDecompositionTridiagonal(A);
+            IMatrix<Float> Q = qr._1;
+            IMatrix<Float> R = qr._2;
             
             // A = R * Q
-            A = R.mmul(Q);
+            A = (IMatrix<Float>)R.mmul(Q);
             
             // 更新特征向量
             eigenvectors = eigenvectors.mmul(Q);
@@ -1776,7 +1780,7 @@ public class GPUComputeUtils {
         }
         
         // 提取特征值（对角线元素）
-        IVector eigenvalues = A.diag();
+        IVector<Float> eigenvalues = A.diag();
         
         // 按特征值大小降序排列
         gpuSortEigenvaluesAndVectors(eigenvalues, eigenvectors);
@@ -1787,25 +1791,25 @@ public class GPUComputeUtils {
     /**
      * GPU海森伯格矩阵QR算法 - 带Wilkinson位移
      */
-    private static Tuple2<IVector, IMatrix> gpuQRAlgorithmForHessenberg(IMatrix H) {
-        int n = H.getRows();
-        IMatrix A = H.copy();
-        IMatrix eigenvectors = IMatrix.eye(n);
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuQRAlgorithmForHessenberg(IMatrix<Float> H) {
+        int n = H.rows();
+        IMatrix<Float> A = H.copy();
+        IMatrix<Float> eigenvectors = Linalg.eye(n,Float.class);
         
         final int maxIterations = 100;
-        final float tolerance = 1e-6f;
-        float previousOffDiagonalSum = Float.MAX_VALUE;
+        final Float tolerance = 1e-6f;
+        Float previousOffDiagonalSum = Float.MAX_VALUE;
         int stagnationCount = 0;
         
         // QR迭代 - 带自适应收敛检查
         for (int iter = 0; iter < maxIterations; iter++) {
             // QR分解
-            Tuple2<IMatrix, IMatrix> qr = A.qr();
-            IMatrix Q = qr._1;
-            IMatrix R = qr._2;
+            var qr = A.qr();
+            IMatrix<Float> Q = (IMatrix<Float>)qr._1;
+            IMatrix<Float> R = (IMatrix<Float>)qr._2;
             
             // A = R * Q
-            A = R.mmul(Q);
+            A = (IMatrix<Float>)R.mmul(Q);
             
             // 更新特征向量
             eigenvectors = eigenvectors.mmul(Q);
@@ -1842,7 +1846,7 @@ public class GPUComputeUtils {
         }
         
         // 提取特征值（对角线元素）
-        IVector eigenvalues = A.diag();
+        IVector<Float> eigenvalues = A.diag();
         
         // 按特征值大小降序排列
         gpuSortEigenvaluesAndVectors(eigenvalues, eigenvectors);
@@ -1853,34 +1857,34 @@ public class GPUComputeUtils {
     /**
      * GPU三对角矩阵QR分解
      */
-    private static Tuple2<IMatrix, IMatrix> gpuQRDecompositionTridiagonal(IMatrix T) {
-        int n = T.getRows();
-        IMatrix Q = IMatrix.eye(n);
-        IMatrix R = T.copy();
+    private static Tuple2<IMatrix<Float>, IMatrix<Float>> gpuQRDecompositionTridiagonal(IMatrix<Float> T) {
+        int n = T.rows();
+        IMatrix<Float> Q = Linalg.eye(n,Float.class);
+        IMatrix<Float> R = T.copy();
         
         // 对三对角矩阵进行Givens旋转
         for (int i = 0; i < n - 1; i++) {
             if (Math.abs(R.get(i + 1, i)) > 1e-10) {
                 // 计算Givens旋转参数
-                float a = R.get(i, i);
-                float b = R.get(i + 1, i);
-                float r = (float) Math.sqrt(a * a + b * b);
+                Float a = R.get(i, i);
+                Float b = R.get(i + 1, i);
+                Float r = (float) Math.sqrt(a * a + b * b);
                 
-                float c = a / r;
-                float s = -b / r;
+                Float c = a / r;
+                Float s = -b / r;
                 
                 // 应用Givens旋转到R
                 for (int j = i; j < n; j++) {
-                    float temp1 = R.get(i, j);
-                    float temp2 = R.get(i + 1, j);
+                    Float temp1 = R.get(i, j);
+                    Float temp2 = R.get(i + 1, j);
                     R.set(i, j, c * temp1 - s * temp2);
                     R.set(i + 1, j, s * temp1 + c * temp2);
                 }
                 
                 // 应用Givens旋转到Q
                 for (int j = 0; j < n; j++) {
-                    float temp1 = Q.get(j, i);
-                    float temp2 = Q.get(j, i + 1);
+                    Float temp1 = Q.get(j, i);
+                    Float temp2 = Q.get(j, i + 1);
                     Q.set(j, i, c * temp1 - s * temp2);
                     Q.set(j, i + 1, s * temp1 + c * temp2);
                 }
@@ -1893,7 +1897,7 @@ public class GPUComputeUtils {
     /**
      * GPU按特征值大小排序特征值和特征向量
      */
-    private static void gpuSortEigenvaluesAndVectors(IVector eigenvalues, IMatrix eigenvectors) {
+    private static void gpuSortEigenvaluesAndVectors(IVector<Float> eigenvalues, IMatrix<Float> eigenvectors) {
         int n = eigenvalues.length();
         
         // 使用选择排序（简单但稳定）
@@ -1907,13 +1911,13 @@ public class GPUComputeUtils {
             
             if (maxIdx != i) {
                 // 交换特征值
-                float tempEigen = eigenvalues.get(i);
+                Float tempEigen = eigenvalues.get(i);
                 eigenvalues.set(i, eigenvalues.get(maxIdx));
                 eigenvalues.set(maxIdx, tempEigen);
                 
                 // 交换对应的特征向量列
-                for (int k = 0; k < eigenvectors.getRows(); k++) {
-                    float tempVec = eigenvectors.get(k, i);
+                for (int k = 0; k < eigenvectors.rows(); k++) {
+                    Float tempVec = eigenvectors.get(k, i);
                     eigenvectors.set(k, i, eigenvectors.get(k, maxIdx));
                     eigenvectors.set(k, maxIdx, tempVec);
                 }
@@ -1925,36 +1929,40 @@ public class GPUComputeUtils {
      * GPU优化的奇异值分解
      * 使用双对角化和分治算法
      */
-    public static Tuple3<IMatrix, IVector, IMatrix> gpuSVD(IMatrix A) {
-        int dataSize = A.getRows() * A.getColumns();
+    public static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> gpuSVD(IMatrix<Float> A) {
+        int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
         if (dataSize < GPU_THRESHOLD) {
             logCPUFallback("SVD分解", "数据量小于阈值，使用CPU");
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
         
         if (!gpuAvailable) {
             logCPUFallback("SVD分解", "GPU不可用");
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
         
-        logGPUOperation("SVD分解", "维度: " + A.getRows() + "x" + A.getColumns());
+        logGPUOperation("SVD分解", "维度: " + A.rows() + "x" + A.cols());
         
         try {
-            int m = A.getRows();
-            int n = A.getColumns();
+            int m = A.rows();
+            int n = A.cols();
             long complexity = (long) m * n * Math.min(m, n);
             
             // 根据矩阵大小选择最优算法
             if (complexity < MEDIUM_MATRIX_THRESHOLD) {
                 // 中等大小矩阵，直接使用CPU的高效实现
                 logCPUFallback("SVD分解", "使用CPU优化算法获得更好性能");
-                return A.svd();
+                var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
             } else if (complexity < GPU_THRESHOLD * 10) {
                 // 大矩阵使用传统SVD（相对简单，GPU优化效果有限）
                 logCPUFallback("SVD分解", "SVD算法复杂度较高，CPU实现更稳定");
-                return A.svd();
+                var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
             } else {
                 // 超大矩阵可以尝试GPU加速某些步骤
                 return gpuOptimizedSVD(A);
@@ -1962,7 +1970,8 @@ public class GPUComputeUtils {
             
         } catch (Exception e) {
             logCPUFallback("SVD分解", "GPU执行失败: " + e.getMessage());
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
     
@@ -1973,76 +1982,78 @@ public class GPUComputeUtils {
     /**
      * GPU优化的SVD算法 - 使用分治算法
      */
-    private static Tuple3<IMatrix, IVector, IMatrix> gpuOptimizedSVD(IMatrix A) {
-        int m = A.getRows();
-        int n = A.getColumns();
+    private static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> gpuOptimizedSVD(IMatrix<Float> A) {
+        int m = A.rows();
+        int n = A.cols();
         int rank = Math.min(m, n);
         
         // 双对角化
-        Tuple3<IMatrix, IMatrix, IMatrix> bidiagResult = gpuBidiagonalization(A);
-        IMatrix B = bidiagResult._1;  // 双对角矩阵
-        IMatrix U = bidiagResult._2;  // 左变换矩阵
-        IMatrix V = bidiagResult._3;  // 右变换矩阵
+        Tuple3<IMatrix<Float>, IMatrix<Float>, IMatrix<Float>> bidiagResult = gpuBidiagonalization(A);
+        IMatrix<Float> B = bidiagResult._1;  // 双对角矩阵
+        IMatrix<Float> U = bidiagResult._2;  // 左变换矩阵
+        IMatrix<Float> V = bidiagResult._3;  // 右变换矩阵
         
         // 对双对角矩阵应用分治算法
-        Tuple2<IVector, IMatrix> svdResult = gpuDivideAndConquerSVD(B);
-        IVector singularValues = svdResult._1;
-        IMatrix Q = svdResult._2;
+        Tuple2<IVector<Float>, IMatrix<Float>> svdResult = gpuDivideAndConquerSVD(B);
+        IVector<Float> singularValues = svdResult._1;
+        IMatrix<Float> Q = svdResult._2;
         
         // 计算最终的U和V
-        IMatrix finalU = U.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
-        IMatrix finalV = V.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
+        IMatrix<Float> finalU = U.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
+        IMatrix<Float> finalV = V.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
         
-        return new Tuple3<>(finalU, singularValues, finalV.transposeNew());
+        return new Tuple3<>(finalU, singularValues, (IMatrix<Float>)finalV.transposeNew());
     }
     
     /**
      * GPU双对角化SVD算法
      */
-    private static Tuple3<IMatrix, IVector, IMatrix> gpuBidiagonalSVD(IMatrix A) {
-        int m = A.getRows();
-        int n = A.getColumns();
+    private static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> gpuBidiagonalSVD(IMatrix<Float> A) {
+        int m = A.rows();
+        int n = A.cols();
         
         // 双对角化
-        Tuple3<IMatrix, IMatrix, IMatrix> bidiagResult = gpuBidiagonalization(A);
-        IMatrix B = bidiagResult._1;  // 双对角矩阵
-        IMatrix U = bidiagResult._2;  // 左变换矩阵
-        IMatrix V = bidiagResult._3;  // 右变换矩阵
+        Tuple3<IMatrix<Float>, IMatrix<Float>, IMatrix<Float>> bidiagResult = gpuBidiagonalization(A);
+        IMatrix<Float> B = bidiagResult._1;  // 双对角矩阵
+        IMatrix<Float> U = bidiagResult._2;  // 左变换矩阵
+        IMatrix<Float> V = bidiagResult._3;  // 右变换矩阵
         
         // 对双对角矩阵应用QR算法
-        Tuple2<IVector, IMatrix> svdResult = gpuQRAlgorithmForBidiagonal(B);
-        IVector singularValues = svdResult._1;
-        IMatrix Q = svdResult._2;
+        Tuple2<IVector<Float>, IMatrix<Float>> svdResult = gpuQRAlgorithmForBidiagonal(B);
+        IVector<Float> singularValues = svdResult._1;
+        IMatrix<Float> Q = svdResult._2;
         
         // 计算最终的U和V
         int rank = Math.min(m, n);
-        IMatrix finalU = U.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
-        IMatrix finalV = V.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
+        IMatrix<Float> finalU = U.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
+        IMatrix<Float> finalV = V.mmul(Q.subMatrix(0, Math.min(m, n), 0, rank));
         
-        return new Tuple3<>(finalU, singularValues, finalV.transposeNew());
+        return new Tuple3<>(finalU, singularValues, (IMatrix<Float>)finalV.transposeNew());
     }
     
     /**
      * GPU传统SVD算法（优化版本）
      */
-    private static Tuple3<IMatrix, IVector, IMatrix> gpuTraditionalSVD(IMatrix A) {
+    private static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> gpuTraditionalSVD(IMatrix<Float> A) {
         
         // 计算A^T * A
-        IMatrix ATA = A.transposeNew().mmul(A);
+        IMatrix<Float> ATA = (IMatrix<Float>)A.transposeNew().mmul(A);
         
         // 对A^T * A进行特征分解得到V和奇异值的平方
-        Tuple2<IVector, IMatrix> eigenResult = gpuEigenDecomposition(ATA);
-        IVector eigenValues = eigenResult._1;
-        IMatrix V = eigenResult._2;
+        Tuple2<IVector<Float>, IMatrix<Float>> eigenResult = gpuEigenDecomposition(ATA);
+        IVector<Float> eigenValues = eigenResult._1;
+        IMatrix<Float> V = eigenResult._2;
         
         // 计算奇异值（特征值的平方根）
-        IVector singularValues = eigenValues.sqrt();
+        IVector<Float> singularValues = eigenValues.sqrt();
         
         // 按奇异值大小降序排列
         gpuSortSingularValues(singularValues);
-        
+        var rec = singularValues.reciprocal().toFloatArray();
+        IMatrix<Float> diag = Linalg.diag(rec);
+        var s1 = A.mmul(V);
         // 计算U = A * V * S^(-1)
-        IMatrix U = A.mmul(V).mmul(IMatrix.diag(singularValues.reciprocal()));
+        IMatrix<Float> U = s1.mmul(diag);
         
         return new Tuple3<>(U, singularValues, V.transposeNew());
     }
@@ -2080,71 +2091,71 @@ public class GPUComputeUtils {
      * @param A 输入矩阵（m×n）
      * @return 包含左变换矩阵U1、双对角矩阵B、右变换矩阵V1的元组
      */
-    private static Tuple3<IMatrix, IMatrix, IMatrix> gpuBidiagonalization(IMatrix A) {
-        int m = A.getRows();
-        int n = A.getColumns();
+    private static Tuple3<IMatrix<Float>, IMatrix<Float>, IMatrix<Float>> gpuBidiagonalization(IMatrix<Float> A) {
+        int m = A.rows();
+        int n = A.cols();
         int minDim = Math.min(m, n);
         
-        IMatrix B = A.copy();
-        IMatrix U = IMatrix.eye(m);
-        IMatrix V = IMatrix.eye(n);
+        IMatrix<Float> B = A.copy();
+        IMatrix<Float> U = Linalg.eye(m,Float.class);
+        IMatrix<Float> V = Linalg.eye(n,Float.class);
         
         // 双对角化过程
         for (int k = 0; k < minDim; k++) {
             // 对第k列进行Householder变换（左变换）
             if (k < m - 1) {
-                IVector x = B.getColunm(k).slice(k, m);
-                float norm = x.norm2();
+                IVector<Float> x = B.getColumn(k).slice(k, m);
+                Float norm = x.norm2();
                 
                 if (norm > 1e-10) {
-                    IVector v = x.copy();
+                    IVector<Float> v = x.copy();
                     v.set(0, v.get(0) + Math.signum(v.get(0)) * norm);
                     v = v.divideByScalar(v.norm2());
                     
                     // 计算外积 v*v^T
-                    IMatrix outer = IMatrix.zeros(m - k, m - k);
+                    IMatrix<Float> outer = Linalg.zeros(m - k, m - k,Float.class);
                     for (int i = 0; i < m - k; i++) {
                         for (int j = 0; j < m - k; j++) {
                             outer.set(i, j, v.get(i) * v.get(j));
                         }
                     }
-                    IMatrix P = IMatrix.eye(m - k).sub(outer.mmul(2.0f));
+                    IMatrix<Float> P = Linalg.eye(m - k,Float.class).sub(outer.mmul(2.0f));
                     
-                    IMatrix subB = B.subMatrix(k, m, k, n);
-                    IMatrix PsubB = P.mmul(subB);
+                    IMatrix<Float> subB = B.subMatrix(k, m, k, n);
+                    IMatrix<Float> PsubB = P.mmul(subB);
                     B.setSubMatrix(k, m, k, n, PsubB);
                     
-                    IMatrix subU = U.subMatrix(0, m, k, m);
-                    IMatrix subUP = subU.mmul(P);
+                    IMatrix<Float> subU = U.subMatrix(0, m, k, m);
+                    IMatrix<Float> subUP = subU.mmul(P);
                     U.setSubMatrix(0, m, k, m, subUP);
                 }
             }
             
             // 对第k行进行Householder变换（右变换）
             if (k < n - 2) {
-                IVector x = B.getRow(k).slice(k + 1, n);
-                float norm = x.norm2();
+                IVector<Float> x = B.getRow(k).slice(k + 1, n);
+                Float norm = x.norm2();
                 
                 if (norm > 1e-10) {
-                    IVector v = x.copy();
+                    IVector<Float> v = x.copy();
                     v.set(0, v.get(0) + Math.signum(v.get(0)) * norm);
                     v = v.divideByScalar(v.norm2());
                     
                     // 计算外积 v*v^T
-                    IMatrix outer = IMatrix.zeros(n - k - 1, n - k - 1);
+                    IMatrix<Float> outer = Linalg.zeros(n - k - 1, n - k - 1,Float.class);
                     for (int i = 0; i < n - k - 1; i++) {
                         for (int j = 0; j < n - k - 1; j++) {
                             outer.set(i, j, v.get(i) * v.get(j));
                         }
                     }
-                    IMatrix P = IMatrix.eye(n - k - 1).sub(outer.mmul(2.0f));
+                    IMatrix<Float> P = Linalg.eye(n - k - 1,Float.class).sub(outer.mmul(2.0f));
                     
-                    IMatrix subB = B.subMatrix(k, m, k + 1, n);
-                    IMatrix subBP = subB.mmul(P);
+                    IMatrix<Float> subB = B.subMatrix(k, m, k + 1, n);
+                    IMatrix<Float> subBP = subB.mmul(P);
                     B.setSubMatrix(k, m, k + 1, n, subBP);
                     
-                    IMatrix subV = V.subMatrix(0, n, k + 1, n);
-                    IMatrix subVP = subV.mmul(P);
+                    IMatrix<Float> subV = V.subMatrix(0, n, k + 1, n);
+                    IMatrix<Float> subVP = subV.mmul(P);
                     V.setSubMatrix(0, n, k + 1, n, subVP);
                 }
             }
@@ -2156,14 +2167,14 @@ public class GPUComputeUtils {
     /**
      * GPU分治算法处理双对角矩阵
      */
-    private static Tuple2<IVector, IMatrix> gpuDivideAndConquerSVD(IMatrix B) {
-        int m = B.getRows();
-        int n = B.getColumns();
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuDivideAndConquerSVD(IMatrix<Float> B) {
+        int m = B.rows();
+        int n = B.cols();
         int minDim = Math.min(m, n);
         
         // 提取双对角矩阵的对角线和次对角线
-        IVector alpha = B.diag();
-        IVector beta = IVector.zeros(minDim - 1);
+        IVector<Float> alpha = B.diag();
+        IVector<Float> beta = Linalg.zeros(minDim - 1,Float.class);
         
         for (int i = 0; i < minDim - 1; i++) {
             beta.set(i, B.get(i, i + 1));
@@ -2176,13 +2187,13 @@ public class GPUComputeUtils {
     /**
      * GPU分治算法处理双对角矩阵
      */
-    private static Tuple2<IVector, IMatrix> gpuDivideAndConquerBidiagonal(IVector alpha, IVector beta, int start, int end) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuDivideAndConquerBidiagonal(IVector<Float> alpha, IVector<Float> beta, int start, int end) {
         int n = end - start + 1;
         
         if (n == 1) {
             // 基本情况：1x1矩阵
-            IVector singularValues = IVector.of(Math.abs(alpha.get(start)));
-            IMatrix Q = IMatrix.eye(1);
+            IVector<Float> singularValues = Linalg.vector(Math.abs(alpha.get(start)));
+            IMatrix<Float> Q = Linalg.eye(1,Float.class);
             return new Tuple2<>(singularValues, Q);
         } else if (n == 2) {
             // 基本情况：2x2矩阵
@@ -2192,8 +2203,8 @@ public class GPUComputeUtils {
             int mid = start + n / 2;
             
             // 分解为两个子问题
-            Tuple2<IVector, IMatrix> leftResult = gpuDivideAndConquerBidiagonal(alpha, beta, start, mid - 1);
-            Tuple2<IVector, IMatrix> rightResult = gpuDivideAndConquerBidiagonal(alpha, beta, mid, end);
+            Tuple2<IVector<Float>, IMatrix<Float>> leftResult = gpuDivideAndConquerBidiagonal(alpha, beta, start, mid - 1);
+            Tuple2<IVector<Float>, IMatrix<Float>> rightResult = gpuDivideAndConquerBidiagonal(alpha, beta, mid, end);
             
             // 合并结果
             return gpuMergeBidiagonalResults(leftResult, rightResult);
@@ -2203,15 +2214,15 @@ public class GPUComputeUtils {
     /**
      * GPU解决2x2双对角矩阵的SVD
      */
-    private static Tuple2<IVector, IMatrix> gpuSolve2x2Bidiagonal(float a, float b, float c) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuSolve2x2Bidiagonal(Float a, Float b, Float c) {
         // 计算特征值（奇异值的平方）
-        float trace = a + c;
-        float det = a * c;
-        float discriminant = trace * trace - 4 * det;
+        Float trace = a + c;
+        Float det = a * c;
+        Float discriminant = trace * trace - 4 * det;
         
-        float lambda1, lambda2;
+        Float lambda1, lambda2;
         if (discriminant >= 0) {
-            float sqrtDisc = (float) Math.sqrt(discriminant);
+            Float sqrtDisc = (float) Math.sqrt(discriminant);
             lambda1 = (trace + sqrtDisc) / 2.0f;
             lambda2 = (trace - sqrtDisc) / 2.0f;
         } else {
@@ -2219,26 +2230,26 @@ public class GPUComputeUtils {
             lambda2 = trace / 2.0f;
         }
         
-        IVector singularValues = IVector.of(
+        IVector<Float> singularValues = Linalg.vector(
             (float) Math.sqrt(Math.max(0, lambda1)),
             (float) Math.sqrt(Math.max(0, lambda2))
         );
         
         // 计算特征向量
-        IMatrix Q = IMatrix.eye(2);
+        IMatrix<Float> Q = Linalg.eye(2,Float.class);
         if (Math.abs(lambda1 - lambda2) > 1e-10) {
             // 不同的特征值
-            float v1x = a - lambda1;
-            float v1y = b;
-            float norm1 = (float) Math.sqrt(v1x * v1x + v1y * v1y);
+            Float v1x = a - lambda1;
+            Float v1y = b;
+            Float norm1 = (float) Math.sqrt(v1x * v1x + v1y * v1y);
             if (norm1 > 1e-10) {
                 Q.set(0, 0, v1x / norm1);
                 Q.set(1, 0, v1y / norm1);
             }
             
-            float v2x = a - lambda2;
-            float v2y = b;
-            float norm2 = (float) Math.sqrt(v2x * v2x + v2y * v2y);
+            Float v2x = a - lambda2;
+            Float v2y = b;
+            Float norm2 = (float) Math.sqrt(v2x * v2x + v2y * v2y);
             if (norm2 > 1e-10) {
                 Q.set(0, 1, v2x / norm2);
                 Q.set(1, 1, v2y / norm2);
@@ -2251,18 +2262,18 @@ public class GPUComputeUtils {
     /**
      * GPU合并两个双对角SVD结果
      */
-    private static Tuple2<IVector, IMatrix> gpuMergeBidiagonalResults(Tuple2<IVector, IMatrix> left, Tuple2<IVector, IMatrix> right) {
-        IVector leftSV = left._1;
-        IVector rightSV = right._1;
-        IMatrix leftQ = left._2;
-        IMatrix rightQ = right._2;
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuMergeBidiagonalResults(Tuple2<IVector<Float>, IMatrix<Float>> left, Tuple2<IVector<Float>, IMatrix<Float>> right) {
+        IVector<Float> leftSV = left._1;
+        IVector<Float> rightSV = right._1;
+        IMatrix<Float> leftQ = left._2;
+        IMatrix<Float> rightQ = right._2;
         
         int leftSize = leftSV.length();
         int rightSize = rightSV.length();
         int totalSize = leftSize + rightSize;
         
         // 合并奇异值
-        IVector mergedSV = IVector.zeros(totalSize);
+        IVector<Float> mergedSV = Linalg.zeros(totalSize,Float.class);
         for (int i = 0; i < leftSize; i++) {
             mergedSV.set(i, leftSV.get(i));
         }
@@ -2271,7 +2282,7 @@ public class GPUComputeUtils {
         }
         
         // 合并Q矩阵
-        IMatrix mergedQ = IMatrix.zeros(totalSize, totalSize);
+        IMatrix<Float> mergedQ = Linalg.zeros(totalSize, totalSize,Float.class);
         for (int i = 0; i < leftSize; i++) {
             for (int j = 0; j < leftSize; j++) {
                 mergedQ.set(i, j, leftQ.get(i, j));
@@ -2292,42 +2303,42 @@ public class GPUComputeUtils {
     /**
      * GPU对双对角矩阵应用QR算法
      */
-    private static Tuple2<IVector, IMatrix> gpuQRAlgorithmForBidiagonal(IMatrix B) {
-        int m = B.getRows();
-        int n = B.getColumns();
+    private static Tuple2<IVector<Float>, IMatrix<Float>> gpuQRAlgorithmForBidiagonal(IMatrix<Float> B) {
+        int m = B.rows();
+        int n = B.cols();
         int minDim = Math.min(m, n);
         
         // 提取双对角矩阵的对角线和次对角线
-        IVector alpha = B.diag();
-        IVector beta = IVector.zeros(minDim - 1);
+        IVector<Float> alpha = B.diag();
+        IVector<Float> beta = Linalg.zeros(minDim - 1,Float.class);
         
         for (int i = 0; i < minDim - 1; i++) {
             beta.set(i, B.get(i, i + 1));
         }
         
         // 初始化Q为单位矩阵
-        IMatrix Q = IMatrix.eye(minDim);
+        IMatrix<Float> Q = Linalg.eye(minDim,Float.class);
         
         final int maxIterations = 100;
-        final float tolerance = 1e-8f;
+        final Float tolerance = 1e-8f;
         
         // QR迭代
         for (int iter = 0; iter < maxIterations; iter++) {
             // 检查收敛性
-            float offDiagonalSum = beta.norm2();
+            Float offDiagonalSum = beta.norm2();
             
             if (offDiagonalSum < tolerance) {
                 break;
             }
             
             // 对双对角矩阵进行QR分解
-            Tuple2<IVector, IVector> qrResult = gpuQRDecompositionBidiagonal(alpha, beta);
+            Tuple2<IVector<Float>, IVector<Float>> qrResult = gpuQRDecompositionBidiagonal(alpha, beta);
             alpha = qrResult._1;
             beta = qrResult._2;
         }
         
         // 计算奇异值
-        IVector singularValues = alpha.abs();
+        IVector<Float> singularValues = alpha.abs();
         
         // 按奇异值大小降序排列
         gpuSortSingularValues(singularValues);
@@ -2339,14 +2350,14 @@ public class GPUComputeUtils {
      * GPU双对角矩阵的QR分解 - 修复版本
      * 每次只消除一个次对角线元素，避免一次性消除所有
      */
-    private static Tuple2<IVector, IVector> gpuQRDecompositionBidiagonal(IVector alpha, IVector beta) {
+    private static Tuple2<IVector<Float>, IVector<Float>> gpuQRDecompositionBidiagonal(IVector<Float> alpha, IVector<Float> beta) {
         int n = alpha.length();
-        IVector newAlpha = alpha.copy();
-        IVector newBeta = beta.copy();
+        IVector<Float> newAlpha = alpha.copy();
+        IVector<Float> newBeta = beta.copy();
         
         // 找到最大的次对角线元素进行消除
         int maxIndex = 0;
-        float maxValue = Math.abs(newBeta.get(0));
+        Float maxValue = Math.abs(newBeta.get(0));
         for (int i = 1; i < n - 1; i++) {
             if (Math.abs(newBeta.get(i)) > maxValue) {
                 maxValue = Math.abs(newBeta.get(i));
@@ -2359,13 +2370,13 @@ public class GPUComputeUtils {
             int i = maxIndex;
             
             // 计算Givens旋转参数
-            float a = newAlpha.get(i);
-            float b = newBeta.get(i);
-            float r = (float) Math.sqrt(a * a + b * b);
+            Float a = newAlpha.get(i);
+            Float b = newBeta.get(i);
+            Float r = (float) Math.sqrt(a * a + b * b);
             
             if (r >= 1e-10) {
-                float c = a / r;
-                // float s = -b / r; // 在双对角矩阵QR分解中不需要s
+                Float c = a / r;
+                // Float s = -b / r; // 在双对角矩阵QR分解中不需要s
                 
                 // 应用Givens旋转
                 newAlpha.set(i, r);
@@ -2388,7 +2399,7 @@ public class GPUComputeUtils {
     /**
      * GPU快速排序奇异值
      */
-    private static void gpuSortSingularValues(IVector values) {
+    private static void gpuSortSingularValues(IVector<Float> values) {
         int n = values.length();
         gpuQuickSortSingularValues(values, 0, n - 1);
     }
@@ -2396,7 +2407,7 @@ public class GPUComputeUtils {
     /**
      * GPU快速排序奇异值
      */
-    private static void gpuQuickSortSingularValues(IVector values, int low, int high) {
+    private static void gpuQuickSortSingularValues(IVector<Float> values, int low, int high) {
         if (low < high) {
             int pi = gpuPartitionSingularValues(values, low, high);
             gpuQuickSortSingularValues(values, pi + 1, high);
@@ -2407,8 +2418,8 @@ public class GPUComputeUtils {
     /**
      * GPU快速排序的分区函数（奇异值）
      */
-    private static int gpuPartitionSingularValues(IVector values, int low, int high) {
-        float pivot = values.get(high);
+    private static int gpuPartitionSingularValues(IVector<Float> values, int low, int high) {
+        Float pivot = values.get(high);
         int i = low - 1;
         
         for (int j = low; j < high; j++) {
@@ -2424,8 +2435,8 @@ public class GPUComputeUtils {
     /**
      * GPU交换奇异值
      */
-    private static void gpuSwapSingularValues(IVector values, int i, int j) {
-        float temp = values.get(i);
+    private static void gpuSwapSingularValues(IVector<Float> values, int i, int j) {
+        Float temp = values.get(i);
         values.set(i, values.get(j));
         values.set(j, temp);
     }
@@ -2499,23 +2510,24 @@ public class GPUComputeUtils {
      * 混合CPU-GPU方法 - 优化的特征分解
      * 根据矩阵大小智能选择最优算法
      */
-    public static Tuple2<IVector, IMatrix> optimizedEigenDecomposition(IMatrix A) {
+    public static Tuple2<IVector<Float>, IMatrix<Float>> optimizedEigenDecomposition(IMatrix<Float> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        if (A.getRows() != A.getColumns()) {
+        if (A.rows() != A.cols()) {
             throw new IllegalArgumentException("特征分解需要方阵");
         }
         
-        int n = A.getRows();
+        int n = A.rows();
         long complexity = (long) n * n * n;
         
         // 混合CPU-GPU策略
         if (complexity < GPU_THRESHOLD) {
             // 小数据使用CPU，无条件避免GPU访问
             logCPUFallback("优化特征分解", "数据量小于阈值，使用CPU");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         } else if (complexity < MEDIUM_MATRIX_THRESHOLD) {
             // 中等矩阵使用混合方法
             return hybridSymmetricEigenDecomposition(A);
@@ -2525,31 +2537,34 @@ public class GPUComputeUtils {
                 return gpuEigenDecomposition(A);
             } catch (Exception e) {
                 logCPUFallback("优化特征分解", "GPU失败: " + e.getMessage());
-                return A.eigen();
+                var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
             }
         } else {
             // 默认使用CPU
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
     }
     
     /**
      * 混合CPU-GPU方法 - 优化的SVD分解
      */
-    public static Tuple3<IMatrix, IVector, IMatrix> optimizedSVD(IMatrix A) {
+    public static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> optimizedSVD(IMatrix<Float> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        int m = A.getRows();
-        int n = A.getColumns();
+        int m = A.rows();
+        int n = A.cols();
         long complexity = (long) m * n * Math.min(m, n);
         
         // 混合CPU-GPU策略
         if (complexity < GPU_THRESHOLD) {
             // 小数据使用CPU，无条件避免GPU访问
             logCPUFallback("优化SVD分解", "数据量小于阈值，使用CPU");
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         } else if (complexity < MEDIUM_MATRIX_THRESHOLD) {
             // 中等矩阵使用混合方法
             return hybridSVD(A);
@@ -2559,23 +2574,25 @@ public class GPUComputeUtils {
                 return gpuSVD(A);
             } catch (Exception e) {
                 logCPUFallback("优化SVD分解", "GPU失败: " + e.getMessage());
-                return A.svd();
+                var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
             }
         } else {
             // 默认使用CPU
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
     
     /**
      * 批处理优化 - 多个小矩阵的特征分解
      */
-    public static List<Tuple2<IVector, IMatrix>> batchEigenDecomposition(List<IMatrix> matrices) {
+    public static List<Tuple2<IVector<Float>, IMatrix<Float>>> batchEigenDecomposition(List<IMatrix<Float>> matrices) {
         if (matrices == null || matrices.isEmpty()) {
             return new ArrayList<>();
         }
         
-        List<Tuple2<IVector, IMatrix>> results = new ArrayList<>(matrices.size());
+        List<Tuple2<IVector<Float>, IMatrix<Float>>> results = new ArrayList<>(matrices.size());
         
         // 检查是否适合批处理
         if (matrices.size() >= BATCH_SIZE_THRESHOLD && areMatricesSmall(matrices)) {
@@ -2583,7 +2600,7 @@ public class GPUComputeUtils {
             results = performBatchEigenDecomposition(matrices);
         } else {
             // 逐个处理
-            for (IMatrix matrix : matrices) {
+            for (IMatrix<Float> matrix : matrices) {
                 results.add(optimizedEigenDecomposition(matrix));
             }
         }
@@ -2594,12 +2611,12 @@ public class GPUComputeUtils {
     /**
      * 批处理优化 - 多个小矩阵的SVD分解
      */
-    public static List<Tuple3<IMatrix, IVector, IMatrix>> batchSVD(List<IMatrix> matrices) {
+    public static List<Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>>> batchSVD(List<IMatrix<Float>> matrices) {
         if (matrices == null || matrices.isEmpty()) {
             return new ArrayList<>();
         }
         
-        List<Tuple3<IMatrix, IVector, IMatrix>> results = new ArrayList<>(matrices.size());
+        List<Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>>> results = new ArrayList<>(matrices.size());
         
         // 检查是否适合批处理
         if (matrices.size() >= BATCH_SIZE_THRESHOLD && areMatricesSmall(matrices)) {
@@ -2607,7 +2624,7 @@ public class GPUComputeUtils {
             results = performBatchSVD(matrices);
         } else {
             // 逐个处理
-            for (IMatrix matrix : matrices) {
+            for (IMatrix<Float> matrix : matrices) {
                 results.add(optimizedSVD(matrix));
             }
         }
@@ -2620,82 +2637,87 @@ public class GPUComputeUtils {
     /**
      * 混合对称矩阵特征分解 - CPU预处理 + GPU计算
      */
-    private static Tuple2<IVector, IMatrix> hybridSymmetricEigenDecomposition(IMatrix A) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> hybridSymmetricEigenDecomposition(IMatrix<Float> A) {
         try {
             // 对于大矩阵，仍然直接使用CPU实现，因为特征分解的迭代性质不适合GPU
             logCPUFallback("混合对称特征分解", "特征分解算法的迭代性质更适合CPU");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         } catch (Exception e) {
             logCPUFallback("混合对称特征分解", e.getMessage());
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
     }
     
     /**
      * 混合一般矩阵特征分解 - CPU预处理 + GPU计算
      */
-    private static Tuple2<IVector, IMatrix> hybridGeneralEigenDecomposition(IMatrix A) {
+    private static Tuple2<IVector<Float>, IMatrix<Float>> hybridGeneralEigenDecomposition(IMatrix<Float> A) {
         try {
             // 对于大矩阵，仍然直接使用CPU实现，因为特征分解的迭代性质不适合GPU
             logCPUFallback("混合一般特征分解", "特征分解算法的迭代性质更适合CPU");
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         } catch (Exception e) {
             logCPUFallback("混合一般特征分解", e.getMessage());
-            return A.eigen();
+            var eigen = A.eigen();
+            return new Tuple2(eigen._1,eigen._2);
         }
     }
     
     /**
      * 混合SVD分解 - CPU预处理 + GPU计算
      */
-    private static Tuple3<IMatrix, IVector, IMatrix> hybridSVD(IMatrix A) {
+    private static Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> hybridSVD(IMatrix<Float> A) {
         try {
             // CPU预处理：双对角化
-            Tuple3<IMatrix, IMatrix, IMatrix> preprocessing = cpuBidiagonalization(A);
-            IMatrix B = preprocessing._1;
-            IMatrix U = preprocessing._2;
-            IMatrix V = preprocessing._3;
+            Tuple3<IMatrix<Float>, IMatrix<Float>, IMatrix<Float>> preprocessing = cpuBidiagonalization(A);
+            IMatrix<Float> B = preprocessing._1;
+            IMatrix<Float> U = preprocessing._2;
+            IMatrix<Float> V = preprocessing._3;
             
             // GPU加速：奇异值计算
-            Tuple2<IVector, IMatrix> svdResult = gpuQRAlgorithmForBidiagonal(B);
-            IVector singularValues = svdResult._1;
-            IMatrix Q = svdResult._2;
+            Tuple2<IVector<Float>, IMatrix<Float>> svdResult = gpuQRAlgorithmForBidiagonal(B);
+            IVector<Float> singularValues = svdResult._1;
+            IMatrix<Float> Q = svdResult._2;
             
             // 计算最终的U和V
-            int rank = Math.min(A.getRows(), A.getColumns());
-            IMatrix finalU = U.mmul(Q.subMatrix(0, Math.min(A.getRows(), A.getColumns()), 0, rank));
-            IMatrix finalV = V.mmul(Q.subMatrix(0, Math.min(A.getRows(), A.getColumns()), 0, rank));
+            int rank = Math.min(A.rows(), A.cols());
+            IMatrix<Float> finalU = U.mmul(Q.subMatrix(0, Math.min(A.rows(), A.cols()), 0, rank));
+            IMatrix<Float> finalV = V.mmul(Q.subMatrix(0, Math.min(A.rows(), A.cols()), 0, rank));
             
             return new Tuple3<>(finalU, singularValues, finalV.transposeNew());
         } catch (Exception e) {
             logCPUFallback("混合SVD分解", e.getMessage());
-            return A.svd();
+            var svd = A.svd();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
     
     /**
      * 检查矩阵是否都是小矩阵（小于GPU阈值）
      */
-    private static boolean areMatricesSmall(List<IMatrix> matrices) {
+    private static boolean areMatricesSmall(List<IMatrix<Float>> matrices) {
         return matrices.stream()
-            .allMatch(m -> m.getRows() * m.getColumns() < GPU_THRESHOLD);
+            .allMatch(m -> m.rows() * m.cols() < GPU_THRESHOLD);
     }
     
     /**
      * 执行批处理特征分解
      */
-    private static List<Tuple2<IVector, IMatrix>> performBatchEigenDecomposition(List<IMatrix> matrices) {
-        List<Tuple2<IVector, IMatrix>> results = new ArrayList<>(matrices.size());
+    private static List<Tuple2<IVector<Float>, IMatrix<Float>>> performBatchEigenDecomposition(List<IMatrix<Float>> matrices) {
+        List<Tuple2<IVector<Float>, IMatrix<Float>>> results = new ArrayList<>(matrices.size());
         
         // 将所有矩阵数据合并为一个大批次
-        int totalSize = matrices.stream().mapToInt(m -> m.getRows() * m.getColumns()).sum();
+        int totalSize = matrices.stream().mapToInt(m -> m.rows() * m.cols()).sum();
         float[] batchData = getVectorMemory(totalSize);
         
         try {
             // 合并数据
             int offset = 0;
-            for (IMatrix matrix : matrices) {
-                float[][] data = matrix.getData();
+            for (IMatrix<Float> matrix : matrices) {
+                float[][] data = matrix.toFloatArray();
                 for (int i = 0; i < data.length; i++) {
                     System.arraycopy(data[i], 0, batchData, offset, data[i].length);
                     offset += data[i].length;
@@ -2704,7 +2726,7 @@ public class GPUComputeUtils {
             
             // GPU批处理计算
             // 这里可以优化为并行计算多个小矩阵
-            for (IMatrix matrix : matrices) {
+            for (IMatrix<Float> matrix : matrices) {
                 results.add(optimizedEigenDecomposition(matrix));
             }
             
@@ -2718,11 +2740,11 @@ public class GPUComputeUtils {
     /**
      * 执行批处理SVD分解
      */
-    private static List<Tuple3<IMatrix, IVector, IMatrix>> performBatchSVD(List<IMatrix> matrices) {
-        List<Tuple3<IMatrix, IVector, IMatrix>> results = new ArrayList<>(matrices.size());
+    private static List<Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>>> performBatchSVD(List<IMatrix<Float>> matrices) {
+        List<Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>>> results = new ArrayList<>(matrices.size());
         
         // 类似的批处理优化
-        for (IMatrix matrix : matrices) {
+        for (IMatrix<Float> matrix : matrices) {
             results.add(optimizedSVD(matrix));
         }
         
@@ -2732,7 +2754,7 @@ public class GPUComputeUtils {
     /**
      * CPU三对角化预处理
      */
-    private static Tuple2<IMatrix, IMatrix> cpuTridiagonalization(IMatrix A) {
+    private static Tuple2<IMatrix<Float>, IMatrix<Float>> cpuTridiagonalization(IMatrix<Float> A) {
         // 使用三对角化预处理，为GPU计算做准备
         return gpuTridiagonalReduction(A);
     }
@@ -2740,7 +2762,7 @@ public class GPUComputeUtils {
     /**
      * CPU双对角化预处理
      */
-    private static Tuple3<IMatrix, IMatrix, IMatrix> cpuBidiagonalization(IMatrix A) {
+    private static Tuple3<IMatrix<Float>, IMatrix<Float>, IMatrix<Float>> cpuBidiagonalization(IMatrix<Float> A) {
         // 使用双对角化预处理，为GPU计算做准备
         return gpuBidiagonalization(A);
     }
@@ -2762,11 +2784,11 @@ public class GPUComputeUtils {
      * 分解任务类
      */
     private static class DecompositionTask {
-        final IMatrix matrix;
+        final IMatrix<Float> matrix;
         final String type; // "eigen" or "svd"
         final long timestamp;
         
-        DecompositionTask(IMatrix matrix, String type) {
+        DecompositionTask(IMatrix<Float> matrix, String type) {
             this.matrix = matrix;
             this.type = type;
             this.timestamp = System.currentTimeMillis();

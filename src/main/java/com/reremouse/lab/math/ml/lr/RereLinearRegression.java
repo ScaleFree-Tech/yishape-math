@@ -1,12 +1,12 @@
 package com.reremouse.lab.math.ml.lr;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
 import com.reremouse.lab.math.optimize.RereLBFGS;
 import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 线性回归实现类
@@ -36,11 +36,11 @@ import com.reremouse.lab.util.Tuple2;
  RegressionResult result = lr.fit(featureMatrix, labelVector);
  
  // 预测新样本
- float prediction = lr.predict(newFeatureVector);
+ double prediction = lr.predict(newFeatureVector);
  
  // 获取模型权重
  IVector weights = result.getWeights();
- float loss = result.getLoss();
+ double loss = result.getLoss();
  }
  * </pre>
  * 
@@ -87,12 +87,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
     /**
      * L1正则化系数（λ₁）
      */
-    private float lambda1 = 0.0f;
+    private double lambda1 = 0.0f;
     
     /**
      * L2正则化系数（λ₂）
      */
-    private float lambda2 = 0.0f;
+    private double lambda2 = 0.0f;
     
     /**
      * 训练特征矩阵（增广后的）
@@ -132,10 +132,10 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @param includeBias 是否包含偏置项
      * @param lambda L2正则化系数（已废弃，建议使用新的构造函数）
-     * @deprecated 建议使用 {@link #RereLinearRegression(boolean, float, float)}
+     * @deprecated 建议使用 {@link #RereLinearRegression(boolean, double, double)}
      */
     @Deprecated
-    public RereLinearRegression(boolean includeBias, float lambda) {
+    public RereLinearRegression(boolean includeBias, double lambda) {
         this(includeBias, 0.0f, lambda);
     }
     
@@ -146,7 +146,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda1 L1正则化系数
      * @param lambda2 L2正则化系数
      */
-    public RereLinearRegression(boolean includeBias, float lambda1, float lambda2) {
+    public RereLinearRegression(boolean includeBias, double lambda1, double lambda2) {
         this.includeBias = includeBias;
         updateRegularizationType(lambda1, lambda2);
     }
@@ -159,7 +159,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda1 L1正则化系数
      * @param lambda2 L2正则化系数
      */
-    public RereLinearRegression(boolean includeBias, RegularizationType regularizationType, float lambda1, float lambda2) {
+    public RereLinearRegression(boolean includeBias, RegularizationType regularizationType, double lambda1, double lambda2) {
         this.includeBias = includeBias;
         this.regularizationType = regularizationType;
         this.lambda1 = lambda1;
@@ -179,7 +179,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param optimizer 自定义优化器
      */
     public RereLinearRegression(boolean includeBias, RegularizationType regularizationType, 
-                               float lambda1, float lambda2, IOptimizer optimizer) {
+                               double lambda1, double lambda2, IOptimizer optimizer) {
         this.includeBias = includeBias;
         this.regularizationType = regularizationType;
         this.lambda1 = lambda1;
@@ -225,7 +225,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda2 L2正则化系数
      * @return 推断出的正则化类型
      */
-    private RegularizationType inferRegularizationType(float lambda1, float lambda2) {
+    private RegularizationType inferRegularizationType(double lambda1, double lambda2) {
         if (lambda1 > 0 && lambda2 > 0) {
             return RegularizationType.ELASTIC_NET;
         } else if (lambda1 > 0 && lambda2 <= 0) {
@@ -243,7 +243,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda1 L1正则化系数
      * @param lambda2 L2正则化系数
      */
-    private void updateRegularizationType(float lambda1, float lambda2) {
+    private void updateRegularizationType(double lambda1, double lambda2) {
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
         this.regularizationType = inferRegularizationType(lambda1, lambda2);
@@ -293,12 +293,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector initialWeights = IVector.zeros(weightCount);
         
         // 使用优化器求解最优权重
-        Tuple2<Float, IVector> optimizationResult = optimizer.optimize(
+        Tuple2<Double, IVector> optimizationResult = optimizer.optimize(
             initialWeights, this, this);
         
         // 保存训练结果
         this.trainedWeights = optimizationResult._2;
-        float finalLoss = optimizationResult._1;
+        double finalLoss = optimizationResult._1;
         
         // 创建并返回训练结果
         RegressionResult result = new RegressionResult();
@@ -309,22 +309,22 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             int featureWeightCount = this.trainedWeights.length() - 1;
             
             // 提取特征权重（不包括偏置项）
-            float[] featureWeights = new float[featureWeightCount];
+            double[] featureWeights = new double[featureWeightCount];
             for (int i = 0; i < featureWeightCount; i++) {
-                featureWeights[i] = this.trainedWeights.getData()[i];
+                featureWeights[i] = this.trainedWeights.toDoubleArray()[i];
             }
             IVector featureWeightVector = IVector.of(featureWeights);
             
             // 提取偏置项（权重向量的最后一个元素）
-            float biasValue = this.trainedWeights.getData()[featureWeightCount];
-            IVector biasVector = IVector.of(new float[]{biasValue});
+            double biasValue = this.trainedWeights.toDoubleArray()[featureWeightCount];
+            IVector biasVector = IVector.of(new double[]{biasValue});
             
             result.setWeights(featureWeightVector);
             result.setBias(biasVector);
         } else {
             // 不包含偏置项：整个权重向量都是特征权重
             result.setWeights(this.trainedWeights);
-            result.setBias(IVector.of(new float[]{0.0f})); // 偏置项为0
+            result.setBias(IVector.of(new double[]{0.0f})); // 偏置项为0
         }
         
         result.setLoss(finalLoss);
@@ -346,7 +346,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @throws IllegalStateException 如果模型尚未训练
      * @throws IllegalArgumentException 如果输入特征维度不匹配
      */
-    public float predict(IVector x) {
+    public double predict(IVector x) {
         if (this.trainedWeights == null) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
@@ -362,7 +362,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector augmentedX = augmentFeatureVector(x);
         
         // 计算预测值：w^T * x
-        float prediction = this.trainedWeights.innerProduct(augmentedX);
+        double prediction = (double)this.trainedWeights.innerProduct(augmentedX);
         
         return prediction;
     }
@@ -402,7 +402,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector predictions = computePredictions(w);
         
         // 计算残差：X * w - y
-        IVector residuals = predictions.sub(this.trainingLabels);
+        IVector residuals = (IVector)predictions.sub(this.trainingLabels);
         
         // 计算梯度：(1/n) * X^T * residuals
         IVector gradient = computeMatrixVectorGradient(residuals);
@@ -410,7 +410,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         // 添加正则化项的梯度
         IVector regularizationGradient = computeRegularizationGradient(w);
         if (regularizationGradient != null) {
-            gradient = gradient.add(regularizationGradient);
+            gradient = (IVector)gradient.add(regularizationGradient);
         }
         
         return gradient;
@@ -431,7 +431,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param w 权重向量
      * @return 目标函数值
      */
-    public float computeObjective(IVector w) {
+    public double computeObjective(IVector w) {
         if (this.augmentedFeatures == null || this.trainingLabels == null) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
@@ -440,13 +440,13 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector predictions = computePredictions(w);
         
         // 计算残差
-        IVector residuals = predictions.sub(this.trainingLabels);
+        IVector residuals = (IVector)predictions.sub(this.trainingLabels);
         
         // 计算均方误差：(1/2n) * ||residuals||^2
-        float mse = residuals.innerProduct(residuals) / (2.0f * this.sampleCount);
+        double mse = (double)residuals.innerProduct(residuals) / (2.0d * this.sampleCount);
         
         // 计算正则化项
-        float regularization = computeRegularizationTerm(w);
+        double regularization = computeRegularizationTerm(w);
         
         return mse + regularization;
     }
@@ -457,14 +457,14 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param w 权重向量
      * @return 正则化项的值
      */
-    private float computeRegularizationTerm(IVector w) {
+    private double computeRegularizationTerm(IVector w) {
         switch (regularizationType) {
             case L1:
                 return lambda1 * computeL1Norm(w);
             case L2:
-                return lambda2 * w.innerProduct(w) / 2.0f;
+                return lambda2 * (double)w.innerProduct(w) / 2.0f;
             case ELASTIC_NET:
-                return lambda1 * computeL1Norm(w) + lambda2 * w.innerProduct(w) / 2.0f;
+                return lambda1 * computeL1Norm(w) + lambda2 * (double)w.innerProduct(w) / 2.0d;
             case NONE:
             default:
                 return 0.0f;
@@ -482,7 +482,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             case L1:
                 return computeL1Gradient(w);
             case L2:
-                return w.multiplyScalar(lambda2);
+                return (IVector)w.multiplyScalar(lambda2);
             case ELASTIC_NET:
                 return computeElasticNetGradient(w);
             case NONE:
@@ -497,9 +497,9 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param w 权重向量
      * @return L1范数值
      */
-    private float computeL1Norm(IVector w) {
-        float[] data = w.getData();
-        float sum = 0.0f;
+    private double computeL1Norm(IVector w) {
+        double[] data = w.toDoubleArray();
+        double sum = 0.0f;
         for (int i = 0; i < data.length; i++) {
             sum += Math.abs(data[i]);
         }
@@ -517,8 +517,8 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @return L1正则化的梯度向量
      */
     private IVector computeL1Gradient(IVector w) {
-        float[] data = w.getData();
-        float[] gradient = new float[data.length];
+        double[] data = w.toDoubleArray();
+        double[] gradient = new double[data.length];
         
         for (int i = 0; i < data.length; i++) {
             if (data[i] > 0) {
@@ -549,10 +549,10 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector l1Gradient = computeL1Gradient(w);
         
         // L2部分
-        IVector l2Gradient = w.multiplyScalar(lambda2);
+        IVector l2Gradient = (IVector)w.multiplyScalar(lambda2);
         
         // 组合梯度
-        return l1Gradient.add(l2Gradient);
+        return (IVector)l1Gradient.add(l2Gradient);
     }
     
     /**
@@ -576,12 +576,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         int cols = feature.getColNum();
         
         // 创建增广矩阵：原特征 + 偏置列
-        float[][] augmentedData = new float[rows][cols + 1];
+        double[][] augmentedData = new double[rows][cols + 1];
         
         // 复制原特征数据
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                augmentedData[i][j] = feature.get(i, j);
+                augmentedData[i][j] = (double)feature.get(i, j);
             }
             // 添加偏置列（全1）
             augmentedData[i][cols] = 1.0f;
@@ -608,11 +608,11 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         }
         
         int length = x.length();
-        float[] augmentedData = new float[length + 1];
+        double[] augmentedData = new double[length + 1];
         
         // 复制原特征数据
         for (int i = 0; i < length; i++) {
-            augmentedData[i] = x.getData()[i];
+            augmentedData[i] = x.toDoubleArray()[i];
         }
         // 添加偏置项
         augmentedData[length] = 1.0f;
@@ -635,12 +635,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         // 由于IMatrix接口的限制，我们手动实现矩阵-向量乘法
         
         int rows = this.augmentedFeatures.getRowNum();
-        float[] predictions = new float[rows];
+        double[] predictions = new double[rows];
         
         for (int i = 0; i < rows; i++) {
-            float prediction = 0.0f;
+            double prediction = 0.0f;
             for (int j = 0; j < w.length(); j++) {
-                prediction += this.augmentedFeatures.get(i, j) * w.getData()[j];
+                prediction += (double)this.augmentedFeatures.get(i, j) * w.toDoubleArray()[j];
             }
             predictions[i] = prediction;
         }
@@ -659,13 +659,13 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      */
     private IVector computeMatrixVectorGradient(IVector residuals) {
         int cols = this.augmentedFeatures.getColNum();
-        float[] gradient = new float[cols];
+        double[] gradient = new double[cols];
         
         // 计算 (1/n) * X^T * residuals
         for (int j = 0; j < cols; j++) {
-            float sum = 0.0f;
+            double sum = 0.0f;
             for (int i = 0; i < this.sampleCount; i++) {
-                sum += this.augmentedFeatures.get(i, j) * residuals.getData()[i];
+                sum += (double)this.augmentedFeatures.get(i, j) * residuals.toDoubleArray()[i];
             }
             gradient[j] = sum / this.sampleCount;
         }
@@ -705,7 +705,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @return L1正则化系数
      */
-    public float getLambda1() {
+    public double getLambda1() {
         return this.lambda1;
     }
     
@@ -714,7 +714,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @return L2正则化系数
      */
-    public float getLambda2() {
+    public double getLambda2() {
         return this.lambda2;
     }
     
@@ -753,7 +753,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda2 L2正则化系数
      * @throws IllegalArgumentException 如果正则化参数无效
      */
-    public void setRegularization(RegularizationType regularizationType, float lambda1, float lambda2) {
+    public void setRegularization(RegularizationType regularizationType, double lambda1, double lambda2) {
         this.regularizationType = regularizationType;
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
@@ -768,7 +768,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param lambda1 L1正则化系数
      * @param lambda2 L2正则化系数
      */
-    public void setRegularization(float lambda1, float lambda2) {
+    public void setRegularization(double lambda1, double lambda2) {
         updateRegularizationType(lambda1, lambda2);
     }
     
@@ -777,7 +777,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @param lambda1 L1正则化系数
      */
-    public void setLambda1(float lambda1) {
+    public void setLambda1(double lambda1) {
         this.lambda1 = lambda1;
         this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
         validateRegularizationParameters();
@@ -788,7 +788,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @param lambda2 L2正则化系数
      */
-    public void setLambda2(float lambda2) {
+    public void setLambda2(double lambda2) {
         this.lambda2 = lambda2;
         this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
         validateRegularizationParameters();
@@ -826,9 +826,9 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         if (this.includeBias) {
             // 包含偏置项：权重向量的最后一个元素是偏置项
             int featureWeightCount = this.trainedWeights.length() - 1;
-            float[] featureWeights = new float[featureWeightCount];
+            double[] featureWeights = new double[featureWeightCount];
             for (int i = 0; i < featureWeightCount; i++) {
-                featureWeights[i] = this.trainedWeights.getData()[i];
+                featureWeights[i] = this.trainedWeights.toDoubleArray()[i];
             }
             return IVector.of(featureWeights);
         } else {
@@ -842,14 +842,14 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * 
      * @return 偏置项值，如果不包含偏置项则返回0
      */
-    public float getBias() {
+    public double getBias() {
         if (this.trainedWeights == null) {
             return 0.0f;
         }
         
         if (this.includeBias) {
             // 包含偏置项：权重向量的最后一个元素是偏置项
-            return this.trainedWeights.getData()[this.trainedWeights.length() - 1];
+            return this.trainedWeights.toDoubleArray()[this.trainedWeights.length() - 1];
         } else {
             // 不包含偏置项
             return 0.0f;

@@ -2,6 +2,7 @@ package com.reremouse.lab.math.test;
 
 import com.reremouse.lab.math.dimreduce.RereUMAP;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * UMAP算法测试类
@@ -28,18 +29,18 @@ public class UMAPTest {
             {6.0f, 7.0f, 8.0f}
         };
         
-        IMatrix originalData = IMatrix.of(testData);
+        IMatrix<Float> originalData = Linalg.matrix(testData);
         System.out.println("原始数据维度: " + java.util.Arrays.toString(originalData.shape()));
         
         // 创建UMAP实例并进行降维
         RereUMAP umap = new RereUMAP();
-        IMatrix reducedData = umap.dimensionReduction(originalData, 2);
+        IMatrix<Float> reducedData = umap.dimensionReduction(originalData, 2);
         
         System.out.println("降维后数据维度: " + java.util.Arrays.toString(reducedData.shape()));
         
         // 输出降维结果
         System.out.println("\n降维结果:");
-        float[][] result = reducedData.getData();
+        float[][] result = reducedData.toFloatArray();
         for (int i = 0; i < result.length; i++) {
             System.out.printf("点 %d: [%.4f, %.4f]%n", 
                             i + 1, result[i][0], result[i][1]);
@@ -61,7 +62,7 @@ public class UMAPTest {
         System.out.printf("降维数据矩阵的Frobenius范数: %.4f%n", reducedData.frobeniusNorm());
         
         // 测试矩阵归一化
-        IMatrix normalizedRows = originalData.normalizeRows();
+        IMatrix<Float> normalizedRows = originalData.normalizeRows();
         System.out.printf("按行归一化后的矩阵Frobenius范数: %.4f%n", normalizedRows.frobeniusNorm());
         
         System.out.println("\n=== UMAP测试完成 ===");

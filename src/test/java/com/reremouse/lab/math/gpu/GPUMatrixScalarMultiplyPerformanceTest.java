@@ -1,25 +1,25 @@
 package com.reremouse.lab.math.gpu;
 
 import com.reremouse.lab.math.compute.GPUConfig;
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.compute.CPUComputeUtils;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.compute.CPUComputeFloatUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * GPU Matrix Scalar Multiply Performance Analysis Test
  * 分析GPU矩阵标量乘法性能瓶颈
  */
-class GPUMatrixScalarMultiplyPerformanceTest {
+public class GPUMatrixScalarMultiplyPerformanceTest {
     
     @BeforeEach
     void setUp() {
         // 启用详细日志以观察性能行为
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
     }
     
     @Test
@@ -40,7 +40,7 @@ class GPUMatrixScalarMultiplyPerformanceTest {
             
             // 创建测试矩阵
             float[][] data = createTestMatrix(size);
-            IMatrix matrix = new RereMatrix(data);
+            IMatrix<Float> matrix = new RereFloatMatrix(data);
             
             // 1. 分析数据传输成本
             analyzeDataTransferCost(matrix, size);
@@ -77,13 +77,13 @@ class GPUMatrixScalarMultiplyPerformanceTest {
     /**
      * 分析数据传输成本
      */
-    private void analyzeDataTransferCost(IMatrix matrix, int size) {
+    private void analyzeDataTransferCost(IMatrix<Float> matrix, int size) {
         System.out.println("📊 数据传输成本分析:");
         
         long startTime = System.nanoTime();
         
         // 模拟GPU计算中的数据转换步骤
-        float[][] originalData = matrix.getData();
+        float[][] originalData = matrix.toFloatArray();
         
         // 1. 2D -> 1D 转换 (flattenMatrix)
         long flattenStart = System.nanoTime();
@@ -113,28 +113,28 @@ class GPUMatrixScalarMultiplyPerformanceTest {
     /**
      * CPU vs GPU性能对比
      */
-    private void compareCPUvsGPUPerformance(IMatrix matrix, float scalar, int size, long dataSize) {
+    private void compareCPUvsGPUPerformance(IMatrix<Float> matrix, float scalar, int size, long dataSize) {
         System.out.println("⚡ CPU vs GPU性能对比:");
         
         // CPU性能测试
         long cpuStart = System.nanoTime();
-        IMatrix cpuResult = CPUComputeUtils.matrixScalarMultiply(matrix.getData(), scalar);
+        IMatrix<Float> cpuResult = CPUComputeFloatUtils.matrixScalarMultiply(matrix.toFloatArray(), scalar);
         long cpuTime = System.nanoTime() - cpuStart;
         
         // GPU性能测试
         long gpuStart = System.nanoTime();
-        IMatrix gpuResult;
+        IMatrix<Float> gpuResult;
         boolean usedGPU = false;
         try {
             if (dataSize >= GPUConfig.GPU_THRESHOLD) {
-                gpuResult = GPUComputeUtils.gpuMatrixScalarMultiply(matrix, scalar);
+                gpuResult = GPUComputeFloatUtils.gpuMatrixScalarMultiply(matrix, scalar);
                 usedGPU = true;
             } else {
-                gpuResult = CPUComputeUtils.matrixScalarMultiply(matrix.getData(), scalar);
+                gpuResult = CPUComputeFloatUtils.matrixScalarMultiply(matrix.toFloatArray(), scalar);
                 usedGPU = false;
             }
         } catch (Exception e) {
-            gpuResult = CPUComputeUtils.matrixScalarMultiply(matrix.getData(), scalar);
+            gpuResult = CPUComputeFloatUtils.matrixScalarMultiply(matrix.toFloatArray(), scalar);
             usedGPU = false;
         }
         long gpuTime = System.nanoTime() - gpuStart;
@@ -163,7 +163,7 @@ class GPUMatrixScalarMultiplyPerformanceTest {
     /**
      * 分析GPU内存开销
      */
-    private void analyzeGPUMemoryOverhead(IMatrix matrix, int size) {
+    private void analyzeGPUMemoryOverhead(IMatrix<Float> matrix, int size) {
         System.out.println("💾 GPU内存开销分析:");
         
         long elements = (long) size * size;
@@ -274,14 +274,14 @@ class GPUMatrixScalarMultiplyPerformanceTest {
         return matrix;
     }
     
-    private boolean compareMatrices(IMatrix a, IMatrix b) {
-        if (a.getRows() != b.getRows() || a.getColumns() != b.getColumns()) {
+    private boolean compareMatrices(IMatrix<Float> a, IMatrix<Float> b) {
+        if (a.rows() != b.rows() || a.cols() != b.cols()) {
             return false;
         }
         
         float tolerance = 1e-6f;
-        for (int i = 0; i < a.getRows(); i++) {
-            for (int j = 0; j < a.getColumns(); j++) {
+        for (int i = 0; i < a.rows(); i++) {
+            for (int j = 0; j < a.cols(); j++) {
                 if (Math.abs(a.get(i, j) - b.get(i, j)) > tolerance) {
                     return false;
                 }

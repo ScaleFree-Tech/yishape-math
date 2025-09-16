@@ -1,11 +1,10 @@
 package com.reremouse.lab.math.compute;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * CPU计算工具类测试
@@ -18,7 +17,7 @@ public class CPUComputeUtilsTest {
         float[][] dataA = {{1, 2}, {3, 4}};
         float[][] dataB = {{5, 6}, {7, 8}};
         
-        IMatrix result = CPUComputeUtils.matrixAdd(dataA, dataB);
+        IMatrix<Float> result = CPUComputeFloatUtils.matrixAdd(dataA, dataB);
         
         assertEquals(6, result.get(0, 0), 1e-6);
         assertEquals(8, result.get(0, 1), 1e-6);
@@ -31,7 +30,7 @@ public class CPUComputeUtilsTest {
         float[][] dataA = {{5, 6}, {7, 8}};
         float[][] dataB = {{1, 2}, {3, 4}};
         
-        IMatrix result = CPUComputeUtils.matrixSub(dataA, dataB);
+        IMatrix<Float> result = CPUComputeFloatUtils.matrixSub(dataA, dataB);
         
         assertEquals(4, result.get(0, 0), 1e-6);
         assertEquals(4, result.get(0, 1), 1e-6);
@@ -44,7 +43,7 @@ public class CPUComputeUtilsTest {
         float[][] dataA = {{1, 2}, {3, 4}};
         float scalar = 2.0f;
         
-        IMatrix result = CPUComputeUtils.matrixScalarMultiply(dataA, scalar);
+        IMatrix<Float> result = CPUComputeFloatUtils.matrixScalarMultiply(dataA, scalar);
         
         assertEquals(2, result.get(0, 0), 1e-6);
         assertEquals(4, result.get(0, 1), 1e-6);
@@ -56,7 +55,7 @@ public class CPUComputeUtilsTest {
     public void testMatrixTranspose() {
         float[][] dataA = {{1, 2, 3}, {4, 5, 6}};
         
-        IMatrix result = CPUComputeUtils.matrixTranspose(dataA);
+        IMatrix<Float> result = CPUComputeFloatUtils.matrixTranspose(dataA);
         
         assertEquals(1, result.get(0, 0), 1e-6);
         assertEquals(4, result.get(0, 1), 1e-6);
@@ -68,10 +67,10 @@ public class CPUComputeUtilsTest {
     
     @Test
     public void testVectorAdd() {
-        IVector a = new RereVector(new float[]{1, 2, 3});
-        IVector b = new RereVector(new float[]{4, 5, 6});
+        IVector<Float> a = new RereFloatVector(new float[]{1, 2, 3});
+        IVector<Float> b = new RereFloatVector(new float[]{4, 5, 6});
         
-        IVector result = CPUComputeUtils.vectorAdd(a, b);
+        IVector<Float> result = CPUComputeFloatUtils.vectorAdd(a, b);
         
         assertEquals(5, result.get(0), 1e-6);
         assertEquals(7, result.get(1), 1e-6);
@@ -80,20 +79,20 @@ public class CPUComputeUtilsTest {
     
     @Test
     public void testVectorDot() {
-        IVector a = new RereVector(new float[]{1, 2, 3});
-        IVector b = new RereVector(new float[]{4, 5, 6});
+        IVector<Float> a = new RereFloatVector(new float[]{1, 2, 3});
+        IVector<Float> b = new RereFloatVector(new float[]{4, 5, 6});
         
-        float result = CPUComputeUtils.vectorDot(a, b);
+        float result = CPUComputeFloatUtils.vectorDot(a, b);
         
         assertEquals(32, result, 1e-6); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
     }
     
     @Test
     public void testVectorScalarMultiply() {
-        IVector a = new RereVector(new float[]{1, 2, 3});
+        IVector<Float> a = new RereFloatVector(new float[]{1, 2, 3});
         float scalar = 2.0f;
         
-        IVector result = CPUComputeUtils.vectorScalarMultiply(a, scalar);
+        IVector<Float> result = CPUComputeFloatUtils.vectorScalarMultiply(a, scalar);
         
         assertEquals(2, result.get(0), 1e-6);
         assertEquals(4, result.get(1), 1e-6);
@@ -102,19 +101,19 @@ public class CPUComputeUtilsTest {
     
     @Test
     public void testVectorSum() {
-        IVector a = new RereVector(new float[]{1, 2, 3, 4});
+        IVector<Float> a = new RereFloatVector(new float[]{1, 2, 3, 4});
         
-        float result = CPUComputeUtils.vectorSum(a);
+        float result = CPUComputeFloatUtils.vectorSum(a);
         
         assertEquals(10, result, 1e-6);
     }
     
     @Test
     public void testVectorReciprocal() {
-        IVector a = new RereVector(new float[]{1, 2, 0.001f, 0});
+        IVector<Float> a = new RereFloatVector(new float[]{1, 2, 0.001f, 0});
         float tolerance = 0.01f;
         
-        IVector result = CPUComputeUtils.vectorReciprocal(a, tolerance);
+        IVector<Float> result = CPUComputeFloatUtils.vectorReciprocal(a, tolerance);
         
         assertEquals(1.0f, result.get(0), 1e-6);
         assertEquals(0.5f, result.get(1), 1e-6);

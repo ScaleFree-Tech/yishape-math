@@ -1,10 +1,10 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 测试带有箱线效果的小提琴图
@@ -17,13 +17,13 @@ public class ViolinPlotWithBoxplotTest {
         
         // 生成测试数据
         Random random = new Random(42);
-        float[] data1 = generateNormalData(50, 15, 200, random);
-        float[] data2 = generateNormalData(80, 10, 200, random);
-        float[] data3 = generateNormalData(65, 20, 200, random);
+        double[] data1 = generateNormalData(50, 15, 200, random);
+        double[] data2 = generateNormalData(80, 10, 200, random);
+        double[] data3 = generateNormalData(65, 20, 200, random);
         
-        IVector vector1 = new RereVector(data1);
-        IVector vector2 = new RereVector(data2);
-        IVector vector3 = new RereVector(data3);
+        IDoubleVector vector1 = new RereDoubleVector(data1);
+        IDoubleVector vector2 = new RereDoubleVector(data2);
+        IDoubleVector vector3 = new RereDoubleVector(data3);
         
         // 测试单向量小提琴图（带箱线效果）
         System.out.println("测试单向量小提琴图（带箱线效果）...");
@@ -47,27 +47,27 @@ public class ViolinPlotWithBoxplotTest {
         System.out.println("\n测试多组小提琴图（带箱线效果）...");
         try {
             // 合并数据
-            List<Float> allData = new ArrayList<>();
+            List<Double> allData = new ArrayList<>();
             List<String> allLabels = new ArrayList<>();
             
-            for (float value : data1) {
+            for (double value : data1) {
                 allData.add(value);
                 allLabels.add("数据集1");
             }
-            for (float value : data2) {
+            for (double value : data2) {
                 allData.add(value);
                 allLabels.add("数据集2");
             }
-            for (float value : data3) {
+            for (double value : data3) {
                 allData.add(value);
                 allLabels.add("数据集3");
             }
             
-            float[] combinedData = new float[allData.size()];
+            double[] combinedData = new double[allData.size()];
             for (int i = 0; i < allData.size(); i++) {
                 combinedData[i] = allData.get(i);
             }
-            IVector combinedVector = new RereVector(combinedData);
+            IDoubleVector combinedVector = new RereDoubleVector(combinedData);
             
             RerePlot plot2 = new RerePlot();
             plot2.title("多组小提琴图（带箱线效果）")
@@ -94,13 +94,13 @@ public class ViolinPlotWithBoxplotTest {
     /**
      * 生成正态分布数据
      */
-    private static float[] generateNormalData(float mean, float stdDev, int size, Random random) {
-        float[] data = new float[size];
+    private static double[] generateNormalData(double mean, double stdDev, int size, Random random) {
+        double[] data = new double[size];
         for (int i = 0; i < size; i++) {
             double u1 = random.nextDouble();
             double u2 = random.nextDouble();
             double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-            data[i] = (float) (z0 * stdDev + mean);
+            data[i] = (double) (z0 * stdDev + mean);
         }
         return data;
     }

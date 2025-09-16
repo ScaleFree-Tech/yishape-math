@@ -41,7 +41,7 @@ public class ToCsvTest {
         // 创建列2：浮点类型 / Create column 2: Float type
         Column col2 = new Column();
         col2.setName("年龄");
-        col2.setColumnType(ColumnType.Float);
+        col2.setColumnType(ColumnType.Numeric);
         List<Object> col2Data = new ArrayList<>();
         col2Data.add(25.0f);
         col2Data.add(30.0f);
@@ -200,7 +200,7 @@ public class ToCsvTest {
         // 浮点列 / Float column
         Column floatCol = new Column();
         floatCol.setName("数值");
-        floatCol.setColumnType(ColumnType.Float);
+        floatCol.setColumnType(ColumnType.Numeric);
         List<Object> floatData = new ArrayList<>();
         floatData.add(1.5f);
         floatData.add(2.7f);

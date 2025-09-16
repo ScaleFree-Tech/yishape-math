@@ -32,7 +32,7 @@ public class RereLBFGS implements IOptimizer{
 
     // LBFGS算法参数 / LBFGS algorithm parameters
     private int m = 10;                    // 存储的历史信息对数 / Number of stored history pairs
-    private float tolerance = 1e-6f;       // 收敛容差 / Convergence tolerance
+    private double tolerance = 1e-6f;       // 收敛容差 / Convergence tolerance
     private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
 
     
@@ -49,7 +49,7 @@ public class RereLBFGS implements IOptimizer{
      * @param tolerance 收敛容差 / Convergence tolerance
      * @param maxIterations 最大迭代次数 / Maximum iterations
      */
-    public RereLBFGS(int m, float tolerance, int maxIterations) {
+    public RereLBFGS(int m, double tolerance, int maxIterations) {
         this.m = m;
         this.tolerance = tolerance;
         this.maxIterations = maxIterations;
@@ -76,7 +76,7 @@ public class RereLBFGS implements IOptimizer{
      * @throws IllegalArgumentException 如果输入参数无效 / if input parameters are invalid
      */
     @Override
-    public Tuple2<Float, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
         // 参数验证 / Parameter validation
         if (initX == null) {
             throw new IllegalArgumentException("初始点不能为空 / Initial point cannot be null");
@@ -89,13 +89,13 @@ public class RereLBFGS implements IOptimizer{
         }
         
         // 初始化变量 / Initialize variables
-        IVector x = initX.copy();  // 当前点 / Current point
+        IVector x = (IVector)initX.copy();  // 当前点 / Current point
         int n = x.length();       // 问题维度 / Problem dimension
         
         // 历史信息存储 / History information storage
         List<IVector> s_history = new ArrayList<>();  // 位置差向量历史 / Position difference history
         List<IVector> y_history = new ArrayList<>();  // 梯度差向量历史 / Gradient difference history
-        List<Float> rho_history = new ArrayList<>(); // ρ值历史 / Rho value history
+        List<Double> rho_history = new ArrayList<>(); // ρ值历史 / Rho value history
         
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
@@ -103,21 +103,21 @@ public class RereLBFGS implements IOptimizer{
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
             // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
-            float gradNorm = grad.norm2();
+            double gradNorm = (double)grad.norm2();
             if (gradNorm < tolerance) {
-                float optimalValue = objFun.computeObjective(x);
+                double optimalValue = objFun.computeObjective(x);
                 return new Tuple2<>(optimalValue, x);
             }
             
             // 计算搜索方向：使用两循环递归 / Compute search direction: two-loop recursion
             IVector direction = computeSearchDirection(grad, s_history, y_history, rho_history);
-            direction = direction.multiplyScalar(-1.0f); // 负梯度方向 / Negative gradient direction
+            direction = (IVector)direction.multiplyScalar(-1.0); // 负梯度方向 / Negative gradient direction
             
             // 线搜索确定步长 / Line search to determine step size
-            float stepSize = new RereLineSearch().search(x, direction, objFun, grdFun, grad);
+            double stepSize = new RereLineSearch().search(x, direction, objFun, grdFun, grad);
             
             // 更新位置 / Update position
-            IVector newX = x.add(direction.multiplyScalar(stepSize));
+            IVector newX = (IVector)x.add(direction.multiplyScalar(stepSize));
             IVector newGrad = grdFun.computeGradient(newX);
             
             // 更新历史信息 / Update history information
@@ -129,7 +129,7 @@ public class RereLBFGS implements IOptimizer{
         }
         
         // 达到最大迭代次数，返回当前最优解 / Maximum iterations reached, return current best solution
-        float finalValue = objFun.computeObjective(x);
+        double finalValue = objFun.computeObjective(x);
         return new Tuple2<>(finalValue, x);
     }
     
@@ -149,16 +149,16 @@ public class RereLBFGS implements IOptimizer{
      * @return 搜索方向 / Search direction
      */
     private IVector computeSearchDirection(IVector grad, List<IVector> s_history, 
-                                        List<IVector> y_history, List<Float> rho_history) {
+                                        List<IVector> y_history, List<Double> rho_history) {
         
-        IVector q = grad.copy();
+        IVector q = (IVector)grad.copy();
         int historySize = s_history.size();
-        float[] alpha = new float[historySize];
+        double[] alpha = new double[historySize];
         
         // 第一个循环：向后递归 / First loop: backward recursion
         for (int i = historySize - 1; i >= 0; i--) {
-            alpha[i] = rho_history.get(i) * s_history.get(i).innerProduct(q);
-            q = q.sub(y_history.get(i).multiplyScalar(alpha[i]));
+            alpha[i] = rho_history.get(i) * (double)s_history.get(i).innerProduct(q);
+            q = (IVector)q.sub(y_history.get(i).multiplyScalar(alpha[i]));
         }
         
         // 应用初始Hessian近似 / Apply initial Hessian approximation
@@ -166,8 +166,8 @@ public class RereLBFGS implements IOptimizer{
         
         // 第二个循环：向前递归 / Second loop: forward recursion
         for (int i = 0; i < historySize; i++) {
-            float beta = rho_history.get(i) * y_history.get(i).innerProduct(r);
-            r = r.add(s_history.get(i).multiplyScalar(alpha[i] - beta));
+            double beta = rho_history.get(i) * (double)y_history.get(i).innerProduct(r);
+            r = (IVector)r.add(s_history.get(i).multiplyScalar(alpha[i] - beta));
         }
         
         return r;
@@ -196,9 +196,9 @@ public class RereLBFGS implements IOptimizer{
         IVector s_k = s_history.get(s_history.size() - 1);
         IVector y_k = y_history.get(y_history.size() - 1);
         
-        float gamma = s_k.innerProduct(y_k) / y_k.innerProduct(y_k);
+        double gamma = (double)s_k.innerProduct(y_k) / (double)y_k.innerProduct(y_k);
         
-        return q.multiplyScalar(gamma);
+        return (IVector)q.multiplyScalar(gamma);
     }
     
     
@@ -222,18 +222,18 @@ public class RereLBFGS implements IOptimizer{
      * @param rho_history ρ值历史 / Rho value history
      */
     private void updateHistory(IVector oldX, IVector newX, IVector oldGrad, IVector newGrad,
-                             List<IVector> s_history, List<IVector> y_history, List<Float> rho_history) {
+                             List<IVector> s_history, List<IVector> y_history, List<Double> rho_history) {
         
         // 计算位置差和梯度差 / Compute position and gradient differences
-        IVector s_k = newX.sub(oldX);
-        IVector y_k = newGrad.sub(oldGrad);
+        IVector s_k = (IVector)newX.sub(oldX);
+        IVector y_k = (IVector)newGrad.sub(oldGrad);
         
         // 计算ρ值 / Compute rho value
-        float sTy = s_k.innerProduct(y_k);
+        double sTy = (double)s_k.innerProduct(y_k);
         
         // 检查曲率条件：s^T * y > 0，确保正定性 / Check curvature condition: s^T * y > 0 for positive definiteness
         if (sTy > 1e-10f) {
-            float rho_k = 1.0f / sTy;
+            double rho_k = 1.0f / sTy;
             
             // 添加新的历史信息 / Add new history information
             s_history.add(s_k);
@@ -271,7 +271,7 @@ public class RereLBFGS implements IOptimizer{
      * 获取收敛容差 / Get convergence tolerance
      * @return 收敛容差 / Convergence tolerance
      */
-    public float getTolerance() {
+    public double getTolerance() {
         return tolerance;
     }
     
@@ -279,7 +279,7 @@ public class RereLBFGS implements IOptimizer{
      * 设置收敛容差 / Set convergence tolerance
      * @param tolerance 收敛容差 / Convergence tolerance
      */
-    public void setTolerance(float tolerance) {
+    public void setTolerance(double tolerance) {
         this.tolerance = Math.max(1e-12f, tolerance);
     }
     

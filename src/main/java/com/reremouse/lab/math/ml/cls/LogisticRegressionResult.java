@@ -13,7 +13,7 @@ public class LogisticRegressionResult extends ClassificationResult {
 
     private IVector bias;
 
-    private float loss;
+    private double loss;
 
     public IVector getWeights() {
         return weights;
@@ -31,11 +31,11 @@ public class LogisticRegressionResult extends ClassificationResult {
         this.bias = bias;
     }
 
-    public float getLoss() {
+    public double getLoss() {
         return loss;
     }
 
-    public void setLoss(float loss) {
+    public void setLoss(double loss) {
         this.loss = loss;
     }
 

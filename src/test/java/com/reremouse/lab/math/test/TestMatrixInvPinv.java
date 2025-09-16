@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
 import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
@@ -23,18 +23,18 @@ public class TestMatrixInvPinv {
         
         // 测试2x2矩阵
         float[][] data2x2 = {{2, 1}, {1, 1}};
-        IMatrix A = new RereMatrix(data2x2);
+        IMatrix<Float> A = new RereFloatMatrix(data2x2);
         
         System.out.println("原矩阵 A:");
         printMatrix(A);
         
         try {
-            IMatrix invA = A.inv();
+            IMatrix<Float> invA = A.inv();
             System.out.println("逆矩阵 A^(-1):");
             printMatrix(invA);
             
             // 验证 A * A^(-1) = I
-            IMatrix I = ((RereMatrix)A).mmul(invA);
+            IMatrix<Float> I = ((RereFloatMatrix)A).mmul(invA);
             System.out.println("验证 A * A^(-1):");
             printMatrix(I);
             
@@ -53,19 +53,19 @@ public class TestMatrixInvPinv {
         
         // 测试3x2矩阵（非方阵）
         float[][] data3x2 = {{1, 2}, {3, 4}, {5, 6}};
-        IMatrix A = new RereMatrix(data3x2);
+        IMatrix<Float> A = new RereFloatMatrix(data3x2);
         
         System.out.println("原矩阵 A (3x2):");
         printMatrix(A);
         
         try {
-            IMatrix pinvA = A.pinv();
+            IMatrix<Float> pinvA = A.pinv();
             System.out.println("伪逆矩阵 A⁺ (2x3):");
             printMatrix(pinvA);
             
             // 验证 A * A⁺ * A = A
-            IMatrix temp = ((RereMatrix)A).mmul(pinvA);
-            IMatrix result = ((RereMatrix)temp).mmul(A);
+            IMatrix<Float> temp = ((RereFloatMatrix)A).mmul(pinvA);
+            IMatrix<Float> result = ((RereFloatMatrix)temp).mmul(A);
             System.out.println("验证 A * A⁺ * A:");
             printMatrix(result);
             
@@ -84,13 +84,13 @@ public class TestMatrixInvPinv {
         
         // 奇异矩阵（行列式为0）
         float[][] singularData = {{1, 2}, {2, 4}};
-        IMatrix singular = new RereMatrix(singularData);
+        IMatrix<Float> singular = new RereFloatMatrix(singularData);
         
         System.out.println("奇异矩阵:");
         printMatrix(singular);
         
         try {
-            IMatrix inv = singular.inv();
+            IMatrix<Float> inv = singular.inv();
             System.out.println("逆矩阵（不应该执行到这里）:");
             printMatrix(inv);
         } catch (ArithmeticException e) {
@@ -99,7 +99,7 @@ public class TestMatrixInvPinv {
         
         // 但是可以计算伪逆
         try {
-            IMatrix pinv = singular.pinv();
+            IMatrix<Float> pinv = singular.pinv();
             System.out.println("伪逆矩阵:");
             printMatrix(pinv);
         } catch (Exception e) {
@@ -116,13 +116,13 @@ public class TestMatrixInvPinv {
         System.out.println("=== 测试非方阵 ===");
         
         float[][] nonSquareData = {{1, 2, 3}, {4, 5, 6}};
-        IMatrix nonSquare = new RereMatrix(nonSquareData);
+        IMatrix<Float> nonSquare = new RereFloatMatrix(nonSquareData);
         
         System.out.println("非方阵 (2x3):");
         printMatrix(nonSquare);
         
         try {
-            IMatrix inv = nonSquare.inv();
+            IMatrix<Float> inv = nonSquare.inv();
             System.out.println("逆矩阵（不应该执行到这里）:");
             printMatrix(inv);
         } catch (IllegalArgumentException e) {
@@ -131,7 +131,7 @@ public class TestMatrixInvPinv {
         
         // 计算伪逆
         try {
-            IMatrix pinv = nonSquare.pinv();
+            IMatrix<Float> pinv = nonSquare.pinv();
             System.out.println("伪逆矩阵 (3x2):");
             printMatrix(pinv);
         } catch (Exception e) {
@@ -144,8 +144,8 @@ public class TestMatrixInvPinv {
     /**
      * 打印矩阵
      */
-    public static void printMatrix(IMatrix matrix) {
-        float[][] data = matrix.getData();
+    public static void printMatrix(IMatrix<Float> matrix) {
+        float[][] data = matrix.toFloatArray();
         for (int i = 0; i < data.length; i++) {
             for (int j = 0; j < data[0].length; j++) {
                 System.out.printf("%8.4f ", data[i][j]);

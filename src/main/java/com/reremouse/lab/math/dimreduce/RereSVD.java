@@ -3,6 +3,8 @@ package com.reremouse.lab.math.dimreduce;
 import com.reremouse.lab.util.Tuple3;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * SVD降维算法实现类 / SVD Dimensionality Reduction Algorithm Implementation
@@ -69,33 +71,33 @@ public class RereSVD {
         // 如果目标维度等于原始维度，直接返回原数据的副本
         // If target dimension equals original dimension, return a copy of original data
         if (dim == originalCols) {
-            return IMatrix.of(originalData.getData());
+            return IMatrix.of(originalData.toDoubleArray());
         }
         
         // 执行SVD分解 / Perform SVD decomposition
         // A = U * S * V^T
-        Tuple3<IMatrix, IVector, IMatrix> svdResult = originalData.svd();
-        IMatrix U = svdResult._1;           // 左奇异向量矩阵 / Left singular vectors matrix
-        IVector singularValues = svdResult._2; // 奇异值向量 / Singular values vector
-        IMatrix VT = svdResult._3;          // 右奇异向量转置矩阵 / Right singular vectors transpose matrix
+        Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> svdResult = originalData.svd();
+        IMatrix U = (IMatrix)svdResult._1;           // 左奇异向量矩阵 / Left singular vectors matrix
+        IVector singularValues = (IVector)svdResult._2; // 奇异值向量 / Singular values vector
+        IMatrix VT = (IMatrix)svdResult._3;          // 右奇异向量转置矩阵 / Right singular vectors transpose matrix
         
         // 从VT中提取前dim个主成分（V的前dim列，即VT的前dim行）
         // Extract first dim principal components from VT (first dim columns of V, i.e., first dim rows of VT)
-        IMatrix V = VT.transposeNew(); // V = (V^T)^T
+        IMatrix V = (IMatrix)VT.transposeNew(); // V = (V^T)^T
         
         // 创建包含前dim个主成分的投影矩阵（V的前dim列）
         // Create projection matrix containing first dim principal components (first dim columns of V)
-        float[][] projectionData = new float[originalCols][dim];
+        double[][] projectionData = new double[originalCols][dim];
         for (int i = 0; i < originalCols; i++) {
             for (int j = 0; j < dim; j++) {
-                projectionData[i][j] = V.get(i, j);
+                projectionData[i][j] = (double)V.get(i, j);
             }
         }
         IMatrix projectionMatrix = IMatrix.of(projectionData);
         
         // 将原始数据投影到低维空间：A_reduced = A * V[:, :dim]
         // Project original data to low-dimensional space: A_reduced = A * V[:, :dim]
-        IMatrix result = originalData.mmul(projectionMatrix);
+        IMatrix result = (IMatrix)originalData.mmul(projectionMatrix);
         
         return result;
     }

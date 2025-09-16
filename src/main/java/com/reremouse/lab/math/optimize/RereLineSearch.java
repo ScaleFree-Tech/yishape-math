@@ -9,9 +9,9 @@ import com.reremouse.lab.math.linalg.IVector;
  */
 public class RereLineSearch {
 
-    private float c1 = 1e-4f;             // Armijo条件参数 / Armijo condition parameter
-    private float c2 = 0.9f;              // Wolfe条件参数 / Wolfe condition parameter
-    private float initialStepSize = 1.0f;  // 初始步长 / Initial step size
+    private double c1 = 1e-4;             // Armijo条件参数 / Armijo condition parameter
+    private double c2 = 0.9;              // Wolfe条件参数 / Wolfe condition parameter
+    private double initialStepSize = 1.0;  // 初始步长 / Initial step size
 
     public RereLineSearch() {
     }
@@ -22,7 +22,7 @@ public class RereLineSearch {
      * @param c2 Wolfe条件参数 / Wolfe condition parameter
      * @param initialStepSize 初始步长 / Initial step size
      */
-    public RereLineSearch(float c1, float c2, float initialStepSize) {
+    public RereLineSearch(double c1, double c2, double initialStepSize) {
         this.c1 = c1;
         this.c2 = c2;
         this.initialStepSize = initialStepSize;
@@ -42,12 +42,12 @@ public class RereLineSearch {
      * @param grad 当前梯度 / Current gradient
      * @return 步长 / Step size
      */
-    public float search(IVector x, IVector direction, IObjectiveFunction objFun,
+    public double search(IVector x, IVector direction, IObjectiveFunction objFun,
             IGradientFunction grdFun, IVector grad) {
 
-        float alpha = initialStepSize;
-        float currentValue = objFun.computeObjective(x);
-        float directionalDerivative = grad.innerProduct(direction);
+        double alpha = initialStepSize;
+        double currentValue = objFun.computeObjective(x);
+        double directionalDerivative = (double)grad.innerProduct(direction);
 
         // 如果方向导数为正，说明不是下降方向，返回小步长 / If directional derivative is positive, not a descent direction
         if (directionalDerivative >= 0) {
@@ -57,13 +57,13 @@ public class RereLineSearch {
         // 回溯线搜索 / Backtracking line search
         int maxLineSearchIterations = 50;
         for (int i = 0; i < maxLineSearchIterations; i++) {
-            IVector newX = x.add(direction.multiplyScalar(alpha));
-            float newValue = objFun.computeObjective(newX);
+            IVector newX = (IVector)x.add(direction.multiplyScalar(alpha));
+            double newValue = objFun.computeObjective(newX);
 
             // 检查Armijo条件 / Check Armijo condition
             if (newValue <= currentValue + c1 * alpha * directionalDerivative) {
                 IVector newGrad = grdFun.computeGradient(newX);
-                float newDirectionalDerivative = newGrad.innerProduct(direction);
+                double newDirectionalDerivative = (double)newGrad.innerProduct(direction);
 
                 // 检查曲率条件 / Check curvature condition
                 if (newDirectionalDerivative >= c2 * directionalDerivative) {

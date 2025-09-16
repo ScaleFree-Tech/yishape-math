@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.anova;
 
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.stats.Stats;
 import com.reremouse.lab.math.stats.distribution.NormalDistribution;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  *
@@ -26,15 +26,15 @@ public class ANOVATest {
         // 从每个组抽取样本
         // sample(n) - 从分布中抽取n个随机样本
         // 参数：n - 样本容量（每组样本量相等）
-        float[] data1 = group1.sample(20);
-        float[] data2 = group2.sample(20);
-        float[] data3 = group3.sample(20);
+        double[] data1 = group1.sample(20);
+        double[] data2 = group2.sample(20);
+        double[] data3 = group3.sample(20);
 
         // 将样本数据转换为IVector对象
-        // IVector.of(array) - 将float数组转换为IVector对象
-        IVector vector1 = IVector.of(data1);
-        IVector vector2 = IVector.of(data2);
-        IVector vector3 = IVector.of(data3);
+        // IDoubleVector.of(array) - 将double数组转换为IVector对象
+        IDoubleVector vector1 = IDoubleVector.of(data1);
+        IDoubleVector vector2 = IDoubleVector.of(data2);
+        IDoubleVector vector3 = IDoubleVector.of(data3);
 
         // 计算ANOVA统计量
         // performOneWayANOVA(vectors...) - 执行单因素方差分析
@@ -43,8 +43,8 @@ public class ANOVATest {
         ANOVAResult result = ANOVA.performOneWayANOVA(vector1, vector2, vector3);
 
         System.out.println("组别统计量 / Group statistics:");
-        // IVector.mean() - 计算组均值
-        // IVector.std() - 计算组标准差
+        // IDoubleVector.mean() - 计算组均值
+        // IDoubleVector.std() - 计算组标准差
         System.out.println("  组1 / Group 1: 均值=" + vector1.mean() + ", 标准差=" + vector1.std());
         System.out.println("  组2 / Group 2: 均值=" + vector2.mean() + ", 标准差=" + vector2.std());
         System.out.println("  组3 / Group 3: 均值=" + vector3.mean() + ", 标准差=" + vector3.std());
@@ -67,13 +67,13 @@ public class ANOVATest {
         System.out.println("\n=== 两因素方差分析 / Two-way ANOVA ===");
 
         // 模拟2×3设计的数据
-        float[][][] data = new float[2][3][10]; // 2个因素，3个水平，每组10个观测
+        double[][][] data = new double[2][3][10]; // 2个因素，3个水平，每组10个观测
 
         // 生成数据
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 3; j++) {
-                float mean = 100 + i * 5 + j * 3; // 主效应
-                NormalDistribution dist = Stats.norm(mean, 10.0f);
+                double mean = 100 + i * 5 + j * 3; // 主效应
+                NormalDistribution dist = Stats.norm(mean, 10.0);
                 data[i][j] = dist.sample(10);
             }
         }
@@ -94,12 +94,12 @@ public class ANOVATest {
         System.out.println("\n=== 重复测量ANOVA / Repeated Measures ANOVA ===");
 
         // 模拟重复测量数据（3个时间点，10个被试）
-        float[][] repeatedData = new float[10][3];
+        double[][] repeatedData = new double[10][3];
 
         for (int subject = 0; subject < 10; subject++) {
             for (int time = 0; time < 3; time++) {
-                float mean = 100 + time * 5; // 时间效应
-                NormalDistribution dist = Stats.norm(mean, 15.0f);
+                double mean = 100 + time * 5; // 时间效应
+                NormalDistribution dist = Stats.norm(mean, 15.0);
                 repeatedData[subject][time] = dist.sample();
             }
         }

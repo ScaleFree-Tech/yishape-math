@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.gpu;
 
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
 
 /**
  * 快速伪逆测试类
@@ -33,14 +33,14 @@ public class QuickPinvTest {
                 long duration = endTime - startTime;
                 
                 System.out.println("✓ 成功完成，耗时: " + duration + "ms");
-                System.out.println("  伪逆矩阵维度: " + pseudoInverse.getRows() + "x" + pseudoInverse.getColumns());
+                System.out.println("  伪逆矩阵维度: " + pseudoInverse.rows() + "x" + pseudoInverse.cols());
                 
                 // 验证伪逆的基本性质：A * A⁺ * A ≈ A
-                IMatrix verification = matrix.mmul(pseudoInverse).mmul(matrix);
-                IMatrix diff = matrix.sub(verification);
-                float maxError = 0.0f;
-                for (int i = 0; i < diff.getRows(); i++) {
-                    for (int j = 0; j < diff.getColumns(); j++) {
+                IMatrix<Double> verification = matrix.mmul(pseudoInverse).mmul(matrix);
+                IMatrix<Double> diff = matrix.sub(verification);
+                double maxError = 0.0f;
+                for (int i = 0; i < diff.rows(); i++) {
+                    for (int j = 0; j < diff.cols(); j++) {
                         maxError = Math.max(maxError, Math.abs(diff.get(i, j)));
                     }
                 }

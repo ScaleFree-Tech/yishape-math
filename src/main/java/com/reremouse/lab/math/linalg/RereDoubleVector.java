@@ -2,7 +2,7 @@ package com.reremouse.lab.math.linalg;
 
 import com.reremouse.lab.math.RereMathUtil;
 import com.reremouse.lab.util.StringUtils;
-import com.reremouse.lab.math.compute.GPUComputeUtils;
+import com.reremouse.lab.math.compute.GPUComputeDoubleUtils;
 import com.reremouse.lab.math.compute.GPUConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,12 +18,12 @@ import java.util.ArrayList;
 /**
  * 向量操作实现类 / Vector Operations Implementation Class
  * <p>
- * 本类实现了向量的常用操作，包括基本的数学运算、统计运算、切片索引、通用函数等功能。 基于一维float数组实现，提供高效的向量计算能力。
+ * 本类实现了向量的常用操作，包括基本的数学运算、统计运算、切片索引、通用函数等功能。 基于一维Double数组实现，提供高效的向量计算能力。
  * </p>
  * <p>
  * This class implements common vector operations including basic mathematical
  * operations, statistical operations, slicing and indexing, universal functions
- * and other functionalities. Based on 1D float array implementation, providing
+ * and other functionalities. Based on 1D Double array implementation, providing
  * efficient vector computation capabilities.
  * </p>
  *
@@ -48,88 +48,85 @@ import java.util.ArrayList;
  * <h3>使用示例 / Usage Example:</h3>
  * <pre>
  * {@code
- * // 创建向量 / Create vector
- * float[] data = {1.0f, 2.0f, 3.0f, 4.0f};
- * IVector vector = new RereVector(data);
- *
- * // 基本运算 / Basic operations
- * IVector doubled = vector.multiplyScala(2.0f);
- * float norm = vector.norm2();
- *
- * // 统计运算 / Statistical operations
- * float mean = vector.mean();
- * float std = vector.std();
- *
- * // 切片操作 / Slicing operations
- * IVector slice = vector.slice(1, 3);
- * IVector squared = vector.squre();
- * }
+ // 创建向量 / Create vector
+ double[] data = {1.0f, 2.0f, 3.0f, 4.0f};
+ IVector<Double> vector = new RereDoubleVector(data);
+
+ // 基本运算 / Basic operations
+ IVector<Double> doubled = vector.multiplyScala(2.0f);
+ Double norm = vector.norm2();
+
+ // 统计运算 / Statistical operations
+ Double mean = vector.mean();
+ Double std = vector.std();
+
+ // 切片操作 / Slicing operations
+ IVector<Double> slice = vector.slice(1, 3);
+ IVector<Double> squared = vector.squre();
+ }
  * </pre>
  *
  * @author lteb2
  * @version 1.0
  * @since 1.0
  */
-public class RereVector implements IVector {
+public class RereDoubleVector implements IDoubleVector {
 
     /**
      * 向量数据存储数组 / Vector data storage array
      * <p>
-     * 使用一维float数组存储向量数据，data[i]表示第i个元素 Uses 1D float array to store vector
+     * 使用一维Double数组存储向量数据，data[i]表示第i个元素 Uses 1D Double array to store vector
      * data, data[i] represents the i-th element
      * </p>
      */
-    private final float data[];
-    
+    private final double data[];
+
     // ========== 性能优化相关字段 / Performance Optimization Fields ==========
-    
     /**
      * 向量对象池 / Vector object pool
      */
-    private static final Queue<RereVector> VECTOR_POOL = new ConcurrentLinkedQueue<>();
-    
+    private static final Queue<RereDoubleVector> VECTOR_POOL = new ConcurrentLinkedQueue<>();
+
     /**
      * 预分配的内存缓冲区 / Pre-allocated memory buffers
      */
-    private static final ThreadLocal<float[]> BUFFER = 
-        ThreadLocal.withInitial(() -> new float[1024 * 1024]);
-    
+    private static final ThreadLocal<double[]> BUFFER
+            = ThreadLocal.withInitial(() -> new double[1024 * 1024]);
+
     /**
      * 是否启用并行计算 / Whether parallel computation is enabled
      */
     private static volatile boolean PARALLEL_ENABLED = true;
-    
+
     // ========== GPU相关字段 / GPU Related Fields ==========
-    
     /**
      * GPU是否可用 / Whether GPU is available
      */
-    private static final boolean GPU_ENABLED = GPUComputeUtils.isGPUAvailable();
-    
+    private static final boolean GPU_ENABLED = GPUComputeDoubleUtils.isGPUAvailable();
+
     /**
      * GPU计算阈值（元素数） / GPU computation threshold (elements)
      */
-    private static final int GPU_THRESHOLD = GPUConfig.GPU_THRESHOLD; 
-    
+    private static final int GPU_THRESHOLD = GPUConfig.GPU_THRESHOLD;
+
     /**
      * 线程池用于并行计算 / Thread pool for parallel computation
      */
-    private static final ExecutorService THREAD_POOL = 
-        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    
+    private static final ExecutorService THREAD_POOL
+            = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
     // ========== 对象池化和内存管理方法 / Object Pooling and Memory Management Methods ==========
-    
     /**
      * 从对象池获取向量实例 / Get vector instance from object pool
      */
-    public static RereVector borrowVector(int length) {
-        RereVector vector = VECTOR_POOL.poll();
+    public static RereDoubleVector borrowVector(int length) {
+        RereDoubleVector vector = VECTOR_POOL.poll();
         if (vector == null) {
-            return new RereVector(length);
+            return new RereDoubleVector(length);
         }
         return vector.reset(length);
     }
-    
+
     /**
      * 将向量返回到对象池 / Return vector to object pool
      */
@@ -138,96 +135,99 @@ public class RereVector implements IVector {
             VECTOR_POOL.offer(this);
         }
     }
-    
+
     /**
      * 重置向量大小 / Reset vector size
      */
-    private RereVector reset(int length) {
+    private RereDoubleVector reset(int length) {
         // 由于data是final的，无法重置，直接返回新实例
-        return new RereVector(length);
+        return new RereDoubleVector(length);
     }
-    
+
     /**
      * 预分配内存的构造函数 / Constructor with pre-allocated memory
      */
-    public RereVector(int length) {
-        this.data = new float[length];
+    public RereDoubleVector(int length) {
+        this.data = new double[length];
     }
-    
+
     /**
      * 获取预分配缓冲区 / Get pre-allocated buffer
      */
-    private static float[] getBuffer(int size) {
-        float[] buffer = BUFFER.get();
+    private static double[] getBuffer(int size) {
+        double[] buffer = BUFFER.get();
         if (buffer.length < size) {
-            return new float[size];
+            return new double[size];
         }
         return buffer;
     }
-    
+
     /**
      * 设置并行计算开关 / Set parallel computation switch
      */
     public static void setParallelEnabled(boolean enabled) {
         PARALLEL_ENABLED = enabled;
     }
-    
+
     /**
      * 关闭线程池 / Shutdown thread pool
      */
     public static void shutdown() {
         THREAD_POOL.shutdown();
-        GPUComputeUtils.cleanup(); // 清理GPU资源
+        GPUComputeDoubleUtils.cleanup(); // 清理GPU资源
     }
-    
-    // ========== GPU相关方法 / GPU Related Methods ==========
-    
+
+
     /**
      * 检查GPU是否启用 / Check if GPU is enabled
      */
     public static boolean isGPUEnabled() {
         return GPU_ENABLED;
     }
-    
+
     /**
      * 获取GPU信息 / Get GPU information
      */
     public static String getGPUInfo() {
-        return GPUComputeUtils.getGPUInfo();
+        return GPUComputeDoubleUtils.getGPUInfo();
     }
 
     /**
      * 向量构造函数（Vector Constructor）
-     * 
-     * <p>使用给定的float数组创建向量实例。这是RereVector的主要构造函数，
-     * 用于将一维float数组包装为向量对象，提供丰富的向量运算功能。</p>
-     * 
-     * <p>设计特点：</p>
+     *
+     * <p>
+     * 使用给定的Double数组创建向量实例。这是RereVector的主要构造函数，
+     * 用于将一维Double数组包装为向量对象，提供丰富的向量运算功能。</p>
+     *
+     * <p>
+     * 设计特点：</p>
      * <ul>
-     *   <li><strong>数据封装</strong>：将原始数组封装为向量对象，提供面向对象的接口</li>
-     *   <li><strong>不可变性</strong>：内部数据数组为final，确保向量创建后数据不变</li>
-     *   <li><strong>空值检查</strong>：严格检查输入参数，防止空指针异常</li>
-     *   <li><strong>性能优化</strong>：直接引用输入数组，避免不必要的内存拷贝</li>
-     * </ul>
-     * 
-     * <p>使用场景：</p>
-     * <ul>
-     *   <li>从外部数据源创建向量（文件读取、网络传输等）</li>
-     *   <li>将计算结果转换为向量对象</li>
-     *   <li>与其他向量运算方法配合使用</li>
-     * </ul>
-     * 
-     * <p>注意事项：</p>
-     * <ul>
-     *   <li>输入数组不应为null，否则抛出IllegalArgumentException</li>
-     *   <li>向量创建后，内部数据与输入数组共享引用</li>
-     *   <li>修改输入数组会影响向量数据，建议传入数组的副本</li>
+     * <li><strong>数据封装</strong>：将原始数组封装为向量对象，提供面向对象的接口</li>
+     * <li><strong>不可变性</strong>：内部数据数组为final，确保向量创建后数据不变</li>
+     * <li><strong>空值检查</strong>：严格检查输入参数，防止空指针异常</li>
+     * <li><strong>性能优化</strong>：直接引用输入数组，避免不必要的内存拷贝</li>
      * </ul>
      *
-     * @param data 一维float数组，表示向量数据。数组长度决定向量维度
+     * <p>
+     * 使用场景：</p>
+     * <ul>
+     * <li>从外部数据源创建向量（文件读取、网络传输等）</li>
+     * <li>将计算结果转换为向量对象</li>
+     * <li>与其他向量运算方法配合使用</li>
+     * </ul>
+     *
+     * <p>
+     * 注意事项：</p>
+     * <ul>
+     * <li>输入数组不应为null，否则抛出IllegalArgumentException</li>
+     * <li>向量创建后，内部数据与输入数组共享引用</li>
+     * <li>修改输入数组会影响向量数据，建议传入数组的副本</li>
+     * </ul>
+     *
+     * @param data 一维Double数组，表示向量数据。数组长度决定向量维度
      * @throws IllegalArgumentException 当输入数据为null时抛出异常
      */
-    public RereVector(float[] data) {
+    public RereDoubleVector(double[] data) {
         // 参数验证：确保输入数据不为null
         if (data == null) {
             throw new IllegalArgumentException("向量数据不能为null / Vector data cannot be null");
@@ -236,39 +236,53 @@ public class RereVector implements IVector {
         this.data = data;
     }
 
+    public RereDoubleVector(Double[] data) {
+        // 参数验证：确保输入数据不为null
+        if (data == null) {
+            throw new IllegalArgumentException("向量数据不能为null / Vector data cannot be null");
+        }
+        // 直接引用输入数组，避免内存拷贝，提高性能
+        this.data = RereMathUtil.toPrimitive(data);
+    }
+
     /**
      * 向量减法运算（Vector Subtraction）
-     * 
-     * <p>计算两个向量的元素级减法，即result[i] = this[i] - vec[i]。
+     *
+     * <p>
+     * 计算两个向量的元素级减法，即result[i] = this[i] - vec[i]。
      * 这是线性代数中的基本运算，广泛应用于向量计算、数值分析和机器学习等领域。</p>
-     * 
-     * <p>数学定义：</p>
+     *
+     * <p>
+     * 数学定义：</p>
      * <ul>
-     *   <li>对于向量a = [a₁, a₂, ..., aₙ]和b = [b₁, b₂, ..., bₙ]</li>
-     *   <li>减法结果c = a - b = [a₁-b₁, a₂-b₂, ..., aₙ-bₙ]</li>
-     *   <li>要求两个向量具有相同的维度</li>
+     * <li>对于向量a = [a₁, a₂, ..., aₙ]和b = [b₁, b₂, ..., bₙ]</li>
+     * <li>减法结果c = a - b = [a₁-b₁, a₂-b₂, ..., aₙ-bₙ]</li>
+     * <li>要求两个向量具有相同的维度</li>
      * </ul>
-     * 
-     * <p>性能优化策略：</p>
+     *
+     * <p>
+     * 性能优化策略：</p>
      * <ul>
-     *   <li><strong>GPU加速</strong>：对于大向量（超过GPU阈值），优先使用GPU并行计算</li>
-     *   <li><strong>CPU回退</strong>：GPU计算失败时自动回退到CPU计算</li>
-     *   <li><strong>内存优化</strong>：使用预分配的结果数组，避免频繁内存分配</li>
+     * <li><strong>GPU加速</strong>：对于大向量（超过GPU阈值），优先使用GPU并行计算</li>
+     * <li><strong>CPU回退</strong>：GPU计算失败时自动回退到CPU计算</li>
+     * <li><strong>内存优化</strong>：使用预分配的结果数组，避免频繁内存分配</li>
      * </ul>
-     * 
-     * <p>算法复杂度：</p>
+     *
+     * <p>
+     * 算法复杂度：</p>
      * <ul>
-     *   <li>时间复杂度：O(n)，其中n是向量长度</li>
-     *   <li>空间复杂度：O(n)，需要存储结果向量</li>
-     *   <li>并行度：GPU版本可达到O(n/p)，其中p是并行处理器数量</li>
+     * <li>时间复杂度：O(n)，其中n是向量长度</li>
+     * <li>空间复杂度：O(n)，需要存储结果向量</li>
+     * <li>并行度：GPU版本可达到O(n/p)，其中p是并行处理器数量</li>
      * </ul>
-     * 
-     * <p>应用场景：</p>
+     *
+     * <p>
+     * 应用场景：</p>
      * <ul>
-     *   <li>梯度下降算法中的参数更新</li>
-     *   <li>向量场计算中的差分运算</li>
-     *   <li>数值分析中的误差计算</li>
-     *   <li>机器学习中的损失函数计算</li>
+     * <li>梯度下降算法中的参数更新</li>
+     * <li>向量场计算中的差分运算</li>
+     * <li>数值分析中的误差计算</li>
+     * <li>机器学习中的损失函数计算</li>
      * </ul>
      *
      * @param vec 被减向量，必须与当前向量具有相同的长度
@@ -276,74 +290,80 @@ public class RereVector implements IVector {
      * @throws IllegalArgumentException 当输入向量为null或长度不匹配时抛出异常
      */
     @Override
-    public IVector sub(IVector vec) {
+    public IVector<Double> sub(IVector<Double> vec1) {
         // 参数验证：确保输入向量不为null
-        if (vec == null) {
+        if (vec1 == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
         // 维度检查：确保两个向量长度相同
-        if (this.data.length != vec.length()) {
-            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + vec.length()
-                    + " / Vector lengths don't match: " + this.data.length + " != " + vec.length());
+        if (this.data.length != vec1.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + vec1.length()
+                    + " / Vector lengths don't match: " + this.data.length + " != " + vec1.length());
         }
+        IDoubleVector vec0 = (IDoubleVector)vec1;
 
         int len = this.data.length;  // 向量长度
-        
+
         // GPU加速策略：对于大向量优先使用GPU计算
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
                 // 尝试使用GPU进行向量减法计算
-                return GPUComputeUtils.gpuVectorSub(this, vec);
+                return GPUComputeDoubleUtils.gpuVectorSub(this, vec0);
             } catch (Exception e) {
                 // GPU计算失败时的容错处理：自动回退到CPU计算
                 System.out.println("GPU向量减法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // CPU计算：使用简单的循环实现元素级减法
-        float[] v = new float[len];  // 预分配结果数组
+        double[] v = new double[len];  // 预分配结果数组
         for (int i = 0; i < len; i++) {
-            v[i] = this.data[i] - vec.getData()[i];  // 对应元素相减
+            v[i] = this.data[i] - vec0.getData()[i];  // 对应元素相减
         }
-        var vv = IVector.of(v);  // 创建结果向量对象
+        var vv = IDoubleVector.of(v);  // 创建结果向量对象
         return vv;
     }
 
     /**
      * 向量加法运算（Vector Addition）
-     * 
-     * <p>计算两个向量的元素级加法，即result[i] = this[i] + vec[i]。
+     *
+     * <p>
+     * 计算两个向量的元素级加法，即result[i] = this[i] + vec[i]。
      * 这是线性代数中最基本的运算之一，是构建复杂数学运算的基础。</p>
-     * 
-     * <p>数学定义：</p>
+     *
+     * <p>
+     * 数学定义：</p>
      * <ul>
-     *   <li>对于向量a = [a₁, a₂, ..., aₙ]和b = [b₁, b₂, ..., bₙ]</li>
-     *   <li>加法结果c = a + b = [a₁+b₁, a₂+b₂, ..., aₙ+bₙ]</li>
-     *   <li>满足交换律：a + b = b + a</li>
-     *   <li>满足结合律：(a + b) + c = a + (b + c)</li>
+     * <li>对于向量a = [a₁, a₂, ..., aₙ]和b = [b₁, b₂, ..., bₙ]</li>
+     * <li>加法结果c = a + b = [a₁+b₁, a₂+b₂, ..., aₙ+bₙ]</li>
+     * <li>满足交换律：a + b = b + a</li>
+     * <li>满足结合律：(a + b) + c = a + (b + c)</li>
      * </ul>
-     * 
-     * <p>性能优化策略：</p>
+     *
+     * <p>
+     * 性能优化策略：</p>
      * <ul>
-     *   <li><strong>GPU加速</strong>：大向量使用GPU并行计算，显著提升性能</li>
-     *   <li><strong>CPU优化</strong>：小向量使用优化的CPU算法，包括SIMD指令和缓存优化</li>
-     *   <li><strong>自适应选择</strong>：根据向量大小自动选择最优计算策略</li>
-     *   <li><strong>容错机制</strong>：GPU失败时自动回退到CPU计算</li>
+     * <li><strong>GPU加速</strong>：大向量使用GPU并行计算，显著提升性能</li>
+     * <li><strong>CPU优化</strong>：小向量使用优化的CPU算法，包括SIMD指令和缓存优化</li>
+     * <li><strong>自适应选择</strong>：根据向量大小自动选择最优计算策略</li>
+     * <li><strong>容错机制</strong>：GPU失败时自动回退到CPU计算</li>
      * </ul>
-     * 
-     * <p>算法复杂度：</p>
+     *
+     * <p>
+     * 算法复杂度：</p>
      * <ul>
-     *   <li>时间复杂度：O(n)，其中n是向量长度</li>
-     *   <li>空间复杂度：O(n)，需要存储结果向量</li>
-     *   <li>并行度：GPU版本可达到O(n/p)，其中p是并行处理器数量</li>
+     * <li>时间复杂度：O(n)，其中n是向量长度</li>
+     * <li>空间复杂度：O(n)，需要存储结果向量</li>
+     * <li>并行度：GPU版本可达到O(n/p)，其中p是并行处理器数量</li>
      * </ul>
-     * 
-     * <p>应用场景：</p>
+     *
+     * <p>
+     * 应用场景：</p>
      * <ul>
-     *   <li>线性组合计算：c₁v₁ + c₂v₂ + ... + cₙvₙ</li>
-     *   <li>神经网络中的前向传播</li>
-     *   <li>数值积分和微分方程求解</li>
-     *   <li>信号处理中的信号叠加</li>
+     * <li>线性组合计算：c₁v₁ + c₂v₂ + ... + cₙvₙ</li>
+     * <li>神经网络中的前向传播</li>
+     * <li>数值积分和微分方程求解</li>
+     * <li>信号处理中的信号叠加</li>
      * </ul>
      *
      * @param vec 加数向量，必须与当前向量具有相同的长度
@@ -351,7 +371,7 @@ public class RereVector implements IVector {
      * @throws IllegalArgumentException 当输入向量为null或长度不匹配时抛出异常
      */
     @Override
-    public IVector add(IVector vec) {
+    public IVector<Double> add(IVector<Double> vec) {
         // 参数验证：确保输入向量不为null
         if (vec == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
@@ -363,58 +383,62 @@ public class RereVector implements IVector {
         }
 
         int len = this.data.length;  // 向量长度
-        
+
         // GPU加速策略：对于大向量优先使用GPU计算
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
                 // 尝试使用GPU进行向量加法计算
-                return GPUComputeUtils.gpuVectorAdd(this, vec);
+                return GPUComputeDoubleUtils.gpuVectorAdd(this, (IDoubleVector)vec);
             } catch (Exception e) {
                 // GPU计算失败时的容错处理：自动回退到CPU计算
                 System.out.println("GPU向量加法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // CPU计算：使用优化的CPU算法
         return cpuVectorAdd(vec);
     }
-    
+
     /**
      * CPU向量加法优化实现（CPU Vector Addition Optimization）
-     * 
-     * <p>这是CPU版本的向量加法实现，采用多层次的性能优化策略。
-     * 根据向量大小自动选择最优的计算方法，在保证数值精度的同时最大化计算性能。</p>
-     * 
-     * <p>优化策略分层：</p>
+     *
+     * <p>
+     * 这是CPU版本的向量加法实现，采用多层次的性能优化策略。 根据向量大小自动选择最优的计算方法，在保证数值精度的同时最大化计算性能。</p>
+     *
+     * <p>
+     * 优化策略分层：</p>
      * <ul>
-     *   <li><strong>小向量（≤512）</strong>：使用缓存友好的基础算法，避免并行开销</li>
-     *   <li><strong>中等向量（513-50000）</strong>：使用SIMD向量化指令，提高单线程性能</li>
-     *   <li><strong>大向量（>50000）</strong>：使用多线程并行计算，充分利用多核CPU</li>
+     * <li><strong>小向量（≤512）</strong>：使用缓存友好的基础算法，避免并行开销</li>
+     * <li><strong>中等向量（513-50000）</strong>：使用SIMD向量化指令，提高单线程性能</li>
+     * <li><strong>大向量（>50000）</strong>：使用多线程并行计算，充分利用多核CPU</li>
      * </ul>
-     * 
-     * <p>性能优化技术：</p>
+     *
+     * <p>
+     * 性能优化技术：</p>
      * <ul>
-     *   <li><strong>循环展开</strong>：减少循环控制开销，提高指令级并行度</li>
-     *   <li><strong>SIMD指令</strong>：利用CPU的向量处理单元，一次处理多个数据</li>
-     *   <li><strong>缓存优化</strong>：优化内存访问模式，提高缓存命中率</li>
-     *   <li><strong>并行计算</strong>：利用多核CPU的并行处理能力</li>
+     * <li><strong>循环展开</strong>：减少循环控制开销，提高指令级并行度</li>
+     * <li><strong>SIMD指令</strong>：利用CPU的向量处理单元，一次处理多个数据</li>
+     * <li><strong>缓存优化</strong>：优化内存访问模式，提高缓存命中率</li>
+     * <li><strong>并行计算</strong>：利用多核CPU的并行处理能力</li>
      * </ul>
-     * 
-     * <p>算法选择逻辑：</p>
+     *
+     * <p>
+     * 算法选择逻辑：</p>
      * <ul>
-     *   <li>首先检查向量大小和并行计算是否启用</li>
-     *   <li>根据大小阈值选择相应的优化算法</li>
-     *   <li>确保所有情况下都能获得最佳性能</li>
+     * <li>首先检查向量大小和并行计算是否启用</li>
+     * <li>根据大小阈值选择相应的优化算法</li>
+     * <li>确保所有情况下都能获得最佳性能</li>
      * </ul>
-     * 
+     *
      * @param vec 加数向量，必须与当前向量具有相同的长度
      * @return 新的向量对象，包含CPU优化的加法运算结果
      */
-    private IVector cpuVectorAdd(IVector vec) {
+    private IVector<Double> cpuVectorAdd(IVector<Double> vec1) {
         int len = this.data.length;        // 向量长度
-        float[] otherData = vec.getData(); // 获取加数向量的数据
-        float[] result = new float[len];   // 预分配结果数组
-        
+        IDoubleVector vec0 = (IDoubleVector)vec1;
+        double[] otherData = vec0.getData(); // 获取加数向量的数据
+        double[] result = new double[len];   // 预分配结果数组
+
         // 根据向量大小选择最优的优化策略
         if (len > 50000 && PARALLEL_ENABLED) {
             // 大向量策略：使用多线程并行计算
@@ -429,30 +453,30 @@ public class RereVector implements IVector {
             // 对于小向量，简单循环比复杂优化更高效
             cacheOptimizedAdd(otherData, result, len);
         }
-        
-        return IVector.of(result);  // 创建并返回结果向量
+
+        return IDoubleVector.of(result);  // 创建并返回结果向量
     }
-    
+
     /**
      * 缓存优化的基础向量加法 / Cache-optimized basic vector addition
      */
-    private void cacheOptimizedAdd(float[] otherData, float[] result, int len) {
+    private void cacheOptimizedAdd(double[] otherData, double[] result, int len) {
         // 对于小向量，简单的顺序访问最优
         for (int i = 0; i < len; i++) {
             result[i] = this.data[i] + otherData[i];
         }
     }
-    
+
     /**
      * SIMD优化的向量化加法 / SIMD-optimized vectorized addition
      */
-    private void simdVectorizedAdd(float[] otherData, float[] result, int len) {
+    private void simdVectorizedAdd(double[] otherData, double[] result, int len) {
         int i = 0;
-        
+
         // 8路循环展开，更好地利用CPU流水线和SIMD指令
         final int unrollFactor = 8;
         final int alignedLen = len - (len % unrollFactor);
-        
+
         for (; i < alignedLen; i += unrollFactor) {
             // 手动展开循环，编译器更容易优化为SIMD指令
             result[i] = this.data[i] + otherData[i];
@@ -464,44 +488,44 @@ public class RereVector implements IVector {
             result[i + 6] = this.data[i + 6] + otherData[i + 6];
             result[i + 7] = this.data[i + 7] + otherData[i + 7];
         }
-        
+
         // 处理剩余元素
         for (; i < len; i++) {
             result[i] = this.data[i] + otherData[i];
         }
     }
-    
+
     /**
      * 优化的并行向量加法 / Optimized parallel vector addition
      */
-    private void parallelAdd(float[] otherData, float[] result, int len) {
-        int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), 
-                                 Math.max(1, len / 10000)); // 动态调整线程数
-        
+    private void parallelAdd(double[] otherData, double[] result, int len) {
+        int numThreads = Math.min(Runtime.getRuntime().availableProcessors(),
+                Math.max(1, len / 10000)); // 动态调整线程数
+
         // 确保每个线程至少处理足够的元素以摊销线程开销
         final int minElementsPerThread = 10000;
         if (len / numThreads < minElementsPerThread) {
             numThreads = Math.max(1, len / minElementsPerThread);
         }
-        
+
         final int elementsPerThread = len / numThreads;
         final int remainder = len % numThreads;
-        
+
         List<Future<Void>> futures = new ArrayList<>(numThreads);
-        
+
         for (int t = 0; t < numThreads; t++) {
             final int startIdx = t * elementsPerThread;
-            final int endIdx = (t == numThreads - 1) ? 
-                              startIdx + elementsPerThread + remainder : 
-                              startIdx + elementsPerThread;
-            
+            final int endIdx = (t == numThreads - 1)
+                    ? startIdx + elementsPerThread + remainder
+                    : startIdx + elementsPerThread;
+
             futures.add(THREAD_POOL.submit(() -> {
                 // 在每个线程内部也使用SIMD优化
                 simdVectorizedAddRange(otherData, result, startIdx, endIdx);
                 return null;
             }));
         }
-        
+
         // 等待所有线程完成
         for (Future<Void> future : futures) {
             try {
@@ -511,15 +535,15 @@ public class RereVector implements IVector {
             }
         }
     }
-    
+
     /**
      * 范围内的SIMD向量化加法 / SIMD vectorized addition within range
      */
-    private void simdVectorizedAddRange(float[] otherData, float[] result, int start, int end) {
+    private void simdVectorizedAddRange(double[] otherData, double[] result, int start, int end) {
         int i = start;
         final int unrollFactor = 8;
         final int alignedEnd = end - ((end - start) % unrollFactor);
-        
+
         for (; i < alignedEnd; i += unrollFactor) {
             result[i] = this.data[i] + otherData[i];
             result[i + 1] = this.data[i + 1] + otherData[i + 1];
@@ -530,7 +554,7 @@ public class RereVector implements IVector {
             result[i + 6] = this.data[i + 6] + otherData[i + 6];
             result[i + 7] = this.data[i + 7] + otherData[i + 7];
         }
-        
+
         for (; i < end; i++) {
             result[i] = this.data[i] + otherData[i];
         }
@@ -549,7 +573,7 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public float innerProduct(IVector vec) {
+    public Double innerProduct(IVector<Double> vec) {
         if (vec == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -559,28 +583,30 @@ public class RereVector implements IVector {
         }
 
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorDot(this, vec);
+                return GPUComputeDoubleUtils.gpuVectorDot(this, (IDoubleVector)vec);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量内积失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU优化算法
         return cpuInnerProduct(vec);
     }
-    
+
+
     /**
      * CPU向量内积（原有算法） / CPU vector inner product (original algorithm)
      */
-    private float cpuInnerProduct(IVector vec) {
+    private Double cpuInnerProduct(IVector<Double> vec1) {
         int len = this.data.length;
-        float[] otherData = vec.getData();
-        
+        IDoubleVector vec0 = (IDoubleVector)vec1;
+        double[] otherData = vec0.getData();
+
         // 优化的算法选择策略
         if (len < 64) {
             // 极小向量：直接计算，避免函数调用开销
@@ -596,49 +622,49 @@ public class RereVector implements IVector {
             return parallelInnerProduct(otherData, len);
         }
     }
-    
+
     /**
      * 直接内积计算（极小向量） / Direct inner product calculation for tiny vectors
      */
-    private float directInnerProduct(float[] otherData, int len) {
-        float sum = 0.0f;
+    private Double directInnerProduct(double[] otherData, int len) {
+        double sum = 0.0;
         for (int i = 0; i < len; i++) {
             sum += this.data[i] * otherData[i];
         }
         return sum;
     }
-    
+
     /**
      * 循环展开的内积计算 / Unrolled inner product calculation
      */
-    private float unrolledInnerProduct(float[] otherData, int len) {
-        float sum = 0.0f;
+    private Double unrolledInnerProduct(double[] otherData, int len) {
+        double sum = 0.0;
         int i = 0;
-        
+
         // 4路循环展开
         for (; i < len - 3; i += 4) {
-            sum += this.data[i] * otherData[i] +
-                   this.data[i + 1] * otherData[i + 1] +
-                   this.data[i + 2] * otherData[i + 2] +
-                   this.data[i + 3] * otherData[i + 3];
+            sum += this.data[i] * otherData[i]
+                    + this.data[i + 1] * otherData[i + 1]
+                    + this.data[i + 2] * otherData[i + 2]
+                    + this.data[i + 3] * otherData[i + 3];
         }
-        
+
         // 处理剩余元素
         for (; i < len; i++) {
             sum += this.data[i] * otherData[i];
         }
-        
+
         return sum;
     }
-    
+
     /**
      * SIMD风格的内积计算 / SIMD-style inner product calculation
      */
-    private float simdStyleInnerProduct(float[] otherData, int len) {
+    private Double simdStyleInnerProduct(double[] otherData, int len) {
         // 使用多个累加器减少数据依赖
-        float sum1 = 0.0f, sum2 = 0.0f, sum3 = 0.0f, sum4 = 0.0f;
+        double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
         int i = 0;
-        
+
         // 8路展开，使用4个累加器
         for (; i < len - 7; i += 8) {
             sum1 += this.data[i] * otherData[i] + this.data[i + 4] * otherData[i + 4];
@@ -646,111 +672,112 @@ public class RereVector implements IVector {
             sum3 += this.data[i + 2] * otherData[i + 2] + this.data[i + 6] * otherData[i + 6];
             sum4 += this.data[i + 3] * otherData[i + 3] + this.data[i + 7] * otherData[i + 7];
         }
-        
+
         // 处理剩余元素
-        float remainderSum = 0.0f;
+        double remainderSum = 0.0;
         for (; i < len; i++) {
             remainderSum += this.data[i] * otherData[i];
         }
-        
+
         return sum1 + sum2 + sum3 + sum4 + remainderSum;
     }
-    
+
     /**
      * 基础内积计算 / Basic inner product calculation
      */
-    private float basicInnerProduct(float[] otherData, int len) {
-        float sum = 0;
+    private Double basicInnerProduct(double[] otherData, int len) {
+        double sum = 0;
         for (int i = 0; i < len; i++) {
             sum += this.data[i] * otherData[i];
         }
         return sum;
     }
-    
+
     /**
-     * 使用Kahan求和算法的向量化内积计算 / Kahan summation vectorized inner product calculation
+     * 使用Kahan求和算法的向量化内积计算 / Kahan summation vectorized inner product
+     * calculation
      */
-    private float kahanVectorizedInnerProduct(float[] otherData, int len) {
+    private Double kahanVectorizedInnerProduct(double[] otherData, int len) {
         // 使用多个累加器减少数据依赖，提高并行度
-        float sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0;
-        float c1 = 0, c2 = 0, c3 = 0, c4 = 0; // Kahan求和的补偿项
-        
+        double sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0;
+        double c1 = 0, c2 = 0, c3 = 0, c4 = 0; // Kahan求和的补偿项
+
         int i = 0;
         final int unrollFactor = 4;
         final int alignedLen = len - (len % unrollFactor);
-        
+
         // 4路展开，每路使用Kahan求和
         for (; i < alignedLen; i += unrollFactor) {
             // 第一路
-            float prod1 = this.data[i] * otherData[i];
-            float y1 = prod1 - c1;
-            float temp1 = sum1 + y1;
+            double prod1 = this.data[i] * otherData[i];
+            double y1 = prod1 - c1;
+            double temp1 = sum1 + y1;
             c1 = (temp1 - sum1) - y1;
             sum1 = temp1;
-            
+
             // 第二路
-            float prod2 = this.data[i + 1] * otherData[i + 1];
-            float y2 = prod2 - c2;
-            float temp2 = sum2 + y2;
+            double prod2 = this.data[i + 1] * otherData[i + 1];
+            double y2 = prod2 - c2;
+            double temp2 = sum2 + y2;
             c2 = (temp2 - sum2) - y2;
             sum2 = temp2;
-            
+
             // 第三路
-            float prod3 = this.data[i + 2] * otherData[i + 2];
-            float y3 = prod3 - c3;
-            float temp3 = sum3 + y3;
+            double prod3 = this.data[i + 2] * otherData[i + 2];
+            double y3 = prod3 - c3;
+            double temp3 = sum3 + y3;
             c3 = (temp3 - sum3) - y3;
             sum3 = temp3;
-            
+
             // 第四路
-            float prod4 = this.data[i + 3] * otherData[i + 3];
-            float y4 = prod4 - c4;
-            float temp4 = sum4 + y4;
+            double prod4 = this.data[i + 3] * otherData[i + 3];
+            double y4 = prod4 - c4;
+            double temp4 = sum4 + y4;
             c4 = (temp4 - sum4) - y4;
             sum4 = temp4;
         }
-        
+
         // 处理剩余元素
-        float remainderSum = 0;
+        double remainderSum = 0;
         for (; i < len; i++) {
             remainderSum += this.data[i] * otherData[i];
         }
-        
+
         return sum1 + sum2 + sum3 + sum4 + remainderSum;
     }
-    
+
     /**
      * 优化的并行内积计算 / Optimized parallel inner product calculation
      */
-    private float parallelInnerProduct(float[] otherData, int len) {
+    private Double parallelInnerProduct(double[] otherData, int len) {
         // 更保守的线程数计算，避免过度并行化
         int numThreads = Math.min(4, Math.max(1, len / 100000));
-        
+
         if (numThreads == 1) {
             // 单线程情况下使用SIMD风格计算
             return simdStyleInnerProduct(otherData, len);
         }
-        
+
         final int elementsPerThread = len / numThreads;
         final int remainder = len % numThreads;
-        
-        List<Future<Float>> futures = new ArrayList<>(numThreads);
-        
+
+        List<Future<Double>> futures = new ArrayList<>(numThreads);
+
         for (int t = 0; t < numThreads; t++) {
             final int startIdx = t * elementsPerThread;
-            final int endIdx = (t == numThreads - 1) ? 
-                              startIdx + elementsPerThread + remainder : 
-                              startIdx + elementsPerThread;
-            
+            final int endIdx = (t == numThreads - 1)
+                    ? startIdx + elementsPerThread + remainder
+                    : startIdx + elementsPerThread;
+
             futures.add(THREAD_POOL.submit(() -> {
                 // 每个线程内部使用SIMD风格计算
                 return simdInnerProductRange(otherData, startIdx, endIdx);
             }));
         }
-        
+
         // 简单求和合并结果
-        float totalSum = 0.0f;
-        for (Future<Float> future : futures) {
+        double totalSum = 0.0;
+        for (Future<Double> future : futures) {
             try {
                 totalSum += future.get();
             } catch (InterruptedException | ExecutionException e) {
@@ -758,17 +785,17 @@ public class RereVector implements IVector {
                 throw new RuntimeException("并行内积计算失败", e);
             }
         }
-        
+
         return totalSum;
     }
-    
+
     /**
      * 范围内的SIMD风格内积计算 / SIMD-style inner product for range
      */
-    private float simdInnerProductRange(float[] otherData, int start, int end) {
-        float sum1 = 0.0f, sum2 = 0.0f, sum3 = 0.0f, sum4 = 0.0f;
+    private Double simdInnerProductRange(double[] otherData, int start, int end) {
+        double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
         int i = start;
-        
+
         // 4路展开
         for (; i < end - 3; i += 4) {
             sum1 += this.data[i] * otherData[i];
@@ -776,23 +803,23 @@ public class RereVector implements IVector {
             sum3 += this.data[i + 2] * otherData[i + 2];
             sum4 += this.data[i + 3] * otherData[i + 3];
         }
-        
+
         // 处理剩余元素
-        float remainderSum = 0.0f;
+        double remainderSum = 0.0;
         for (; i < end; i++) {
             remainderSum += this.data[i] * otherData[i];
         }
-        
+
         return sum1 + sum2 + sum3 + sum4 + remainderSum;
     }
-    
+
     /**
      * 范围内的Kahan求和内积计算 / Kahan summation inner product within range
      */
-    private double kahanInnerProductRange(float[] otherData, int start, int end) {
+    private double kahanInnerProductRange(double[] otherData, int start, int end) {
         double sum = 0;
         double c = 0; // Kahan求和补偿项
-        
+
         for (int i = start; i < end; i++) {
             double prod = (double) this.data[i] * otherData[i];
             double y = prod - c;
@@ -800,12 +827,12 @@ public class RereVector implements IVector {
             c = (temp - sum) - y;
             sum = temp;
         }
-        
+
         return sum;
     }
 
     @Override
-    public float dot(IVector vec) {
+    public Double dot(IVector<Double> vec) {
         return this.innerProduct(vec);
     }
 
@@ -819,89 +846,93 @@ public class RereVector implements IVector {
      * @return 2范数 / L2 norm
      */
     @Override
-    public float norm2() {
+    public Double norm2() {
         int len = this.data.length;
-        
-        if (len == 0) return 0.0f;
-        if (len == 1) return Math.abs(this.data[0]);
-        
+
+        if (len == 0) {
+            return 0.0;
+        }
+        if (len == 1) {
+            return Math.abs(this.data[0]);
+        }
+
         // 使用优化的平方和计算，避免Math.pow的开销
         if (len > 100000 && PARALLEL_ENABLED) {
-            return (float) Math.sqrt(parallelSumOfSquares());
+            return Math.sqrt(parallelSumOfSquares());
         } else if (len > 256) {
-            return (float) Math.sqrt(kahanSumOfSquares());
+            return Math.sqrt(kahanSumOfSquares());
         } else {
-            return (float) Math.sqrt(basicSumOfSquares());
+            return Math.sqrt(basicSumOfSquares());
         }
     }
-    
+
     /**
      * 基础平方和计算 / Basic sum of squares calculation
      */
     private double basicSumOfSquares() {
         double sum = 0;
         for (int i = 0; i < this.data.length; i++) {
-            float val = this.data[i];
+            double val = this.data[i];
             sum += val * val; // 避免Math.pow的函数调用开销
         }
         return sum;
     }
-    
+
     /**
      * Kahan求和的平方和计算 / Kahan summation sum of squares calculation
      */
     private double kahanSumOfSquares() {
         double sum = 0;
         double c = 0; // 补偿项
-        
+
         for (int i = 0; i < this.data.length; i++) {
-            float val = this.data[i];
+            double val = this.data[i];
             double square = val * val;
             double y = square - c;
             double temp = sum + y;
             c = (temp - sum) - y;
             sum = temp;
         }
-        
+
         return sum;
     }
-    
+
     /**
      * 并行平方和计算 / Parallel sum of squares calculation
      */
     private double parallelSumOfSquares() {
         int len = this.data.length;
-        int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), 
-                                 Math.max(1, len / 25000));
-        
+        int numThreads = Math.min(Runtime.getRuntime().availableProcessors(),
+                Math.max(1, len / 25000));
+
         final int elementsPerThread = len / numThreads;
         final int remainder = len % numThreads;
-        
+
         List<Future<Double>> futures = new ArrayList<>(numThreads);
-        
+
         for (int t = 0; t < numThreads; t++) {
             final int startIdx = t * elementsPerThread;
-            final int endIdx = (t == numThreads - 1) ? 
-                              startIdx + elementsPerThread + remainder : 
-                              startIdx + elementsPerThread;
-            
+            final int endIdx = (t == numThreads - 1)
+                    ? startIdx + elementsPerThread + remainder
+                    : startIdx + elementsPerThread;
+
             futures.add(THREAD_POOL.submit(() -> {
                 double sum = 0;
                 double c = 0;
-                
+
                 for (int i = startIdx; i < endIdx; i++) {
-                    float val = this.data[i];
+                    double val = this.data[i];
                     double square = val * val;
                     double y = square - c;
                     double temp = sum + y;
                     c = (temp - sum) - y;
                     sum = temp;
                 }
-                
+
                 return sum;
             }));
         }
-        
+
         // 合并结果
         double totalSum = 0;
         double c = 0;
@@ -916,7 +947,7 @@ public class RereVector implements IVector {
                 throw new RuntimeException("并行平方和计算失败", e);
             }
         }
-        
+
         return totalSum;
     }
 
@@ -930,9 +961,9 @@ public class RereVector implements IVector {
      * @return 1范数 / L1 norm
      */
     @Override
-    public float norm1() {
+    public Double norm1() {
         int len = this.data.length;
-        float sum = 0;
+        double sum = 0;
         for (int i = 0; i < len; i++) {
             sum += Math.abs(this.data[i]);
         }
@@ -950,16 +981,16 @@ public class RereVector implements IVector {
      * @throws ArithmeticException 如果标量为零 / if scalar is zero
      */
     @Override
-    public IVector divideByScalar(float p) {
+    public IVector<Double> divideByScalar(Double p) {
         if (p == 0.0f) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
 
-        float[] v = new float[this.data.length];
+        double[] v = new double[this.data.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[i] / p;
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -972,7 +1003,7 @@ public class RereVector implements IVector {
      * @return 向量的数据数组 / Data array of the vector
      */
     @Override
-    public float[] getData() {
+    public double[] getData() {
         return this.data;
     }
 
@@ -990,33 +1021,34 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public IVector multiply(IVector vec) {
-        if (vec == null) {
+    public IVector<Double> multiply(IVector<Double> vec1) {
+        IDoubleVector vec0 = (IDoubleVector)vec1;
+        if (vec1 == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
-        if (this.data.length != vec.length()) {
-            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + vec.length()
-                    + " / Vector lengths don't match: " + this.data.length + " != " + vec.length());
+        if (this.data.length != vec1.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + vec1.length()
+                    + " / Vector lengths don't match: " + this.data.length + " != " + vec1.length());
         }
 
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorMultiply(this, vec);
+                return GPUComputeDoubleUtils.gpuVectorMultiply(this, vec0);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量乘法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        float[] v = new float[this.data.length];
+        double[] v = new double[this.data.length];
         for (int i = 0; i < v.length; i++) {
-            v[i] = data[i] * vec.getData()[i];
+            v[i] = data[i] * vec0.getData()[i];
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1026,23 +1058,24 @@ public class RereVector implements IVector {
      * vector length must equal matrix row count
      * </p>
      *
-     * @param m 矩阵 / IMatrix
+     * @param m 矩阵 / IDoubleMatrix
      * @return 结果矩阵 / Result matrix
      * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length
      * doesn't match matrix row count
      */
     @Override
-    public IMatrix dot(IMatrix m) {
-        float[][] mm = new float[m.getRowNum()][m.getColNum()];
+    public IMatrix<Double> dot(IMatrix<Double> m) {
+        IDoubleMatrix m0 = (IDoubleMatrix)m;
+        double[][] mm = new double[m.getRowNum()][m.getColNum()];
         for (int i = 0; i < data.length; i++) {
-            float w = data[i];
-            float[] v = m.getData()[i];
+            double w = data[i];
+            double[] v = m0.getData()[i];
             for (int j = 0; j < v.length; j++) {
                 v[j] = w * v[j];
             }
             mm[i] = v;
         }
-        return IMatrix.of(mm);
+        return IDoubleMatrix.of(mm);
     }
 
     /**
@@ -1055,25 +1088,25 @@ public class RereVector implements IVector {
      * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
      */
     @Override
-    public IVector subScalar(float p) {
+    public IVector<Double> subScalar(Double p) {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorScalarSub(this, p);
+                return GPUComputeDoubleUtils.gpuVectorScalarSub(this, p);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量标量减法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        float[] v = new float[this.data.length];
+        double[] v = new double[this.data.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[i] - p;
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1086,25 +1119,25 @@ public class RereVector implements IVector {
      * @return 新的向量对象，包含加法结果 / New vector object containing addition result
      */
     @Override
-    public IVector addScalar(float p) {
+    public IVector<Double> addScalar(Double p) {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorScalarAdd(this, p);
+                return GPUComputeDoubleUtils.gpuVectorScalarAdd(this, p);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量标量加法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        float[] v = new float[this.data.length];
+        double[] v = new double[this.data.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[i] + p;
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1118,25 +1151,25 @@ public class RereVector implements IVector {
      * result
      */
     @Override
-    public IVector multiplyScalar(float p) {
+    public IVector<Double> multiplyScalar(Double p) {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorScalarMultiply(this, p);
+                return GPUComputeDoubleUtils.gpuVectorScalarMultiply(this, p);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量标量乘法失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        float[] v = new float[this.data.length];
+        double[] v = new double[this.data.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[i] * p;
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1148,21 +1181,21 @@ public class RereVector implements IVector {
      * @return 元素和 / Sum of elements
      */
     @Override
-    public float sum() {
+    public Double sum() {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorSum(this);
+                return GPUComputeDoubleUtils.gpuVectorSum(this);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量求和失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        float sum = 0;
+        double sum = 0;
         for (int i = 0; i < len; i++) {
             sum += this.data[i];
         }
@@ -1178,9 +1211,9 @@ public class RereVector implements IVector {
      * @return 最小值 / Minimum value
      */
     @Override
-    public float min() {
+    public Double min() {
         int len = this.data.length;
-        float min = Float.MAX_VALUE;
+        double min = Double.MAX_VALUE;
         for (int i = 0; i < len; i++) {
             if (data[i] < min) {
                 min = data[i];
@@ -1198,9 +1231,9 @@ public class RereVector implements IVector {
      * @return 最大值 / Maximum value
      */
     @Override
-    public float max() {
+    public Double max() {
         int len = this.data.length;
-        float max = Float.MIN_VALUE;
+        double max = Double.MIN_VALUE;
         for (int i = 0; i < len; i++) {
             if (data[i] > max) {
                 max = data[i];
@@ -1221,7 +1254,7 @@ public class RereVector implements IVector {
     @Override
     public int argMin() {
         int len = this.data.length;
-        float min = Float.MAX_VALUE;
+        double min = Double.MAX_VALUE;
         int ind = -1;
         for (int i = 0; i < len; i++) {
             if (data[i] < min) {
@@ -1244,7 +1277,7 @@ public class RereVector implements IVector {
     @Override
     public int argMax() {
         int len = this.data.length;
-        float max = Float.MIN_VALUE;
+        double max = Double.MIN_VALUE;
         int ind = -1;
         for (int i = 0; i < len; i++) {
             if (data[i] > max) {
@@ -1264,8 +1297,8 @@ public class RereVector implements IVector {
      * @return 平均值 / Mean value
      */
     @Override
-    public float mean() {
-        return this.sum() / (float) this.length();
+    public Double mean() {
+        return this.sum() / (double) this.length();
     }
 
     /**
@@ -1278,8 +1311,8 @@ public class RereVector implements IVector {
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
-        return (float) Math.sqrt(this.var());
+    public Double std() {
+        return Math.sqrt(this.var());
     }
 
     /**
@@ -1293,8 +1326,8 @@ public class RereVector implements IVector {
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std(int ddof) {
-        return (float) Math.sqrt(this.var(ddof));
+    public Double std(int ddof) {
+        return Math.sqrt(this.var(ddof));
     }
 
     /**
@@ -1306,8 +1339,8 @@ public class RereVector implements IVector {
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
-        return this.subScalar(this.mean()).pow(2).sum() / (float) this.length();
+    public Double var() {
+        return this.subScalar(this.mean()).pow(2d).sum() / (double) this.length();
     }
 
     /**
@@ -1321,8 +1354,8 @@ public class RereVector implements IVector {
      * @return 方差 / Variance
      */
     @Override
-    public float var(int ddof) {
-        return this.subScalar(this.mean()).pow(2).sum() / (float) (this.length() - ddof);
+    public Double var(int ddof) {
+        return this.subScalar(this.mean()).pow(2d).sum() / (double) (this.length() - ddof);
     }
 
     /**
@@ -1338,21 +1371,21 @@ public class RereVector implements IVector {
      * than 3 or standard deviation is 0
      */
     @Override
-    public float skewness() {
+    public Double skewness() {
         if (this.length() < 3) {
             throw new ArithmeticException("向量长度必须大于等于3才能计算偏度 / Vector length must be at least 3 to calculate skewness");
         }
 
-        float mean = this.mean();
-        float std = this.std();
+        double mean = this.mean();
+        double std = this.std();
 
         if (std == 0) {
             throw new ArithmeticException("标准差为0，无法计算偏度 / Standard deviation is 0, cannot calculate skewness");
         }
 
-        float sum = 0.0f;
+        double sum = 0.0;
         for (int i = 0; i < this.length(); i++) {
-            float diff = data[i] - mean;
+            double diff = data[i] - mean;
             sum += diff * diff * diff; // (x - μ)³
         }
 
@@ -1374,21 +1407,21 @@ public class RereVector implements IVector {
      * than 4 or standard deviation is 0
      */
     @Override
-    public float kurtosis() {
+    public Double kurtosis() {
         if (this.length() < 4) {
             throw new ArithmeticException("向量长度必须大于等于4才能计算峰度 / Vector length must be at least 4 to calculate kurtosis");
         }
 
-        float mean = this.mean();
-        float std = this.std();
+        double mean = this.mean();
+        double std = this.std();
 
         if (std == 0) {
             throw new ArithmeticException("标准差为0，无法计算峰度 / Standard deviation is 0, cannot calculate kurtosis");
         }
 
-        float sum = 0.0f;
+        double sum = 0.0;
         for (int i = 0; i < this.length(); i++) {
-            float diff = data[i] - mean;
+            double diff = data[i] - mean;
             sum += diff * diff * diff * diff; // (x - μ)⁴
         }
 
@@ -1401,13 +1434,14 @@ public class RereVector implements IVector {
      * 返回向量的长度（元素个数） Returns the length (number of elements) of the vector
      * </p>
      *
-     * @return 向量长度 / IVector length
+     * @return 向量长度 / IVector<Double> length
      */
     @Override
     public int length() {
         return data.length;
     }
 
+    @Override
     public int size() {
         return this.length();
     }
@@ -1426,7 +1460,7 @@ public class RereVector implements IVector {
      * of bounds
      */
     @Override
-    public float get(int position) {
+    public Double get(int position) {
         int actualPosition = position;
         if (position < 0) {
             actualPosition = data.length + position;
@@ -1450,7 +1484,7 @@ public class RereVector implements IVector {
      * bounds
      */
     @Override
-    public IVector slice(int start) {
+    public IVector<Double> slice(int start) {
         return this.slice(start, this.length(), 1);
     }
 
@@ -1468,7 +1502,7 @@ public class RereVector implements IVector {
      * out of bounds
      */
     @Override
-    public IVector slice(int start, int end) {
+    public IVector<Double> slice(int start, int end) {
         return this.slice(start, end, 1);
     }
 
@@ -1492,7 +1526,7 @@ public class RereVector implements IVector {
      * equal to 0
      */
     @Override
-    public IVector slice(int start, int end, int step) {
+    public IVector<Double> slice(int start, int end, int step) {
         // 处理负数索引
         if (start < 0) {
             start = data.length + start;
@@ -1513,15 +1547,15 @@ public class RereVector implements IVector {
         }
 
         if (start >= end) {
-            return IVector.of(new float[0]); // 返回空向量
+            return IDoubleVector.of(new double[0]); // 返回空向量
         }
 
-        int[] inds = IVector.range(start, end, step).asIntArray();
-        float[] v = new float[inds.length];
+        int[] inds = IDoubleVector.range(start, end, step).toIntArray();
+        double[] v = new double[inds.length];
         for (int i = 0; i < v.length; i++) {
             v[i] = data[inds[i]];
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1538,7 +1572,7 @@ public class RereVector implements IVector {
      * invalid
      */
     @Override
-    public IVector slice(String sliceExpression) {
+    public IVector<Double> slice(String sliceExpression) {
         if (sliceExpression == null || sliceExpression.trim().isEmpty()) {
             throw new IllegalArgumentException("切片表达式不能为空 / Slice expression cannot be empty");
         }
@@ -1547,7 +1581,7 @@ public class RereVector implements IVector {
         SliceExpressionParser.SliceResult result = SliceExpressionParser.parse(sliceExpression, data.length);
 
         if (result.actualStart >= result.actualEnd) {
-            return IVector.of(new float[0]);
+            return IDoubleVector.of(new double[0]);
         }
 
         return slice(result.actualStart, result.actualEnd, result.step);
@@ -1568,8 +1602,8 @@ public class RereVector implements IVector {
      * out of bounds
      */
     @Override
-    public IVector fancyGet(int[] positions) {
-        float[] v = new float[positions.length];
+    public IVector<Double> fancyGet(int[] positions) {
+        double[] v = new double[positions.length];
         for (int i = 0; i < v.length; i++) {
             int actualPosition = positions[i];
             if (actualPosition < 0) {
@@ -1580,7 +1614,7 @@ public class RereVector implements IVector {
             }
             v[i] = data[actualPosition];
         }
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1597,7 +1631,7 @@ public class RereVector implements IVector {
      * length doesn't match vector length
      */
     @Override
-    public IVector booleanGet(boolean[] booleanIndex) {
+    public IVector<Double> booleanGet(boolean[] booleanIndex) {
         if (booleanIndex == null) {
             throw new IllegalArgumentException("布尔索引数组不能为null / Boolean index array cannot be null");
         }
@@ -1606,14 +1640,14 @@ public class RereVector implements IVector {
                     + " / Boolean index array length doesn't match vector length: " + booleanIndex.length + " != " + this.data.length);
         }
 
-        List<Float> ls = new ArrayList();
+        List<Double> ls = new ArrayList();
         for (int i = 0; i < booleanIndex.length; i++) {
             if (booleanIndex[i]) {
                 ls.add(data[i]);
             }
         }
-        Float[] v = ls.toArray(Float[]::new);
-        return IVector.of(v);
+        Double[] v = ls.toArray(Double[]::new);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1631,7 +1665,7 @@ public class RereVector implements IVector {
      * of bounds
      */
     @Override
-    public IVector set(int position, float value) {
+    public IVector<Double> set(int position, Double value) {
         int actualPosition = position;
         if (position < 0) {
             actualPosition = data.length + position;
@@ -1662,7 +1696,7 @@ public class RereVector implements IVector {
      * doesn't match
      */
     @Override
-    public IVector setFromTo(int start, int end, int step, float[] values) {
+    public IVector<Double> setFromTo(int start, int end, int step, Double[] values) {
         // 处理负数索引
         int actualStart = start;
         int actualEnd = end;
@@ -1673,7 +1707,7 @@ public class RereVector implements IVector {
             actualEnd = data.length + end;
         }
 
-        int[] inds = IVector.range(actualStart, actualEnd, step).asIntArray();
+        int[] inds = IDoubleVector.range(actualStart, actualEnd, step).toIntArray();
         for (int i = 0; i < inds.length; i++) {
             if (inds[i] < 0 || inds[i] >= data.length) {
                 throw new IndexOutOfBoundsException("位置索引超出范围: " + inds[i] + " / Position index out of bounds: " + inds[i]);
@@ -1701,7 +1735,7 @@ public class RereVector implements IVector {
      * doesn't match
      */
     @Override
-    public IVector setFromTo(int start, int end, float[] values) {
+    public IVector<Double> setFromTo(int start, int end, Double[] values) {
         return this.setFromTo(start, end, 1, values);
     }
 
@@ -1718,7 +1752,7 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public boolean[] equals(IVector other) {
+    public boolean[] equals(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -1748,7 +1782,7 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public boolean[] lessThan(IVector other) {
+    public boolean[] lessThan(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -1778,7 +1812,7 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public boolean[] greaterThan(IVector other) {
+    public boolean[] greaterThan(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -1803,8 +1837,8 @@ public class RereVector implements IVector {
      * @return 元素乘积 / Product of elements
      */
     @Override
-    public float prod() {
-        float p = 1;
+    public Double prod() {
+        double p = 1;
         for (var e : data) {
             p *= e;
         }
@@ -1823,7 +1857,7 @@ public class RereVector implements IVector {
      * @throws IllegalArgumentException 如果lower > upper / if lower > upper
      */
     @Override
-    public IVector clip(float lower, float upper) {
+    public IVector<Double> clip(Double lower, Double upper) {
         if (lower > upper) {
             throw new IllegalArgumentException("下界不能大于上界: " + lower + " > " + upper
                     + " / Lower bound cannot be greater than upper bound: " + lower + " > " + upper);
@@ -1849,7 +1883,7 @@ public class RereVector implements IVector {
      * @return 峰峰值 / Peak-to-peak value
      */
     @Override
-    public float ptp() {
+    public Double ptp() {
         return this.max() - this.min();
     }
 
@@ -1863,12 +1897,12 @@ public class RereVector implements IVector {
      * results
      */
     @Override
-    public IVector abs() {
-        var data2 = new float[this.data.length];
+    public IVector<Double> abs() {
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
             data2[i] = Math.abs(data[i]);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -1881,7 +1915,7 @@ public class RereVector implements IVector {
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      */
     @Override
-    public IVector fill(float value) {
+    public IVector<Double> fill(Double value) {
         for (int i = 0; i < this.length(); i++) {
             data[i] = value;
         }
@@ -1898,7 +1932,7 @@ public class RereVector implements IVector {
      * @return 排序后的向量（就地操作） / Sorted vector (in-place operation)
      */
     @Override
-    public IVector sort() {
+    public IVector<Double> sort() {
         Arrays.sort(data);
         return this;
     }
@@ -1912,9 +1946,9 @@ public class RereVector implements IVector {
      * @return 反转后的向量（就地操作） / Reversed vector (in-place operation)
      */
     @Override
-    public IVector reverse() {
+    public IVector<Double> reverse() {
         for (int i = 0; i < data.length / 2; i++) {
-            float temp = data[i];
+            double temp = data[i];
             data[i] = data[data.length - i - 1];
             data[data.length - i - 1] = temp;
         }
@@ -1931,10 +1965,10 @@ public class RereVector implements IVector {
      * original
      */
     @Override
-    public IVector copy() {
-        float[] v = new float[this.length()];
+    public IVector<Double> copy() {
+        double[] v = new double[this.length()];
         System.arraycopy(data, 0, v, 0, this.length());
-        return IVector.of(v);
+        return IDoubleVector.of(v);
     }
 
     /**
@@ -1948,25 +1982,25 @@ public class RereVector implements IVector {
      * @throws ArithmeticException 如果元素值为负数 / if any element value is negative
      */
     @Override
-    public IVector sqrt() {
+    public IVector<Double> sqrt() {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorSqrt(this);
+                return GPUComputeDoubleUtils.gpuVectorSqrt(this);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量开方失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        var data2 = new float[this.data.length];
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.sqrt(data[i]);
+            data2[i] = Math.sqrt(data[i]);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -1978,25 +2012,25 @@ public class RereVector implements IVector {
      * @return 新的向量对象，包含平方结果 / New vector object containing square results
      */
     @Override
-    public IVector squre() {
+    public IVector<Double> square() {
         int len = this.data.length;
-        
+
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeUtils.gpuVectorSquare(this);
+                return GPUComputeDoubleUtils.gpuVectorSquare(this);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量平方失败，回退到CPU: " + e.getMessage());
             }
         }
-        
+
         // 使用原有的CPU算法
-        var data2 = new float[this.data.length];
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.pow(data[i], 2);
+            data2[i] =  Math.pow(data[i], 2);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2010,12 +2044,12 @@ public class RereVector implements IVector {
      * results
      */
     @Override
-    public IVector exp() {
-        var data2 = new float[this.data.length];
+    public IVector<Double> exp() {
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.exp(data[i]);
+            data2[i] = Math.exp(data[i]);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2030,12 +2064,12 @@ public class RereVector implements IVector {
      * than or equal to 0
      */
     @Override
-    public IVector log() {
-        var data2 = new float[this.data.length];
+    public IVector<Double> log() {
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.log(data[i]);
+            data2[i] = Math.log(data[i]);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2050,12 +2084,12 @@ public class RereVector implements IVector {
      * than or equal to 0
      */
     @Override
-    public IVector log10() {
-        var data2 = new float[this.data.length];
+    public IVector<Double> log10() {
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.log10(data[i]);
+            data2[i] = Math.log10(data[i]);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2070,12 +2104,12 @@ public class RereVector implements IVector {
      * results
      */
     @Override
-    public IVector pow(float m) {
-        var data2 = new float[this.data.length];
+    public IVector<Double> pow(Double m) {
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] = (float) Math.pow(data[i], m);
+            data2[i] = Math.pow(data[i], m);
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2089,16 +2123,16 @@ public class RereVector implements IVector {
      * @throws ArithmeticException 如果除数为零 / if divisor is zero
      */
     @Override
-    public IVector remainder(float value) {
+    public IVector<Double> remainder(Double value) {
         if (value == 0.0f) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
 
-        var data2 = new float[this.data.length];
+        var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
             data2[i] = data[i] % value;
         }
-        return IVector.of(data2);
+        return IDoubleVector.of(data2);
     }
 
     /**
@@ -2110,22 +2144,10 @@ public class RereVector implements IVector {
      * @return 整数数组 / Integer array
      */
     @Override
-    public int[] asIntArray() {
-        return RereMathUtil.floatToInt(data);
+    public int[] toIntArray() {
+        return RereMathUtil.doubleToInt(data);
     }
 
-    /**
-     * 转换为双精度数组 / Convert to double array
-     * <p>
-     * 将向量转换为双精度数组 Converts the vector to a double array
-     * </p>
-     *
-     * @return 双精度数组 / Double array
-     */
-    @Override
-    public double[] asDoubleArray() {
-        return RereMathUtil.floatToDouble(data);
-    }
 
     /**
      * 计算与另一个向量的欧几里得距离 / Compute Euclidean distance to another vector
@@ -2140,13 +2162,13 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public float euclideanDistance(IVector other) {
+    public Double euclideanDistance(IVector<Double> other) {
         if (this.data.length != other.length()) {
             throw new IllegalArgumentException("向量长度不匹配 / Vector lengths don't match");
         }
 
-        IVector diff = this.sub(other);
-        return (float) Math.sqrt(diff.innerProduct(diff));
+        IVector<Double> diff = this.sub(other);
+        return Math.sqrt(diff.innerProduct(diff));
     }
 
     /**
@@ -2162,12 +2184,12 @@ public class RereVector implements IVector {
      * match
      */
     @Override
-    public float manhattanDistance(IVector other) {
+    public Double manhattanDistance(IVector<Double> other) {
         if (this.data.length != other.length()) {
             throw new IllegalArgumentException("向量长度不匹配 / Vector lengths don't match");
         }
 
-        IVector diff = this.sub(other);
+        IVector<Double> diff = this.sub(other);
         return diff.abs().sum();
     }
 
@@ -2185,14 +2207,14 @@ public class RereVector implements IVector {
      * @throws ArithmeticException 如果向量长度为零 / if vector norm is zero
      */
     @Override
-    public float cosineSimilarity(IVector other) {
+    public Double cosineSimilarity(IVector<Double> other) {
         if (this.data.length != other.length()) {
             throw new IllegalArgumentException("向量长度不匹配 / Vector lengths don't match");
         }
 
-        float dotProduct = this.innerProduct(other);
-        float norm1 = this.norm2();
-        float norm2 = other.norm2();
+        double dotProduct = this.innerProduct(other);
+        double norm1 = this.norm2();
+        double norm2 = other.norm2();
 
         if (norm1 == 0.0f || norm2 == 0.0f) {
             throw new ArithmeticException("向量长度为零 / Vector norm is zero");
@@ -2211,135 +2233,135 @@ public class RereVector implements IVector {
 
     // ========== 三角函数操作实现 / Trigonometric Functions Implementation ==========
     @Override
-    public IVector sin() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> sin() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.sin(this.data[i]);
+            result[i] =  Math.sin(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector cos() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> cos() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.cos(this.data[i]);
+            result[i] =  Math.cos(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector tan() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> tan() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.tan(this.data[i]);
+            result[i] =  Math.tan(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector arcsin() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> arcsin() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             if (this.data[i] < -1.0f || this.data[i] > 1.0f) {
                 throw new ArithmeticException("反正弦函数输入值超出范围[-1,1]: " + this.data[i]
                         + " / Arcsine input value outside range [-1,1]: " + this.data[i]);
             }
-            result[i] = (float) Math.asin(this.data[i]);
+            result[i] =  Math.asin(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector arccos() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> arccos() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             if (this.data[i] < -1.0f || this.data[i] > 1.0f) {
                 throw new ArithmeticException("反余弦函数输入值超出范围[-1,1]: " + this.data[i]
                         + " / Arccosine input value outside range [-1,1]: " + this.data[i]);
             }
-            result[i] = (float) Math.acos(this.data[i]);
+            result[i] =  Math.acos(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector arctan() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> arctan() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.atan(this.data[i]);
+            result[i] =  Math.atan(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 双曲函数实现 / Hyperbolic Functions Implementation ==========
     @Override
-    public IVector sinh() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> sinh() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.sinh(this.data[i]);
+            result[i] =  Math.sinh(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector cosh() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> cosh() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.cosh(this.data[i]);
+            result[i] =  Math.cosh(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector tanh() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> tanh() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.tanh(this.data[i]);
+            result[i] =  Math.tanh(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 舍入函数实现 / Rounding Functions Implementation ==========
     @Override
-    public IVector round() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> round() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = Math.round(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector floor() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> floor() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.floor(this.data[i]);
+            result[i] =  Math.floor(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector ceil() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> ceil() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.ceil(this.data[i]);
+            result[i] =  Math.ceil(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector trunc() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> trunc() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float) Math.rint(this.data[i]);
+            result[i] =  Math.rint(this.data[i]);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 逻辑运算实现 / Logical Operations Implementation ==========
     @Override
-    public IVector logicalAnd(IVector other) {
+    public IVector<Double> logicalAnd(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -2348,15 +2370,15 @@ public class RereVector implements IVector {
                     + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
         }
 
-        float[] result = new float[this.data.length];
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = (this.data[i] != 0.0f && other.get(i) != 0.0f) ? 1.0f : 0.0f;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector logicalOr(IVector other) {
+    public IVector<Double> logicalOr(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -2365,24 +2387,24 @@ public class RereVector implements IVector {
                     + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
         }
 
-        float[] result = new float[this.data.length];
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = (this.data[i] != 0.0f || other.get(i) != 0.0f) ? 1.0f : 0.0f;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector logicalNot() {
-        float[] result = new float[this.data.length];
+    public IVector<Double> logicalNot() {
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = (this.data[i] == 0.0f) ? 1.0f : 0.0f;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector logicalXor(IVector other) {
+    public IVector<Double> logicalXor(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -2391,54 +2413,54 @@ public class RereVector implements IVector {
                     + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
         }
 
-        float[] result = new float[this.data.length];
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             boolean a = this.data[i] != 0.0f;
             boolean b = other.get(i) != 0.0f;
             result[i] = (a != b) ? 1.0f : 0.0f;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 累积操作实现 / Cumulative Operations Implementation ==========
     @Override
-    public IVector cumsum() {
-        float[] result = new float[this.data.length];
-        float sum = 0.0f;
+    public IVector<Double> cumsum() {
+        double[] result = new double[this.data.length];
+        double sum = 0.0;
         for (int i = 0; i < this.data.length; i++) {
             sum += this.data[i];
             result[i] = sum;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector cumprod() {
-        float[] result = new float[this.data.length];
-        float product = 1.0f;
+    public IVector<Double> cumprod() {
+        double[] result = new double[this.data.length];
+        double product = 1.0;
         for (int i = 0; i < this.data.length; i++) {
             product *= this.data[i];
             result[i] = product;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 差分操作实现 / Difference Operations Implementation ==========
     @Override
-    public IVector diff() {
+    public IVector<Double> diff() {
         if (this.data.length < 2) {
-            return IVector.of(new float[0]);
+            return IDoubleVector.of(new double[0]);
         }
 
-        float[] result = new float[this.data.length - 1];
+        double[] result = new double[this.data.length - 1];
         for (int i = 0; i < result.length; i++) {
             result[i] = this.data[i + 1] - this.data[i];
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector diff(int n) {
+    public IVector<Double> diff(int n) {
         if (n < 1) {
             throw new IllegalArgumentException("差分阶数必须大于等于1: " + n + " / Difference order must be greater than or equal to 1: " + n);
         }
@@ -2447,7 +2469,7 @@ public class RereVector implements IVector {
                     + " / Difference order must be less than vector length: " + n + " >= " + this.data.length);
         }
 
-        IVector current = this.copy();
+        IVector<Double> current = this.copy();
         for (int i = 0; i < n; i++) {
             current = current.diff();
         }
@@ -2456,7 +2478,7 @@ public class RereVector implements IVector {
 
     // ========== 条件操作实现 / Conditional Operations Implementation ==========
     @Override
-    public IVector where(boolean[] condition, float x, float y) {
+    public IVector<Double> where(boolean[] condition, Double x, Double y) {
         if (condition == null) {
             throw new IllegalArgumentException("条件数组不能为null / Condition array cannot be null");
         }
@@ -2465,15 +2487,15 @@ public class RereVector implements IVector {
                     + " / Condition array length doesn't match vector length: " + condition.length + " != " + this.data.length);
         }
 
-        float[] result = new float[this.data.length];
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = condition[i] ? x : y;
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector where(boolean[] condition, IVector x, IVector y) {
+    public IVector<Double> where(boolean[] condition, IVector<Double> x, IVector<Double> y) {
         if (condition == null) {
             throw new IllegalArgumentException("条件数组不能为null / Condition array cannot be null");
         }
@@ -2484,50 +2506,50 @@ public class RereVector implements IVector {
             throw new IllegalArgumentException("向量长度不匹配 / Vector lengths don't match");
         }
 
-        float[] result = new float[this.data.length];
+        double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
             result[i] = condition[i] ? x.get(i) : y.get(i);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 重复和连接操作实现 / Repeat and Concatenation Operations Implementation ==========
     @Override
-    public IVector repeat(int repeats) {
+    public IVector<Double> repeat(int repeats) {
         if (repeats < 1) {
             throw new IllegalArgumentException("重复次数必须大于等于1: " + repeats + " / Repeat count must be greater than or equal to 1: " + repeats);
         }
 
-        float[] result = new float[this.data.length * repeats];
+        double[] result = new double[this.data.length * repeats];
         for (int i = 0; i < this.data.length; i++) {
             for (int j = 0; j < repeats; j++) {
                 result[i * repeats + j] = this.data[i];
             }
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector tile(int reps) {
+    public IVector<Double> tile(int reps) {
         if (reps < 1) {
             throw new IllegalArgumentException("重复次数必须大于等于1: " + reps + " / Repeat count must be greater than or equal to 1: " + reps);
         }
 
-        float[] result = new float[this.data.length * reps];
+        double[] result = new double[this.data.length * reps];
         for (int i = 0; i < reps; i++) {
             System.arraycopy(this.data, 0, result, i * this.data.length, this.data.length);
         }
-        return IVector.of(result);
+        return IDoubleVector.of(result);
     }
 
     // ========== 统计扩展操作实现 / Extended Statistical Operations Implementation ==========
     @Override
-    public float median() {
+    public Double median() {
         if (this.data.length == 0) {
             throw new ArithmeticException("空向量无法计算中位数 / Cannot compute median for empty vector");
         }
 
-        float[] sorted = this.data.clone();
+        double[] sorted = this.data.clone();
         Arrays.sort(sorted);
 
         if (sorted.length % 2 == 0) {
@@ -2540,7 +2562,7 @@ public class RereVector implements IVector {
     }
 
     @Override
-    public float percentile(float q) {
+    public Double percentile(Double q) {
         if (q < 0.0f || q > 100.0f) {
             throw new IllegalArgumentException("百分位数必须在[0,100]范围内: " + q + " / Percentile must be in range [0,100]: " + q);
         }
@@ -2548,7 +2570,7 @@ public class RereVector implements IVector {
             throw new ArithmeticException("空向量无法计算百分位数 / Cannot compute percentile for empty vector");
         }
 
-        float[] sorted = this.data.clone();
+        double[] sorted = this.data.clone();
         Arrays.sort(sorted);
 
         if (q == 0.0f) {
@@ -2558,7 +2580,7 @@ public class RereVector implements IVector {
             return sorted[sorted.length - 1];
         }
 
-        float index = (q / 100.0f) * (sorted.length - 1);
+        double index = (q / 100.0f) * (sorted.length - 1);
         int lowerIndex = (int) Math.floor(index);
         int upperIndex = (int) Math.ceil(index);
 
@@ -2566,26 +2588,26 @@ public class RereVector implements IVector {
             return sorted[lowerIndex];
         }
 
-        float weight = index - lowerIndex;
+        double weight = index - lowerIndex;
         return sorted[lowerIndex] * (1.0f - weight) + sorted[upperIndex] * weight;
     }
 
     @Override
-    public float mode() {
+    public Double mode() {
         if (this.data.length == 0) {
             throw new ArithmeticException("空向量无法计算众数 / Cannot compute mode for empty vector");
         }
 
         // 使用HashMap统计频率 / Use HashMap to count frequency
-        java.util.Map<Float, Integer> frequency = new java.util.HashMap<>();
-        for (float value : this.data) {
+        java.util.Map<Double, Integer> frequency = new java.util.HashMap<>();
+        for (double value : this.data) {
             frequency.put(value, frequency.getOrDefault(value, 0) + 1);
         }
 
-        float mode = this.data[0];
+        double mode = this.data[0];
         int maxFreq = 1;
 
-        for (java.util.Map.Entry<Float, Integer> entry : frequency.entrySet()) {
+        for (java.util.Map.Entry<Double, Integer> entry : frequency.entrySet()) {
             if (entry.getValue() > maxFreq) {
                 maxFreq = entry.getValue();
                 mode = entry.getKey();
@@ -2597,7 +2619,7 @@ public class RereVector implements IVector {
 
     // ========== 线性代数扩展操作实现 / Extended Linear Algebra Operations Implementation ==========
     @Override
-    public float norm(float p) {
+    public Double norm(Double p) {
         if (p < 1.0f) {
             throw new IllegalArgumentException("范数阶数必须大于等于1: " + p + " / Norm order must be greater than or equal to 1: " + p);
         }
@@ -2608,22 +2630,22 @@ public class RereVector implements IVector {
         if (p == 2.0f) {
             return this.norm2();
         }
-        if (Float.isInfinite(p)) {
+        if (Double.isInfinite(p)) {
             return this.normInf();
         }
 
-        float sum = 0.0f;
+        double sum = 0.0f;
         for (int i = 0; i < this.data.length; i++) {
             sum += Math.pow(Math.abs(this.data[i]), p);
         }
-        return (float) Math.pow(sum, 1.0 / p);
+        return Math.pow(sum, 1.0 / p);
     }
 
     @Override
-    public float normInf() {
-        float maxAbs = 0.0f;
+    public Double normInf() {
+        double maxAbs = 0.0;
         for (int i = 0; i < this.data.length; i++) {
-            float abs = Math.abs(this.data[i]);
+            double abs = Math.abs(this.data[i]);
             if (abs > maxAbs) {
                 maxAbs = abs;
             }
@@ -2632,8 +2654,8 @@ public class RereVector implements IVector {
     }
 
     @Override
-    public IVector normalize() {
-        float norm = this.norm2();
+    public IVector<Double> normalize() {
+        double norm = this.norm2();
         if (norm == 0.0f) {
             throw new ArithmeticException("向量L2范数为零，无法归一化 / Vector L2 norm is zero, cannot normalize");
         }
@@ -2641,34 +2663,81 @@ public class RereVector implements IVector {
     }
 
     @Override
-    public IVector reciprocal() {
-        float[] result = new float[data.length];
+    public IVector<Double> reciprocal() {
+        double[] result = new double[data.length];
         for (int i = 0; i < data.length; i++) {
             if (data[i] == 0.0f) {
                 throw new ArithmeticException("向量包含零元素，无法计算倒数 / Vector contains zero element, cannot compute reciprocal");
             }
             result[i] = 1.0f / data[i];
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
 
     @Override
-    public IMatrix outer(IVector other) {
+    public IDoubleMatrix outer(IVector<Double> other) {
         if (other == null) {
             throw new IllegalArgumentException("向量不能为null / Vector cannot be null");
         }
-        
+
         int rows = this.data.length;
         int cols = other.length();
-        float[][] result = new float[rows][cols];
-        
+        double[][] result = new double[rows][cols];
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 result[i][j] = this.data[i] * other.get(j);
             }
         }
-        
-        return new RereMatrix(result);
+
+        return new RereDoubleMatrix(result);
     }
+
+
+    @Override
+    public double[] toDoubleArray() {
+        return this.data;}
+    
+    
+        /**
+     * 转换为双精度数组 / Convert to double array
+     * <p>
+     * 将向量转换为双精度数组 Converts the vector to a double array
+     * </p>
+     *
+     * @return 双精度数组 / Double array
+     */
+    @Override
+    public float[] toFloatArray() {
+        return RereMathUtil.doubleToFloat(data);
+    }
+
+    /**
+     * 作为列向量，实质是一个m*1的矩阵
+     * <p>
+     * 将向量转换为列向量矩阵，即m×1的矩阵，其中m是向量的长度。
+     * 向量的每个元素成为矩阵对应行的第一列元素。
+     * </p>
+     * <p>
+     * Converts the vector to a column vector matrix, i.e., an m×1 matrix where m is the vector length.
+     * Each element of the vector becomes the first column element of the corresponding row in the matrix.
+     * </p>
+     *
+     * @return 列向量矩阵（m×1）/ Column vector matrix (m×1)
+     */
+    @Override
+    public IMatrix<Double> asColumnVector() {
+        int len = this.data.length;
+        double[][] columnMatrix = new double[len][1];
+        
+        // 将向量的每个元素放入矩阵的第一列
+        for (int i = 0; i < len; i++) {
+            columnMatrix[i][0] = this.data[i];
+        }
+        
+        return new RereDoubleMatrix(columnMatrix);
+    }
+
+    
 
 }

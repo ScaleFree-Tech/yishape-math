@@ -24,14 +24,14 @@ public class RereUMAP {
     
     // UMAP算法超参数 / UMAP algorithm hyperparameters
     private final int nNeighbors = 15;        // k近邻数量 / Number of k-nearest neighbors
-    private final float minDist = 0.1f;       // 最小距离参数 / Minimum distance parameter
+    private final double minDist = 0.1f;       // 最小距离参数 / Minimum distance parameter
     private final int nEpochs = 500;          // 最大迭代次数 / Maximum iterations
-    private final float learningRate = 1.0f;  // 学习率 / Learning rate
-    private final float spread = 1.0f;        // 散布参数 / Spread parameter
-    private final float localConnectivity = 1.0f; // 局部连通性 / Local connectivity
-    private final float repulsionStrength = 1.0f; // 排斥强度 / Repulsion strength
+    private final double learningRate = 1.0f;  // 学习率 / Learning rate
+    private final double spread = 1.0f;        // 散布参数 / Spread parameter
+    private final double localConnectivity = 1.0f; // 局部连通性 / Local connectivity
+    private final double repulsionStrength = 1.0f; // 排斥强度 / Repulsion strength
     private final int negativeSampleRate = 5; // 负样本采样率 / Negative sampling rate
-    private final float initialAlpha = 1.0f;  // 初始学习率 / Initial learning rate
+    private final double initialAlpha = 1.0f;  // 初始学习率 / Initial learning rate
     private final Random random = new Random();
     
     /**
@@ -49,7 +49,7 @@ public class RereUMAP {
         // 第一步：构建k近邻图
         System.out.println("步骤1: 构建k近邻图...");
         int[][] knnIndices = computeKNearestNeighbors(originalData);
-        float[][] knnDistances = computeKNNDistances(originalData, knnIndices);
+        double[][] knnDistances = computeKNNDistances(originalData, knnIndices);
         
         // 第二步：计算流形结构（fuzzy simplicial complex）
         System.out.println("步骤2: 计算流形结构...");
@@ -75,14 +75,14 @@ public class RereUMAP {
         int[][] knnIndices = new int[n][nNeighbors];
         
         for (int i = 0; i < n; i++) {
-            IVector query = data.getRow(i);
+            IVector query = (IVector)data.getRow(i);
             
             // 计算到所有其他点的距离
             List<DistanceIndex> distances = new ArrayList<>();
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    IVector target = data.getRow(j);
-                    float distance = computeEuclideanDistance(query, target);
+                    IVector target = (IVector)data.getRow(j);
+                    double distance = computeEuclideanDistance(query, target);
                     distances.add(new DistanceIndex(j, distance));
                 }
             }
@@ -100,15 +100,15 @@ public class RereUMAP {
     /**
      * 计算k近邻距离
      */
-    private float[][] computeKNNDistances(IMatrix data, int[][] knnIndices) {
+    private double[][] computeKNNDistances(IMatrix data, int[][] knnIndices) {
         int n = data.getRowNum();
-        float[][] distances = new float[n][nNeighbors];
+        double[][] distances = new double[n][nNeighbors];
         
         for (int i = 0; i < n; i++) {
-            IVector query = data.getRow(i);
+            IVector query = (IVector)data.getRow(i);
             for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
                 if (knnIndices[i][k] >= 0) {
-                    IVector neighbor = data.getRow(knnIndices[i][k]);
+                    IVector neighbor = (IVector)data.getRow(knnIndices[i][k]);
                     distances[i][k] = computeEuclideanDistance(query, neighbor);
                 }
             }
@@ -120,12 +120,12 @@ public class RereUMAP {
     /**
      * 计算模糊单纯复形（Fuzzy Simplicial Complex）
      */
-    private IMatrix computeFuzzySimplicialComplex(int[][] knnIndices, float[][] knnDistances, int n) {
+    private IMatrix computeFuzzySimplicialComplex(int[][] knnIndices, double[][] knnDistances, int n) {
         IMatrix weights = IMatrix.zeros(n, n);
         
         // 计算每个点的局部连通性半径
-        float[] sigmas = new float[n];
-        float[] rhos = new float[n];
+        double[] sigmas = new double[n];
+        double[] rhos = new double[n];
         
         for (int i = 0; i < n; i++) {
             // 找到第localConnectivity个最近邻的距离作为rho
@@ -141,10 +141,10 @@ public class RereUMAP {
             for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
                 if (knnIndices[i][k] >= 0) {
                     int j = knnIndices[i][k];
-                    float distance = knnDistances[i][k];
+                    double distance = knnDistances[i][k];
                     
                     // 计算概率权重
-                    float weight = computeWeight(distance, rhos[i], sigmas[i]);
+                    double weight = computeWeight(distance, rhos[i], sigmas[i]);
                     weights.put(i, j, weight);
                 }
             }
@@ -157,15 +157,15 @@ public class RereUMAP {
     /**
      * 找到最优的sigma参数
      */
-    private float findOptimalSigma(float[] distances, float rho) {
-        float target = (float) Math.log(2.0); // 目标困惑度对应的熵
-        float sigmaMin = 1e-20f;
-        float sigmaMax = 1000.0f;
-        float sigma = 1.0f;
+    private double findOptimalSigma(double[] distances, double rho) {
+        double target = (double) Math.log(2.0); // 目标困惑度对应的熵
+        double sigmaMin = 1e-20f;
+        double sigmaMax = 1000.0f;
+        double sigma = 1.0f;
         
         for (int iter = 0; iter < 64; iter++) {
-            float entropy = computeLocalEntropy(distances, rho, sigma);
-            float diff = entropy - target;
+            double entropy = computeLocalEntropy(distances, rho, sigma);
+            double diff = entropy - target;
             
             if (Math.abs(diff) < 1e-5) {
                 break;
@@ -186,23 +186,23 @@ public class RereUMAP {
     /**
      * 计算局部熵
      */
-    private float computeLocalEntropy(float[] distances, float rho, float sigma) {
-        float entropy = 0.0f;
-        float sum = 0.0f;
+    private double computeLocalEntropy(double[] distances, double rho, double sigma) {
+        double entropy = 0.0f;
+        double sum = 0.0f;
         
-        for (float distance : distances) {
+        for (double distance : distances) {
             if (distance > 0) {
-                float adjustedDist = Math.max(0, distance - rho);
-                float prob = (float) Math.exp(-adjustedDist / sigma);
+                double adjustedDist = Math.max(0, distance - rho);
+                double prob = (double) Math.exp(-adjustedDist / sigma);
                 sum += prob;
             }
         }
         
         if (sum > 0) {
-            for (float distance : distances) {
+            for (double distance : distances) {
                 if (distance > 0) {
-                    float adjustedDist = Math.max(0, distance - rho);
-                    float prob = (float) Math.exp(-adjustedDist / sigma) / sum;
+                    double adjustedDist = Math.max(0, distance - rho);
+                    double prob = (double) Math.exp(-adjustedDist / sigma) / sum;
                     if (prob > 1e-12) {
                         entropy -= prob * Math.log(prob);
                     }
@@ -216,9 +216,9 @@ public class RereUMAP {
     /**
      * 计算权重
      */
-    private float computeWeight(float distance, float rho, float sigma) {
-        float adjustedDist = Math.max(0, distance - rho);
-        return (float) Math.exp(-adjustedDist / sigma);
+    private double computeWeight(double distance, double rho, double sigma) {
+        double adjustedDist = Math.max(0, distance - rho);
+        return (double) Math.exp(-adjustedDist / sigma);
     }
     
     /**
@@ -230,10 +230,10 @@ public class RereUMAP {
         
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                float wij = weights.get(i, j);
-                float wji = weights.get(j, i);
+                double wij = (double)weights.get(i, j);
+                double wji = (double)weights.get(j, i);
                 // 使用模糊并集操作: a + b - a*b
-                float combined = wij + wji - wij * wji;
+                double combined = wij + wji - wij * wji;
                 symmetric.put(i, j, combined);
             }
         }
@@ -245,12 +245,12 @@ public class RereUMAP {
      * 初始化低维嵌入
      */
     private IMatrix initializeEmbedding(int n, int dim) {
-        float[][] data = new float[n][dim];
+        double[][] data = new double[n][dim];
         
         // 使用随机初始化
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < dim; j++) {
-                data[i][j] = (float) (random.nextGaussian() * 10.0);
+                data[i][j] = (double) (random.nextGaussian() * 10.0);
             }
         }
         
@@ -268,7 +268,7 @@ public class RereUMAP {
         List<Edge> edges = prepareEdges(weights, knnIndices);
         
         for (int epoch = 0; epoch < nEpochs; epoch++) {
-            float alpha = initialAlpha * (1.0f - (float)epoch / nEpochs);
+            double alpha = initialAlpha * (1.0f - (double)epoch / nEpochs);
             
             // 处理所有边
             for (Edge edge : edges) {
@@ -304,7 +304,7 @@ public class RereUMAP {
             for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
                 if (knnIndices[i][k] >= 0) {
                     int j = knnIndices[i][k];
-                    float weight = weights.get(i, j);
+                    double weight = (double)weights.get(i, j);
                     if (weight > 0) {
                         edges.add(new Edge(i, j, weight));
                     }
@@ -318,29 +318,29 @@ public class RereUMAP {
     /**
      * 更新正样本梯度
      */
-    private void updatePositiveGradient(IMatrix embedding, Edge edge, float alpha) {
-        IVector yi = embedding.getRow(edge.i);
-        IVector yj = embedding.getRow(edge.j);
+    private void updatePositiveGradient(IMatrix embedding, Edge edge, double alpha) {
+        IVector yi = (IVector)embedding.getRow(edge.i);
+        IVector yj = (IVector)embedding.getRow(edge.j);
         
-        float distance = computeEuclideanDistance(yi, yj);
+        double distance = computeEuclideanDistance(yi, yj);
         
         if (distance > 0) {
             // UMAP的低维相似性函数: 1 / (1 + a * d^(2b))
-            float a = 1.929f; // 这些参数可以从minDist和spread计算得出
-            float b = 0.7915f;
+            double a = 1.929f; // 这些参数可以从minDist和spread计算得出
+            double b = 0.7915f;
             
-            float powered_distance = (float) Math.pow(distance, 2 * b);
-            float similarity = 1.0f / (1.0f + a * powered_distance);
+            double powered_distance = (double) Math.pow(distance, 2 * b);
+            double similarity = 1.0f / (1.0f + a * powered_distance);
             
             // 计算梯度
-            float grad_coeff = edge.weight * 2 * a * b * powered_distance * similarity / 
+            double grad_coeff = edge.weight * 2 * a * b * powered_distance * similarity / 
                               (distance * (1.0f + a * powered_distance));
             
             // 更新嵌入
             for (int d = 0; d < embedding.getColNum(); d++) {
-                float grad = grad_coeff * (yi.get(d) - yj.get(d));
-                float newYi = yi.get(d) + alpha * grad;
-                float newYj = yj.get(d) - alpha * grad;
+                double grad = grad_coeff * ((double)yi.get(d) - (double)yj.get(d));
+                double newYi = (double)yi.get(d) + alpha * grad;
+                double newYj = (double)yj.get(d) - alpha * grad;
                 
                 embedding.put(edge.i, d, newYi);
                 embedding.put(edge.j, d, newYj);
@@ -351,28 +351,28 @@ public class RereUMAP {
     /**
      * 更新负样本梯度
      */
-    private void updateNegativeGradient(IMatrix embedding, int i, int neg, float alpha) {
-        IVector yi = embedding.getRow(i);
-        IVector yneg = embedding.getRow(neg);
+    private void updateNegativeGradient(IMatrix embedding, int i, int neg, double alpha) {
+        IVector yi = (IVector)embedding.getRow(i);
+        IVector yneg = (IVector)embedding.getRow(neg);
         
-        float distance = computeEuclideanDistance(yi, yneg);
+        double distance = computeEuclideanDistance(yi, yneg);
         
         if (distance > 0) {
-            float a = 1.929f;
-            float b = 0.7915f;
+            double a = 1.929f;
+            double b = 0.7915f;
             
-            float powered_distance = (float) Math.pow(distance, 2 * b);
-            float similarity = 1.0f / (1.0f + a * powered_distance);
+            double powered_distance = (double) Math.pow(distance, 2 * b);
+            double similarity = 1.0f / (1.0f + a * powered_distance);
             
             // 负样本的梯度
-            float grad_coeff = repulsionStrength * 2 * a * b * powered_distance * 
+            double grad_coeff = repulsionStrength * 2 * a * b * powered_distance * 
                               similarity * similarity / distance;
             
             // 更新嵌入（排斥）
             for (int d = 0; d < embedding.getColNum(); d++) {
-                float grad = grad_coeff * (yi.get(d) - yneg.get(d));
-                float newYi = yi.get(d) + alpha * grad;
-                float newYneg = yneg.get(d) - alpha * grad;
+                double grad = grad_coeff * ((double)yi.get(d) - (double)yneg.get(d));
+                double newYi = (double)yi.get(d) + alpha * grad;
+                double newYneg = (double)yneg.get(d) - alpha * grad;
                 
                 embedding.put(i, d, newYi);
                 embedding.put(neg, d, newYneg);
@@ -383,8 +383,8 @@ public class RereUMAP {
     /**
      * 计算欧几里得距离
      */
-    private float computeEuclideanDistance(IVector v1, IVector v2) {
-        return v1.euclideanDistance(v2);
+    private double computeEuclideanDistance(IVector v1, IVector v2) {
+        return (double)v1.euclideanDistance(v2);
         
     }
     
@@ -393,9 +393,9 @@ public class RereUMAP {
      */
     private static class DistanceIndex {
         int index;
-        float distance;
+        double distance;
         
-        DistanceIndex(int index, float distance) {
+        DistanceIndex(int index, double distance) {
             this.index = index;
             this.distance = distance;
         }
@@ -406,9 +406,9 @@ public class RereUMAP {
      */
     private static class Edge {
         int i, j;
-        float weight;
+        double weight;
         
-        Edge(int i, int j, float weight) {
+        Edge(int i, int j, double weight) {
             this.i = i;
             this.j = j;
             this.weight = weight;

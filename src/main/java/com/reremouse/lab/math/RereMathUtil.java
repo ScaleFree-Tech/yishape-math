@@ -68,6 +68,37 @@ public class RereMathUtil {
         }
         return darr;
     }
+    
+    
+        /**
+     * 将int数组转换为double数组
+     *
+     * @param array 要转换的int数组
+     * @return 转换后的double数组
+     * @throws NullPointerException 如果输入数组为null
+     */
+    public static double[] intToDouble(int[] array) {
+        double[] darr = new double[array.length];
+        for (int i = 0; i < array.length; i++) {
+            darr[i] = (float) array[i];
+        }
+        return darr;
+    }
+
+    /**
+     * 将double数组转换为int数组（截断小数部分）
+     *
+     * @param array 要转换的double数组
+     * @return 转换后的int数组
+     * @throws NullPointerException 如果输入数组为null
+     */
+    public static int[] doubleToInt(double[] array) {
+        int[] darr = new int[array.length];
+        for (int i = 0; i < array.length; i++) {
+            darr[i] = (int) array[i];
+        }
+        return darr;
+    }
 
     /**
      * 将Float包装类数组转换为float基本类型数组
@@ -78,6 +109,42 @@ public class RereMathUtil {
      */
     public static float[] toPrimitive(Float[] v) {
         float[] vv = new float[v.length];
+        for (int i = 0; i < v.length; i++) {
+            vv[i] = v[i];
+        }
+        return vv;
+    }
+    
+    /**
+     * 将Float包装类二维数组转换为float基本类型二维数组
+     *
+     * @param v 要转换的Float二维数组
+     * @return 转换后的float二维数组
+     * @throws NullPointerException 如果输入数组为null或包含null行/元素
+     */
+    public static float[][] toPrimitive(Float[][] v) {
+        if (v == null) {
+            throw new NullPointerException("Input array cannot be null");
+        }
+        
+        float[][] result = new float[v.length][];
+        for (int i = 0; i < v.length; i++) {
+            if (v[i] == null) {
+                throw new NullPointerException("Row " + i + " cannot be null");
+            }
+            result[i] = new float[v[i].length];
+            for (int j = 0; j < v[i].length; j++) {
+                if (v[i][j] == null) {
+                    throw new NullPointerException("Element at [" + i + "][" + j + "] cannot be null");
+                }
+                result[i][j] = v[i][j];
+            }
+        }
+        return result;
+    }
+    
+    public static Float[] toClassArray(float[] v) {
+        Float[] vv = new Float[v.length];
         for (int i = 0; i < v.length; i++) {
             vv[i] = v[i];
         }
@@ -98,6 +165,42 @@ public class RereMathUtil {
         }
         return vv;
     }
+    
+    /**
+     * 将Double包装类二维数组转换为double基本类型二维数组
+     *
+     * @param v 要转换的Double二维数组
+     * @return 转换后的double二维数组
+     * @throws NullPointerException 如果输入数组为null或包含null行/元素
+     */
+    public static double[][] toPrimitive(Double[][] v) {
+        if (v == null) {
+            throw new NullPointerException("Input array cannot be null");
+        }
+        
+        double[][] result = new double[v.length][];
+        for (int i = 0; i < v.length; i++) {
+            if (v[i] == null) {
+                throw new NullPointerException("Row " + i + " cannot be null");
+            }
+            result[i] = new double[v[i].length];
+            for (int j = 0; j < v[i].length; j++) {
+                if (v[i][j] == null) {
+                    throw new NullPointerException("Element at [" + i + "][" + j + "] cannot be null");
+                }
+                result[i][j] = v[i][j];
+            }
+        }
+        return result;
+    }
+    
+    public static Double[] toClassArray(double[] v) {
+        Double[] vv = new Double[v.length];
+        for (int i = 0; i < v.length; i++) {
+            vv[i] = v[i];
+        }
+        return vv;
+    }
 
     /**
      * 将Integer包装类数组转换为int基本类型数组
@@ -108,6 +211,14 @@ public class RereMathUtil {
      */
     public static int[] toPrimitive(Integer[] v) {
         int[] vv = new int[v.length];
+        for (int i = 0; i < v.length; i++) {
+            vv[i] = v[i];
+        }
+        return vv;
+    }
+    
+    public static Integer[] toClassArray(int[] v) {
+        Integer[] vv = new Integer[v.length];
         for (int i = 0; i < v.length; i++) {
             vv[i] = v[i];
         }
@@ -180,7 +291,7 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 伽马函数值 / Gamma function value
      */
-    public static double gamma(float x) {
+    public static double gamma(double x) {
         // Stirling's approximation for gamma function
         if (x < 0.5f) {
             return Math.PI / (Math.sin(Math.PI * x) * gamma(1.0f - x));
@@ -211,7 +322,7 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 不完全贝塔函数值 / Incomplete beta function value
      */
-    public static double incompleteBeta(float a, float b, float x) {
+    public static double incompleteBeta(double a, double b, double x) {
         if (x < 0.0f || x > 1.0f) {
             throw new IllegalArgumentException("x必须在[0,1]范围内 / x must be in range [0,1]");
         }
@@ -228,7 +339,7 @@ public class RereMathUtil {
      * 使用数值积分计算不完全贝塔函数
      * Calculate incomplete beta function using numerical integration
      */
-    private static double incompleteBetaIntegral(float a, float b, float x) {
+    private static double incompleteBetaIntegral(double a, double b, double x) {
         // 使用自适应辛普森法则进行数值积分
         // Using adaptive Simpson's rule for numerical integration
         return adaptiveSimpson(a, b, 0.0, x, 1e-8, 100);
@@ -238,7 +349,7 @@ public class RereMathUtil {
      * 自适应辛普森法则积分
      * Adaptive Simpson's rule integration
      */
-    private static double adaptiveSimpson(float a, float b, double x1, double x2, double tolerance, int maxDepth) {
+    private static double adaptiveSimpson(double a, double b, double x1, double x2, double tolerance, int maxDepth) {
         if (maxDepth <= 0) {
             return simpson(a, b, x1, x2);
         }
@@ -260,7 +371,7 @@ public class RereMathUtil {
      * 辛普森法则积分
      * Simpson's rule integration
      */
-    private static double simpson(float a, float b, double x1, double x2) {
+    private static double simpson(double a, double b, double x1, double x2) {
         double h = (x2 - x1) / 2.0;
         double x0 = x1;
         double x1_mid = x1 + h;
@@ -277,7 +388,7 @@ public class RereMathUtil {
      * 贝塔函数被积函数
      * Beta function integrand
      */
-    private static double betaIntegrand(float a, float b, double t) {
+    private static double betaIntegrand(double a, double b, double t) {
         if (t <= 0.0 || t >= 1.0) {
             return 0.0;
         }
@@ -297,7 +408,7 @@ public class RereMathUtil {
      * 贝塔函数的连分数展开
      * Continued fraction expansion for beta function
      */
-    private static double betaCF(float a, float b, float x) {
+    private static double betaCF(double a, double b, double x) {
         int maxIter = 100;
         double eps = 1e-10;
         
@@ -343,7 +454,7 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 误差函数值 / Error function value
      */
-    public static double erf(float x) {
+    public static double erf(double x) {
         // Abramowitz and Stegun approximation
         double a1 =  0.254829592;
         double a2 = -0.284496736;
@@ -369,7 +480,7 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 不完全伽马函数值 / Incomplete gamma function value
      */
-    public static double incompleteGamma(float a, float x) {
+    public static double incompleteGamma(double a, double x) {
         if (x < 0.0f) {
             throw new IllegalArgumentException("x必须大于等于0 / x must be greater than or equal to 0");
         }
@@ -386,7 +497,7 @@ public class RereMathUtil {
      * 使用数值积分计算不完全伽马函数
      * Calculate incomplete gamma function using numerical integration
      */
-    private static double incompleteGammaIntegral(float a, float x) {
+    private static double incompleteGammaIntegral(double a, double x) {
         // 使用梯形法则进行数值积分
         // Using trapezoidal rule for numerical integration
         int n = 1000; // 积分步数
@@ -413,7 +524,7 @@ public class RereMathUtil {
      * 伽马函数的连分数展开
      * Continued fraction expansion for gamma function
      */
-    private static double gammaCF(float a, float x) {
+    private static double gammaCF(double a, double x) {
         int maxIter = 100;
         double eps = 1e-10;
         
@@ -446,7 +557,7 @@ public class RereMathUtil {
      * @param p 概率值，范围[0,1] / Probability value, range [0,1]
      * @return 逆正态CDF值 / Inverse normal CDF value
      */
-    public static double inverseNormalCDF(float p) {
+    public static double inverseNormalCDF(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -495,7 +606,7 @@ public class RereMathUtil {
     
     /**
      * 生成随机浮点数数组
-     * Generate random float array
+     * Generate random double array
      * 
      * @param n 数组长度 / Array length
      * @return 随机浮点数数组 / Random float array
@@ -650,20 +761,20 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 正则化不完全Beta函数值 / Regularized incomplete beta function value
      */
-    public static double regularizedIncompleteBeta(int a, int b, float x) {
+    public static double regularizedIncompleteBeta(int a, int b, double x) {
         return incompleteBeta(a, b, x) / beta(a, b);
     }
     
     /**
      * 正则化不完全Beta函数（float参数版本）
-     * Regularized incomplete beta function (float parameter version)
+     * Regularized incomplete beta function (double parameter version)
      * 
      * @param a 参数a / Parameter a
      * @param b 参数b / Parameter b
      * @param x 输入值 / Input value
      * @return 正则化不完全Beta函数值 / Regularized incomplete beta function value
      */
-    public static double regularizedIncompleteBeta(float a, float b, float x) {
+    public static double regularizedIncompleteBeta(double a, double b, double x) {
         return incompleteBeta(a, b, x) / beta(a, b);
     }
     
@@ -675,7 +786,7 @@ public class RereMathUtil {
      * @param x 输入值 / Input value
      * @return 正则化不完全Gamma函数值 / Regularized incomplete gamma function value
      */
-    public static double regularizedIncompleteGamma(int a, float x) {
+    public static double regularizedIncompleteGamma(int a, double x) {
         return incompleteGamma(a, x) / gamma(a);
     }
     
@@ -687,7 +798,7 @@ public class RereMathUtil {
      * @param b 参数b / Parameter b
      * @return Beta函数值 / Beta function value
      */
-    public static double beta(float a, float b) {
+    public static double beta(double a, double b) {
         return gamma(a) * gamma(b) / gamma(a + b);
     }
     
@@ -699,7 +810,7 @@ public class RereMathUtil {
      * @param stdDev 标准差 / Standard deviation
      * @return 正态分布随机数 / Normal distribution random number
      */
-    public static double normalSample(float mean, float stdDev) {
+    public static double normalSample(double mean, double stdDev) {
         // Box-Muller变换
         double u1 = Math.random();
         double u2 = Math.random();

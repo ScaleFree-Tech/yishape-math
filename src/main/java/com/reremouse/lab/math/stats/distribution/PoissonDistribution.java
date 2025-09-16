@@ -25,10 +25,10 @@ public class PoissonDistribution implements IDiscreteDistribution {
     private static final long serialVersionUID = 1L;
     
     /** 平均发生率（期望值）/ Average rate of occurrence (expected value) */
-    private final float lambda;
+    private final double lambda;
     
     /** e^(-λ)的预计算值 / Precomputed value of e^(-λ) */
-    private final float expNegLambda;
+    private final double expNegLambda;
     
     /**
      * 构造函数
@@ -37,7 +37,7 @@ public class PoissonDistribution implements IDiscreteDistribution {
      * @param lambda 平均发生率，必须大于0 / Average rate of occurrence, must be greater than 0
      * @throws IllegalArgumentException 如果λ小于等于0 / If lambda is less than or equal to 0
      */
-    public PoissonDistribution(float lambda) {
+    public PoissonDistribution(double lambda) {
         if (lambda <= 0.0f) {
             throw new IllegalArgumentException("平均发生率必须大于0 / Lambda must be greater than 0");
         }
@@ -51,62 +51,62 @@ public class PoissonDistribution implements IDiscreteDistribution {
      * 
      * @return 平均发生率 / Average rate of occurrence
      */
-    public float getLambda() {
+    public double getLambda() {
         return lambda;
     }
     
     // ==================== 基本统计量 / Basic Statistics ====================
     
     @Override
-    public float mean() {
+    public double mean() {
         return lambda;
     }
     
     @Override
-    public float var() {
+    public double var() {
         return lambda;
     }
     
     @Override
-    public float std() {
+    public double std() {
         return (float) Math.sqrt(lambda);
     }
     
     @Override
-    public float median() {
+    public double median() {
         // 泊松分布的中位数近似为 floor(λ + 1/3 - 0.02/λ)
         return (float) Math.floor(lambda + 1.0f / 3.0f - 0.02f / lambda);
     }
     
     @Override
-    public float mode() {
+    public double mode() {
         return (float) Math.floor(lambda);
     }
     
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
     @Override
-    public float skewness() {
+    public double skewness() {
         return 1.0f / (float) Math.sqrt(lambda);
     }
     
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return 1.0f / lambda;
     }
     
     // ==================== 概率计算 / Probability Calculations ====================
     
     @Override
-    public float pmf(int x) {
+    public double pmf(int x) {
         if (x < 0) return 0.0f;
         
         // 使用对数避免数值溢出
@@ -115,15 +115,15 @@ public class PoissonDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float cdf(int x) {
+    public double cdf(int x) {
         if (x < 0) return 0.0f;
         
         // 使用正则化不完全Gamma函数计算CDF
-        return (float) RereMathUtil.regularizedIncompleteGamma(x + 1, lambda);
+        return RereMathUtil.regularizedIncompleteGamma(x + 1, lambda);
     }
     
     @Override
-    public int ppf(float prob) {
+    public int ppf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -145,12 +145,12 @@ public class PoissonDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float sf(int x) {
+    public double sf(int x) {
         return 1.0f - cdf(x);
     }
     
     @Override
-    public int isf(float prob) {
+    public int isf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -208,7 +208,7 @@ public class PoissonDistribution implements IDiscreteDistribution {
     // ==================== 高级统计方法 / Advanced Statistical Methods ====================
     
     @Override
-    public float moment(int k) {
+    public double moment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -216,7 +216,7 @@ public class PoissonDistribution implements IDiscreteDistribution {
         if (k == 1) return lambda;
         
         // 对于泊松分布，k阶矩 = λ * (k-1阶矩 + λ^(k-1))
-        float result = lambda;
+        double result = lambda;
         for (int i = 2; i <= k; i++) {
             result = lambda * (result + (float) Math.pow(lambda, i - 1));
         }
@@ -224,7 +224,7 @@ public class PoissonDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float centralMoment(int k) {
+    public double centralMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -237,16 +237,16 @@ public class PoissonDistribution implements IDiscreteDistribution {
         if (k == 4) return lambda + 3 * lambda * lambda;
         
         // 对于高阶矩，使用递推公式
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float term = RereMathUtil.combination(k, i) * (float) Math.pow(-lambda, k - i) * moment(i);
+            double term = RereMathUtil.combination(k, i) * (float) Math.pow(-lambda, k - i) * moment(i);
             result += term;
         }
         return result;
     }
     
     @Override
-    public float standardizedMoment(int k) {
+    public double standardizedMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -257,10 +257,10 @@ public class PoissonDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float entropy() {
-        float entropy = 0.0f;
+    public double entropy() {
+        double entropy = 0.0f;
         for (int k = 0; k <= (int) (lambda + 10 * Math.sqrt(lambda)); k++) {
-            float prob = pmf(k);
+            double prob = pmf(k);
             if (prob > 0.0f) {
                 entropy -= prob * (float) Math.log(prob);
             }
@@ -269,24 +269,24 @@ public class PoissonDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float cgf(float t) {
+    public double cgf(double t) {
         return lambda * ((float) Math.exp(t) - 1.0f);
     }
     
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
     @Override
-    public int quantile(float prob) {
+    public int quantile(double prob) {
         return ppf(prob);
     }
     
     @Override
-    public int[] confidenceInterval(float confidence) {
+    public int[] confidenceInterval(double confidence) {
         if (confidence < 0.0f || confidence > 1.0f) {
             throw new IllegalArgumentException("置信水平必须在[0,1]范围内 / Confidence level must be in range [0,1]");
         }
         
-        float alpha = 1.0f - confidence;
+        double alpha = 1.0f - confidence;
         int lower = ppf(alpha / 2.0f);
         int upper = ppf(1.0f - alpha / 2.0f);
         
@@ -296,39 +296,39 @@ public class PoissonDistribution implements IDiscreteDistribution {
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
     @Override
-    public float klDivergence(IDiscreteDistribution other) {
+    public double klDivergence(IDiscreteDistribution other) {
         if (!(other instanceof PoissonDistribution)) {
             throw new IllegalArgumentException("只能与泊松分布计算KL散度 / Can only calculate KL divergence with Poisson distribution");
         }
         
         PoissonDistribution otherPoisson = (PoissonDistribution) other;
-        float otherLambda = otherPoisson.getLambda();
+        double otherLambda = otherPoisson.getLambda();
         
-        float kl = lambda * (float) Math.log(lambda / otherLambda) - lambda + otherLambda;
+        double kl = lambda * (float) Math.log(lambda / otherLambda) - lambda + otherLambda;
         return kl;
     }
     
     @Override
-    public float jsDivergence(IDiscreteDistribution other) {
+    public double jsDivergence(IDiscreteDistribution other) {
         if (!(other instanceof PoissonDistribution)) {
             throw new IllegalArgumentException("只能与泊松分布计算JS散度 / Can only calculate JS divergence with Poisson distribution");
         }
         
         PoissonDistribution otherPoisson = (PoissonDistribution) other;
-        float otherLambda = otherPoisson.getLambda();
-        float mLambda = (lambda + otherLambda) / 2.0f;
+        double otherLambda = otherPoisson.getLambda();
+        double mLambda = (lambda + otherLambda) / 2.0f;
         
         // 创建混合分布
         PoissonDistribution mixed = new PoissonDistribution(mLambda);
         
-        float kl1 = klDivergence(mixed);
-        float kl2 = otherPoisson.klDivergence(mixed);
+        double kl1 = klDivergence(mixed);
+        double kl2 = otherPoisson.klDivergence(mixed);
         
         return 0.5f * kl1 + 0.5f * kl2;
     }
     
     @Override
-    public float wassersteinDistance(IDiscreteDistribution other) {
+    public double wassersteinDistance(IDiscreteDistribution other) {
         if (!(other instanceof PoissonDistribution)) {
             throw new IllegalArgumentException("只能与泊松分布计算Wasserstein距离 / Can only calculate Wasserstein distance with Poisson distribution");
         }
@@ -369,12 +369,12 @@ public class PoissonDistribution implements IDiscreteDistribution {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         PoissonDistribution that = (PoissonDistribution) obj;
-        return Float.compare(that.lambda, lambda) == 0;
+        return Double.compare(that.lambda, lambda) == 0;
     }
     
     @Override
     public int hashCode() {
-        return Float.hashCode(lambda);
+        return Double.hashCode(lambda);
     }
     
     // ==================== 辅助方法 / Helper Methods ====================

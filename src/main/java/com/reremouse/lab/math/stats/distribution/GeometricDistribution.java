@@ -25,10 +25,10 @@ public class GeometricDistribution implements IDiscreteDistribution {
     private static final long serialVersionUID = 1L;
     
     /** 成功概率 / Probability of success */
-    private final float p;
+    private final double p;
     
     /** 失败概率 / Probability of failure */
-    private final float q;
+    private final double q;
     
     /**
      * 构造函数
@@ -37,7 +37,7 @@ public class GeometricDistribution implements IDiscreteDistribution {
      * @param p 成功概率，范围(0,1] / Probability of success, range (0,1]
      * @throws IllegalArgumentException 如果概率不在(0,1]范围内 / If probability is not in range (0,1]
      */
-    public GeometricDistribution(float p) {
+    public GeometricDistribution(double p) {
         if (p <= 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("成功概率必须在(0,1]范围内 / Probability must be in range (0,1]");
         }
@@ -51,73 +51,73 @@ public class GeometricDistribution implements IDiscreteDistribution {
      * 
      * @return 成功概率 / Probability of success
      */
-    public float getProbability() {
+    public double getProbability() {
         return p;
     }
     
     // ==================== 基本统计量 / Basic Statistics ====================
     
     @Override
-    public float mean() {
+    public double mean() {
         return 1.0f / p;
     }
     
     @Override
-    public float var() {
+    public double var() {
         return q / (p * p);
     }
     
     @Override
-    public float std() {
+    public double std() {
         return (float) Math.sqrt(q) / p;
     }
     
     @Override
-    public float median() {
+    public double median() {
         return (float) Math.ceil(-Math.log(2.0) / Math.log(q));
     }
     
     @Override
-    public float mode() {
+    public double mode() {
         return 1.0f; // 几何分布的众数总是1
     }
     
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
     @Override
-    public float skewness() {
+    public double skewness() {
         return (2.0f - p) / (float) Math.sqrt(q);
     }
     
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return 6.0f + (p * p) / q;
     }
     
     // ==================== 概率计算 / Probability Calculations ====================
     
     @Override
-    public float pmf(int x) {
+    public double pmf(int x) {
         if (x < 1) return 0.0f;
         return (float) Math.pow(q, x - 1) * p;
     }
     
     @Override
-    public float cdf(int x) {
+    public double cdf(int x) {
         if (x < 1) return 0.0f;
         return 1.0f - (float) Math.pow(q, x);
     }
     
     @Override
-    public int ppf(float prob) {
+    public int ppf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -129,12 +129,12 @@ public class GeometricDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float sf(int x) {
+    public double sf(int x) {
         return 1.0f - cdf(x);
     }
     
     @Override
-    public int isf(float prob) {
+    public int isf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -188,7 +188,7 @@ public class GeometricDistribution implements IDiscreteDistribution {
     // ==================== 高级统计方法 / Advanced Statistical Methods ====================
     
     @Override
-    public float moment(int k) {
+    public double moment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -197,7 +197,7 @@ public class GeometricDistribution implements IDiscreteDistribution {
         
         // 对于几何分布，k阶矩 = k! * (q/p)^k * Li_{-k}(q)
         // 其中Li_{-k}(q)是负k阶多对数函数
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 1; i <= 100; i++) { // 使用截断级数近似
             result += (float) Math.pow(i, k) * pmf(i);
         }
@@ -205,7 +205,7 @@ public class GeometricDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float centralMoment(int k) {
+    public double centralMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -214,16 +214,16 @@ public class GeometricDistribution implements IDiscreteDistribution {
         if (k == 2) return var();
         
         // 使用递推公式计算中心矩
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
+            double term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
             result += term;
         }
         return result;
     }
     
     @Override
-    public float standardizedMoment(int k) {
+    public double standardizedMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -234,10 +234,10 @@ public class GeometricDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float entropy() {
-        float entropy = 0.0f;
+    public double entropy() {
+        double entropy = 0.0f;
         for (int k = 1; k <= 1000; k++) { // 使用截断级数
-            float prob = pmf(k);
+            double prob = pmf(k);
             if (prob > 0.0f) {
                 entropy -= prob * (float) Math.log(prob);
             }
@@ -246,9 +246,9 @@ public class GeometricDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float cgf(float t) {
+    public double cgf(double t) {
         if (t >= Math.log(1.0 / q)) {
-            return Float.POSITIVE_INFINITY;
+            return Double.POSITIVE_INFINITY;
         }
         return (float) Math.log(p * Math.exp(t) / (1.0 - q * Math.exp(t)));
     }
@@ -256,17 +256,17 @@ public class GeometricDistribution implements IDiscreteDistribution {
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
     @Override
-    public int quantile(float prob) {
+    public int quantile(double prob) {
         return ppf(prob);
     }
     
     @Override
-    public int[] confidenceInterval(float confidence) {
+    public int[] confidenceInterval(double confidence) {
         if (confidence < 0.0f || confidence > 1.0f) {
             throw new IllegalArgumentException("置信水平必须在[0,1]范围内 / Confidence level must be in range [0,1]");
         }
         
-        float alpha = 1.0f - confidence;
+        double alpha = 1.0f - confidence;
         int lower = ppf(alpha / 2.0f);
         int upper = ppf(1.0f - alpha / 2.0f);
         
@@ -276,21 +276,21 @@ public class GeometricDistribution implements IDiscreteDistribution {
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
     @Override
-    public float klDivergence(IDiscreteDistribution other) {
+    public double klDivergence(IDiscreteDistribution other) {
         if (!(other instanceof GeometricDistribution)) {
             throw new IllegalArgumentException("只能与几何分布计算KL散度 / Can only calculate KL divergence with Geometric distribution");
         }
         
         GeometricDistribution otherGeometric = (GeometricDistribution) other;
         
-        float kl = 0.0f;
+        double kl = 0.0f;
         for (int k = 1; k <= 1000; k++) { // 使用截断级数
-            float p1 = pmf(k);
-            float p2 = otherGeometric.pmf(k);
+            double p1 = pmf(k);
+            double p2 = otherGeometric.pmf(k);
             if (p1 > 0.0f && p2 > 0.0f) {
                 kl += p1 * (float) Math.log(p1 / p2);
             } else if (p1 > 0.0f) {
-                return Float.POSITIVE_INFINITY;
+                return Double.POSITIVE_INFINITY;
             }
         }
         
@@ -298,25 +298,25 @@ public class GeometricDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float jsDivergence(IDiscreteDistribution other) {
+    public double jsDivergence(IDiscreteDistribution other) {
         if (!(other instanceof GeometricDistribution)) {
             throw new IllegalArgumentException("只能与几何分布计算JS散度 / Can only calculate JS divergence with Geometric distribution");
         }
         
         GeometricDistribution otherGeometric = (GeometricDistribution) other;
-        float mP = (p + otherGeometric.getProbability()) / 2.0f;
+        double mP = (p + otherGeometric.getProbability()) / 2.0f;
         
         // 创建混合分布
         GeometricDistribution mixed = new GeometricDistribution(mP);
         
-        float kl1 = klDivergence(mixed);
-        float kl2 = otherGeometric.klDivergence(mixed);
+        double kl1 = klDivergence(mixed);
+        double kl2 = otherGeometric.klDivergence(mixed);
         
         return 0.5f * kl1 + 0.5f * kl2;
     }
     
     @Override
-    public float wassersteinDistance(IDiscreteDistribution other) {
+    public double wassersteinDistance(IDiscreteDistribution other) {
         if (!(other instanceof GeometricDistribution)) {
             throw new IllegalArgumentException("只能与几何分布计算Wasserstein距离 / Can only calculate Wasserstein distance with Geometric distribution");
         }
@@ -357,11 +357,11 @@ public class GeometricDistribution implements IDiscreteDistribution {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         GeometricDistribution that = (GeometricDistribution) obj;
-        return Float.compare(that.p, p) == 0;
+        return Double.compare(that.p, p) == 0;
     }
     
     @Override
     public int hashCode() {
-        return Float.hashCode(p);
+        return Double.hashCode(p);
     }
 }

@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.testing;
 
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.stats.Stats;
 import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  *
@@ -12,10 +12,10 @@ public class HypothesisTesting {
 
     ParameterEstimation estimator = new ParameterEstimation();
 
-    public TestingResult testMeanEqualWithT(float h0, IVector sample, float confidence) {
+    public TestingResult testMeanEqualWithT(double h0, IDoubleVector sample, double confidence) {
         var t = Stats.t(sample.length() - 1);
-        Tuple2<Float, Float> tp = estimator.estimateMeanIntevalWithT(sample, confidence);
-        float p = 1 - t.cdf(h0);
+        Tuple2<Double, Double> tp = estimator.estimateMeanIntevalWithT(sample, confidence);
+        double p = 1 - t.cdf(h0);
         if (p > 0.5) {
             p = 1 - p;
         }
@@ -23,10 +23,10 @@ public class HypothesisTesting {
         return new TestingResult(pass, p, tp);
     }
 
-    public TestingResult testVarEqualWithChi2(float h0, IVector sample, float confidence) {
+    public TestingResult testVarEqualWithChi2(double h0, IDoubleVector sample, double confidence) {
         var chi2 = Stats.chi2(sample.length() - 1);
-        Tuple2<Float, Float> tp = estimator.estimateVarIntevalWithChi2(sample, confidence);
-        float p = 1 - chi2.cdf(h0);
+        Tuple2<Double, Double> tp = estimator.estimateVarIntevalWithChi2(sample, confidence);
+        double p = 1 - chi2.cdf(h0);
         if (p > 0.5) {
             p = 1 - p;
         }

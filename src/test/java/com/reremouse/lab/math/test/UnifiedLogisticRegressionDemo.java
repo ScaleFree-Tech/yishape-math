@@ -1,12 +1,12 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
-import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.math.ml.cls.LogisticRegressionResult;
 import com.reremouse.lab.math.ml.cls.RereLogisticRegression;
 import java.util.Map;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 统一逻辑回归演示类
@@ -65,7 +65,7 @@ public class UnifiedLogisticRegressionDemo {
         };
         
         // 创建特征矩阵
-        IMatrix featureMatrix = new RereMatrix(featureData);
+        IMatrix<Float> featureMatrix = new RereFloatMatrix(featureData);
         
         System.out.println("二分类训练数据：");
         System.out.println("特征矩阵形状: " + featureMatrix.getRowNum() + " x " + featureMatrix.getColNum());
@@ -138,7 +138,7 @@ public class UnifiedLogisticRegressionDemo {
         };
         
         // 创建特征矩阵
-        IMatrix featureMatrix = new RereMatrix(featureData);
+        IMatrix<Float> featureMatrix = new RereFloatMatrix(featureData);
         
         System.out.println("多分类训练数据：");
         System.out.println("特征矩阵形状: " + featureMatrix.getRowNum() + " x " + featureMatrix.getColNum());
@@ -189,7 +189,7 @@ public class UnifiedLogisticRegressionDemo {
         
         String[] labels = {"A", "A", "A", "B", "B", "B", "C", "C", "C"};
         
-        IMatrix featureMatrix = new RereMatrix(featureData);
+        IMatrix<Float> featureMatrix = new RereFloatMatrix(featureData);
         
         // 测试L1正则化
         System.out.println("--- L1正则化测试 ---");
@@ -211,7 +211,7 @@ public class UnifiedLogisticRegressionDemo {
     /**
      * 测试特定正则化方法
      */
-    private static void testRegularization(IMatrix featureMatrix, String[] labels, 
+    private static void testRegularization(IMatrix<Float> featureMatrix, String[] labels, 
                                          float lambda1, float lambda2, String methodName) {
         RereLogisticRegression lr = new RereLogisticRegression();
         lr.setLearningRate(0.01f);
@@ -250,7 +250,7 @@ public class UnifiedLogisticRegressionDemo {
      * 评估二分类模型
      */
     private static void evaluateBinaryClassificationModel(RereLogisticRegression lr, 
-                                                        IMatrix featureMatrix, String[] labels) {
+                                                        IMatrix<Float> featureMatrix, String[] labels) {
         System.out.println("二分类模型评估：");
         
         // 显示标签映射
@@ -273,8 +273,8 @@ public class UnifiedLogisticRegressionDemo {
         // 显示详细预测结果
         System.out.println("详细预测结果：");
         for (int i = 0; i < featureMatrix.getRowNum(); i++) {
-            IVector sample = featureMatrix.getRow(i);
-            float probability = lr.predictProbability(sample);
+            IVector<Float> sample = featureMatrix.getRow(i);
+            double probability = lr.predictProbability(sample);
             
             System.out.printf("  样本%d: 预测=%s, 实际=%s, 正类概率=%.3f%n", 
                 i + 1, predictions[i], labels[i], probability);
@@ -289,9 +289,9 @@ public class UnifiedLogisticRegressionDemo {
         };
         
         for (int i = 0; i < newSamples.length; i++) {
-            IVector newSample = new RereVector(newSamples[i]);
+            IVector<Float> newSample = new RereFloatVector(newSamples[i]);
             String prediction = lr.predict(newSample);
-            float probability = lr.predictProbability(newSample);
+            double probability = lr.predictProbability(newSample);
             
             System.out.printf("  新样本%d [%.1f, %.1f, %.1f]: 预测=%s, 正类概率=%.3f%n", 
                 i + 1, newSamples[i][0], newSamples[i][1], newSamples[i][2], 
@@ -300,8 +300,8 @@ public class UnifiedLogisticRegressionDemo {
         
         // 显示权重信息
         System.out.println("\n权重信息：");
-        IMatrix weightsMatrix = lr.getWeights();
-        IVector biasVector = lr.getBias();
+        IMatrix<Float> weightsMatrix = lr.getWeights();
+        IVector<Float> biasVector = lr.getBias();
         
         System.out.println("权重向量: [");
         for (int j = 0; j < weightsMatrix.getColNum(); j++) {
@@ -315,7 +315,7 @@ public class UnifiedLogisticRegressionDemo {
      * 评估多分类模型
      */
     private static void evaluateMulticlassModel(RereLogisticRegression lr, 
-                                              IMatrix featureMatrix, String[] labels) {
+                                              IMatrix<Float> featureMatrix, String[] labels) {
         System.out.println("多分类模型评估：");
         
         // 显示标签映射
@@ -339,8 +339,8 @@ public class UnifiedLogisticRegressionDemo {
         System.out.println("详细预测结果（前5个样本）：");
         int showCount = Math.min(5, featureMatrix.getRowNum());
         for (int i = 0; i < showCount; i++) {
-            IVector sample = featureMatrix.getRow(i);
-            float[] probabilities = lr.predictProbabilities(sample);
+            IVector<Float> sample = featureMatrix.getRow(i);
+            double[] probabilities = lr.predictProbabilities(sample);
             
             System.out.printf("  样本%d: 预测=%s, 实际=%s, 概率分布: A=%.3f, B=%.3f, C=%.3f%n", 
                 i + 1, predictions[i], labels[i], 
@@ -356,9 +356,9 @@ public class UnifiedLogisticRegressionDemo {
         };
         
         for (int i = 0; i < newSamples.length; i++) {
-            IVector newSample = new RereVector(newSamples[i]);
+            IVector<Float> newSample = new RereFloatVector(newSamples[i]);
             String prediction = lr.predict(newSample);
-            float[] probabilities = lr.predictProbabilities(newSample);
+            double[] probabilities = lr.predictProbabilities(newSample);
             
             System.out.printf("  新样本%d [数学:%.0f, 英语:%.0f, 学习时间:%.1f小时, 参与度:%.1f]: ", 
                 i + 1, newSamples[i][0], newSamples[i][1], newSamples[i][2], newSamples[i][3]);
@@ -368,13 +368,13 @@ public class UnifiedLogisticRegressionDemo {
         
         // 显示权重信息
         System.out.println("\n权重信息：");
-        IMatrix weightsMatrix = lr.getWeights();
-        IVector biasVector = lr.getBias();
+        IMatrix<Float> weightsMatrix = lr.getWeights();
+        IVector<Float> biasVector = lr.getBias();
         
         System.out.println("权重矩阵 (每行对应一个类别):");
         for (int k = 0; k < lr.getNumClasses(); k++) {
             final int classIndex = k;
-            IVector classWeights = weightsMatrix.getRow(k);
+            IVector<Float> classWeights = weightsMatrix.getRow(k);
             System.out.printf("  类别%d (%s): [", k, lr.getLabelMapping().entrySet().stream()
                 .filter(entry -> entry.getValue() == classIndex)
                 .findFirst()

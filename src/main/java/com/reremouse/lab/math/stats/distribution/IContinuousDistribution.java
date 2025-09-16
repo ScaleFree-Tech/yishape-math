@@ -10,68 +10,68 @@ public interface IContinuousDistribution {
      * 均值
      * @return 
      */
-    public float mean();
+    public double mean();
 
     /**
      * 方差
      * @return 
      */
-    public float var();
+    public double var();
 
     /**
      * 标准差
      * @return 
      */
-    public float std();
+    public double std();
     
     /**
      * 中位数
      * @return 
      */
-    public float median();
+    public double median();
     
     /**
      * 众数
      * @return 
      */
-    public float mode();
+    public double mode();
     
     /**
      * 四分位数
      * @return 
      */
-    public float q1();
+    public double q1();
     
     /**
      * 四分之三分位数
      * @return 
      */    
-    public float q3();
+    public double q3();
     
     /**
      * 偏度
      * @return 
      */
-    public float skewness();
+    public double skewness();
     
     /**
      * 峰度
      * @return 
      */
-    public float kurtosis();
+    public double kurtosis();
     
     /**
      * 采样
      * @return 
      */
-    public float sample();
+    public double sample();
     
     /**
      * 采样N个
      * @param n
      * @return 
      */
-    public float[] sample(int n);
+    public double[] sample(int n);
 
     /**
      * 概率密度函数
@@ -79,7 +79,7 @@ public interface IContinuousDistribution {
      * @param x
      * @return
      */
-    public float pdf(float x);
+    public double pdf(double x);
 
     /**
      * 累积分布
@@ -87,7 +87,7 @@ public interface IContinuousDistribution {
      * @param x
      * @return
      */
-    public float cdf(float x);
+    public double cdf(double x);
 
     /**
      * 百分点函数
@@ -95,7 +95,7 @@ public interface IContinuousDistribution {
      * @param prob
      * @return
      */
-    public float ppf(float prob);
+    public double ppf(double prob);
 
     /**
      * 生存函数
@@ -103,7 +103,7 @@ public interface IContinuousDistribution {
      * @param x
      * @return
      */
-    public float sf(float x);
+    public double sf(double x);
 
     /**
      * 逆生存函数
@@ -111,5 +111,5 @@ public interface IContinuousDistribution {
      * @param prob
      * @return
      */
-    public float isf(float prob);
+    public double isf(double prob);
 }

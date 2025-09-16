@@ -1,11 +1,11 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.ml.cls.LogisticRegressionResult;
 import com.reremouse.lab.math.ml.cls.RereLogisticRegression;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 
 /**
  * 逻辑斯蒂回归演示类
@@ -33,7 +33,7 @@ public class LogisticRegressionDemo {
         // 创建训练数据
         // 特征矩阵：每行是一个学生，每列是一个特征
         // 特征：[数学成绩, 英语成绩, 学习时间(小时)]
-        float[][] featureData = {
+        double[][] featureData = {
             {85, 78, 3.5f},  // 学生1：数学85，英语78，学习3.5小时
             {92, 85, 4.0f},  // 学生2：数学92，英语85，学习4.0小时
             {78, 82, 2.5f},  // 学生3：数学78，英语82，学习2.5小时
@@ -50,7 +50,7 @@ public class LogisticRegressionDemo {
         String[] labels = {"1", "1", "0", "1", "0", "1", "1", "1", "0", "1"};
         
         // 创建特征矩阵
-        IMatrix featureMatrix = new RereMatrix(featureData);
+        IMatrix<Double> featureMatrix = Linalg.matrix(featureData);
         
         System.out.println("训练数据：");
         System.out.println("特征矩阵形状: " + featureMatrix.getRowNum() + " x " + featureMatrix.getColNum());
@@ -90,7 +90,7 @@ public class LogisticRegressionDemo {
             System.out.println("  最终损失: " + result.getLoss());
             
             // 手动格式化权重向量输出，避免依赖问题
-            IVector weights = result.getWeights();
+            IVector<Float> weights = result.getWeights();
             System.out.print("  权重向量: [");
             for (int i = 0; i < weights.length(); i++) {
                 if (i > 0) System.out.print(", ");
@@ -99,7 +99,7 @@ public class LogisticRegressionDemo {
             System.out.println("]");
             
             // 手动格式化偏置项输出
-            IVector bias = result.getBias();
+            IVector<Float> bias = result.getBias();
             System.out.printf("  偏置项: %.4f%n", bias.get(0));
             System.out.println();
             
@@ -112,8 +112,8 @@ public class LogisticRegressionDemo {
             System.out.println("训练集预测结果：");
             String[] predictions = lr.predictBatch(featureMatrix);
             for (int i = 0; i < featureMatrix.getRowNum(); i++) {
-                IVector sample = featureMatrix.getRow(i);
-                float probability = lr.predictProbability(sample);
+                IVector<Double> sample = featureMatrix.getRow(i);
+                double probability = lr.predictProbability(sample);
                 System.out.printf("  学生%d: 预测=%s, 概率=%.3f, 实际=%s%n", 
                     i + 1, predictions[i], probability, labels[i]);
             }
@@ -121,16 +121,16 @@ public class LogisticRegressionDemo {
             
             // 预测新样本
             System.out.println("新样本预测：");
-            float[][] newSamples = {
+            double[][] newSamples = {
                 {80, 80, 3.0f},  // 新学生1
                 {95, 95, 5.0f},  // 新学生2
                 {65, 65, 1.5f}   // 新学生3
             };
             
             for (int i = 0; i < newSamples.length; i++) {
-                IVector newSample = new RereVector(newSamples[i]);
+                IVector<Double> newSample = new RereDoubleVector(newSamples[i]);
                 String prediction = lr.predict(newSample);
-                float probability = lr.predictProbability(newSample);
+                double probability = lr.predictProbability(newSample);
                 
                 System.out.printf("  新学生%d [数学:%.0f, 英语:%.0f, 学习时间:%.1f小时]: ", 
                     i + 1, newSamples[i][0], newSamples[i][1], newSamples[i][2]);
@@ -146,7 +146,7 @@ public class LogisticRegressionDemo {
                     correctPredictions++;
                 }
             }
-            float accuracy = (float) correctPredictions / predictions.length * 100;
+            double accuracy = (double) correctPredictions / predictions.length * 100;
             System.out.printf("  准确率: %.1f%% (%d/%d)%n", accuracy, correctPredictions, predictions.length);
             
         } catch (Exception e) {

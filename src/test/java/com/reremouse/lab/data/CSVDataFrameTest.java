@@ -1,8 +1,8 @@
 package com.reremouse.lab.data;
 
 import com.reremouse.lab.math.data.DataFrame;
-import com.reremouse.lab.math.linalg.IMatrix;
 import java.io.IOException;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * CSV DataFrame测试 / CSV DataFrame Test

@@ -38,7 +38,7 @@ import com.reremouse.lab.math.stats.distribution.StudentDistribution;
  */
 public class DistributionTest {
     
-    private static final float TOLERANCE = 1e-3f; // 测试容差 / Test tolerance
+    private static final double TOLERANCE = 1e-3f; // 测试容差 / Test tolerance
     private static final int SAMPLE_SIZE = 10000; // 采样大小 / Sample size
     private static int testCount = 0;
     private static int passedTests = 0;
@@ -64,7 +64,7 @@ public class DistributionTest {
             System.out.println("总测试数 / Total tests: " + testCount);
             System.out.println("通过测试 / Passed: " + passedTests);
             System.out.println("失败测试 / Failed: " + failedTests);
-            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (float)passedTests / testCount * 100));
+            System.out.println("成功率 / Success rate: " + String.format("%.2f%%", (double)passedTests / testCount * 100));
             
             if (failedTests == 0) {
                 System.out.println("所有测试通过！/ All tests passed!");
@@ -97,8 +97,8 @@ public class DistributionTest {
         
         // PDF测试
         // PDF test
-        float pdf0 = normal.pdf(0.0f);
-        float expectedPdf0 = 0.3989f; // 1/√(2π) ≈ 0.3989
+        double pdf0 = normal.pdf(0.0f);
+        double expectedPdf0 = 0.3989f; // 1/√(2π) ≈ 0.3989
         assertEqual(expectedPdf0, pdf0, "x=0处的PDF值不正确 / PDF at x=0 is incorrect");
         
         // CDF测试
@@ -113,8 +113,8 @@ public class DistributionTest {
         
         // 四分位数测试
         // Quartiles test
-        float q1 = normal.q1();
-        float q3 = normal.q3();
+        double q1 = normal.q1();
+        double q3 = normal.q3();
         assertTrue(q1 < 0, "Q1应小于0 / Q1 should be less than 0");
         assertTrue(q3 > 0, "Q3应大于0 / Q3 should be greater than 0");
         assertEqual(0.0f, (q1 + q3) / 2.0f, "Q1和Q3的平均值应为0 / Average of Q1 and Q3 should be 0");
@@ -142,7 +142,7 @@ public class DistributionTest {
         
         // PDF测试
         // PDF test
-        float pdf0 = tDist.pdf(0.0f);
+        double pdf0 = tDist.pdf(0.0f);
         assertTrue(pdf0 > 0, "x=0处的PDF值应大于0 / PDF at x=0 should be greater than 0");
         
         // CDF测试
@@ -166,7 +166,7 @@ public class DistributionTest {
         assertEqual(5.0f, uniform.mean(), "均值应为5 / Mean should be 5");
         assertEqual(8.333f, uniform.var(), "方差应约为8.333 / Variance should be approximately 8.333");
         assertEqual(5.0f, uniform.median(), "中位数应为5 / Median should be 5");
-        assertTrue(Float.isNaN(uniform.mode()), "众数应为NaN / Mode should be NaN");
+        assertTrue(Double.isNaN(uniform.mode()), "众数应为NaN / Mode should be NaN");
         assertEqual(0.0f, uniform.skewness(), "偏度应为0 / Skewness should be 0");
         assertEqual(-1.2f, uniform.kurtosis(), "峰度应为-1.2 / Kurtosis should be -1.2");
         
@@ -303,24 +303,24 @@ public class DistributionTest {
         for (IContinuousDistribution dist : distributions) {
             // 测试CDF和SF的关系
             // Test relationship between CDF and SF
-            float x = 0.5f;
-            float cdf = dist.cdf(x);
-            float sf = dist.sf(x);
+            double x = 0.5f;
+            double cdf = dist.cdf(x);
+            double sf = dist.sf(x);
             assertEqual(1.0f, cdf + sf, 
                 dist.getClass().getSimpleName() + " CDF + SF 应等于1 / CDF + SF should equal 1");
             
             // 测试PPF和ISF的关系
             // Test relationship between PPF and ISF
-            float p = 0.3f;
-            float ppf = dist.ppf(p);
-            float isf = dist.isf(1.0f - p);
+            double p = 0.3f;
+            double ppf = dist.ppf(p);
+            double isf = dist.isf(1.0f - p);
             assertEqual(ppf, isf, 
                 dist.getClass().getSimpleName() + " PPF和ISF应相等 / PPF and ISF should be equal");
             
             // 测试PPF和CDF的逆关系
             // Test inverse relationship between PPF and CDF
-            float ppfValue = dist.ppf(p);
-            float cdfValue = dist.cdf(ppfValue);
+            double ppfValue = dist.ppf(p);
+            double cdfValue = dist.cdf(ppfValue);
             assertEqual(p, cdfValue, 
                 dist.getClass().getSimpleName() + " PPF和CDF应为逆函数 / PPF and CDF should be inverse functions");
         }
@@ -337,15 +337,15 @@ public class DistributionTest {
         
         // 测试极值
         // Test extreme values
-        assertEqual(0.0f, normal.pdf(Float.NEGATIVE_INFINITY), "负无穷处的PDF应为0 / PDF at negative infinity should be 0");
-        assertEqual(0.0f, normal.pdf(Float.POSITIVE_INFINITY), "正无穷处的PDF应为0 / PDF at positive infinity should be 0");
-        assertEqual(0.0f, normal.cdf(Float.NEGATIVE_INFINITY), "负无穷处的CDF应为0 / CDF at negative infinity should be 0");
-        assertEqual(1.0f, normal.cdf(Float.POSITIVE_INFINITY), "正无穷处的CDF应为1 / CDF at positive infinity should be 1");
+        assertEqual(0.0f, normal.pdf(Double.NEGATIVE_INFINITY), "负无穷处的PDF应为0 / PDF at negative infinity should be 0");
+        assertEqual(0.0f, normal.pdf(Double.POSITIVE_INFINITY), "正无穷处的PDF应为0 / PDF at positive infinity should be 0");
+        assertEqual(0.0f, normal.cdf(Double.NEGATIVE_INFINITY), "负无穷处的CDF应为0 / CDF at negative infinity should be 0");
+        assertEqual(1.0f, normal.cdf(Double.POSITIVE_INFINITY), "正无穷处的CDF应为1 / CDF at positive infinity should be 1");
         
         // 测试PPF的边界情况
         // Test edge cases for PPF
-        assertTrue(Float.isInfinite(normal.ppf(0.0f)) && normal.ppf(0.0f) < 0, "0%分位数应为负无穷 / 0th percentile should be negative infinity");
-        assertTrue(Float.isInfinite(normal.ppf(1.0f)) && normal.ppf(1.0f) > 0, "100%分位数应为正无穷 / 100th percentile should be positive infinity");
+        assertTrue(Double.isInfinite(normal.ppf(0.0f)) && normal.ppf(0.0f) < 0, "0%分位数应为负无穷 / 0th percentile should be negative infinity");
+        assertTrue(Double.isInfinite(normal.ppf(1.0f)) && normal.ppf(1.0f) > 0, "100%分位数应为正无穷 / 100th percentile should be positive infinity");
         
         // 测试均匀分布的边界情况
         // Test edge cases for uniform distribution
@@ -410,7 +410,7 @@ public class DistributionTest {
      * @param distName 分布名称 / Distribution name
      */
     private static void testRandomSampling(IContinuousDistribution dist, String distName) {
-        float[] samples = dist.sample(SAMPLE_SIZE);
+        double[] samples = dist.sample(SAMPLE_SIZE);
         
         // 检查样本数量
         // Check sample size
@@ -418,30 +418,30 @@ public class DistributionTest {
         
         // 检查样本是否在合理范围内
         // Check if samples are in reasonable range
-        for (float sample : samples) {
-            assertFalse(Float.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
-            assertFalse(Float.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
+        for (double sample : samples) {
+            assertFalse(Double.isNaN(sample), "样本不应为NaN / Sample should not be NaN");
+            assertFalse(Double.isInfinite(sample), "样本不应为无穷大 / Sample should not be infinite");
         }
         
         // 计算样本统计量
         // Calculate sample statistics
-        float sampleMean = calculateMean(samples);
-        float sampleVar = calculateVariance(samples, sampleMean);
+        double sampleMean = calculateMean(samples);
+        double sampleVar = calculateVariance(samples, sampleMean);
         
         // 检查样本均值是否接近理论均值
         // Check if sample mean is close to theoretical mean
-        if (!Float.isNaN(dist.mean())) {
-            float meanError = Math.abs(sampleMean - dist.mean());
-            float meanThreshold = Math.max(0.1f, Math.abs(dist.mean()) * 0.2f); // 动态调整容差
+        if (!Double.isNaN(dist.mean())) {
+            double meanError = Math.abs(sampleMean - dist.mean());
+            double meanThreshold = Math.max(0.1f, Math.abs(dist.mean()) * 0.2f); // 动态调整容差
             assertTrue(meanError < meanThreshold, 
                 distName + " 样本均值与理论均值差异过大 / Sample mean differs too much from theoretical mean");
         }
         
         // 检查样本方差是否接近理论方差
         // Check if sample variance is close to theoretical variance
-        if (!Float.isNaN(dist.var())) {
-            float varError = Math.abs(sampleVar - dist.var());
-            float varThreshold = Math.max(0.5f, Math.abs(dist.var()) * 0.3f); // 动态调整容差
+        if (!Double.isNaN(dist.var())) {
+            double varError = Math.abs(sampleVar - dist.var());
+            double varThreshold = Math.max(0.5f, Math.abs(dist.var()) * 0.3f); // 动态调整容差
             assertTrue(varError < varThreshold, 
                 distName + " 样本方差与理论方差差异过大 / Sample variance differs too much from theoretical variance");
         }
@@ -454,9 +454,9 @@ public class DistributionTest {
      * @param values 数值数组 / Array of values
      * @return 均值 / Mean
      */
-    private static float calculateMean(float[] values) {
-        float sum = 0.0f;
-        for (float value : values) {
+    private static double calculateMean(double[] values) {
+        double sum = 0.0f;
+        for (double value : values) {
             sum += value;
         }
         return sum / values.length;
@@ -470,17 +470,17 @@ public class DistributionTest {
      * @param mean 均值 / Mean
      * @return 方差 / Variance
      */
-    private static float calculateVariance(float[] values, float mean) {
-        float sumSquaredDiff = 0.0f;
-        for (float value : values) {
-            float diff = value - mean;
+    private static double calculateVariance(double[] values, double mean) {
+        double sumSquaredDiff = 0.0f;
+        for (double value : values) {
+            double diff = value - mean;
             sumSquaredDiff += diff * diff;
         }
         return sumSquaredDiff / values.length;
     }
     
     // 测试辅助方法 / Test helper methods
-    private static void assertEqual(float expected, float actual, String message) {
+    private static void assertEqual(double expected, double actual, String message) {
         testCount++;
         if (Math.abs(expected - actual) <= TOLERANCE) {
             passedTests++;

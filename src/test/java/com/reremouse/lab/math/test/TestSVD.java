@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.test;
 
-
 import com.reremouse.lab.math.dimreduce.RereSVD;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * 简单的SVD降维测试 / Simple SVD Dimensionality Reduction Test
@@ -20,7 +20,7 @@ public class TestSVD {
             {2.0f, 3.0f, 4.0f}
         };
         
-        IMatrix originalMatrix = IMatrix.of(testData);
+        IMatrix<Float> originalMatrix = Linalg.matrix(testData);
         RereSVD svd = new RereSVD();
         
         System.out.println("原始数据矩阵 / Original data matrix:");
@@ -29,13 +29,13 @@ public class TestSVD {
         try {
             // 测试降维到2维
             System.out.println("\n降维到2维 / Reduce to 2 dimensions:");
-            IMatrix reduced2D = svd.dimensionReduction(originalMatrix, 2);
+            IMatrix<Float> reduced2D = svd.dimensionReduction(originalMatrix, 2);
             printMatrix(reduced2D);
             System.out.println("降维后矩阵形状: " + reduced2D.getRowNum() + "x" + reduced2D.getColNum());
             
             // 测试降维到1维
             System.out.println("\n降维到1维 / Reduce to 1 dimension:");
-            IMatrix reduced1D = svd.dimensionReduction(originalMatrix, 1);
+            IMatrix<Float> reduced1D = svd.dimensionReduction(originalMatrix, 1);
             printMatrix(reduced1D);
             System.out.println("降维后矩阵形状: " + reduced1D.getRowNum() + "x" + reduced1D.getColNum());
             
@@ -47,8 +47,8 @@ public class TestSVD {
         }
     }
     
-    private static void printMatrix(IMatrix matrix) {
-        float[][] data = matrix.getData();
+    private static void printMatrix(IMatrix<Float> matrix) {
+        float[][] data = matrix.toFloatArray();
         for (int i = 0; i < data.length; i++) {
             System.out.print("[");
             for (int j = 0; j < data[i].length; j++) {

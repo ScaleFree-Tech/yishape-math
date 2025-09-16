@@ -22,6 +22,6 @@ public interface IRegression {
      * @param x
      * @return 
      */
-    public float predict(IVector x);
+    public double predict(IVector x);
     
 }

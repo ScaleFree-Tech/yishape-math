@@ -34,7 +34,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     private final int n;
     
     /** 概率质量 / Probability mass */
-    private final float probMass;
+    private final double probMass;
     
     /**
      * 构造函数
@@ -98,67 +98,67 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     // ==================== 基本统计量 / Basic Statistics ====================
     
     @Override
-    public float mean() {
+    public double mean() {
         return (a + b) / 2.0f;
     }
     
     @Override
-    public float var() {
+    public double var() {
         return (n * n - 1) / 12.0f;
     }
     
     @Override
-    public float std() {
+    public double std() {
         return (float) Math.sqrt((n * n - 1) / 12.0f);
     }
     
     @Override
-    public float median() {
+    public double median() {
         return (a + b) / 2.0f;
     }
     
     @Override
-    public float mode() {
+    public double mode() {
         return Float.NaN; // 离散均匀分布没有唯一的众数
     }
     
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
     @Override
-    public float skewness() {
+    public double skewness() {
         return 0.0f; // 离散均匀分布是对称的
     }
     
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return -6.0f * (n * n + 1) / (5.0f * (n * n - 1));
     }
     
     // ==================== 概率计算 / Probability Calculations ====================
     
     @Override
-    public float pmf(int x) {
+    public double pmf(int x) {
         if (x < a || x > b) return 0.0f;
         return probMass;
     }
     
     @Override
-    public float cdf(int x) {
+    public double cdf(int x) {
         if (x < a) return 0.0f;
         if (x >= b) return 1.0f;
         return (x - a + 1) * probMass;
     }
     
     @Override
-    public int ppf(float prob) {
+    public int ppf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -170,12 +170,12 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float sf(int x) {
+    public double sf(int x) {
         return 1.0f - cdf(x);
     }
     
     @Override
-    public int isf(float prob) {
+    public int isf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -227,7 +227,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     // ==================== 高级统计方法 / Advanced Statistical Methods ====================
     
     @Override
-    public float moment(int k) {
+    public double moment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -235,7 +235,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
         if (k == 1) return mean();
         
         // 对于离散均匀分布，k阶矩 = (1/n) * Σ(i=a to b) i^k
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = a; i <= b; i++) {
             result += (float) Math.pow(i, k);
         }
@@ -243,7 +243,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float centralMoment(int k) {
+    public double centralMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -252,16 +252,16 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
         if (k == 2) return var();
         
         // 使用递推公式计算中心矩
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
+            double term = RereMathUtil.combination(k, i) * (float) Math.pow(-mean(), k - i) * moment(i);
             result += term;
         }
         return result;
     }
     
     @Override
-    public float standardizedMoment(int k) {
+    public double standardizedMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -272,15 +272,15 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float entropy() {
+    public double entropy() {
         return (float) Math.log(n);
     }
     
     @Override
-    public float cgf(float t) {
+    public double cgf(double t) {
         if (t == 0.0f) return 0.0f;
         
-        float sum = 0.0f;
+        double sum = 0.0f;
         for (int i = a; i <= b; i++) {
             sum += (float) Math.exp(t * i);
         }
@@ -290,17 +290,17 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
     @Override
-    public int quantile(float prob) {
+    public int quantile(double prob) {
         return ppf(prob);
     }
     
     @Override
-    public int[] confidenceInterval(float confidence) {
+    public int[] confidenceInterval(double confidence) {
         if (confidence < 0.0f || confidence > 1.0f) {
             throw new IllegalArgumentException("置信水平必须在[0,1]范围内 / Confidence level must be in range [0,1]");
         }
         
-        float alpha = 1.0f - confidence;
+        double alpha = 1.0f - confidence;
         int lower = ppf(alpha / 2.0f);
         int upper = ppf(1.0f - alpha / 2.0f);
         
@@ -310,7 +310,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
     @Override
-    public float klDivergence(IDiscreteDistribution other) {
+    public double klDivergence(IDiscreteDistribution other) {
         if (!(other instanceof DiscreteUniformDistribution)) {
             throw new IllegalArgumentException("只能与离散均匀分布计算KL散度 / Can only calculate KL divergence with Discrete Uniform distribution");
         }
@@ -329,7 +329,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float jsDivergence(IDiscreteDistribution other) {
+    public double jsDivergence(IDiscreteDistribution other) {
         if (!(other instanceof DiscreteUniformDistribution)) {
             throw new IllegalArgumentException("只能与离散均匀分布计算JS散度 / Can only calculate JS divergence with Discrete Uniform distribution");
         }
@@ -348,7 +348,7 @@ public class DiscreteUniformDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float wassersteinDistance(IDiscreteDistribution other) {
+    public double wassersteinDistance(IDiscreteDistribution other) {
         if (!(other instanceof DiscreteUniformDistribution)) {
             throw new IllegalArgumentException("只能与离散均匀分布计算Wasserstein距离 / Can only calculate Wasserstein distance with Discrete Uniform distribution");
         }

@@ -1,11 +1,8 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.RereVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.viz.Plots;
-import com.reremouse.lab.math.viz.IPlot;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
 import java.util.*;
-import java.util.Random;
 
 /**
  * IPlot扩展功能演示
@@ -18,9 +15,9 @@ public class RerePlotExtendedDemo {
         System.out.println("=== IPlot扩展功能演示 ===");
         
         // 创建测试数据
-        RereVector data1 = new RereVector(new float[]{10, 20, 30, 40, 50});
-        RereVector data2 = new RereVector(new float[]{15, 25, 35, 45, 55});
-        RereVector data3 = new RereVector(new float[]{5, 15, 25, 35, 45});
+        RereDoubleVector data1 = new RereDoubleVector(new double[]{10, 20, 30, 40, 50});
+        RereDoubleVector data2 = new RereDoubleVector(new double[]{15, 25, 35, 45, 55});
+        RereDoubleVector data3 = new RereDoubleVector(new double[]{5, 15, 25, 35, 45});
         
         List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
         List<String> labels = Arrays.asList("数据1", "数据2", "数据3", "数据4", "数据5");
@@ -44,42 +41,42 @@ public class RerePlotExtendedDemo {
         // 2. 统计图表
         System.out.println("4. 测试箱线图...");
         // 创建多组箱线图测试数据
-        List<Float> boxplotData = new ArrayList<>();
+        List<Double> boxplotData = new ArrayList<>();
         List<String> boxplotLabels = new ArrayList<>();
         
         // 生成三组有明显差异的数据
         Random random = new Random(42);
         for (int i = 0; i < 50; i++) {
-            boxplotData.add((float)(10 + random.nextGaussian() * 5)); // 均值10，标准差5
+            boxplotData.add((double)(10 + random.nextGaussian() * 5)); // 均值10，标准差5
             boxplotLabels.add("数据集A");
         }
         for (int i = 0; i < 50; i++) {
-            boxplotData.add((float)(30 + random.nextGaussian() * 8)); // 均值30，标准差8
+            boxplotData.add((double)(30 + random.nextGaussian() * 8)); // 均值30，标准差8
             boxplotLabels.add("数据集B");
         }
         for (int i = 0; i < 50; i++) {
-            boxplotData.add((float)(50 + random.nextGaussian() * 10)); // 均值50，标准差10
+            boxplotData.add((double)(50 + random.nextGaussian() * 10)); // 均值50，标准差10
             boxplotLabels.add("数据集C");
         }
         
-        float[] boxplotArray = new float[boxplotData.size()];
+        double[] boxplotArray = new double[boxplotData.size()];
         for (int i = 0; i < boxplotData.size(); i++) {
             boxplotArray[i] = boxplotData.get(i);
         }
-        RereVector boxplotVector = new RereVector(boxplotArray);
+        RereDoubleVector boxplotVector = new RereDoubleVector(boxplotArray);
         
         plot.boxplot(boxplotVector, boxplotLabels);
         plot.saveAsHtml("boxplot_demo.html");
         
         // 创建K线图数据
-        float[][] candlestickArray = {
+        double[][] candlestickArray = {
             {100, 110, 95, 115},
             {110, 120, 105, 125},
             {120, 115, 110, 130},
             {115, 125, 110, 135},
             {125, 130, 120, 140}
         };
-        RereMatrix candlestickData = new RereMatrix(candlestickArray);
+        RereDoubleMatrix candlestickData = new RereDoubleMatrix(candlestickArray);
         
         List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05");
         
@@ -171,12 +168,12 @@ public class RerePlotExtendedDemo {
         plot.saveAsHtml("graph_demo.html");
         
         // 创建平行坐标图数据
-        float[][] parallelArray = {
+        double[][] parallelArray = {
             {1, 2, 3, 4},
             {2, 3, 4, 5},
             {3, 4, 5, 6}
         };
-        RereMatrix parallelData = new RereMatrix(parallelArray);
+        RereDoubleMatrix parallelData = new RereDoubleMatrix(parallelArray);
         
         List<String> dimensions = Arrays.asList("维度1", "维度2", "维度3", "维度4");
         
@@ -186,12 +183,12 @@ public class RerePlotExtendedDemo {
         
         // 4. 现有图表完善
         System.out.println("14. 测试热力图...");
-        float[][] heatmapArray = {
+        double[][] heatmapArray = {
             {1, 2, 3},
             {4, 5, 6},
             {7, 8, 9}
         };
-        RereMatrix heatmapData = new RereMatrix(heatmapArray);
+        RereDoubleMatrix heatmapData = new RereDoubleMatrix(heatmapArray);
         
         List<String> xLabels = Arrays.asList("X1", "X2", "X3");
         List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3");

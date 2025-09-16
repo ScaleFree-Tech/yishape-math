@@ -1,7 +1,6 @@
 package com.reremouse.lab.math.data;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -12,10 +11,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import com.reremouse.lab.math.linalg.SliceExpressionParser;
 import org.apache.commons.csv.CSVPrinter;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * 数据框类，用于处理结构化数据，支持从CSV文件读取数据并与IMatrix进行转换
@@ -146,7 +144,7 @@ public class DataFrame implements Serializable {
                 }
                 
                 if (isNumeric && !floatData.isEmpty()) {
-                    column.setColumnType(ColumnType.Float);
+                    column.setColumnType(ColumnType.Numeric);
                     column.setData(floatData);
                 }
             }
@@ -327,7 +325,7 @@ public class DataFrame implements Serializable {
     public IMatrix toMatrix() {
         List<Column> floatColumns = new ArrayList<>();
         for (Column column : columns) {
-            if (column.getColumnType() == ColumnType.Float) {
+            if (column.getColumnType() == ColumnType.Numeric) {
                 floatColumns.add(column);
             }
         }
@@ -339,7 +337,7 @@ public class DataFrame implements Serializable {
         // 检查所有Float列的数据长度是否一致 / Check if all Float columns have consistent data length
         int actualRowCount = floatColumns.get(0).getData().size();
         if (actualRowCount == 0) {
-            return new RereMatrix(new float[0][0]);
+            return new RereDoubleMatrix(new double[0][0]);
         }
         
         for (Column column : floatColumns) {
@@ -349,7 +347,7 @@ public class DataFrame implements Serializable {
         }
         
         // 创建矩阵数据 / Create matrix data
-        float[][] matrixData = new float[actualRowCount][floatColumns.size()];
+        double[][] matrixData = new double[actualRowCount][floatColumns.size()];
         for (int i = 0; i < actualRowCount; i++) {
             for (int j = 0; j < floatColumns.size(); j++) {
                 Object value = floatColumns.get(j).getData().get(i);
@@ -357,7 +355,7 @@ public class DataFrame implements Serializable {
             }
         }
         
-        return new RereMatrix(matrixData);
+        return new RereDoubleMatrix(matrixData);
     }
 
     /**

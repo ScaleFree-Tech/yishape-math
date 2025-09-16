@@ -1,10 +1,12 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
+import com.reremouse.lab.math.viz.RerePlot;
+import com.reremouse.lab.math.viz.IPlot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 箱线图诊断测试
@@ -21,14 +23,14 @@ public class BoxplotDiagnosticTest {
             Random random = new Random(42);
             
             // 生成三组有明显差异的数据
-            float[] data1 = generateNormalData(100, 10, 50, random);  // 均值10，标准差50
-            float[] data2 = generateNormalData(100, 30, 20, random);  // 均值30，标准差20
-            float[] data3 = generateNormalData(100, 50, 30, random);  // 均值50，标准差30
+            double[] data1 = generateNormalData(100, 10, 50, random);  // 均值10，标准差50
+            double[] data2 = generateNormalData(100, 30, 20, random);  // 均值30，标准差20
+            double[] data3 = generateNormalData(100, 50, 30, random);  // 均值50，标准差30
             
             // 创建向量
-            IVector vector1 = new RereVector(data1);
-            IVector vector2 = new RereVector(data2);
-            IVector vector3 = new RereVector(data3);
+            IDoubleVector vector1 = new RereDoubleVector(data1);
+            IDoubleVector vector2 = new RereDoubleVector(data2);
+            IDoubleVector vector3 = new RereDoubleVector(data3);
             
             // 测试1: 单箱线图（应该正确显示）
             System.out.println("1. 测试单箱线图...");
@@ -55,7 +57,7 @@ public class BoxplotDiagnosticTest {
     /**
      * 测试单箱线图
      */
-    private static void testSingleBoxplot(IVector data, String filename) {
+    private static void testSingleBoxplot(IDoubleVector data, String filename) {
         try {
             RerePlot plot = new RerePlot();
             plot.title("单箱线图测试", "数据量: " + data.length());
@@ -72,30 +74,30 @@ public class BoxplotDiagnosticTest {
     /**
      * 测试多箱线图
      */
-    private static void testMultiBoxplot(float[] data1, float[] data2, float[] data3, String filename) {
+    private static void testMultiBoxplot(double[] data1, double[] data2, double[] data3, String filename) {
         try {
             // 合并数据
-            List<Float> allData = new ArrayList<>();
+            List<Double> allData = new ArrayList<>();
             List<String> allLabels = new ArrayList<>();
             
-            for (float value : data1) {
+            for (double value : data1) {
                 allData.add(value);
                 allLabels.add("数据集1");
             }
-            for (float value : data2) {
+            for (double value : data2) {
                 allData.add(value);
                 allLabels.add("数据集2");
             }
-            for (float value : data3) {
+            for (double value : data3) {
                 allData.add(value);
                 allLabels.add("数据集3");
             }
             
-            float[] combinedData = new float[allData.size()];
+            double[] combinedData = new double[allData.size()];
             for (int i = 0; i < allData.size(); i++) {
                 combinedData[i] = allData.get(i);
             }
-            IVector combinedVector = new RereVector(combinedData);
+            IDoubleVector combinedVector = new RereDoubleVector(combinedData);
             
             RerePlot plot = new RerePlot();
             plot.title("多箱线图测试", "三组数据对比");
@@ -113,7 +115,7 @@ public class BoxplotDiagnosticTest {
     /**
      * 调试多箱线图数据
      */
-    private static void debugMultiBoxplotData(float[] data1, float[] data2, float[] data3) {
+    private static void debugMultiBoxplotData(double[] data1, double[] data2, double[] data3) {
         System.out.println("数据集1统计信息:");
         printStatistics(data1, "数据集1");
         
@@ -125,24 +127,24 @@ public class BoxplotDiagnosticTest {
         
         // 模拟多箱线图的分组逻辑
         System.out.println("\n模拟多箱线图分组:");
-        List<Float> allData = new ArrayList<>();
+        List<Double> allData = new ArrayList<>();
         List<String> allLabels = new ArrayList<>();
         
-        for (float value : data1) {
+        for (double value : data1) {
             allData.add(value);
             allLabels.add("数据集1");
         }
-        for (float value : data2) {
+        for (double value : data2) {
             allData.add(value);
             allLabels.add("数据集2");
         }
-        for (float value : data3) {
+        for (double value : data3) {
             allData.add(value);
             allLabels.add("数据集3");
         }
         
         // 按标签分组
-        java.util.Map<String, List<Float>> groupedData = new java.util.HashMap<>();
+        java.util.Map<String, List<Double>> groupedData = new java.util.HashMap<>();
         for (int i = 0; i < allData.size(); i++) {
             String label = allLabels.get(i);
             if (!groupedData.containsKey(label)) {
@@ -153,8 +155,8 @@ public class BoxplotDiagnosticTest {
         
         // 计算每个组的箱线图统计量
         for (String label : groupedData.keySet()) {
-            List<Float> groupData = groupedData.get(label);
-            float[] groupArray = new float[groupData.size()];
+            List<Double> groupData = groupedData.get(label);
+            double[] groupArray = new double[groupData.size()];
             for (int i = 0; i < groupData.size(); i++) {
                 groupArray[i] = groupData.get(i);
             }
@@ -168,13 +170,13 @@ public class BoxplotDiagnosticTest {
     /**
      * 打印基本统计信息
      */
-    private static void printStatistics(float[] data, String name) {
+    private static void printStatistics(double[] data, String name) {
         java.util.Arrays.sort(data);
         int n = data.length;
-        float min = data[0];
-        float max = data[n - 1];
-        float mean = 0;
-        for (float value : data) {
+        double min = data[0];
+        double max = data[n - 1];
+        double mean = 0;
+        for (double value : data) {
             mean += value;
         }
         mean /= n;
@@ -189,25 +191,25 @@ public class BoxplotDiagnosticTest {
     /**
      * 打印箱线图统计信息
      */
-    private static void printBoxplotStatistics(float[] sortedData) {
+    private static void printBoxplotStatistics(double[] sortedData) {
         int n = sortedData.length;
-        float min = sortedData[0];
-        float max = sortedData[n - 1];
+        double min = sortedData[0];
+        double max = sortedData[n - 1];
         
         // 计算Q1 (25%分位数)
         int q1Index = (int) Math.ceil(n * 0.25) - 1;
         q1Index = Math.max(0, Math.min(q1Index, n - 1));
-        float q1 = sortedData[q1Index];
+        double q1 = sortedData[q1Index];
         
         // 计算中位数 (50%分位数)
         int q2Index = (int) Math.ceil(n * 0.5) - 1;
         q2Index = Math.max(0, Math.min(q2Index, n - 1));
-        float q2 = sortedData[q2Index];
+        double q2 = sortedData[q2Index];
         
         // 计算Q3 (75%分位数)
         int q3Index = (int) Math.ceil(n * 0.75) - 1;
         q3Index = Math.max(0, Math.min(q3Index, n - 1));
-        float q3 = sortedData[q3Index];
+        double q3 = sortedData[q3Index];
         
         System.out.println("  箱线图数据: [" + min + ", " + q1 + ", " + q2 + ", " + q3 + ", " + max + "]");
         System.out.println("  四分位距: " + (q3 - q1));
@@ -217,14 +219,14 @@ public class BoxplotDiagnosticTest {
     /**
      * 生成正态分布数据
      */
-    private static float[] generateNormalData(int size, float mean, float std, Random random) {
-        float[] data = new float[size];
+    private static double[] generateNormalData(int size, double mean, double std, Random random) {
+        double[] data = new double[size];
         for (int i = 0; i < size; i++) {
             // Box-Muller变换生成正态分布
             double u1 = random.nextDouble();
             double u2 = random.nextDouble();
             double z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-            data[i] = (float) (mean + std * z0);
+            data[i] = (double) (mean + std * z0);
         }
         return data;
     }

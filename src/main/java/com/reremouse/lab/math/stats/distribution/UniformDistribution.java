@@ -1,7 +1,8 @@
 package com.reremouse.lab.math.stats.distribution;
 
-import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.RereMathUtil;
 import java.io.Serializable;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 均匀分布 (Uniform Distribution)
@@ -22,16 +23,16 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
     private static final long serialVersionUID = 1L;
     
     /** 下界 / Lower bound */
-    private final float lowerBound;
+    private final double lowerBound;
     
     /** 上界 / Upper bound */
-    private final float upperBound;
+    private final double upperBound;
     
     /** 区间长度 / Interval length */
-    private final float range;
+    private final double range;
     
     /** 概率密度值 / Probability density value */
-    private final float density;
+    private final double density;
     
     /**
      * 构造函数，创建标准均匀分布（区间[0,1]）
@@ -49,7 +50,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @param upperBound 上界 / Upper bound
      * @throws IllegalArgumentException 如果上界小于等于下界 / If upper bound is less than or equal to lower bound
      */
-    public UniformDistribution(float lowerBound, float upperBound) {
+    public UniformDistribution(double lowerBound, double upperBound) {
         if (upperBound <= lowerBound) {
             throw new IllegalArgumentException("上界必须大于下界 / Upper bound must be greater than lower bound");
         }
@@ -67,7 +68,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 概率密度函数值 / PDF value
      */
     @Override
-    public float pdf(float x) {
+    public double pdf(double x) {
         if (x < lowerBound || x > upperBound) {
             return 0.0f;
         }
@@ -82,7 +83,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 累积分布函数值 / CDF value
      */
     @Override
-    public float cdf(float x) {
+    public double cdf(double x) {
         if (x < lowerBound) {
             return 0.0f;
         } else if (x >= upperBound) {
@@ -100,7 +101,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 百分点函数值 / PPF value
      */
     @Override
-    public float ppf(float p) {
+    public double ppf(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -119,7 +120,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 生存函数值 / Survival function value
      */
     @Override
-    public float sf(float x) {
+    public double sf(double x) {
         return 1.0f - cdf(x);
     }
     
@@ -131,7 +132,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 逆生存函数值 / Inverse survival function value
      */
     @Override
-    public float isf(float p) {
+    public double isf(double p) {
         return ppf(1.0f - p);
     }
     
@@ -141,7 +142,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 下界 / Lower bound
      */
-    public float getLowerBound() {
+    public double getLowerBound() {
         return lowerBound;
     }
     
@@ -151,7 +152,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 上界 / Upper bound
      */
-    public float getUpperBound() {
+    public double getUpperBound() {
         return upperBound;
     }
     
@@ -161,7 +162,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 区间长度 / Interval length
      */
-    public float getRange() {
+    public double getRange() {
         return range;
     }
     
@@ -171,7 +172,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 均值 / Mean
      */
-    public float getMean() {
+    public double getMean() {
         return (lowerBound + upperBound) / 2.0f;
     }
     
@@ -181,7 +182,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 方差 / Variance
      */
-    public float getVariance() {
+    public double getVariance() {
         return (range * range) / 12.0f;
     }
     
@@ -191,7 +192,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 标准差 / Standard deviation
      */
-    public float getStandardDeviation() {
+    public double getStandardDeviation() {
         return range / (2.0f * (float) Math.sqrt(3.0));
     }
     
@@ -202,7 +203,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @param x 输入值 / Input value
      * @return 是否在支持区间内 / Whether within support interval
      */
-    public boolean isInSupport(float x) {
+    public boolean isInSupport(double x) {
         return x >= lowerBound && x <= upperBound;
     }
     
@@ -213,7 +214,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 均值 / Mean
      */
     @Override
-    public float mean() {
+    public double mean() {
         return getMean();
     }
     
@@ -224,7 +225,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
+    public double var() {
         return getVariance();
     }
     
@@ -235,7 +236,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
+    public double std() {
         return getStandardDeviation();
     }
     
@@ -246,7 +247,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 中位数 / Median
      */
     @Override
-    public float median() {
+    public double median() {
         return getMean(); // 均匀分布的中位数等于均值
     }
     
@@ -257,7 +258,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 众数 / Mode
      */
     @Override
-    public float mode() {
+    public double mode() {
         return Float.NaN; // 均匀分布没有唯一的众数
     }
     
@@ -268,7 +269,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 第一四分位数 / First quartile
      */
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
@@ -279,7 +280,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 第三四分位数 / Third quartile
      */
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
@@ -290,7 +291,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 偏度 / Skewness
      */
     @Override
-    public float skewness() {
+    public double skewness() {
         return 0.0f; // 均匀分布是对称的，偏度为0
     }
     
@@ -301,7 +302,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 峰度 / Kurtosis
      */
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return -1.2f; // 均匀分布的峰度为-1.2（超额峰度）
     }
     
@@ -312,7 +313,7 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 随机样本 / Random sample
      */
     @Override
-    public float sample() {
+    public double sample() {
         return lowerBound + (float) Math.random() * range;
     }
     
@@ -324,14 +325,14 @@ public class UniformDistribution implements IContinuousDistribution, Serializabl
      * @return 随机样本数组 / Array of random samples
      */
     @Override
-    public float[] sample(int n) {
+    public double[] sample(int n) {
         if (n <= 0) {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
         // 使用IVector进行数组操作
-        // Using IVector for array operations
-        IVector samples = IVector.zeros(n);
+        // Using IDoubleVector for array operations
+        IDoubleVector samples = IDoubleVector.zeros(n);
         for (int i = 0; i < n; i++) {
             samples.set(i, sample());
         }

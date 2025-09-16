@@ -55,6 +55,7 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 
 
 
+
 ## 核心类 / Core Classes
 
 ### 1. Plots - 绘图工厂类 / Plotting Factory Class
@@ -72,34 +73,34 @@ RerePlot of(int width, int height);                 // 创建指定尺寸的绘�
 RerePlot of(int width, int height, String theme);   // 创建指定尺寸和主题的绘图对象 / Create plot object with specified size and theme
 
 // 图表类型专用工厂方法 / Chart-specific factory methods
-RerePlot line(IVector x, IVector y);                // 创建线图 / Create line chart
-RerePlot line(IVector x);                           // 创建单向量线图 / Create single vector line chart
-RerePlot line(IVector x, IVector y, List<String> hue); // 创建多线图 / Create multi-line chart
-RerePlot scatter(IVector x, IVector y);             // 创建散点图 / Create scatter plot
-RerePlot scatter(IVector x, IVector y, List<String> hue); // 创建多组散点图 / Create multi-group scatter plot
-RerePlot pie(IVector data);                         // 创建饼图 / Create pie chart
-RerePlot bar(IVector data);                         // 创建柱状图 / Create bar chart
-RerePlot bar(IVector data, List<String> hue);       // 创建分组柱状图 / Create grouped bar chart
-RerePlot hist(IVector data, boolean fittingLine);   // 创建直方图 / Create histogram
-RerePlot boxplot(IVector data);                     // 创建箱线图 / Create box plot
-RerePlot boxplot(IVector data, List<String> labels); // 创建带标签的箱线图 / Create labeled box plot
-RerePlot violinplot(IVector data);                  // 创建小提琴图 / Create violin plot
-RerePlot violinplot(IVector data, List<String> labels); // 创建带标签的小提琴图 / Create labeled violin plot
-RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels); // 创建热力图 / Create heatmap
-RerePlot radar(IVector data, List<String> indicators); // 创建雷达图 / Create radar chart
-RerePlot gauge(float value, float max, float min);  // 创建仪表盘 / Create gauge chart
+RerePlot line(IVector<Double> x, IVector<Double> y);                // 创建线图 / Create line chart
+RerePlot line(IVector<Double> x);                           // 创建单向量线图 / Create single vector line chart
+RerePlot line(IVector<Double> x, IVector<Double> y, List<String> hue); // 创建多线图 / Create multi-line chart
+RerePlot scatter(IVector<Double> x, IVector<Double> y);             // 创建散点图 / Create scatter plot
+RerePlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue); // 创建多组散点图 / Create multi-group scatter plot
+RerePlot pie(IVector<Double> data);                         // 创建饼图 / Create pie chart
+RerePlot bar(IVector<Double> data);                         // 创建柱状图 / Create bar chart
+RerePlot bar(IVector<Double> data, List<String> hue);       // 创建分组柱状图 / Create grouped bar chart
+RerePlot hist(IVector<Double> data, boolean fittingLine);   // 创建直方图 / Create histogram
+RerePlot boxplot(IVector<Double> data);                     // 创建箱线图 / Create box plot
+RerePlot boxplot(IVector<Double> data, List<String> labels); // 创建带标签的箱线图 / Create labeled box plot
+RerePlot violinplot(IVector<Double> data);                  // 创建小提琴图 / Create violin plot
+RerePlot violinplot(IVector<Double> data, List<String> labels); // 创建带标签的小提琴图 / Create labeled violin plot
+RerePlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels); // 创建热力图 / Create heatmap
+RerePlot radar(IVector<Double> data, List<String> indicators); // 创建雷达图 / Create radar chart
+RerePlot gauge(double value, double max, double min);  // 创建仪表盘 / Create gauge chart
 
 // 带尺寸的工厂方法 / Factory methods with dimensions
-RerePlot line(IVector x, IVector y, int width, int height);
-RerePlot scatter(IVector x, IVector y, int width, int height);
-RerePlot bar(IVector data, int width, int height);
-RerePlot pie(IVector data, int width, int height);
+RerePlot line(IVector<Double> x, IVector<Double> y, int width, int height);
+RerePlot scatter(IVector<Double> x, IVector<Double> y, int width, int height);
+RerePlot bar(IVector<Double> data, int width, int height);
+RerePlot pie(IVector<Double> data, int width, int height);
 
 // 带主题的工厂方法 / Factory methods with themes
-RerePlot line(IVector x, IVector y, int width, int height, String theme);
-RerePlot scatter(IVector x, IVector y, int width, int height, String theme);
-RerePlot bar(IVector data, int width, int height, String theme);
-RerePlot pie(IVector data, int width, int height, String theme);
+RerePlot line(IVector<Double> x, IVector<Double> y, int width, int height, String theme);
+RerePlot scatter(IVector<Double> x, IVector<Double> y, int width, int height, String theme);
+RerePlot bar(IVector<Double> data, int width, int height, String theme);
+RerePlot pie(IVector<Double> data, int width, int height, String theme);
 ```
 
 #### 使用示例 / Usage Examples
@@ -143,14 +144,14 @@ public interface IPlot {
      * @param y Y轴数据 / Y-axis data
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot line(IVector x, IVector y);
+    IPlot line(IVector<Double> x, IVector<Double> y);
     
     /**
      * 绘制单向量线图 / Draw single vector line chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot line(IVector x);
+    IPlot line(IVector<Double> x);
     
     /**
      * 绘制多线图 / Draw multi-line chart
@@ -159,7 +160,7 @@ public interface IPlot {
      * @param hue 分组标签 / Group labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot line(IVector x, IVector y, List<String> hue);
+    IPlot line(IVector<Double> x, IVector<Double> y, List<String> hue);
     
     /**
      * 绘制散点图 / Draw scatter plot
@@ -167,7 +168,7 @@ public interface IPlot {
      * @param y Y轴数据 / Y-axis data
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot scatter(IVector x, IVector y);
+    IPlot scatter(IVector<Double> x, IVector<Double> y);
     
     /**
      * 绘制多组散点图 / Draw multi-group scatter plot
@@ -176,21 +177,21 @@ public interface IPlot {
      * @param hue 分组标签 / Group labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot scatter(IVector x, IVector y, List<String> hue);
+    IPlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue);
     
     /**
      * 绘制饼图 / Draw pie chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot pie(IVector x);
+    IPlot pie(IVector<Double> x);
     
     /**
      * 绘制柱状图 / Draw bar chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot bar(IVector x);
+    IPlot bar(IVector<Double> x);
     
     /**
      * 绘制分组柱状图 / Draw grouped bar chart
@@ -198,7 +199,7 @@ public interface IPlot {
      * @param hue 分组标签 / Group labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot bar(IVector x, List<String> hue);
+    IPlot bar(IVector<Double> x, List<String> hue);
     
     /**
      * 绘制直方图 / Draw histogram
@@ -206,7 +207,7 @@ public interface IPlot {
      * @param fittingLine 是否显示拟合线 / Whether to show fitting line
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot hist(IVector x, boolean fittingLine);
+    IPlot hist(IVector<Double> x, boolean fittingLine);
     
     // ========== 极坐标图表方法 / Polar Chart Methods ==========
     
@@ -216,7 +217,7 @@ public interface IPlot {
      * @param categories 类别标签 / Category labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot polarBar(IVector data, List<String> categories);
+    IPlot polarBar(IVector<Double> data, List<String> categories);
     
     /**
      * 绘制极坐标线图 / Draw polar line chart
@@ -224,7 +225,7 @@ public interface IPlot {
      * @param categories 类别标签 / Category labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot polarLine(IVector data, List<String> categories);
+    IPlot polarLine(IVector<Double> data, List<String> categories);
     
     /**
      * 绘制极坐标散点图 / Draw polar scatter chart
@@ -232,7 +233,7 @@ public interface IPlot {
      * @param categories 类别标签 / Category labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot polarScatter(IVector data, List<String> categories);
+    IPlot polarScatter(IVector<Double> data, List<String> categories);
     
     // ========== 统计图表方法 / Statistical Chart Methods ==========
     
@@ -241,7 +242,7 @@ public interface IPlot {
      * @param data 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot boxplot(IVector data);
+    IPlot boxplot(IVector<Double> data);
     
     /**
      * 绘制箱线图 / Draw box plot
@@ -249,14 +250,14 @@ public interface IPlot {
      * @param labels 标签 / Labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot boxplot(IVector data, List<String> labels);
+    IPlot boxplot(IVector<Double> data, List<String> labels);
     
     /**
      * 绘制小提琴图 / Draw violin plot
      * @param data 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot violinplot(IVector data);
+    IPlot violinplot(IVector<Double> data);
     
     /**
      * 绘制小提琴图 / Draw violin plot
@@ -264,7 +265,7 @@ public interface IPlot {
      * @param labels 标签 / Labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot violinplot(IVector data, List<String> labels);
+    IPlot violinplot(IVector<Double> data, List<String> labels);
     
     /**
      * 绘制K线图 / Draw candlestick chart
@@ -272,7 +273,7 @@ public interface IPlot {
      * @param dates 日期标签 / Date labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot candlestick(IMatrix data, List<String> dates);
+    IPlot candlestick(IMatrix<Double> data, List<String> dates);
     
     // ========== 特殊图表方法 / Special Chart Methods ==========
     
@@ -282,7 +283,7 @@ public interface IPlot {
      * @param labels 标签 / Labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot funnel(IVector data, List<String> labels);
+    IPlot funnel(IVector<Double> data, List<String> labels);
     
     /**
      * 绘制桑基图 / Draw sankey diagram
@@ -335,7 +336,7 @@ public interface IPlot {
      * @param dimensions 维度名称 / Dimension names
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot parallel(IMatrix data, List<String> dimensions);
+    IPlot parallel(IMatrix<Double> data, List<String> dimensions);
     
     // ========== 完善图表方法 / Chart Completion Methods ==========
     
@@ -346,7 +347,7 @@ public interface IPlot {
      * @param yLabels Y轴标签 / Y-axis labels
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels);
+    IPlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels);
     
     /**
      * 绘制雷达图 / Draw radar chart
@@ -354,7 +355,7 @@ public interface IPlot {
      * @param indicators 指标名称 / Indicator names
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot radar(IVector data, List<String> indicators);
+    IPlot radar(IVector<Double> data, List<String> indicators);
     
     /**
      * 绘制仪表盘 / Draw gauge chart
@@ -363,7 +364,7 @@ public interface IPlot {
      * @param min 最小值 / Minimum value
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
-    IPlot gauge(float value, float max, float min);
+    IPlot gauge(double value, double max, double min);
     
     // ========== 流式API方法 / Fluent API Methods ==========
     
@@ -507,12 +508,12 @@ The `AxisTicks` class is used to configure axis ticks and labels, providing flex
 public class AxisTicks {
     // 构造函数 / Constructors
     public AxisTicks();
-    public AxisTicks(IVector tickValues);
-    public AxisTicks(IVector tickValues, List<String> tickLabels);
+    public AxisTicks(IVector<Double> tickValues);
+    public AxisTicks(IVector<Double> tickValues, List<String> tickLabels);
     
     // 属性访问 / Property access
-    public IVector getTickValues();
-    public void setTickValues(IVector tickValues);
+    public IVector<Double> getTickValues();
+    public void setTickValues(IVector<Double> tickValues);
     public List<String> getTickLabels();
     public void setTickLabels(List<String> tickLabels);
     
@@ -560,6 +561,222 @@ try {
     // 处理其他异常 / Handle other exceptions
 }
 ```
+
+## 样式系统 / Style System
+
+数据可视化包配备了完整的样式系统，提供强大的图表美化和个性化定制功能。该系统支持自动化样式应用、高级颜色操作、交互状态管理和深度主题集成。
+
+The data visualization package features a complete style system, providing powerful chart styling and personalization capabilities. This system supports automated style application, advanced color operations, interactive state management, and deep theme integration.
+
+### 系统特性 / System Features
+
+#### 1. 通用样式应用器 / Universal Style Applier
+
+[`UniversalStyleApplier`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\UniversalStyleApplier.java) 提供全图表类型的样式应用支持，确保所有图表都能享受一致的样式体验。
+
+```java
+// 自动应用样式到任意图表类型
+PlotStyle style = new PlotStyle()
+    .color("#3498DB")
+    .lineWidth(2.5)
+    .opacity(0.8);
+
+// 系统自动识别图表类型并应用相应样式
+UniversalStyleApplier.applyToSeries(series, style);
+```
+
+**支持的图表类型**:
+- 基础图表：线图、散点图、柱状图、饼图
+- 统计图表：箱线图、小提琴图、直方图
+- 高级图表：仪表盘、K线图、热力图、雷达图
+- 极坐标图表：极坐标线图、柱状图、散点图
+- 特殊图表：漏斗图、桑基图、关系图等
+
+#### 2. 高级颜色操作 / Advanced Color Operations
+
+[`StyleConverter`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\StyleConverter.java) 提供基于HSL色彩空间的智能颜色处理功能。
+
+```java
+// HSL色彩空间转换
+String brighterColor = StyleConverter.adjustBrightness("#3498DB", 0.2);  // 提高亮度20%
+String saturatedColor = StyleConverter.adjustSaturation("#E74C3C", 0.3); // 提高饱和度30%
+String shiftedHue = StyleConverter.shiftHue("#2ECC71", 30);              // 色相偏移30度
+
+// 智能渐变生成
+List<String> gradient = StyleConverter.createLinearGradient(
+    "#FF6B6B", "#4ECDC4", 5  // 5步线性渐变
+);
+
+// 高级渐变算法
+String radialGradient = StyleConverter.createRadialGradient(
+    "#FFD93D", "#FF6B6B", 0.5, 0.5, 0.8  // 径向渐变
+);
+```
+
+**颜色操作功能**:
+- HSL色彩空间转换和操作
+- 智能亮度、饱和度、色相调整
+- 多种渐变算法（线性、径向、圆锥）
+- 颜色和谐度分析
+- 色盲友好色彩生成
+
+#### 3. 交互状态样式 / Interactive State Styling
+
+系统支持hover、blur、select等交互状态的样式定制，提供丰富的用户交互体验。
+
+```java
+// 配置交互状态样式
+PlotStyle style = new PlotStyle()
+    .color("#3498DB")
+    .emphasis(new PlotStyle().color("#E74C3C").lineWidth(3.0))  // hover状态
+    .blur(new PlotStyle().opacity(0.3))                         // 失焦状态
+    .select(new PlotStyle().color("#F39C12").lineWidth(4.0));   // 选中状态
+
+// 应用到图表
+Plots.of(800, 600)
+    .line(x, y, style)
+    .show();
+```
+
+**支持的交互状态**:
+- **emphasis**: 鼠标悬停时的强调样式
+- **blur**: 元素失焦时的样式
+- **select**: 元素被选中时的样式
+- **normal**: 默认状态样式
+
+#### 4. 图表专用转换器 / Chart-Specific Converters
+
+针对复杂图表类型提供专用的样式转换器，确保样式应用的准确性和效果。
+
+```java
+// 关系图专用样式转换
+Map<String, Object> graphStyle = ChartSpecificConverters.convertForGraph(style);
+Map<String, Object> nodeStyle = graphStyle.get("nodeStyle");
+Map<String, Object> linkStyle = graphStyle.get("linkStyle");
+
+// 平行坐标图专用样式转换
+Map<String, Object> parallelStyle = ChartSpecificConverters.convertForParallel(style);
+
+// 漏斗图专用样式转换
+Map<String, Object> funnelStyle = ChartSpecificConverters.convertForFunnel(style);
+```
+
+**专用转换器覆盖**:
+- 关系图：节点和连接样式分离
+- 平行坐标图：多维度样式映射
+- 漏斗图：阶段性颜色渐变
+- 桑基图：流向样式定制
+- 树图：层次结构样式
+
+#### 5. 主题深度集成 / Deep Theme Integration
+
+[`ThemeManager`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\ThemeManager.java) 提供智能主题推荐和自动样式应用功能。
+
+```java
+// 智能主题推荐
+String recommendedTheme = ThemeManager.recommendTheme(dataType, chartType, userPreference);
+
+// 主题样式融合
+PlotStyle themedStyle = ThemeManager.applyThemeToStyle(originalStyle, "dark");
+
+// 自动样式继承
+PlotStyle inheritedStyle = ThemeManager.inheritFromTheme("vintage", customizations);
+```
+
+**主题集成特性**:
+- 智能主题推荐算法
+- 主题与自定义样式的平滑融合
+- 样式继承和覆盖机制
+- 主题一致性检查
+- 动态主题切换支持
+
+### 使用示例 / Usage Examples
+
+#### 基础样式应用 / Basic Style Application
+
+```java
+import com.reremouse.lab.math.viz.*;
+
+// 创建带高级样式的线图
+PlotStyle advancedStyle = new PlotStyle()
+    .color("#3498DB")
+    .lineStyle("solid")
+    .lineWidth(2.5)
+    .marker("o")
+    .markerSize(6.0)
+    .opacity(0.9)
+    .emphasis(new PlotStyle()
+        .color("#E74C3C")
+        .lineWidth(4.0)
+        .markerSize(8.0))
+    .blur(new PlotStyle()
+        .opacity(0.3));
+
+Plots.of(800, 600)
+    .line(x, y, advancedStyle)
+    .title("高级样式线图")
+    .show();
+```
+
+#### 颜色智能操作 / Intelligent Color Operations
+
+```java
+// 基于HSL的颜色调整
+String baseColor = "#3498DB";
+String lighterColor = StyleConverter.adjustBrightness(baseColor, 0.2);
+String darkerColor = StyleConverter.adjustBrightness(baseColor, -0.2);
+
+// 创建色彩渐变系列
+List<String> colorSeries = StyleConverter.createColorSeries(
+    baseColor, 5, "brightness"  // 基于亮度的5色系列
+);
+
+// 应用到多系列图表
+for (int i = 0; i < dataSeries.size(); i++) {
+    PlotStyle seriesStyle = new PlotStyle().color(colorSeries.get(i));
+    plot.line(x, dataSeries.get(i), seriesStyle);
+}
+```
+
+#### 主题智能应用 / Intelligent Theme Application
+
+```java
+// 智能主题选择和应用
+String theme = ThemeManager.recommendTheme(
+    "financial",  // 数据类型
+    "candlestick", // 图表类型
+    "professional" // 用户偏好
+);
+
+// 创建主题化图表
+Plots.of(800, 600, theme)
+    .candlestick(ohlcData, dates)
+    .title("专业K线图")
+    .show();
+
+// 自定义主题融合
+PlotStyle customStyle = new PlotStyle().color("#FF6B6B");
+PlotStyle themedStyle = ThemeManager.applyThemeToStyle(customStyle, theme);
+```
+
+### 性能优化 / Performance Optimization
+
+样式系统在设计时充分考虑了性能优化：
+
+- **样式缓存**：重复使用的样式配置会被缓存，减少重复计算
+- **延迟计算**：颜色转换和渐变生成采用延迟计算策略
+- **批量处理**：支持批量样式应用，提高大数据集处理效率
+- **内存优化**：智能内存管理，避免样式对象内存泄漏
+
+```java
+// 批量样式应用
+List<PlotStyle> styles = StyleConverter.createBatchStyles(
+    baseStyle, variations, count
+);
+UniversalStyleApplier.applyBatch(seriesList, styles);
+```
+
+---
 
 ## 主要实现类 / Main Implementation Classes
 
@@ -614,42 +831,42 @@ private String theme;                   // 主题名称 / Theme name
 
 ```java
 // 基础图表方法 / Basic chart methods
-public RerePlot line(IVector x, IVector y);
-public RerePlot line(IVector x);
-public RerePlot line(IVector x, IVector y, List<String> hue);
-public RerePlot scatter(IVector x, IVector y);
-public RerePlot scatter(IVector x, IVector y, List<String> hue);
-public RerePlot pie(IVector x);
-public RerePlot bar(IVector x);
-public RerePlot bar(IVector x, List<String> hue);
-public RerePlot hist(IVector x, boolean fittingLine);
+public RerePlot line(IVector<Double> x, IVector<Double> y);
+public RerePlot line(IVector<Double> x);
+public RerePlot line(IVector<Double> x, IVector<Double> y, List<String> hue);
+public RerePlot scatter(IVector<Double> x, IVector<Double> y);
+public RerePlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue);
+public RerePlot pie(IVector<Double> x);
+public RerePlot bar(IVector<Double> x);
+public RerePlot bar(IVector<Double> x, List<String> hue);
+public RerePlot hist(IVector<Double> x, boolean fittingLine);
 
 // 极坐标图表方法 / Polar coordinate chart methods
-public RerePlot polarBar(IVector data, List<String> categories);
-public RerePlot polarLine(IVector data, List<String> categories);
-public RerePlot polarScatter(IVector data, List<String> categories);
+public RerePlot polarBar(IVector<Double> data, List<String> categories);
+public RerePlot polarLine(IVector<Double> data, List<String> categories);
+public RerePlot polarScatter(IVector<Double> data, List<String> categories);
 
 // 统计图表方法 / Statistical chart methods
-public RerePlot boxplot(IVector data);
-public RerePlot boxplot(IVector data, List<String> labels);
-public RerePlot violinplot(IVector data);
-public RerePlot violinplot(IVector data, List<String> labels);
-public RerePlot candlestick(IMatrix data, List<String> dates);
+public RerePlot boxplot(IVector<Double> data);
+public RerePlot boxplot(IVector<Double> data, List<String> labels);
+public RerePlot violinplot(IVector<Double> data);
+public RerePlot violinplot(IVector<Double> data, List<String> labels);
+public RerePlot candlestick(IMatrix<Double> data, List<String> dates);
 
 // 特殊图表方法 / Special chart methods
-public RerePlot funnel(IVector data, List<String> labels);
+public RerePlot funnel(IVector<Double> data, List<String> labels);
 public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
 public RerePlot sunburst(List<Map<String, Object>> data);
 public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories);
 public RerePlot tree(List<Map<String, Object>> data);
 public RerePlot treemap(List<Map<String, Object>> data);
 public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-public RerePlot parallel(IMatrix data, List<String> dimensions);
+public RerePlot parallel(IMatrix<Double> data, List<String> dimensions);
 
 // 完善图表方法 / Enhanced chart methods
-public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels);
-public RerePlot radar(IVector data, List<String> indicators);
-public RerePlot gauge(float value, float max, float min);
+public RerePlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels);
+public RerePlot radar(IVector<Double> data, List<String> indicators);
+public RerePlot gauge(double value, double max, double min);
 
 // 流式API方法 / Fluent API methods
 public RerePlot title(String titleText);
@@ -716,7 +933,7 @@ Using index as X-axis, suitable for displaying trends of a single data series.
 ```java
 // 创建线图（使用索引作为X轴）/ Create line chart (using index as X-axis)
 IPlot plot = Plots.of(800, 600);
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 plot.line(y);
 plot.setTitle("单向量线图");
 plot.saveAsHtml("single_line_chart.html");
@@ -731,8 +948,8 @@ Specify X and Y axis data, suitable for displaying relationships between two var
 ```java
 // 创建线图（指定X和Y轴数据）/ Create line chart (specify X and Y axis data)
 IPlot plot = Plots.of(800, 600);
-IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 plot.line(x, y);
 plot.setTitle("双向量线图");
 plot.setXlabel("时间");
@@ -751,8 +968,8 @@ Use hue parameter to group multiple lines, suitable for comparing data trends ac
 ```java
 // 创建多组线图 / Create multi-group line chart
 IPlot plot = Plots.of(800, 600);
-IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
 List<String> hue = Arrays.asList("组A", "组A", "组A", "组A", "组A", 
                                 "组B", "组B", "组B", "组B", "组B");
 plot.line(x, y, hue);
@@ -789,8 +1006,8 @@ Display basic relationships between two variables, suitable for correlation anal
 ```java
 // 创建散点图 / Create scatter chart
 IPlot plot = Plots.of(800, 600);
-IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 plot.scatter(x, y);
 plot.setTitle("散点图"); // Scatter Chart
 plot.saveAsHtml("chart.html"); // 散点图 / Scatter chart
@@ -807,8 +1024,8 @@ Use different colors or shapes to distinguish data points from different groups,
 ```java
 // 创建多组散点图 / Create multi-group scatter chart
 IPlot plot = Plots.of(800, 600);
-IVector x = IVector.of(new float[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25, 15, 25, 20, 35, 30});
 List<String> hue = Arrays.asList("类别A", "类别A", "类别A", "类别A", "类别A", // Category A
                                 "类别B", "类别B", "类别B", "类别B", "类别B"); // Category B
 plot.scatter(x, y, hue);
@@ -839,7 +1056,7 @@ Pie charts are used to display the proportion of each part to the whole, suitabl
 ```java
 // 创建饼图 / Create pie chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{30, 25, 20, 15, 10});
+IVector<Double> data = Linalg.vector(new double[]{30, 25, 20, 15, 10});
 plot.pie(data);
 plot.setTitle("饼图"); // Pie Chart
 plot.saveAsHtml("chart.html"); // 饼图 / Pie chart
@@ -872,7 +1089,7 @@ Display single-dimensional data comparison, suitable for visualizing categorical
 ```java
 // 创建柱状图 / Create bar chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> data = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 plot.bar(data);
 plot.setTitle("柱状图"); // Bar Chart
 plot.saveAsHtml("chart.html"); // 柱状图 / Bar chart
@@ -889,7 +1106,7 @@ Use hue parameter to group multiple series of data, suitable for multi-dimension
 ```java
 // 创建分组柱状图 / Create grouped bar chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> data = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 List<String> hue = Arrays.asList("组A", "组B", "组A", "组B", "组A");
 plot.bar(data, hue);
 plot.setTitle("分组柱状图");
@@ -919,7 +1136,7 @@ Histograms are used to display data distribution, providing intuitive visualizat
 ```java
 // 创建直方图（带拟合线）/ Create histogram (with fitting line)
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
+IVector<Double> data = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 plot.hist(data, true); // true表示显示正态分布拟合线 / true means show normal distribution fitting line
 plot.setTitle("直方图"); // Histogram
 plot.setXlabel("数值区间"); // Value range
@@ -963,7 +1180,7 @@ Display bar charts in polar coordinate system, suitable for visualizing periodic
 ```java
 // 创建极坐标柱状图 / Create polar bar chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> data = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E"); // Category A, B, C, D, E
 plot.polarBar(data, categories);
 plot.setTitle("极坐标柱状图"); // Polar Bar Chart
@@ -991,7 +1208,7 @@ Display line charts in polar coordinate system, suitable for visualizing periodi
 ```java
 // 创建极坐标线图 / Create polar line chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> data = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
 plot.polarLine(data, categories);
 plot.setTitle("极坐标线图");
@@ -1009,7 +1226,7 @@ Display scatter charts in polar coordinate system, suitable for visualizing pola
 ```java
 // 创建极坐标散点图 / Create polar scatter chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> data = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E"); // Category A, B, C, D, E
 plot.polarScatter(data, categories);
 plot.setTitle("极坐标散点图"); // Polar Scatter Chart
@@ -1046,7 +1263,7 @@ Display distribution of a single dataset, including median, quartiles, outliers,
 ```java
 // 创建单组箱线图 / Create single group box plot
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 plot.boxplot(data);
 plot.setTitle("单组箱线图", "数据分布统计特征分析"); // Single Group Box Plot, Statistical Feature Analysis of Data Distribution
 plot.setXlabel("数据集"); // Dataset
@@ -1065,7 +1282,7 @@ Compare distributions of multiple data groups, suitable for comparative analysis
 ```java
 // 创建多组箱线图 / Create multi-group box plot
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
                                      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", // Group A
                                    "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B"); // Group B
@@ -1114,7 +1331,7 @@ Display distribution of a single dataset, including density curves and box plot 
 ```java
 // 创建小提琴图 / Create violin plot
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 plot.violinplot(data);
 plot.setTitle("数据分布小提琴图", "展示数据的分布形状和统计特征");
 plot.setXlabel("数值");
@@ -1133,7 +1350,7 @@ Compare distributions of multiple data groups, suitable for comparative analysis
 ```java
 // 创建多组小提琴图 / Create multi-group violin plot
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
                                      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 List<String> labels = Arrays.asList("组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A", "组A",
                                    "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B", "组B");
@@ -1168,14 +1385,14 @@ Candlestick charts are used to display financial data including opening, closing
 // 创建K线图 / Create candlestick chart
 IPlot plot = Plots.of(800, 600);
 // 数据格式：[开盘价, 收盘价, 最低价, 最高价] / Data format: [open, close, low, high]
-float[][] candlestickArray = {
+double[][] candlestickArray = {
     {100, 110, 95, 115},
     {110, 120, 105, 125},
     {120, 115, 110, 130},
     {115, 125, 110, 135},
     {125, 130, 120, 140}
 };
-IMatrix candlestickData = IMatrix.of(candlestickArray);
+IMatrix<Double> candlestickData = Linalg.matrix(candlestickArray);
 List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05");
 plot.candlestick(candlestickData, dates);
 plot.setTitle("K线图");
@@ -1218,7 +1435,7 @@ Funnel charts are used to display conversion rates at each stage of a process, s
 ```java
 // 创建漏斗图 / Create funnel chart
 IPlot plot = Plots.of(800, 600);
-IVector data = IVector.of(new float[]{100, 80, 60, 40, 20});
+IVector<Double> data = Linalg.vector(new double[]{100, 80, 60, 40, 20});
 List<String> labels = Arrays.asList("访问", "注册", "购买", "支付", "完成");
 plot.funnel(data, labels);
 plot.setTitle("漏斗图");
@@ -1532,13 +1749,13 @@ Parallel coordinates charts are used to display distribution and relationships o
 IPlot plot = Plots.of(800, 600);
 
 // 创建数据矩阵 / Create data matrix
-float[][] dataArray = {
+double[][] dataArray = {
     {1, 2, 3, 4},
     {2, 3, 4, 5},
     {3, 4, 5, 6},
     {4, 5, 6, 7}
 };
-IMatrix data = IMatrix.of(dataArray);
+IMatrix<Double> data = Linalg.matrix(dataArray);
 List<String> dimensions = Arrays.asList("维度1", "维度2", "维度3", "维度4");
 
 plot.parallel(data, dimensions);
@@ -1553,6 +1770,91 @@ plot.saveAsHtml("chart.html");
 IPlot plot = Plots.of(1200, 600)
     .title("多维数据分布", "各维度数据的分布情况")
     .parallel(multiDimData, dimensionNames)
+    .show();
+```
+
+### 9. 树图 / Tree Chart
+
+树图用于展示层次结构数据，适用于展示组织结构、分类体系等树形数据。
+
+Tree charts are used to display hierarchical structure data, suitable for showing organizational structures, classification systems, and other tree-structured data.
+
+![树图示例](images/tree.png)
+
+```java
+// 创建树图 / Create tree chart
+IPlot plot = Plots.of(800, 600);
+
+List<Map<String, Object>> treeData = new ArrayList<>();
+treeData.add(createTreeNode("root", "根节点", 100));
+treeData.add(createTreeNode("child1", "子节点1", 60, "root"));
+treeData.add(createTreeNode("child2", "子节点2", 40, "root"));
+treeData.add(createTreeNode("grandchild1", "孙节点1", 30, "child1"));
+
+plot.tree(treeData);
+plot.setTitle("树图"); // Tree Chart
+plot.saveAsHtml("chart.html");
+
+// 辅助方法 / Helper method
+private static Map<String, Object> createTreeNode(String id, String name, int value, String parent) {
+    Map<String, Object> node = new HashMap<>();
+    node.put("id", id);
+    node.put("name", name);
+    node.put("value", value);
+    node.put("parent", parent);
+    return node;
+}
+```
+
+#### 流式API示例 / Fluent API Example
+
+```java
+// 使用流式API创建树图 / Create tree chart using fluent API
+IPlot plot = Plots.of(1000, 800)
+    .title("决策树", "机器学习决策树模型") // Decision Tree, Machine Learning Decision Tree Model
+    .tree(decisionTreeData)
+    .show();
+```
+
+### 10. 矩形树图 / Treemap Chart
+
+矩形树图用于展示层次数据的比例关系，通过矩形面积大小表示数据量，适用于展示分类数据的分布。
+
+Treemap charts are used to display proportional relationships in hierarchical data, with rectangle sizes representing data volumes, suitable for showing distribution of categorical data.
+
+![矩形树图示例](images/treemap.png)
+
+```java
+// 创建矩形树图 / Create treemap chart
+IPlot plot = Plots.of(800, 600);
+
+List<Map<String, Object>> treemapData = new ArrayList<>();
+treemapData.add(createTreemapNode("root", "根节点", 100)); // Root Node
+treemapData.add(createTreemapNode("child1", "子节点1", 60, "root")); // Child Node 1
+treemapData.add(createTreemapNode("child2", "子节点2", 40, "root")); // Child Node 2
+
+plot.treemap(treemapData);
+plot.setTitle("矩形树图"); // Treemap Chart
+plot.saveAsHtml("chart.html");
+
+// 辅助方法 / Helper method
+private static Map<String, Object> createTreemapNode(String id, String name, int value, String parent) {
+    Map<String, Object> node = new HashMap<>();
+    node.put("id", id);
+    node.put("name", name);
+    node.put("value", value);
+    node.put("parent", parent);
+    return node;
+}
+```
+
+#### 流式API示例 / Fluent API Example
+
+```java
+// 使用流式API创建矩形树图 / Create treemap chart using fluent API
+IPlot plot = Plots.of(800, 600)
+    .title("市场份额分布", "各产品线市场份额对比") // Market Share Distribution, Market Share Comparison by Product Line
+    .treemap(marketShareData)
     .show();
 ```
 
@@ -1582,13 +1884,13 @@ Heatmaps are used to display distribution of two-dimensional data, with color in
 IPlot plot = Plots.of(800, 600);
 
 // 创建二维数据矩阵 / Create 2D data matrix
-float[][] heatmapArray = {
+double[][] heatmapArray = {
     {1, 2, 3, 4},
     {2, 3, 4, 5},
     {3, 4, 5, 6},
     {4, 5, 6, 7}
 };
-IMatrix data = IMatrix.of(heatmapArray);
+IMatrix<Double> data = Linalg.matrix(heatmapArray);
 List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
 List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
 
@@ -1619,7 +1921,7 @@ Radar charts are used to display distribution of multi-dimensional data, suitabl
 // 创建雷达图 / Create radar chart
 IPlot plot = Plots.of(800, 600);
 
-IVector data = IVector.of(new float[]{80, 90, 70, 85, 95, 75});
+IVector<Double> data = Linalg.vector(new double[]{80, 90, 70, 85, 95, 75});
 List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
 
 plot.radar(data, indicators);
@@ -1649,9 +1951,9 @@ Gauge charts are used to display current values of single indicators, suitable f
 // 创建仪表盘 / Create gauge chart
 IPlot plot = Plots.of(800, 600);
 
-float value = 75.5f;
-float max = 100.0f;
-float min = 0.0f;
+double value = 75.5f;
+double max = 100.0f;
+double min = 0.0f;
 
 plot.gauge(value, max, min);
 plot.setTitle("仪表盘"); // Gauge Chart
@@ -1685,12 +1987,12 @@ plot.setYlabel("Y轴标签"); // Y-axis label
 
 // 设置坐标轴刻度 / Set axis ticks
 AxisTicks xTicks = new AxisTicks();
-xTicks.setTickValues(IVector.of(new float[]{0, 1, 2, 3, 4, 5}));
+xTicks.setTickValues(Linalg.vector(new double[]{0, 1, 2, 3, 4, 5}));
 xTicks.setTickLabels(Arrays.asList("0", "1", "2", "3", "4", "5"));
 plot.setXticks(xTicks);
 
 AxisTicks yTicks = new AxisTicks();
-yTicks.setTickValues(IVector.of(new float[]{0, 10, 20, 30, 40, 50}));
+yTicks.setTickValues(Linalg.vector(new double[]{0, 10, 20, 30, 40, 50}));
 plot.setYticks(yTicks);
 ```
 
@@ -1703,7 +2005,7 @@ plot.setYticks(yTicks);
 AxisTicks ticks = new AxisTicks();
 
 // 设置刻度值 / Set tick values
-ticks.setTickValues(IVector.of(new float[]{0, 25, 50, 75, 100}));
+ticks.setTickValues(Linalg.vector(new double[]{0, 25, 50, 75, 100}));
 
 // 设置刻度标签 / Set tick labels
 ticks.setTickLabels(Arrays.asList("0%", "25%", "50%", "75%", "100%"));
@@ -1836,7 +2138,7 @@ System.out.println(json);
 
 ```java
 // 确保数据质量 / Ensure data quality
-IVector data = IVector.of(new float[]{1, 2, 3, 4, 5});
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5});
 if (data.length() == 0) {
     throw new IllegalArgumentException("数据不能为空"); // Data cannot be empty
 }
@@ -1871,7 +2173,7 @@ if (data.length() > 10000) {
 }
 
 // 使用合适的数据结构 / Use appropriate data structures
-IVector optimizedData = data.copy(); // 避免不必要的数据复制 / Avoid unnecessary data copying
+IVector<Double> optimizedData = data.copy(); // 避免不必要的数据复制 / Avoid unnecessary data copying
 ```
 
 ### 4. 错误处理 / Error Handling
@@ -1886,6 +2188,329 @@ try {
     // 处理错误情况 / Handle error cases
 }
 ```
+
+---
+
+## 统一样式系统 / Unified Style System
+
+YiShape-Math 实现了完整的统一样式系统，为所有图表类型提供类似 matplotlib 的样式控制功能，并支持 seaborn 风格的数据分组。该系统通过统一的内部实现彻底消除了代码重复，提供了强大而灵活的绘图能力。
+
+YiShape-Math implements a complete unified style system that provides matplotlib-like style control for all chart types and supports seaborn-style data grouping. This system completely eliminates code duplication through unified internal implementation, providing powerful and flexible plotting capabilities.
+
+### 核心特性 / Core Features
+
+- **matplotlib 风格的样式表达式**（如 "r-", "b--o", "g:^"）/ **matplotlib-style style expressions** (e.g., "r-", "b--o", "g:^")
+- **完整的样式对象系统**（PlotStyle）/ **Complete style object system** (PlotStyle)
+- **丰富的调色板管理**（matplotlib, seaborn, echarts 等）/ **Rich palette management** (matplotlib, seaborn, echarts, etc.)
+- **seaborn 风格的分组显示**（hue, style, size 映射）/ **seaborn-style grouping display** (hue, style, size mapping)
+- **统一的内部实现**（消除所有代码重复）/ **Unified internal implementation** (eliminates all code duplication)
+- **单参数绘图支持**（自动使用索引作为 X 轴）/ **Single parameter plotting support** (automatically uses index as X-axis)
+- **多维数据分组**（同时按颜色、线型、标记分组）/ **Multi-dimensional data grouping** (grouping by color, line style, and markers simultaneously)
+- **高级颜色操作**（HSL色彩空间、智能渐变）/ **Advanced color operations** (HSL color space, intelligent gradients)
+- **交互状态样式**（hover、blur、select等）/ **Interactive state styling** (hover, blur, select, etc.)
+- **智能主题管理**（自动推荐、样式融合）/ **Intelligent theme management** (auto-recommendation, style fusion)
+
+### 快速开始 / Quick Start
+
+#### 1. 基础样式表达式 / Basic Style Expressions
+
+```java
+// 传统方式（仍然可用）/ Traditional way (still available)
+plot.line(x, y);
+
+// 新样式方式 - 红色实线 / New style way - red solid line
+plot.line(x, y, "r-");
+
+// 单向量绘图（使用索引作 X 轴）/ Single vector plotting (using index as X-axis)
+plot.line(y, "b--");        // 蓝色虚线 / blue dashed line
+
+// 蓝色虚线带圆圈标记 / Blue dashed line with circle markers
+plot.line(x, y, "b--o");
+
+// 绿色点线带三角标记 / Green dotted line with triangle markers
+plot.line(x, y, "g:^");
+
+// 黑色圆圈散点 / Black circle scatter
+plot.scatter(x, y, "ko");
+
+// 十六进制颜色 / Hexadecimal color
+plot.line(x, y, "#FF5733-s");
+```
+
+#### 2. PlotStyle 对象 / PlotStyle Objects
+
+```java
+// 创建自定义样式 / Create custom style
+PlotStyle style = new PlotStyle()
+    .color("#FF6B6B")
+    .lineStyle("dashed")
+    .lineWidth(3.0)
+    .marker("s")
+    .markerSize(8.0)
+    .alpha(0.8)
+    .label("我的数据");
+
+// 应用样式 / Apply style
+plot.line(x, y, style);
+plot.scatter(x, y, style);
+
+// 工厂方法 / Factory methods
+PlotStyle lineStyle = PlotStyle.line("#E74C3C", "solid", 2.5);
+PlotStyle scatterStyle = PlotStyle.scatter("#3498DB", "o", 6.0);
+```
+
+#### 3. 调色板支持 / Palette Support
+
+```java
+// 设置调色板 / Set palette
+plot.setPalette("matplotlib");
+
+// 使用 C0-C9 颜色 / Use C0-C9 colors
+plot.line(x, y, "C0-");  // matplotlib 第0个颜色 / matplotlib 0th color
+plot.line(x, y, "C1--"); // matplotlib 第1个颜色 / matplotlib 1st color
+
+// 切换到其他调色板 / Switch to other palettes
+plot.setPalette("seaborn");
+plot.setPalette("echarts");
+plot.setPalette("colorblind");
+```
+
+#### 4. Seaborn 风格分组显示 / Seaborn-style Grouping Display
+
+```java
+// 按颜色分组（自动分配颜色）/ Group by color (automatically assign colors)
+List<String> categories = Arrays.asList("A", "B", "A", "C", "B");
+plot.line(x, y, categories);        // 每个类别自动分配不同颜色 / Each category automatically assigned different colors
+plot.scatter(x, y, categories);     // 散点图也支持相同分组 / Scatter plot also supports same grouping
+
+// 多维分组（颜色 + 线条样式）/ Multi-dimensional grouping (color + line style)
+List<String> hue = Arrays.asList("Group1", "Group1", "Group2", "Group2");
+List<String> lineStyle = Arrays.asList("solid", "dashed", "solid", "dashed");
+plot.line(x, y, hue, lineStyle);   // 同时按颜色和线型分组 / Group by color and line style simultaneously
+```
+
+### 样式表达式语法 / Style Expression Syntax
+
+#### 颜色规范 / Color Specifications
+
+| 符号 / Symbol | 颜色 / Color | 示例 / Example |
+|---------------|--------------|----------------|
+| `r` | 红色 / Red | `"r-"` |
+| `g` | 绿色 / Green | `"g:"` |
+| `b` | 蓝色 / Blue | `"b--"` |
+| `k` | 黑色 / Black | `"ko"` |
+| `w` | 白色 / White | `"w^"` |
+| `y` | 黄色 / Yellow | `"y-"` |
+| `c` | 青色 / Cyan | `"c--"` |
+| `m` | 品红 / Magenta | `"ms"` |
+| `C0-C9` | matplotlib颜色 / matplotlib colors | `"C0-"`, `"C1:"` |
+| `#RRGGBB` | 十六进制 / Hexadecimal | `"#FF5733-"` |
+
+#### 线条样式 / Line Styles
+
+| 符号 / Symbol | 样式 / Style | 描述 / Description |
+|---------------|--------------|-------------------|
+| `-` | solid | 实线 / Solid line |
+| `--` | dashed | 虚线 / Dashed line |
+| `:` | dotted | 点线 / Dotted line |
+| `-.` | dashdot | 点划线 / Dash-dot line |
+
+#### 标记样式 / Marker Styles
+
+| 符号 / Symbol | 标记 / Marker | 描述 / Description |
+|---------------|---------------|-------------------|
+| `o` | circle | 圆形 / Circle |
+| `s` | square | 方形 / Square |
+| `^` | triangle | 三角形 / Triangle |
+| `v` | triangle | 下三角 / Downward triangle |
+| `<` | triangle | 左三角 / Left triangle |
+| `>` | triangle | 右三角 / Right triangle |
+| `d` | diamond | 菱形 / Diamond |
+| `*` | star | 星形 / Star |
+| `+` | plus | 加号 / Plus |
+| `x` | cross | 叉号 / Cross |
+| `.` | point | 小点 / Point |
+
+### 调色板系统 / Palette System
+
+#### 内置调色板 / Built-in Palettes
+
+| 名称 / Name | 描述 / Description | 颜色数量 / Color Count |
+|-------------|-------------------|----------------------|
+| `matplotlib` | matplotlib 默认调色板 / matplotlib default palette | 10 |
+| `echarts` | ECharts 默认调色板 / ECharts default palette | 10 |
+| `seaborn` | Seaborn deep 调色板 / Seaborn deep palette | 10 |
+| `muted` | Seaborn muted 调色板 / Seaborn muted palette | 10 |
+| `pastel` | Seaborn pastel 调色板 / Seaborn pastel palette | 10 |
+| `colorblind` | 色盲友好调色板 / Colorblind-friendly palette | 9 |
+| `blues` | 蓝色单色调色板 / Blue monochrome palette | 9 |
+| `reds` | 红色单色调色板 / Red monochrome palette | 9 |
+| `greens` | 绿色单色调色板 / Green monochrome palette | 9 |
+
+### 样式系统详细说明 / Detailed Style System Description
+
+#### 1. StyleExpression - 样式表达式解析器 / Style Expression Parser
+
+`StyleExpression` 类提供类似 matplotlib 的样式字符串解析功能，支持简洁的样式定义。
+
+```java
+// 基础样式表达式
+plot.line(x, y, "r-");        // 红色实线
+plot.line(x, y, "b--o");      // 蓝色虚线带圆圈
+plot.scatter(x, y, "ko");     // 黑色圆圈散点
+plot.line(x, y, "g:^");       // 绿色点线带三角
+
+// 十六进制颜色
+plot.line(x, y, "#FF5733-s"); // 十六进制颜色方形标记
+
+// C0-C9 颜色（matplotlib风格）
+plot.line(x, y, "C0-");       // matplotlib第0个颜色
+plot.line(x, y, "C1--");      // matplotlib第1个颜色
+```
+
+#### 2. StyleConverter - 样式转换器 / Style Converter
+
+`StyleConverter` 类提供高级颜色操作和ECharts样式转换功能。
+
+```java
+// HSL色彩空间操作
+String brighter = StyleConverter.adjustBrightness("#3498DB", 0.3);
+String moreSaturated = StyleConverter.adjustSaturation("#3498DB", 0.2);
+String hueShifted = StyleConverter.shiftHue("#3498DB", 60);
+
+// 智能渐变生成
+List<String> gradient = StyleConverter.createLinearGradient(
+    "#FF6B6B", "#4ECDC4", 5  // 5步线性渐变
+);
+
+// 径向渐变
+String radialGradient = StyleConverter.createRadialGradient(
+    "#FFD93D", "#FF6B6B", 0.5, 0.5, 0.8
+);
+
+// 颜色和谐度分析
+boolean isHarmonious = StyleConverter.isColorHarmonious("#FF6B6B", "#4ECDC4");
+```
+
+#### 3. SeabornStyleMapper - Seaborn风格映射器 / Seaborn Style Mapper
+
+`SeabornStyleMapper` 类提供类似 seaborn 的数据分组和样式映射功能。
+
+```java
+// 创建映射器
+SeabornStyleMapper mapper = new SeabornStyleMapper()
+    .setHuePalette("viridis")           // 设置色调调色板
+    .setStyleSequence(new String[]{"solid", "dashed", "dotted"})  // 设置线条样式序列
+    .setMarkerSequence(new String[]{"o", "s", "^", "v"});         // 设置标记序列
+
+// 获取分组样式
+PlotStyle styleA = mapper.getStyleForGroup("GroupA", "hue");
+PlotStyle styleB = mapper.getStyleForGroup("GroupB", "hue");
+
+// 多维分组
+PlotStyle multiStyle = mapper.getMultiDimensionalStyle(
+    "GroupA", "Type1", "Size1", "hue", "style", "size"
+);
+```
+
+#### 4. UniversalStyleApplier - 通用样式应用器 / Universal Style Applier
+
+`UniversalStyleApplier` 类为所有图表类型提供统一的样式应用功能。
+
+```java
+// 应用到线图
+UniversalStyleApplier.applyToLineSeries(lineSeries, style);
+
+// 应用到散点图
+UniversalStyleApplier.applyToScatterSeries(scatterSeries, style);
+
+// 应用到柱状图
+UniversalStyleApplier.applyToBarSeries(barSeries, style);
+
+// 批量应用
+List<PlotStyle> styles = Arrays.asList(style1, style2, style3);
+UniversalStyleApplier.applyBatch(seriesList, styles);
+```
+
+#### 5. ThemeManager - 主题管理器 / Theme Manager
+
+`ThemeManager` 类提供智能主题推荐和样式融合功能。
+
+```java
+// 智能主题推荐
+String recommendedTheme = ThemeManager.recommendTheme(
+    "financial",    // 数据类型
+    "candlestick",  // 图表类型
+    "professional"  // 用户偏好
+);
+
+// 主题样式融合
+PlotStyle themedStyle = ThemeManager.applyThemeToStyle(
+    customStyle, recommendedTheme
+);
+
+// 主题继承
+PlotStyle inheritedStyle = ThemeManager.inheritFromTheme(
+    "vintage", customizations
+);
+
+// 注册自定义主题
+ThemeManager.registerCustomTheme("myTheme", customThemeConfig);
+```
+
+### 样式系统示例 / Style System Examples
+
+#### 基础样式应用 / Basic Style Application
+
+```java
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.viz.Plots;
+import com.reremouse.lab.math.viz.PlotStyle;
+
+// 创建数据 / Create data
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
+
+// 使用样式表达式 / Use style expressions
+Plots.of(800, 600)
+    .line(x, y, "r--o")  // 红色虚线带圆圈 / Red dashed line with circles
+    .title("样式示例")
+    .show();
+
+// 使用PlotStyle对象 / Use PlotStyle object
+PlotStyle style = new PlotStyle()
+    .color("#FF6B6B")
+    .lineStyle("dashed")
+    .lineWidth(2.0)
+    .marker("s")
+    .markerSize(6.0);
+
+Plots.of(800, 600)
+    .line(x, y, style)
+    .title("自定义样式")
+    .show();
+```
+
+#### 分组显示示例 / Grouping Display Examples
+
+```java
+// 按颜色分组 / Group by color
+List<String> categories = Arrays.asList("A", "A", "B", "B", "C");
+Plots.of(800, 600)
+    .scatter(x, y, categories)
+    .title("分组散点图")
+    .show();
+
+// 多维分组 / Multi-dimensional grouping
+List<String> hue = Arrays.asList("Group1", "Group1", "Group2", "Group2", "Group1");
+List<String> style = Arrays.asList("solid", "dashed", "solid", "dashed", "dotted");
+Plots.of(800, 600)
+    .line(x, y, hue, style)
+    .title("多维分组线图")
+    .show();
+```
+
+---
 
 ## 注意事项 / Notes
 

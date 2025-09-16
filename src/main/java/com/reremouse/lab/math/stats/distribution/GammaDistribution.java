@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.distribution;
 
 import com.reremouse.lab.math.RereMathUtil;
-import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * Gamma分布 (Gamma Distribution)
@@ -23,22 +23,22 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
     private static final long serialVersionUID = 1L;
     
     /** 形状参数α / Shape parameter α */
-    private final float alpha;
+    private final double alpha;
     
     /** 尺度参数β / Scale parameter β */
-    private final float beta;
+    private final double beta;
     
     /** Gamma函数值Γ(α)的缓存 / Cached value of Gamma function Γ(α) */
-    private final float gammaFunction;
+    private final double gammaFunction;
     
     /** 均值 / Mean */
-    private final float mean;
+    private final double mean;
     
     /** 方差 / Variance */
-    private final float variance;
+    private final double variance;
     
     /** 标准差 / Standard deviation */
-    private final float stdDev;
+    private final double stdDev;
     
     /**
      * 构造函数
@@ -48,7 +48,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @param beta 尺度参数β，必须大于0 / Scale parameter β, must be greater than 0
      * @throws IllegalArgumentException 如果参数小于等于0 / If parameters are less than or equal to 0
      */
-    public GammaDistribution(float alpha, float beta) {
+    public GammaDistribution(double alpha, double beta) {
         if (alpha <= 0.0f) {
             throw new IllegalArgumentException("α参数必须大于0 / α parameter must be greater than 0");
         }
@@ -58,7 +58,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
         
         this.alpha = alpha;
         this.beta = beta;
-        this.gammaFunction = (float) RereMathUtil.gamma(alpha);
+        this.gammaFunction = RereMathUtil.gamma(alpha);
         
         // 计算统计量
         this.mean = alpha / beta;
@@ -74,22 +74,22 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 概率密度函数值 / PDF value
      */
     @Override
-    public float pdf(float x) {
+    public double pdf(double x) {
         if (x <= 0.0f) {
             return 0.0f;
         }
         
-        if (Float.isInfinite(x) || Float.isNaN(x)) {
+        if (Double.isInfinite(x) || Double.isNaN(x)) {
             return 0.0f;
         }
         
         if (x == 0.0f && alpha < 1.0f) {
-            return Float.POSITIVE_INFINITY;
+            return Double.POSITIVE_INFINITY;
         }
         
         double logPdf = alpha * Math.log(beta) - Math.log(gammaFunction) + 
                        (alpha - 1.0f) * Math.log(x) - beta * x;
-        return (float) Math.exp(logPdf);
+        return Math.exp(logPdf);
     }
     
     /**
@@ -100,17 +100,17 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 累积分布函数值 / CDF value
      */
     @Override
-    public float cdf(float x) {
-        if (Float.isInfinite(x)) {
-            if (x == Float.NEGATIVE_INFINITY) return 0.0f;
-            if (x == Float.POSITIVE_INFINITY) return 1.0f;
+    public double cdf(double x) {
+        if (Double.isInfinite(x)) {
+            if (x == Double.NEGATIVE_INFINITY) return 0.0f;
+            if (x == Double.POSITIVE_INFINITY) return 1.0f;
         }
-        if (Float.isNaN(x)) return Float.NaN;
+        if (Double.isNaN(x)) return Double.NaN;
         
         if (x < 0.0f) return 0.0f;
         if (x == 0.0f) return 0.0f;
         
-        return (float) RereMathUtil.incompleteGamma(alpha, beta * x) / gammaFunction;
+        return RereMathUtil.incompleteGamma(alpha, beta * x) / gammaFunction;
     }
     
     /**
@@ -121,13 +121,13 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 百分点函数值 / PPF value
      */
     @Override
-    public float ppf(float p) {
+    public double ppf(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
         
         if (p == 0.0f) return 0.0f;
-        if (p == 1.0f) return Float.POSITIVE_INFINITY;
+        if (p == 1.0f) return Double.POSITIVE_INFINITY;
         
         // 使用二分法求解逆Gamma分布
         // Using binary search to solve inverse Gamma distribution
@@ -138,10 +138,10 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * 使用二分法计算逆Gamma CDF
      * Calculate inverse Gamma CDF using binary search
      */
-    private float inverseGammaCDF(float p) {
-        float low = 0.0f;
-        float high = mean + 10.0f * stdDev; // 使用均值+10倍标准差作为上界
-        float tolerance = 1e-6f;
+    private double inverseGammaCDF(double p) {
+        double low = 0.0f;
+        double high = mean + 10.0f * stdDev; // 使用均值+10倍标准差作为上界
+        double tolerance = 1e-6f;
         int maxIter = 100;
         
         // 如果概率很小，调整上界
@@ -150,8 +150,8 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
         }
         
         for (int i = 0; i < maxIter; i++) {
-            float mid = (low + high) / 2.0f;
-            float cdfValue = cdf(mid);
+            double mid = (low + high) / 2.0f;
+            double cdfValue = cdf(mid);
             
             if (Math.abs(cdfValue - p) < tolerance) {
                 return mid;
@@ -175,7 +175,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 生存函数值 / Survival function value
      */
     @Override
-    public float sf(float x) {
+    public double sf(double x) {
         return 1.0f - cdf(x);
     }
     
@@ -187,7 +187,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 逆生存函数值 / Inverse survival function value
      */
     @Override
-    public float isf(float p) {
+    public double isf(double p) {
         return ppf(1.0f - p);
     }
     
@@ -198,7 +198,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 均值 / Mean
      */
     @Override
-    public float mean() {
+    public double mean() {
         return mean;
     }
     
@@ -209,7 +209,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
+    public double var() {
         return variance;
     }
     
@@ -220,7 +220,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
+    public double std() {
         return stdDev;
     }
     
@@ -231,7 +231,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 中位数 / Median
      */
     @Override
-    public float median() {
+    public double median() {
         return ppf(0.5f);
     }
     
@@ -242,7 +242,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 众数 / Mode
      */
     @Override
-    public float mode() {
+    public double mode() {
         if (alpha < 1.0f) {
             return 0.0f;
         }
@@ -256,7 +256,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 第一四分位数 / First quartile
      */
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
@@ -267,7 +267,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 第三四分位数 / Third quartile
      */
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
@@ -278,7 +278,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 偏度 / Skewness
      */
     @Override
-    public float skewness() {
+    public double skewness() {
         return 2.0f / (float) Math.sqrt(alpha);
     }
     
@@ -289,7 +289,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 峰度 / Kurtosis
      */
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return 6.0f / alpha;
     }
     
@@ -300,7 +300,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 随机样本 / Random sample
      */
     @Override
-    public float sample() {
+    public double sample() {
         return gammaSample(alpha, beta);
     }
     
@@ -312,12 +312,12 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * @return 随机样本数组 / Array of random samples
      */
     @Override
-    public float[] sample(int n) {
+    public double[] sample(int n) {
         if (n <= 0) {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
-        IVector samples = IVector.zeros(n);
+        IDoubleVector samples = IDoubleVector.zeros(n);
         for (int i = 0; i < n; i++) {
             samples.set(i, sample());
         }
@@ -328,24 +328,24 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * 使用Marsaglia和Tsang的方法生成Gamma分布样本
      * Generate Gamma distribution sample using Marsaglia and Tsang method
      */
-    private float gammaSample(float shape, float scale) {
+    private double gammaSample(double shape, double scale) {
         if (shape < 1.0f) {
             // 对于形状参数小于1的情况，使用变换
             return gammaSample(shape + 1.0f, scale) * (float) Math.pow(Math.random(), 1.0f / shape);
         }
         
         // 使用Marsaglia和Tsang的方法
-        float d = shape - 1.0f / 3.0f;
-        float c = 1.0f / (float) Math.sqrt(9.0f * d);
+        double d = shape - 1.0f / 3.0f;
+        double c = 1.0f / (float) Math.sqrt(9.0f * d);
         
         while (true) {
-            float x = (float) RereMathUtil.normalSample(0.0f, 1.0f);
-            float v = 1.0f + c * x;
+            double x = (float) RereMathUtil.normalSample(0.0f, 1.0f);
+            double v = 1.0f + c * x;
             
             if (v <= 0.0f) continue;
             
             v = v * v * v;
-            float u = (float) Math.random();
+            double u = (float) Math.random();
             
             if (u < 1.0f - 0.0331f * x * x * x * x) {
                 return d * v / scale;
@@ -363,7 +363,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * 
      * @return 形状参数α / Shape parameter α
      */
-    public float getAlpha() {
+    public double getAlpha() {
         return alpha;
     }
     
@@ -373,7 +373,7 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
      * 
      * @return 尺度参数β / Scale parameter β
      */
-    public float getBeta() {
+    public double getBeta() {
         return beta;
     }
     

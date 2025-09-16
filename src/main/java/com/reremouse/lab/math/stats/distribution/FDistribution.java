@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.distribution;
 
 import com.reremouse.lab.math.RereMathUtil;
-import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * F分布 (F-Distribution)
@@ -24,16 +24,16 @@ public class FDistribution implements IContinuousDistribution, Serializable {
     private static final long serialVersionUID = 1L;
     
     /** 分子自由度 / Numerator degrees of freedom */
-    private final float numeratorDof;
+    private final double numeratorDof;
     
     /** 分母自由度 / Denominator degrees of freedom */
-    private final float denominatorDof;
+    private final double denominatorDof;
     
     /** 预计算的常数 / Precomputed constants */
-    private final float halfNumeratorDof;
-    private final float halfDenominatorDof;
-    private final float halfSumDof;
-    private final float normalizationConstant;
+    private final double halfNumeratorDof;
+    private final double halfDenominatorDof;
+    private final double halfSumDof;
+    private final double normalizationConstant;
     
     /**
      * 构造函数
@@ -43,7 +43,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @param denominatorDof 分母自由度，必须大于0 / Denominator degrees of freedom, must be greater than 0
      * @throws IllegalArgumentException 如果自由度小于等于0 / If degrees of freedom is less than or equal to 0
      */
-    public FDistribution(float numeratorDof, float denominatorDof) {
+    public FDistribution(double numeratorDof, double denominatorDof) {
         if (numeratorDof <= 0 || denominatorDof <= 0) {
             throw new IllegalArgumentException("自由度必须大于0 / Degrees of freedom must be greater than 0");
         }
@@ -55,7 +55,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
         
         // 计算归一化常数
         // Calculate normalization constant
-        this.normalizationConstant = (float) (RereMathUtil.gamma(halfSumDof) / 
+        this.normalizationConstant =  (RereMathUtil.gamma(halfSumDof) / 
             (RereMathUtil.gamma(halfNumeratorDof) * RereMathUtil.gamma(halfDenominatorDof)) * 
             Math.pow(numeratorDof / denominatorDof, halfNumeratorDof));
     }
@@ -68,14 +68,14 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 概率密度函数值 / PDF value
      */
     @Override
-    public float pdf(float x) {
+    public double pdf(double x) {
         if (x <= 0) {
             return 0.0f;
         }
         
-        float power1 = halfNumeratorDof - 1.0f;
-        float power2 = -(halfSumDof);
-        float base = 1.0f + (numeratorDof * x) / denominatorDof;
+        double power1 = halfNumeratorDof - 1.0f;
+        double power2 = -(halfSumDof);
+        double base = 1.0f + (numeratorDof * x) / denominatorDof;
         
         return normalizationConstant * (float) Math.pow(x, power1) * (float) Math.pow(base, power2);
     }
@@ -88,15 +88,15 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 累积分布函数值 / CDF value
      */
     @Override
-    public float cdf(float x) {
+    public double cdf(double x) {
         if (x <= 0) {
             return 0.0f;
         }
         
         // 使用正则化不完全贝塔函数
         // Using regularized incomplete beta function
-        float t = (numeratorDof * x) / (denominatorDof + numeratorDof * x);
-        return (float) RereMathUtil.regularizedIncompleteBeta(halfNumeratorDof, halfDenominatorDof, t);
+        double t = (numeratorDof * x) / (denominatorDof + numeratorDof * x);
+        return RereMathUtil.regularizedIncompleteBeta(halfNumeratorDof, halfDenominatorDof, t);
     }
     
     /**
@@ -107,13 +107,13 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 百分点函数值 / PPF value
      */
     @Override
-    public float ppf(float p) {
+    public double ppf(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
         
         if (p == 0.0f) return 0.0f;
-        if (p == 1.0f) return Float.POSITIVE_INFINITY;
+        if (p == 1.0f) return Double.POSITIVE_INFINITY;
         
         // 使用数值方法求解
         // Using numerical method to solve
@@ -128,7 +128,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 生存函数值 / Survival function value
      */
     @Override
-    public float sf(float x) {
+    public double sf(double x) {
         return 1.0f - cdf(x);
     }
     
@@ -140,7 +140,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 逆生存函数值 / Inverse survival function value
      */
     @Override
-    public float isf(float p) {
+    public double isf(double p) {
         return ppf(1.0f - p);
     }
     
@@ -150,7 +150,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 分子自由度 / Numerator degrees of freedom
      */
-    public float getNumeratorDof() {
+    public double getNumeratorDof() {
         return numeratorDof;
     }
     
@@ -160,7 +160,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 分母自由度 / Denominator degrees of freedom
      */
-    public float getDenominatorDof() {
+    public double getDenominatorDof() {
         return denominatorDof;
     }
     
@@ -170,11 +170,11 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 均值 / Mean
      */
-    public float getMean() {
+    public double getMean() {
         if (denominatorDof > 2) {
             return denominatorDof / (denominatorDof - 2.0f);
         }
-        return Float.NaN; // 当分母自由度 <= 2 时均值不存在
+        return Double.NaN; // 当分母自由度 <= 2 时均值不存在
     }
     
     /**
@@ -183,13 +183,13 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 方差 / Variance
      */
-    public float getVariance() {
+    public double getVariance() {
         if (denominatorDof > 4) {
-            float numerator = 2.0f * denominatorDof * denominatorDof * (numeratorDof + denominatorDof - 2.0f);
-            float denominator = numeratorDof * (denominatorDof - 2.0f) * (denominatorDof - 2.0f) * (denominatorDof - 4.0f);
+            double numerator = 2.0f * denominatorDof * denominatorDof * (numeratorDof + denominatorDof - 2.0f);
+            double denominator = numeratorDof * (denominatorDof - 2.0f) * (denominatorDof - 2.0f) * (denominatorDof - 4.0f);
             return numerator / denominator;
         }
-        return Float.NaN; // 当分母自由度 <= 4 时方差不存在
+        return Double.NaN; // 当分母自由度 <= 4 时方差不存在
     }
     
     /**
@@ -198,10 +198,10 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 标准差 / Standard deviation
      */
-    public float getStandardDeviation() {
-        float variance = getVariance();
-        if (Float.isNaN(variance)) {
-            return Float.NaN;
+    public double getStandardDeviation() {
+        double variance = getVariance();
+        if (Double.isNaN(variance)) {
+            return Double.NaN;
         }
         return (float) Math.sqrt(variance);
     }
@@ -212,7 +212,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 
      * @return 众数 / Mode
      */
-    public float getMode() {
+    public double getMode() {
         if (numeratorDof > 2) {
             return (denominatorDof * (numeratorDof - 2.0f)) / (numeratorDof * (denominatorDof + 2.0f));
         }
@@ -232,12 +232,12 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * 逆F分布累积分布函数的数值求解
      * Numerical solution for inverse F-distribution CDF
      */
-    private float inverseFCDF(float p) {
+    private double inverseFCDF(double p) {
         // 使用改进的二分法求解
         // Using improved bisection method to solve
-        float left = 0.0f;
-        float right = 1.0f; // 从较小的初始值开始
-        float tolerance = 1e-8f;
+        double left = 0.0f;
+        double right = 1.0f; // 从较小的初始值开始
+        double tolerance = 1e-8f;
         int maxIter = 200;
         
         // 调整右边界直到CDF(right) >= p
@@ -262,8 +262,8 @@ public class FDistribution implements IContinuousDistribution, Serializable {
         }
         
         for (int i = 0; i < maxIter; i++) {
-            float mid = (left + right) / 2.0f;
-            float cdfMid = cdf(mid);
+            double mid = (left + right) / 2.0f;
+            double cdfMid = cdf(mid);
             
             if (Math.abs(cdfMid - p) < tolerance) {
                 return mid;
@@ -291,7 +291,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @param x 输入值 / Input value
      * @return 是否在支持区间内 / Whether within support interval
      */
-    public boolean isInSupport(float x) {
+    public boolean isInSupport(double x) {
         return x > 0;
     }
     
@@ -302,7 +302,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 均值 / Mean
      */
     @Override
-    public float mean() {
+    public double mean() {
         return getMean();
     }
     
@@ -313,7 +313,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
+    public double var() {
         return getVariance();
     }
     
@@ -324,7 +324,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
+    public double std() {
         return getStandardDeviation();
     }
     
@@ -335,7 +335,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 中位数 / Median
      */
     @Override
-    public float median() {
+    public double median() {
         return ppf(0.5f);
     }
     
@@ -346,7 +346,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 众数 / Mode
      */
     @Override
-    public float mode() {
+    public double mode() {
         return getMode();
     }
     
@@ -357,7 +357,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 第一四分位数 / First quartile
      */
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
@@ -368,7 +368,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 第三四分位数 / Third quartile
      */
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
@@ -379,15 +379,15 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 偏度 / Skewness
      */
     @Override
-    public float skewness() {
+    public double skewness() {
         if (denominatorDof > 6) {
-            float numerator = (2.0f * numeratorDof + denominatorDof - 2.0f) * 
+            double numerator = (2.0f * numeratorDof + denominatorDof - 2.0f) * 
                 (float) Math.sqrt(8.0f * (denominatorDof - 4.0f));
-            float denominator = (denominatorDof - 6.0f) * 
+            double denominator = (denominatorDof - 6.0f) * 
                 (float) Math.sqrt(numeratorDof * (numeratorDof + denominatorDof - 2.0f));
             return numerator / denominator;
         }
-        return Float.NaN; // 当分母自由度 <= 6 时偏度不存在
+        return Double.NaN; // 当分母自由度 <= 6 时偏度不存在
     }
     
     /**
@@ -397,15 +397,15 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 峰度 / Kurtosis
      */
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         if (denominatorDof > 8) {
-            float n1 = numeratorDof;
-            float n2 = denominatorDof;
-            float numerator = 12.0f * n1 * (n1 + n2 - 2.0f) * (n1 * (n2 - 2.0f) + n2 * (n2 - 4.0f));
-            float denominator = n1 * (n2 - 6.0f) * (n2 - 8.0f) * (n1 + n2 - 2.0f);
+            double n1 = numeratorDof;
+            double n2 = denominatorDof;
+            double numerator = 12.0f * n1 * (n1 + n2 - 2.0f) * (n1 * (n2 - 2.0f) + n2 * (n2 - 4.0f));
+            double denominator = n1 * (n2 - 6.0f) * (n2 - 8.0f) * (n1 + n2 - 2.0f);
             return numerator / denominator;
         }
-        return Float.NaN; // 当分母自由度 <= 8 时峰度不存在
+        return Double.NaN; // 当分母自由度 <= 8 时峰度不存在
     }
     
     // 缓存的卡方分布对象，避免重复创建
@@ -420,7 +420,7 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 随机样本 / Random sample
      */
     @Override
-    public float sample() {
+    public double sample() {
         // 使用卡方分布生成F分布随机数
         // Using chi-squared distributions to generate F-distribution random numbers
         if (chi2Num == null) {
@@ -430,8 +430,8 @@ public class FDistribution implements IContinuousDistribution, Serializable {
             chi2Den = new Chi2Distribution(denominatorDof);
         }
         
-        float chi2NumSample = chi2Num.sample();
-        float chi2DenSample = chi2Den.sample();
+        double chi2NumSample = chi2Num.sample();
+        double chi2DenSample = chi2Den.sample();
         
         return (chi2NumSample / numeratorDof) / (chi2DenSample / denominatorDof);
     }
@@ -444,14 +444,14 @@ public class FDistribution implements IContinuousDistribution, Serializable {
      * @return 随机样本数组 / Array of random samples
      */
     @Override
-    public float[] sample(int n) {
+    public double[] sample(int n) {
         if (n <= 0) {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
         // 使用IVector进行数组操作
-        // Using IVector for array operations
-        IVector samples = IVector.zeros(n);
+        // Using IDoubleVector for array operations
+        IDoubleVector samples = IDoubleVector.zeros(n);
         for (int i = 0; i < n; i++) {
             samples.set(i, sample());
         }

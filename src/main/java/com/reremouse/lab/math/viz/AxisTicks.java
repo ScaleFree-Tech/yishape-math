@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
 import java.util.List;
 import java.util.ArrayList;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 坐标轴刻度配置类

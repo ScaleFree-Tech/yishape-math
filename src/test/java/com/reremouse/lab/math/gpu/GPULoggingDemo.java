@@ -1,10 +1,10 @@
 package com.reremouse.lab.math.gpu;
 
-import com.reremouse.lab.math.compute.GPUComputeUtils;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.IFloatVector;
 
 /**
  * GPU日志控制演示程序
@@ -36,15 +36,15 @@ public class GPULoggingDemo {
             }
         }
         
-        IMatrix matrixA = new RereMatrix(dataA);
-        IMatrix matrixB = new RereMatrix(dataB);
-        IVector vectorA = new RereVector(vectorDataA);
-        IVector vectorB = new RereVector(vectorDataB);
+        IMatrix matrixA = new RereFloatMatrix(dataA);
+        IMatrix matrixB = new RereFloatMatrix(dataB);
+        IFloatVector vectorA = new RereFloatVector(vectorDataA);
+        IFloatVector vectorB = new RereFloatVector(vectorDataB);
         
         // 演示1：关闭日志
         System.out.println("1. 关闭日志模式:");
         System.out.println("----------------");
-        GPUComputeUtils.setLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(false);
         matrixA.add(matrixB);
         vectorA.add(vectorB);
         System.out.println("(应该看不到任何GPU/CPU日志)\n");
@@ -52,8 +52,8 @@ public class GPULoggingDemo {
         // 演示2：基本日志模式
         System.out.println("2. 基本日志模式:");
         System.out.println("----------------");
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(false);
         matrixA.add(matrixB);
         vectorA.add(vectorB);
         System.out.println("(只显示GPU/CPU标识)\n");
@@ -61,7 +61,7 @@ public class GPULoggingDemo {
         // 演示3：详细日志模式
         System.out.println("3. 详细日志模式:");
         System.out.println("----------------");
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         matrixA.add(matrixB);
         vectorA.add(vectorB);
         matrixA.mmul(2.0f);
@@ -72,8 +72,8 @@ public class GPULoggingDemo {
         System.out.println("4. 小数据量CPU回退:");
         System.out.println("------------------");
         float[][] smallData = {{1, 2}, {3, 4}};
-        IMatrix smallMatrix = new RereMatrix(smallData);
-        IMatrix smallMatrix2 = new RereMatrix(smallData);
+        IMatrix smallMatrix = new RereFloatMatrix(smallData);
+        IMatrix smallMatrix2 = new RereFloatMatrix(smallData);
         smallMatrix.add(smallMatrix2);
         System.out.println("(小数据量应该显示CPU回退日志)\n");
         
@@ -92,7 +92,7 @@ public class GPULoggingDemo {
         vectorA.addScalar(1.0f);
         vectorA.subScalar(0.5f);
         vectorA.multiplyScalar(2.0f);
-        vectorA.squre();
+        vectorA.square();
         vectorA.sqrt();
         vectorA.innerProduct(vectorB);
         

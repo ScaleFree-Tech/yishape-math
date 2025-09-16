@@ -2,17 +2,34 @@
 
 ## 概述 / Overview
 
-`IVector` 接口和 `RereVector` 实现类提供了完整的向量数学运算功能，包括基本数学运算、统计运算、切片索引、通用函数等。该接口设计简洁，功能强大，支持链式操作。
+`IVector<T>` 接口提供了完整的泛型向量数学运算功能，支持 `Float` 和 `Double` 类型，包括基本数学运算、统计运算、切片索引、通用函数等。该接口设计简洁，功能强大，支持链式操作。推荐使用 `Linalg` 工厂类来创建向量实例。
 
-The `IVector` interface and `RereVector` implementation class provide comprehensive vector mathematical operations including basic mathematical operations, statistical operations, slicing and indexing, universal functions, and more. The interface features clean design, powerful functionality, and supports method chaining.
+The `IVector<T>` interface provides comprehensive generic vector mathematical operations supporting `Float` and `Double` types, including basic mathematical operations, statistical operations, slicing and indexing, universal functions, and more. The interface features clean design, powerful functionality, and supports method chaining. It is recommended to use the `Linalg` factory class to create vector instances.
 
 ## 核心接口 / Core Interface
 
 ### IVector 接口 / IVector Interface
 
-`IVector` 是向量操作的核心接口，定义了所有向量运算的抽象方法。
+`IVector<T>` 是向量操作的核心泛型接口，定义了所有向量运算的抽象方法，支持 `Float` 和 `Double` 类型。
 
-`IVector` is the core interface for vector operations, defining abstract methods for all vector operations.
+`IVector<T>` is the core generic interface for vector operations, defining abstract methods for all vector operations, supporting `Float` and `Double` types.
+
+### Linalg 工厂类 / Linalg Factory Class
+
+`Linalg` 类提供了统一的向量和矩阵创建入口，推荐使用此类来创建向量实例。该类采用委托模式，将创建请求委托给相应的接口实现。
+
+`Linalg` class provides a unified entry point for vector and matrix creation, recommended for creating vector instances. This class uses delegation pattern, delegating creation requests to corresponding interface implementations.
+
+**架构设计 / Architecture Design:**
+- **委托链** / **Delegation chain**: `Linalg` → `IVector` → `IFloatVector/IDoubleVector`
+- **类型推断** / **Type inference**: 根据输入数据类型自动选择合适的实现
+- **API统一** / **API consistency**: 提供一致的命名和使用模式
+
+```java
+// 推荐使用 Linalg 创建向量 / Recommended to use Linalg for vector creation
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Float> v2 = Linalg.vector(new float[]{1.0f, 2.0f, 3.0f, 4.0f});
+```
 
 ## 主要功能 / Main Features
 
@@ -21,32 +38,52 @@ The `IVector` interface and `RereVector` implementation class provide comprehens
 #### 静态工厂方法 / Static Factory Methods
 
 ```java
-// 从float数组创建 / Create from float array
-IVector v1 = IVector.of(new float[]{1, 2, 3, 4});
+// 推荐使用 Linalg 工厂类 / Recommended to use Linalg factory class
 
-// 从Float包装类数组创建 / Create from Float wrapper array
-IVector v2 = IVector.of(new Float[]{1.0f, 2.0f, 3.0f, 4.0f});
+// 从数组创建向量 / Create vector from array
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Float> v2 = Linalg.vector(new float[]{1.0f, 2.0f, 3.0f, 4.0f});
 
-// 从double数组创建 / Create from double array
-IVector v3 = IVector.of(new double[]{1.0, 2.0, 3.0, 4.0});
+// 从包装类数组创建 / Create from wrapper array
+IVector<Double> v3 = Linalg.vector(new Double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Float> v4 = Linalg.vector(new Float[]{1.0f, 2.0f, 3.0f, 4.0f});
 
-// 从int数组创建 / Create from int array
-IVector v4 = IVector.of(new int[]{1, 2, 3, 4});
+// 从基本类型数组创建 / Create from primitive arrays
+IVector<Double> v5 = Linalg.vector(new int[]{1, 2, 3, 4});        // 自动转换为Double
+IVector<Double> v6 = Linalg.vector(new Integer[]{1, 2, 3, 4});    // 自动转换为Double
+
+// 从单个值创建向量 / Create vector from single values
+IVector<Double> v7 = Linalg.vector(5.0);                          // [5.0]
+IVector<Double> v8 = Linalg.vector(1.0, 2.0);                     // [1.0, 2.0]
+IVector<Float> v9 = Linalg.vector(3.0f);                          // [3.0f]
+IVector<Float> v10 = Linalg.vector(1.0f, 2.0f);                   // [1.0f, 2.0f]
 
 // 创建范围向量 / Create range vector
-IVector v5 = IVector.range(10);        // [0, 1, 2, ..., 9]
-IVector v6 = IVector.range(1, 11);     // [1, 2, 3, ..., 10]
-IVector v7 = IVector.range(0, 20, 2); // [0, 2, 4, ..., 18]
+IVector<Double> v11 = Linalg.range(10);                           // [0.0, 1.0, 2.0, ..., 9.0]
+IVector<Double> v12 = Linalg.range(1, 11);                        // [1.0, 2.0, 3.0, ..., 10.0]
+IVector<Double> v13 = Linalg.range(0, 20, 2);                     // [0.0, 2.0, 4.0, ..., 18.0]
+IVector<Float> v14 = Linalg.range(5, Float.class);                // [0.0f, 1.0f, 2.0f, 3.0f, 4.0f]
 
 // 创建特殊向量 / Create special vectors
-IVector v8 = IVector.ones(5);          // [1, 1, 1, 1, 1]
-IVector v9 = IVector.zeros(5);         // [0, 0, 0, 0, 0]
-IVector v10 = IVector.random(5);       // 随机向量 / Random vector
-IVector v11 = IVector.randomNormal(5, 0.0f, 1.0f); // 正态分布随机向量 / Normal distribution random vector
+IVector<Double> v15 = Linalg.ones(5);                             // [1.0, 1.0, 1.0, 1.0, 1.0]
+IVector<Float> v16 = Linalg.zeros(5, Float.class);                // [0.0f, 0.0f, 0.0f, 0.0f, 0.0f]
+IVector<Double> v17 = Linalg.rand(5);                             // 随机向量 / Random vector
+IVector<Float> v18 = Linalg.rand(5, Float.class);                 // Float类型随机向量
+
+// 正态分布随机向量 / Normal distribution random vectors
+IVector<Double> v19 = Linalg.randn(5);                            // 标准正态分布
+IVector<Double> v20 = Linalg.randn(5, 0.0, 1.0);                  // 指定均值和标准差
+IVector<Float> v21 = Linalg.randn(5, 0.0f, 1.0f, Float.class);    // Float类型正态分布
 
 // 创建线性空间向量 / Create linear space vectors
-IVector v12 = IVector.linspace(0.0f, 1.0f, 5);     // [0.0, 0.25, 0.5, 0.75, 1.0]
-IVector v13 = IVector.logspace(0.0f, 2.0f, 4);     // [1.0, 10.0, 100.0, 1000.0]
+IVector<Double> v22 = Linalg.linspace(0.0, 1.0, 5);               // [0.0, 0.25, 0.5, 0.75, 1.0]
+IVector<Float> v23 = Linalg.linspace(0.0f, 1.0f, 5, Float.class); // Float类型线性空间
+IVector<Double> v24 = Linalg.logspace(0.0, 2.0, 4);               // [1.0, 10.0, 100.0, 1000.0]
+IVector<Float> v25 = Linalg.logspace(0.0f, 2.0f, 4, Float.class); // Float类型对数空间
+
+// 直接使用 IVector 接口（不推荐） / Direct use of IVector interface (not recommended)
+IVector<Double> v26 = IVector.of(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Float> v27 = IVector.of(new float[]{1.0f, 2.0f, 3.0f, 4.0f});
 ```
 
 ### 2. 基本数学运算 / Basic Mathematical Operations
@@ -54,98 +91,115 @@ IVector v13 = IVector.logspace(0.0f, 2.0f, 4);     // [1.0, 10.0, 100.0, 1000.0]
 #### 向量间运算 / Vector-to-Vector Operations
 
 ```java
+// 创建向量 / Create vectors
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Double> v2 = Linalg.vector(new double[]{5.0, 6.0, 7.0, 8.0});
+
 // 加法 / Addition
-IVector sum = v1.add(v2);
+IVector<Double> sum = v1.add(v2);
 
 // 减法 / Subtraction
-IVector diff = v1.sub(v2);
+IVector<Double> diff = v1.sub(v2);
 
 // 元素级乘法 / Element-wise multiplication
-IVector product = v1.multiply(v2);
+IVector<Double> product = v1.multiply(v2);
 
 // 内积 / Inner product (dot product)
-float dotProduct = v1.innerProduct(v2);
+Double dotProduct = v1.innerProduct(v2);
 
 // 向量与矩阵点积 / Vector-matrix dot product
-IMatrix result = v1.dot(matrix);
+IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1.0, 2.0}, {3.0, 4.0}});
+IMatrix<Double> result = v1.dot(matrix);
+
+// 向量外积 / Vector outer product
+IMatrix<Double> outerProduct = v1.outer(v2);
 ```
 
 #### 标量运算 / Scalar Operations
 
 ```java
 // 标量加法 / Scalar addition
-IVector result1 = v1.addScalar(5.0f);
+IVector<Double> result1 = v1.addScalar(5.0);
 
 // 标量减法 / Scalar subtraction
-IVector result2 = v1.subScalar(2.0f);
+IVector<Double> result2 = v1.subScalar(2.0);
 
 // 标量乘法 / Scalar multiplication
-IVector result3 = v1.multiplyScalar(3.0f);
+IVector<Double> result3 = v1.multiplyScalar(3.0);
 
 // 标量除法 / Scalar division
-IVector result4 = v1.divideByScalar(2.0f);
+IVector<Double> result4 = v1.divideByScalar(2.0);
 ```
 
 ### 3. 统计运算 / Statistical Operations
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0});
+
 // 基本统计 / Basic statistics
-float sum = v1.sum();           // 求和 / Sum
-float mean = v1.mean();         // 均值 / Mean
-float variance = v1.var();      // 方差 / Variance
-float std = v1.std();           // 标准差 / Standard deviation
-float prod = v1.prod();         // 元素乘积 / Product
+Double sum = v1.sum();           // 求和 / Sum
+Double mean = v1.mean();         // 均值 / Mean
+Double variance = v1.var();      // 方差 / Variance
+Double std = v1.std();           // 标准差 / Standard deviation
+Double prod = v1.prod();         // 元素乘积 / Product
 
 // 最值 / Min/Max
-float min = v1.min();           // 最小值 / Minimum
-float max = v1.max();           // 最大值 / Maximum
-int minIndex = v1.argMin();     // 最小值索引 / Index of minimum
-int maxIndex = v1.argMax();     // 最大值索引 / Index of maximum
+Double min = v1.min();           // 最小值 / Minimum
+Double max = v1.max();           // 最大值 / Maximum
+int minIndex = v1.argMin();      // 最小值索引 / Index of minimum
+int maxIndex = v1.argMax();      // 最大值索引 / Index of maximum
 
 // 范数 / Norms
-float norm1 = v1.norm1();       // L1范数 / L1 norm
-float norm2 = v1.norm2();       // L2范数 / L2 norm
-float normInf = v1.normInf();   // 无穷范数 / Infinity norm
-float normP = v1.norm(3.0f);    // Lp范数 / Lp norm
+Double norm1 = v1.norm1();       // L1范数 / L1 norm
+Double norm2 = v1.norm2();       // L2范数 / L2 norm
+Double normInf = v1.normInf();   // 无穷范数 / Infinity norm
+Double normP = v1.norm(3.0);     // Lp范数 / Lp norm
 
 // 其他统计量 / Other statistics
-float ptp = v1.ptp();           // 峰峰值 / Peak-to-peak value
-float median = v1.median();      // 中位数 / Median
-float mode = v1.mode();          // 众数 / Mode
-float percentile = v1.percentile(75.0f); // 75%分位数 / 75th percentile
+Double ptp = v1.ptp();           // 峰峰值 / Peak-to-peak value
+Double median = v1.median();     // 中位数 / Median
+Double mode = v1.mode();         // 众数 / Mode
+Double percentile = v1.percentile(75.0); // 75%分位数 / 75th percentile
+Double skewness = v1.skewness(); // 偏度 / Skewness
+Double kurtosis = v1.kurtosis(); // 峰度 / Kurtosis
 ```
 
 ### 4. 通用函数 / Universal Functions
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+
 // 数学函数 / Mathematical functions
-IVector squared = v1.squre();           // 平方 / Square
-IVector sqrt = v1.sqrt();               // 平方根 / Square root
-IVector exp = v1.exp();                 // 指数 / Exponential
-IVector log = v1.log();                 // 自然对数 / Natural logarithm
-IVector log10 = v1.log10();             // 以10为底对数 / Base-10 logarithm
-IVector abs = v1.abs();                 // 绝对值 / Absolute value
-IVector pow = v1.pow(2.0f);             // 幂运算 / Power
-IVector remainder = v1.remainder(2.0f); // 取余运算 / Remainder
+IVector<Double> squared = v1.squre();           // 平方 / Square
+IVector<Double> sqrt = v1.sqrt();               // 平方根 / Square root
+IVector<Double> exp = v1.exp();                 // 指数 / Exponential
+IVector<Double> log = v1.log();                 // 自然对数 / Natural logarithm
+IVector<Double> log10 = v1.log10();             // 以10为底对数 / Base-10 logarithm
+IVector<Double> abs = v1.abs();                 // 绝对值 / Absolute value
+IVector<Double> pow = v1.pow(2.0);              // 幂运算 / Power
+IVector<Double> remainder = v1.remainder(2.0);  // 取余运算 / Remainder
+IVector<Double> reciprocal = v1.reciprocal();   // 倒数 / Reciprocal
 
 // 三角函数 / Trigonometric functions
-IVector sin = v1.sin();                 // 正弦 / Sine
-IVector cos = v1.cos();                 // 余弦 / Cosine
-IVector tan = v1.tan();                 // 正切 / Tangent
-IVector arcsin = v1.arcsin();           // 反正弦 / Arcsine
-IVector arccos = v1.arccos();           // 反余弦 / Arccosine
-IVector arctan = v1.arctan();           // 反正切 / Arctangent
+IVector<Double> sin = v1.sin();                 // 正弦 / Sine
+IVector<Double> cos = v1.cos();                 // 余弦 / Cosine
+IVector<Double> tan = v1.tan();                 // 正切 / Tangent
+IVector<Double> arcsin = v1.arcsin();           // 反正弦 / Arcsine
+IVector<Double> arccos = v1.arccos();           // 反余弦 / Arccosine
+IVector<Double> arctan = v1.arctan();           // 反正切 / Arctangent
 
 // 双曲函数 / Hyperbolic functions
-IVector sinh = v1.sinh();               // 双曲正弦 / Hyperbolic sine
-IVector cosh = v1.cosh();               // 双曲余弦 / Hyperbolic cosine
-IVector tanh = v1.tanh();               // 双曲正切 / Hyperbolic tangent
+IVector<Double> sinh = v1.sinh();               // 双曲正弦 / Hyperbolic sine
+IVector<Double> cosh = v1.cosh();               // 双曲余弦 / Hyperbolic cosine
+IVector<Double> tanh = v1.tanh();               // 双曲正切 / Hyperbolic tangent
 
 // 舍入函数 / Rounding functions
-IVector round = v1.round();             // 四舍五入 / Round
-IVector floor = v1.floor();             // 向下取整 / Floor
-IVector ceil = v1.ceil();               // 向上取整 / Ceiling
-IVector trunc = v1.trunc();             // 截断取整 / Truncate
+IVector<Double> round = v1.round();             // 四舍五入 / Round
+IVector<Double> floor = v1.floor();             // 向下取整 / Floor
+IVector<Double> ceil = v1.ceil();               // 向上取整 / Ceiling
+IVector<Double> trunc = v1.trunc();             // 截断取整 / Truncate
 ```
 
 ### 5. 切片和索引 / Slicing and Indexing
@@ -153,29 +207,32 @@ IVector trunc = v1.trunc();             // 截断取整 / Truncate
 #### 范围切片 / Range Slicing
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0});
+
 // 基本切片 / Basic slicing
-IVector slice1 = v1.slice(2);          // 从索引2到末尾 / From index 2 to end
-IVector slice2 = v1.slice(1, 4);       // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
-IVector slice3 = v1.slice(0, 6, 2);    // 从索引0到6，步长为2 / From index 0 to 6 with step 2
+IVector<Double> slice1 = v1.slice(2);          // 从索引2到末尾 / From index 2 to end
+IVector<Double> slice2 = v1.slice(1, 4);       // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
+IVector<Double> slice3 = v1.slice(0, 6, 2);    // 从索引0到6，步长为2 / From index 0 to 6 with step 2
 
 // 负数索引切片 / Negative indexing slicing
-IVector slice4 = v1.slice(-3);         // 从倒数第3个到末尾 / From 3rd to last to end
-IVector slice5 = v1.slice(1, -1);      // 从索引1到倒数第1个（不包含） / From index 1 to 2nd to last (exclusive)
-IVector slice6 = v1.slice(-4, -1, 2);  // 从倒数第4个到倒数第1个，步长为2 / From 4th to last to 2nd to last with step 2
+IVector<Double> slice4 = v1.slice(-3);         // 从倒数第3个到末尾 / From 3rd to last to end
+IVector<Double> slice5 = v1.slice(1, -1);      // 从索引1到倒数第1个（不包含） / From index 1 to 2nd to last (exclusive)
+IVector<Double> slice6 = v1.slice(-4, -1, 2);  // 从倒数第4个到倒数第1个，步长为2 / From 4th to last to 2nd to last with step 2
 
 // 字符串切片表达式 / String slice expressions
-IVector slice7 = v1.slice("1:4");      // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
-IVector slice8 = v1.slice(":-1");      // 从开始到倒数第1个（不包含） / From start to 2nd to last (exclusive)
-IVector slice9 = v1.slice("::2");      // 从开始到末尾，步长为2 / From start to end with step 2
-IVector slice10 = v1.slice("1:-1:2");  // 从索引1到倒数第1个，步长为2 / From index 1 to 2nd to last with step 2
+IVector<Double> slice7 = v1.slice("1:4");      // 从索引1到4（不包含） / From index 1 to 4 (exclusive)
+IVector<Double> slice8 = v1.slice(":-1");      // 从开始到倒数第1个（不包含） / From start to 2nd to last (exclusive)
+IVector<Double> slice9 = v1.slice("::2");      // 从开始到末尾，步长为2 / From start to end with step 2
+IVector<Double> slice10 = v1.slice("1:-1:2");  // 从索引1到倒数第1个，步长为2 / From index 1 to 2nd to last with step 2
 
 // 花式索引 / Fancy indexing
-IVector fancy1 = v1.fancyGet(new int[]{0, 2, 3});  // 获取索引0, 2, 3的元素
-IVector fancy2 = v1.fancyGet(new int[]{-1, -2, 0}); // 获取倒数第1、2个和第一个元素
+IVector<Double> fancy1 = v1.fancyGet(new int[]{0, 2, 3});  // 获取索引0, 2, 3的元素
+IVector<Double> fancy2 = v1.fancyGet(new int[]{-1, -2, 0}); // 获取倒数第1、2个和第一个元素
 
 // 布尔索引 / Boolean indexing
-boolean[] mask = {true, false, true, false};
-IVector fancy3 = v1.booleanGet(mask);  // 获取mask为true的元素
+boolean[] mask = {true, false, true, false, true, false};
+IVector<Double> fancy3 = v1.booleanGet(mask);  // 获取mask为true的元素
 ```
 
 #### 切片表达式语法 / Slice Expression Syntax
@@ -185,6 +242,9 @@ YiShape支持类似NumPy的切片表达式语法，支持负数索引：
 YiShape supports NumPy-like slice expression syntax with negative indexing:
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0});
+
 // 基本格式：start:end:step / Basic format: start:end:step
 // 其中start、end、step都可以省略，支持负数索引
 // Where start, end, step can be omitted, supports negative indexing
@@ -212,23 +272,30 @@ v1.slice("::-1");      // 反转向量 / Reverse vector
 Negative indexing starts from -1, representing the last element:
 
 ```java
-// 对于长度为5的向量 [0, 1, 2, 3, 4]
-// For a vector of length 5 [0, 1, 2, 3, 4]
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0});
+
+// 对于长度为5的向量 [1.0, 2.0, 3.0, 4.0, 5.0]
+// For a vector of length 5 [1.0, 2.0, 3.0, 4.0, 5.0]
 
 // 正数索引 / Positive indices: 0, 1, 2, 3, 4
 // 负数索引 / Negative indices: -5, -4, -3, -2, -1
 
-v1.get(0);    // 获取第一个元素 / Get first element
-v1.get(-1);   // 获取最后一个元素 / Get last element
-v1.get(-2);   // 获取倒数第二个元素 / Get second to last element
+Double first = v1.get(0);    // 获取第一个元素 / Get first element (1.0)
+Double last = v1.get(-1);    // 获取最后一个元素 / Get last element (5.0)
+Double secondLast = v1.get(-2); // 获取倒数第二个元素 / Get second to last element (4.0)
 
-v1.slice("1:-1");  // 从索引1到倒数第1个（不包含），即[1, 2, 3]
-v1.slice("-3:-1"); // 从倒数第3个到倒数第1个（不包含），即[2, 3]
+IVector<Double> middle = v1.slice("1:-1");  // 从索引1到倒数第1个（不包含），即[2.0, 3.0, 4.0]
+IVector<Double> lastTwo = v1.slice("-3:-1"); // 从倒数第3个到倒数第1个（不包含），即[3.0, 4.0]
 ```
 
 ### 6. 比较运算 / Comparison Operations
 
 ```java
+// 创建向量 / Create vectors
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Double> v2 = Linalg.vector(new double[]{2.0, 1.0, 4.0, 3.0});
+
 // 元素级比较 / Element-wise comparison
 boolean[] greater = v1.greaterThan(v2);      // 大于 / Greater than
 boolean[] less = v1.lessThan(v2);            // 小于 / Less than
@@ -238,13 +305,16 @@ boolean[] equal = v1.equals(v2);             // 等于 / Equal
 ### 7. 数据转换 / Data Conversion
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+
 // 类型转换 / Type conversion
-float[] floatArray = v1.getData();         // 获取float数组 / Get float array
-double[] doubleArray = v1.asDoubleArray(); // 转换为double数组 / Convert to double array
-int[] intArray = v1.asIntArray();          // 转换为int数组 / Convert to int array
+double[] doubleArray = v1.toDoubleArray(); // 转换为double数组 / Convert to double array
+float[] floatArray = v1.toFloatArray();    // 转换为float数组 / Convert to float array
+int[] intArray = v1.toIntArray();          // 转换为int数组 / Convert to int array
 
 // 数据访问 / Data access
-float element = v1.get(2);                 // 获取指定索引的元素 / Get element at specific index
+Double element = v1.get(2);                // 获取指定索引的元素 / Get element at specific index
 int length = v1.length();                  // 获取向量长度 / Get vector length
 ```
 
@@ -253,80 +323,109 @@ int length = v1.length();                  // 获取向量长度 / Get vector le
 #### 距离计算 / Distance Calculations
 
 ```java
+// 创建向量 / Create vectors
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+IVector<Double> v2 = Linalg.vector(new double[]{2.0, 1.0, 4.0, 3.0});
+
 // 距离度量 / Distance metrics
-float euclideanDist = v1.euclideanDistance(v2);  // 欧几里得距离 / Euclidean distance
-float manhattanDist = v1.manhattanDistance(v2);  // 曼哈顿距离 / Manhattan distance
-float cosineSim = v1.cosineSimilarity(v2);       // 余弦相似度 / Cosine similarity
+Double euclideanDist = v1.euclideanDistance(v2);  // 欧几里得距离 / Euclidean distance
+Double manhattanDist = v1.manhattanDistance(v2);  // 曼哈顿距离 / Manhattan distance
+Double cosineSim = v1.cosineSimilarity(v2);       // 余弦相似度 / Cosine similarity
 ```
 
 #### 条件操作 / Conditional Operations
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+
 // 条件选择 / Conditional selection
 boolean[] condition = {true, false, true, false};
-IVector result = v1.where(condition, 10.0f, 20.0f);  // 根据条件选择值
-IVector result2 = v1.where(condition, v2, v3);        // 根据条件选择向量
+IVector<Double> result = v1.where(condition, 10.0, 20.0);  // 根据条件选择值
+IVector<Double> result2 = v1.where(condition, v2, v1);     // 根据条件选择向量
 ```
 
 #### 重复和连接 / Repeat and Concatenation
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0});
+
 // 重复操作 / Repeat operations
-IVector repeated = v1.repeat(3);              // 重复向量3次
-IVector tiled = v1.tile(2);                   // 平铺向量2次
+IVector<Double> repeated = v1.repeat(3);              // 重复向量3次
+IVector<Double> tiled = v1.tile(2);                   // 平铺向量2次
 ```
 
 #### 排序和查找 / Sorting and Searching
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{3.0, 1.0, 4.0, 2.0});
+
 // 排序操作 / Sorting operations
-IVector sorted = v1.sort();                   // 升序排序 / Ascending sort
-IVector reversed = v1.reverse();               // 反转向量 / Reverse vector
+IVector<Double> sorted = v1.sort();                   // 升序排序 / Ascending sort
+IVector<Double> reversed = v1.reverse();               // 反转向量 / Reverse vector
 ```
 
 #### 数据修改 / Data Modification
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+
 // 元素设置 / Element setting
-IVector modified = v1.set(2, 10.0f);          // 设置指定位置的值
-IVector rangeSet = v1.setFromTo(1, 4, new float[]{10, 20, 30}); // 范围设置
+IVector<Double> modified = v1.set(2, 10.0);          // 设置指定位置的值
+IVector<Double> rangeSet = v1.setFromTo(1, 4, new double[]{10.0, 20.0, 30.0}); // 范围设置
 
 // 数据填充 / Data filling
-IVector filled = v1.fill(0.0f);               // 填充所有元素为0
-IVector clipped = v1.clip(0.0f, 100.0f);     // 裁剪值到指定范围
+IVector<Double> filled = v1.fill(0.0);               // 填充所有元素为0
+IVector<Double> clipped = v1.clip(0.0, 100.0);      // 裁剪值到指定范围
 ```
 
 #### 累积操作 / Cumulative Operations
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
+
 // 累积运算 / Cumulative operations
-IVector cumsum = v1.cumsum();                 // 累积求和 / Cumulative sum
-IVector cumprod = v1.cumprod();               // 累积乘积 / Cumulative product
+IVector<Double> cumsum = v1.cumsum();                 // 累积求和 / Cumulative sum
+IVector<Double> cumprod = v1.cumprod();               // 累积乘积 / Cumulative product
 ```
 
 #### 差分操作 / Difference Operations
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 4.0, 7.0, 11.0});
+
 // 差分运算 / Difference operations
-IVector diff = v1.diff();                     // 一阶差分 / First order difference
-IVector diff2 = v1.diff(2);                   // 二阶差分 / Second order difference
+IVector<Double> diff = v1.diff();                     // 一阶差分 / First order difference
+IVector<Double> diff2 = v1.diff(2);                   // 二阶差分 / Second order difference
 ```
 
 #### 逻辑运算 / Logical Operations
 
 ```java
+// 创建向量 / Create vectors
+IVector<Double> v1 = Linalg.vector(new double[]{1.0, 0.0, 1.0, 0.0});
+IVector<Double> v2 = Linalg.vector(new double[]{0.0, 1.0, 1.0, 0.0});
+
 // 逻辑运算 / Logical operations
-IVector logicalAnd = v1.logicalAnd(v2);       // 逻辑与 / Logical AND
-IVector logicalOr = v1.logicalOr(v2);         // 逻辑或 / Logical OR
-IVector logicalNot = v1.logicalNot();         // 逻辑非 / Logical NOT
-IVector logicalXor = v1.logicalXor(v2);       // 逻辑异或 / Logical XOR
+IVector<Double> logicalAnd = v1.logicalAnd(v2);       // 逻辑与 / Logical AND
+IVector<Double> logicalOr = v1.logicalOr(v2);         // 逻辑或 / Logical OR
+IVector<Double> logicalNot = v1.logicalNot();         // 逻辑非 / Logical NOT
+IVector<Double> logicalXor = v1.logicalXor(v2);       // 逻辑异或 / Logical XOR
 ```
 
 #### 线性代数扩展 / Extended Linear Algebra
 
 ```java
+// 创建向量 / Create vector
+IVector<Double> v1 = Linalg.vector(new double[]{3.0, 4.0, 0.0});
+
 // 线性代数扩展 / Extended linear algebra
-IVector normalized = v1.normalize();           // 向量归一化 / Vector normalization
+IVector<Double> normalized = v1.normalize();           // 向量归一化 / Vector normalization
 ```
 
 
@@ -350,6 +449,7 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 
 ### 类型安全 / Type Safety
 - 强类型系统，避免运行时错误 / Strong type system to avoid runtime errors
+- 泛型支持，编译时类型检查 / Generic support with compile-time type checking
 - 参数验证和异常处理 / Parameter validation and exception handling
 - 清晰的接口契约 / Clear interface contracts
 
@@ -357,14 +457,15 @@ For detailed code examples, please refer to the [Vector-Examples.md](examples/Ve
 
 1. **索引范围** / **Index Range**: 所有索引操作都会进行边界检查 / All index operations perform boundary checking
 2. **空值处理** / **Null Handling**: 输入参数不能为null / Input parameters cannot be null
-3. **精度** / **Precision**: 使用float类型，注意精度限制 / Uses float type, pay attention to precision limitations
+3. **精度** / **Precision**: 支持Float和Double类型，注意精度限制 / Supports Float and Double types, pay attention to precision limitations
 4. **内存** / **Memory**: 大量向量操作时注意内存使用 / Pay attention to memory usage for large vector operations
 5. **就地操作** / **In-place Operations**: 某些方法会修改原向量，注意是否需要复制 / Some methods modify the original vector, pay attention to whether copying is needed
+6. **泛型类型** / **Generic Types**: 使用泛型时确保类型一致性 / Ensure type consistency when using generics
 
 ## 扩展性 / Extensibility
 
-`IVector` 接口设计支持扩展，可以轻松添加新的向量类型实现：
-The `IVector` interface is designed to support extensions, making it easy to add new vector type implementations:
+`IVector<T>` 接口设计支持扩展，可以轻松添加新的向量类型实现：
+The `IVector<T>` interface is designed to support extensions, making it easy to add new vector type implementations:
 - 稀疏向量 / Sparse vectors
 - GPU加速向量 / GPU-accelerated vectors
 - 分布式向量 / Distributed vectors
@@ -377,20 +478,22 @@ The `IVector` interface is designed to support extensions, making it easy to add
 
 | YiShape IVector | NumPy | 功能描述 / Description |
 |-----------------|-------|----------------------|
-| `IVector.of(float[])` | `np.array()` | 从数组创建向量 / Create vector from array |
-| `IVector.zeros(n)` | `np.zeros(n)` | 创建全零向量 / Create zero vector |
-| `IVector.ones(n)` | `np.ones(n)` | 创建全一向量 / Create ones vector |
-| `IVector.range(n)` | `np.arange(n)` | 创建范围向量 / Create range vector |
-| `IVector.range(start, end)` | `np.arange(start, end)` | 创建指定范围向量 / Create range with start/end |
-| `IVector.range(start, end, step)` | `np.arange(start, end, step)` | 创建带步长范围向量 / Create range with step |
-| `IVector.rand(n)` | `np.random.rand(n)` | 创建随机向量 / Create random vector |
-| `IVector.randn(n, mean, std)` | `np.random.randn(mean, std, n)` | 创建正态分布随机向量 / Create normal random vector |
-| `IVector.linspace(start, stop, num)` | `np.linspace(start, stop, num)` | 创建线性空间向量 / Create linear space vector |
-| `IVector.logspace(start, stop, num)` | `np.logspace(start, stop, num)` | 创建对数空间向量 / Create logarithmic space vector |
+| `Linalg.vector(double[])` | `np.array()` | 从数组创建向量 / Create vector from array |
+| `Linalg.zeros(n)` | `np.zeros(n)` | 创建全零向量 / Create zero vector |
+| `Linalg.ones(n)` | `np.ones(n)` | 创建全一向量 / Create ones vector |
+| `Linalg.range(n)` | `np.arange(n)` | 创建范围向量 / Create range vector |
+| `Linalg.range(start, end)` | `np.arange(start, end)` | 创建指定范围向量 / Create range with start/end |
+| `Linalg.range(start, end, step)` | `np.arange(start, end, step)` | 创建带步长范围向量 / Create range with step |
+| `Linalg.rand(n)` | `np.random.rand(n)` | 创建随机向量 / Create random vector |
+| `Linalg.randn(n)` | `np.random.randn(n)` | 创建正态分布随机向量 / Create normal random vector |
+| `Linalg.randn(n, mean, std, seed)` | `np.random.normal(mean, std, n)` | 创建带参数的正态分布随机向量 / Create normal random vector with parameters |
+| `Linalg.linspace(start, stop, num)` | `np.linspace(start, stop, num)` | 创建线性空间向量 / Create linear space vector |
+| `Linalg.logspace(start, stop, num)` | `np.logspace(start, stop, num)` | 创建对数空间向量 / Create logarithmic space vector |
 | `v1.add(v2)` | `v1 + v2` | 向量加法 / Vector addition |
 | `v1.sub(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
 | `v1.multiply(v2)` | `v1 * v2` | 元素级乘法 / Element-wise multiplication |
 | `v1.innerProduct(v2)、v1.dot(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
+| `v1.outer(v2)` | `np.outer(v1, v2)` | 外积 / Outer product |
 | `v1.addScalar(s)` | `v1 + s` | 标量加法 / Scalar addition |
 | `v1.subScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
 | `v1.multiplyScalar(s)` | `v1 * s` | 标量乘法 / Scalar multiplication |
@@ -475,7 +578,8 @@ YiShape's vector operations design references NumPy's API design, providing simi
 - **语法相似性** / **Syntax Similarity**: 方法命名和参数设计与NumPy保持一致 / Method naming and parameter design consistent with NumPy
 - **功能对等性** / **Functional Equivalence**: 核心功能与NumPy向量操作完全对等 / Core functionality is completely equivalent to NumPy vector operations
 - **性能优化** / **Performance Optimization**: 针对Java环境进行了性能优化 / Performance optimized for Java environment
-- **类型安全** / **Type Safety**: 提供比NumPy更强的类型安全保障 / Provides stronger type safety guarantees than NumPy
+- **类型安全** / **Type Safety**: 提供比NumPy更强的类型安全保障，支持泛型 / Provides stronger type safety guarantees than NumPy with generic support
+- **统一入口** / **Unified Entry**: 通过Linalg工厂类提供统一的API入口 / Provides unified API entry through Linalg factory class
 
 这使得从Python/NumPy迁移到Java/YiShape变得相对容易，同时保持了Java的类型安全和性能优势。
 This makes migration from Python/NumPy to Java/YiShape relatively easy while maintaining Java's type safety and performance advantages.
@@ -484,4 +588,4 @@ This makes migration from Python/NumPy to Java/YiShape relatively easy while mai
 
 **向量操作** - 数学计算的基础，让数据处理更高效！
 
-**Vector Operations** - The foundation of mathematical computing, making data processing more efficient!
+**Vector Operation

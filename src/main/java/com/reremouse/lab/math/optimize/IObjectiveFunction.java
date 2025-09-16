@@ -13,6 +13,6 @@ public interface IObjectiveFunction {
      * @param x 变量值（向量）
      * @return 目标函数值
      */
-    public float computeObjective(IVector x);
+    public double computeObjective(IVector x);
     
 }

@@ -3,6 +3,7 @@ package com.reremouse.lab.math.test;
 import com.reremouse.lab.math.optimize.*;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * LBFGS算法测试类
@@ -41,8 +42,8 @@ public class TestLBFGS {
         // 定义目标函数：f(x) = (x-2)^2
         IObjectiveFunction objFun = new IObjectiveFunction() {
             @Override
-            public float computeObjective(IVector x) {
-                float val = x.get(0) - 2.0f;
+            public double computeObjective(IVector x) {
+                double val = (double)x.get(0) - 2.0d;
                 return val * val;
             }
         };
@@ -50,26 +51,26 @@ public class TestLBFGS {
         // 定义梯度函数：f'(x) = 2(x-2)
         IGradientFunction grdFun = new IGradientFunction() {
             @Override
-            public IVector computeGradient(IVector x) {
-                float grad = 2 * (x.get(0) - 2.0f);
-                return IVector.of(new float[]{grad});
+            public IVector<Double> computeGradient(IVector x) {
+                double grad = 2 * ((double)x.get(0) - 2.0f);
+                return Linalg.vector(new double[]{grad});
             }
         };
         
         // 初始点
-        IVector initX = IVector.of(new float[]{10.0f});
+        IVector<Double> initX = Linalg.vector(new double[]{10.0f});
         
         // 创建LBFGS优化器
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
         
         System.out.println("初始点: x = " + initX.get(0));
         System.out.println("最优值: " + result._1);
         System.out.println("最优点: x = " + result._2.get(0));
         System.out.println("理论最优解: x = 2.0, f = 0.0");
-        System.out.println("误差: " + Math.abs(result._2.get(0) - 2.0f));
+        System.out.println("误差: " + Math.abs((double)result._2.get(0) - 2.0d));
     }
     
     /**
@@ -79,11 +80,11 @@ public class TestLBFGS {
         // 定义Rosenbrock函数：f(x,y) = (1-x)^2 + 100(y-x^2)^2
         IObjectiveFunction objFun = new IObjectiveFunction() {
             @Override
-            public float computeObjective(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
-                float term1 = (1 - x1) * (1 - x1);
-                float term2 = 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+            public double computeObjective(IVector x) {
+                double x1 = (double)x.get(0);
+                double x2 = (double)x.get(1);
+                double term1 = (1 - x1) * (1 - x1);
+                double term2 = 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
                 return term1 + term2;
             }
         };
@@ -91,34 +92,34 @@ public class TestLBFGS {
         // 定义梯度函数
         IGradientFunction grdFun = new IGradientFunction() {
             @Override
-            public IVector computeGradient(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
+            public IVector<Double> computeGradient(IVector x) {
+                double x1 = (double)x.get(0);
+                double x2 = (double)x.get(1);
                 
                 // ∂f/∂x1 = -2(1-x1) - 400x1(x2-x1^2)
-                float grad1 = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+                double grad1 = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
                 
                 // ∂f/∂x2 = 200(x2-x1^2)
-                float grad2 = 200 * (x2 - x1 * x1);
+                double grad2 = 200 * (x2 - x1 * x1);
                 
-                return IVector.of(new float[]{grad1, grad2});
+                return Linalg.vector(new double[]{grad1, grad2});
             }
         };
         
         // 初始点
-        IVector initX = IVector.of(new float[]{-1.0f, 2.0f});
+        IVector<Double> initX = Linalg.vector(new double[]{-1.0f, 2.0f});
         
         // 创建LBFGS优化器
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
         
         System.out.println("初始点: x = [" + initX.get(0) + ", " + initX.get(1) + "]");
         System.out.println("最优值: " + result._1);
         System.out.println("最优点: x = [" + result._2.get(0) + ", " + result._2.get(1) + "]");
         System.out.println("理论最优解: x = [1.0, 1.0], f = 0.0");
-        System.out.println("误差: " + Math.sqrt(Math.pow(result._2.get(0) - 1.0f, 2) + Math.pow(result._2.get(1) - 1.0f, 2)));
+        System.out.println("误差: " + Math.sqrt(Math.pow((double)result._2.get(0) - 1.0d, 2) + Math.pow((double)result._2.get(1) - 1.0f, 2)));
     }
     
     /**
@@ -126,13 +127,13 @@ public class TestLBFGS {
      */
     private static void testMultiDimensionalQuadratic() {
         // 目标向量
-        IVector target = IVector.of(new float[]{1.0f, 2.0f, 3.0f});
+        IVector<Double> target = Linalg.vector(new double[]{1.0f, 2.0f, 3.0f});
         
         // 定义目标函数：f(x) = ||x - target||^2
         IObjectiveFunction objFun = new IObjectiveFunction() {
             @Override
-            public float computeObjective(IVector x) {
-                IVector diff = x.sub(target);
+            public double computeObjective(IVector x) {
+                IVector<Double> diff = x.sub(target);
                 return diff.innerProduct(diff);
             }
         };
@@ -140,19 +141,19 @@ public class TestLBFGS {
         // 定义梯度函数：∇f(x) = 2(x - target)
         IGradientFunction grdFun = new IGradientFunction() {
             @Override
-            public IVector computeGradient(IVector x) {
+            public IVector<Double> computeGradient(IVector x) {
                 return x.sub(target).multiplyScalar(2.0f);
             }
         };
         
         // 初始点
-        IVector initX = IVector.of(new float[]{10.0f, -5.0f, 8.0f});
+        IVector<Double> initX = Linalg.vector(new double[]{10.0f, -5.0f, 8.0f});
         
         // 创建LBFGS优化器
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
         
         System.out.println("初始点: x = [" + initX.get(0) + ", " + initX.get(1) + ", " + initX.get(2) + "]");
         System.out.println("最优值: " + result._1);
@@ -160,7 +161,7 @@ public class TestLBFGS {
         System.out.println("理论最优解: x = [1.0, 2.0, 3.0], f = 0.0");
         
         // 计算误差
-        IVector error = result._2.sub(target);
+        IVector<Double> error = result._2.sub(target);
         System.out.println("误差范数: " + error.norm2());
     }
     
@@ -171,9 +172,9 @@ public class TestLBFGS {
         // 定义目标函数：f(x,y) = x^2 + 2y^2 + 3xy
         IObjectiveFunction objFun = new IObjectiveFunction() {
             @Override
-            public float computeObjective(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
+            public double computeObjective(IVector x) {
+                double x1 = (double)x.get(0);
+                double x2 = (double)x.get(1);
                 return x1 * x1 + 2 * x2 * x2 + 3 * x1 * x2;
             }
         };
@@ -181,22 +182,22 @@ public class TestLBFGS {
         // 定义梯度函数
         IGradientFunction grdFun = new IGradientFunction() {
             @Override
-            public IVector computeGradient(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
+            public IVector<Double> computeGradient(IVector x) {
+                double x1 = (double)x.get(0);
+                double x2 = (double)x.get(1);
                 
                 // ∂f/∂x1 = 2x1 + 3x2
-                float grad1 = 2 * x1 + 3 * x2;
+                double grad1 = 2 * x1 + 3 * x2;
                 
                 // ∂f/∂x2 = 4x2 + 3x1
-                float grad2 = 4 * x2 + 3 * x1;
+                double grad2 = 4 * x2 + 3 * x1;
                 
-                return IVector.of(new float[]{grad1, grad2});
+                return Linalg.vector(new double[]{grad1, grad2});
             }
         };
         
         // 初始点
-        IVector initX = IVector.of(new float[]{5.0f, -3.0f});
+        IVector<Double> initX = Linalg.vector(new double[]{5.0f, -3.0f});
         
         // 创建自定义参数的LBFGS优化器
         RereLBFGS optimizer = new RereLBFGS(5, 1e-8f, 500);
@@ -207,7 +208,7 @@ public class TestLBFGS {
         System.out.println("  最大迭代次数: " + optimizer.getMaxIterations());
         
         // 执行优化
-        Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
         
         System.out.println("初始点: x = [" + initX.get(0) + ", " + initX.get(1) + "]");
         System.out.println("最优值: " + result._1);

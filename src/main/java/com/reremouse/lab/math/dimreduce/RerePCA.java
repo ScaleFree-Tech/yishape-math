@@ -3,6 +3,8 @@ package com.reremouse.lab.math.dimreduce;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * PCA (主成分分析) 降维算法实现类 / PCA (Principal Component Analysis) Dimensionality Reduction Algorithm Implementation
@@ -82,33 +84,33 @@ public class RerePCA {
         // 如果目标维度等于原始维度，直接返回原数据的副本
         // If target dimension equals original dimension, return a copy of original data
         if (dim == originalCols) {
-            return IMatrix.of(originalData.getData());
+            return IMatrix.of(originalData.toDoubleArray());
         }
         
         // 步骤1：数据中心化 / Step 1: Data centering
-        IMatrix centeredData = originalData.center();
+        IMatrix centeredData = (IMatrix)originalData.center();
         
         // 步骤2：计算协方差矩阵 / Step 2: Compute covariance matrix
-        IMatrix covarianceMatrix = centeredData.covarianceFromCentered();
+        IMatrix covarianceMatrix = (IMatrix)centeredData.covarianceFromCentered();
         
         // 步骤3：对协方差矩阵进行特征分解 / Step 3: Eigendecomposition of covariance matrix
-        Tuple2<IVector, IMatrix> eigenResult = covarianceMatrix.eigen();
-        IVector eigenValues = eigenResult._1;    // 特征值（已按大小降序排列）/ Eigenvalues (sorted in descending order)
-        IMatrix eigenVectors = eigenResult._2;   // 特征向量（列为特征向量）/ Eigenvectors (columns are eigenvectors)
+        Tuple2<IVector<Double>, IMatrix<Double>> eigenResult = covarianceMatrix.eigen();
+        IVector eigenValues = (IVector)eigenResult._1;    // 特征值（已按大小降序排列）/ Eigenvalues (sorted in descending order)
+        IMatrix eigenVectors = (IMatrix)eigenResult._2;   // 特征向量（列为特征向量）/ Eigenvectors (columns are eigenvectors)
         
         // 步骤4：选择前dim个主成分 / Step 4: Select first dim principal components
-        float[][] principalComponentsData = new float[originalCols][dim];
+        double[][] principalComponentsData = new double[originalCols][dim];
         for (int i = 0; i < dim; i++) {
-            IVector eigenVec = eigenVectors.getColunm(i);
+            IVector eigenVec = (IVector)eigenVectors.getColumn(i);
             // 将特征向量作为主成分矩阵的列
             for (int j = 0; j < originalCols; j++) {
-                principalComponentsData[j][i] = eigenVec.get(j);
+                principalComponentsData[j][i] = (double)eigenVec.get(j);
             }
         }
         IMatrix principalComponents = IMatrix.of(principalComponentsData);
         
         // 步骤5：将中心化数据投影到主成分空间 / Step 5: Project centered data to principal component space
-        IMatrix reducedData = centeredData.mmul(principalComponents);
+        IMatrix reducedData = (IMatrix)centeredData.mmul(principalComponents);
         
         return reducedData;
     }

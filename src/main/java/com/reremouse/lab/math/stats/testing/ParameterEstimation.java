@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.testing;
 
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.stats.Stats;
 import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 统计参数估计
@@ -11,55 +11,55 @@ import com.reremouse.lab.util.Tuple2;
  */
 public class ParameterEstimation {
 
-    public Tuple2<Float,Float> estimateMeanIntevalWithZ(IVector sample, float sigma) {
+    public Tuple2<Double,Double> estimateMeanIntevalWithZ(IDoubleVector sample, double sigma) {
         return estimateMeanIntevalWithZ(sample, 0.95f, sigma);
     }
 
-    public Tuple2<Float,Float> estimateMeanIntevalWithZ(IVector sample, float confidence, float sigma) {
+    public Tuple2<Double,Double> estimateMeanIntevalWithZ(IDoubleVector sample, double confidence, double sigma) {
         var norm = Stats.norm();
-        float left = (float) (1.0f - confidence) / 2.0f;
-        float right = 1 - left;
-        float zLowBound = norm.ppf(left);
-        float zUpperBound = norm.ppf(right);
-        float mean = sample.mean();
+        double left = (float) (1.0f - confidence) / 2.0f;
+        double right = 1 - left;
+        double zLowBound = norm.ppf(left);
+        double zUpperBound = norm.ppf(right);
+        double mean = sample.mean();
         int n = sample.length();
-        float mLowBound = mean - zUpperBound * sigma / (float) n;
-        float mUpperBound = mean - zLowBound * sigma / (float) n;
+        double mLowBound = mean - zUpperBound * sigma / (float) n;
+        double mUpperBound = mean - zLowBound * sigma / (float) n;
         return new Tuple2(mLowBound, mUpperBound);
     }
 
-    public Tuple2<Float,Float> estimateMeanIntevalWithT(IVector sample) {
+    public Tuple2<Double,Double> estimateMeanIntevalWithT(IDoubleVector sample) {
         return estimateMeanIntevalWithT(sample, 0.95f);
     }
 
-    public Tuple2<Float,Float> estimateMeanIntevalWithT(IVector sample, float confidence) {
+    public Tuple2<Double,Double> estimateMeanIntevalWithT(IDoubleVector sample, double confidence) {
         var t = Stats.t(sample.length() - 1);
-        float left = (float) (1.0f - confidence) / 2.0f;
-        float right = 1 - left;
-        float tLowBound = t.ppf(left);
-        float tUpperBound = t.ppf(right);
-        float mean = sample.mean();
+        double left = (float) (1.0f - confidence) / 2.0f;
+        double right = 1 - left;
+        double tLowBound = t.ppf(left);
+        double tUpperBound = t.ppf(right);
+        double mean = sample.mean();
         int n = sample.length();
-        float s = sample.std(1);
-        float mLowBound = mean - tUpperBound * s / (float) n;
-        float mUpperBound = mean - tLowBound * s / (float) n;
+        double s = sample.std(1);
+        double mLowBound = mean - tUpperBound * s / (float) n;
+        double mUpperBound = mean - tLowBound * s / (float) n;
         return new Tuple2(mLowBound, mUpperBound);
     }
 
-    public Tuple2<Float,Float> estimateVarIntevalWithChi2(IVector sample) {
+    public Tuple2<Double,Double> estimateVarIntevalWithChi2(IDoubleVector sample) {
         return estimateVarIntevalWithChi2(sample, 0.95f);
     }
 
-    public Tuple2<Float,Float> estimateVarIntevalWithChi2(IVector sample, float confidence) {
+    public Tuple2<Double,Double> estimateVarIntevalWithChi2(IDoubleVector sample, double confidence) {
         var chi2 = Stats.chi2(sample.length() - 1);
-        float left = (float) (1.0f - confidence) / 2.0f;
-        float right = 1 - left;
-        float chi2LowBound = chi2.ppf(left);
-        float chi2UpperBound = chi2.ppf(right);
+        double left = (float) (1.0f - confidence) / 2.0f;
+        double right = 1 - left;
+        double chi2LowBound = chi2.ppf(left);
+        double chi2UpperBound = chi2.ppf(right);
         int n = sample.length();
-        float s2 = sample.var(1);
-        float varLowBound = (n - 1) * s2 / chi2UpperBound;
-        float varUpperBound = (n - 1) * s2 / chi2LowBound;
+        double s2 = sample.var(1);
+        double varLowBound = (n - 1) * s2 / chi2UpperBound;
+        double varUpperBound = (n - 1) * s2 / chi2LowBound;
         return new Tuple2(varLowBound, varUpperBound);
     }
 

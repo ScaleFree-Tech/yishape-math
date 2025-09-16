@@ -1,12 +1,12 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.viz.Plots;
 import com.reremouse.lab.math.viz.PlotException;
 import java.util.Arrays;
 import java.util.List;
 import com.reremouse.lab.math.viz.IPlot;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 测试改进后的Plot API
@@ -18,8 +18,8 @@ public class PlotImprovementTest {
         System.out.println("=== 测试改进后的Plot API ===\n");
         
         // 创建测试数据
-        IVector x = new RereVector(new float[]{1, 2, 3, 4, 5});
-        IVector y = new RereVector(new float[]{2, 4, 6, 8, 10});
+        IDoubleVector x = new RereDoubleVector(new double[]{1, 2, 3, 4, 5});
+        IDoubleVector y = new RereDoubleVector(new double[]{2, 4, 6, 8, 10});
         List<String> labels = Arrays.asList("A", "B", "C", "D", "E");
         
         try {

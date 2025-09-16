@@ -1,11 +1,9 @@
 package com.reremouse.lab.math.gpu;
 
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.compute.CPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.compute.CPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.util.Tuple3;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,12 +15,14 @@ import org.junit.jupiter.api.Order;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * GPU vs CPU Performance Comparison Test Class
- * 
- * Comprehensive performance benchmarks comparing GPUComputeUtils and CPUComputeUtils
- * for identical mathematical operations across different data sizes.
+
+ Comprehensive performance benchmarks comparing GPUComputeFloatUtils and CPUComputeFloatUtils
+ for identical mathematical operations across different data sizes.
  * 
  * @author lteb2
  * @version 1.0
@@ -44,7 +44,7 @@ public class GPUvsCPUPerformanceComparisonTest {
     @BeforeEach
     void setUp() {
         System.out.println("=== 初始化GPU vs CPU性能对比测试 ===");
-        System.out.println("GPU可用性: " + GPUComputeUtils.isGPUAvailable());
+        System.out.println("GPU可用性: " + GPUComputeFloatUtils.isGPUAvailable());
         performJVMWarmup();
     }
     
@@ -57,8 +57,8 @@ public class GPUvsCPUPerformanceComparisonTest {
         for (int size : VECTOR_SIZES) {
             System.out.printf("\n向量大小: %d\n", size);
             
-            IVector v1 = generateRandomVector(size);
-            IVector v2 = generateRandomVector(size);
+            IVector<Float> v1 = generateRandomVector(size);
+            IVector<Float> v2 = generateRandomVector(size);
             float scalar = 3.14f;
             
             // Vector Addition
@@ -81,8 +81,8 @@ public class GPUvsCPUPerformanceComparisonTest {
         for (int size : MATRIX_SIZES) {
             System.out.printf("\n矩阵大小: %dx%d\n", size, size);
             
-            IMatrix m1 = generateRandomMatrix(size, size);
-            IMatrix m2 = generateRandomMatrix(size, size);
+            IMatrix<Float> m1 = generateRandomMatrix(size, size);
+            IMatrix<Float> m2 = generateRandomMatrix(size, size);
             float scalar = 2.5f;
             
             // Matrix Addition
@@ -110,7 +110,7 @@ public class GPUvsCPUPerformanceComparisonTest {
         for (int size : sizes) {
             System.out.printf("\n高级运算矩阵大小: %dx%d\n", size, size);
             
-            IMatrix matrix = generateWellConditionedMatrix(size, size);
+            IMatrix<Float> matrix = generateWellConditionedMatrix(size, size);
             
             // Pseudo Inverse
             testPseudoInverse(matrix, size * size);
@@ -152,7 +152,7 @@ public class GPUvsCPUPerformanceComparisonTest {
     void cleanup() {
         System.out.println("\n=== 清理GPU资源 ===");
         try {
-            GPUComputeUtils.cleanup();
+            GPUComputeFloatUtils.cleanup();
             System.out.println("GPU资源清理完成");
         } catch (Exception e) {
             System.out.println("GPU资源清理失败: " + e.getMessage());
@@ -161,121 +161,121 @@ public class GPUvsCPUPerformanceComparisonTest {
     
     // =========================== 具体测试方法 ===========================
     
-    private void testVectorAddition(IVector v1, IVector v2, int size) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.vectorAdd(v1, v2));
+    private void testVectorAddition(IVector<Float> v1, IVector<Float> v2, int size) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.vectorAdd(v1, v2));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuVectorAdd(v1, v2);
+                return GPUComputeFloatUtils.gpuVectorAdd(v1, v2);
             } catch (Exception e) {
-                return CPUComputeUtils.vectorAdd(v1, v2);
+                return CPUComputeFloatUtils.vectorAdd(v1, v2);
             }
         });
         recordResult("Vector Addition", size, cpuTime, gpuTime);
     }
     
-    private void testVectorDotProduct(IVector v1, IVector v2, int size) {
-        long cpuTime = measureScalarTime(() -> CPUComputeUtils.vectorDot(v1, v2));
+    private void testVectorDotProduct(IVector<Float> v1, IVector<Float> v2, int size) {
+        long cpuTime = measureScalarTime(() -> CPUComputeFloatUtils.vectorDot(v1, v2));
         long gpuTime = measureScalarTime(() -> {
             try {
-                return GPUComputeUtils.gpuVectorDot(v1, v2);
+                return GPUComputeFloatUtils.gpuVectorDot(v1, v2);
             } catch (Exception e) {
-                return CPUComputeUtils.vectorDot(v1, v2);
+                return CPUComputeFloatUtils.vectorDot(v1, v2);
             }
         });
         recordResult("Vector Dot Product", size, cpuTime, gpuTime);
     }
     
-    private void testVectorScalarMultiply(IVector v, float scalar, int size) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.vectorScalarMultiply(v, scalar));
+    private void testVectorScalarMultiply(IVector<Float> v, float scalar, int size) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.vectorScalarMultiply(v, scalar));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuVectorScalarMultiply(v, scalar);
+                return GPUComputeFloatUtils.gpuVectorScalarMultiply(v, scalar);
             } catch (Exception e) {
-                return CPUComputeUtils.vectorScalarMultiply(v, scalar);
+                return CPUComputeFloatUtils.vectorScalarMultiply(v, scalar);
             }
         });
         recordResult("Vector Scalar Multiply", size, cpuTime, gpuTime);
     }
     
-    private void testMatrixAddition(IMatrix m1, IMatrix m2, int dataSize) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.matrixAdd(m1.getData(), m2.getData()));
+    private void testMatrixAddition(IMatrix<Float> m1, IMatrix<Float> m2, int dataSize) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.matrixAdd(m1.toFloatArray(), m2.toFloatArray()));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuMatrixAdd(m1, m2);
+                return GPUComputeFloatUtils.gpuMatrixAdd(m1, m2);
             } catch (Exception e) {
-                return CPUComputeUtils.matrixAdd(m1.getData(), m2.getData());
+                return CPUComputeFloatUtils.matrixAdd(m1.toFloatArray(), m2.toFloatArray());
             }
         });
         recordResult("Matrix Addition", dataSize, cpuTime, gpuTime);
     }
     
-    private void testMatrixMultiplication(IMatrix m1, IMatrix m2, int dataSize) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.matrixMultiply(m1.getData(), m2.getData()));
+    private void testMatrixMultiplication(IMatrix<Float> m1, IMatrix<Float> m2, int dataSize) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.matrixMultiply(m1.toFloatArray(), m2.toFloatArray()));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuMatrixMultiply(m1, m2);
+                return GPUComputeFloatUtils.gpuMatrixMultiply(m1, m2);
             } catch (Exception e) {
-                return CPUComputeUtils.matrixMultiply(m1.getData(), m2.getData());
+                return CPUComputeFloatUtils.matrixMultiply(m1.toFloatArray(), m2.toFloatArray());
             }
         });
         recordResult("Matrix Multiplication", dataSize, cpuTime, gpuTime);
     }
     
-    private void testMatrixScalarMultiply(IMatrix m, float scalar, int dataSize) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.matrixScalarMultiply(m.getData(), scalar));
+    private void testMatrixScalarMultiply(IMatrix<Float> m, float scalar, int dataSize) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.matrixScalarMultiply(m.toFloatArray(), scalar));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuMatrixScalarMultiply(m, scalar);
+                return GPUComputeFloatUtils.gpuMatrixScalarMultiply(m, scalar);
             } catch (Exception e) {
-                return CPUComputeUtils.matrixScalarMultiply(m.getData(), scalar);
+                return CPUComputeFloatUtils.matrixScalarMultiply(m.toFloatArray(), scalar);
             }
         });
         recordResult("Matrix Scalar Multiply", dataSize, cpuTime, gpuTime);
     }
     
-    private void testMatrixTranspose(IMatrix m, int dataSize) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.matrixTranspose(m.getData()));
+    private void testMatrixTranspose(IMatrix<Float> m, int dataSize) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.matrixTranspose(m.toFloatArray()));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuMatrixTranspose(m);
+                return GPUComputeFloatUtils.gpuMatrixTranspose(m);
             } catch (Exception e) {
-                return CPUComputeUtils.matrixTranspose(m.getData());
+                return CPUComputeFloatUtils.matrixTranspose(m.toFloatArray());
             }
         });
         recordResult("Matrix Transpose", dataSize, cpuTime, gpuTime);
     }
     
-    private void testPseudoInverse(IMatrix m, int dataSize) {
-        long cpuTime = measureTime(() -> CPUComputeUtils.pseudoInverse(m));
+    private void testPseudoInverse(IMatrix<Float> m, int dataSize) {
+        long cpuTime = measureTime(() -> CPUComputeFloatUtils.pseudoInverse(m));
         long gpuTime = measureTime(() -> {
             try {
-                return GPUComputeUtils.gpuPseudoInverse(m);
+                return GPUComputeFloatUtils.gpuPseudoInverse(m);
             } catch (Exception e) {
-                return CPUComputeUtils.pseudoInverse(m);
+                return CPUComputeFloatUtils.pseudoInverse(m);
             }
         });
         recordResult("Pseudo Inverse", dataSize, cpuTime, gpuTime);
     }
     
-    private void testEigenDecomposition(IMatrix m, int dataSize) {
-        long cpuTime = measureEigenTime(() -> CPUComputeUtils.eigen(m));
+    private void testEigenDecomposition(IMatrix<Float> m, int dataSize) {
+        long cpuTime = measureEigenTime(() -> CPUComputeFloatUtils.eigen(m));
         long gpuTime = measureEigenTime(() -> {
             try {
-                return GPUComputeUtils.gpuEigenDecomposition(m);
+                return GPUComputeFloatUtils.gpuEigenDecomposition(m);
             } catch (Exception e) {
-                return CPUComputeUtils.eigen(m);
+                return CPUComputeFloatUtils.eigen(m);
             }
         });
         recordResult("Eigen Decomposition", dataSize, cpuTime, gpuTime);
     }
     
-    private void testSVDDecomposition(IMatrix m, int dataSize) {
-        long cpuTime = measureSVDTime(() -> CPUComputeUtils.svd(m));
+    private void testSVDDecomposition(IMatrix<Float> m, int dataSize) {
+        long cpuTime = measureSVDTime(() -> CPUComputeFloatUtils.svd(m));
         long gpuTime = measureGPUSVDTime(() -> {
             try {
-                return GPUComputeUtils.gpuSVD(m);
+                return GPUComputeFloatUtils.gpuSVD(m);
             } catch (Exception e) {
-                var cpuResult = CPUComputeUtils.svd(m);
+                var cpuResult = CPUComputeFloatUtils.svd(m);
                 return cpuResult;
             }
         });
@@ -286,36 +286,36 @@ public class GPUvsCPUPerformanceComparisonTest {
     
     private void performJVMWarmup() {
         System.out.println("执行JVM预热...");
-        IVector warmupVector = generateRandomVector(100);
-        IMatrix warmupMatrix = generateRandomMatrix(10, 10);
+        IVector<Float> warmupVector = generateRandomVector(100);
+        IMatrix<Float> warmupMatrix = generateRandomMatrix(10, 10);
         
         for (int i = 0; i < 3; i++) {
             try {
-                CPUComputeUtils.vectorAdd(warmupVector, warmupVector);
-                GPUComputeUtils.gpuVectorAdd(warmupVector, warmupVector);
+                CPUComputeFloatUtils.vectorAdd(warmupVector, warmupVector);
+                GPUComputeFloatUtils.gpuVectorAdd(warmupVector, warmupVector);
             } catch (Exception ignored) {}
         }
     }
     
-    private IVector generateRandomVector(int size) {
+    private IVector<Float> generateRandomVector(int size) {
         float[] data = new float[size];
         for (int i = 0; i < size; i++) {
             data[i] = (float) (Math.random() * 10.0 - 5.0);
         }
-        return new RereVector(data);
+        return new RereFloatVector(data);
     }
     
-    private IMatrix generateRandomMatrix(int rows, int cols) {
+    private IMatrix<Float> generateRandomMatrix(int rows, int cols) {
         float[][] data = new float[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 data[i][j] = (float) (Math.random() * 10.0 - 5.0);
             }
         }
-        return new RereMatrix(data);
+        return new RereFloatMatrix(data);
     }
     
-    private IMatrix generateWellConditionedMatrix(int rows, int cols) {
+    private IMatrix<Float> generateWellConditionedMatrix(int rows, int cols) {
         float[][] data = new float[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -326,7 +326,7 @@ public class GPUvsCPUPerformanceComparisonTest {
                 }
             }
         }
-        return new RereMatrix(data);
+        return new RereFloatMatrix(data);
     }
     
     private long measureTime(Supplier<Object> operation) {
@@ -459,16 +459,16 @@ public class GPUvsCPUPerformanceComparisonTest {
     
     @FunctionalInterface
     private interface SVDSupplier {
-        Tuple3<IMatrix, IVector, IMatrix> get();
+        Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> get();
     }
     
     @FunctionalInterface
     private interface EigenSupplier {
-        Tuple2<IVector, IMatrix> get();
+        Tuple2<IVector<Float>, IMatrix<Float>> get();
     }
     
     @FunctionalInterface
     private interface GPUSVDSupplier {
-        Tuple3<IMatrix, IVector, IMatrix> get();
+        Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> get();
     }
 }

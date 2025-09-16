@@ -2,109 +2,87 @@ package com.reremouse.lab.math.linalg;
 
 
 /**
- * 向量操作接口 / Vector Operations Interface
+ * 泛型向量操作接口 / Generic Vector Operations Interface
  * <p>
- * 本接口定义了向量的常用操作，包括基本的数学运算、统计运算、切片索引、通用函数等功能。 提供了创建向量的静态工厂方法和各种向量运算的抽象方法定义。
+ * 本接口定义了支持泛型数值类型的向量操作，包括基本的数学运算、统计运算、切片索引、通用函数等功能。
+ * 提供了创建向量的静态工厂方法和各种向量运算的抽象方法定义。
  * </p>
  * <p>
- * This interface defines common vector operations including basic mathematical
+ * This interface defines vector operations supporting generic numeric types, including basic mathematical
  * operations, statistical operations, slicing and indexing, universal functions
  * and other functionalities. Provides static factory methods for creating
  * vectors and abstract method definitions for various vector operations.
  * </p>
  *
- * <h3>主要功能 / Main Features:</h3>
+ * <h3>静态工厂方法架构 / Static Factory Method Architecture:</h3>
+ * <p>
+ * 本接口采用委托模式，静态工厂方法委托给具体实现类：
+ * This interface uses delegation pattern, static factory methods delegate to concrete implementations:
+ * </p>
  * <ul>
- * <li>基本数学运算：加法、减法、乘法、内积 / Basic math operations: add, subtract, multiply,
- * inner product</li>
- * <li>标量运算：与标量的四则运算 / Scalar operations: arithmetic operations with
- * scalars</li>
- * <li>统计运算：求和、均值、方差、标准差、最值 / Statistical operations: sum, mean, variance,
- * standard deviation, min/max</li>
- * <li>通用函数：开方、平方、指数、对数、幂运算 / Universal functions: sqrt, square, exp, log,
- * power</li>
- * <li>切片索引：范围切片、花式索引、布尔索引 / Slicing and indexing: range slicing, fancy
- * indexing, boolean indexing</li>
- * <li>比较运算：元素级比较操作 / Comparison operations: element-wise comparison</li>
- * <li>数据转换：类型转换、数据获取 / Data conversion: type conversion, data access</li>
- * <li>工厂方法：创建范围向量、全1向量、零向量 / Factory methods: create range, ones, zeros
- * vectors</li>
+ * <li>**用户调用** / **User calls**: {@code IVector.of(data)} 或 {@code Linalg.vector(data)}</li>
+ * <li>**委托链** / **Delegation chain**: {@code Linalg → IVector → IFloatVector/IDoubleVector}</li>
+ * <li>**类型推断** / **Type inference**: 根据输入数据类型自动选择合适的实现 / Automatically selects appropriate implementation based on input data type</li>
+ * <li>**支持类型** / **Supported types**: Float, Double（默认）/ Float, Double (default)</li>
  * </ul>
  *
- * <h3>使用示例 / Usage Example:</h3>
+ * <h3>使用示例 / Usage Examples:</h3>
  * <pre>
  * {@code
- * // 创建向量 / Create vectors
- * IVector v1 = IVector.of(new float[]{1, 2, 3, 4});
- * IVector v2 = IVector.range(10);
- * IVector v3 = IVector.ones(5);
- *
- * // 基本运算 / Basic operations
- * IVector sum = v1.add(v2.slice(4));
- * float dotProduct = v1.innerProduct(v2.slice(4));
- *
- * // 统计运算 / Statistical operations
- * float mean = v1.mean();
- * float std = v1.std();
- *
- * // 通用函数 / Universal functions
- * IVector squared = v1.squre();
- * IVector normalized = v1.divideByScala(v1.norm2());
- *
- * // 切片和索引 / Slicing and indexing
- * IVector slice = v2.slice(2, 8, 2);
- * IVector fancy = v1.fancyGet(new int[]{0, 2, 3});
+ * // 通过IVector创建 / Create via IVector
+ * IVector<Double> v1 = IVector.of(new double[]{1, 2, 3});
+ * IVector<Float> v2 = IVector.of(new float[]{1f, 2f, 3f});
+ * 
+ * // 通过Linalg创建（推荐）/ Create via Linalg (recommended)
+ * IVector<Double> v3 = Linalg.vector(new double[]{1, 2, 3});
+ * IVector<Float> v4 = Linalg.vector(new float[]{1f, 2f, 3f});
+ * 
+ * // 范围向量 / Range vectors
+ * IVector<Double> range = IVector.range(0, 10, 2);  // [0, 2, 4, 6, 8]
+ * IVector<Float> rangeF = IVector.range(5, Float.class);  // [0, 1, 2, 3, 4]
+ * 
+ * // 特殊向量 / Special vectors
+ * IVector<Double> ones = IVector.ones(5);     // [1, 1, 1, 1, 1]
+ * IVector<Double> zeros = IVector.zeros(3);   // [0, 0, 0]
+ * IVector<Double> random = IVector.rand(4);   // 随机向量 / Random vector
  * }
  * </pre>
  *
+ * @param <T> 数值类型，必须继承自Number / Numeric type, must extend Number
  * @author lteb2
  * @version 1.0
  * @since 1.0
+ * @see Linalg 推荐使用Linalg类的工厂方法 / Recommended to use Linalg class factory methods
+ * @see IFloatVector Float类型向量的具体实现 / Concrete implementation for Float type vectors
+ * @see IDoubleVector Double类型向量的具体实现 / Concrete implementation for Double type vectors
  */
-public interface IVector {
+public interface IVector<T extends Number> {
 
-    /**
-     * 向量工厂方法（float数组） / Vector factory method (float array)
-     * <p>
-     * 使用给定的float数组创建向量实例 Creates a vector instance with the given float array
-     * </p>
-     *
-     * @param data float数组，表示向量数据 / float array representing vector data
-     * @return 新的向量实例 / New vector instance
-     * @throws IllegalArgumentException 如果数据为null / if data is null
-     */
-    public static IVector of(float[] data) {
-        return LAs.vec(data);
-    }
-
-    /**
-     * 向量工厂方法（Float包装类数组） / Vector factory method (Float wrapper array)
-     * <p>
-     * 使用给定的Float包装类数组创建向量实例 Creates a vector instance with the given Float
-     * wrapper array
-     * </p>
-     *
-     * @param data Float包装类数组 / Float wrapper array
-     * @return 新的向量实例 / New vector instance
-     * @throws IllegalArgumentException 如果数据为null / if data is null
-     */
-    public static IVector of(Float[] data) {
-        return LAs.vec(data);
-    }
-
+    // ========== 泛型工厂方法支持 / Generic Factory Method Support ==========
+    // 注意：这些方法委托给具体实现类，不包含具体逻辑。推荐使用 Linalg 类的工厂方法。
+    // Note: These methods delegate to concrete implementations and contain no specific logic. 
+    // It's recommended to use factory methods from the Linalg class.
+    
+    
     /**
      * 向量工厂方法（double数组） / Vector factory method (double array)
      * <p>
-     * 使用给定的double数组创建向量实例，自动转换为float Creates a vector instance with the given
-     * double array, automatically converted to float
+     * 使用给定的double数组创建向量实例。此方法委托给 {@link IDoubleVector#of(double[])} 实现。
+     * Creates a vector instance with the given double array. This method delegates to {@link IDoubleVector#of(double[])}.
+     * </p>
+     * <p>
+     * <strong>推荐使用：</strong>{@code Linalg.vector(data)} 替代直接调用此方法。<br>
+     * <strong>Recommended:</strong> Use {@code Linalg.vector(data)} instead of calling this method directly.
      * </p>
      *
-     * @param data double数组 / double array
-     * @return 新的向量实例 / New vector instance
+     * @param data double数组，表示向量数据 / double array representing vector data
+     * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
      * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see Linalg#vector(double[]) 推荐的工厂方法 / Recommended factory method
+     * @see IDoubleVector#of(double[]) 实际实现方法 / Actual implementation method
      */
-    public static IVector of(double[] data) {
-        return LAs.vec(data);
+    public static <T extends Number> IVector<T> of(double[] data) {
+        return (IVector<T>) IDoubleVector.of(data);
     }
 
     /**
@@ -118,23 +96,52 @@ public interface IVector {
      * @return 新的向量实例 / New vector instance
      * @throws IllegalArgumentException 如果数据为null / if data is null
      */
-    public static IVector of(Double[] data) {
-        return LAs.vec(data);
+    public static <T extends Number> IVector<T> of(Double[] data) {
+        return (IVector<T>) IDoubleVector.of(data);
+    }
+
+    /**
+     * 向量工厂方法（float数组） / Vector factory method (float array)
+     * <p>
+     * 使用给定的float数组创建向量实例 Creates a vector instance with the given float array
+     * </p>
+     *
+     * @param data float数组，表示向量数据 / float array representing vector data
+     * @return 新的向量实例 / New vector instance
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     */
+    public static <T extends Number> IVector<T> of(float[] data) {
+        return (IVector<T>) IFloatVector.of(data);
+    }
+
+    /**
+     * 向量工厂方法（Float包装类数组） / Vector factory method (Float wrapper array)
+     * <p>
+     * 使用给定的Float包装类数组创建向量实例 Creates a vector instance with the given Float
+     * wrapper array
+     * </p>
+     *
+     * @param data Float包装类数组 / Float wrapper array
+     * @return 新的向量实例 / New vector instance
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     */
+    public static <T extends Number> IVector<T> of(Float[] data) {
+        return (IVector<T>) IFloatVector.of(data);
     }
 
     /**
      * 向量工厂方法（int数组） / Vector factory method (int array)
      * <p>
-     * 使用给定的int数组创建向量实例，自动转换为float Creates a vector instance with the given int
-     * array, automatically converted to float
+     * 使用给定的int数组创建向量实例，自动转换为相应类型 Creates a vector instance with the given int
+     * array, automatically converted to corresponding type
      * </p>
      *
      * @param data int数组 / int array
      * @return 新的向量实例 / New vector instance
      * @throws IllegalArgumentException 如果数据为null / if data is null
      */
-    public static IVector of(int[] data) {
-        return LAs.vec(data);
+    public static <T extends Number> IVector<T> of(int[] data) {
+        return (IVector<T>) IDoubleVector.of(data);
     }
 
     /**
@@ -148,12 +155,94 @@ public interface IVector {
      * @return 新的向量实例 / New vector instance
      * @throws IllegalArgumentException 如果数据为null / if data is null
      */
-    public static IVector of(Integer[] data) {
-        return LAs.vec(data);
+    public static <T extends Number> IVector<T> of(Integer[] data) {
+        return (IVector<T>) IDoubleVector.of(data);
     }
 
     /**
-     * 创建范围向量（带步长） / Create range vector (with step)
+     * 向量工厂方法（单个Double值） / Vector factory method (single Double value)
+     * <p>
+     * 创建包含单个Double值的向量 Creates a vector containing a single Double value
+     * </p>
+     *
+     * @param value 单个Double值 / Single Double value
+     * @return 包含单个值的向量 / Vector containing single value
+     */
+    public static IVector<Double> of(Double value) {
+        return (IVector<Double>) IDoubleVector.of(value);
+    }
+
+    /**
+     * 向量工厂方法（两个Double值） / Vector factory method (two Double values)
+     * <p>
+     * 创建包含两个Double值的向量 Creates a vector containing two Double values
+     * </p>
+     *
+     * @param value1 第一个值 / First value
+     * @param value2 第二个值 / Second value
+     * @return 包含两个值的向量 / Vector containing two values
+     */
+    public static IVector<Double> of(Double value1, Double value2) {
+        return (IVector<Double>) IDoubleVector.of(value1, value2);
+    }
+
+    /**
+     * 向量工厂方法（单个Float值） / Vector factory method (single Float value)
+     * <p>
+     * 创建包含单个Float值的向量 Creates a vector containing a single Float value
+     * </p>
+     *
+     * @param value 单个Float值 / Single Float value
+     * @return 包含单个值的向量 / Vector containing single value
+     */
+    public static IVector<Float> of(Float value) {
+        return (IVector<Float>) IFloatVector.of(value);
+    }
+
+    /**
+     * 向量工厂方法（两个Float值） / Vector factory method (two Float values)
+     * <p>
+     * 创建包含两个Float值的向量 Creates a vector containing two Float values
+     * </p>
+     *
+     * @param value1 第一个值 / First value
+     * @param value2 第二个值 / Second value
+     * @return 包含两个值的向量 / Vector containing two values
+     */
+    public static IVector<Float> of(Float value1, Float value2) {
+        return (IVector<Float>) IFloatVector.of(value1, value2);
+    }
+
+    // ========== 范围向量创建 / Range Vector Creation ==========
+    
+    /**
+     * 创建指定类型的范围向量（带步长） / Create range vector of specified type (with step)
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param step 步长 / Step size
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     * @throws IllegalArgumentException 如果step为0或负数 / if step is 0 or negative
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> range(int start, int end, int step, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.range(start, end, step);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.range(start, end, step);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
+
+    /**
+     * 创建范围向量（带步长，默认Double类型） / Create range vector (with step, default Double type)
      * <p>
      * 创建一个从start到end（不包含end）、步长为step的向量 Creates a vector from start to end
      * (exclusive) with specified step
@@ -165,12 +254,36 @@ public interface IVector {
      * @return 范围向量 / Range vector
      * @throws IllegalArgumentException 如果step为0或负数 / if step is 0 or negative
      */
-    public static IVector range(int start, int end, int step) {
-        return LAs.range(start, end, step);
+    public static IVector<Double> range(int start, int end, int step) {
+        return (IVector<Double>) IDoubleVector.range(start, end, step);
     }
 
     /**
-     * 创建范围向量（步长为1） / Create range vector (step size 1)
+     * 创建指定类型的范围向量（步长为1） / Create range vector of specified type (step size 1)
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> range(int start, int end, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.range(start, end);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.range(start, end);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
+
+    /**
+     * 创建范围向量（步长为1，默认Double类型） / Create range vector (step size 1, default Double type)
      * <p>
      * 创建一个从start到end（不包含end）、步长为1的向量 Creates a vector from start to end
      * (exclusive) with step size 1
@@ -180,12 +293,35 @@ public interface IVector {
      * @param end 结束值（不包含） / End value (exclusive)
      * @return 范围向量 / Range vector
      */
-    public static IVector range(int start, int end) {
-        return LAs.range(start, end);
+    public static IVector<Double> range(int start, int end) {
+        return (IVector<Double>) IDoubleVector.range(start, end);
     }
 
     /**
-     * 创建范围向量（从0开始） / Create range vector (starting from 0)
+     * 创建指定类型的范围向量（从0开始） / Create range vector of specified type (starting from 0)
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> range(int end, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.range(end);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.range(end);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
+
+    /**
+     * 创建范围向量（从0开始，默认Double类型） / Create range vector (starting from 0, default Double type)
      * <p>
      * 创建一个从0到end（不包含end）、步长为1的向量 Creates a vector from 0 to end (exclusive)
      * with step size 1
@@ -194,479 +330,279 @@ public interface IVector {
      * @param end 结束值（不包含） / End value (exclusive)
      * @return 范围向量 / Range vector
      */
-    public static IVector range(int end) {
-        return LAs.range(end);
+    public static IVector<Double> range(int end) {
+        return (IVector<Double>) IDoubleVector.range(end);
+    }
+
+    // ========== 特殊向量创建 / Special Vector Creation ==========
+    
+    /**
+     * 创建指定类型的全1向量 / Create ones vector of specified type
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param len 向量长度 / Vector length
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 全1向量 / Ones vector
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> ones(int len, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.ones(len);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.ones(len);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
     }
 
     /**
-     * 创建全1向量 / Create ones vector
+     * 创建全1向量（默认Double类型） / Create ones vector (default Double type)
      * <p>
      * 创建一个指定长度的向量，所有元素都为1 Creates a vector of specified length with all
      * elements set to 1
      * </p>
      *
-     * @param len 向量长度 / IVector length
+     * @param len 向量长度 / Vector length
      * @return 全1向量 / Ones vector
-     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or
-     * equal to 0
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
      */
-    public static IVector ones(int len) {
-        return LAs.ones(len);
+    static IVector<Double> ones(int len) {
+        return (IVector<Double>) IDoubleVector.ones(len);
     }
 
     /**
-     * 创建零向量 / Create zeros vector
+     * 创建指定类型的零向量 / Create zeros vector of specified type
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param len 向量长度 / Vector length
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 零向量 / Zeros vector
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> zeros(int len, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.zeros(len);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.zeros(len);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
+
+    /**
+     * 创建零向量（默认Double类型） / Create zeros vector (default Double type)
      * <p>
      * 创建一个指定长度的向量，所有元素都为0 Creates a vector of specified length with all
      * elements set to 0
      * </p>
      *
-     * @param len 向量长度 / IVector length
+     * @param len 向量长度 / Vector length
      * @return 零向量 / Zeros vector
-     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or
-     * equal to 0
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
      */
-    public static IVector zeros(int len) {
-        return LAs.zeros(len);
+    static IVector<Double> zeros(int len) {
+        return (IVector<Double>) IDoubleVector.zeros(len);
+    }
+
+    // ========== 随机数生成 / Random Number Generation ==========
+    
+    /**
+     * 创建指定类型的随机向量 / Create random vector of specified type
+     * <p>
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
+     * </p>
+     *
+     * @param length 向量长度 / Vector length
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 随机向量 / Random vector
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> rand(int length, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.rand(length);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.rand(length);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
     }
 
     /**
-     * 向量减法运算 / Vector subtraction
+     * 创建随机向量（默认Double类型） / Create random vector (default Double type)
      * <p>
-     * 对应元素相减，要求两个向量长度相同 Element-wise subtraction, requires both vectors to have
-     * the same length
+     * 创建指定长度的随机向量，元素值在[0,1)范围内 Creates a random vector of specified length with
+     * elements in [0,1) range
      * </p>
      *
-     * @param vec 另一个向量 / The other vector
-     * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param length 向量长度 / Vector length
+     * @return 随机向量 / Random vector
+     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or equal to 0
      */
-    public IVector sub(IVector vec);
+    static IVector<Double> rand(int length) {
+        return (IVector<Double>) IDoubleVector.rand(length);
+    }
 
     /**
-     * 向量加法运算 / Vector addition
+     * 创建指定类型的正态分布随机向量 / Create normal distribution random vector of specified type
      * <p>
-     * 对应元素相加，要求两个向量长度相同 Element-wise addition, requires both vectors to have
-     * the same length
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
      * </p>
      *
-     * @param vec 另一个向量 / The other vector
-     * @return 新的向量对象，包含加法结果 / New vector object containing addition result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param length 向量长度 / Vector length
+     * @param mean 均值 / Mean
+     * @param std 标准差 / Standard deviation
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 正态分布随机向量 / Normal distribution random vector
+     * @throws IllegalArgumentException 如果长度小于等于0或标准差小于等于0 / if length is less than or equal to 0 or std is less than or equal to 0
      */
-    public IVector add(IVector vec);
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> randn(int length, T mean, T std, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.randn(length, (Float) mean, (Float) std);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.randn(length, (Double) mean, (Double) std);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
 
     /**
-     * 向量乘法运算（元素级） / Vector multiplication (element-wise)
+     * 创建正态分布随机向量（默认Double类型） / Create normal distribution random vector (default Double type)
      * <p>
-     * 对应元素相乘，要求两个向量长度相同 Element-wise multiplication, requires both vectors to
-     * have the same length
+     * 创建指定长度的正态分布随机向量 Creates a normal distribution random vector of specified
+     * length
      * </p>
      *
-     * @param vec 另一个向量 / The other vector
-     * @return 新的向量对象，包含乘法结果 / New vector object containing multiplication
-     * result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param length 向量长度 / Vector length
+     * @param mean 均值 / Mean
+     * @param std 标准差 / Standard deviation
+     * @return 正态分布随机向量 / Normal distribution random vector
+     * @throws IllegalArgumentException 如果长度小于等于0或标准差小于等于0 / if length is less than or equal to 0 or std is less than or equal to 0
      */
-    public IVector multiply(IVector vec);
+    static IVector<Double> randn(int length, Double mean, Double std) {
+        return (IVector<Double>) IDoubleVector.randn(length, mean, std);
+    }
 
+    // ========== 线性空间生成 / Linear Space Generation ==========
+    
     /**
-     * 向量内积运算 / Vector inner product
+     * 创建指定类型的线性空间向量 / Create linear space vector of specified type
      * <p>
-     * 计算两个向量的内积（点积），要求两个向量长度相同 Computes the inner product (dot product) of two
-     * vectors, requires both vectors to have the same length
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
      * </p>
      *
-     * @param vec 另一个向量 / The other vector
-     * @return 内积结果 / Inner product result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param start 起始值 / Start value
+     * @param stop 结束值 / Stop value
+     * @param num 元素数量 / Number of elements
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 线性空间向量 / Linear space vector
+     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is less than 2
      */
-    public float innerProduct(IVector vec);
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> linspace(T start, T stop, int num, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.linspace((Float) start, (Float) stop, num);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.linspace((Double) start, (Double) stop, num);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
 
     /**
-     * 向量内积运算 / Vector inner product innerProduct的别名（适配NumPy名称）
-     *
-     * @param vec 另一个向量 / The other vector
-     * @return 内积结果 / Inner product result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
-     */
-    public float dot(IVector vec);
-
-    /**
-     * 向量与矩阵的点积 / Vector-matrix dot product
+     * 创建线性空间向量（默认Double类型） / Create linear space vector (default Double type)
      * <p>
-     * 计算向量与矩阵的点积，向量长度必须与矩阵行数相等 Computes the dot product of vector and matrix,
-     * vector length must equal matrix row count
+     * 创建指定数量的等间距数值向量 Creates a vector with specified number of equally spaced
+     * values
      * </p>
      *
-     * @param m 矩阵 / IMatrix
-     * @return 结果矩阵 / Result matrix
-     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length
-     * doesn't match matrix row count
+     * @param start 起始值 / Start value
+     * @param stop 结束值 / Stop value
+     * @param num 元素数量 / Number of elements
+     * @return 线性空间向量 / Linear space vector
+     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is less than 2
      */
-    public IMatrix dot(IMatrix m);
+    static IVector<Double> linspace(Double start, Double stop, int num) {
+        return (IVector<Double>) IDoubleVector.linspace(start, stop, num);
+    }
 
     /**
-     * 向量相等比较 / Vector equality comparison
+     * 创建指定类型的对数空间向量 / Create logarithmic space vector of specified type
      * <p>
-     * 对应元素进行相等比较，返回布尔数组 Element-wise equality comparison, returns boolean array
+     * 此方法提供泛型支持，具体实现由子接口提供 This method provides generic support, concrete
+     * implementation provided by sub-interfaces
      * </p>
      *
-     * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示对应位置元素是否相等 / Boolean array indicating whether
-     * corresponding elements are equal
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param start 起始值（type^start） / Start value (type^start)
+     * @param stop 结束值（type^stop） / Stop value (type^stop)
+     * @param num 元素数量 / Number of elements
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 对数空间向量 / Logarithmic space vector
+     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is less than 2
      */
-    public boolean[] equals(IVector other);
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IVector<T> logspace(T start, T stop, int num, Class<T> type) {
+        if (type == Float.class) {
+            return (IVector<T>) IFloatVector.logspace((Float) start, (Float) stop, num);
+        } else if (type == Double.class) {
+            return (IVector<T>) IDoubleVector.logspace((Double) start, (Double) stop, num);
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
 
     /**
-     * 向量小于比较 / Vector less-than comparison
+     * 创建对数空间向量（默认Double类型） / Create logarithmic space vector (default Double type)
      * <p>
-     * 对应元素进行小于比较，返回布尔数组 Element-wise less-than comparison, returns boolean
-     * array
+     * 创建指定数量的对数等间距数值向量 Creates a vector with specified number of
+     * logarithmically equally spaced values
      * </p>
      *
-     * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示对应位置元素是否小于 / Boolean array indicating whether
-     * corresponding elements are less than
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @param start 起始值（10^start） / Start value (10^start)
+     * @param stop 结束值（10^stop） / Stop value (10^stop)
+     * @param num 元素数量 / Number of elements
+     * @return 对数空间向量 / Logarithmic space vector
+     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is less than 2
      */
-    public boolean[] lessThan(IVector other);
+    static IVector<Double> logspace(Double start, Double stop, int num) {
+        return (IVector<Double>) IDoubleVector.logspace(start, stop, num);
+    }
+
+    // ========== 向量实例方法 / Vector Instance Methods ==========
+
+    // 工厂方法将在具体实现类中定义
+
+    // ========== 抽象方法定义 / Abstract Method Definitions ==========
+
+
 
     /**
-     * 向量大于比较 / Vector greater-than comparison
+     * 获取向量长度 / Get vector length
      * <p>
-     * 对应元素进行大于比较，返回布尔数组 Element-wise greater-than comparison, returns boolean
-     * array
+     * 返回向量的长度（元素个数） Returns the length (number of elements) of the vector
      * </p>
      *
-     * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示对应位置元素是否大于 / Boolean array indicating whether
-     * corresponding elements are greater than
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @return 向量长度 / Vector length
      */
-    public boolean[] greaterThan(IVector other);
-
-    /**
-     * 向量减标量 / Vector sub scalar
-     * <p>
-     * 向量中每个元素减去标量值 Subtracts a scalar value from each element in the vector
-     * </p>
-     *
-     * @param p 标量值 / Scalar value
-     * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
-     */
-    public IVector subScalar(float p);
-
-    /**
-     * 向量加标量 / Vector plus scalar
-     * <p>
-     * 向量中每个元素加上标量值 Adds a scalar value to each element in the vector
-     * </p>
-     *
-     * @param p 标量值 / Scalar value
-     * @return 新的向量对象，包含加法结果 / New vector object containing addition result
-     */
-    public IVector addScalar(float p);
-
-    /**
-     * 向量乘标量 / Vector multiply scalar
-     * <p>
-     * 向量中每个元素乘以标量值 Multiplies each element in the vector by a scalar value
-     * </p>
-     *
-     * @param p 标量值 / Scalar value
-     * @return 新的向量对象，包含乘法结果 / New vector object containing multiplication
-     * result
-     */
-    public IVector multiplyScalar(float p);
-
-    /**
-     * 向量除标量 / Vector divide by scalar
-     * <p>
-     * 向量中每个元素除以标量值 Divides each element in the vector by a scalar value
-     * </p>
-     *
-     * @param p 标量值 / Scalar value
-     * @return 新的向量对象，包含除法结果 / New vector object containing division result
-     * @throws ArithmeticException 如果标量为零 / if scalar is zero
-     */
-    public IVector divideByScalar(float p);
-
-    /**
-     * 向量元素求和 / Vector sum
-     * <p>
-     * 计算向量中所有元素的和 Calculates the sum of all elements in the vector
-     * </p>
-     *
-     * @return 元素和 / Sum of elements
-     */
-    public float sum();
-
-    /**
-     * 向量最小值 / Vector minimum
-     * <p>
-     * 找到向量中的最小元素值 Finds the minimum element value in the vector
-     * </p>
-     *
-     * @return 最小值 / Minimum value
-     */
-    public float min();
-
-    /**
-     * 向量最大值 / Vector maximum
-     * <p>
-     * 找到向量中的最大元素值 Finds the maximum element value in the vector
-     * </p>
-     *
-     * @return 最大值 / Maximum value
-     */
-    public float max();
-
-    /**
-     * 最小值索引 / Index of minimum value
-     * <p>
-     * 返回向量中最小元素的索引位置 Returns the index position of the minimum element in the
-     * vector
-     * </p>
-     *
-     * @return 最小值的索引 / Index of minimum value
-     */
-    public int argMin();
-
-    /**
-     * 最大值索引 / Index of maximum value
-     * <p>
-     * 返回向量中最大元素的索引位置 Returns the index position of the maximum element in the
-     * vector
-     * </p>
-     *
-     * @return 最大值的索引 / Index of maximum value
-     */
-    public int argMax();
-
-    /**
-     * 向量均值 / Vector mean
-     * <p>
-     * 计算向量中所有元素的平均值 Calculates the mean of all elements in the vector
-     * </p>
-     *
-     * @return 平均值 / Mean value
-     */
-    public float mean();
-
-    /**
-     * 向量标准差 / Vector standard deviation
-     * <p>
-     * 计算向量的标准差（除以N） Calculates the standard deviation of the vector (divided by
-     * N)
-     * </p>
-     *
-     * @return 标准差 / Standard deviation
-     */
-    public float std();
-
-    /**
-     * 向量标准差（自由度修正） / Vector standard deviation (degrees of freedom correction)
-     * <p>
-     * 计算向量的标准差，使用自由度修正（除以N-ddof） Calculates the standard deviation of the
-     * vector with degrees of freedom correction (divided by N-ddof)
-     * </p>
-     *
-     * @param ddof 自由度修正值 / Degrees of freedom correction
-     * @return 标准差 / Standard deviation
-     */
-    public float std(int ddof);
-
-    /**
-     * 向量方差 / Vector variance
-     * <p>
-     * 计算向量的方差（除以N） Calculates the variance of the vector (divided by N)
-     * </p>
-     *
-     * @return 方差 / Variance
-     */
-    public float var();
-
-    /**
-     * 向量方差（自由度修正） / Vector variance (degrees of freedom correction)
-     * <p>
-     * 计算向量的方差，使用自由度修正（除以N-ddof） Calculates the variance of the vector with
-     * degrees of freedom correction (divided by N-ddof)
-     * </p>
-     *
-     * @param ddof 自由度修正值 / Degrees of freedom correction
-     * @return 方差 / Variance
-     */
-    public float var(int ddof);
-
-    /**
-     * 向量偏度 / Vector skewness
-     * <p>
-     * 计算向量的偏度，衡量数据分布的不对称性 偏度 = E[(X-μ)³] / σ³，其中μ是均值，σ是标准差 Calculates the
-     * skewness of the vector, measuring the asymmetry of data distribution
-     * Skewness = E[(X-μ)³] / σ³, where μ is mean and σ is standard deviation
-     * </p>
-     *
-     * @return 偏度值 / Skewness value
-     * @throws ArithmeticException 如果向量长度小于3或标准差为0 / if vector length is less
-     * than 3 or standard deviation is 0
-     */
-    public float skewness();
-
-    /**
-     * 向量峰度 / Vector kurtosis
-     * <p>
-     * 计算向量的峰度，衡量数据分布的尖锐程度 峰度 = E[(X-μ)⁴] / σ⁴ - 3，其中μ是均值，σ是标准差 减去3是为了使正态分布的峰度为0
-     * Calculates the kurtosis of the vector, measuring the peakedness of data
-     * distribution Kurtosis = E[(X-μ)⁴] / σ⁴ - 3, where μ is mean and σ is
-     * standard deviation Subtracting 3 makes normal distribution kurtosis equal
-     * to 0
-     * </p>
-     *
-     * @return 峰度值 / Kurtosis value
-     * @throws ArithmeticException 如果向量长度小于4或标准差为0 / if vector length is less
-     * than 4 or standard deviation is 0
-     */
-    public float kurtosis();
-
-    /**
-     * 向量元素乘积 / Vector product
-     * <p>
-     * 计算向量中所有元素的乘积 Calculates the product of all elements in the vector
-     * </p>
-     *
-     * @return 元素乘积 / Product of elements
-     */
-    public float prod();
-
-    /**
-     * 向量裁剪 / Vector clipping
-     * <p>
-     * 将向量中的元素值限制在指定范围内 Clips vector elements to the specified range
-     * </p>
-     *
-     * @param lower 下界 / Lower bound
-     * @param upper 上界 / Upper bound
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
-     * @throws IllegalArgumentException 如果lower > upper / if lower > upper
-     */
-    public IVector clip(float lower, float upper);
-
-    /**
-     * 向量峰峰值 / Vector peak-to-peak value
-     * <p>
-     * 计算向量的峰峰值（最大值减最小值） Calculates the peak-to-peak value of the vector (max -
-     * min)
-     * </p>
-     *
-     * @return 峰峰值 / Peak-to-peak value
-     */
-    public float ptp();
-
-    /**
-     * 向量绝对值 / Vector absolute value
-     * <p>
-     * 对向量中每个元素取绝对值 Takes the absolute value of each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含绝对值结果 / New vector object containing absolute value
-     * results
-     */
-    public IVector abs();
-
-    /**
-     * 向量开方 / Vector square root
-     * <p>
-     * 对向量中每个元素进行开方运算 Performs square root operation on each element in the
-     * vector
-     * </p>
-     *
-     * @return 新的向量对象，包含开方结果 / New vector object containing square root results
-     * @throws ArithmeticException 如果元素值为负数 / if any element value is negative
-     */
-    public IVector sqrt();
-
-    /**
-     * 向量平方 / Vector square
-     * <p>
-     * 对向量中每个元素进行平方运算 Performs square operation on each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含平方结果 / New vector object containing square results
-     */
-    public IVector squre();
-
-    /**
-     * 向量指数运算 / Vector exponential
-     * <p>
-     * 对向量中每个元素进行指数运算（e^x） Performs exponential operation (e^x) on each element
-     * in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含指数运算结果 / New vector object containing exponential
-     * results
-     */
-    public IVector exp();
-
-    /**
-     * 向量自然对数 / Vector natural logarithm
-     * <p>
-     * 对向量中每个元素进行自然对数运算（ln(x)） Performs natural logarithm operation (ln(x)) on
-     * each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含对数运算结果 / New vector object containing logarithm results
-     * @throws ArithmeticException 如果元素值小于等于0 / if any element value is less
-     * than or equal to 0
-     */
-    public IVector log();
-
-    /**
-     * 向量以10为底的对数 / Vector base-10 logarithm
-     * <p>
-     * 对向量中每个元素进行以10为底的对数运算（log10(x)） Performs base-10 logarithm operation
-     * (log10(x)) on each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含对数运算结果 / New vector object containing logarithm results
-     * @throws ArithmeticException 如果元素值小于等于0 / if any element value is less
-     * than or equal to 0
-     */
-    public IVector log10();
-
-    /**
-     * 向量幂运算 / Vector power operation
-     * <p>
-     * 对向量中每个元素进行幂运算（x^m） Performs power operation (x^m) on each element in the
-     * vector
-     * </p>
-     *
-     * @param m 幂指数 / Power exponent
-     * @return 新的向量对象，包含幂运算结果 / New vector object containing power operation
-     * results
-     */
-    public IVector pow(float m);
-
-    /**
-     * 向量取余运算 / Vector remainder operation
-     * <p>
-     * 对向量中每个元素进行取余运算 Performs remainder operation on each element in the vector
-     * </p>
-     *
-     * @param value 除数 / Divisor
-     * @return 新的向量对象，包含取余运算结果 / New vector object containing remainder results
-     * @throws ArithmeticException 如果除数为零 / if divisor is zero
-     */
-    public IVector remainder(float value);
+    public int length();
 
     /**
      * 获取指定位置的元素 / Get element at specified position
@@ -680,102 +616,7 @@ public interface IVector {
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
      * of bounds
      */
-    public float get(int position);
-
-    /**
-     * 向量切片（到指定结束位置） / Vector slice (to specified end position)
-     * <p>
-     * 返回从开始到指定结束位置的向量切片 Returns a vector slice from start to the specified end
-     * position
-     * </p>
-     *
-     * @param end 结束位置（不包含） / End position (exclusive)
-     * @return 切片向量 / Sliced vector
-     * @throws IndexOutOfBoundsException 如果结束位置超出范围 / if end position is out of
-     * bounds
-     */
-    public IVector slice(int end);
-
-    /**
-     * 向量切片（指定开始和结束位置） / Vector slice (specified start and end positions)
-     * <p>
-     * 返回从指定开始位置到结束位置的向量切片 Returns a vector slice from specified start position
-     * to end position
-     * </p>
-     *
-     * @param start 开始位置 / Start position
-     * @param end 结束位置（不包含） / End position (exclusive)
-     * @return 切片向量 / Sliced vector
-     * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
-     * out of bounds
-     */
-    public IVector slice(int start, int end);
-
-    /**
-     * 向量切片（指定开始、结束位置和步长） / Vector slice (specified start, end positions and
-     * step)
-     * <p>
-     * 返回从指定开始位置到结束位置、指定步长的向量切片，支持负数索引 Returns a vector slice from specified
-     * start position to end position with specified step, supports negative
-     * indexing
-     * </p>
-     *
-     * @param start 开始位置（支持负数索引） / Start position (supports negative indexing)
-     * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
-     * indexing)
-     * @param step 步长 / Step size
-     * @return 切片向量 / Sliced vector
-     * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
-     * out of bounds
-     * @throws IllegalArgumentException 如果步长小于等于0 / if step is less than or
-     * equal to 0
-     */
-    public IVector slice(int start, int end, int step);
-
-    /**
-     * 向量切片（字符串表达式） / Vector slice (string expression)
-     * <p>
-     * 根据切片表达式对向量进行切片操作，支持负数索引 Performs vector slicing based on slice
-     * expression, supports negative indexing
-     * </p>
-     *
-     * @param sliceExpression 切片表达式，如 "1:3", ":-1", "::2" / Slice expression,
-     * e.g. "1:3", ":-1", "::2"
-     * @return 切片向量 / Sliced vector
-     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is
-     * invalid
-     */
-    public IVector slice(String sliceExpression);
-
-    /**
-     * 花式索引 / Fancy indexing
-     * <p>
-     * 根据给定的位置数组获取对应位置的元素组成新向量 Gets elements at specified positions to form a
-     * new vector
-     * </p>
-     *
-     * @param positions 位置索引数组 / Array of position indices
-     * @return 新的向量对象，包含指定位置的元素 / New vector object containing elements at
-     * specified positions
-     * @throws IndexOutOfBoundsException 如果任何位置索引超出范围 / if any position index is
-     * out of bounds
-     */
-    public IVector fancyGet(int[] positions);
-
-    /**
-     * 布尔索引 / Boolean indexing
-     * <p>
-     * 根据布尔数组获取对应位置为true的元素组成新向量 Gets elements where the corresponding boolean
-     * index is true to form a new vector
-     * </p>
-     *
-     * @param booleanIndex 布尔索引数组 / Boolean index array
-     * @return 新的向量对象，包含布尔索引为true位置的元素 / New vector object containing elements
-     * where boolean index is true
-     * @throws IllegalArgumentException 如果布尔数组长度与向量长度不匹配 / if boolean array
-     * length doesn't match vector length
-     */
-    public IVector booleanGet(boolean[] booleanIndex);
+    public T get(int position);
 
     /**
      * 设置指定位置的元素 / Set element at specified position
@@ -790,7 +631,503 @@ public interface IVector {
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
      * of bounds
      */
-    public IVector set(int position, float value);
+    public IVector<T> set(int position, T value);
+
+    /**
+     * 向量加法运算 / Vector addition
+     * <p>
+     * 对应元素相加，要求两个向量长度相同 Element-wise addition, requires both vectors to have
+     * the same length
+     * </p>
+     *
+     * @param vec 另一个向量 / The other vector
+     * @return 新的向量对象，包含加法结果 / New vector object containing addition result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     */
+    public IVector<T> add(IVector<T> vec);
+
+    /**
+     * 向量减法运算 / Vector subtraction
+     * <p>
+     * 对应元素相减，要求两个向量长度相同 Element-wise subtraction, requires both vectors to have
+     * the same length
+     * </p>
+     *
+     * @param vec 另一个向量 / The other vector
+     * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     */
+    public IVector<T> sub(IVector<T> vec);
+
+    /**
+     * 向量乘法运算（元素级） / Vector multiplication (element-wise)
+     * <p>
+     * 对应元素相乘，要求两个向量长度相同 Element-wise multiplication, requires both vectors to
+     * have the same length
+     * </p>
+     *
+     * @param vec 另一个向量 / The other vector
+     * @return 新的向量对象，包含乘法结果 / New vector object containing multiplication
+     * result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     */
+    public IVector<T> multiply(IVector<T> vec);
+
+    /**
+     * 向量内积运算 / Vector inner product
+     * <p>
+     * 计算两个向量的内积（点积），要求两个向量长度相同 Computes the inner product (dot product) of two
+     * vectors, requires both vectors to have the same length
+     * </p>
+     *
+     * @param vec 另一个向量 / The other vector
+     * @return 内积结果 / Inner product result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     */
+    public T innerProduct(IVector<T> vec);
+
+    /**
+     * 向量内积运算 / Vector inner product innerProduct的别名（适配NumPy名称）
+     *
+     * @param vec 另一个向量 / The other vector
+     * @return 内积结果 / Inner product result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     */
+    public T dot(IVector<T> vec);
+
+    /**
+     * 向量加标量 / Vector plus scalar
+     * <p>
+     * 向量中每个元素加上标量值 Adds a scalar value to each element in the vector
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 新的向量对象，包含加法结果 / New vector object containing addition result
+     */
+    public IVector<T> addScalar(T p);
+
+    /**
+     * 向量减标量 / Vector sub scalar
+     * <p>
+     * 向量中每个元素减去标量值 Subtracts a scalar value from each element in the vector
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 新的向量对象，包含减法结果 / New vector object containing subtraction result
+     */
+    public IVector<T> subScalar(T p);
+
+    /**
+     * 向量乘标量 / Vector multiply scalar
+     * <p>
+     * 向量中每个元素乘以标量值 Multiplies each element in the vector by a scalar value
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 新的向量对象，包含乘法结果 / New vector object containing multiplication
+     * result
+     */
+    public IVector<T> multiplyScalar(T p);
+
+    /**
+     * 向量除标量 / Vector divide by scalar
+     * <p>
+     * 向量中每个元素除以标量值 Divides each element in the vector by a scalar value
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 新的向量对象，包含除法结果 / New vector object containing division result
+     * @throws ArithmeticException 如果标量为零 / if scalar is zero
+     */
+    public IVector<T> divideByScalar(T p);
+
+    /**
+     * 向量元素求和 / Vector sum
+     * <p>
+     * 计算向量中所有元素的和 Calculates the sum of all elements in the vector
+     * </p>
+     *
+     * @return 元素和 / Sum of elements
+     */
+    public T sum();
+
+    /**
+     * 向量最小值 / Vector minimum
+     * <p>
+     * 找到向量中的最小元素值 Finds the minimum element value in the vector
+     * </p>
+     *
+     * @return 最小值 / Minimum value
+     */
+    public T min();
+
+    /**
+     * 向量最大值 / Vector maximum
+     * <p>
+     * 找到向量中的最大元素值 Finds the maximum element value in the vector
+     * </p>
+     *
+     * @return 最大值 / Maximum value
+     */
+    public T max();
+
+    /**
+     * 向量均值 / Vector mean
+     * <p>
+     * 计算向量中所有元素的平均值 Calculates the mean of all elements in the vector
+     * </p>
+     *
+     * @return 平均值 / Mean value
+     */
+    public T mean();
+
+    /**
+     * 向量复制 / Vector copy
+     * <p>
+     * 创建向量的深拷贝 Creates a deep copy of the vector
+     * </p>
+     *
+     * @return 新的向量对象，与原向量内容相同 / New vector object with the same content as the
+     * original
+     */
+    public IVector<T> copy();
+
+    /**
+     * 向量切片（指定开始和结束位置） / Vector slice (specified start and end positions)
+     * <p>
+     * 返回从指定开始位置到结束位置的向量切片 Returns a vector slice from specified start position
+     * to end position
+     * </p>
+     *
+     * @param start 开始位置 / Start position
+     * @param end 结束位置（不包含） / End position (exclusive)
+     * @return 切片向量 / Sliced vector
+     * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
+     * out of bounds
+     */
+    public IVector<T> slice(int start, int end);
+
+    /**
+     * 向量切片（到指定结束位置） / Vector slice (to specified end position)
+     * <p>
+     * 返回从开始到指定结束位置的向量切片 Returns a vector slice from start to the specified end
+     * position
+     * </p>
+     *
+     * @param end 结束位置（不包含） / End position (exclusive)
+     * @return 切片向量 / Sliced vector
+     * @throws IndexOutOfBoundsException 如果结束位置超出范围 / if end position is out of
+     * bounds
+     */
+    public IVector<T> slice(int end);
+
+    /**
+     * 向量2范数 / Vector L2 norm
+     * <p>
+     * 计算向量的2范数（欧几里得范数） Calculates the L2 norm (Euclidean norm) of the vector
+     * </p>
+     *
+     * @return 2范数 / L2 norm
+     */
+    public T norm2();
+
+    /**
+     * 向量1范数 / Vector L1 norm
+     * <p>
+     * 计算向量的1范数（曼哈顿范数） Calculates the L1 norm (Manhattan norm) of the vector
+     * </p>
+     *
+     * @return 1范数 / L1 norm
+     */
+    public T norm1();
+
+    // ========== 扩展的统计操作 / Extended Statistical Operations ==========
+
+    /**
+     * 向量标准差 / Vector standard deviation
+     */
+    public T std();
+
+    /**
+     * 向量标准差（自由度修正） / Vector standard deviation (degrees of freedom correction)
+     */
+    public T std(int ddof);
+
+    /**
+     * 向量方差 / Vector variance
+     */
+    public T var();
+
+    /**
+     * 向量方差（自由度修正） / Vector variance (degrees of freedom correction)
+     */
+    public T var(int ddof);
+
+    /**
+     * 最小值索引 / Index of minimum value
+     */
+    public int argMin();
+
+    /**
+     * 最大值索引 / Index of maximum value
+     */
+    public int argMax();
+
+    /**
+     * 向量元素乘积 / Vector product
+     */
+    public T prod();
+
+    // ========== 数学函数 / Mathematical Functions ==========
+
+    /**
+     * 向量绝对值 / Vector absolute value
+     */
+    public IVector<T> abs();
+
+    /**
+     * 向量开方 / Vector square root
+     */
+    public IVector<T> sqrt();
+
+    /**
+     * 向量平方 / Vector square
+     */
+    public IVector<T> square();
+    
+
+    /**
+     * 向量指数运算 / Vector exponential
+     */
+    public IVector<T> exp();
+
+    /**
+     * 向量自然对数 / Vector natural logarithm
+     */
+    public IVector<T> log();
+
+    /**
+     * 向量以10为底的对数 / Vector base-10 logarithm
+     */
+    public IVector<T> log10();
+
+    /**
+     * 向量幂运算 / Vector power operation
+     */
+    public IVector<T> pow(T m);
+
+    // ========== 三角函数 / Trigonometric Functions ==========
+
+    /**
+     * 向量正弦函数 / Vector sine function
+     */
+    public IVector<T> sin();
+
+    /**
+     * 向量余弦函数 / Vector cosine function
+     */
+    public IVector<T> cos();
+
+    /**
+     * 向量正切函数 / Vector tangent function
+     */
+    public IVector<T> tan();
+
+    /**
+     * 向量反正弦函数 / Vector arcsine function
+     */
+    public IVector<T> arcsin();
+
+    /**
+     * 向量反余弦函数 / Vector arccosine function
+     */
+    public IVector<T> arccos();
+
+    /**
+     * 向量反正切函数 / Vector arctangent function
+     */
+    public IVector<T> arctan();
+
+    // ========== 双曲函数 / Hyperbolic Functions ==========
+
+    /**
+     * 向量双曲正弦函数 / Vector hyperbolic sine function
+     */
+    public IVector<T> sinh();
+
+    /**
+     * 向量双曲余弦函数 / Vector hyperbolic cosine function
+     */
+    public IVector<T> cosh();
+
+    /**
+     * 向量双曲正切函数 / Vector hyperbolic tangent function
+     */
+    public IVector<T> tanh();
+
+    // ========== 舍入函数 / Rounding Functions ==========
+
+    /**
+     * 向量四舍五入 / Vector round function
+     */
+    public IVector<T> round();
+
+    /**
+     * 向量向下取整 / Vector floor function
+     */
+    public IVector<T> floor();
+
+    /**
+     * 向量向上取整 / Vector ceiling function
+     */
+    public IVector<T> ceil();
+
+    /**
+     * 向量截断取整 / Vector truncate function
+     */
+    public IVector<T> trunc();
+
+    // ========== 高级索引和切片操作 / Advanced Indexing and Slicing ==========
+
+    /**
+     * 向量切片（指定开始、结束位置和步长） / Vector slice with step
+     */
+    public IVector<T> slice(int start, int end, int step);
+
+    /**
+     * 向量切片（字符串表达式） / Vector slice with string expression
+     */
+    public IVector<T> slice(String sliceExpression);
+
+    /**
+     * 花式索引 / Fancy indexing
+     */
+    public IVector<T> fancyGet(int[] positions);
+    
+    
+    
+    /**
+     * 向量元素倒数 / Vector reciprocal
+     * <p>
+     * 对向量中每个元素计算倒数（1/x） Computes the reciprocal (1/x) of each element in the vector
+     * </p>
+     *
+     * @return 新的向量对象，包含倒数结果 / New vector object containing reciprocal results
+     * @throws ArithmeticException 如果任何元素值为零 / if any element value is zero
+     */
+    public IVector<T> reciprocal();
+
+    /**
+     * 向量外积 / Vector outer product
+     * <p>
+     * 计算当前向量与另一个向量的外积（张量积） Computes the outer product (tensor product) of current vector with another vector
+     * </p>
+     *
+     * @param other 另一个向量 / The other vector
+     * @return 外积矩阵 / Outer product matrix
+     * @throws IllegalArgumentException 如果向量为null / if vector is null
+     */
+    public IMatrix<T> outer(IVector<T> other);
+    
+    
+    // ========== IVector<T> 特有方法 / IVector<T>-specific Methods ==========
+    // Note: 大部分方法现在在 IVector 中定义，这里保留类型特化的方法
+    // Note: Most methods are now defined in IVector, keeping type-specific methods here
+
+    /**
+     * 向量与矩阵的点积 / Vector-matrix dot product
+     */
+    public IMatrix<T> dot(IMatrix<T> m);
+
+    /**
+     * 向量相等比较 / Vector equality comparison
+     */
+    public boolean[] equals(IVector<T> other);
+
+    /**
+     * 向量小于比较 / Vector less-than comparison
+     */
+    public boolean[] lessThan(IVector<T> other);
+
+    /**
+     * 向量大于比较 / Vector greater-than comparison
+     */
+    public boolean[] greaterThan(IVector<T> other);
+
+
+
+    // Note: 基本数学函数、三角函数、双曲函数、舝入函数、切片操作等
+    // 现在都在 IVector 中定义，从 IVector<T> 继承
+    // Note: Basic math functions, trigonometric functions, hyperbolic functions, rounding functions, slicing operations
+    // are now defined in IVector and inherited by IVector<T>
+    
+    // ========== Float特有方法 / Float-specific Methods ==========
+
+    /**
+     * 向量裁剪 / Vector clipping
+     * <p>
+     * 将向量中的元素值限制在指定范围内 Clips vector elements to the specified range
+     * </p>
+     *
+     * @param lower 下界 / Lower bound
+     * @param upper 上界 / Upper bound
+     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
+     * @throws IllegalArgumentException 如果lower > upper / if lower > upper
+     */
+    public IVector<T> clip(T lower, T upper);
+
+    /**
+     * 向量峰峰值 / Vector peak-to-peak value
+     * <p>
+     * 计算向量的峰峰值（最大值减最小值） Calculates the peak-to-peak value of the vector (max -
+     * min)
+     * </p>
+     *
+     * @return 峰峰值 / Peak-to-peak value
+     */
+    public T ptp();
+
+    
+
+
+
+    
+
+    /**
+     * 向量取余运算 / Vector remainder operation
+     * <p>
+     * 对向量中每个元素进行取余运算 Performs remainder operation on each element in the vector
+     * </p>
+     *
+     * @param value 除数 / Divisor
+     * @return 新的向量对象，包含取余运算结果 / New vector object containing remainder results
+     * @throws ArithmeticException 如果除数为零 / if divisor is zero
+     */
+    public IVector<T> remainder(T value);
+
+    
+
+
+    /**
+     * 布尔索引 / Boolean indexing
+     * <p>
+     * 根据布尔数组获取对应位置为true的元素组成新向量 Gets elements where the corresponding boolean
+     * index is true to form a new vector
+     * </p>
+     *
+     * @param booleanIndex 布尔索引数组 / Boolean index array
+     * @return 新的向量对象，包含布尔索引为true位置的元素 / New vector object containing elements
+     * where boolean index is true
+     * @throws IllegalArgumentException 如果布尔数组长度与向量长度不匹配 / if boolean array
+     * length doesn't match vector length
+     */
+    public IVector<T> booleanGet(boolean[] booleanIndex);
+
 
     /**
      * 范围设置值（带步长） / Range set values (with step)
@@ -809,7 +1146,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
      * doesn't match
      */
-    public IVector setFromTo(int start, int end, int step, float[] values);
+    public IVector<T> setFromTo(int start, int end, int step, T[] values);
 
     /**
      * 范围设置值 / Range set values
@@ -827,7 +1164,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
      * doesn't match
      */
-    public IVector setFromTo(int start, int end, float[] values);
+    public IVector<T> setFromTo(int start, int end, T[] values);
 
     /**
      * 向量填充 / Vector fill
@@ -838,27 +1175,9 @@ public interface IVector {
      * @param value 填充值 / Fill value
      * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      */
-    public IVector fill(float value);
+    public IVector<T> fill(T value);
 
-    /**
-     * 向量2范数 / Vector L2 norm
-     * <p>
-     * 计算向量的2范数（欧几里得范数） Calculates the L2 norm (Euclidean norm) of the vector
-     * </p>
-     *
-     * @return 2范数 / L2 norm
-     */
-    public float norm2();
 
-    /**
-     * 向量1范数 / Vector L1 norm
-     * <p>
-     * 计算向量的1范数（曼哈顿范数） Calculates the L1 norm (Manhattan norm) of the vector
-     * </p>
-     *
-     * @return 1范数 / L1 norm
-     */
-    public float norm1();
 
     /**
      * 向量排序 / Vector sorting
@@ -868,7 +1187,7 @@ public interface IVector {
      *
      * @return 排序后的向量（就地操作） / Sorted vector (in-place operation)
      */
-    public IVector sort();
+    public IVector<T> sort();
 
     /**
      * 向量反转 / Vector reverse
@@ -878,28 +1197,9 @@ public interface IVector {
      *
      * @return 反转后的向量（就地操作） / Reversed vector (in-place operation)
      */
-    public IVector reverse();
+    public IVector<T> reverse();
 
-    /**
-     * 获取向量数据数组 / Get vector data array
-     * <p>
-     * 返回向量的内部数据数组引用 Returns a reference to the internal data array of the
-     * vector
-     * </p>
-     *
-     * @return 向量的数据数组 / Data array of the vector
-     */
-    public float[] getData();
 
-    /**
-     * 获取向量长度 / Get vector length
-     * <p>
-     * 返回向量的长度（元素个数） Returns the length (number of elements) of the vector
-     * </p>
-     *
-     * @return 向量长度 / IVector length
-     */
-    public int length();
 
     /**
      * 获取向量长度 / Get vector size (The same as length)
@@ -907,21 +1207,14 @@ public interface IVector {
      * 返回向量的长度（元素个数） Returns the size (number of elements) of the vector
      * </p>
      *
-     * @return 向量长度 / IVector size
+     * @return 向量长度 / IVector<T> size
      */
     public int size();
 
-    /**
-     * 向量复制 / Vector copy
-     * <p>
-     * 创建向量的深拷贝 Creates a deep copy of the vector
-     * </p>
-     *
-     * @return 新的向量对象，与原向量内容相同 / New vector object with the same content as the
-     * original
-     */
-    public IVector copy();
 
+
+    
+    
     /**
      * 转换为整数数组 / Convert to integer array
      * <p>
@@ -930,7 +1223,7 @@ public interface IVector {
      *
      * @return 整数数组 / Integer array
      */
-    public int[] asIntArray();
+    public int[] toIntArray();
 
     /**
      * 转换为双精度数组 / Convert to double array
@@ -940,7 +1233,9 @@ public interface IVector {
      *
      * @return 双精度数组 / Double array
      */
-    public double[] asDoubleArray();
+    public double[] toDoubleArray();
+    
+    public float[] toFloatArray();
 
     /**
      * 计算与另一个向量的欧几里得距离 / Compute Euclidean distance to another vector
@@ -954,7 +1249,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public float euclideanDistance(IVector other);
+    public T euclideanDistance(IVector<T> other);
 
     /**
      * 计算与另一个向量的曼哈顿距离 / Compute Manhattan distance to another vector
@@ -968,7 +1263,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public float manhattanDistance(IVector other);
+    public T manhattanDistance(IVector<T> other);
 
     /**
      * 计算与另一个向量的余弦相似度 / Compute cosine similarity to another vector
@@ -983,152 +1278,12 @@ public interface IVector {
      * match
      * @throws ArithmeticException 如果向量长度为零 / if vector norm is zero
      */
-    public float cosineSimilarity(IVector other);
+    public T cosineSimilarity(IVector<T> other);
 
     // ========== 三角函数操作 / Trigonometric Functions ==========
-    /**
-     * 向量正弦函数 / Vector sine function
-     * <p>
-     * 对向量中每个元素计算正弦值 Computes sine value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含正弦值结果 / New vector object containing sine results
-     */
-    public IVector sin();
 
-    /**
-     * 向量余弦函数 / Vector cosine function
-     * <p>
-     * 对向量中每个元素计算余弦值 Computes cosine value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含余弦值结果 / New vector object containing cosine results
-     */
-    public IVector cos();
 
-    /**
-     * 向量正切函数 / Vector tangent function
-     * <p>
-     * 对向量中每个元素计算正切值 Computes tangent value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含正切值结果 / New vector object containing tangent results
-     */
-    public IVector tan();
 
-    /**
-     * 向量反正弦函数 / Vector arcsine function
-     * <p>
-     * 对向量中每个元素计算反正弦值 Computes arcsine value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含反正弦值结果 / New vector object containing arcsine results
-     * @throws ArithmeticException 如果元素值超出[-1,1]范围 / if any element value is
-     * outside [-1,1] range
-     */
-    public IVector arcsin();
-
-    /**
-     * 向量反余弦函数 / Vector arccosine function
-     * <p>
-     * 对向量中每个元素计算反余弦值 Computes arccosine value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含反余弦值结果 / New vector object containing arccosine results
-     * @throws ArithmeticException 如果元素值超出[-1,1]范围 / if any element value is
-     * outside [-1,1] range
-     */
-    public IVector arccos();
-
-    /**
-     * 向量反正切函数 / Vector arctangent function
-     * <p>
-     * 对向量中每个元素计算反正切值 Computes arctangent value for each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含反正切值结果 / New vector object containing arctangent results
-     */
-    public IVector arctan();
-
-    // ========== 双曲函数 / Hyperbolic Functions ==========
-    /**
-     * 向量双曲正弦函数 / Vector hyperbolic sine function
-     * <p>
-     * 对向量中每个元素计算双曲正弦值 Computes hyperbolic sine value for each element in the
-     * vector
-     * </p>
-     *
-     * @return 新的向量对象，包含双曲正弦值结果 / New vector object containing hyperbolic sine
-     * results
-     */
-    public IVector sinh();
-
-    /**
-     * 向量双曲余弦函数 / Vector hyperbolic cosine function
-     * <p>
-     * 对向量中每个元素计算双曲余弦值 Computes hyperbolic cosine value for each element in the
-     * vector
-     * </p>
-     *
-     * @return 新的向量对象，包含双曲余弦值结果 / New vector object containing hyperbolic cosine
-     * results
-     */
-    public IVector cosh();
-
-    /**
-     * 向量双曲正切函数 / Vector hyperbolic tangent function
-     * <p>
-     * 对向量中每个元素计算双曲正切值 Computes hyperbolic tangent value for each element in the
-     * vector
-     * </p>
-     *
-     * @return 新的向量对象，包含双曲正切值结果 / New vector object containing hyperbolic
-     * tangent results
-     */
-    public IVector tanh();
-
-    // ========== 舍入函数 / Rounding Functions ==========
-    /**
-     * 向量四舍五入 / Vector round function
-     * <p>
-     * 对向量中每个元素进行四舍五入 Rounds each element in the vector to the nearest integer
-     * </p>
-     *
-     * @return 新的向量对象，包含四舍五入结果 / New vector object containing rounded results
-     */
-    public IVector round();
-
-    /**
-     * 向量向下取整 / Vector floor function
-     * <p>
-     * 对向量中每个元素进行向下取整 Rounds each element in the vector down to the nearest
-     * integer
-     * </p>
-     *
-     * @return 新的向量对象，包含向下取整结果 / New vector object containing floored results
-     */
-    public IVector floor();
-
-    /**
-     * 向量向上取整 / Vector ceiling function
-     * <p>
-     * 对向量中每个元素进行向上取整 Rounds each element in the vector up to the nearest
-     * integer
-     * </p>
-     *
-     * @return 新的向量对象，包含向上取整结果 / New vector object containing ceiling results
-     */
-    public IVector ceil();
-
-    /**
-     * 向量截断取整 / Vector truncate function
-     * <p>
-     * 对向量中每个元素进行截断取整（向零方向取整） Truncates each element in the vector towards zero
-     * </p>
-     *
-     * @return 新的向量对象，包含截断取整结果 / New vector object containing truncated results
-     */
-    public IVector trunc();
 
     // ========== 逻辑运算 / Logical Operations ==========
     /**
@@ -1144,7 +1299,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public IVector logicalAnd(IVector other);
+    public IVector<T> logicalAnd(IVector<T> other);
 
     /**
      * 向量逻辑或运算 / Vector logical OR operation
@@ -1159,7 +1314,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public IVector logicalOr(IVector other);
+    public IVector<T> logicalOr(IVector<T> other);
 
     /**
      * 向量逻辑非运算 / Vector logical NOT operation
@@ -1171,7 +1326,7 @@ public interface IVector {
      * @return 新的向量对象，包含逻辑非运算结果 / New vector object containing logical NOT
      * results
      */
-    public IVector logicalNot();
+    public IVector<T> logicalNot();
 
     /**
      * 向量逻辑异或运算 / Vector logical XOR operation
@@ -1186,7 +1341,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public IVector logicalXor(IVector other);
+    public IVector<T> logicalXor(IVector<T> other);
 
     // ========== 累积操作 / Cumulative Operations ==========
     /**
@@ -1198,7 +1353,7 @@ public interface IVector {
      * @return 新的向量对象，包含累积和结果 / New vector object containing cumulative sum
      * results
      */
-    public IVector cumsum();
+    public IVector<T> cumsum();
 
     /**
      * 向量累积乘积 / Vector cumulative product
@@ -1209,7 +1364,7 @@ public interface IVector {
      * @return 新的向量对象，包含累积乘积结果 / New vector object containing cumulative product
      * results
      */
-    public IVector cumprod();
+    public IVector<T> cumprod();
 
     // ========== 差分操作 / Difference Operations ==========
     /**
@@ -1221,7 +1376,7 @@ public interface IVector {
      *
      * @return 新的向量对象，包含差分结果 / New vector object containing difference results
      */
-    public IVector diff();
+    public IVector<T> diff();
 
     /**
      * 向量差分（指定阶数） / Vector difference (specified order)
@@ -1234,7 +1389,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果阶数小于1或大于等于向量长度 / if order is less than
      * 1 or greater than or equal to vector length
      */
-    public IVector diff(int n);
+    public IVector<T> diff(int n);
 
     // ========== 条件操作 / Conditional Operations ==========
     /**
@@ -1251,7 +1406,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果条件向量长度不匹配 / if condition vector length
      * doesn't match
      */
-    public IVector where(boolean[] condition, float x, float y);
+    public IVector<T> where(boolean[] condition, T x, T y);
 
     /**
      * 向量条件选择（向量值） / Vector where operation (vector values)
@@ -1268,7 +1423,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
      * match
      */
-    public IVector where(boolean[] condition, IVector x, IVector y);
+    public IVector<T> where(boolean[] condition, IVector<T> x, IVector<T> y);
 
     // ========== 重复和连接操作 / Repeat and Concatenation Operations ==========
     /**
@@ -1283,7 +1438,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果重复次数小于1 / if repeat count is less than
      * 1
      */
-    public IVector repeat(int repeats);
+    public IVector<T> repeat(int repeats);
 
     /**
      * 向量平铺 / Vector tile
@@ -1296,7 +1451,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果重复次数小于1 / if repeat count is less than
      * 1
      */
-    public IVector tile(int reps);
+    public IVector<T> tile(int reps);
 
     // ========== 统计扩展操作 / Extended Statistical Operations ==========
     /**
@@ -1307,7 +1462,7 @@ public interface IVector {
      *
      * @return 中位数 / Median value
      */
-    public float median();
+    public T median();
 
     /**
      * 向量百分位数 / Vector percentile
@@ -1321,7 +1476,7 @@ public interface IVector {
      * @throws IllegalArgumentException 如果百分位数超出[0,100]范围 / if percentile is
      * outside [0,100] range
      */
-    public float percentile(float q);
+    public T percentile(T q);
 
     /**
      * 向量众数 / Vector mode
@@ -1332,7 +1487,7 @@ public interface IVector {
      *
      * @return 众数 / Mode value
      */
-    public float mode();
+    public T mode();
 
     // ========== 线性代数扩展操作 / Extended Linear Algebra Operations ==========
     /**
@@ -1345,7 +1500,7 @@ public interface IVector {
      * @return p范数 / Lp norm
      * @throws IllegalArgumentException 如果p小于1 / if p is less than 1
      */
-    public float norm(float p);
+    public T norm(T p);
 
     /**
      * 向量无穷范数 / Vector L-infinity norm
@@ -1356,7 +1511,7 @@ public interface IVector {
      *
      * @return 无穷范数 / L-infinity norm
      */
-    public float normInf();
+    public T normInf();
 
     /**
      * 向量归一化 / Vector normalization
@@ -1368,128 +1523,66 @@ public interface IVector {
      * @return 新的向量对象，包含归一化结果 / New vector object containing normalized results
      * @throws ArithmeticException 如果向量L2范数为零 / if vector L2 norm is zero
      */
-    public IVector normalize();
+    public IVector<T> normalize();
 
-    // ========== 随机数生成 / Random Number Generation ==========
+    
     /**
-     * 创建随机向量 / Create random vector
+     * 计算向量偏度 / Calculate vector skewness
      * <p>
-     * 创建指定长度的随机向量，元素值在[0,1)范围内 Creates a random vector of specified length with
-     * elements in [0,1) range
+     * 计算向量中元素的偏度（三阶中心矩），用于衡量数据分布的对称性
+     * Calculates the skewness (third central moment) of elements in the vector,
+     * used to measure the symmetry of data distribution
+     * </p>
+     * <p>
+     * 偏度公式：skewness = E[(X - μ)³] / σ³
+     * Skewness formula: skewness = E[(X - μ)³] / σ³
+     * </p>
+     * <ul>
+     * <li>skewness = 0: 对称分布 / Symmetric distribution</li>
+     * <li>skewness > 0: 右偏分布（正偏） / Right-skewed distribution (positive skew)</li>
+     * <li>skewness < 0: 左偏分布（负偏） / Left-skewed distribution (negative skew)</li>
+     * </ul>
+     *
+     * @return 偏度值 / Skewness value
+     * @throws ArithmeticException 如果向量长度小于3或标准差为0 / if vector length is less than 3 or standard deviation is 0
+     */
+    public T skewness();
+    
+    /**
+     * 计算向量峰度 / Calculate vector kurtosis
+     * <p>
+     * 计算向量中元素的峰度（四阶中心矩），用于衡量数据分布的尖锐程度
+     * Calculates the kurtosis (fourth central moment) of elements in the vector,
+     * used to measure the sharpness of data distribution
+     * </p>
+     * <p>
+     * 峰度公式：kurtosis = E[(X - μ)⁴] / σ⁴ - 3
+     * Kurtosis formula: kurtosis = E[(X - μ)⁴] / σ⁴ - 3
+     * </p>
+     * <ul>
+     * <li>kurtosis = 0: 正态分布峰度 / Normal distribution kurtosis</li>
+     * <li>kurtosis > 0: 尖峰分布（重尾） / Leptokurtic distribution (heavy tails)</li>
+     * <li>kurtosis < 0: 平峰分布（轻尾） / Platykurtic distribution (light tails)</li>
+     * </ul>
+     *
+     * @return 峰度值 / Kurtosis value
+     * @throws ArithmeticException 如果向量长度小于4或标准差为0 / if vector length is less than 4 or standard deviation is 0
+     */
+    public T kurtosis();
+    
+    /**
+     * 作为列向量，实质是一个m*1的矩阵
+     * <p>
+     * 将向量转换为列向量矩阵，即m×1的矩阵，其中m是向量的长度。
+     * 向量的每个元素成为矩阵对应行的第一列元素。
+     * </p>
+     * <p>
+     * Converts the vector to a column vector matrix, i.e., an m×1 matrix where m is the vector length.
+     * Each element of the vector becomes the first column element of the corresponding row in the matrix.
      * </p>
      *
-     * @param length 向量长度 / IVector length
-     * @return 随机向量 / Random vector
-     * @throws IllegalArgumentException 如果长度小于等于0 / if length is less than or
-     * equal to 0
+     * @return 列向量矩阵（m×1）/ Column vector matrix (m×1)
      */
-    public static IVector rand(int length) {
-        return LAs.rand(length);
-    }
-
-    /**
-     * 创建正态分布随机向量 / Create normal distribution random vector
-     * <p>
-     * 创建指定长度的正态分布随机向量 Creates a normal distribution random vector of specified
-     * length
-     * </p>
-     *
-     * @param length 向量长度 / IVector length
-     * @param mean 均值 / Mean
-     * @param std 标准差 / Standard deviation
-     * @return 正态分布随机向量 / Normal distribution random vector
-     * @throws IllegalArgumentException 如果长度小于等于0或标准差小于等于0 / if length is less
-     * than or equal to 0 or std is less than or equal to 0
-     */
-    public static IVector randn(int length, float mean, float std) {
-        return LAs.randn(length, mean, std);
-    }
-
-    // ========== 线性空间生成 / Linear Space Generation ==========
-    /**
-     * 创建线性空间向量 / Create linear space vector
-     * <p>
-     * 创建指定数量的等间距数值向量 Creates a vector with specified number of equally spaced
-     * values
-     * </p>
-     *
-     * @param start 起始值 / Start value
-     * @param stop 结束值 / Stop value
-     * @param num 元素数量 / Number of elements
-     * @return 线性空间向量 / Linear space vector
-     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is
-     * less than 2
-     */
-    public static IVector linspace(float start, float stop, int num) {
-        return LAs.linspace(start, stop, num);
-    }
-
-    /**
-     * 创建对数空间向量 / Create logarithmic space vector
-     * <p>
-     * 创建指定数量的对数等间距数值向量 Creates a vector with specified number of
-     * logarithmically equally spaced values
-     * </p>
-     *
-     * @param start 起始值（10^start） / Start value (10^start)
-     * @param stop 结束值（10^stop） / Stop value (10^stop)
-     * @param num 元素数量 / Number of elements
-     * @return 对数空间向量 / Logarithmic space vector
-     * @throws IllegalArgumentException 如果元素数量小于2 / if number of elements is
-     * less than 2
-     */
-    public static IVector logspace(float start, float stop, int num) {
-        return LAs.logspace(start, stop, num);
-    }
-
-    /**
-     * 向量元素倒数 / Vector reciprocal
-     * <p>
-     * 对向量中每个元素计算倒数（1/x） Computes the reciprocal (1/x) of each element in the vector
-     * </p>
-     *
-     * @return 新的向量对象，包含倒数结果 / New vector object containing reciprocal results
-     * @throws ArithmeticException 如果任何元素值为零 / if any element value is zero
-     */
-    public IVector reciprocal();
-
-    /**
-     * 向量外积 / Vector outer product
-     * <p>
-     * 计算当前向量与另一个向量的外积（张量积） Computes the outer product (tensor product) of current vector with another vector
-     * </p>
-     *
-     * @param other 另一个向量 / The other vector
-     * @return 外积矩阵 / Outer product matrix
-     * @throws IllegalArgumentException 如果向量为null / if vector is null
-     */
-    public IMatrix outer(IVector other);
-
-    /**
-     * 向量工厂方法（单个值） / Vector factory method (single value)
-     * <p>
-     * 创建包含单个值的向量 Creates a vector containing a single value
-     * </p>
-     *
-     * @param value 单个值 / Single value
-     * @return 包含单个值的向量 / Vector containing single value
-     */
-    public static IVector of(float value) {
-        return LAs.vec(new float[]{value});
-    }
-
-    /**
-     * 向量工厂方法（两个值） / Vector factory method (two values)
-     * <p>
-     * 创建包含两个值的向量 Creates a vector containing two values
-     * </p>
-     *
-     * @param value1 第一个值 / First value
-     * @param value2 第二个值 / Second value
-     * @return 包含两个值的向量 / Vector containing two values
-     */
-    public static IVector of(float value1, float value2) {
-        return LAs.vec(new float[]{value1, value2});
-    }
+    public IMatrix<T> asColumnVector();
 
 }

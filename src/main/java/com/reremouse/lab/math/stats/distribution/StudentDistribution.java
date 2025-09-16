@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.distribution;
 
 import com.reremouse.lab.math.RereMathUtil;
-import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * t分布 (Student's t-Distribution)
@@ -23,12 +23,12 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     private static final long serialVersionUID = 1L;
     
     /** 自由度 / Degrees of freedom */
-    private final float degreesOfFreedom;
+    private final double degreesOfFreedom;
     
     /** 预计算的常数 / Precomputed constants */
-    private final float normalizationConstant;
-    private final float halfDof;
-    private final float halfDofPlusHalf;
+    private final double normalizationConstant;
+    private final double halfDof;
+    private final double halfDofPlusHalf;
     
     /**
      * 构造函数
@@ -37,7 +37,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @param degreesOfFreedom 自由度，必须大于0 / Degrees of freedom, must be greater than 0
      * @throws IllegalArgumentException 如果自由度小于等于0 / If degrees of freedom is less than or equal to 0
      */
-    public StudentDistribution(float degreesOfFreedom) {
+    public StudentDistribution(double degreesOfFreedom) {
         if (degreesOfFreedom <= 0) {
             throw new IllegalArgumentException("自由度必须大于0 / Degrees of freedom must be greater than 0");
         }
@@ -47,8 +47,10 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         
         // 计算归一化常数
         // Calculate normalization constant
-        this.normalizationConstant = (float) (RereMathUtil.gamma(halfDofPlusHalf) / 
-            (Math.sqrt(degreesOfFreedom * Math.PI) * RereMathUtil.gamma(halfDof)));
+        double x1 = RereMathUtil.gamma(halfDofPlusHalf);
+        double x2 = Math.sqrt(degreesOfFreedom * Math.PI) * RereMathUtil.gamma(halfDof);
+        
+        this.normalizationConstant = x1 / x2;
     }
     
     /**
@@ -59,9 +61,9 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 概率密度函数值 / PDF value
      */
     @Override
-    public float pdf(float x) {
-        float power = -(halfDofPlusHalf);
-        float base = 1.0f + (x * x) / degreesOfFreedom;
+    public double pdf(double x) {
+        double power = -(halfDofPlusHalf);
+        double base = 1.0f + (x * x) / degreesOfFreedom;
         return normalizationConstant * (float) Math.pow(base, power);
     }
     
@@ -73,17 +75,17 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 累积分布函数值 / CDF value
      */
     @Override
-    public float cdf(float x) {
+    public double cdf(double x) {
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return 0.5f * (1.0f + (float) RereMathUtil.erf(x / (float) Math.sqrt(2.0)));
+            return 0.5 * (1.0 + RereMathUtil.erf(x /  Math.sqrt(2.0)));
         }
         
         // 使用不完全贝塔函数
         // Using incomplete beta function
-        float t = x / (float) Math.sqrt(degreesOfFreedom + x * x);
-        return 0.5f + 0.5f * sign(x) * (float) RereMathUtil.incompleteBeta(halfDof, 0.5f, t * t);
+        double t = x / (float) Math.sqrt(degreesOfFreedom + x * x);
+        return 0.5 + 0.5 * sign(x) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
     }
     
     /**
@@ -94,18 +96,18 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 百分点函数值 / PPF value
      */
     @Override
-    public float ppf(float p) {
+    public double ppf(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
         
-        if (p == 0.0f) return Float.NEGATIVE_INFINITY;
-        if (p == 1.0f) return Float.POSITIVE_INFINITY;
+        if (p == 0.0f) return Double.NEGATIVE_INFINITY;
+        if (p == 1.0f) return Double.POSITIVE_INFINITY;
         
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return (float) RereMathUtil.inverseNormalCDF(p);
+            return RereMathUtil.inverseNormalCDF(p);
         }
         
         // 使用数值方法求解
@@ -121,7 +123,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 生存函数值 / Survival function value
      */
     @Override
-    public float sf(float x) {
+    public double sf(double x) {
         return 1.0f - cdf(x);
     }
     
@@ -133,7 +135,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 逆生存函数值 / Inverse survival function value
      */
     @Override
-    public float isf(float p) {
+    public double isf(double p) {
         return ppf(1.0f - p);
     }
     
@@ -143,7 +145,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * 
      * @return 自由度 / Degrees of freedom
      */
-    public float getDegreesOfFreedom() {
+    public double getDegreesOfFreedom() {
         return degreesOfFreedom;
     }
     
@@ -163,12 +165,12 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * 逆t分布累积分布函数的数值求解
      * Numerical solution for inverse t-distribution CDF
      */
-    private float inverseTCDF(float p) {
+    private double inverseTCDF(double p) {
         // 使用改进的二分法求解
         // Using improved bisection method to solve
-        float left = -10.0f;
-        float right = 10.0f;
-        float tolerance = 1e-8f;
+        double left = -10.0f;
+        double right = 10.0f;
+        double tolerance = 1e-8f;
         int maxIter = 200;
         
         // 调整边界以确保包含解
@@ -181,8 +183,8 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         }
         
         for (int i = 0; i < maxIter; i++) {
-            float mid = (left + right) / 2.0f;
-            float cdfMid = cdf(mid);
+            double mid = (left + right) / 2.0f;
+            double cdfMid = cdf(mid);
             
             if (Math.abs(cdfMid - p) < tolerance) {
                 return mid;
@@ -207,7 +209,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * 符号函数
      * Sign function
      */
-    private float sign(float x) {
+    private double sign(double x) {
         return x >= 0 ? 1.0f : -1.0f;
     }
     
@@ -218,11 +220,11 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 均值 / Mean
      */
     @Override
-    public float mean() {
+    public double mean() {
         if (degreesOfFreedom > 1) {
             return 0.0f; // t分布的均值为0
         }
-        return Float.NaN; // 当自由度 <= 1 时均值不存在
+        return Double.NaN; // 当自由度 <= 1 时均值不存在
     }
     
     /**
@@ -232,11 +234,11 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
+    public double var() {
         if (degreesOfFreedom > 2) {
             return degreesOfFreedom / (degreesOfFreedom - 2.0f);
         }
-        return Float.NaN; // 当自由度 <= 2 时方差不存在
+        return Double.NaN; // 当自由度 <= 2 时方差不存在
     }
     
     /**
@@ -246,10 +248,10 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
-        float variance = var();
-        if (Float.isNaN(variance)) {
-            return Float.NaN;
+    public double std() {
+        double variance = var();
+        if (Double.isNaN(variance)) {
+            return Double.NaN;
         }
         return (float) Math.sqrt(variance);
     }
@@ -261,7 +263,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 中位数 / Median
      */
     @Override
-    public float median() {
+    public double median() {
         return 0.0f; // t分布的中位数为0
     }
     
@@ -272,7 +274,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 众数 / Mode
      */
     @Override
-    public float mode() {
+    public double mode() {
         return 0.0f; // t分布的众数为0
     }
     
@@ -283,7 +285,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 第一四分位数 / First quartile
      */
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
@@ -294,7 +296,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 第三四分位数 / Third quartile
      */
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
@@ -305,7 +307,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 偏度 / Skewness
      */
     @Override
-    public float skewness() {
+    public double skewness() {
         return 0.0f; // t分布是对称的，偏度为0
     }
     
@@ -316,11 +318,11 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 峰度 / Kurtosis
      */
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         if (degreesOfFreedom > 4) {
             return 6.0f / (degreesOfFreedom - 4.0f);
         }
-        return Float.NaN; // 当自由度 <= 4 时峰度不存在
+        return Double.NaN; // 当自由度 <= 4 时峰度不存在
     }
     
     // 缓存的分布对象，避免重复创建
@@ -335,7 +337,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 随机样本 / Random sample
      */
     @Override
-    public float sample() {
+    public double sample() {
         // 使用正态分布和卡方分布生成t分布随机数
         // Using normal and chi-squared distributions to generate t-distribution random numbers
         if (normal == null) {
@@ -345,8 +347,8 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
             chi2 = new Chi2Distribution(degreesOfFreedom);
         }
         
-        float z = normal.sample();
-        float chi2Sample = chi2.sample();
+        double z = normal.sample();
+        double chi2Sample = chi2.sample();
         
         return z / (float) Math.sqrt(chi2Sample / degreesOfFreedom);
     }
@@ -359,14 +361,14 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @return 随机样本数组 / Array of random samples
      */
     @Override
-    public float[] sample(int n) {
+    public double[] sample(int n) {
         if (n <= 0) {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
         // 使用IVector进行数组操作
-        // Using IVector for array operations
-        IVector samples = IVector.zeros(n);
+        // Using IDoubleVector for array operations
+        IDoubleVector samples = IDoubleVector.zeros(n);
         for (int i = 0; i < n; i++) {
             samples.set(i, sample());
         }

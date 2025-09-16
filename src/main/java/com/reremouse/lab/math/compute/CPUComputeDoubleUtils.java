@@ -1,11 +1,12 @@
 package com.reremouse.lab.math.compute;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.util.Tuple3;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * CPU计算工具类（CPU Computing Utilities）
@@ -58,7 +59,7 @@ import com.reremouse.lab.util.Tuple3;
  * @version 1.0
  * @since 1.0
  */
-public class CPUComputeUtils {
+public class CPUComputeDoubleUtils {
     
     // ========== 矩阵运算 / Matrix Operations ==========
     
@@ -97,7 +98,7 @@ public class CPUComputeUtils {
      * @return 新的矩阵对象，包含加法运算结果
      * @throws IllegalArgumentException 当输入矩阵为null、空或维度不匹配时抛出异常
      */
-    public static IMatrix matrixAdd(float[][] dataA, float[][] dataB) {
+    public static IMatrix<Double> matrixAdd(double[][] dataA, double[][] dataB) {
         // 参数验证：确保输入矩阵不为null
         if (dataA == null || dataB == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -116,7 +117,7 @@ public class CPUComputeUtils {
         }
         
         // 预分配结果矩阵，避免动态扩容
-        float[][] result = new float[m][n];
+        double[][] result = new double[m][n];
         
         // 执行矩阵加法：对应元素相加
         for (int i = 0; i < m; i++) {
@@ -125,13 +126,13 @@ public class CPUComputeUtils {
             }
         }
         
-        return new RereMatrix(result);  // 创建并返回结果矩阵
+        return new RereDoubleMatrix(result);  // 创建并返回结果矩阵
     }
     
     /**
      * CPU矩阵减法
      */
-    public static IMatrix matrixSub(float[][] dataA, float[][] dataB) {
+    public static IMatrix<Double> matrixSub(double[][] dataA, double[][] dataB) {
         if (dataA == null || dataB == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
@@ -147,13 +148,13 @@ public class CPUComputeUtils {
             throw new IllegalArgumentException("矩阵维度不匹配进行减法运算");
         }
         
-        float[][] result = new float[m][n];
+        double[][] result = new double[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 result[i][j] = dataA[i][j] - dataB[i][j];
             }
         }
-        return new RereMatrix(result);
+        return new RereDoubleMatrix(result);
     }
     
     /**
@@ -182,7 +183,7 @@ public class CPUComputeUtils {
      * <ul>
      *   <li><strong>时间复杂度</strong>：O(m×n×p)，其中m、n、p是矩阵维度</li>
      *   <li><strong>空间复杂度</strong>：O(m×p)，存储结果矩阵</li>
-     *   <li><strong>数值稳定性</strong>：使用float累加，注意精度损失</li>
+     *   <li><strong>数值稳定性</strong>：使用Double累加，注意精度损失</li>
      * </ul>
      * 
      * <p>性能优化：</p>
@@ -205,7 +206,7 @@ public class CPUComputeUtils {
      * @return 新的矩阵对象，包含乘法运算结果，维度为m×p
      * @throws IllegalArgumentException 当输入矩阵为null、空或维度不匹配时抛出异常
      */
-    public static IMatrix matrixMultiply(float[][] dataA, float[][] dataB) {
+    public static IMatrix<Double> matrixMultiply(double[][] dataA, double[][] dataB) {
         // 参数验证：确保输入矩阵不为null
         if (dataA == null || dataB == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -225,12 +226,12 @@ public class CPUComputeUtils {
         }
         
         // 预分配结果矩阵，维度为m×p
-        float[][] result = new float[m][p];
+        double[][] result = new double[m][p];
         
         // 三重循环实现矩阵乘法
         for (int i = 0; i < m; i++) {        // 遍历结果矩阵的行
             for (int j = 0; j < p; j++) {    // 遍历结果矩阵的列
-                float sum = 0.0f;            // 累加器，计算内积
+                double  sum = 0.0f;            // 累加器，计算内积
                 for (int k = 0; k < n; k++) { // 计算A的第i行与B的第j列的内积
                     sum += dataA[i][k] * dataB[k][j];
                 }
@@ -238,13 +239,13 @@ public class CPUComputeUtils {
             }
         }
         
-        return new RereMatrix(result);  // 创建并返回结果矩阵
+        return new RereDoubleMatrix(result);  // 创建并返回结果矩阵
     }
     
     /**
      * CPU矩阵标量乘法
      */
-    public static IMatrix matrixScalarMultiply(float[][] dataA, float scalar) {
+    public static IMatrix<Double> matrixScalarMultiply(double[][] dataA, double  scalar) {
         if (dataA == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
@@ -254,19 +255,19 @@ public class CPUComputeUtils {
         
         int m = dataA.length;
         int n = dataA[0].length;
-        float[][] result = new float[m][n];
+        double[][] result = new double[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 result[i][j] = dataA[i][j] * scalar;
             }
         }
-        return new RereMatrix(result);
+        return new RereDoubleMatrix(result);
     }
     
     /**
      * CPU矩阵标量加法
      */
-    public static IMatrix matrixScalarAdd(float[][] dataA, float scalar) {
+    public static IMatrix<Double> matrixScalarAdd(double[][] dataA, double scalar) {
         if (dataA == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
@@ -276,19 +277,19 @@ public class CPUComputeUtils {
         
         int m = dataA.length;
         int n = dataA[0].length;
-        float[][] result = new float[m][n];
+        double[][] result = new double[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 result[i][j] = dataA[i][j] + scalar;
             }
         }
-        return new RereMatrix(result);
+        return new RereDoubleMatrix(result);
     }
     
     /**
      * CPU矩阵标量减法
      */
-    public static IMatrix matrixScalarSub(float[][] dataA, float scalar) {
+    public static IMatrix<Double> matrixScalarSub(double[][] dataA, double scalar) {
         if (dataA == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
@@ -298,19 +299,19 @@ public class CPUComputeUtils {
         
         int m = dataA.length;
         int n = dataA[0].length;
-        float[][] result = new float[m][n];
+        double[][] result = new double[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 result[i][j] = dataA[i][j] - scalar;
             }
         }
-        return new RereMatrix(result);
+        return new RereDoubleMatrix(result);
     }
     
     /**
      * CPU矩阵转置
      */
-    public static IMatrix matrixTranspose(float[][] dataA) {
+    public static IMatrix<Double> matrixTranspose(double[][] dataA) {
         if (dataA == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
@@ -320,13 +321,13 @@ public class CPUComputeUtils {
         
         int m = dataA.length;
         int n = dataA[0].length;
-        float[][] result = new float[n][m];
+        double[][] result = new double[n][m];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 result[j][i] = dataA[i][j];
             }
         }
-        return new RereMatrix(result);
+        return new RereDoubleMatrix(result);
     }
     
     // ========== 向量运算 / Vector Operations ==========
@@ -334,7 +335,7 @@ public class CPUComputeUtils {
     /**
      * CPU向量加法
      */
-    public static IVector vectorAdd(IVector a, IVector b) {
+    public static IVector<Double> vectorAdd(IVector<Double> a, IVector<Double> b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
@@ -344,17 +345,17 @@ public class CPUComputeUtils {
             throw new IllegalArgumentException("向量维度不匹配进行加法运算");
         }
         
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) + b.get(i);
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量减法
      */
-    public static IVector vectorSub(IVector a, IVector b) {
+    public static IVector<Double> vectorSub(IVector<Double> a, IVector<Double> b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
@@ -364,17 +365,17 @@ public class CPUComputeUtils {
             throw new IllegalArgumentException("向量维度不匹配进行减法运算");
         }
         
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) - b.get(i);
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量乘法
      */
-    public static IVector vectorMultiply(IVector a, IVector b) {
+    public static IVector<Double> vectorMultiply(IVector<Double> a, IVector<Double> b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
@@ -384,17 +385,17 @@ public class CPUComputeUtils {
             throw new IllegalArgumentException("向量维度不匹配进行乘法运算");
         }
         
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) * b.get(i);
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量内积
      */
-    public static float vectorDot(IVector a, IVector b) {
+    public static double  vectorDot(IVector<Double> a, IVector<Double> b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
@@ -404,7 +405,7 @@ public class CPUComputeUtils {
             throw new IllegalArgumentException("向量维度不匹配进行内积运算");
         }
         
-        float sum = 0.0f;
+        double  sum = 0.0f;
         for (int i = 0; i < length; i++) {
             sum += a.get(i) * b.get(i);
         }
@@ -414,55 +415,55 @@ public class CPUComputeUtils {
     /**
      * CPU向量标量加法
      */
-    public static IVector vectorScalarAdd(IVector a, float scalar) {
+    public static IVector<Double> vectorScalarAdd(IVector<Double> a, double  scalar) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) + scalar;
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量标量减法
      */
-    public static IVector vectorScalarSub(IVector a, float scalar) {
+    public static IVector<Double> vectorScalarSub(IVector<Double> a, double  scalar) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) - scalar;
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量标量乘法
      */
-    public static IVector vectorScalarMultiply(IVector a, float scalar) {
+    public static IVector<Double> vectorScalarMultiply(IVector<Double> a, double  scalar) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) * scalar;
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量标量除法
      */
-    public static IVector vectorScalarDivide(IVector a, float scalar) {
+    public static IVector<Double> vectorScalarDivide(IVector<Double> a, double  scalar) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
@@ -471,56 +472,56 @@ public class CPUComputeUtils {
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
             result[i] = a.get(i) / scalar;
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量平方
      */
-    public static IVector vectorSquare(IVector a) {
+    public static IVector<Double> vectorSquare(IVector<Double> a) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
-            float val = a.get(i);
+            double  val = a.get(i);
             result[i] = val * val;
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量开方
      */
-    public static IVector vectorSqrt(IVector a) {
+    public static IVector<Double> vectorSqrt(IVector<Double> a) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float[] result = new float[length];
+        double[] result = new double[length];
         for (int i = 0; i < length; i++) {
-            result[i] = (float) Math.sqrt(a.get(i));
+            result[i] =  Math.sqrt(a.get(i));
         }
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     /**
      * CPU向量求和
      */
-    public static float vectorSum(IVector a) {
+    public static double  vectorSum(IVector<Double> a) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
         int length = a.length();
-        float sum = 0.0f;
+        double  sum = 0.0f;
         for (int i = 0; i < length; i++) {
             sum += a.get(i);
         }
@@ -531,16 +532,16 @@ public class CPUComputeUtils {
      * CPU向量倒数计算
      * 计算向量的倒数，用于伪逆矩阵计算
      */
-    public static IVector vectorReciprocal(IVector a, float tolerance) {
+    public static IVector<Double> vectorReciprocal(IVector<Double> a, double  tolerance) {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
         
-        float[] dataA = a.getData();
-        float[] result = new float[dataA.length];
+        double[] dataA = a.toDoubleArray();
+        double[] result = new double[dataA.length];
         
         for (int i = 0; i < dataA.length; i++) {
-            float value = dataA[i];
+            double  value = dataA[i];
             if (Math.abs(value) > tolerance) {
                 result[i] = 1.0f / value;
             } else {
@@ -548,7 +549,7 @@ public class CPUComputeUtils {
             }
         }
         
-        return new RereVector(result);
+        return new RereDoubleVector(result);
     }
     
     // ========== 高级运算 / Advanced Operations ==========
@@ -556,50 +557,50 @@ public class CPUComputeUtils {
     /**
      * CPU伪逆矩阵计算
      */
-    public static IMatrix pseudoInverse(IMatrix A) {
+    public static IMatrix<Double> pseudoInverse(IMatrix<Double> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        final float tolerance = 1e-10f;
+        final double  tolerance = 1e-10f;
         
         // 进行奇异值分解：A = U * S * V^T
         var svdResult = A.svd();
-        IMatrix U = svdResult._1;           // 左奇异向量矩阵
-        IVector singularValues = svdResult._2;  // 奇异值向量
-        IMatrix VT = svdResult._3;          // 右奇异向量转置矩阵
+        IMatrix<Double> U = (IMatrix<Double>)svdResult._1;           // 左奇异向量矩阵
+        IVector<Double> singularValues = (IVector<Double>)svdResult._2;  // 奇异值向量
+        IMatrix<Double> VT = (IMatrix<Double>)svdResult._3;          // 右奇异向量转置矩阵
         
         // 获取矩阵的维度信息
-        int originalRows = A.getRows();
-        int originalCols = A.getColumns();
+        int originalRows = A.rows();
+        int originalCols = A.cols();
         int singularValuesLength = singularValues.length();
         
         // 计算奇异值的伪逆
-        IVector pseudoSingularValues = IVector.zeros(singularValuesLength);
+        IVector<Double> pseudoSingularValues = Linalg.zeros(singularValuesLength);
         
         for (int i = 0; i < singularValuesLength; i++) {
-            float sv = singularValues.get(i);
+            double  sv = singularValues.get(i);
             if (Math.abs(sv) > tolerance) {
                 pseudoSingularValues.set(i, 1.0f / sv);  // 非零奇异值的倒数
             } else {
-                pseudoSingularValues.set(i, 0.0f);       // 零奇异值保持为零
+                pseudoSingularValues.set(i, 0.0);       // 零奇异值保持为零
             }
         }
         
         // 计算伪逆：A⁺ = V * Σ⁺ * U^T
-        IMatrix V = VT.transposeNew();  // V = (V^T)^T
+        IMatrix<Double> V = (IMatrix<Double>)VT.transposeNew();  // V = (V^T)^T
         
         // 创建结果矩阵：A⁺的维度应该是 originalCols x originalRows
-        IMatrix pseudoInverse = IMatrix.zeros(originalCols, originalRows);
+        IMatrix<Double> pseudoInverse = Linalg.zeros(originalCols, originalRows);
         
         // 逐元素计算伪逆：A⁺[i,j] = Σ(k=0 to rank-1) V[i,k] * (1/σ[k]) * U[j,k]
         for (int i = 0; i < originalCols; i++) {
             for (int j = 0; j < originalRows; j++) {
-                float sum = 0.0f;
+                double  sum = 0.0f;
                 for (int k = 0; k < singularValuesLength; k++) {
-                    float vValue = (k < V.getColumns()) ? V.get(i, k) : 0.0f;
-                    float uValue = (k < U.getColumns()) ? U.get(j, k) : 0.0f;
-                    float sigmaInv = pseudoSingularValues.get(k);
+                    double  vValue = (k < V.cols()) ? V.get(i, k) : 0.0f;
+                    double  uValue = (k < U.cols()) ? U.get(j, k) : 0.0f;
+                    double  sigmaInv = pseudoSingularValues.get(k);
                     sum += vValue * sigmaInv * uValue;
                 }
                 pseudoInverse.put(i, j, sum);
@@ -613,25 +614,26 @@ public class CPUComputeUtils {
      * CPU特征分解
      * 使用QR算法计算特征值和特征向量
      */
-    public static Tuple2<IVector, IMatrix> eigen(IMatrix A) {
+    public static Tuple2<IVector<Double>, IMatrix<Double>> eigen(IMatrix<Double> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
         // 检查是否为方阵
-        if (A.getRows() != A.getColumns()) {
+        if (A.rows() != A.cols()) {
             throw new IllegalArgumentException("特征分解需要方阵 / Eigendecomposition requires square matrix");
         }
         
         // 如果已经是RereMatrix，直接使用其方法避免复制
-        if (A instanceof RereMatrix) {
-            return ((RereMatrix) A).qrEigenDecomposition();
+        if (A instanceof RereDoubleMatrix) {
+            var eigen = ((RereDoubleMatrix) A).qrEigenDecomposition();
+        return new Tuple2(eigen._1,eigen._2);
         }
         
         // 对于其他IMatrix实现，需要复制数据
-        int n = A.getRows();
-        float[][] data = A.getData();
-        float[][] matrixData = new float[n][n];
+        int n = A.rows();
+        double[][] data = A.toDoubleArray();
+        double[][] matrixData = new double[n][n];
         
         // 复制矩阵数据
         for (int i = 0; i < n; i++) {
@@ -639,50 +641,57 @@ public class CPUComputeUtils {
         }
         
         // 使用QR算法计算特征值和特征向量
-        return new RereMatrix(matrixData).qrEigenDecomposition();
+        var eigen = new RereDoubleMatrix(matrixData).qrEigenDecomposition();
+        return new Tuple2(eigen._1,eigen._2);
     }
     
     /**
      * CPU奇异值分解
      * 根据矩阵大小选择不同的算法，直接实现CPU版本
      */
-    public static Tuple3<IMatrix, IVector, IMatrix> svd(IMatrix A) {
+    public static Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> svd(IMatrix<Double> A) {
         if (A == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        int m = A.getRows();    // 行数
-        int n = A.getColumns(); // 列数
+        int m = A.rows();    // 行数
+        int n = A.cols(); // 列数
         
         // 如果已经是RereMatrix，直接使用其方法避免转换
-        if (A instanceof RereMatrix) {
-            RereMatrix matrix = (RereMatrix) A;
+        if (A instanceof RereDoubleMatrix) {
+            RereDoubleMatrix matrix = (RereDoubleMatrix) A;
             
             // 对于大矩阵，使用优化的SVD算法
             if (m * n > 10000) {
-                return matrix.optimizedSVD();
+                var svd = matrix.optimizedSVD();
+                return new Tuple3(svd._1,svd._2,svd._3);
             }
             
             // 对于中等矩阵，使用双对角化方法
             if (m * n > 1000) {
-                return matrix.bidiagonalSVD();
+                var svd = matrix.bidiagonalSVD();
+                return new Tuple3(svd._1,svd._2,svd._3);
             }
             
             // 对于小矩阵，使用传统方法但优化排序
-            return matrix.traditionalSVD();
+            var svd = matrix.traditionalSVD();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
         
         // 对于其他IMatrix实现，需要转换为RereMatrix
-        float[][] data = A.getData();
-        RereMatrix matrix = new RereMatrix(data);
+        double[][] data = A.toDoubleArray();
+        RereDoubleMatrix matrix = new RereDoubleMatrix(data);
         
         // 根据矩阵大小选择算法
         if (m * n > 10000) {
-            return matrix.optimizedSVD();
+            var svd = matrix.optimizedSVD();
+            return new Tuple3(svd._1,svd._2,svd._3);
         } else if (m * n > 1000) {
-            return matrix.bidiagonalSVD();
+            var svd = matrix.bidiagonalSVD();
+            return new Tuple3(svd._1,svd._2,svd._3);
         } else {
-            return matrix.traditionalSVD();
+            var svd = matrix.traditionalSVD();
+            return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
 }

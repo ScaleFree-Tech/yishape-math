@@ -24,10 +24,10 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     private static final long serialVersionUID = 1L;
     
     /** 成功概率 / Probability of success */
-    private final float p;
+    private final double p;
     
     /** 失败概率 / Probability of failure */
-    private final float q;
+    private final double q;
     
     /**
      * 构造函数
@@ -36,7 +36,7 @@ public class BernoulliDistribution implements IDiscreteDistribution {
      * @param p 成功概率，范围[0,1] / Probability of success, range [0,1]
      * @throws IllegalArgumentException 如果概率不在[0,1]范围内 / If probability is not in range [0,1]
      */
-    public BernoulliDistribution(float p) {
+    public BernoulliDistribution(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("成功概率必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -50,63 +50,63 @@ public class BernoulliDistribution implements IDiscreteDistribution {
      * 
      * @return 成功概率 / Probability of success
      */
-    public float getProbability() {
+    public double getProbability() {
         return p;
     }
     
     // ==================== 基本统计量 / Basic Statistics ====================
     
     @Override
-    public float mean() {
+    public double mean() {
         return p;
     }
     
     @Override
-    public float var() {
+    public double var() {
         return p * q;
     }
     
     @Override
-    public float std() {
+    public double std() {
         return (float) Math.sqrt(p * q);
     }
     
     @Override
-    public float median() {
+    public double median() {
         if (p < 0.5f) return 0.0f;
         if (p > 0.5f) return 1.0f;
         return 0.5f; // 当p=0.5时，中位数可以是0或1，这里返回0.5
     }
     
     @Override
-    public float mode() {
+    public double mode() {
         if (p > 0.5f) return 1.0f;
         if (p < 0.5f) return 0.0f;
-        return Float.NaN; // 当p=0.5时，没有唯一的众数
+        return Double.NaN; // 当p=0.5时，没有唯一的众数
     }
     
     @Override
-    public float q1() {
+    public double q1() {
         if (p < 0.25f) return 0.0f;
         if (p > 0.25f) return 1.0f;
         return 0.0f; // 当p=0.25时
     }
     
     @Override
-    public float q3() {
+    public double q3() {
         if (p < 0.75f) return 0.0f;
         if (p > 0.75f) return 1.0f;
         return 1.0f; // 当p=0.75时
     }
     
     @Override
-    public float skewness() {
+    public double skewness() {
         if (p == 0.0f || p == 1.0f) return 0.0f;
         return (1.0f - 2.0f * p) / (float) Math.sqrt(p * q);
     }
     
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         if (p == 0.0f || p == 1.0f) return 0.0f;
         return (1.0f - 6.0f * p * q) / (p * q);
     }
@@ -114,21 +114,21 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     // ==================== 概率计算 / Probability Calculations ====================
     
     @Override
-    public float pmf(int x) {
+    public double pmf(int x) {
         if (x == 1) return p;
         if (x == 0) return q;
         return 0.0f;
     }
     
     @Override
-    public float cdf(int x) {
+    public double cdf(int x) {
         if (x < 0) return 0.0f;
         if (x >= 1) return 1.0f;
         return q; // x = 0时
     }
     
     @Override
-    public int ppf(float prob) {
+    public int ppf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -137,12 +137,12 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float sf(int x) {
+    public double sf(int x) {
         return 1.0f - cdf(x);
     }
     
     @Override
-    public int isf(float prob) {
+    public int isf(double prob) {
         if (prob < 0.0f || prob > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -194,7 +194,7 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     // ==================== 高级统计方法 / Advanced Statistical Methods ====================
     
     @Override
-    public float moment(int k) {
+    public double moment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -203,7 +203,7 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float centralMoment(int k) {
+    public double centralMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -214,16 +214,16 @@ public class BernoulliDistribution implements IDiscreteDistribution {
         if (k == 4) return p * q * (1.0f - 6.0f * p * q);
         
         // 对于高阶矩，使用递推公式
-        float result = 0.0f;
+        double result = 0.0f;
         for (int i = 0; i <= k; i++) {
-            float term = RereMathUtil.combination(k, i) * (float) Math.pow(-p, k - i) * p;
+            double term = RereMathUtil.combination(k, i) * (float) Math.pow(-p, k - i) * p;
             result += term;
         }
         return result;
     }
     
     @Override
-    public float standardizedMoment(int k) {
+    public double standardizedMoment(int k) {
         if (k < 0) {
             throw new IllegalArgumentException("矩的阶数必须非负 / Moment order must be non-negative");
         }
@@ -234,25 +234,25 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float entropy() {
+    public double entropy() {
         if (p == 0.0f || p == 1.0f) return 0.0f;
         return -(p * (float) Math.log(p) + q * (float) Math.log(q));
     }
     
     @Override
-    public float cgf(float t) {
+    public double cgf(double t) {
         return (float) Math.log(q + p * Math.exp(t));
     }
     
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
     @Override
-    public int quantile(float prob) {
+    public int quantile(double prob) {
         return ppf(prob);
     }
     
     @Override
-    public int[] confidenceInterval(float confidence) {
+    public int[] confidenceInterval(double confidence) {
         if (confidence < 0.0f || confidence > 1.0f) {
             throw new IllegalArgumentException("置信水平必须在[0,1]范围内 / Confidence level must be in range [0,1]");
         }
@@ -264,20 +264,20 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
     @Override
-    public float klDivergence(IDiscreteDistribution other) {
+    public double klDivergence(IDiscreteDistribution other) {
         if (!(other instanceof BernoulliDistribution)) {
             throw new IllegalArgumentException("只能与伯努利分布计算KL散度 / Can only calculate KL divergence with Bernoulli distribution");
         }
         
         BernoulliDistribution otherBernoulli = (BernoulliDistribution) other;
-        float otherP = otherBernoulli.getProbability();
+        double otherP = otherBernoulli.getProbability();
         
-        if (p == 0.0f && otherP > 0.0f) return Float.POSITIVE_INFINITY;
-        if (p == 1.0f && otherP < 1.0f) return Float.POSITIVE_INFINITY;
-        if (otherP == 0.0f && p > 0.0f) return Float.POSITIVE_INFINITY;
-        if (otherP == 1.0f && p < 1.0f) return Float.POSITIVE_INFINITY;
+        if (p == 0.0f && otherP > 0.0f) return Double.POSITIVE_INFINITY;
+        if (p == 1.0f && otherP < 1.0f) return Double.POSITIVE_INFINITY;
+        if (otherP == 0.0f && p > 0.0f) return Double.POSITIVE_INFINITY;
+        if (otherP == 1.0f && p < 1.0f) return Double.POSITIVE_INFINITY;
         
-        float kl = 0.0f;
+        double kl = 0.0f;
         if (p > 0.0f) kl += p * (float) Math.log(p / otherP);
         if (q > 0.0f) kl += q * (float) Math.log(q / (1.0f - otherP));
         
@@ -285,22 +285,22 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float jsDivergence(IDiscreteDistribution other) {
+    public double jsDivergence(IDiscreteDistribution other) {
         if (!(other instanceof BernoulliDistribution)) {
             throw new IllegalArgumentException("只能与伯努利分布计算JS散度 / Can only calculate JS divergence with Bernoulli distribution");
         }
         
         // JS散度 = 0.5 * KL(P||M) + 0.5 * KL(Q||M)，其中M = 0.5 * (P + Q)
         BernoulliDistribution otherBernoulli = (BernoulliDistribution) other;
-        float otherP = otherBernoulli.getProbability();
-        float mP = (p + otherP) / 2.0f;
-        float mQ = 1.0f - mP;
+        double otherP = otherBernoulli.getProbability();
+        double mP = (p + otherP) / 2.0f;
+        double mQ = 1.0f - mP;
         
-        float kl1 = 0.0f;
+        double kl1 = 0.0f;
         if (p > 0.0f) kl1 += p * (float) Math.log(p / mP);
         if (q > 0.0f) kl1 += q * (float) Math.log(q / mQ);
         
-        float kl2 = 0.0f;
+        double kl2 = 0.0f;
         if (otherP > 0.0f) kl2 += otherP * (float) Math.log(otherP / mP);
         if ((1.0f - otherP) > 0.0f) kl2 += (1.0f - otherP) * (float) Math.log((1.0f - otherP) / mQ);
         
@@ -308,7 +308,7 @@ public class BernoulliDistribution implements IDiscreteDistribution {
     }
     
     @Override
-    public float wassersteinDistance(IDiscreteDistribution other) {
+    public double wassersteinDistance(IDiscreteDistribution other) {
         if (!(other instanceof BernoulliDistribution)) {
             throw new IllegalArgumentException("只能与伯努利分布计算Wasserstein距离 / Can only calculate Wasserstein distance with Bernoulli distribution");
         }
@@ -349,11 +349,11 @@ public class BernoulliDistribution implements IDiscreteDistribution {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         BernoulliDistribution that = (BernoulliDistribution) obj;
-        return Float.compare(that.p, p) == 0;
+        return Double.compare(that.p, p) == 0;
     }
     
     @Override
     public int hashCode() {
-        return Float.hashCode(p);
+        return Double.hashCode(p);
     }
 }

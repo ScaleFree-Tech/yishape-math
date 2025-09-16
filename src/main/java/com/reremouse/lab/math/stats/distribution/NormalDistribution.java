@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.stats.distribution;
 
 import com.reremouse.lab.math.RereMathUtil;
-import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 正态分布 (Normal Distribution)
@@ -23,16 +23,16 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
     private static final long serialVersionUID = 1L;
     
     /** 均值 / Mean */
-    private final float mean;
+    private final double mean;
     
     /** 标准差 / Standard deviation */
-    private final float stdDev;
+    private final double stdDev;
     
     /** 方差 / Variance */
-    private final float variance;
+    private final double variance;
     
     /** 1/√(2π) 的预计算值 / Precomputed value of 1/√(2π) */
-    private static final float INV_SQRT_2PI = 0.3989422804014327f;
+    private static final double INV_SQRT_2PI = 0.3989422804014327f;
     
     /**
      * 构造函数，创建标准正态分布（均值为0，标准差为1）
@@ -50,7 +50,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @param stdDev 标准差 / Standard deviation
      * @throws IllegalArgumentException 如果标准差小于等于0 / If standard deviation is less than or equal to 0
      */
-    public NormalDistribution(float mean, float stdDev) {
+    public NormalDistribution(double mean, double stdDev) {
         if (stdDev <= 0) {
             throw new IllegalArgumentException("标准差必须大于0 / Standard deviation must be greater than 0");
         }
@@ -67,9 +67,9 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 概率密度函数值 / PDF value
      */
     @Override
-    public float pdf(float x) {
-        float diff = x - mean;
-        float exponent = -(diff * diff) / (2.0f * variance);
+    public double pdf(double x) {
+        double diff = x - mean;
+        double exponent = -(diff * diff) / (2.0f * variance);
         return INV_SQRT_2PI / stdDev * (float) Math.exp(exponent);
     }
     
@@ -81,11 +81,11 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 累积分布函数值 / CDF value
      */
     @Override
-    public float cdf(float x) {
+    public double cdf(double x) {
         // 使用误差函数的近似公式
         // Using approximation formula for error function
-        float z = (x - mean) / stdDev;
-        return 0.5f * (1.0f + (float) RereMathUtil.erf(z / (float) Math.sqrt(2.0)));
+        double z = (x - mean) / stdDev;
+        return 0.5 * (1.0 + RereMathUtil.erf(z / Math.sqrt(2.0)));
     }
     
     /**
@@ -96,7 +96,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 百分点函数值 / PPF value
      */
     @Override
-    public float ppf(float p) {
+    public double ppf(double p) {
         if (p < 0.0f || p > 1.0f) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
@@ -106,7 +106,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         
         // 使用近似方法计算逆正态分布
         // Using approximation method to calculate inverse normal distribution
-        float z = (float) RereMathUtil.inverseNormalCDF(p);
+        double z = (float) RereMathUtil.inverseNormalCDF(p);
         return mean + stdDev * z;
     }
     
@@ -118,7 +118,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 生存函数值 / Survival function value
      */
     @Override
-    public float sf(float x) {
+    public double sf(double x) {
         return 1.0f - cdf(x);
     }
     
@@ -130,7 +130,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 逆生存函数值 / Inverse survival function value
      */
     @Override
-    public float isf(float p) {
+    public double isf(double p) {
         return ppf(1.0f - p);
     }
     
@@ -140,7 +140,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * 
      * @return 均值 / Mean
      */
-    public float getMean() {
+    public double getMean() {
         return mean;
     }
     
@@ -150,7 +150,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * 
      * @return 标准差 / Standard deviation
      */
-    public float getStdDev() {
+    public double getStdDev() {
         return stdDev;
     }
     
@@ -160,7 +160,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * 
      * @return 方差 / Variance
      */
-    public float getVariance() {
+    public double getVariance() {
         return variance;
     }
     
@@ -177,7 +177,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 均值 / Mean
      */
     @Override
-    public float mean() {
+    public double mean() {
         return mean;
     }
     
@@ -188,7 +188,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 方差 / Variance
      */
     @Override
-    public float var() {
+    public double var() {
         return variance;
     }
     
@@ -199,7 +199,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 标准差 / Standard deviation
      */
     @Override
-    public float std() {
+    public double std() {
         return stdDev;
     }
     
@@ -210,7 +210,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 中位数 / Median
      */
     @Override
-    public float median() {
+    public double median() {
         return mean; // 正态分布的中位数等于均值
     }
     
@@ -221,7 +221,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 众数 / Mode
      */
     @Override
-    public float mode() {
+    public double mode() {
         return mean; // 正态分布的众数等于均值
     }
     
@@ -232,7 +232,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 第一四分位数 / First quartile
      */
     @Override
-    public float q1() {
+    public double q1() {
         return ppf(0.25f);
     }
     
@@ -243,7 +243,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 第三四分位数 / Third quartile
      */
     @Override
-    public float q3() {
+    public double q3() {
         return ppf(0.75f);
     }
     
@@ -254,7 +254,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 偏度 / Skewness
      */
     @Override
-    public float skewness() {
+    public double skewness() {
         return 0.0f; // 正态分布的偏度为0
     }
     
@@ -265,7 +265,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 峰度 / Kurtosis
      */
     @Override
-    public float kurtosis() {
+    public double kurtosis() {
         return 0.0f; // 正态分布的峰度为0（超额峰度）
     }
     
@@ -276,7 +276,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 随机样本 / Random sample
      */
     @Override
-    public float sample() {
+    public double sample() {
         // 使用Box-Muller变换生成正态分布随机数
         // Using Box-Muller transform to generate normal random numbers
         if (hasSpare) {
@@ -300,14 +300,14 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      * @return 随机样本数组 / Array of random samples
      */
     @Override
-    public float[] sample(int n) {
+    public double[] sample(int n) {
         if (n <= 0) {
             throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
         }
         
         // 使用IVector进行数组操作
-        // Using IVector for array operations
-        IVector samples = IVector.zeros(n);
+        // Using IDoubleVector for array operations
+        IDoubleVector samples = IDoubleVector.zeros(n);
         for (int i = 0; i < n; i++) {
             samples.set(i, sample());
         }
@@ -317,7 +317,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
     // Box-Muller变换的辅助变量
     // Helper variables for Box-Muller transform
     private boolean hasSpare = false;
-    private float spare = 0.0f;
+    private double spare = 0.0f;
     
     @Override
     public String toString() {

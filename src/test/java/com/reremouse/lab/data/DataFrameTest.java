@@ -3,10 +3,9 @@ package com.reremouse.lab.data;
 import com.reremouse.lab.math.data.Column;
 import com.reremouse.lab.math.data.DataFrame;
 import com.reremouse.lab.math.data.ColumnType;
-import com.reremouse.lab.math.linalg.IMatrix;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * DataFrame测试类 / DataFrame Test Class
@@ -33,7 +32,7 @@ public class DataFrameTest {
         // 添加Float类型列 / Add Float type column
         Column floatCol1 = new Column();
         floatCol1.setName("feature1");
-        floatCol1.setColumnType(ColumnType.Float);
+        floatCol1.setColumnType(ColumnType.Numeric);
         List<Object> floatData1 = new ArrayList<>();
         floatData1.add(1.0f);
         floatData1.add(2.0f);
@@ -45,7 +44,7 @@ public class DataFrameTest {
         // 添加另一个Float类型列 / Add another Float type column
         Column floatCol2 = new Column();
         floatCol2.setName("feature2");
-        floatCol2.setColumnType(ColumnType.Float);
+        floatCol2.setColumnType(ColumnType.Numeric);
         List<Object> floatData2 = new ArrayList<>();
         floatData2.add(5.0f);
         floatData2.add(6.0f);
@@ -103,7 +102,7 @@ public class DataFrameTest {
         // 测试获取列 / Test getting columns
         Column col1 = df.get(0);
         assertEquals("feature1", col1.getName());
-        assertEquals(ColumnType.Float, col1.getColumnType());
+        assertEquals(ColumnType.Numeric, col1.getColumnType());
         
         // 测试负数索引 / Test negative indexing
         Column lastCol = df.get(-1);
@@ -150,10 +149,10 @@ public class DataFrameTest {
         assertEquals(2, matrix.getColNum()); // 只有Float类型列被转换 / Only Float type columns are converted
         
         // 验证矩阵数据 / Verify matrix data
-        assertEquals(1.0f, matrix.get(0, 0));
-        assertEquals(5.0f, matrix.get(0, 1));
-        assertEquals(4.0f, matrix.get(3, 0));
-        assertEquals(8.0f, matrix.get(3, 1));
+        assertEquals(1.0, matrix.get(0, 0));
+        assertEquals(5.0, matrix.get(0, 1));
+        assertEquals(4.0, matrix.get(3, 0));
+        assertEquals(8.0, matrix.get(3, 1));
         System.out.println("✓ 矩阵转换测试通过 / Matrix conversion test passed");
     }
 
@@ -162,7 +161,7 @@ public class DataFrameTest {
         // 测试添加列 / Test adding column
         Column newCol = new Column();
         newCol.setName("newFeature");
-        newCol.setColumnType(ColumnType.Float);
+        newCol.setColumnType(ColumnType.Numeric);
         List<Object> newData = new ArrayList<>();
         newData.add(9.0f);
         newData.add(10.0f);
@@ -206,7 +205,7 @@ public class DataFrameTest {
         // 测试根据列名获取列 / Test getting column by name
         Column col = df.getColumnByName("feature1");
         assertNotNull(col);
-        assertEquals(ColumnType.Float, col.getColumnType());
+        assertEquals(ColumnType.Numeric, col.getColumnType());
         
         Column notFound = df.getColumnByName("nonexistent");
         assertNull(notFound);

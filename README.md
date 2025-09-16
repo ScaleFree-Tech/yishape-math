@@ -61,14 +61,14 @@
   - *Funnel, Sankey, Sunburst, Theme River, Tree, Treemap, Graph, Parallel charts*
 - **扩展图表** / **Enhanced Charts**: 热力图、雷达图、仪表盘
   - *Heatmap, radar, gauge charts*
-- **ECharts集成** / **ECharts Integration**: 基于ECharts-Java的丰富可视化功能
-  - *Rich visualization capabilities based on ECharts-Java*
+- **统一样式系统** / **Unified Style System**: 完整的样式管理和应用系统
+  - *Complete style management and application system*
+  - matplotlib风格样式表达式：支持"r-", "b--o", "g:^"等简洁样式定义 / matplotlib-style style expressions: support for "r-", "b--o", "g:^" etc.
 - **流式API** / **Fluent API**: 支持链式调用的简洁API设计
   - *Fluent API design supporting chained method calls*
-- **主题支持** / **Theme Support**: 多种内置主题和自定义主题
+- **主题管理** / **Theme Management**: 多种内置主题和自定义主题支持
   - *Multiple built-in themes and custom theme support*
-- **交互功能** / **Interactive Features**: 缩放、平移、悬停、图例交互等
-  - *Zoom, pan, hover, legend interaction and more*
+  - 内置主题 / Built-in themes：light、dark、vintage、chalk、essos、infographic、macarons、purple-passion、roma、shine、walden、westeros、wonderland
 
 
 ### 🤖 机器学习算法 / Machine Learning Algorithms
@@ -137,28 +137,28 @@
 #### 向量运算 / Vector Operations
 ```java
 // 创建向量 / Create vectors
-IVector v1 = IVector.of(new float[]{1, 2, 3, 4});
-IVector v2 = IVector.range(10);
+IVector<Double> v1 = Linalg.vector(new double[]{1, 2, 3, 4});
+IVector<Double> v2 = Linalg.range(10);
 
 // 基本运算 / Basic operations
-IVector sum = v1.add(v2.slice("1:10:2"));
-float dotProduct = v1.dot(v2.slice(5, -1, 1));
+IVector<Double> sum = v1.add(v2.slice("1:10:2"));
+double dotProduct = v1.dot(v2.slice(5, -1, 1));
 
 // 统计运算 / Statsistical operations
-float mean = v1.mean();
-float std = v1.std(1);//ddof = 1, 计算样本标准差/ sample std
+double mean = v1.mean();
+double std = v1.std(1);//ddof = 1, 计算样本标准差/ sample std
 ```
 
 #### 矩阵运算 / Matrix Operations
 ```java
 // 创建矩阵 / Create matrices
-IMatrix matrix1 = IMatrix.ones(3, 3);
-IMatrix matrix2 = IMatrix.eye(3, 3);
-IMatrix matrix3 = IMatrix.rand(3, 3);
+IMatrix<Double> matrix1 = Linalg.ones(3, 3);
+var matrix2 = Linalg.eye(3, 3);
+var matrix3 = Linalg.rand(3, 3);
 
 // 矩阵运算 / Matrix operations
-IMatrix result = matrix1.add(matrix2).mmul(2.0f);
-IMatrix transposed = matrix2.t();
+var result = matrix1.add(matrix2).mmul(2.0);
+var transposed = matrix2.t();
 ```
 
 #### DataFrame 数据框操作 / DataFrame Operations
@@ -170,7 +170,7 @@ DataFrame df = DataFrame.readCsv("data.csv", ",", true);
 DataFrame sliced = df.slice("1:3", "0:2");  // 行1-2，列0-1
 
 // 转换为矩阵 / Convert to matrix
-IMatrix matrix = df.toMatrix();
+IMatrix<Double> matrix = df.toMatrix();
 
 // 保存数据 / Save data
 df.toCsv("output.csv");
@@ -183,11 +183,11 @@ NormalDistribution normal = Stats.norm(0, 1);  // 均值0，标准差1 / Mean=0,
 NormalDistribution standardNormal = Stats.norm();  // 标准正态分布 / Standard normal distribution
 
 // 计算概率密度和累积分布函数 / Calculate PDF and CDF
-float pdf = normal.pdf(1.0f);  // 概率密度函数 / Probability density function
-float cdf = normal.cdf(1.0f);  // 累积分布函数 / Cumulative distribution function
+double pdf = normal.pdf(1.0f);  // 概率密度函数 / Probability density function
+double cdf = normal.cdf(1.0f);  // 累积分布函数 / Cumulative distribution function
 
 // 生成随机数 / Generate random numbers
-float[] randomSamples = normal.sample(1000);  // 生成1000个随机样本 / Generate 1000 random samples
+double[] randomSamples = normal.sample(1000);  // 生成1000个随机样本 / Generate 1000 random samples
 
 // 其他分布 / Other distributions
 StudentDistribution tDist = Stats.t(10);  // t分布，自由度10 / t-distribution with 10 degrees of freedom
@@ -197,34 +197,61 @@ UniformDistribution uniform = Stats.uniform(0, 1);  // 均匀分布[0,1] / Unifo
 ExponentialDistribution exp = Stats.exponential(2.0f);  // 指数分布，参数2 / Exponential distribution with rate 2
 
 // 统计描述 / Statsistical descriptions
-float mean = normal.mean();        // 均值 / Mean
-float variance = normal.var();     // 方差 / Variance
-float stdDev = normal.std();       // 标准差 / Standard deviation
-float median = normal.median();    // 中位数 / Median
-float mode = normal.mode();        // 众数 / Mode
-float skewness = normal.skewness(); // 偏度 / Skewness
-float kurtosis = normal.kurtosis(); // 峰度 / Kurtosis
+double mean = normal.mean();        // 均值 / Mean
+double variance = normal.var();     // 方差 / Variance
+double stdDev = normal.std();       // 标准差 / Standard deviation
+double median = normal.median();    // 中位数 / Median
+double mode = normal.mode();        // 众数 / Mode
+double skewness = normal.skewness(); // 偏度 / Skewness
+double kurtosis = normal.kurtosis(); // 峰度 / Kurtosis
 
 // 分位数计算 / Quantile calculations
-float q1 = normal.q1();            // 第一四分位数 / First quartile
-float q3 = normal.q3();            // 第三四分位数 / Third quartile
-float ppf = normal.ppf(0.95f);     // 95%分位数 / 95th percentile
+double q1 = normal.q1();            // 第一四分位数 / First quartile
+double q3 = normal.q3();            // 第三四分位数 / Third quartile
+double ppf = normal.ppf(0.95f);     // 95%分位数 / 95th percentile
 
 // 生存函数 / Survival function
-float sf = normal.sf(1.0f);        // 生存函数值 / Survival function value
-float isf = normal.isf(0.05f);     // 逆生存函数值 / Inverse survival function value
+double sf = normal.sf(1.0f);        // 生存函数值 / Survival function value
+double isf = normal.isf(0.05f);     // 逆生存函数值 / Inverse survival function value
 ```
 
 #### 数据可视化 / Data Visualization
 ```java
 // 基础线图 / Basic line chart
-IVector x = IVector.of(new float[]{1, 2, 3, 4, 5});
-IVector y = IVector.of(new float[]{10, 20, 15, 30, 25});
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 Plots.of(800, 600)
     .line(x, y)
     .title("销售趋势图", "2024年各月销售数据")
     .xlabel("月份")
     .ylabel("销售额（万元）")
+    .show();
+
+// matplotlib风格样式表达式 / matplotlib-style style expressions
+Plots.of(800, 600)
+    .line(x, y, "r-")        // 红色实线
+    .line(x, y, "b--o")      // 蓝色虚线带圆圈
+    .scatter(x, y, "ko")     // 黑色圆圈散点
+    .title("样式表达式示例")
+    .show();
+
+// 高级颜色操作 / Advanced color operations
+PlotStyle style = new PlotStyle()
+    .color("#3498DB")
+    .lineWidth(2.5)
+    .opacity(0.8)
+    .emphasis(new PlotStyle().color("#E74C3C").lineWidth(4.0))
+    .blur(new PlotStyle().opacity(0.3));
+
+Plots.of(800, 600)
+    .line(x, y, style)
+    .title("高级样式应用")
+    .show();
+
+// 主题管理 / Theme management
+Plots.of(800, 600, "dark")  // 使用dark主题
+    .line(x, y)
+    .title("暗色主题图表")
     .show();
 
 // 散点图 / Scatter chart
@@ -235,7 +262,7 @@ Plots.scatter(x, y)
     .saveAsHtml("scatter_chart.html");
 
 // 饼图 / Pie chart
-IVector data = IVector.of(new float[]{30, 25, 20, 15, 10});
+IVector<Double> data = Linalg.vector(new double[]{30, 25, 20, 15, 10});
 Plots.pie(data)
     .title("市场份额分布")
     .saveAsHtml("pie_chart.html");
@@ -248,7 +275,7 @@ Plots.bar(data)
     .saveAsHtml("bar_chart.html");
 
 // 直方图 / Histogram
-IVector histData = IVector.of(new float[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
+IVector<Double> histData = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 Plots.hist(histData, true)  // true表示显示拟合线
     .title("数据分布直方图")
     .xlabel("数值区间")
@@ -256,8 +283,8 @@ Plots.hist(histData, true)  // true表示显示拟合线
     .saveAsHtml("histogram_chart.html");
 
 // 热力图 / Heatmap
-float[][] heatmapArray = {{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}};
-IMatrix heatmapData = IMatrix.of(heatmapArray);
+double[][] heatmapArray = {{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}};
+IMatrix<Double> heatmapData = Linalg.matrix(heatmapArray);
 List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
 List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
 Plots.heatmap(heatmapData, xLabels, yLabels)
@@ -265,14 +292,14 @@ Plots.heatmap(heatmapData, xLabels, yLabels)
     .saveAsHtml("heatmap_chart.html");
 
 // 雷达图 / Radar chart
-IVector radarData = IVector.of(new float[]{80, 90, 70, 85, 95, 75});
+IVector<Double> radarData = Linalg.vector(new double[]{80, 90, 70, 85, 95, 75});
 List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
 Plots.radar(radarData, indicators)
     .title("能力雷达图")
     .saveAsHtml("radar_chart.html");
 
 // 箱线图 / Box plot
-IVector boxData = IVector.of(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+IVector<Double> boxData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 List<String> labels = Arrays.asList("数据集");
 Plots.boxplot(boxData, labels)
     .title("数据分布箱线图")
@@ -281,8 +308,8 @@ Plots.boxplot(boxData, labels)
     .saveAsHtml("boxplot_chart.html");
 
 // K线图 / Candlestick chart
-float[][] candlestickArray = {{100, 110, 95, 115}, {110, 120, 105, 125}, {120, 115, 110, 130}};
-IMatrix candlestickData = IMatrix.of(candlestickArray);
+double[][] candlestickArray = {{100, 110, 95, 115}, {110, 120, 105, 125}, {120, 115, 110, 130}};
+IMatrix<Double> candlestickData = Linalg.vector(candlestickArray);
 List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
 Plots.candlestick(candlestickData, dates)
     .title("股票价格K线图")
@@ -294,6 +321,30 @@ Plots.candlestick(candlestickData, dates)
 Plots.gauge(75.5f, 100.0f, 0.0f)
     .title("系统性能监控", "CPU使用率实时监控")
     .saveAsHtml("gauge_chart.html");
+
+// 小提琴图 / Violin plot
+IVector<Double> violinData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+Plots.violinplot(violinData, labels)
+    .title("数据分布小提琴图")
+    .xlabel("指标")
+    .ylabel("数值")
+    .saveAsHtml("violin_chart.html");
+
+// 桑基图 / Sankey diagram
+Map<String, Object> sankeyData = new HashMap<>();
+sankeyData.put("nodes", Arrays.asList(
+    Map.of("name", "源节点1"),
+    Map.of("name", "源节点2"),
+    Map.of("name", "目标节点1"),
+    Map.of("name", "目标节点2")
+));
+sankeyData.put("links", Arrays.asList(
+    Map.of("source", "源节点1", "target", "目标节点1", "value", 10),
+    Map.of("source", "源节点2", "target", "目标节点2", "value", 20)
+));
+Plots.sankey(sankeyData)
+    .title("数据流向桑基图")
+    .saveAsHtml("sankey_chart.html");
 ```
 
 #### 图表展示 / Chart Gallery
@@ -357,7 +408,7 @@ lr.setLambda2(0.1f);
 RegressionResult result = lr.fit(featureMatrix, labelVector);
 
 // 预测 / Predict
-float prediction = lr.predict(newFeatureVector);
+double prediction = lr.predict(newFeatureVector);
 ```
 
 #### PCA降维 / PCA Dimensionality Reduction
@@ -379,7 +430,7 @@ ClassificationResult result = lr.fit(featureMatrix, labelVector);
 
 // 预测分类 / Predict classification
 int prediction = lr.predict(newFeatureVector);
-float[] probabilities = lr.predictProbabilities(newFeatureVector);
+double[] probabilities = lr.predictProbabilities(newFeatureVector);
 ```
 
 
@@ -417,31 +468,38 @@ float[] probabilities = lr.predictProbabilities(newFeatureVector);
 ```mermaid
 graph TB
     subgraph "应用层 (Application Layer)"
-        VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot]
-        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression]
-        DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA]
-        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions]
+        VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot, Plots<br/>ColorPalette, ThemeManager]
+        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression<br/>RereLogisticRegression]
+        DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA, RereSVD<br/>RereTSNE, RereUMAP]
+        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions<br/>ANOVA, HypothesisTesting]
     end
     
     subgraph "中间层 (Middle Layer)"
-        DATA[数据处理层<br/>Data Processing Layer<br/>DataFrame, Column]
-        OPT[优化算法层<br/>Optimization Layer<br/>RereLBFGS, IOptimizer]
+        DATA[数据处理层<br/>Data Processing Layer<br/>DataFrame, Column<br/>ColumnType]
+        OPT[优化算法层<br/>Optimization Layer<br/>RereLBFGS, RereLineSearch<br/>IOptimizer, IObjectiveFunction]
+        COMP[计算加速层<br/>Computing Acceleration Layer<br/>CPUComputeUtils, GPUComputeUtils<br/>GPUConfig]
     end
     
     subgraph "基础层 (Foundation Layer)"
-        MATH[基础数学层<br/>Core Math Layer<br/>IMatrix, IVector<br/>RereMatrix, RereVector]
-        UTIL[工具类层<br/>Utility Layer<br/>RereMathUtil<br/>SliceExpressionParser<br/>Tuple2, Tuple3]
+        MATH[基础数学层<br/>Core Math Layer<br/>IMatrix, IVector, IMatrix<br/>RereDoubleMatrix, RereFloatMatrix<br/>RereDoubleVector, RereFloatVector<br/>Linalg, SliceExpressionParser]
+        UTIL[工具类层<br/>Utility Layer<br/>RereMathUtil, StringUtils<br/>Tuple2-9, RereTree]
     end
     
     VIZ --> MATH
     VIZ --> DATA
+    VIZ --> COMP
     ML --> MATH
     ML --> OPT
+    ML --> COMP
     DIM --> MATH
+    DIM --> COMP
     STAT --> MATH
+    STAT --> COMP
     DATA --> MATH
     DATA --> UTIL
     OPT --> MATH
+    OPT --> COMP
+    COMP --> MATH
 ```
 
 ### 文件结构 / File Structure
@@ -452,19 +510,27 @@ src/main/java/com/reremouse/lab/
 │   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
 │   ├── YishapeMath.java      # 主入口类 / Main Entry Class
 │   ├── compute/              # 计算模块 / Computing Module
-│   │   ├── CPUComputeUtils.java  # CPU计算工具类 / CPU Computing Utilities
-│   │   ├── GPUComputeUtils.java  # GPU计算工具类 / GPU Computing Utilities
-│   │   └── GPUConfig.java        # GPU配置类 / GPU Configuration
+│   │   ├── CPUComputeDoubleUtils.java  # CPU双精度计算工具类 / CPU Double Computing Utilities
+│   │   ├── CPUComputeFloatUtils.java   # CPU单精度计算工具类 / CPU Float Computing Utilities
+│   │   ├── GPUComputeDoubleUtils.java  # GPU双精度计算工具类 / GPU Double Computing Utilities
+│   │   ├── GPUComputeFloatUtils.java   # GPU单精度计算工具类 / GPU Float Computing Utilities
+│   │   └── GPUConfig.java             # GPU配置类 / GPU Configuration
 │   ├── data/                 # 数据结构模块 / Data Structure Module
 │   │   ├── DataFrame.java    # 数据框类 / DataFrame Class
 │   │   ├── Column.java       # 列类 / Column Class
 │   │   └── ColumnType.java   # 列类型枚举 / Column Type Enum
 │   ├── linalg/               # 线性代数模块 / Linear Algebra Module
 │   │   ├── IVector.java          # 向量操作接口 / Vector Operations Interface
-│   │   ├── RereVector.java       # 向量实现类 / Vector Implementation Class
+│   │   ├── IDoubleVector.java    # 双精度向量接口 / Double Vector Interface
+│   │   ├── IFloatVector.java     # 单精度向量接口 / Float Vector Interface
+│   │   ├── RereDoubleVector.java # 双精度向量实现类 / Double Vector Implementation
+│   │   ├── RereFloatVector.java  # 单精度向量实现类 / Float Vector Implementation
 │   │   ├── IMatrix.java          # 矩阵操作接口 / Matrix Operations Interface
-│   │   ├── RereMatrix.java       # 矩阵实现类 / Matrix Implementation Class
-│   │   ├── LAs.java              # 线性代数工具类 / Linear Algebra Utilities
+│   │   ├── IDoubleMatrix.java    # 双精度矩阵接口 / Double Matrix Interface
+│   │   ├── IFloatMatrix.java     # 单精度矩阵接口 / Float Matrix Interface
+│   │   ├── RereDoubleMatrix.java # 双精度矩阵实现类 / Double Matrix Implementation
+│   │   ├── RereFloatMatrix.java  # 单精度矩阵实现类 / Float Matrix Implementation
+│   │   ├── Linalg.java           # 线性代数工具类 / Linear Algebra Utilities
 │   │   └── SliceExpressionParser.java # 切片表达式解析器 / Slice Expression Parser
 │   ├── stats/                # 统计学模块 / Statistics Module
 │   │   ├── Stats.java         # 统计分布工厂类 / Statistical Distribution Factory Class
@@ -522,7 +588,15 @@ src/main/java/com/reremouse/lab/
 │   │   ├── RerePlot.java         # 绘图实现类 / Plotting Implementation Class
 │   │   ├── Plots.java            # 绘图工厂类 / Plotting Factory Class
 │   │   ├── AxisTicks.java        # 坐标轴刻度类 / Axis Ticks Class
-│   │   └── PlotException.java    # 绘图异常类 / Plotting Exception Class
+│   │   ├── PlotException.java    # 绘图异常类 / Plotting Exception Class
+│   │   ├── ColorPalette.java     # 颜色调色板类 / Color Palette Class
+│   │   ├── PlotStyle.java        # 绘图样式类 / Plot Style Class
+│   │   ├── SeabornStyleMapper.java # Seaborn样式映射器 / Seaborn Style Mapper
+│   │   ├── StyleConverter.java   # 样式转换器 / Style Converter
+│   │   ├── StyleExpression.java  # 样式表达式 / Style Expression
+│   │   ├── StyleSystemEnhancementDemo.java # 样式系统增强演示 / Style System Enhancement Demo
+│   │   ├── ThemeManager.java     # 主题管理器 / Theme Manager
+│   │   └── UniversalStyleApplier.java # 通用样式应用器 / Universal Style Applier
 │   └── examples/             # 示例代码模块 / Examples Module
 └── util/                     # 工具类模块 / Utility Module
     ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class

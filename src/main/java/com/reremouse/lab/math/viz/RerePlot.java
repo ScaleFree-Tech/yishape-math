@@ -1,7 +1,8 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,35 +11,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.icepear.echarts.Bar;
-import org.icepear.echarts.Line;
-import org.icepear.echarts.Scatter;
-import org.icepear.echarts.Pie;
-import org.icepear.echarts.Heatmap;
-import org.icepear.echarts.Radar;
-import org.icepear.echarts.Gauge;
-import org.icepear.echarts.PolarBar;
-import org.icepear.echarts.PolarLine;
-import org.icepear.echarts.PolarScatter;
 import org.icepear.echarts.Boxplot;
 import org.icepear.echarts.Candlestick;
 import org.icepear.echarts.Funnel;
+import org.icepear.echarts.Gauge;
+import org.icepear.echarts.Graph;
+import org.icepear.echarts.Heatmap;
+import org.icepear.echarts.Line;
+import org.icepear.echarts.Option;
+import org.icepear.echarts.Parallel;
+import org.icepear.echarts.Pie;
+import org.icepear.echarts.PolarBar;
+import org.icepear.echarts.PolarLine;
+import org.icepear.echarts.PolarScatter;
+import org.icepear.echarts.Radar;
 import org.icepear.echarts.Sankey;
+import org.icepear.echarts.Scatter;
 import org.icepear.echarts.Sunburst;
 import org.icepear.echarts.ThemeRiver;
 import org.icepear.echarts.Tree;
 import org.icepear.echarts.Treemap;
-import org.icepear.echarts.Graph;
-import org.icepear.echarts.Parallel;
 import org.icepear.echarts.charts.bar.BarSeries;
 import org.icepear.echarts.charts.line.LineSeries;
 import org.icepear.echarts.charts.scatter.ScatterSeries;
+import org.icepear.echarts.components.coord.cartesian.CategoryAxis;
+import org.icepear.echarts.components.coord.cartesian.ValueAxis;
 import org.icepear.echarts.components.legend.Legend;
 import org.icepear.echarts.components.title.Title;
 import org.icepear.echarts.components.tooltip.Tooltip;
-import org.icepear.echarts.components.coord.cartesian.CategoryAxis;
-import org.icepear.echarts.components.coord.cartesian.ValueAxis;
 import org.icepear.echarts.render.Engine;
-import org.icepear.echarts.Option;
+
 
 /**
  * 结合ECharts-Java实现基本的画图功能
@@ -46,7 +48,7 @@ import org.icepear.echarts.Option;
  * ECharts-Java文档地址：https://echarts.icepear.org/#/quick-start
  * @author lteb2
  */
-public class RerePlot  implements Serializable,IPlot{
+public class  RerePlot  implements Serializable,IPlot{
 
     private Title title;
     private Legend legend;
@@ -60,6 +62,16 @@ public class RerePlot  implements Serializable,IPlot{
     private int width;
     private int height;
     private String theme;
+    
+    // ========== 样式系统 ==========
+    private PlotStyle defaultStyle;        // 默认样式
+    private String currentPalette;         // 当前调色板
+    private boolean useStyleSystem;        // 是否启用新样式系统
+    private SeabornStyleMapper styleMapper; // seaborn风格样式映射器
+    
+    // ========== 主题系统 ==========
+    private String currentTheme;           // 当前主题
+    private boolean useThemeSystem;        // 是否启用主题系统
     
     /**
      * 默认构造函数
@@ -82,6 +94,16 @@ public class RerePlot  implements Serializable,IPlot{
         this.width = 800;
         this.height = 600;
         this.theme = "default";
+        
+        // 初始化样式系统
+        this.defaultStyle = PlotStyle.defaultStyle();
+        this.currentPalette = "echarts";
+        this.useStyleSystem = true;
+        this.styleMapper = new SeabornStyleMapper();
+        
+        // 初始化主题系统
+        this.currentTheme = ThemeManager.THEME_DEFAULT;
+        this.useThemeSystem = true;
     }
     
     /**
@@ -106,120 +128,312 @@ public class RerePlot  implements Serializable,IPlot{
         this.theme = theme;
     }
 
+    // ========== 统一的线图方法 ==========
     
-    
+    /**
+     * 创建线图（基础版本）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @return 当前实例
+     */
     public RerePlot line(IVector x, IVector y) {
+        return lineInternal(x, y, null, null, null);
+    }
+
+    /**
+     * 创建线图（支持样式字符串）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param styleString 样式字符串（如 "r-", "b--o", "g:^"）
+     * @return 当前实例
+     */
+    public RerePlot line(IVector x, IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return lineInternal(x, y, style, null, null);
+    }
+
+    /**
+     * 创建线图（支持PlotStyle样式）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot line(IVector x, IVector y, PlotStyle style) {
+        return lineInternal(x, y, style, null, null);
+    }
+    
+    /**
+     * 创建单向量线图（使用索引作为X轴）
+     * @param y Y轴数据
+     * @return 当前实例
+     */
+    public RerePlot line(IVector y) {
+        return lineInternal(null, y, null, null, null);
+    }
+    
+    /**
+     * 创建单向量线图（支持样式）
+     * @param y Y轴数据
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot line(IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return lineInternal(null, y, style, null, null);
+    }
+    
+    /**
+     * 创建单向量线图（支持PlotStyle）
+     * @param y Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot line(IVector y, PlotStyle style) {
+        return lineInternal(null, y, style, null, null);
+    }
+
+    /**
+     * 创建分组线图（seaborn风格）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param hue 颜色分组
+     * @return 当前实例
+     */
+    public RerePlot line(IVector x, IVector y, List<String> hue) {
+        return lineInternal(x, y, null, hue, null);
+    }
+    
+    /**
+     * 创建分组线图（seaborn风格，支持样式和标记分组）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param hue 颜色分组
+     * @param style 线条样式分组
+     * @return 当前实例
+     */
+    public RerePlot line(IVector x, IVector y, List<String> hue, List<String> style) {
+        return lineInternal(x, y, null, hue, style);
+    }
+    
+    /**
+     * 统一的线图内部实现
+     * @param x X轴数据（如果为null，使用索引）
+     * @param y Y轴数据
+     * @param style 个体样式（优先级最高）
+     * @param hue 颜色分组
+     * @param styleGroup 样式分组
+     * @return 当前实例
+     */
+    private RerePlot lineInternal(IVector x, IVector y, PlotStyle style, 
+                                List<String> hue, List<String> styleGroup) {
         try {
-            // 创建线图
             Line lineChart = new Line();
             
-            // 设置数据 - 创建(x,y)坐标对
-            Object[] data = vectorToNumber(x, y);
-            LineSeries lineSeries = new LineSeries();
-            lineSeries.setData(data);
-            lineSeries.setName("数据线");
-            lineChart.addSeries(lineSeries);
+            // 处理单向量情况（使用索引作X轴）
+            IVector xData = x;
+            if (x == null) {
+                double[] indices = new double[y.length()];
+                for (int i = 0; i < y.length(); i++) {
+                    indices[i] = i;
+                }
+                xData = Linalg.vector(indices);
+            }
             
-            // 配置坐标轴
-            ValueAxis xAxis = new ValueAxis();
-            ValueAxis yAxis = new ValueAxis();
-            configureAxes(xAxis, yAxis);
-            
-            this.option = lineChart.getOption();
-            setCommonOptions(this.option);
-            this.option.setXAxis(xAxis);
-            this.option.setYAxis(yAxis);
-            this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[]{lineSeries});
+            // 处理分组情况
+            if (hue != null || styleGroup != null) {
+                return createGroupedLineChart(lineChart, xData, y, style, hue, styleGroup);
+            } else {
+                return createSingleLineChart(lineChart, xData, y, style);
+            }
             
         } catch (Exception e) {
             throw new PlotException("创建线图失败: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 创建单条线图
+     */
+    private RerePlot createSingleLineChart(Line lineChart, IVector x, IVector y, PlotStyle style) {
+        Object[] data = vectorToNumber(x, y);
+        LineSeries lineSeries = new LineSeries();
+        lineSeries.setData(data);
+        
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style : 
+            (useStyleSystem ? defaultStyle : null);
+        
+        if (effectiveStyle != null && useStyleSystem) {
+            applyStyleToLineSeries(lineSeries, effectiveStyle);
+        } else {
+            lineSeries.setName("数据线");
+        }
+        
+        lineChart.addSeries(lineSeries);
+        
+        // 配置图表
+        setupChartOptions(lineChart);
+        return this;
+    }
+    
+    /**
+     * 创建分组线图（seaborn风格）
+     */
+    private RerePlot createGroupedLineChart(Line lineChart, IVector x, IVector y, 
+                                           PlotStyle baseStyle, List<String> hue, 
+                                           List<String> styleGroup) {
+        if (x.length() != y.length() || 
+            (hue != null && x.length() != hue.size()) ||
+            (styleGroup != null && x.length() != styleGroup.size())) {
+            throw new PlotException("数据和分组标签长度不一致");
+        }
+        
+        // 创建样式映射
+        SeabornStyleMapper.GroupStyleMapping mapping = styleMapper.createMapping(
+            hue, styleGroup, null, null);
+        
+        // 分组数据
+        Map<String, SeabornStyleMapper.GroupedData> groups = 
+            styleMapper.groupData(x, y, hue, mapping);
+        
+        // 为每个组创建系列
+        for (SeabornStyleMapper.GroupedData group : groups.values()) {
+            LineSeries lineSeries = new LineSeries();
+            lineSeries.setData(group.getData());
+            
+            // 应用组样式
+            PlotStyle groupStyle = group.getStyle();
+            if (baseStyle != null) {
+                // 如果有基础样式，合并样式
+                groupStyle = mergeStyles(baseStyle, groupStyle);
+            }
+            
+            if (useStyleSystem) {
+                applyStyleToLineSeries(lineSeries, groupStyle);
+            } else {
+                lineSeries.setName(group.getGroupName());
+            }
+            
+            lineChart.addSeries(lineSeries);
+        }
+        
+        setupChartOptions(lineChart);
         return this;
     }
 
+    // ========== 辅助方法 ==========
     
+    /**
+     * 设置图表通用选项
+     */
+    private void setupChartOptions(Line lineChart) {
+        ValueAxis xAxis = new ValueAxis();
+        ValueAxis yAxis = new ValueAxis();
+        configureAxes(xAxis, yAxis);
+        
+        this.option = lineChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+    }
     
-    public RerePlot line(IVector x) {
+    /**
+     * 合并两个样式对象
+     * @param base 基础样式
+     * @param overlay 覆盖样式
+     * @return 合并后的样式
+     */
+    private PlotStyle mergeStyles(PlotStyle base, PlotStyle overlay) {
+        PlotStyle merged = new PlotStyle(base);
+        
+        // 覆盖非空属性
+        if (overlay.getColor() != null && !overlay.getColor().equals(base.getColor())) {
+            merged.setColor(overlay.getColor());
+        }
+        if (overlay.getLineStyle() != null && !overlay.getLineStyle().equals(base.getLineStyle())) {
+            merged.setLineStyle(overlay.getLineStyle());
+        }
+        if (overlay.getMarker() != null && !overlay.getMarker().equals(base.getMarker())) {
+            merged.setMarker(overlay.getMarker());
+        }
+        if (overlay.getLabel() != null && !overlay.getLabel().isEmpty()) {
+            merged.setLabel(overlay.getLabel());
+        }
+        
+        return merged;
+    }
+
+    /**
+     * 创建散点图（支持样式字符串）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param styleString 样式字符串
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot scatter(IVector x, IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return scatterWithStyle(x, y, style);
+    }
+
+    /**
+     * 创建散点图（支持PlotStyle样式）
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot scatter(IVector x, IVector y, PlotStyle style) {
+        return scatterWithStyle(x, y, style);
+    }
+
+    /**
+     * 创建散点图的内部实现
+     */
+    private RerePlot scatterWithStyle(IVector x, IVector y, PlotStyle style) {
         try {
-            // 创建线图（单向量，使用索引作为X轴）
-            Line lineChart = new Line();
+            // 创建散点图
+            Scatter scatterChart = new Scatter();
             
             // 设置数据
-            Object[] data = vectorToNumber(x);
-            LineSeries lineSeries = new LineSeries();
-            lineSeries.setData(data);
-            lineSeries.setName("数据线");
-            lineChart.addSeries(lineSeries);
+            Object[] data = vectorToNumber(x, y);
+            ScatterSeries scatterSeries = new ScatterSeries();
+            scatterSeries.setData(data);
             
-            // 配置坐标轴
-            ValueAxis xAxis = new ValueAxis();
-            xAxis.setName(xlabel.isEmpty() ? "索引" : xlabel);
-            
-            ValueAxis yAxis = new ValueAxis();
-            yAxis.setName(ylabel.isEmpty() ? "Y轴" : ylabel);
-            if (yticks.hasTickValues()) {
-                yAxis.setData(vectorToStringArray(yticks.getTickValues()));
+            // 应用样式
+            if (style != null && useStyleSystem) {
+                applyStyleToScatterSeries(scatterSeries, style);
+            } else {
+                scatterSeries.setName("散点数据");
             }
             
-            this.option = lineChart.getOption();
-            setCommonOptions(this.option);
-            this.option.setXAxis(xAxis);
-            this.option.setYAxis(yAxis);
-            this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[]{lineSeries});
-            
-        } catch (Exception e) {
-            throw new PlotException("创建线图失败: " + e.getMessage(), e);
-        }
-        return this;
-    }
-
-    
-    
-    public RerePlot line(IVector x, IVector y, List<String> hue) {
-        try {
-            // 创建多条线图
-            Line lineChart = new Line();
-            
-            if (x.length() != y.length() || x.length() != hue.size()) {
-                throw new PlotException("X、Y向量和hue列表长度必须相等");
-            }
-            
-            // 按hue分组数据
-            Map<String, List<Object[]>> groupedData = new HashMap<>();
-            for (int i = 0; i < x.length(); i++) {
-                String groupName = hue.get(i);
-                if (!groupedData.containsKey(groupName)) {
-                    groupedData.put(groupName, new ArrayList<>());
-                }
-                groupedData.get(groupName).add(new Number[]{x.get(i), y.get(i)});
-            }
-            
-            // 为每个组创建一条线
-            for (Map.Entry<String, List<Object[]>> entry : groupedData.entrySet()) {
-                LineSeries lineSeries = new LineSeries();
-                lineSeries.setData(entry.getValue().toArray(new Object[0]));
-                lineSeries.setName(entry.getKey());
-                lineChart.addSeries(lineSeries);
-            }
+            scatterChart.addSeries(scatterSeries);
             
             // 配置坐标轴
             ValueAxis xAxis = new ValueAxis();
             ValueAxis yAxis = new ValueAxis();
             configureAxes(xAxis, yAxis);
             
-            this.option = lineChart.getOption();
+            this.option = scatterChart.getOption();
             setCommonOptions(this.option);
             this.option.setXAxis(xAxis);
             this.option.setYAxis(yAxis);
             
         } catch (Exception e) {
-            throw new PlotException("创建多条线图失败: " + e.getMessage(), e);
+            throw new PlotException("创建散点图失败: " + e.getMessage(), e);
         }
         return this;
     }
 
-    
-    
+    /**
+     * 创建散点图（原有方法，保持向后兼容）
+     */
     public RerePlot scatter(IVector x, IVector y) {
         try {
             // 创建散点图
@@ -296,6 +510,65 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot pie(IVector x) {
+        return pieInternal(x, null, null);
+    }
+    
+    /**
+     * 创建饼图（支持样式字符串）
+     * @param x 数据向量
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot pie(IVector x, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return pieInternal(x, style, null);
+    }
+    
+    /**
+     * 创建饼图（支持PlotStyle样式）
+     * @param x 数据向量
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot pie(IVector x, PlotStyle style) {
+        return pieInternal(x, style, null);
+    }
+    
+    /**
+     * 创建饼图（支持标签）
+     * @param x 数据向量
+     * @param labels 标签列表
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot pie(IVector x, List<String> labels, PlotStyle style) {
+        return pieInternal(x, style, labels);
+    }
+    
+    /**
+     * 创建饼图（支持标签和样式字符串）
+     * @param x 数据向量
+     * @param labels 标签列表
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot pie(IVector x, List<String> labels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return pieInternal(x, style, labels);
+    }
+    
+    /**
+     * 统一的饼图内部实现
+     * @param x 数据向量
+     * @param style 绘图样式
+     * @param labels 标签列表
+     * @return 当前实例
+     */
+    private RerePlot pieInternal(IVector x, PlotStyle style, List<String> labels) {
         try {
             // 创建饼图
             Pie pieChart = new Pie();
@@ -303,16 +576,26 @@ public class RerePlot  implements Serializable,IPlot{
             // 转换数据格式 - 饼图需要对象数组格式 {name, value}
             org.icepear.echarts.charts.pie.PieDataItem[] pieData = new org.icepear.echarts.charts.pie.PieDataItem[x.length()];
             for (int i = 0; i < x.length(); i++) {
+                String name = (labels != null && i < labels.size()) ? labels.get(i) : "数据" + (i + 1);
                 pieData[i] = new org.icepear.echarts.charts.pie.PieDataItem()
-                    .setName("数据" + (i + 1))
+                    .setName(name)
                     .setValue(x.get(i));
             }
             
             // 创建PieSeries并正确设置data
             org.icepear.echarts.charts.pie.PieSeries series = new org.icepear.echarts.charts.pie.PieSeries()
                 .setType("pie")
-                .setName("饼图数据")
                 .setData(pieData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToPieSeries(series, effectiveStyle);
+            } else {
+                series.setName("饼图数据");
+            }
             
             this.option = pieChart.getOption();
             setCommonOptions(this.option);
@@ -327,123 +610,273 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot bar(IVector x) {
+        return barInternal(x, null, null, null);
+    }
+    
+    /**
+     * 创建柱状图（支持样式字符串）
+     * @param x 数据向量
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot bar(IVector x, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return barInternal(x, style, null, null);
+    }
+    
+    /**
+     * 创建柱状图（支持PlotStyle样式）
+     * @param x 数据向量
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot bar(IVector x, PlotStyle style) {
+        return barInternal(x, style, null, null);
+    }
+    
+    /**
+     * 创建分组柱状图（支持样式）
+     * @param x 数据向量
+     * @param hue 分组标签
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot bar(IVector x, List<String> hue, PlotStyle style) {
+        return barInternal(x, style, hue, null);
+    }
+    
+    /**
+     * 创建分组柱状图（支持样式字符串）
+     * @param x 数据向量
+     * @param hue 分组标签
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot bar(IVector x, List<String> hue, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return barInternal(x, style, hue, null);
+    }
+    
+    /**
+     * 统一的柱状图内部实现
+     * @param x 数据向量
+     * @param style 个体样式
+     * @param hue 颜色分组
+     * @param styleGroup 样式分组
+     * @return 当前实例
+     */
+    private RerePlot barInternal(IVector x, PlotStyle style, List<String> hue, List<String> styleGroup) {
         try {
             // 创建柱状图
             Bar barChart = new Bar();
             
-            // 设置数据
-            Object[] data = new Object[x.length()];
-            for (int i = 0; i < x.length(); i++) {
-                data[i] = new Object[]{"类别" + (i + 1), x.get(i)};
+            // 处理分组情况
+            if (hue != null) {
+                return createGroupedBarChart(barChart, x, style, hue, styleGroup);
+            } else {
+                return createSingleBarChart(barChart, x, style);
             }
-            
-            BarSeries barSeries = new BarSeries();
-            barSeries.setData(data);
-            barSeries.setName("柱状图数据");
-            barChart.addSeries(barSeries);
-            
-            // 配置坐标轴
-            CategoryAxis xAxis = new CategoryAxis();
-            String[] categories = new String[x.length()];
-            for (int i = 0; i < x.length(); i++) {
-                categories[i] = "类别" + (i + 1);
-            }
-            xAxis.setData(categories);
-            
-            ValueAxis yAxis = new ValueAxis();
-            configureCategoryAxes(xAxis, yAxis);
-            
-            this.option = barChart.getOption();
-            setCommonOptions(this.option);
-            this.option.setXAxis(xAxis);
-            this.option.setYAxis(yAxis);
             
         } catch (Exception e) {
             throw new PlotException("创建柱状图失败: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 创建单组柱状图
+     */
+    private RerePlot createSingleBarChart(Bar barChart, IVector x, PlotStyle style) {
+        // 设置数据
+        Object[] data = new Object[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            data[i] = new Object[]{"类别" + (i + 1), x.get(i)};
+        }
+        
+        BarSeries barSeries = new BarSeries();
+        barSeries.setData(data);
+        
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style : 
+            (useStyleSystem ? defaultStyle : null);
+        
+        if (effectiveStyle != null && useStyleSystem) {
+            UniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+        } else {
+            barSeries.setName("柱状图数据");
+        }
+        
+        barChart.addSeries(barSeries);
+        
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+        
+        ValueAxis yAxis = new ValueAxis();
+        configureCategoryAxes(xAxis, yAxis);
+        
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+        
+        return this;
+    }
+    
+    /**
+     * 创建分组柱状图
+     */
+    private RerePlot createGroupedBarChart(Bar barChart, IVector x, PlotStyle baseStyle, 
+                                         List<String> hue, List<String> styleGroup) {
+        if (x.length() != hue.size()) {
+            throw new PlotException("X向量和hue列表长度必须相等");
+        }
+        
+        // 创建样式映射
+        SeabornStyleMapper.GroupStyleMapping mapping = styleMapper.createMapping(
+            hue, styleGroup, null, null);
+        
+        // 分组数据
+        Map<String, SeabornStyleMapper.GroupedData> groups = 
+            styleMapper.groupData(x, null, hue, mapping);
+        
+        // 为每个组创建系列
+        for (SeabornStyleMapper.GroupedData group : groups.values()) {
+            BarSeries barSeries = new BarSeries();
+            
+            // 转换数据格式
+            Object[] data = new Object[group.getData().length];
+            for (int i = 0; i < group.getData().length; i++) {
+                data[i] = new Object[]{"类别" + (i + 1), group.getData()[i]};
+            }
+            barSeries.setData(data);
+            
+            // 应用组样式
+            PlotStyle groupStyle = group.getStyle();
+            if (baseStyle != null) {
+                // 如果有基础样式，合并样式
+                groupStyle = mergeStyles(baseStyle, groupStyle);
+            }
+            
+            if (useStyleSystem) {
+                UniversalStyleApplier.applyToBarSeries(barSeries, groupStyle);
+            } else {
+                barSeries.setName(group.getGroupName());
+            }
+            
+            barChart.addSeries(barSeries);
+        }
+        
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+        
+        ValueAxis yAxis = new ValueAxis();
+        configureCategoryAxes(xAxis, yAxis);
+        
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+        
         return this;
     }
 
     
     
     public RerePlot bar(IVector x, List<String> hue) {
-        try {
-            // 创建分组柱状图
-            Bar barChart = new Bar();
-            
-            if (x.length() != hue.size()) {
-                throw new PlotException("X向量和hue列表长度必须相等");
-            }
-            
-            // 按hue分组数据
-            Map<String, List<Object[]>> groupedData = new HashMap<>();
-            for (int i = 0; i < x.length(); i++) {
-                String groupName = hue.get(i);
-                if (!groupedData.containsKey(groupName)) {
-                    groupedData.put(groupName, new ArrayList<>());
-                }
-                groupedData.get(groupName).add(new Object[]{"类别" + (i + 1), x.get(i)});
-            }
-            
-            // 为每个组创建柱状系列
-            for (Map.Entry<String, List<Object[]>> entry : groupedData.entrySet()) {
-                BarSeries barSeries = new BarSeries();
-                barSeries.setData(entry.getValue().toArray(new Object[0]));
-                barSeries.setName(entry.getKey());
-                barChart.addSeries(barSeries);
-            }
-            
-            // 配置坐标轴
-            CategoryAxis xAxis = new CategoryAxis();
-            String[] categories = new String[x.length()];
-            for (int i = 0; i < x.length(); i++) {
-                categories[i] = "类别" + (i + 1);
-            }
-            xAxis.setData(categories);
-            
-            ValueAxis yAxis = new ValueAxis();
-            configureCategoryAxes(xAxis, yAxis);
-            
-            this.option = barChart.getOption();
-            setCommonOptions(this.option);
-            this.option.setXAxis(xAxis);
-            this.option.setYAxis(yAxis);
-            
-        } catch (Exception e) {
-            throw new PlotException("创建分组柱状图失败: " + e.getMessage(), e);
-        }
-        return this;
+        return barInternal(x, null, hue, null);
     }
 
     
     
     public RerePlot hist(IVector x, boolean fittingLine) {
+        return histInternal(x, fittingLine, null, null);
+    }
+    
+    /**
+     * 创建直方图（支持样式字符串）
+     * @param x 数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot hist(IVector x, boolean fittingLine, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return histInternal(x, fittingLine, style, null);
+    }
+    
+    /**
+     * 创建直方图（支持PlotStyle样式）
+     * @param x 数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot hist(IVector x, boolean fittingLine, PlotStyle style) {
+        return histInternal(x, fittingLine, style, null);
+    }
+    
+    /**
+     * 创建直方图（支持样式和bins参数）
+     * @param x 数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style 绘图样式
+     * @param bins bin数量
+     * @return 当前实例
+     */
+    public RerePlot hist(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
+        return histInternal(x, fittingLine, style, bins);
+    }
+    
+    /**
+     * 统一的直方图内部实现
+     * @param x 数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style 绘图样式
+     * @param bins bin数量
+     * @return 当前实例
+     */
+    private RerePlot histInternal(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
         try {
             // 计算直方图数据
-            int bins = Math.min(20, (int) Math.sqrt(x.length())); // 自动确定bin数量
-            float min = x.min();
-            float max = x.max();
+            int binCount = (bins != null) ? bins : Math.min(20, (int) Math.sqrt(x.length()));
+            double min = (double)x.min();
+            double max = (double)x.max();
             
             // 确保bin宽度不为0
             if (max == min) {
                 max = min + 1.0f;
             }
             
-            float binWidth = (max - min) / bins;
+            double binWidth = (max - min) / binCount;
             
             // 创建直方图数据
-            int[] counts = new int[bins];
-            float[] binCenters = new float[bins];
+            int[] counts = new int[binCount];
+            double[] binCenters = new double[binCount];
             
-            for (int i = 0; i < bins; i++) {
-                binCenters[i] = min + (i + 0.5f) * binWidth;
+            for (int i = 0; i < binCount; i++) {
+                binCenters[i] = min + (i + 0.5) * binWidth;
             }
             
             // 统计每个bin的数据点数量
             for (int i = 0; i < x.length(); i++) {
-                float value = x.get(i);
-                int binIndex = Math.min((int) ((value - min) / binWidth), bins - 1);
-                if (binIndex >= 0 && binIndex < bins) {
+                double value = (double)x.get(i);
+                int binIndex = Math.min((int) ((value - min) / binWidth), binCount - 1);
+                if (binIndex >= 0 && binIndex < binCount) {
                     counts[binIndex]++;
                 }
             }
@@ -452,17 +885,25 @@ public class RerePlot  implements Serializable,IPlot{
             Bar barChart = new Bar();
             
             // 设置数据
-            Object[] data = new Object[bins];
-            for (int i = 0; i < bins; i++) {
+            Object[] data = new Object[binCount];
+            for (int i = 0; i < binCount; i++) {
                 data[i] = new Object[]{String.format("%.2f", binCenters[i]), counts[i]};
             }
             
             BarSeries barSeries = new BarSeries();
             barSeries.setData(data);
-            barSeries.setName("直方图");
             
-            // 设置条形图的美观颜色
-            barSeries.setColor("#91cc75");  // 清新的绿色
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+            } else {
+                barSeries.setName("直方图");
+                // 设置默认颜色
+                barSeries.setColor("#91cc75");  // 清新的绿色
+            }
             
             barChart.addSeries(barSeries);
             
@@ -482,7 +923,7 @@ public class RerePlot  implements Serializable,IPlot{
             
             // 如果需要拟合线，添加核密度估计曲线
             if (fittingLine) {
-                addKernelDensityFit(x, min, max, bins, binCenters, counts);
+                addKernelDensityFit(x, min, max, binCount, binCenters, counts);
             }
             
         } catch (Exception e) {
@@ -500,7 +941,7 @@ public class RerePlot  implements Serializable,IPlot{
      * @param binCenters bin中心点
      * @param counts bin计数
      */
-    private void addKernelDensityFit(IVector x, float min, float max, int bins, float[] binCenters, int[] counts) {
+    private void addKernelDensityFit(IVector x, double min, double max, int bins, double[] binCenters, int[] counts) {
         try {
             // 使用核密度估计计算密度曲线
             List<double[]> kdeData = kernelDensityEstimation(x, 2.5);
@@ -665,14 +1106,6 @@ public class RerePlot  implements Serializable,IPlot{
      */
     public String getTheme() {
         return theme;
-    }
-    
-    /**
-     * 设置主题
-     * @param theme 主题名称
-     */
-    public void setTheme(String theme) {
-        this.theme = theme;
     }
     
     /**
@@ -852,12 +1285,13 @@ public class RerePlot  implements Serializable,IPlot{
     }
     
     /**
-     * 设置图表主题（流式API）
+     * 设置图表主题（流式API，已废弃）
      * @param theme 主题名称
      * @return 当前实例，支持链式调用
+     * @deprecated 请使用新的主题系统 theme(String) 方法
      */
-    
-    public RerePlot theme(String theme) {
+    @Deprecated
+    public RerePlot setTheme(String theme) {
         this.theme = theme;
         return this;
     }
@@ -952,6 +1386,45 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels) {
+        return heatmapInternal(data, xLabels, yLabels, null);
+    }
+    
+    /**
+     * 创建热力图（支持样式字符串）
+     * @param data 数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return heatmapInternal(data, xLabels, yLabels, style);
+    }
+    
+    /**
+     * 创建热力图（支持PlotStyle样式）
+     * @param data 数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
+        return heatmapInternal(data, xLabels, yLabels, style);
+    }
+    
+    /**
+     * 统一的热力图内部实现
+     * @param data 数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    private RerePlot heatmapInternal(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
         try {
             Heatmap heatmapChart = new Heatmap();
             
@@ -964,7 +1437,22 @@ public class RerePlot  implements Serializable,IPlot{
                 }
             }
             
-            heatmapChart.addSeries("热力图", heatmapData);
+            // 创建热力图系列
+            org.icepear.echarts.charts.heatmap.HeatmapSeries series = new org.icepear.echarts.charts.heatmap.HeatmapSeries()
+                .setType("heatmap")
+                .setData(heatmapData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToHeatmapSeries(series, effectiveStyle);
+            } else {
+                series.setName("热力图");
+            }
+            
+            heatmapChart.addSeries(series);
             
             // 配置坐标轴
             CategoryAxis xAxis = new CategoryAxis();
@@ -1003,6 +1491,42 @@ public class RerePlot  implements Serializable,IPlot{
      */
     
     public RerePlot radar(IVector data, List<String> indicators) {
+        return radarInternal(data, indicators, null);
+    }
+    
+    /**
+     * 创建雷达图（支持样式字符串）
+     * @param data 数据向量
+     * @param indicators 指标名称
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot radar(IVector data, List<String> indicators, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return radarInternal(data, indicators, style);
+    }
+    
+    /**
+     * 创建雷达图（支持PlotStyle样式）
+     * @param data 数据向量
+     * @param indicators 指标名称
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot radar(IVector data, List<String> indicators, PlotStyle style) {
+        return radarInternal(data, indicators, style);
+    }
+    
+    /**
+     * 统一的雷达图内部实现
+     * @param data 数据向量
+     * @param indicators 指标名称
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    private RerePlot radarInternal(IVector data, List<String> indicators, PlotStyle style) {
         try {
             Radar radarChart = new Radar();
             
@@ -1014,7 +1538,22 @@ public class RerePlot  implements Serializable,IPlot{
             }
             radarData[0] = values;
             
-            radarChart.addSeries("雷达图", radarData);
+            // 创建雷达图系列
+            org.icepear.echarts.charts.radar.RadarSeries series = new org.icepear.echarts.charts.radar.RadarSeries()
+                .setType("radar")
+                .setData(radarData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToRadarSeries(series, effectiveStyle);
+            } else {
+                series.setName("雷达图");
+            }
+            
+            radarChart.addSeries(series);
             
             // 设置雷达图指标配置
             org.icepear.echarts.components.coord.radar.RadarIndicator[] indicatorsArray = 
@@ -1044,11 +1583,65 @@ public class RerePlot  implements Serializable,IPlot{
      * @param min 最小值
      */
     
-    public RerePlot gauge(float value, float max, float min) {
+    public RerePlot gauge(double value, double max, double min) {
+        return gaugeInternal(value, max, min, null);
+    }
+    
+    /**
+     * 创建仪表盘（支持样式字符串）
+     * @param value 数值
+     * @param max 最大值
+     * @param min 最小值
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot gauge(double value, double max, double min, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return gaugeInternal(value, max, min, style);
+    }
+    
+    /**
+     * 创建仪表盘（支持PlotStyle样式）
+     * @param value 数值
+     * @param max 最大值
+     * @param min 最小值
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot gauge(double value, double max, double min, PlotStyle style) {
+        return gaugeInternal(value, max, min, style);
+    }
+    
+    /**
+     * 统一的仪表盘内部实现
+     * @param value 数值
+     * @param max 最大值
+     * @param min 最小值
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    private RerePlot gaugeInternal(double value, double max, double min, PlotStyle style) {
         try {
             Gauge gaugeChart = new Gauge();
             
-            gaugeChart.addSeries(new Object[]{value});
+            // 创建仪表盘系列
+            org.icepear.echarts.charts.gauge.GaugeSeries series = new org.icepear.echarts.charts.gauge.GaugeSeries()
+                .setType("gauge")
+                .setData(new Object[]{value});
+            
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToGaugeSeries(series, effectiveStyle);
+            } else {
+                series.setName("仪表盘");
+            }
+            
+            gaugeChart.addSeries(series);
             
             this.option = gaugeChart.getOption();
             this.option.setTitle(title);
@@ -1072,6 +1665,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot polarBar(IVector data, List<String> categories) {
+        return polarBarInternal(data, categories, null);
+    }
+    
+    public RerePlot polarBar(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarBarInternal(data, categories, style);
+    }
+    
+    public RerePlot polarBar(IVector data, List<String> categories, PlotStyle style) {
+        return polarBarInternal(data, categories, style);
+    }
+    
+    private RerePlot polarBarInternal(IVector data, List<String> categories, PlotStyle style) {
         try {
             PolarBar polarBarChart = new PolarBar();
             
@@ -1093,6 +1699,12 @@ public class RerePlot  implements Serializable,IPlot{
                 .setData(dataArray)
                 .setCoordinateSystem("polar");
             
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToBarSeries(series, effectiveStyle);
+            }
+            
             this.option = polarBarChart.getOption();
             this.option.setTitle(title);
             this.option.setLegend(legend);
@@ -1113,6 +1725,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot polarLine(IVector data, List<String> categories) {
+        return polarLineInternal(data, categories, null);
+    }
+    
+    public RerePlot polarLine(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarLineInternal(data, categories, style);
+    }
+    
+    public RerePlot polarLine(IVector data, List<String> categories, PlotStyle style) {
+        return polarLineInternal(data, categories, style);
+    }
+    
+    private RerePlot polarLineInternal(IVector data, List<String> categories, PlotStyle style) {
         try {
             PolarLine polarLineChart = new PolarLine();
             
@@ -1125,6 +1750,19 @@ public class RerePlot  implements Serializable,IPlot{
             Object[] dataArray = new Object[data.length()];
             for (int i = 0; i < data.length(); i++) {
                 dataArray[i] = data.get(i);
+            }
+            
+            // 创建线图系列
+            org.icepear.echarts.charts.line.LineSeries series = new org.icepear.echarts.charts.line.LineSeries()
+                .setType("line")
+                .setName("极坐标线图")
+                .setData(dataArray)
+                .setCoordinateSystem("polar");
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToLineSeries(series, effectiveStyle);
             }
             
             polarLineChart.addSeries("极坐标线图", dataArray);
@@ -1148,6 +1786,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot polarScatter(IVector data, List<String> categories) {
+        return polarScatterInternal(data, categories, null);
+    }
+    
+    public RerePlot polarScatter(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarScatterInternal(data, categories, style);
+    }
+    
+    public RerePlot polarScatter(IVector data, List<String> categories, PlotStyle style) {
+        return polarScatterInternal(data, categories, style);
+    }
+    
+    private RerePlot polarScatterInternal(IVector data, List<String> categories, PlotStyle style) {
         try {
             PolarScatter polarScatterChart = new PolarScatter();
             
@@ -1160,6 +1811,19 @@ public class RerePlot  implements Serializable,IPlot{
             Object[] dataArray = new Object[data.length()];
             for (int i = 0; i < data.length(); i++) {
                 dataArray[i] = data.get(i);
+            }
+            
+            // 创建散点图系列
+            org.icepear.echarts.charts.scatter.ScatterSeries series = new org.icepear.echarts.charts.scatter.ScatterSeries()
+                .setType("scatter")
+                .setName("极坐标散点图")
+                .setData(dataArray)
+                .setCoordinateSystem("polar");
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToScatterSeries(series, effectiveStyle);
             }
             
             polarScatterChart.addSeries("极坐标散点图", dataArray);
@@ -1175,6 +1839,13 @@ public class RerePlot  implements Serializable,IPlot{
         return this;
     }
     
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========    
     // ========== 统计图表 ==========
     
     /**
@@ -1185,6 +1856,42 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot boxplot(IVector data, List<String> labels) {
+        return boxplotInternal(data, labels, null);
+    }
+    
+    /**
+     * 创建箱线图（支持样式字符串）
+     * @param data 数据向量
+     * @param labels 标签列表
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public RerePlot boxplot(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem) 
+            ? StyleExpression.parse(styleString) 
+            : null;
+        return boxplotInternal(data, labels, style);
+    }
+    
+    /**
+     * 创建箱线图（支持PlotStyle样式）
+     * @param data 数据向量
+     * @param labels 标签列表
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public RerePlot boxplot(IVector data, List<String> labels, PlotStyle style) {
+        return boxplotInternal(data, labels, style);
+    }
+    
+    /**
+     * 统一的箱线图内部实现
+     * @param data 数据向量
+     * @param labels 标签列表
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    private RerePlot boxplotInternal(IVector data, List<String> labels, PlotStyle style) {
         try {
             if (data.length() != labels.size()) {
                 throw new PlotException("数据向量和标签列表长度必须相等");
@@ -1193,13 +1900,13 @@ public class RerePlot  implements Serializable,IPlot{
             Boxplot boxplotChart = new Boxplot();
             
             // 按标签分组数据
-            Map<String, List<Float>> groupedData = new HashMap<>();
+            Map<String, List<Double>> groupedData = new HashMap<>();
             for (int i = 0; i < data.length(); i++) {
                 String label = labels.get(i);
                 if (!groupedData.containsKey(label)) {
                     groupedData.put(label, new ArrayList<>());
                 }
-                groupedData.get(label).add(data.get(i));
+                groupedData.get(label).add((double)data.get(i));
             }
             
             // 获取所有唯一的标签，保持顺序
@@ -1214,10 +1921,10 @@ public class RerePlot  implements Serializable,IPlot{
             Object[][] boxData = new Object[uniqueLabels.size()][];
             for (int i = 0; i < uniqueLabels.size(); i++) {
                 String label = uniqueLabels.get(i);
-                List<Float> groupData = groupedData.get(label);
+                List<Double> groupData = groupedData.get(label);
                 
                 // 转换为数组并排序
-                float[] groupArray = new float[groupData.size()];
+                double[] groupArray = new double[groupData.size()];
                 for (int j = 0; j < groupData.size(); j++) {
                     groupArray[j] = groupData.get(j);
                 }
@@ -1231,29 +1938,44 @@ public class RerePlot  implements Serializable,IPlot{
                     continue;
                 }
                 
-                float min = groupArray[0];
-                float max = groupArray[n - 1];
+                double min = groupArray[0];
+                double max = groupArray[n - 1];
                 
                 // 计算Q1 (25%分位数)
                 int q1Index = (int) Math.ceil(n * 0.25) - 1;
                 q1Index = Math.max(0, Math.min(q1Index, n - 1));
-                float q1 = groupArray[q1Index];
+                double q1 = groupArray[q1Index];
                 
                 // 计算中位数 (50%分位数)
                 int q2Index = (int) Math.ceil(n * 0.5) - 1;
                 q2Index = Math.max(0, Math.min(q2Index, n - 1));
-                float q2 = groupArray[q2Index];
+                double q2 = groupArray[q2Index];
                 
                 // 计算Q3 (75%分位数)
                 int q3Index = (int) Math.ceil(n * 0.75) - 1;
                 q3Index = Math.max(0, Math.min(q3Index, n - 1));
-                float q3 = groupArray[q3Index];
+                double q3 = groupArray[q3Index];
                 
                 // 创建箱线图数据 [min, Q1, median, Q3, max]
                 boxData[i] = new Object[]{min, q1, q2, q3, max};
             }
             
-            boxplotChart.addSeries("箱线图", boxData);
+            // 创建箱线图系列
+            org.icepear.echarts.charts.boxplot.BoxplotSeries series = new org.icepear.echarts.charts.boxplot.BoxplotSeries()
+                .setType("boxplot")
+                .setData(boxData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style : 
+                (useStyleSystem ? defaultStyle : null);
+            
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToBoxplotSeries(series, effectiveStyle);
+            } else {
+                series.setName("箱线图");
+            }
+            
+            boxplotChart.addSeries(series);
             
             // 配置坐标轴
             CategoryAxis xAxis = new CategoryAxis();
@@ -1282,9 +2004,9 @@ public class RerePlot  implements Serializable,IPlot{
             Boxplot boxplotChart = new Boxplot();
             
             // 计算箱线图统计量
-            float[] sortedData = new float[data.length()];
+            double[] sortedData = new double[data.length()];
             for (int i = 0; i < data.length(); i++) {
-                sortedData[i] = data.get(i);
+                sortedData[i] = (double)data.get(i);
             }
             java.util.Arrays.sort(sortedData);
             
@@ -1293,23 +2015,23 @@ public class RerePlot  implements Serializable,IPlot{
                 throw new PlotException("数据向量不能为空");
             }
             
-            float min = sortedData[0];
-            float max = sortedData[n - 1];
+            double min = sortedData[0];
+            double max = sortedData[n - 1];
             
             // 计算Q1 (25%分位数)
             int q1Index = (int) Math.ceil(n * 0.25) - 1;
             q1Index = Math.max(0, Math.min(q1Index, n - 1));
-            float q1 = sortedData[q1Index];
+            double q1 = sortedData[q1Index];
             
             // 计算中位数 (50%分位数)
             int q2Index = (int) Math.ceil(n * 0.5) - 1;
             q2Index = Math.max(0, Math.min(q2Index, n - 1));
-            float q2 = sortedData[q2Index];
+            double q2 = sortedData[q2Index];
             
             // 计算Q3 (75%分位数)
             int q3Index = (int) Math.ceil(n * 0.75) - 1;
             q3Index = Math.max(0, Math.min(q3Index, n - 1));
-            float q3 = sortedData[q3Index];
+            double q3 = sortedData[q3Index];
             
             // 创建箱线图数据 [min, Q1, median, Q3, max]
             Object[] boxData = new Object[1];
@@ -1340,54 +2062,36 @@ public class RerePlot  implements Serializable,IPlot{
 
     @Override
     public IPlot violinplot(IVector data) {
-        try {
-            // 创建组合图表，包含箱线图和密度图
-            Line lineChart = new Line();
-            
-            // 计算核密度估计
-            List<double[]> kdeData = kernelDensityEstimation(data, 2.5);
-            
-            // 添加密度曲线（左右对称）
-            addViolinDensitySeries(lineChart, kdeData, "小提琴图", "#5470c6");
-            
-            // 添加箱线图数据
-            addBoxplotToViolin(lineChart, data, "箱线图", "#5470c6");
-            
-            // 配置坐标轴 - 显示坐标轴作为边框
-        ValueAxis xAxis = new ValueAxis();
-        xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
-        xAxis.setType("value");
-        xAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
-        xAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
-        xAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
-
-        ValueAxis yAxis = new ValueAxis();
-        yAxis.setName(ylabel.isEmpty() ? "密度" : ylabel);
-        yAxis.setType("value");
-        yAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
-        yAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
-        yAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
-            
-            this.option = lineChart.getOption();
-            this.option.setTitle(title);
-            // 设置legend只显示主要系列，过滤掉箱线图的详细部分
-            Legend filteredLegend = new Legend();
-            filteredLegend.setData(new String[]{"小提琴图"});
-            this.option.setLegend(filteredLegend);
-            this.option.setTooltip(tooltip);
-            this.option.setXAxis(xAxis);
-            this.option.setYAxis(yAxis);
-            
-        } catch (Exception e) {
-            throw new PlotException("创建小提琴图失败: " + e.getMessage(), e);
-        }
-        return this;
+        return violinplotInternal(data, null, null);
     }
+    
+    public IPlot violinplot(IVector data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return violinplotInternal(data, style, null);
+    }
+    
+    public IPlot violinplot(IVector data, PlotStyle style) {
+        return violinplotInternal(data, style, null);
+    }
+    
 
     @Override
     public IPlot violinplot(IVector data, List<String> labels) {
+        return violinplotInternal(data, null, labels);
+    }
+    
+    public IPlot violinplot(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return violinplotInternal(data, style, labels);
+    }
+    
+    public IPlot violinplot(IVector data, List<String> labels, PlotStyle style) {
+        return violinplotInternal(data, style, labels);
+    }
+    
+    private IPlot violinplotInternal(IVector data, PlotStyle style, List<String> labels) {
         try {
-            if (data.length() != labels.size()) {
+            if (labels != null && data.length() != labels.size()) {
                 throw new PlotException("数据向量和标签列表长度必须相等");
             }
             
@@ -1395,29 +2099,29 @@ public class RerePlot  implements Serializable,IPlot{
             Line lineChart = new Line();
             
             // 按标签分组数据
-            Map<String, List<Float>> groupedData = new HashMap<>();
+            Map<String, List<Double>> groupedData = new HashMap<>();
             for (int i = 0; i < data.length(); i++) {
                 String label = labels.get(i);
                 if (!groupedData.containsKey(label)) {
                     groupedData.put(label, new ArrayList<>());
                 }
-                groupedData.get(label).add(data.get(i));
+                groupedData.get(label).add((double)data.get(i));
             }
             
             // 为每个组计算核密度估计并添加密度曲线
             String[] colors = {"#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"};
             int colorIndex = 0;
             
-            for (Map.Entry<String, List<Float>> entry : groupedData.entrySet()) {
+            for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
                 String groupName = entry.getKey();
-                List<Float> groupData = entry.getValue();
+                List<Double> groupData = entry.getValue();
                 
                 // 转换为IVector格式进行计算
-                float[] groupArray = new float[groupData.size()];
+                double[] groupArray = new double[groupData.size()];
                 for (int i = 0; i < groupData.size(); i++) {
                     groupArray[i] = groupData.get(i);
                 }
-                IVector groupVector = new com.reremouse.lab.math.linalg.RereVector(groupArray);
+                IVector groupVector = new com.reremouse.lab.math.linalg.RereDoubleVector(groupArray);
                 
                 // 计算核密度估计
                 List<double[]> kdeData = kernelDensityEstimation(groupVector, 2.5);
@@ -1452,7 +2156,7 @@ public class RerePlot  implements Serializable,IPlot{
             Legend filteredLegend = new Legend();
             // 只显示每个组的主要系列名称
             Set<String> groupNames = new HashSet<>();
-            for (Map.Entry<String, List<Float>> entry : groupedData.entrySet()) {
+            for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
                 groupNames.add(entry.getKey());
             }
             filteredLegend.setData(groupNames.toArray(new String[0]));
@@ -1478,6 +2182,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot candlestick(IMatrix data, List<String> dates) {
+        return candlestickInternal(data, dates, null);
+    }
+    
+    public RerePlot candlestick(IMatrix data, List<String> dates, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return candlestickInternal(data, dates, style);
+    }
+    
+    public RerePlot candlestick(IMatrix data, List<String> dates, PlotStyle style) {
+        return candlestickInternal(data, dates, style);
+    }
+    
+    private RerePlot candlestickInternal(IMatrix data, List<String> dates, PlotStyle style) {
         try {
             Candlestick candlestickChart = new Candlestick();
             
@@ -1492,6 +2209,18 @@ public class RerePlot  implements Serializable,IPlot{
                         data.get(i, 3)  // 最高价
                     };
                 }
+            }
+            
+            // 创建K线图系列
+            org.icepear.echarts.charts.candlestick.CandlestickSeries series = new org.icepear.echarts.charts.candlestick.CandlestickSeries()
+                .setType("candlestick")
+                .setName("K线图")
+                .setData(candlestickData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToCandlestickSeries(series, effectiveStyle);
             }
             
             candlestickChart.addSeries("K线图", candlestickData);
@@ -1527,6 +2256,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot funnel(IVector data, List<String> labels) {
+        return funnelInternal(data, labels, null);
+    }
+    
+    public RerePlot funnel(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return funnelInternal(data, labels, style);
+    }
+    
+    public RerePlot funnel(IVector data, List<String> labels, PlotStyle style) {
+        return funnelInternal(data, labels, style);
+    }
+    
+    private RerePlot funnelInternal(IVector data, List<String> labels, PlotStyle style) {
         try {
             Funnel funnelChart = new Funnel();
             
@@ -1537,6 +2279,18 @@ public class RerePlot  implements Serializable,IPlot{
                 item.put("name", labels.get(i));
                 item.put("value", data.get(i));
                 funnelData[i] = item;
+            }
+            
+            // 创建漏斗图系列
+            org.icepear.echarts.charts.funnel.FunnelSeries series = new org.icepear.echarts.charts.funnel.FunnelSeries()
+                .setType("funnel")
+                .setName("漏斗图")
+                .setData(funnelData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToFunnelSeries(series, effectiveStyle);
             }
             
             funnelChart.addSeries("漏斗图", funnelData);
@@ -1560,6 +2314,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+        return sankeyInternal(nodes, links, null);
+    }
+    
+    public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return sankeyInternal(nodes, links, style);
+    }
+    
+    public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        return sankeyInternal(nodes, links, style);
+    }
+    
+    private RerePlot sankeyInternal(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
         try {
             Sankey sankeyChart = new Sankey();
             
@@ -1602,6 +2369,12 @@ public class RerePlot  implements Serializable,IPlot{
                 .setData(nodes.toArray(new Object[0]))
                 .setLinks(sankeyLinks);
             
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToSankeySeries(series, effectiveStyle);
+            }
+            
             this.option = sankeyChart.getOption();
             this.option.setTitle(title);
             this.option.setLegend(legend);
@@ -1621,11 +2394,36 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot sunburst(List<Map<String, Object>> data) {
+        return sunburstInternal(data, null);
+    }
+    
+    public RerePlot sunburst(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return sunburstInternal(data, style);
+    }
+    
+    public RerePlot sunburst(List<Map<String, Object>> data, PlotStyle style) {
+        return sunburstInternal(data, style);
+    }
+    
+    private RerePlot sunburstInternal(List<Map<String, Object>> data, PlotStyle style) {
         try {
             Sunburst sunburstChart = new Sunburst();
             
             // 将平级数据转换为层次结构
             Object[] sunburstData = buildSunburstHierarchy(data);
+            
+            // 创建旭日图系列
+            org.icepear.echarts.charts.sunburst.SunburstSeries series = new org.icepear.echarts.charts.sunburst.SunburstSeries()
+                .setType("sunburst")
+                .setName("旭日图")
+                .setData(sunburstData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToSunburstSeries(series, effectiveStyle);
+            }
             
             // 设置数据
             sunburstChart.addSeries(sunburstData);
@@ -1745,6 +2543,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories) {
+        return themeRiverInternal(data, categories, null);
+    }
+    
+    public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return themeRiverInternal(data, categories, style);
+    }
+    
+    public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories, PlotStyle style) {
+        return themeRiverInternal(data, categories, style);
+    }
+    
+    private RerePlot themeRiverInternal(List<Map<String, Object>> data, List<String> categories, PlotStyle style) {
         try {
             ThemeRiver themeRiverChart = new ThemeRiver();
             
@@ -1770,6 +2581,12 @@ public class RerePlot  implements Serializable,IPlot{
                 .setName("主题河流图")
                 .setData(themeRiverData);
             
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToThemeRiverSeries(series, effectiveStyle);
+            }
+            
             this.option = themeRiverChart.getOption();
             this.option.setTitle(title);
             this.option.setLegend(legend);
@@ -1794,6 +2611,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot tree(List<Map<String, Object>> data) {
+        return treeInternal(data, null);
+    }
+    
+    public RerePlot tree(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return treeInternal(data, style);
+    }
+    
+    public RerePlot tree(List<Map<String, Object>> data, PlotStyle style) {
+        return treeInternal(data, style);
+    }
+    
+    private RerePlot treeInternal(List<Map<String, Object>> data, PlotStyle style) {
         try {
             Tree treeChart = new Tree();
             
@@ -1903,6 +2733,12 @@ public class RerePlot  implements Serializable,IPlot{
                 .setName("树图")
                 .setData(treeData);
             
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToTreeSeries(series, effectiveStyle);
+            }
+            
             this.option = treeChart.getOption();
             this.option.setTitle(title);
             this.option.setLegend(legend);
@@ -1945,11 +2781,36 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot treemap(List<Map<String, Object>> data) {
+        return treemapInternal(data, null);
+    }
+    
+    public RerePlot treemap(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return treemapInternal(data, style);
+    }
+    
+    public RerePlot treemap(List<Map<String, Object>> data, PlotStyle style) {
+        return treemapInternal(data, style);
+    }
+    
+    private RerePlot treemapInternal(List<Map<String, Object>> data, PlotStyle style) {
         try {
             Treemap treemapChart = new Treemap();
             
             // 将平级数据转换为层次结构
             Object[] treemapData = buildTreemapHierarchy(data);
+            
+            // 创建矩形树图系列
+            org.icepear.echarts.charts.treemap.TreemapSeries series = new org.icepear.echarts.charts.treemap.TreemapSeries()
+                .setType("treemap")
+                .setName("矩形树图")
+                .setData(treemapData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToTreemapSeries(series, effectiveStyle);
+            }
             
             // 设置数据
             treemapChart.addSeries(treemapData);
@@ -2006,6 +2867,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+        return graphInternal(nodes, links, null);
+    }
+    
+    public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return graphInternal(nodes, links, style);
+    }
+    
+    public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        return graphInternal(nodes, links, style);
+    }
+    
+    private RerePlot graphInternal(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
         try {
             Graph graphChart = new Graph();
             
@@ -2075,6 +2949,12 @@ public class RerePlot  implements Serializable,IPlot{
                 .setData(graphNodes)
                 .setLinks(graphLinks);
             
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToGraphSeries(series, effectiveStyle);
+            }
+            
             this.option = graphChart.getOption();
             this.option.setTitle(title);
             this.option.setLegend(legend);
@@ -2095,6 +2975,19 @@ public class RerePlot  implements Serializable,IPlot{
     
     
     public RerePlot parallel(IMatrix data, List<String> dimensions) {
+        return parallelInternal(data, dimensions, null);
+    }
+    
+    public RerePlot parallel(IMatrix data, List<String> dimensions, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return parallelInternal(data, dimensions, style);
+    }
+    
+    public RerePlot parallel(IMatrix data, List<String> dimensions, PlotStyle style) {
+        return parallelInternal(data, dimensions, style);
+    }
+    
+    private RerePlot parallelInternal(IMatrix data, List<String> dimensions, PlotStyle style) {
         try {
             Parallel parallelChart = new Parallel();
             
@@ -2111,6 +3004,18 @@ public class RerePlot  implements Serializable,IPlot{
             // 添加平行坐标轴 - 这是必需的
             for (int i = 0; i < dimensions.size(); i++) {
                 parallelChart.addParallelAxis(dimensions.get(i), i);
+            }
+            
+            // 创建平行坐标图系列
+            org.icepear.echarts.charts.parallel.ParallelSeries series = new org.icepear.echarts.charts.parallel.ParallelSeries()
+                .setType("parallel")
+                .setName("平行坐标图")
+                .setData(parallelData);
+            
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToParallelSeries(series, effectiveStyle);
             }
             
             parallelChart.addSeries("平行坐标图", parallelData);
@@ -2136,15 +3041,15 @@ public class RerePlot  implements Serializable,IPlot{
      */
     private List<double[]> kernelDensityEstimation(IVector data, double bandwidth) {
         List<double[]> points = new ArrayList<>();
-        double min = data.min();
-        double max = data.max();
+        double min = (double)data.min();
+        double max = (double)data.max();
         double range = max - min;
         double step = range / 100.0;
         
         for (double x = min - range * 0.2; x <= max + range * 0.2; x += step) {
             double density = 0;
             for (int i = 0; i < data.length(); i++) {
-                double u = (x - data.get(i)) / bandwidth;
+                double u = (x - (double)data.get(i)) / bandwidth;
                 density += Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
             }
             density /= (data.length() * bandwidth);
@@ -2216,18 +3121,18 @@ public class RerePlot  implements Serializable,IPlot{
      */
     private void addBoxplotToViolin(Line chart, IVector data, String name, String color, boolean isMultiGroup) {
         // 计算箱线图统计量
-        float[] sortedData = new float[data.length()];
+        double[] sortedData = new double[data.length()];
         for (int i = 0; i < data.length(); i++) {
-            sortedData[i] = data.get(i);
+            sortedData[i] = (double)data.get(i);
         }
         java.util.Arrays.sort(sortedData);
         
         int n = sortedData.length;
-        float q1 = sortedData[n / 4];
-        float q2 = sortedData[n / 2];
-        float q3 = sortedData[3 * n / 4];
-        float min = data.min();
-        float max = data.max();
+        double q1 = sortedData[n / 4];
+        double q2 = sortedData[n / 2];
+        double q3 = sortedData[3 * n / 4];
+        double min = (double)data.min();
+        double max = (double)data.max();
         
         // 计算密度曲线的实际高度范围，用于调整箱线图高度
         List<double[]> kdeData = kernelDensityEstimation(data, 2.5);
@@ -2236,10 +3141,10 @@ public class RerePlot  implements Serializable,IPlot{
             maxDensity = Math.max(maxDensity, point[1]);
         }
         // 将密度值放大100倍（与密度曲线保持一致）
-        float densityHeight = (float) (maxDensity * 100);
+        double densityHeight = (float) (maxDensity * 100);
         
         // 根据密度曲线高度自动调整箱线图高度
-        float boxHeight;
+        double boxHeight;
         
         if (isMultiGroup) {
             // 多组模式：概率密度大的组应该有更高的箱线图
@@ -2384,7 +3289,259 @@ public class RerePlot  implements Serializable,IPlot{
                         .setWidth(3)));
     }
     
+    // ========== 样式系统辅助方法 ==========
     
+    /**
+     * 应用样式到LineSeries
+     * @param lineSeries 线条系列
+     * @param style 样式对象
+     */
+    private void applyStyleToLineSeries(LineSeries lineSeries, PlotStyle style) {
+        if (style == null) {
+            lineSeries.setName("数据线");
+            return;
+        }
+        
+        // 设置名称/标签
+        String label = style.getLabel();
+        lineSeries.setName(label.isEmpty() ? "数据线" : label);
+        
+        // 设置线条样式
+        org.icepear.echarts.components.series.LineStyle lineStyle = StyleConverter.toEChartsLineStyle(style);
+        lineSeries.setLineStyle(lineStyle);
+        
+        // 设置标记符号
+        if (style.getMarker() != null && !style.getMarker().isEmpty()) {
+            String symbol = StyleConverter.convertMarkerToSymbol(style.getMarker());
+            lineSeries.setSymbol(symbol);
+            lineSeries.setSymbolSize((int) style.getMarkerSize());
+            lineSeries.setShowSymbol(true);
+        }
+        
+        // 设置透明度和填充
+        if (style.getAlpha() < 1.0f) {
+            org.icepear.echarts.charts.line.LineAreaStyle areaStyle = StyleConverter.toEChartsAreaStyle(style);
+            lineSeries.setAreaStyle(areaStyle);
+        }
+    }
+    
+    /**
+     * 应用样式到ScatterSeries
+     * @param scatterSeries 散点系列
+     * @param style 样式对象
+     */
+    private void applyStyleToScatterSeries(ScatterSeries scatterSeries, PlotStyle style) {
+        if (style == null) {
+            scatterSeries.setName("散点数据");
+            return;
+        }
+        
+        // 设置名称/标签
+        String label = style.getLabel();
+        scatterSeries.setName(label.isEmpty() ? "散点数据" : label);
+        
+        // 设置标记符号和颜色
+        if (style.getMarker() != null && !style.getMarker().isEmpty()) {
+            String symbol = StyleConverter.convertMarkerToSymbol(style.getMarker());
+            scatterSeries.setSymbol(symbol);
+        }
+        
+        scatterSeries.setSymbolSize((int) style.getMarkerSize());
+        
+        // 设置颜色（散点图主要通过itemStyle设置颜色）
+        if (style.getColor() != null) {
+            // 这里需要设置itemStyle，但ECharts-Java可能需要特殊处理
+            // 暂时通过系列级别设置
+        }
+    }
+    
+    /**
+     * 设置默认样式
+     * @param style 默认样式
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot setDefaultStyle(PlotStyle style) {
+        this.defaultStyle = style != null ? style : PlotStyle.defaultStyle();
+        return this;
+    }
+    
+    /**
+     * 获取默认样式
+     * @return 默认样式
+     */
+    public PlotStyle getDefaultStyle() {
+        return this.defaultStyle;
+    }
+    
+    /**
+     * 设置调色板
+     * @param paletteName 调色板名称
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot setPalette(String paletteName) {
+        if (ColorPalette.hasPalette(paletteName)) {
+            this.currentPalette = paletteName;
+        }
+        return this;
+    }
+    
+    /**
+     * 获取当前调色板名称
+     * @return 调色板名称
+     */
+    public String getPalette() {
+        return this.currentPalette;
+    }
+    
+    /**
+     * 启用或禁用样式系统
+     * @param enabled 是否启用
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot enableStyleSystem(boolean enabled) {
+        this.useStyleSystem = enabled;
+        return this;
+    }
+    
+    /**
+     * 检查样式系统是否启用
+     * @return 是否启用
+     */
+    public boolean isStyleSystemEnabled() {
+        return this.useStyleSystem;
+    }
+    
+    /**
+     * 应用样式字符串到图表元素
+     * @param styleString 样式字符串
+     * @return 解析后的样式对象
+     */
+    public PlotStyle parseStyle(String styleString) {
+        return StyleExpression.parse(styleString);
+    }
+    
+    /**
+     * 创建自定义样式
+     * @param color 颜色
+     * @param lineStyle 线条样式
+     * @param marker 标记
+     * @return 样式对象
+     */
+    public static PlotStyle createStyle(String color, String lineStyle, String marker) {
+        return new PlotStyle()
+                .color(color)
+                .lineStyle(lineStyle)
+                .marker(marker);
+    }
+    
+    // ========== 主题系统方法 ==========
+    
+    /**
+     * 设置当前主题
+     * @param themeName 主题名称
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot theme(String themeName) {
+        this.currentTheme = themeName;
+        if (this.option != null && this.useThemeSystem) {
+            ThemeManager.applyTheme(this.option, themeName);
+        }
+        return this;
+    }
+    
+    /**
+     * 获取当前主题
+     * @return 当前主题名称
+     */
+    public String getCurrentTheme() {
+        return this.currentTheme;
+    }
+    
+    /**
+     * 启用或禁用主题系统
+     * @param enabled 是否启用
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot enableThemeSystem(boolean enabled) {
+        this.useThemeSystem = enabled;
+        return this;
+    }
+    
+    /**
+     * 检查主题系统是否启用
+     * @return 是否启用
+     */
+    public boolean isThemeSystemEnabled() {
+        return this.useThemeSystem;
+    }
+    
+    /**
+     * 应用主题到当前图表
+     * @param themeName 主题名称
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot applyTheme(String themeName) {
+        if (this.option != null && this.useThemeSystem) {
+            ThemeManager.applyTheme(this.option, themeName);
+            this.currentTheme = themeName;
+        }
+        return this;
+    }
+    
+    /**
+     * 注册自定义主题
+     * @param themeName 主题名称
+     * @param theme 自定义主题对象
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot registerTheme(String themeName, ThemeManager.CustomTheme theme) {
+        ThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+    
+    /**
+     * 创建渐变主题
+     * @param themeName 主题名称
+     * @param startColor 起始颜色
+     * @param endColor 结束颜色
+     * @param backgroundColor 背景颜色
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot createGradientTheme(String themeName, String startColor, String endColor, String backgroundColor) {
+        ThemeManager.CustomTheme theme = ThemeManager.createGradientTheme(themeName, startColor, endColor, backgroundColor);
+        ThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+    
+    /**
+     * 创建单色主题
+     * @param themeName 主题名称
+     * @param baseColor 基础颜色
+     * @param backgroundColor 背景颜色
+     * @return 当前实例，支持链式调用
+     */
+    public RerePlot createMonochromeTheme(String themeName, String baseColor, String backgroundColor) {
+        ThemeManager.CustomTheme theme = ThemeManager.createMonochromeTheme(themeName, baseColor, backgroundColor);
+        ThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+    
+    /**
+     * 获取所有可用的主题名称
+     * @return 主题名称列表
+     */
+    public static List<String> getAvailableThemes() {
+        return ThemeManager.getRegisteredThemeNames();
+    }
+    
+    /**
+     * 获取内置主题名称
+     * @return 内置主题名称列表
+     */
+    public static List<String> getBuiltinThemes() {
+        return ThemeManager.getBuiltinThemeNames();
+    }
 
 }
+            
             

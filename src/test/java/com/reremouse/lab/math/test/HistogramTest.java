@@ -1,9 +1,10 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.math.viz.Plots;
+import com.reremouse.lab.math.viz.IPlot;
 import java.util.Random;
+import com.reremouse.lab.math.linalg.IFloatVector;
 
 /**
  * 直方图功能测试
@@ -18,7 +19,7 @@ public class HistogramTest {
             // 测试1: 正态分布数据
             System.out.println("1. 测试正态分布数据...");
             float[] normalData = generateNormalDistribution(1000, 5.0f, 2.0f);
-            IVector normalVector = IVector.of(normalData);
+            IFloatVector normalVector = IFloatVector.of(normalData);
             
             var plot1 = Plots.of(800, 600);
             plot1.title("正态分布直方图", "均值=5, 标准差=2");
@@ -31,7 +32,7 @@ public class HistogramTest {
             // 测试2: 均匀分布数据
             System.out.println("\n2. 测试均匀分布数据...");
             float[] uniformData = generateUniformDistribution(1000, 0.0f, 10.0f);
-            IVector uniformVector = IVector.of(uniformData);
+            IFloatVector uniformVector = IFloatVector.of(uniformData);
             
             var plot2 = Plots.of(800, 600);
             plot2.title("均匀分布直方图", "范围=[0, 10]");
@@ -44,7 +45,7 @@ public class HistogramTest {
             // 测试3: 小数据集
             System.out.println("\n3. 测试小数据集...");
             float[] smallData = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f};
-            IVector smallVector = IVector.of(smallData);
+            IFloatVector smallVector = IFloatVector.of(smallData);
             
             var plot3 = Plots.of(800, 600);
             plot3.title("小数据集直方图", "9个数据点");
@@ -60,7 +61,7 @@ public class HistogramTest {
             for (int i = 0; i < 50; i++) {
                 sameData[i] = 5.0f; // 所有值都相同
             }
-            IVector sameVector = IVector.of(sameData);
+            IFloatVector sameVector = IFloatVector.of(sameData);
             
             var plot4 = Plots.of(800, 600);
             plot4.title("相同值直方图", "所有值都是5.0");

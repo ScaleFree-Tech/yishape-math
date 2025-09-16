@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
 import com.reremouse.lab.math.viz.Plots;
+import com.reremouse.lab.math.viz.IPlot;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 简单直方图测试
@@ -15,8 +15,8 @@ public class SimpleHistogramTest {
         
         try {
             // 创建测试数据
-            float[] data = {1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 9, 10};
-            IVector vector = IVector.of(data);
+            double[] data = {1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 6.0, 6.0, 7.0, 8.0, 9.0, 10.0};
+            IDoubleVector vector = IDoubleVector.of(data);
             
             System.out.println("数据点数量: " + vector.length());
             System.out.println("数据范围: " + vector.min() + " - " + vector.max());

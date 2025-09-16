@@ -1,9 +1,9 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import java.util.List;
 import java.util.Map;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 绘图接口，定义绘图实例的基本方法
@@ -217,7 +217,7 @@ public interface IPlot {
      * @param max 最大值
      * @param min 最小值
      */
-    IPlot gauge(float value, float max, float min);
+    IPlot gauge(double value, double max, double min);
     
     // ========== 流式API方法 ==========
     

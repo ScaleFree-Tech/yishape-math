@@ -1,10 +1,10 @@
 package com.reremouse.lab.math.gpu;
 
-import com.reremouse.lab.math.compute.GPUComputeUtils;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
 
 /**
  * GPUComputeUtils简单测试类
@@ -49,10 +49,10 @@ public class GPUComputeUtilsSimpleTest {
     private static void testGPUAvailability() {
         System.out.println("\n--- 测试GPU可用性检查 ---");
         
-        boolean gpuAvailable = GPUComputeUtils.isGPUAvailable();
+        boolean gpuAvailable = GPUComputeFloatUtils.isGPUAvailable();
         System.out.println("GPU可用性: " + gpuAvailable);
         
-        String gpuInfo = GPUComputeUtils.getGPUInfo();
+        String gpuInfo = GPUComputeFloatUtils.getGPUInfo();
         System.out.println("GPU信息: " + gpuInfo);
         
         if (gpuAvailable) {
@@ -68,7 +68,7 @@ public class GPUComputeUtilsSimpleTest {
     private static void testGPUDeviceInfo() {
         System.out.println("\n--- 测试GPU设备信息 ---");
         
-        String deviceInfo = GPUComputeUtils.getGPUDeviceInfo();
+        String deviceInfo = GPUComputeFloatUtils.getGPUDeviceInfo();
         System.out.println("设备信息:\n" + deviceInfo);
         
         System.out.println("✓ GPU设备信息检查完成");
@@ -80,7 +80,7 @@ public class GPUComputeUtilsSimpleTest {
     private static void testGPUMatrixMultiply() {
         System.out.println("\n--- 测试GPU矩阵乘法 ---");
         
-        if (!GPUComputeUtils.isGPUAvailable()) {
+        if (!GPUComputeFloatUtils.isGPUAvailable()) {
             System.out.println("GPU不可用，跳过GPU矩阵乘法测试");
             return;
         }
@@ -100,10 +100,10 @@ public class GPUComputeUtilsSimpleTest {
                 {5.0f, 6.0f}
             };
             
-            IMatrix matrixA = new RereMatrix(testMatrixA);
-            IMatrix matrixB = new RereMatrix(testMatrixB);
+            IMatrix<Float> matrixA = new RereFloatMatrix(testMatrixA);
+            IMatrix<Float> matrixB = new RereFloatMatrix(testMatrixB);
             
-            IMatrix result = GPUComputeUtils.gpuMatrixMultiply(matrixA, matrixB);
+            IMatrix<Float> result = GPUComputeFloatUtils.gpuMatrixMultiply(matrixA, matrixB);
             
             System.out.println("GPU矩阵乘法结果:");
             System.out.println("结果矩阵大小: " + result.getRowNum() + "x" + result.getColNum());
@@ -141,7 +141,7 @@ public class GPUComputeUtilsSimpleTest {
     private static void testGPUVectorAdd() {
         System.out.println("\n--- 测试GPU向量加法 ---");
         
-        if (!GPUComputeUtils.isGPUAvailable()) {
+        if (!GPUComputeFloatUtils.isGPUAvailable()) {
             System.out.println("GPU不可用，跳过GPU向量加法测试");
             return;
         }
@@ -150,10 +150,10 @@ public class GPUComputeUtilsSimpleTest {
             float[] testVectorA = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
             float[] testVectorB = {2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
             
-            IVector vectorA = new RereVector(testVectorA);
-            IVector vectorB = new RereVector(testVectorB);
+            IVector<Float> vectorA = new RereFloatVector(testVectorA);
+            IVector<Float> vectorB = new RereFloatVector(testVectorB);
             
-            IVector result = GPUComputeUtils.gpuVectorAdd(vectorA, vectorB);
+            IVector<Float> result = GPUComputeFloatUtils.gpuVectorAdd(vectorA, vectorB);
             
             System.out.println("GPU向量加法结果:");
             System.out.print("向量A: ");
@@ -204,7 +204,7 @@ public class GPUComputeUtilsSimpleTest {
     private static void testGPUVectorDot() {
         System.out.println("\n--- 测试GPU向量内积 ---");
         
-        if (!GPUComputeUtils.isGPUAvailable()) {
+        if (!GPUComputeFloatUtils.isGPUAvailable()) {
             System.out.println("GPU不可用，跳过GPU向量内积测试");
             return;
         }
@@ -213,10 +213,10 @@ public class GPUComputeUtilsSimpleTest {
             float[] testVectorA = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
             float[] testVectorB = {2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
             
-            IVector vectorA = new RereVector(testVectorA);
-            IVector vectorB = new RereVector(testVectorB);
+            IVector<Float> vectorA = new RereFloatVector(testVectorA);
+            IVector<Float> vectorB = new RereFloatVector(testVectorB);
             
-            float result = GPUComputeUtils.gpuVectorDot(vectorA, vectorB);
+            float result = GPUComputeFloatUtils.gpuVectorDot(vectorA, vectorB);
             
             // 计算预期结果
             float expected = 0.0f;
@@ -248,7 +248,7 @@ public class GPUComputeUtilsSimpleTest {
         System.out.println("\n--- 测试GPU资源清理 ---");
         
         try {
-            GPUComputeUtils.cleanup();
+            GPUComputeFloatUtils.cleanup();
             System.out.println("✓ GPU资源清理测试通过");
         } catch (Exception e) {
             System.out.println("✗ GPU资源清理测试失败: " + e.getMessage());
@@ -261,7 +261,7 @@ public class GPUComputeUtilsSimpleTest {
     private static void testLargeMatrixPerformance() {
         System.out.println("\n--- 测试大矩阵GPU性能 ---");
         
-        if (!GPUComputeUtils.isGPUAvailable()) {
+        if (!GPUComputeFloatUtils.isGPUAvailable()) {
             System.out.println("GPU不可用，跳过大矩阵性能测试");
             return;
         }
@@ -274,13 +274,13 @@ public class GPUComputeUtilsSimpleTest {
             float[][] largeMatrixA = createRandomMatrix(size, size);
             float[][] largeMatrixB = createRandomMatrix(size, size);
             
-            IMatrix matrixA = new RereMatrix(largeMatrixA);
-            IMatrix matrixB = new RereMatrix(largeMatrixB);
+            IMatrix<Float> matrixA = new RereFloatMatrix(largeMatrixA);
+            IMatrix<Float> matrixB = new RereFloatMatrix(largeMatrixB);
             
             System.out.println("开始GPU大矩阵乘法性能测试...");
             long startTime = System.currentTimeMillis();
             
-            IMatrix result = GPUComputeUtils.gpuMatrixMultiply(matrixA, matrixB);
+            IMatrix<Float> result = GPUComputeFloatUtils.gpuMatrixMultiply(matrixA, matrixB);
             
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;

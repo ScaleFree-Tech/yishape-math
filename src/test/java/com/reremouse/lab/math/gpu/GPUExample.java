@@ -1,9 +1,10 @@
 package com.reremouse.lab.math.gpu;
 
 
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IFloatVector;
 import com.reremouse.lab.math.linalg.IVector;
 
 /**
@@ -42,9 +43,9 @@ public class GPUExample {
      */
     private static void checkGPUStatus() {
         System.out.println("\n--- GPU状态检查 ---");
-        System.out.println("矩阵GPU支持: " + RereMatrix.isGPUEnabled());
-        System.out.println("向量GPU支持: " + RereVector.isGPUEnabled());
-        System.out.println("GPU信息: " + RereMatrix.getGPUInfo());
+        System.out.println("矩阵GPU支持: " + RereFloatMatrix.isGPUEnabled());
+        System.out.println("向量GPU支持: " + RereFloatVector.isGPUEnabled());
+        System.out.println("GPU信息: " + RereFloatMatrix.getGPUInfo());
     }
     
     /**
@@ -60,8 +61,8 @@ public class GPUExample {
         float[][] dataA = createRandomMatrix(size, size);
         float[][] dataB = createRandomMatrix(size, size);
         
-        RereMatrix matrixA = new RereMatrix(dataA);
-        RereMatrix matrixB = new RereMatrix(dataB);
+        RereFloatMatrix matrixA = new RereFloatMatrix(dataA);
+        RereFloatMatrix matrixB = new RereFloatMatrix(dataB);
         
         // 执行矩阵乘法（自动选择GPU或CPU）
         System.out.println("执行矩阵乘法...");
@@ -95,8 +96,8 @@ public class GPUExample {
         float[] dataA = createRandomVector(length);
         float[] dataB = createRandomVector(length);
         
-        RereVector vectorA = new RereVector(dataA);
-        RereVector vectorB = new RereVector(dataB);
+        RereFloatVector vectorA = new RereFloatVector(dataA);
+        RereFloatVector vectorB = new RereFloatVector(dataB);
         
         // 向量加法
         System.out.println("执行向量加法...");
@@ -132,8 +133,8 @@ public class GPUExample {
             float[][] dataA = createRandomMatrix(size, size);
             float[][] dataB = createRandomMatrix(size, size);
             
-            RereMatrix matrixA = new RereMatrix(dataA);
-            RereMatrix matrixB = new RereMatrix(dataB);
+            RereFloatMatrix matrixA = new RereFloatMatrix(dataA);
+            RereFloatMatrix matrixB = new RereFloatMatrix(dataB);
             
             // 执行多次测试取平均值
             int iterations = 3;
@@ -184,8 +185,8 @@ public class GPUExample {
      */
     private static void cleanup() {
         System.out.println("\n--- 清理资源 ---");
-        RereMatrix.shutdown();
-        RereVector.shutdown();
+        RereFloatMatrix.shutdown();
+        RereFloatVector.shutdown();
         System.out.println("资源清理完成!");
     }
     
@@ -196,7 +197,7 @@ public class GPUExample {
         System.out.println("\n=== 高级GPU使用示例 ===");
         
         // 检查GPU是否可用
-        if (!RereMatrix.isGPUEnabled()) {
+        if (!RereFloatMatrix.isGPUEnabled()) {
             System.out.println("GPU不可用，将使用CPU优化算法");
             return;
         }
@@ -211,8 +212,8 @@ public class GPUExample {
                 float[][] dataA = createRandomMatrix(size, size);
                 float[][] dataB = createRandomMatrix(size, size);
                 
-                RereMatrix matrixA = new RereMatrix(dataA);
-                RereMatrix matrixB = new RereMatrix(dataB);
+                RereFloatMatrix matrixA = new RereFloatMatrix(dataA);
+                RereFloatMatrix matrixB = new RereFloatMatrix(dataB);
                 
                 long startTime = System.currentTimeMillis();
                 IMatrix result = matrixA.mmul(matrixB);
@@ -250,8 +251,8 @@ public class GPUExample {
                 float[] dataA = createRandomVector(length);
                 float[] dataB = createRandomVector(length);
                 
-                RereVector vectorA = new RereVector(dataA);
-                RereVector vectorB = new RereVector(dataB);
+                RereFloatVector vectorA = new RereFloatVector(dataA);
+                RereFloatVector vectorB = new RereFloatVector(dataB);
                 
                 // 向量加法测试
                 long startTime = System.currentTimeMillis();

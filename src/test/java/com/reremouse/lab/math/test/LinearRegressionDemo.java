@@ -1,9 +1,10 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.ml.lr.RegressionResult;
 import com.reremouse.lab.math.ml.lr.RereLinearRegression;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * 线性回归演示类
@@ -59,8 +60,8 @@ public class LinearRegressionDemo {
             labels[i] = 2.0f * features[i][0] + 3.0f * features[i][1] + 1.0f;
         }
         
-        IMatrix featureMatrix = IMatrix.of(features);
-        IVector labelVector = IVector.of(labels);
+        IMatrix<Float> featureMatrix = Linalg.matrix(features);
+        IVector<Float> labelVector = Linalg.vector(labels);
         
         System.out.println("   特征矩阵形状: " + featureMatrix.getRowNum() + " x " + featureMatrix.getColNum());
         System.out.println("   标签向量长度: " + labelVector.length());
@@ -83,9 +84,9 @@ public class LinearRegressionDemo {
             System.out.println("   - 偏置项向量长度: " + result.getBias().length());
             System.out.println("   - 特征权重向量:");
             for (int i = 0; i < result.getWeights().length(); i++) {
-                System.out.printf("     w%d = %.6f (特征%d的系数)\n", i, result.getWeights().getData()[i], i);
+                System.out.printf("     w%d = %.6f (特征%d的系数)\n", i, result.getWeights().toFloatArray()[i], i);
             }
-            System.out.printf("   - 偏置项: b = %.6f\n", result.getBias().getData()[0]);
+            System.out.printf("   - 偏置项: b = %.6f\n", result.getBias().toFloatArray()[0]);
             
             // 使用新的getter方法获取权重信息
             System.out.println("   - 使用getter方法获取:");
@@ -110,12 +111,12 @@ public class LinearRegressionDemo {
         
         System.out.println("   测试样本预测结果:");
         for (int i = 0; i < testFeatures.length; i++) {
-            IVector testFeature = IVector.of(testFeatures[i]);
-            float prediction = linearRegression.predict(testFeature);
+            IVector<Float> testFeature = Linalg.vector(testFeatures[i]);
+            double prediction = linearRegression.predict(testFeature);
             
             // 计算真实值
             float actual = 2.0f * testFeatures[i][0] + 3.0f * testFeatures[i][1] + 1.0f;
-            float error = Math.abs(prediction - actual);
+            double error = Math.abs(prediction - actual);
             
             System.out.printf("     测试样本%d: x1=%.1f, x2=%.1f\n", i+1, testFeatures[i][0], testFeatures[i][1]);
             System.out.printf("       预测值: %.6f\n", prediction);
@@ -148,9 +149,9 @@ public class LinearRegressionDemo {
             System.out.println("   - L1正则化后的权重和偏置项:");
             System.out.println("     - 特征权重:");
             for (int i = 0; i < resultL1.getWeights().length(); i++) {
-                System.out.printf("       w%d = %.6f\n", i, resultL1.getWeights().getData()[i]);
+                System.out.printf("       w%d = %.6f\n", i, resultL1.getWeights().toFloatArray()[i]);
             }
-            System.out.printf("     - 偏置项: b = %.6f\n", resultL1.getBias().getData()[0]);
+            System.out.printf("     - 偏置项: b = %.6f\n", resultL1.getBias().toFloatArray()[0]);
         } catch (Exception e) {
             System.err.println("   L1正则化训练失败: " + e.getMessage());
         }
@@ -170,9 +171,9 @@ public class LinearRegressionDemo {
             System.out.println("   - L2正则化后的权重和偏置项:");
             System.out.println("     - 特征权重:");
             for (int i = 0; i < resultL2.getWeights().length(); i++) {
-                System.out.printf("       w%d = %.6f\n", i, resultL2.getWeights().getData()[i]);
+                System.out.printf("       w%d = %.6f\n", i, resultL2.getWeights().toFloatArray()[i]);
             }
-            System.out.printf("     - 偏置项: b = %.6f\n", resultL2.getBias().getData()[0]);
+            System.out.printf("     - 偏置项: b = %.6f\n", resultL2.getBias().toFloatArray()[0]);
         } catch (Exception e) {
             System.err.println("   L2正则化训练失败: " + e.getMessage());
         }
@@ -192,9 +193,9 @@ public class LinearRegressionDemo {
             System.out.println("   - ElasticNet正则化后的权重和偏置项:");
             System.out.println("     - 特征权重:");
             for (int i = 0; i < resultElasticNet.getWeights().length(); i++) {
-                System.out.printf("       w%d = %.6f\n", i, resultElasticNet.getWeights().getData()[i]);
+                System.out.printf("       w%d = %.6f\n", i, resultElasticNet.getWeights().toFloatArray()[i]);
             }
-            System.out.printf("     - 偏置项: b = %.6f\n", resultElasticNet.getBias().getData()[0]);
+            System.out.printf("     - 偏置项: b = %.6f\n", resultElasticNet.getBias().toFloatArray()[0]);
         } catch (Exception e) {
             System.err.println("   ElasticNet正则化训练失败: " + e.getMessage());
         }

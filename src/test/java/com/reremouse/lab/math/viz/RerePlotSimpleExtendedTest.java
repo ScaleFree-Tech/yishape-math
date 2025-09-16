@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.RereVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
 import com.reremouse.lab.math.viz.RerePlot;
 import java.util.*;
 
@@ -15,7 +15,7 @@ public class RerePlotSimpleExtendedTest {
         System.out.println("=== RerePlot扩展功能简单测试 ===");
         
         // 创建测试数据
-        RereVector data = new RereVector(new float[]{10, 20, 30, 40, 50});
+        RereDoubleVector data = new RereDoubleVector(new double[]{10, 20, 30, 40, 50});
         List<String> categories = Arrays.asList("类别A", "类别B", "类别C", "类别D", "类别E");
         
         RerePlot plot = new RerePlot(800, 600);
@@ -42,12 +42,12 @@ public class RerePlotSimpleExtendedTest {
             
             // 测试K线图
             System.out.println("测试K线图...");
-            float[][] candlestickArray = {
+            double[][] candlestickArray = {
                 {100, 110, 95, 115},
                 {110, 120, 105, 125},
                 {120, 115, 110, 130}
             };
-            RereMatrix candlestickData = new RereMatrix(candlestickArray);
+            RereDoubleMatrix candlestickData = new RereDoubleMatrix(candlestickArray);
             List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
             plot.candlestick(candlestickData, dates);
             plot.saveAsHtml("test_candlestick.html");
@@ -55,12 +55,12 @@ public class RerePlotSimpleExtendedTest {
             
             // 测试热力图
             System.out.println("测试热力图...");
-            float[][] heatmapArray = {
+            double[][] heatmapArray = {
                 {1, 2, 3},
                 {4, 5, 6},
                 {7, 8, 9}
             };
-            RereMatrix heatmapData = new RereMatrix(heatmapArray);
+            RereDoubleMatrix heatmapData = new RereDoubleMatrix(heatmapArray);
             List<String> xLabels = Arrays.asList("X1", "X2", "X3");
             List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3");
             plot.heatmap(heatmapData, xLabels, yLabels);

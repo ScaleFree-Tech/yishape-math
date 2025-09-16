@@ -1,9 +1,9 @@
 package com.reremouse.lab.math.data;
 
-import com.reremouse.lab.math.linalg.IVector;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  *
@@ -12,7 +12,7 @@ import java.util.List;
 public class Column  implements Serializable{
     
     private String name;//列名
-    private ColumnType columnType = ColumnType.Float;//列的类型
+    private ColumnType columnType = ColumnType.Numeric;//列的类型
     
     private List<Object> data = new ArrayList();
 

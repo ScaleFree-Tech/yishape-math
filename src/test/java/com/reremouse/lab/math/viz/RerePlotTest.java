@@ -1,11 +1,11 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.viz.RerePlot;
 import com.reremouse.lab.math.viz.AxisTicks;
 import java.util.Arrays;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * RerePlot 功能测试类
@@ -21,11 +21,11 @@ public class RerePlotTest {
         try {
             // 测试数据创建
             System.out.println("1. 测试数据创建");
-            float[] xData = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-            float[] yData = {2.1f, 3.9f, 6.1f, 8.0f, 10.2f, 12.1f, 14.0f, 16.1f, 18.0f, 20.1f};
+            double[] xData = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+            double[] yData = {2.1f, 3.9f, 6.1f, 8.0f, 10.2f, 12.1f, 14.0f, 16.1f, 18.0f, 20.1f};
             
-            IVector x = IVector.of(xData);
-            IVector y = IVector.of(yData);
+            IDoubleVector x = new RereDoubleVector(xData);
+            IDoubleVector y = new RereDoubleVector(yData);
             
             System.out.println("   X向量长度: " + x.length());
             System.out.println("   Y向量长度: " + y.length());
@@ -60,11 +60,11 @@ public class RerePlotTest {
             // 测试坐标轴刻度
             System.out.println("\n4. 测试坐标轴刻度");
             AxisTicks xTicks = new AxisTicks();
-            xTicks.setTickValues(IVector.of(new float[]{1, 5, 10}));
+            xTicks.setTickValues(new RereDoubleVector(new double[]{1, 5, 10}));
             xTicks.setTickLabels(Arrays.asList("开始", "中间", "结束"));
             
             AxisTicks yTicks = new AxisTicks();
-            yTicks.setTickValues(IVector.of(new float[]{0, 10, 20}));
+            yTicks.setTickValues(new RereDoubleVector(new double[]{0, 10, 20}));
             
             plot1.setXticks(xTicks);
             plot1.setYticks(yTicks);

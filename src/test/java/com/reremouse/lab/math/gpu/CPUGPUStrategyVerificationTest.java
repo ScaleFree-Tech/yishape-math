@@ -1,26 +1,26 @@
 package com.reremouse.lab.math.gpu;
 
 import com.reremouse.lab.math.compute.GPUConfig;
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
 
 /**
  * 验证RereMatrix和RereVector的CPU/GPU策略
- * Verify CPU/GPU strategy in RereMatrix and RereVector
+ Verify CPU/GPU strategy in RereDoubleMatrix and RereDoubleVector
  */
-class CPUGPUStrategyVerificationTest {
+public class CPUGPUStrategyVerificationTest {
     
     @BeforeEach
     void setUp() {
         // 启用日志以观察CPU/GPU选择
-        GPUComputeUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
     }
     
     @Test
@@ -30,22 +30,22 @@ class CPUGPUStrategyVerificationTest {
         System.out.println("GPU阈值: " + GPUConfig.GPU_THRESHOLD);
         
         // 创建小矩阵（远小于GPU阈值）
-        float[][] data1 = {{1, 2}, {3, 4}};
-        float[][] data2 = {{5, 6}, {7, 8}};
-        IMatrix m1 = new RereMatrix(data1);
-        IMatrix m2 = new RereMatrix(data2);
+        double[][] data1 = {{1, 2}, {3, 4}};
+        double[][] data2 = {{5, 6}, {7, 8}};
+        IMatrix<Double> m1 = new RereDoubleMatrix(data1);
+        IMatrix<Double> m2 = new RereDoubleMatrix(data2);
         
-        int dataSize = m1.getRows() * m1.getColumns();
-        System.out.println("矩阵大小: " + m1.getRows() + "x" + m1.getColumns() + 
+        int dataSize = m1.rows() * m1.cols();
+        System.out.println("矩阵大小: " + m1.rows() + "x" + m1.cols() + 
                           ", 数据量: " + dataSize + 
                           ", 预期: 使用CPU (< " + GPUConfig.GPU_THRESHOLD + ")");
         
         // 测试各种矩阵运算
-        IMatrix result1 = m1.add(m2);
-        IMatrix result2 = m1.sub(m2);  
-        IMatrix result3 = m1.mmul(m2);
-        IMatrix result4 = m1.mmul(2.0f);
-        IMatrix result5 = m1.transposeNew();
+        IMatrix<Double> result1 = m1.add(m2);
+        IMatrix<Double> result2 = m1.sub(m2);  
+        IMatrix<Double> result3 = m1.mmul(m2);
+        IMatrix<Double> result4 = m1.mmul(2.0);
+        IMatrix<Double> result5 = m1.transposeNew();
         
         // 验证结果
         assertNotNull(result1);
@@ -64,22 +64,22 @@ class CPUGPUStrategyVerificationTest {
         System.out.println("GPU阈值: " + GPUConfig.GPU_THRESHOLD);
         
         // 创建小向量（远小于GPU阈值）
-        float[] data1 = {1, 2, 3, 4, 5};
-        float[] data2 = {6, 7, 8, 9, 10};
-        IVector v1 = new RereVector(data1);
-        IVector v2 = new RereVector(data2);
+        double[] data1 = {1, 2, 3, 4, 5};
+        double[] data2 = {6, 7, 8, 9, 10};
+        IVector<Double> v1 = new RereDoubleVector(data1);
+        IVector<Double> v2 = new RereDoubleVector(data2);
         
         System.out.println("向量长度: " + v1.length() + 
                           ", 预期: 使用CPU (< " + GPUConfig.GPU_THRESHOLD + ")");
         
         // 测试各种向量运算
-        IVector result1 = v1.add(v2);
-        IVector result2 = v1.sub(v2);
-        IVector result3 = v1.multiply(v2);
-        IVector result4 = v1.multiplyScalar(2.0f);
-        IVector result5 = v1.addScalar(1.0f);
-        float dotResult = v1.dot(v2);
-        float sumResult = v1.sum();
+        IVector<Double> result1 = v1.add(v2);
+        IVector<Double> result2 = v1.sub(v2);
+        IVector<Double> result3 = v1.multiply(v2);
+        IVector<Double> result4 = v1.multiplyScalar(2.0);
+        IVector<Double> result5 = v1.addScalar(1.0);
+        double dotResult = v1.dot(v2);
+        double sumResult = v1.sum();
         
         // 验证结果
         assertNotNull(result1);
@@ -125,16 +125,16 @@ class CPUGPUStrategyVerificationTest {
         
         // 验证各个类使用相同的GPU阈值
         int gpuConfigThreshold = GPUConfig.GPU_THRESHOLD;
-        boolean gpuEnabled = RereMatrix.isGPUEnabled();
-        String gpuInfo = RereMatrix.getGPUInfo();
+        boolean gpuEnabled = RereDoubleMatrix.isGPUEnabled();
+        String gpuInfo = RereDoubleMatrix.getGPUInfo();
         
         System.out.println("GPUConfig.GPU_THRESHOLD: " + gpuConfigThreshold);
         System.out.println("RereMatrix.isGPUEnabled(): " + gpuEnabled);
         System.out.println("GPU信息: " + gpuInfo);
         
         // 验证向量GPU配置
-        boolean vectorGpuEnabled = RereVector.isGPUEnabled();
-        String vectorGpuInfo = RereVector.getGPUInfo();
+        boolean vectorGpuEnabled = RereDoubleVector.isGPUEnabled();
+        String vectorGpuInfo = RereDoubleVector.getGPUInfo();
         
         System.out.println("RereVector.isGPUEnabled(): " + vectorGpuEnabled);
         System.out.println("Vector GPU信息: " + vectorGpuInfo);
@@ -152,16 +152,16 @@ class CPUGPUStrategyVerificationTest {
         System.out.println("=== 异常处理和回退机制验证 ===");
         
         // 创建测试数据
-        float[][] data = {{1, 2}, {3, 4}};
-        IMatrix matrix = new RereMatrix(data);
+        double[][] data = {{1, 2}, {3, 4}};
+        IMatrix<Double> matrix = new RereDoubleMatrix(data);
         
         // 即使在异常情况下，运算也应该成功（通过CPU回退）
         try {
-            IMatrix result = matrix.mmul(2.0f);
+            IMatrix<Double> result = matrix.mmul(2.0);
             assertNotNull(result);
             System.out.println("标量乘法成功（通过CPU回退机制）");
             
-            IMatrix transpose = matrix.transposeNew();
+            IMatrix<Double> transpose = matrix.transposeNew();
             assertNotNull(transpose);
             System.out.println("矩阵转置成功（通过CPU回退机制）");
             

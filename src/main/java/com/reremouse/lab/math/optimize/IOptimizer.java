@@ -16,6 +16,6 @@ public interface IOptimizer {
      * @param grdFun 梯度计算法
      * @return 返回最优值及最优点的变量值（向量）
      */
-    public Tuple2<Float,IVector> optimize(IVector initX, IObjectiveFunction objFun,IGradientFunction grdFun);
+    public Tuple2<Double,IVector> optimize(IVector initX, IObjectiveFunction objFun,IGradientFunction grdFun);
     
 }

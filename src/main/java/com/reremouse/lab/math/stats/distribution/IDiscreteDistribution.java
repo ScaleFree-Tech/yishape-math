@@ -36,7 +36,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 均值 / Mean value
      */
-    public float mean();
+    public double mean();
 
     /**
      * 计算分布的方差
@@ -44,7 +44,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 方差 / Variance
      */
-    public float var();
+    public double var();
 
     /**
      * 计算分布的标准差
@@ -52,7 +52,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 标准差 / Standard deviation
      */
-    public float std();
+    public double std();
     
     /**
      * 计算分布的中位数
@@ -60,7 +60,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 中位数 / Median
      */
-    public float median();
+    public double median();
     
     /**
      * 计算分布的众数（最频繁出现的值）
@@ -68,7 +68,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 众数，如果不存在唯一众数则返回NaN / Mode, or NaN if no unique mode exists
      */
-    public float mode();
+    public double mode();
     
     /**
      * 计算第一四分位数（25%分位数）
@@ -76,7 +76,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 第一四分位数 / First quartile
      */
-    public float q1();
+    public double q1();
     
     /**
      * 计算第三四分位数（75%分位数）
@@ -84,7 +84,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 第三四分位数 / Third quartile
      */    
-    public float q3();
+    public double q3();
     
     /**
      * 计算分布的偏度
@@ -92,7 +92,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 偏度 / Skewness
      */
-    public float skewness();
+    public double skewness();
     
     /**
      * 计算分布的峰度
@@ -100,7 +100,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 峰度 / Kurtosis
      */
-    public float kurtosis();
+    public double kurtosis();
     
     // ==================== 概率计算 / Probability Calculations ====================
     
@@ -112,7 +112,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return 概率质量函数值 / PMF value
      * @throws IllegalArgumentException 如果x不在分布的支持区间内 / If x is not in the support of the distribution
      */
-    public float pmf(int x);
+    public double pmf(int x);
     
     /**
      * 计算累积分布函数值
@@ -121,7 +121,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @param x 输入值 / Input value
      * @return 累积分布函数值 / CDF value
      */
-    public float cdf(int x);
+    public double cdf(int x);
     
     /**
      * 计算百分点函数值（分位数函数）
@@ -131,7 +131,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return 百分点函数值 / PPF value
      * @throws IllegalArgumentException 如果概率值不在[0,1]范围内 / If probability is not in range [0,1]
      */
-    public int ppf(float prob);
+    public int ppf(double prob);
     
     /**
      * 计算生存函数值（1 - CDF）
@@ -140,7 +140,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @param x 输入值 / Input value
      * @return 生存函数值 / Survival function value
      */
-    public float sf(int x);
+    public double sf(int x);
     
     /**
      * 计算逆生存函数值
@@ -150,7 +150,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return 逆生存函数值 / Inverse survival function value
      * @throws IllegalArgumentException 如果概率值不在[0,1]范围内 / If probability is not in range [0,1]
      */
-    public int isf(float prob);
+    public int isf(double prob);
     
     // ==================== 随机采样 / Random Sampling ====================
     
@@ -217,7 +217,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return k阶原点矩 / k-th raw moment
      * @throws IllegalArgumentException 如果k小于0 / If k is less than 0
      */
-    public float moment(int k);
+    public double moment(int k);
     
     /**
      * 计算分布的中心矩（k阶中心矩）
@@ -227,7 +227,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return k阶中心矩 / k-th central moment
      * @throws IllegalArgumentException 如果k小于0 / If k is less than 0
      */
-    public float centralMoment(int k);
+    public double centralMoment(int k);
     
     /**
      * 计算分布的标准化矩
@@ -237,7 +237,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return k阶标准化矩 / k-th standardized moment
      * @throws IllegalArgumentException 如果k小于0或标准差为0 / If k is less than 0 or standard deviation is 0
      */
-    public float standardizedMoment(int k);
+    public double standardizedMoment(int k);
     
     /**
      * 计算分布的熵
@@ -245,7 +245,7 @@ public interface IDiscreteDistribution extends Serializable {
      * 
      * @return 熵值 / Entropy value
      */
-    public float entropy();
+    public double entropy();
     
     /**
      * 计算分布的累积生成函数值
@@ -254,7 +254,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @param t 参数 / Parameter
      * @return 累积生成函数值 / CGF value
      */
-    public float cgf(float t);
+    public double cgf(double t);
     
     // ==================== 分位数和区间估计 / Quantiles and Interval Estimation ====================
     
@@ -266,7 +266,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return 分位数 / Quantile
      * @throws IllegalArgumentException 如果概率值不在[0,1]范围内 / If probability is not in range [0,1]
      */
-    public int quantile(float prob);
+    public int quantile(double prob);
     
     /**
      * 计算置信区间
@@ -276,7 +276,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return 置信区间，[下界, 上界] / Confidence interval [lower bound, upper bound]
      * @throws IllegalArgumentException 如果置信水平不在[0,1]范围内 / If confidence level is not in range [0,1]
      */
-    public int[] confidenceInterval(float confidence);
+    public int[] confidenceInterval(double confidence);
     
     // ==================== 分布比较和距离 / Distribution Comparison and Distance ====================
     
@@ -288,7 +288,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return KL散度 / KL divergence
      * @throws IllegalArgumentException 如果分布不兼容 / If distributions are incompatible
      */
-    public float klDivergence(IDiscreteDistribution other);
+    public double klDivergence(IDiscreteDistribution other);
     
     /**
      * 计算与另一个离散分布的JS散度
@@ -298,7 +298,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return JS散度 / JS divergence
      * @throws IllegalArgumentException 如果分布不兼容 / If distributions are incompatible
      */
-    public float jsDivergence(IDiscreteDistribution other);
+    public double jsDivergence(IDiscreteDistribution other);
     
     /**
      * 计算与另一个离散分布的Wasserstein距离
@@ -308,7 +308,7 @@ public interface IDiscreteDistribution extends Serializable {
      * @return Wasserstein距离 / Wasserstein distance
      * @throws IllegalArgumentException 如果分布不兼容 / If distributions are incompatible
      */
-    public float wassersteinDistance(IDiscreteDistribution other);
+    public double wassersteinDistance(IDiscreteDistribution other);
     
     // ==================== 分布信息 / Distribution Information ====================
     

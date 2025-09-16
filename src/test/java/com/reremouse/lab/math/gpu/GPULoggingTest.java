@@ -1,13 +1,15 @@
 package com.reremouse.lab.math.gpu;
 
-import com.reremouse.lab.math.compute.GPUComputeUtils;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.compute.GPUComputeFloatUtils;
+import com.reremouse.lab.math.linalg.RereFloatMatrix;
+import com.reremouse.lab.math.linalg.RereFloatVector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IFloatVector;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * GPU日志控制测试类
@@ -28,25 +30,25 @@ public class GPULoggingTest {
     void setUp() {
         // 创建测试数据（超过GPU阈值10000）
         int size = 200; // 200x200 = 40000 > 10000
-        float[][] dataA = new float[size][size];
-        float[][] dataB = new float[size][size];
-        float[] vectorDataA = new float[size * size];
-        float[] vectorDataB = new float[size * size];
+        double[][] dataA = new double[size][size];
+        double[][] dataB = new double[size][size];
+        double[] vectorDataA = new double[size * size];
+        double[] vectorDataB = new double[size * size];
         
         // 初始化测试数据
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                dataA[i][j] = (float) (Math.random() * 10);
-                dataB[i][j] = (float) (Math.random() * 10);
-                vectorDataA[i * size + j] = (float) (Math.random() * 10);
-                vectorDataB[i * size + j] = (float) (Math.random() * 10);
+                dataA[i][j] = (double) (Math.random() * 10);
+                dataB[i][j] = (double) (Math.random() * 10);
+                vectorDataA[i * size + j] = (double) (Math.random() * 10);
+                vectorDataB[i * size + j] = (double) (Math.random() * 10);
             }
         }
         
-        testMatrixA = new RereMatrix(dataA);
-        testMatrixB = new RereMatrix(dataB);
-        testVectorA = new RereVector(vectorDataA);
-        testVectorB = new RereVector(vectorDataB);
+        testMatrixA = Linalg.matrix(dataA);
+        testMatrixB = Linalg.matrix(dataB);
+        testVectorA = Linalg.vector(vectorDataA);
+        testVectorB = Linalg.vector(vectorDataB);
     }
     
     @Test
@@ -55,7 +57,7 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试关闭日志 ===");
         
         // 关闭日志
-        GPUComputeUtils.setLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(false);
         
         // 执行一些GPU操作
         testMatrixA.add(testMatrixB);
@@ -64,7 +66,7 @@ public class GPULoggingTest {
         System.out.println("日志已关闭，应该看不到GPU/CPU日志");
         
         // 重新启用日志
-        GPUComputeUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
     }
     
     @Test
@@ -73,8 +75,8 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试基本日志 ===");
         
         // 启用基本日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(false);
         
         // 执行一些GPU操作
         testMatrixA.add(testMatrixB);
@@ -90,8 +92,8 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试详细日志 ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         // 执行一些GPU操作
         testMatrixA.add(testMatrixB);
@@ -108,18 +110,18 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试小数据量CPU回退 ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         // 创建小矩阵（小于GPU阈值）
-        float[][] smallData = {{1, 2}, {3, 4}};
-        IMatrix smallMatrix = new RereMatrix(smallData);
-        IMatrix smallMatrix2 = new RereMatrix(smallData);
+        double[][] smallData = {{1, 2}, {3, 4}};
+        IMatrix smallMatrix = Linalg.matrix(smallData);
+        IMatrix smallMatrix2 = Linalg.matrix(smallData);
         
         // 创建小向量
-        float[] smallVectorData = {1, 2, 3, 4};
-        IVector smallVector = new RereVector(smallVectorData);
-        IVector smallVector2 = new RereVector(smallVectorData);
+        double[] smallVectorData = {1, 2, 3, 4};
+        IVector smallVector = Linalg.vector(smallVectorData);
+        IVector smallVector2 = Linalg.vector(smallVectorData);
         
         // 这些操作应该使用CPU（因为数据量小）
         smallMatrix.add(smallMatrix2);
@@ -134,11 +136,11 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试GPU失败回退 ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         // 模拟GPU不可用的情况
-        boolean originalGPUState = GPUComputeUtils.isGPUAvailable();
+        boolean originalGPUState = GPUComputeFloatUtils.isGPUAvailable();
         
         // 注意：这里我们无法直接设置GPU不可用，因为它是静态初始化的
         // 但我们可以通过日志看到正常的GPU操作
@@ -157,20 +159,20 @@ public class GPULoggingTest {
         
         // 测试日志状态
         System.out.println("初始日志状态:");
-        System.out.println("日志启用: " + GPUComputeUtils.isLoggingEnabled());
-        System.out.println("详细日志启用: " + GPUComputeUtils.isDetailedLoggingEnabled());
+        System.out.println("日志启用: " + GPUComputeFloatUtils.isLoggingEnabled());
+        System.out.println("详细日志启用: " + GPUComputeFloatUtils.isDetailedLoggingEnabled());
         
         // 关闭日志
-        GPUComputeUtils.setLoggingEnabled(false);
+        GPUComputeFloatUtils.setLoggingEnabled(false);
         System.out.println("关闭日志后:");
-        System.out.println("日志启用: " + GPUComputeUtils.isLoggingEnabled());
+        System.out.println("日志启用: " + GPUComputeFloatUtils.isLoggingEnabled());
         
         // 重新启用日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         System.out.println("启用详细日志后:");
-        System.out.println("日志启用: " + GPUComputeUtils.isLoggingEnabled());
-        System.out.println("详细日志启用: " + GPUComputeUtils.isDetailedLoggingEnabled());
+        System.out.println("日志启用: " + GPUComputeFloatUtils.isLoggingEnabled());
+        System.out.println("详细日志启用: " + GPUComputeFloatUtils.isDetailedLoggingEnabled());
         
         // 执行一个操作来验证日志
         testMatrixA.add(testMatrixB);
@@ -182,8 +184,8 @@ public class GPULoggingTest {
         System.out.println("\n=== 测试所有GPU操作日志 ===");
         
         // 启用详细日志
-        GPUComputeUtils.setLoggingEnabled(true);
-        GPUComputeUtils.setDetailedLoggingEnabled(true);
+        GPUComputeFloatUtils.setLoggingEnabled(true);
+        GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         
         System.out.println("执行各种GPU操作:");
         
@@ -204,7 +206,7 @@ public class GPULoggingTest {
         testVectorA.subScalar(1.0f);
         testVectorA.multiplyScalar(2.0f);
         testVectorA.sum();
-        testVectorA.squre();
+        testVectorA.square();
         testVectorA.sqrt();
         testVectorA.innerProduct(testVectorB);
         

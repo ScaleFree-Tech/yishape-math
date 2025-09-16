@@ -3,9 +3,9 @@ package com.reremouse.lab.data;
 import com.reremouse.lab.math.data.Column;
 import com.reremouse.lab.math.data.DataFrame;
 import com.reremouse.lab.math.data.ColumnType;
-import com.reremouse.lab.math.linalg.IMatrix;
 import java.util.ArrayList;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IMatrix;
 
 /**
  * 简单的DataFrame测试 / Simple DataFrame Test
@@ -22,7 +22,7 @@ public class SimpleDataFrameTest {
             // 添加Float类型列 / Add Float type column
             Column floatCol1 = new Column();
             floatCol1.setName("feature1");
-            floatCol1.setColumnType(ColumnType.Float);
+            floatCol1.setColumnType(ColumnType.Numeric);
             List<Object> floatData1 = new ArrayList<>();
             floatData1.add(1.0f);
             floatData1.add(2.0f);
@@ -33,7 +33,7 @@ public class SimpleDataFrameTest {
             // 添加另一个Float类型列 / Add another Float type column
             Column floatCol2 = new Column();
             floatCol2.setName("feature2");
-            floatCol2.setColumnType(ColumnType.Float);
+            floatCol2.setColumnType(ColumnType.Numeric);
             List<Object> floatData2 = new ArrayList<>();
             floatData2.add(4.0f);
             floatData2.add(5.0f);

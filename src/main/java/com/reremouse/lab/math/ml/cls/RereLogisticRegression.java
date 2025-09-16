@@ -1,9 +1,7 @@
 package com.reremouse.lab.math.ml.cls;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.RereMatrix;
-import com.reremouse.lab.math.linalg.RereVector;
+import com.reremouse.lab.math.linalg.RereDoubleMatrix;
+import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
@@ -13,6 +11,9 @@ import com.reremouse.lab.util.Tuple2;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
 
 /**
  * 统一逻辑回归实现类
@@ -37,19 +38,19 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private IVector bias;
     
     /** 学习率 */
-    private float learningRate = 0.01f;
+    private double learningRate = 0.01f;
     
     /** 最大迭代次数 */
     private int maxIterations = 1000;
     
     /** 收敛阈值 */
-    private float tolerance = 1e-6f;
+    private double tolerance = 1e-6f;
     
     /** L1正则化系数（λ₁） */
-    private float lambda1 = 0.0f;
+    private double lambda1 = 0.0f;
     
     /** L2正则化系数（λ₂） */
-    private float lambda2 = 0.0f;
+    private double lambda2 = 0.0f;
     
     /**
      * 正则化类型枚举
@@ -105,8 +106,8 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 参数化构造函数
      */
-    public RereLogisticRegression(float learningRate, int maxIterations, float tolerance, 
-                                 float lambda1, float lambda2) {
+    public RereLogisticRegression(double learningRate, int maxIterations, double tolerance, 
+                                 double lambda1, double lambda2) {
         this();
         this.learningRate = learningRate;
         this.maxIterations = maxIterations;
@@ -149,7 +150,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         this.isTrained = true;
         
         // 计算最终损失
-        float finalLoss = computeObjective(createParameterVector());
+        double finalLoss = computeObjective(createParameterVector());
         
         // 创建并返回训练结果
         LogisticRegressionResult result = new LogisticRegressionResult();
@@ -163,9 +164,9 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         
         // 设置偏置（多分类时使用第一个偏置作为兼容）
         if (isBinaryClassification) {
-            result.setBias(new RereVector(new float[]{bias.get(0)}));
+            result.setBias(Linalg.vector(new double[]{(double)bias.get(0)}));
         } else {
-            result.setBias(new RereVector(new float[]{bias.get(0)}));
+            result.setBias(Linalg.vector(new double[]{(double)bias.get(0)}));
         }
         
         result.setLoss(finalLoss);
@@ -184,7 +185,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         IOptimizer optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Float, IVector> optimizationResult = optimizer.optimize(initParams, this, this);
+        Tuple2<Double, IVector> optimizationResult = optimizer.optimize(initParams, this, this);
         
         // 从优化结果中提取参数
         IVector optimalParams = optimizationResult._2;
@@ -209,13 +210,13 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         
         if (isBinaryClassification) {
             // 二分类：使用sigmoid函数
-            float probability = predictProbability(x);
+            double probability = predictProbability(x);
             return probability >= 0.5 ? reverseLabelMapping.get(1) : reverseLabelMapping.get(0);
         } else {
             // 多分类：使用softmax函数
-            float[] probabilities = predictProbabilities(x);
+            double[] probabilities = predictProbabilities(x);
             int predictedClass = 0;
-            float maxProb = probabilities[0];
+            double maxProb = probabilities[0];
             for (int i = 1; i < numClasses; i++) {
                 if (probabilities[i] > maxProb) {
                     maxProb = probabilities[i];
@@ -229,7 +230,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 预测样本属于正类的概率（仅适用于二分类）
      */
-    public float predictProbability(IVector x) {
+    public double predictProbability(IVector x) {
         if (!isBinaryClassification) {
             throw new IllegalStateException("predictProbability方法仅适用于二分类模型");
         }
@@ -239,7 +240,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         }
         
         // 计算线性组合：z = w^T * x + b
-        float z = weights.getRow(0).innerProduct(x) + bias.get(0);
+        double z = (double)weights.getRow(0).innerProduct(x) + (double)bias.get(0);
         
         // 应用sigmoid函数：P(y=1|x) = 1 / (1 + e^(-z))
         return sigmoid(z);
@@ -247,8 +248,10 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     
     /**
      * 预测样本属于每个类别的概率（适用于多分类）
+     * @param x
+     * @return 
      */
-    public float[] predictProbabilities(IVector x) {
+    public double[] predictProbabilities(IVector x) {
         if (isBinaryClassification) {
             throw new IllegalStateException("predictProbabilities方法仅适用于多分类模型");
         }
@@ -258,10 +261,10 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         }
         
         // 计算每个类别的线性组合
-        float[] logits = new float[numClasses];
+        double[] logits = new double[numClasses];
         for (int k = 0; k < numClasses; k++) {
-            IVector classWeights = weights.getRow(k);
-            logits[k] = classWeights.innerProduct(x) + bias.get(k);
+            IVector classWeights = (IVector)weights.getRow(k);
+            logits[k] = (double)classWeights.innerProduct(x) + (double)bias.get(k);
         }
         
         // 应用softmax函数
@@ -274,14 +277,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private Object predictProbabilityInternal(IVector x) {
         if (isBinaryClassification) {
             // 二分类：返回单个概率值
-            float z = weights.getRow(0).innerProduct(x) + bias.get(0);
+            double z = (double)weights.getRow(0).innerProduct(x) + (double)bias.get(0);
             return sigmoid(z);
         } else {
             // 多分类：返回概率数组
-            float[] logits = new float[numClasses];
+            double[] logits = new double[numClasses];
             for (int k = 0; k < numClasses; k++) {
-                IVector classWeights = weights.getRow(k);
-                logits[k] = classWeights.innerProduct(x) + bias.get(k);
+                IVector classWeights = (IVector)weights.getRow(k);
+                logits[k] = (double)classWeights.innerProduct(x) + (double)bias.get(k);
             }
             return softmax(logits);
         }
@@ -306,7 +309,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         String[] predictions = new String[features.getRowNum()];
         
         for (int i = 0; i < features.getRowNum(); i++) {
-            IVector sample = features.getRow(i);
+            IVector sample = (IVector)features.getRow(i);
             predictions[i] = predict(sample);
         }
         
@@ -316,7 +319,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     // ==================== 损失函数和梯度计算 ====================
     
     @Override
-    public float computeObjective(IVector x) {
+    public double computeObjective(IVector x) {
         if (trainingFeatures == null || trainingLabels == null) {
             throw new IllegalStateException("训练数据未设置");
         }
@@ -324,24 +327,24 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         // 从参数向量中提取权重和偏置
         extractParametersFromVector(x);
         
-        float totalLoss = 0.0f;
+        double totalLoss = 0.0f;
         int m = trainingFeatures.getRowNum();
         
         // 计算每个样本的损失
         for (int i = 0; i < m; i++) {
-            IVector sample = trainingFeatures.getRow(i);
+            IVector sample = (IVector)trainingFeatures.getRow(i);
             int label = trainingLabels[i];
             
             if (isBinaryClassification) {
                 // 二分类：使用sigmoid和交叉熵损失
-                float probability = (Float) predictProbabilityInternal(sample);
-                float sampleLoss = -label * (float) Math.log(probability + 1e-15f) - 
-                                  (1 - label) * (float) Math.log(1 - probability + 1e-15f);
+                double probability = (Double) predictProbabilityInternal(sample);
+                double sampleLoss = -label * (double) Math.log(probability + 1e-15f) - 
+                                  (1 - label) * (double) Math.log(1 - probability + 1e-15f);
                 totalLoss += sampleLoss;
             } else {
                 // 多分类：使用softmax和交叉熵损失
-                float[] probabilities = (float[]) predictProbabilityInternal(sample);
-                float sampleLoss = -(float) Math.log(probabilities[label] + 1e-15f);
+                double[] probabilities = (double[]) predictProbabilityInternal(sample);
+                double sampleLoss = -(double) Math.log(probabilities[label] + 1e-15f);
                 totalLoss += sampleLoss;
             }
         }
@@ -382,23 +385,23 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         int n = featureDimension;
         
         // 初始化梯度向量
-        float[] weightGradients = new float[n];
-        float biasGradient = 0.0f;
+        double[] weightGradients = new double[n];
+        double biasGradient = 0.0f;
         
         // 计算每个样本的梯度
         for (int i = 0; i < m; i++) {
-            IVector sample = trainingFeatures.getRow(i);
+            IVector sample = (IVector)trainingFeatures.getRow(i);
             int label = trainingLabels[i];
             
             // 计算预测概率
-            float probability = (Float) predictProbabilityInternal(sample);
+            double probability = (Double) predictProbabilityInternal(sample);
             
             // 计算误差
-            float error = probability - label;
+            double error = probability - label;
             
             // 累积权重梯度
             for (int j = 0; j < n; j++) {
-                weightGradients[j] += error * sample.get(j);
+                weightGradients[j] += error * (double)sample.get(j);
             }
             
             // 累积偏置梯度
@@ -423,24 +426,24 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      */
     private IVector computeMulticlassClassificationGradient(int m) {
         // 初始化梯度矩阵和向量
-        float[][] weightGradients = new float[numClasses][featureDimension];
-        float[] biasGradients = new float[numClasses];
+        double[][] weightGradients = new double[numClasses][featureDimension];
+        double[] biasGradients = new double[numClasses];
         
         // 计算每个样本的梯度
         for (int i = 0; i < m; i++) {
-            IVector sample = trainingFeatures.getRow(i);
+            IVector sample = (IVector)trainingFeatures.getRow(i);
             int label = trainingLabels[i];
             
             // 计算预测概率
-            float[] probabilities = (float[]) predictProbabilityInternal(sample);
+            double[] probabilities = (double[]) predictProbabilityInternal(sample);
             
             // 计算每个类别的梯度
             for (int k = 0; k < numClasses; k++) {
-                float error = probabilities[k] - (k == label ? 1.0f : 0.0f);
+                double error = probabilities[k] - (k == label ? 1.0f : 0.0f);
                 
                 // 权重梯度
                 for (int j = 0; j < featureDimension; j++) {
-                    weightGradients[k][j] += error * sample.get(j);
+                    weightGradients[k][j] += error * (double)sample.get(j);
                 }
                 
                 // 偏置梯度
@@ -505,30 +508,30 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         
         if (isBinaryClassification) {
             // 二分类：权重向量 + 单个偏置
-            float scale = (float) Math.sqrt(2.0 / featureDimension);
-            float[] weightData = new float[featureDimension];
+            double scale = (double) Math.sqrt(2.0 / featureDimension);
+            double[] weightData = new double[featureDimension];
             for (int i = 0; i < featureDimension; i++) {
-                weightData[i] = (random.nextFloat() - 0.5f) * 2.0f * scale;
+                weightData[i] = (random.nextDouble() - 0.5f) * 2.0f * scale;
             }
             
-            this.weights = new RereMatrix(new float[][]{weightData});
-            this.bias = new RereVector(new float[]{0.0f});
+            this.weights = new RereDoubleMatrix(new double[][]{weightData});
+            this.bias = new RereDoubleVector(new double[]{0.0f});
         } else {
             // 多分类：权重矩阵 + 偏置向量
-            float scale = (float) Math.sqrt(2.0 / featureDimension);
-            float[][] weightData = new float[numClasses][featureDimension];
+            double scale = (double) Math.sqrt(2.0 / featureDimension);
+            double[][] weightData = new double[numClasses][featureDimension];
             for (int k = 0; k < numClasses; k++) {
                 for (int j = 0; j < featureDimension; j++) {
-                    weightData[k][j] = (random.nextFloat() - 0.5f) * 2.0f * scale;
+                    weightData[k][j] = (random.nextDouble() - 0.5f) * 2.0f * scale;
                 }
             }
             
-            this.weights = new RereMatrix(weightData);
-            float[] biasData = new float[numClasses];
+            this.weights = new RereDoubleMatrix(weightData);
+            double[] biasData = new double[numClasses];
             for (int k = 0; k < numClasses; k++) {
                 biasData[k] = 0.0f;
             }
-            this.bias = new RereVector(biasData);
+            this.bias = new RereDoubleVector(biasData);
         }
     }
     
@@ -539,37 +542,37 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         if (isBinaryClassification) {
             // 二分类：[w1, w2, ..., wn, b]
             int n = featureDimension;
-            float[] paramData = new float[n + 1];
+            double[] paramData = new double[n + 1];
             
             // 复制权重
             for (int i = 0; i < n; i++) {
-                paramData[i] = weights.get(0, i);
+                paramData[i] = (double)weights.get(0, i);
             }
             
             // 添加偏置
-            paramData[n] = bias.get(0);
+            paramData[n] = (double)bias.get(0);
             
-            return new RereVector(paramData);
+            return new RereDoubleVector(paramData);
         } else {
             // 多分类：[w11, w12, ..., w1n, w21, w22, ..., w2n, ..., wk1, wk2, ..., wkn, b1, b2, ..., bk]
             int totalParams = numClasses * featureDimension + numClasses;
-            float[] paramData = new float[totalParams];
+            double[] paramData = new double[totalParams];
             
             int index = 0;
             
             // 复制权重
             for (int k = 0; k < numClasses; k++) {
                 for (int j = 0; j < featureDimension; j++) {
-                    paramData[index++] = weights.get(k, j);
+                    paramData[index++] = (double)weights.get(k, j);
                 }
             }
             
             // 复制偏置
             for (int k = 0; k < numClasses; k++) {
-                paramData[index++] = bias.get(k);
+                paramData[index++] = (double)bias.get(k);
             }
             
-            return new RereVector(paramData);
+            return new RereDoubleVector(paramData);
         }
     }
     
@@ -582,43 +585,43 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             int n = paramVector.length() - 1;
             
             // 提取权重
-            float[] weightData = new float[n];
+            double[] weightData = new double[n];
             for (int i = 0; i < n; i++) {
-                weightData[i] = paramVector.get(i);
+                weightData[i] = (double)paramVector.get(i);
             }
-            this.weights = new RereMatrix(new float[][]{weightData});
+            this.weights = Linalg.matrix(new double[][]{weightData});
             
             // 提取偏置
-            float biasValue = paramVector.get(n);
-            this.bias = new RereVector(new float[]{biasValue});
+            double biasValue = (double)paramVector.get(n);
+            this.bias = new RereDoubleVector(new double[]{biasValue});
         } else {
             // 多分类：提取权重矩阵和偏置向量
             int index = 0;
             
             // 提取权重
-            float[][] weightData = new float[numClasses][featureDimension];
+            double[][] weightData = new double[numClasses][featureDimension];
             for (int k = 0; k < numClasses; k++) {
                 for (int j = 0; j < featureDimension; j++) {
-                    weightData[k][j] = paramVector.get(index++);
+                    weightData[k][j] = (double)paramVector.get(index++);
                 }
             }
-            this.weights = new RereMatrix(weightData);
+            this.weights = new RereDoubleMatrix(weightData);
             
             // 提取偏置
-            float[] biasData = new float[numClasses];
+            double[] biasData = new double[numClasses];
             for (int k = 0; k < numClasses; k++) {
-                biasData[k] = paramVector.get(index++);
+                biasData[k] = (double)paramVector.get(index++);
             }
-            this.bias = new RereVector(biasData);
+            this.bias = new RereDoubleVector(biasData);
         }
     }
     
     /**
      * 创建梯度向量（二分类）
      */
-    private IVector createGradientVector(float[] weightGradients, float biasGradient) {
+    private IVector createGradientVector(double[] weightGradients, double biasGradient) {
         int n = weightGradients.length;
-        float[] gradientData = new float[n + 1];
+        double[] gradientData = new double[n + 1];
         
         // 复制权重梯度
         System.arraycopy(weightGradients, 0, gradientData, 0, n);
@@ -626,15 +629,15 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         // 添加偏置梯度
         gradientData[n] = biasGradient;
         
-        return new RereVector(gradientData);
+        return new RereDoubleVector(gradientData);
     }
     
     /**
      * 创建梯度向量（多分类）
      */
-    private IVector createGradientVector(float[][] weightGradients, float[] biasGradients) {
+    private IVector createGradientVector(double[][] weightGradients, double[] biasGradients) {
         int totalParams = numClasses * featureDimension + numClasses;
-        float[] gradientData = new float[totalParams];
+        double[] gradientData = new double[totalParams];
         
         int index = 0;
         
@@ -650,13 +653,13 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             gradientData[index++] = biasGradients[k];
         }
         
-        return new RereVector(gradientData);
+        return new RereDoubleVector(gradientData);
     }
     
     /**
      * 根据lambda1和lambda2的值自动判断正则化类型
      */
-    private RegularizationType inferRegularizationType(float lambda1, float lambda2) {
+    private RegularizationType inferRegularizationType(double lambda1, double lambda2) {
         if (lambda1 > 0 && lambda2 > 0) {
             return RegularizationType.ELASTIC_NET;
         } else if (lambda1 > 0 && lambda2 <= 0) {
@@ -671,14 +674,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 计算正则化项
      */
-    private float computeRegularizationTerm() {
-        float regularizationTerm = 0.0f;
+    private double computeRegularizationTerm() {
+        double regularizationTerm = 0.0f;
         
         switch (regularizationType) {
             case L1:
                 for (int i = 0; i < weights.getRowNum(); i++) {
                     for (int j = 0; j < weights.getColNum(); j++) {
-                        regularizationTerm += Math.abs(weights.get(i, j));
+                        regularizationTerm += Math.abs((double)weights.get(i, j));
                     }
                 }
                 regularizationTerm *= lambda1;
@@ -686,24 +689,24 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             case L2:
                 for (int i = 0; i < weights.getRowNum(); i++) {
                     for (int j = 0; j < weights.getColNum(); j++) {
-                        regularizationTerm += weights.get(i, j) * weights.get(i, j);
+                        regularizationTerm += (double)weights.get(i, j) * (double)weights.get(i, j);
                     }
                 }
                 regularizationTerm *= lambda2 / 2.0f;
                 break;
             case ELASTIC_NET:
                 // L1部分
-                float l1Term = 0.0f;
+                double l1Term = 0.0f;
                 for (int i = 0; i < weights.getRowNum(); i++) {
                     for (int j = 0; j < weights.getColNum(); j++) {
-                        l1Term += Math.abs(weights.get(i, j));
+                        l1Term += Math.abs((double)weights.get(i, j));
                     }
                 }
                 // L2部分
-                float l2Term = 0.0f;
+                double l2Term = 0.0f;
                 for (int i = 0; i < weights.getRowNum(); i++) {
                     for (int j = 0; j < weights.getColNum(); j++) {
-                        l2Term += weights.get(i, j) * weights.get(i, j);
+                        l2Term += (double)weights.get(i, j) * (double)weights.get(i, j);
                     }
                 }
                 regularizationTerm = lambda1 * l1Term + lambda2 * l2Term / 2.0f;
@@ -720,21 +723,21 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 添加正则化梯度（二分类）
      */
-    private void addRegularizationGradients(float[] weightGradients) {
+    private void addRegularizationGradients(double[] weightGradients) {
         switch (regularizationType) {
             case L1:
                 for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += lambda1 * Math.signum(weights.get(0, i));
+                    weightGradients[i] += (double)lambda1 * Math.signum((double)weights.get(0, i));
                 }
                 break;
             case L2:
                 for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += lambda2 * weights.get(0, i);
+                    weightGradients[i] += lambda2 * (double)weights.get(0, i);
                 }
                 break;
             case ELASTIC_NET:
                 for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += lambda1 * Math.signum(weights.get(0, i)) + lambda2 * weights.get(0, i);
+                    weightGradients[i] += lambda1 * Math.signum((double)weights.get(0, i)) + lambda2 * (double)weights.get(0, i);
                 }
                 break;
             case NONE:
@@ -747,26 +750,26 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 添加正则化梯度（多分类）
      */
-    private void addRegularizationGradients(float[][] weightGradients) {
+    private void addRegularizationGradients(double[][] weightGradients) {
         switch (regularizationType) {
             case L1:
                 for (int k = 0; k < numClasses; k++) {
                     for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda1 * Math.signum(weights.get(k, j));
+                        weightGradients[k][j] += lambda1 * Math.signum((double)weights.get(k, j));
                     }
                 }
                 break;
             case L2:
                 for (int k = 0; k < numClasses; k++) {
                     for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda2 * weights.get(k, j);
+                        weightGradients[k][j] += lambda2 * (double)weights.get(k, j);
                     }
                 }
                 break;
             case ELASTIC_NET:
                 for (int k = 0; k < numClasses; k++) {
                     for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda1 * Math.signum(weights.get(k, j)) + lambda2 * weights.get(k, j);
+                        weightGradients[k][j] += lambda1 * Math.signum((double)weights.get(k, j)) + lambda2 * (double)weights.get(k, j);
                     }
                 }
                 break;
@@ -780,12 +783,12 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * Sigmoid激活函数
      */
-    private float sigmoid(float z) {
+    private double sigmoid(double z) {
         // 处理数值稳定性
         if (z > 0) {
-            return 1.0f / (1.0f + (float) Math.exp(-z));
+            return 1.0f / (1.0f + (double) Math.exp(-z));
         } else {
-            float expZ = (float) Math.exp(z);
+            double expZ = (double) Math.exp(z);
             return expZ / (1.0f + expZ);
         }
     }
@@ -793,11 +796,11 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * Softmax激活函数
      */
-    private float[] softmax(float[] logits) {
-        float[] probabilities = new float[numClasses];
+    private double[] softmax(double[] logits) {
+        double[] probabilities = new double[numClasses];
         
         // 找到最大值以提高数值稳定性
-        float maxLogit = logits[0];
+        double maxLogit = logits[0];
         for (int i = 1; i < numClasses; i++) {
             if (logits[i] > maxLogit) {
                 maxLogit = logits[i];
@@ -805,9 +808,9 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         }
         
         // 计算指数并求和
-        float sum = 0.0f;
+        double sum = 0.0f;
         for (int i = 0; i < numClasses; i++) {
-            probabilities[i] = (float) Math.exp(logits[i] - maxLogit);
+            probabilities[i] = (double) Math.exp(logits[i] - maxLogit);
             sum += probabilities[i];
         }
         
@@ -859,14 +862,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 获取学习率
      */
-    public float getLearningRate() {
+    public double getLearningRate() {
         return learningRate;
     }
     
     /**
      * 设置学习率
      */
-    public void setLearningRate(float learningRate) {
+    public void setLearningRate(double learningRate) {
         this.learningRate = learningRate;
     }
     
@@ -887,28 +890,28 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 获取收敛阈值
      */
-    public float getTolerance() {
+    public double getTolerance() {
         return tolerance;
     }
     
     /**
      * 设置收敛阈值
      */
-    public void setTolerance(float tolerance) {
+    public void setTolerance(double tolerance) {
         this.tolerance = tolerance;
     }
     
     /**
      * 获取L1正则化系数
      */
-    public float getLambda1() {
+    public double getLambda1() {
         return lambda1;
     }
     
     /**
      * 设置L1正则化系数
      */
-    public void setLambda1(float lambda1) {
+    public void setLambda1(double lambda1) {
         this.lambda1 = lambda1;
         this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
     }
@@ -916,14 +919,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 获取L2正则化系数
      */
-    public float getLambda2() {
+    public double getLambda2() {
         return lambda2;
     }
     
     /**
      * 设置L2正则化系数
      */
-    public void setLambda2(float lambda2) {
+    public void setLambda2(double lambda2) {
         this.lambda2 = lambda2;
         this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
     }
@@ -931,7 +934,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 设置正则化参数
      */
-    public void setRegularization(float lambda1, float lambda2) {
+    public void setRegularization(double lambda1, double lambda2) {
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
         this.regularizationType = inferRegularizationType(lambda1, lambda2);

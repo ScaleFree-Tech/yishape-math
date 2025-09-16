@@ -1,8 +1,8 @@
 package com.reremouse.lab.math.viz;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import java.util.List;
+import com.reremouse.lab.math.linalg.IDoubleMatrix;
+import com.reremouse.lab.math.linalg.IDoubleVector;
 
 /**
  * 绘图静态工厂类，提供创建各种图表类型的静态方法
@@ -10,9 +10,9 @@ import java.util.List;
  */
 public final class Plots {
     
-    private Plots() {
-        // 工具类，防止实例化
-    }
+//    private Plots() {
+//        // 工具类，防止实例化
+//    }
     
     // ========== 基础工厂方法 ==========
     
@@ -53,7 +53,7 @@ public final class Plots {
      * @param y Y轴数据
      * @return 配置好的线图实例
      */
-    public static RerePlot line(IVector x, IVector y) {
+    public static RerePlot line(IDoubleVector x, IDoubleVector y) {
         RerePlot plot = of();
         plot.line(x, y);
         return plot;
@@ -64,7 +64,7 @@ public final class Plots {
      * @param x 数据向量
      * @return 配置好的线图实例
      */
-    public static RerePlot line(IVector x) {
+    public static RerePlot line(IDoubleVector x) {
         RerePlot plot = of();
         plot.line(x);
         return plot;
@@ -77,7 +77,7 @@ public final class Plots {
      * @param hue 分组标签
      * @return 配置好的多线图实例
      */
-    public static RerePlot line(IVector x, IVector y, List<String> hue) {
+    public static RerePlot line(IDoubleVector x, IDoubleVector y, List<String> hue) {
         RerePlot plot = of();
         plot.line(x, y, hue);
         return plot;
@@ -89,7 +89,7 @@ public final class Plots {
      * @param y Y轴数据
      * @return 配置好的散点图实例
      */
-    public static RerePlot scatter(IVector x, IVector y) {
+    public static RerePlot scatter(IDoubleVector x, IDoubleVector y) {
         RerePlot plot = of();
         plot.scatter(x, y);
         return plot;
@@ -102,7 +102,7 @@ public final class Plots {
      * @param hue 分组标签
      * @return 配置好的多组散点图实例
      */
-    public static RerePlot scatter(IVector x, IVector y, List<String> hue) {
+    public static RerePlot scatter(IDoubleVector x, IDoubleVector y, List<String> hue) {
         RerePlot plot = of();
         plot.scatter(x, y, hue);
         return plot;
@@ -113,7 +113,7 @@ public final class Plots {
      * @param x 数据向量
      * @return 配置好的饼图实例
      */
-    public static RerePlot pie(IVector x) {
+    public static RerePlot pie(IDoubleVector x) {
         RerePlot plot = of();
         plot.pie(x);
         return plot;
@@ -124,7 +124,7 @@ public final class Plots {
      * @param x 数据向量
      * @return 配置好的柱状图实例
      */
-    public static RerePlot bar(IVector x) {
+    public static RerePlot bar(IDoubleVector x) {
         RerePlot plot = of();
         plot.bar(x);
         return plot;
@@ -136,7 +136,7 @@ public final class Plots {
      * @param hue 分组标签
      * @return 配置好的分组柱状图实例
      */
-    public static RerePlot bar(IVector x, List<String> hue) {
+    public static RerePlot bar(IDoubleVector x, List<String> hue) {
         RerePlot plot = of();
         plot.bar(x, hue);
         return plot;
@@ -148,7 +148,7 @@ public final class Plots {
      * @param fittingLine 是否显示拟合线
      * @return 配置好的直方图实例
      */
-    public static RerePlot hist(IVector x, boolean fittingLine) {
+    public static RerePlot hist(IDoubleVector x, boolean fittingLine) {
         RerePlot plot = of();
         plot.hist(x, fittingLine);
         return plot;
@@ -161,7 +161,7 @@ public final class Plots {
      * @param yLabels Y轴标签
      * @return 配置好的热力图实例
      */
-    public static RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels) {
+    public static RerePlot heatmap(IDoubleMatrix data, List<String> xLabels, List<String> yLabels) {
         RerePlot plot = of();
         plot.heatmap(data, xLabels, yLabels);
         return plot;
@@ -173,7 +173,7 @@ public final class Plots {
      * @param indicators 指标名称
      * @return 配置好的雷达图实例
      */
-    public static RerePlot radar(IVector data, List<String> indicators) {
+    public static RerePlot radar(IDoubleVector data, List<String> indicators) {
         RerePlot plot = of();
         plot.radar(data, indicators);
         return plot;
@@ -186,7 +186,7 @@ public final class Plots {
      * @param min 最小值
      * @return 配置好的仪表盘实例
      */
-    public static RerePlot gauge(float value, float max, float min) {
+    public static RerePlot gauge(double value, double max, double min) {
         RerePlot plot = of();
         plot.gauge(value, max, min);
         return plot;
@@ -202,7 +202,7 @@ public final class Plots {
      * @param height 图表高度
      * @return 配置好的线图实例
      */
-    public static RerePlot line(IVector x, IVector y, int width, int height) {
+    public static RerePlot line(IDoubleVector x, IDoubleVector y, int width, int height) {
         RerePlot plot = of(width, height);
         plot.line(x, y);
         return plot;
@@ -216,7 +216,7 @@ public final class Plots {
      * @param height 图表高度
      * @return 配置好的散点图实例
      */
-    public static RerePlot scatter(IVector x, IVector y, int width, int height) {
+    public static RerePlot scatter(IDoubleVector x, IDoubleVector y, int width, int height) {
         RerePlot plot = of(width, height);
         plot.scatter(x, y);
         return plot;
@@ -229,7 +229,7 @@ public final class Plots {
      * @param height 图表高度
      * @return 配置好的柱状图实例
      */
-    public static RerePlot bar(IVector x, int width, int height) {
+    public static RerePlot bar(IDoubleVector x, int width, int height) {
         RerePlot plot = of(width, height);
         plot.bar(x);
         return plot;
@@ -242,7 +242,7 @@ public final class Plots {
      * @param height 图表高度
      * @return 配置好的饼图实例
      */
-    public static RerePlot pie(IVector x, int width, int height) {
+    public static RerePlot pie(IDoubleVector x, int width, int height) {
         RerePlot plot = of(width, height);
         plot.pie(x);
         return plot;
@@ -259,7 +259,7 @@ public final class Plots {
      * @param theme 主题名称
      * @return 配置好的线图实例
      */
-    public static RerePlot line(IVector x, IVector y, int width, int height, String theme) {
+    public static RerePlot line(IDoubleVector x, IDoubleVector y, int width, int height, String theme) {
         RerePlot plot = of(width, height, theme);
         plot.line(x, y);
         return plot;
@@ -274,7 +274,7 @@ public final class Plots {
      * @param theme 主题名称
      * @return 配置好的散点图实例
      */
-    public static RerePlot scatter(IVector x, IVector y, int width, int height, String theme) {
+    public static RerePlot scatter(IDoubleVector x, IDoubleVector y, int width, int height, String theme) {
         RerePlot plot = of(width, height, theme);
         plot.scatter(x, y);
         return plot;
@@ -288,7 +288,7 @@ public final class Plots {
      * @param theme 主题名称
      * @return 配置好的柱状图实例
      */
-    public static RerePlot bar(IVector x, int width, int height, String theme) {
+    public static RerePlot bar(IDoubleVector x, int width, int height, String theme) {
         RerePlot plot = of(width, height, theme);
         plot.bar(x);
         return plot;
@@ -302,7 +302,7 @@ public final class Plots {
      * @param theme 主题名称
      * @return 配置好的饼图实例
      */
-    public static RerePlot pie(IVector x, int width, int height, String theme) {
+    public static RerePlot pie(IDoubleVector x, int width, int height, String theme) {
         RerePlot plot = of(width, height, theme);
         plot.pie(x);
         return plot;

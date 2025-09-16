@@ -2,17 +2,28 @@
 
 ## 概述 / Overview
 
-`IMatrix` 接口和 `RereMatrix` 实现类提供了完整的矩阵数学运算功能，包括基本数学运算、矩阵变换、线性代数运算、特征分解等。该接口设计支持链式操作，提供丰富的矩阵操作功能。
+`IMatrix` 接口提供了完整的泛型矩阵数学运算功能，支持 Float 和 Double 类型，包括基本数学运算、矩阵变换、线性代数运算、特征分解等。该接口采用泛型设计，支持链式操作，提供丰富的矩阵操作功能。
 
-The `IMatrix` interface and `RereMatrix` implementation class provide comprehensive matrix mathematical operations including basic mathematical operations, matrix transformations, linear algebra operations, eigendecomposition, and more. The interface supports method chaining and offers rich matrix operation functionalities.
+The `IMatrix` interface provides comprehensive generic matrix mathematical operations supporting Float and Double types, including basic mathematical operations, matrix transformations, linear algebra operations, eigendecomposition, and more. The interface uses generic design, supports method chaining, and offers rich matrix operation functionalities.
 
 ## 核心接口 / Core Interface
 
 ### IMatrix 接口 / IMatrix Interface
 
-`IMatrix` 是矩阵操作的核心接口，定义了所有矩阵运算的抽象方法。
+`IMatrix<T>` 是矩阵操作的核心泛型接口，定义了所有矩阵运算的抽象方法，支持 `Float` 和 `Double` 类型。
 
-`IMatrix` is the core interface for matrix operations, defining abstract methods for all matrix operations.
+`IMatrix<T>` is the core generic interface for matrix operations, defining abstract methods for all matrix operations, supporting `Float` and `Double` types.
+
+### Linalg 工厂类 / Linalg Factory Class
+
+`Linalg` 类提供了统一的矩阵和向量创建入口，推荐使用此类来创建矩阵实例。该类采用委托模式，将创建请求委托给相应的接口实现。
+
+`Linalg` class provides a unified entry point for matrix and vector creation, recommended for creating matrix instances. This class uses delegation pattern, delegating creation requests to corresponding interface implementations.
+
+**架构设计 / Architecture Design:**
+- **委托链** / **Delegation chain**: `Linalg` → `IMatrix` → `IFloatMatrix/IDoubleMatrix`
+- **类型推断** / **Type inference**: 根据输入数据类型自动选择合适的实现
+- **API统一** / **API consistency**: 提供一致的命名和使用模式
 
 ## 主要功能 / Main Features
 
@@ -21,39 +32,75 @@ The `IMatrix` interface and `RereMatrix` implementation class provide comprehens
 #### 静态工厂方法 / Static Factory Methods
 
 ```java
+// 推荐使用 Linalg 工厂方法 / Recommended to use Linalg factory methods
+import com.reremouse.lab.math.linalg.Linalg;
+
 // 从二维数组创建 / Create from 2D array
-float[][] data = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-IMatrix matrix1 = IMatrix.of(data);
+double[][] data = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+IMatrix<Double> matrix1 = Linalg.matrix(data);
+
+float[][] floatData = {{1f, 2f, 3f}, {4f, 5f, 6f}, {7f, 8f, 9f}};
+IMatrix<Float> matrix1f = Linalg.matrix(floatData);
+
+// 从包装类数组创建 / Create from wrapper arrays
+Double[][] doubleData = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
+IMatrix<Double> matrix2 = Linalg.matrix(doubleData);
+
+Float[][] floatData2 = {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}};
+IMatrix<Float> matrix2f = Linalg.matrix(floatData2);
 
 // 从List创建 / Create from List
-List<float[]> rows = Arrays.asList(
-    new float[]{1, 2, 3},
-    new float[]{4, 5, 6},
-    new float[]{7, 8, 9}
+List<double[]> rows = Arrays.asList(
+    new double[]{1, 2, 3},
+    new double[]{4, 5, 6},
+    new double[]{7, 8, 9}
 );
-IMatrix matrix2 = IMatrix.of(rows);
+IMatrix<Double> matrix3 = Linalg.matrixFromDoubleList(rows);
+
+List<float[]> floatRows = Arrays.asList(
+    new float[]{1f, 2f, 3f},
+    new float[]{4f, 5f, 6f},
+    new float[]{7f, 8f, 9f}
+);
+IMatrix<Float> matrix3f = Linalg.matrixFromFloatList(floatRows);
 
 // 从Vector数组创建 / Create from Vector array
-IVector[] vectors = {IVector.of(new float[]{1, 2}), IVector.of(new float[]{3, 4})};
-IMatrix matrix3 = IMatrix.of(vectors);
+IVector<Double>[] vectors = {Linalg.vector(new double[]{1, 2}), Linalg.vector(new double[]{3, 4})};
+IMatrix<Double> matrix4 = IMatrix.of(vectors);
 
 // 创建特殊矩阵 / Create special matrices
-IMatrix ones = IMatrix.ones(3, 3);        // 全1矩阵 / Matrix of ones
-IMatrix zeros = IMatrix.zeros(3, 3);      // 零矩阵 / Zero matrix
-IMatrix identity = IMatrix.eye(3);        // 单位矩阵 / Identity matrix
-IMatrix random = IMatrix.rand(3, 3);      // 随机矩阵（均匀分布） / Random matrix (uniform distribution)
-IMatrix random = IMatrix.randn(3, 3);      // 随机矩阵（正态分布） / Random matrix (normal distribution)
-IMatrix randomSeeded = IMatrix.rand(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed(uniform distribution)
-IMatrix randomSeeded = IMatrix.randn(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed(normal distribution)
+IMatrix<Double> ones = Linalg.ones(3, 3);        // 全1矩阵 / Matrix of ones
+IMatrix<Float> onesF = Linalg.ones(3, 3, Float.class); // Float类型全1矩阵
+IMatrix<Double> zeros = Linalg.zeros(3, 3);      // 零矩阵 / Zero matrix
+IMatrix<Float> zerosF = Linalg.zeros(3, 3, Float.class); // Float类型零矩阵
+IMatrix<Double> identity = Linalg.eye(3);        // 单位矩阵 / Identity matrix
+IMatrix<Float> identityF = Linalg.eye(3, Float.class); // Float类型单位矩阵
+
+// 随机矩阵 / Random matrices
+IMatrix<Double> random = Linalg.rand(3, 3);      // 随机矩阵（均匀分布） / Random matrix (uniform distribution)
+IMatrix<Float> randomF = Linalg.rand(3, 3, Float.class); // Float类型随机矩阵
+IMatrix<Double> randomSeeded = Linalg.rand(3, 3, 12345L); // 指定种子的随机矩阵 / Random matrix with seed
+IMatrix<Double> randomNormal = Linalg.randn(3, 3); // 随机矩阵（正态分布） / Random matrix (normal distribution)
+IMatrix<Float> randomNormalF = Linalg.randn(3, 3, Float.class); // Float类型正态随机矩阵
+IMatrix<Double> randomNormalSeeded = Linalg.randn(3, 3, 0.0, 1.0, 12345L); // 指定种子的正态随机矩阵
 
 // 创建对角矩阵 / Create diagonal matrix
-IMatrix diagonal = IMatrix.diag(new float[]{1, 2, 3});
+IMatrix<Double> diagonal = Linalg.diag(new Double[]{1.0, 2.0, 3.0});
+IMatrix<Float> diagonalF = Linalg.diag(new Float[]{1.0f, 2.0f, 3.0f});
+IMatrix<Double> diagonalFromArray = Linalg.diag(new double[]{1.0, 2.0, 3.0});
+IMatrix<Float> diagonalFromArrayF = Linalg.diag(new float[]{1.0f, 2.0f, 3.0f});
 
 // 从一维数组创建 / Create from 1D array
-IMatrix reshaped = IMatrix.fromArray(new float[]{1, 2, 3, 4}, 2, 2);
+IMatrix<Double> reshaped = Linalg.fromArray(new double[]{1, 2, 3, 4}, 2, 2);
+IMatrix<Float> reshapedF = Linalg.fromArray(new float[]{1f, 2f, 3f, 4f}, 2, 2);
 
 // 从文件加载 / Load from file
-IMatrix loaded = IMatrix.load("matrix.txt");
+IMatrix<Double> loaded = Linalg.load("matrix.txt");
+IMatrix<Float> loadedF = Linalg.load("matrix.txt", Float.class);
+
+// 矩阵平均 / Matrix averaging
+IMatrix<Double>[] matrices = {matrix1, matrix2, matrix3};
+IMatrix<Double> averaged = Linalg.average(matrices);
 ```
 
 ### 2. 基本数学运算 / Basic Mathematical Operations
@@ -62,51 +109,59 @@ IMatrix loaded = IMatrix.load("matrix.txt");
 
 ```java
 // 加法 / Addition
-IMatrix sum = matrix1.add(matrix2);
+IMatrix<Double> sum = matrix1.add(matrix2);
 
 // 减法 / Subtraction
-IMatrix diff = matrix1.sub(matrix2);
+IMatrix<Double> diff = matrix1.sub(matrix2);
 
 // 矩阵乘法 / Matrix multiplication
-IMatrix matrixProduct = matrix1.mmul(matrix2);
+IMatrix<Double> matrixProduct = matrix1.mmul(matrix2);
 
 // 元素级除法 / Element-wise division
-IMatrix quotient = matrix1.divide(matrix2);
+IMatrix<Double> quotient = matrix1.divide(matrix2);
 ```
 
 #### 标量运算 / Scalar Operations
 
 ```java
 // 标量减法 / Scalar subtraction
-IMatrix result1 = matrix1.sub(5.0f);
+IMatrix<Double> result1 = matrix1.sub(5.0);
 
 // 标量乘法 / Scalar multiplication
-IMatrix result2 = matrix1.mmul(3.0f);
-IMatrix result3 = matrix1.mmul(3.0); // double类型
+IMatrix<Double> result2 = matrix1.mmul(3.0);
 
 // 向量点积 / Vector dot product
-float dotProduct = matrix1.dot(matrix2); // 要求都是列向量
+Double dotProduct = matrix1.dot(matrix2); // 要求都是列向量
+
+// 矩阵外积 / Matrix outer product
+IMatrix<Double> outerProduct = matrix1.outer(matrix2);
 ```
 
 ### 3. 矩阵变换 / Matrix Transformations
 
 ```java
 // 转置 / Transpose
-IMatrix transposed = matrix1.transpose();      // 就地转置
-IMatrix transposedNew = matrix1.transposeNew(); // 创建新对象
-IMatrix transposedShort = matrix1.t();         // 简写形式
+IMatrix<Double> transposed = matrix1.transpose();      // 创建新对象
+IMatrix<Double> transposedNew = matrix1.transposeNew(); // 创建新对象
+IMatrix<Double> transposedShort = matrix1.t();         // 简写形式
 
 // 幂运算 / Power
-IMatrix squared = matrix1.pow(2.0f);
+IMatrix<Double> squared = matrix1.pow(2.0);
 
 // 开方 / Square root
-IMatrix sqrt = matrix1.sqrt();
+IMatrix<Double> sqrt = matrix1.sqrt();
 
 // 求逆 / Inverse
-IMatrix inverse = matrix1.inv();
+IMatrix<Double> inverse = matrix1.inv();
 
 // 伪逆 / Pseudo-inverse
-IMatrix pseudoInverse = matrix1.pinv();
+IMatrix<Double> pseudoInverse = matrix1.pinv();
+
+// 矩阵条件数 / Matrix condition number
+Double conditionNumber = matrix1.cond();
+
+// 矩阵秩 / Matrix rank
+int rank = matrix1.rank();
 ```
 
 ### 4. 线性代数运算 / Linear Algebra Operations
@@ -115,67 +170,80 @@ IMatrix pseudoInverse = matrix1.pinv();
 
 ```java
 // 特征分解 / Eigendecomposition
-Tuple2<IVector, IMatrix> eigenResult = matrix1.eigen();
-IVector eigenValues = eigenResult._1;      // 特征值 / Eigenvalues
-IMatrix eigenVectors = eigenResult._2;     // 特征向量 / Eigenvectors
+Tuple2<IVector<Double>, IMatrix<Double>> eigenResult = matrix1.eigen();
+IVector<Double> eigenValues = eigenResult._1;      // 特征值 / Eigenvalues
+IMatrix<Double> eigenVectors = eigenResult._2;     // 特征向量 / Eigenvectors
 
 // QR算法特征分解 / QR algorithm eigendecomposition
-Tuple2<IVector, IMatrix> qrEigenResult = matrix1.qrEigenDecomposition();
+Tuple2<IVector<Double>, IMatrix<Double>> qrEigenResult = matrix1.qrEigenDecomposition();
 ```
 
 #### 奇异值分解 / Singular Value Decomposition
 
 ```java
 // SVD分解 / SVD decomposition
-Tuple3<IMatrix, IVector, IMatrix> svdResult = matrix1.svd();
-IMatrix U = svdResult._1;                  // 左奇异向量 / Left singular vectors
-IVector S = svdResult._2;                  // 奇异值 / Singular values
-IMatrix V = svdResult._3;                  // 右奇异向量 / Right singular vectors
+Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> svdResult = matrix1.svd();
+IMatrix<Double> U = svdResult._1;                  // 左奇异向量 / Left singular vectors
+IVector<Double> S = svdResult._2;                  // 奇异值 / Singular values
+IMatrix<Double> V = svdResult._3;                  // 右奇异向量 / Right singular vectors
 ```
 
 #### 矩阵分解 / Matrix Decomposition
 
 ```java
 // QR分解 / QR decomposition
-Tuple2<IMatrix, IMatrix> qrResult = matrix1.qr();
-IMatrix Q = qrResult._1;                   // 正交矩阵 / Orthogonal matrix
-IMatrix R = qrResult._2;                   // 上三角矩阵 / Upper triangular matrix
+Tuple2<IMatrix<Double>, IMatrix<Double>> qrResult = matrix1.qr();
+IMatrix<Double> Q = qrResult._1;                   // 正交矩阵 / Orthogonal matrix
+IMatrix<Double> R = qrResult._2;                   // 上三角矩阵 / Upper triangular matrix
 
 // LU分解 / LU decomposition
-Tuple2<IMatrix, IMatrix> luResult = matrix1.lu();
-IMatrix L = luResult._1;                   // 下三角矩阵 / Lower triangular matrix
-IMatrix U = luResult._2;                   // 上三角矩阵 / Upper triangular matrix
+Tuple2<IMatrix<Double>, IMatrix<Double>> luResult = matrix1.lu();
+IMatrix<Double> L = luResult._1;                   // 下三角矩阵 / Lower triangular matrix
+IMatrix<Double> U = luResult._2;                   // 上三角矩阵 / Upper triangular matrix
 
 // Cholesky分解 / Cholesky decomposition
-IMatrix L = matrix1.cholesky();            // 下三角矩阵L，A = L * L^T
+IMatrix<Double> L_chol = matrix1.cholesky();            // 下三角矩阵L，A = L * L^T
 ```
 
 #### 行列式和迹 / Determinant and Trace
 
 ```java
 // 行列式 / Determinant
-float det = matrix1.det();
+Double det = matrix1.det();
 
 // 迹 / Trace
-float trace = matrix1.trace();
+Double trace = matrix1.trace();
 
 // 秩 / Rank
 int rank = matrix1.rank();
 
 // 条件数 / Condition number
-float cond = matrix1.cond();
+Double cond = matrix1.cond();
+
+// 矩阵范数 / Matrix norms
+Double frobeniusNorm = matrix1.frobeniusNorm(); // Frobenius范数
+Double frobeniusDistance = matrix1.frobeniusDistance(matrix2); // Frobenius距离
+
+// 矩阵展平 / Matrix flattening
+IVector<Double> flattened = matrix1.flatten();  // 展平为向量
+
+// 矩阵重塑 / Matrix reshape
+IMatrix<Double> reshaped = matrix1.reshape(4, 3);  // 重塑为4x3
+
+// 矩阵复制 / Matrix copy
+IMatrix<Double> copied = matrix1.copy();            // 深拷贝
 ```
 
 #### 线性方程组求解 / Linear System Solving
 
 ```java
 // 求解Ax = b
-IVector b = IVector.of(new float[]{5, 6});
-IVector x = matrix1.solve(b);
+IVector<Double> b = Linalg.vector(new double[]{5, 6});
+IVector<Double> x = matrix1.solve(b);
 
 // 求解AX = B
-IMatrix B = IMatrix.of(new float[][]{{5, 6}, {7, 8}});
-IMatrix X = matrix1.solve(B);
+IMatrix<Double> B = Linalg.matrix(new double[][]{{5, 6}, {7, 8}});
+IMatrix<Double> X = matrix1.solve(B);
 ```
 
 ### 5. 数据访问和操作 / Data Access and Manipulation
@@ -184,50 +252,58 @@ IMatrix X = matrix1.solve(B);
 
 ```java
 // 获取行 / Get row
-IVector row = matrix1.getRow(0);
+IVector<Double> row = matrix1.getRow(0);
 
 // 获取列 / Get column
-IVector column = matrix1.getColunm(0);
-IMatrix columnMatrix = matrix1.getColumn(0);
+IVector<Double> column = matrix1.getColumn(0);
+IMatrix<Double> columnMatrix = matrix1.getColumnMatrix(0);
 
 // 设置列 / Set column
-matrix1.putColumn(0, newColumnVector);
+matrix1.putColumn(0, newColumnMatrix);
 
 // 获取多个列 / Get multiple columns
-IMatrix[] columns = matrix1.getColumns(new int[]{0, 2});
+IVector<Double>[] columns = matrix1.getColumns(new int[]{0, 2});
 
 // 获取形状 / Get shape
 int[] shape = matrix1.shape();             // [行数, 列数]
 int rows = matrix1.getRowNum();            // 行数
 int cols = matrix1.getColNum();            // 列数
-int rowsAlt = matrix1.getRows();           // 行数（替代方法）
-int colsAlt = matrix1.getColumns();        // 列数（替代方法）
+int rowsAlt = matrix1.rows();              // 行数（替代方法）
+int colsAlt = matrix1.cols();              // 列数（替代方法）
+
+// 矩阵属性检查 / Matrix property checks
+boolean isSquare = matrix1.isSquare();           // 是否为方阵
+boolean isSymmetric = matrix1.isSymmetric();     // 是否为对称矩阵
+boolean isPositiveDefinite = matrix1.isPositiveDefinite(); // 是否为正定矩阵
+
+// 矩阵对角线操作 / Matrix diagonal operations
+IVector<Double> diagonal = matrix1.diag();       // 获取对角线元素
 ```
 
 #### 矩阵切片操作 / Matrix Slicing Operations
 
 ```java
 // 基本切片 / Basic slicing
-IMatrix slice1 = matrix1.slice(1, 3, 0, 2);  // 行1-2，列0-1 / Rows 1-2, columns 0-1
+IMatrix<Double> slice1 = matrix1.subMatrix(1, 3, 0, 2);  // 行1-2，列0-1 / Rows 1-2, columns 0-1
 
 // 字符串切片表达式 / String slice expressions
-IMatrix slice2 = matrix1.slice("1:3", "0:2");  // 行1-2，列0-1 / Rows 1-2, columns 0-1
-IMatrix slice3 = matrix1.slice(":-1", "1:");   // 除最后一行外的所有行，从第1列到末尾 / All rows except last, from column 1 to end
-IMatrix slice4 = matrix1.slice("::2", "::2");  // 每隔一行一列 / Every other row and column
+IMatrix<Double> slice2 = matrix1.slice("1:3", "0:2");  // 行1-2，列0-1 / Rows 1-2, columns 0-1
+IMatrix<Double> slice3 = matrix1.slice(":-1", "1:");   // 除最后一行外的所有行，从第1列到末尾 / All rows except last, from column 1 to end
+IMatrix<Double> slice4 = matrix1.slice("::2", "::2");  // 每隔一行一列 / Every other row and column
 
 // 负数索引切片 / Negative indexing slicing
-IMatrix slice5 = matrix1.slice("-2:", "-1:");  // 最后两行，最后一列 / Last two rows, last column
-IMatrix slice6 = matrix1.slice("1:-1", "1:-1"); // 中间部分（除边界） / Middle part (excluding boundaries)
+IMatrix<Double> slice5 = matrix1.slice("-2:", "-1:");  // 最后两行，最后一列 / Last two rows, last column
+IMatrix<Double> slice6 = matrix1.slice("1:-1", "1:-1"); // 中间部分（除边界） / Middle part (excluding boundaries)
 
 // 行切片 / Row slicing
-IMatrix rowSlice1 = matrix1.sliceRows("1:3");   // 行1-2 / Rows 1-2
-IMatrix rowSlice2 = matrix1.sliceRows("-2:");   // 最后两行 / Last two rows
-IMatrix rowSlice3 = matrix1.sliceRows("::2");   // 每隔一行 / Every other row
+IMatrix<Double> rowSlice1 = matrix1.sliceRows("1:3");   // 行1-2 / Rows 1-2
+IMatrix<Double> rowSlice2 = matrix1.sliceRows("-2:");   // 最后两行 / Last two rows
+IMatrix<Double> rowSlice3 = matrix1.sliceRows("::2");   // 每隔一行 / Every other row
 
 // 列切片 / Column slicing
-IMatrix colSlice1 = matrix1.sliceColumns("0:2"); // 列0-1 / Columns 0-1
-IMatrix colSlice2 = matrix1.sliceColumns("-1:"); // 最后一列 / Last column
-IMatrix colSlice3 = matrix1.sliceColumns("::2"); // 每隔一列 / Every other column
+IMatrix<Double> colSlice1 = matrix1.sliceColumns("0:2"); // 列0-1 / Columns 0-1
+IMatrix<Double> colSlice2 = matrix1.sliceColumns("-1:"); // 最后一列 / Last column
+IMatrix<Double> colSlice3 = matrix1.sliceColumns("::2"); // 每隔一列 / Every other column
 ```
 
 #### 切片表达式语法 / Slice Expression Syntax
@@ -280,109 +356,148 @@ matrix1.slice("-2:", "-2:");    // 右下角2x2子矩阵 / Bottom-right 2x2 subm
 
 ```java
 // 获取元素 / Get element
-float element = matrix1.get(1, 2);
+Double element = matrix1.get(1, 2);
 
 // 设置元素 / Set element
-matrix1.put(1, 2, 10.0f);
+matrix1.put(1, 2, 10.0);
 
 // 负数索引访问 / Negative indexing access
-float lastElement = matrix1.get(-1, -1);  // 获取最后一个元素 / Get last element
-matrix1.put(-1, -1, 100.0f);             // 设置最后一个元素 / Set last element
+Double lastElement = matrix1.get(-1, -1);  // 获取最后一个元素 / Get last element
+matrix1.put(-1, -1, 100.0);             // 设置最后一个元素 / Set last element
 ```
 
 ### 6. 统计运算 / Statistical Operations
 
 ```java
 // 行统计 / Row statistics
-IVector rowSums = matrix1.rowSums();        // 行和（按列求和）
-IVector rowMeans = matrix1.rowMeans();      // 行均值（按列求均值）
+IVector<Double> rowSums = matrix1.rowSums();        // 行和（按列求和）
+IVector<Double> rowMeans = matrix1.rowMeans();      // 行均值（按列求均值）
 
 // 列统计 / Column statistics
-IVector colSums = matrix1.colSums();        // 列和（按行求和）
-IVector colMeans = matrix1.colMeans();      // 列均值（按行求均值）
+IVector<Double> colSums = matrix1.colSums();        // 列和（按行求和）
+IVector<Double> colMeans = matrix1.colMeans();      // 列均值（按行求均值）
 
 // 整体统计 / Overall statistics
-float sum = matrix1.sum();                  // 总和
-float mean = matrix1.mean();                // 整体均值
-float variance = matrix1.var();             // 整体方差
-float stdDev = matrix1.std();               // 整体标准差
-float max = matrix1.max();                  // 最大值
-float min = matrix1.min();                  // 最小值
+Double sum = matrix1.sum();                  // 总和
+Double mean = matrix1.mean();                // 整体均值
+Double variance = matrix1.var();             // 整体方差
+Double stdDev = matrix1.std();               // 整体标准差
+Double max = matrix1.max();                  // 最大值
+Double min = matrix1.min();                  // 最小值
 ```
 
 ### 7. 数据转换和中心化 / Data Conversion and Centering
 
 ```java
 // 中心化 / Centering
-IMatrix centered = matrix1.center();        // 减去列均值
+IMatrix<Double> centered = matrix1.center();        // 减去列均值
 
 // 协方差矩阵 / Covariance matrix
-IMatrix covMatrix = matrix1.covariance();   // 从原始数据计算
-IMatrix covFromCentered = matrix1.covarianceFromCentered(); // 从中心化数据计算
+IMatrix<Double> covMatrix = matrix1.covariance();   // 从原始数据计算
+IMatrix<Double> covFromCentered = matrix1.covarianceFromCentered(); // 从中心化数据计算
 
 // 归一化 / Normalization
-IMatrix normalizedRows = matrix1.normalizeRows();      // 行归一化
-IMatrix normalizedCols = matrix1.normalizeColumns();   // 列归一化
+IMatrix<Double> normalizedRows = matrix1.normalizeRows();      // 行归一化
+IMatrix<Double> normalizedCols = matrix1.normalizeColumns();   // 列归一化
 
 // 类型转换 / Type conversion
-float[][] floatArray = matrix1.getData();   // 获取float数组
-float[] flatArray = matrix1.toArray();      // 转为一维数组
-double[] doubleArray = matrix1.toDoubleArray(); // 转换为double数组
+double[][] doubleArray = matrix1.toDoubleArray(); // 转换为double数组
+float[][] floatArray = matrix1.toFloatArray();   // 转换为float数组
+IVector<Double> flatArray = matrix1.flatten();      // 转为一维向量
 ```
 
 ### 8. 数学函数应用 / Mathematical Functions
 
 ```java
 // 三角函数 / Trigonometric functions
-IMatrix sinResult = matrix1.sin();          // 正弦
-IMatrix cosResult = matrix1.cos();          // 余弦
-IMatrix tanResult = matrix1.tan();          // 正切
+IMatrix<Double> sinResult = matrix1.sin();          // 正弦
+IMatrix<Double> cosResult = matrix1.cos();          // 余弦
+IMatrix<Double> tanResult = matrix1.tan();          // 正切
 
 // 双曲函数 / Hyperbolic functions
-IMatrix sinhResult = matrix1.sinh();        // 双曲正弦
-IMatrix coshResult = matrix1.cosh();        // 双曲余弦
-IMatrix tanhResult = matrix1.tanh();        // 双曲正切
+IMatrix<Double> sinhResult = matrix1.sinh();        // 双曲正弦
+IMatrix<Double> coshResult = matrix1.cosh();        // 双曲余弦
+IMatrix<Double> tanhResult = matrix1.tanh();        // 双曲正切
 
 // 指数和对数 / Exponential and logarithm
-IMatrix expResult = matrix1.exp();          // 指数
-IMatrix logResult = matrix1.log();          // 自然对数
+IMatrix<Double> expResult = matrix1.exp();          // 指数
+IMatrix<Double> logResult = matrix1.log();          // 自然对数
 
 // 绝对值和符号 / Absolute value and sign
-IMatrix absResult = matrix1.abs();          // 绝对值
-IMatrix signResult = matrix1.sign();        // 符号函数
+IMatrix<Double> absResult = matrix1.abs();          // 绝对值
+IMatrix<Double> signResult = matrix1.sign();        // 符号函数
 ```
 
 ### 9. 矩阵操作 / Matrix Operations
 
 ```java
 // 矩阵拼接 / Matrix concatenation
-IMatrix hstacked = matrix1.hstack(matrix2); // 水平拼接
-IMatrix vstacked = matrix1.vstack(matrix2); // 垂直拼接
+IMatrix<Double> hstacked = matrix1.hstack(matrix2); // 水平拼接
+IMatrix<Double> vstacked = matrix1.vstack(matrix2); // 垂直拼接
 
 // 矩阵分割 / Matrix splitting
-IMatrix[] hsplit = matrix1.hsplit(new int[]{2}); // 水平分割
-IMatrix[] vsplit = matrix1.vsplit(new int[]{2}); // 垂直分割
+IMatrix<Double>[] hsplit = matrix1.hsplit(new int[]{2}); // 水平分割
+IMatrix<Double>[] vsplit = matrix1.vsplit(new int[]{2}); // 垂直分割
 
 // 矩阵重塑 / Matrix reshape
-IMatrix reshaped = matrix1.reshape(4, 3);  // 重塑为4x3
+IMatrix<Double> reshaped = matrix1.reshape(4, 3);  // 重塑为4x3
 
 // 矩阵复制 / Matrix copy
-IMatrix copied = matrix1.copy();            // 深拷贝
+IMatrix<Double> copied = matrix1.copy();            // 深拷贝
 
 // 矩阵范数 / Matrix norms
-float frobeniusNorm = matrix1.frobeniusNorm(); // Frobenius范数
-float frobeniusDistance = matrix1.frobeniusDistance(matrix2); // Frobenius距离
+Double frobeniusNorm = matrix1.frobeniusNorm(); // Frobenius范数
+Double frobeniusDistance = matrix1.frobeniusDistance(matrix2); // Frobenius距离
 ```
 
-### 10. 文件操作 / File Operations
+### 10. 高级矩阵操作 / Advanced Matrix Operations
+
+#### 花式索引和子矩阵操作 / Fancy Indexing and Submatrix Operations
+
+```java
+// 花式索引获取矩阵元素 / Fancy indexing for matrix elements
+int[] rowIndices = {0, 2, 4};
+int[] colIndices = {1, 3};
+IMatrix<Double> fancyResult = matrix1.fancyGet(rowIndices, colIndices);
+
+// 子矩阵操作 / Submatrix operations
+IMatrix<Double> subMatrix = matrix1.subMatrix(1, 3, 1, 3); // 获取子矩阵
+matrix1.setSubMatrix(0, 2, 0, 2, subMatrix); // 设置子矩阵
+```
+
+#### 矩阵属性检查 / Matrix Property Checks
+
+```java
+// 矩阵属性检查 / Matrix property checks
+boolean isSquare = matrix1.isSquare();           // 是否为方阵
+boolean isSymmetric = matrix1.isSymmetric();     // 是否为对称矩阵
+boolean isPositiveDefinite = matrix1.isPositiveDefinite(); // 是否为正定矩阵
+
+// 矩阵对角线操作 / Matrix diagonal operations
+IVector<Double> diagonal = matrix1.diag();       // 获取对角线元素
+```
+
+#### 矩阵平均和加载 / Matrix Averaging and Loading
+
+```java
+// 矩阵平均 / Matrix averaging
+IMatrix<Double>[] matrices = {matrix1, matrix2, matrix3};
+IMatrix<Double> average = Linalg.average(matrices); // 计算多个矩阵的平均值
+
+// 从文件加载（指定类型）/ Load from file with type specification
+IMatrix<Float> floatMatrix = Linalg.load("matrix.txt", Float.class);
+IMatrix<Double> doubleMatrix = Linalg.load("matrix.txt", Double.class);
+```
+
+### 11. 文件操作 / File Operations
 
 ```java
 // 保存矩阵到文件 / Save matrix to file
-IMatrix matrix = IMatrix.of(new float[][]{{1, 2}, {3, 4}});
-matrix.save("matrix.txt");
+IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+// matrix.save("matrix.txt"); // 需要实现保存方法
 
 // 从文件加载矩阵 / Load matrix from file
-IMatrix loaded = IMatrix.load("matrix.txt");
+IMatrix<Double> loaded = Linalg.load("matrix.txt");
 ```
 
 ## 使用示例 / Usage Examples
@@ -444,22 +559,27 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 
 ## 与NumPy功能对照表 / NumPy Functionality Comparison Table
 
-| 功能类别 / Function Category | IMatrix/RereMatrix | NumPy | 说明 / Description |
+| 功能类别 / Function Category | IMatrix/Linalg | NumPy | 说明 / Description |
 |---------|-------------------|-------|------|
 | **矩阵创建 / Matrix Creation** | | | |
-| 从数组创建 / Create from array | `IMatrix.of(data)` | `np.array(data)` | 从二维数组创建矩阵 / Create matrix from 2D array |
-| 全零矩阵 / Zero matrix | `IMatrix.zeros(rows, cols)` | `np.zeros((rows, cols))` | 创建全零矩阵 / Create zero matrix |
-| 全一矩阵 / Ones matrix | `IMatrix.ones(rows, cols)` | `np.ones((rows, cols))` | 创建全一矩阵 / Create ones matrix |
-| 单位矩阵 / Identity matrix | `IMatrix.eye(n)` | `np.eye(n)` | 创建n×n单位矩阵 / Create n×n identity matrix |
-| 随机矩阵 / Random matrix | `IMatrix.rand(rows, cols)` | `np.random.rand(rows, cols)` | 创建随机矩阵 / Create random matrix |
-| 对角矩阵 / Diagonal matrix | `IMatrix.diag(vector)` | `np.diag(vector)` | 从向量创建对角矩阵 / Create diagonal matrix from vector |
+| 从数组创建 / Create from array | `Linalg.matrix(data)` | `np.array(data)` | 从二维数组创建矩阵 / Create matrix from 2D array |
+| 全零矩阵 / Zero matrix | `Linalg.zeros(rows, cols)` | `np.zeros((rows, cols))` | 创建全零矩阵 / Create zero matrix |
+| 全一矩阵 / Ones matrix | `Linalg.ones(rows, cols)` | `np.ones((rows, cols))` | 创建全一矩阵 / Create ones matrix |
+| 单位矩阵 / Identity matrix | `Linalg.eye(n)` | `np.eye(n)` | 创建n×n单位矩阵 / Create n×n identity matrix |
+| 随机矩阵 / Random matrix | `Linalg.rand(rows, cols)` | `np.random.rand(rows, cols)` | 创建随机矩阵 / Create random matrix |
+| 正态随机矩阵 / Normal random matrix | `Linalg.randn(rows, cols)` | `np.random.randn(rows, cols)` | 创建正态分布随机矩阵 / Create normal random matrix |
+| 对角矩阵 / Diagonal matrix | `Linalg.diag(vector)` | `np.diag(vector)` | 从向量创建对角矩阵 / Create diagonal matrix from vector |
+| 从一维数组重塑 / Reshape from 1D array | `Linalg.fromArray(data, rows, cols)` | `np.array(data).reshape(rows, cols)` | 从一维数组重塑为矩阵 / Reshape 1D array to matrix |
 | **基本运算 / Basic Operations** | | | |
 | 矩阵加法 / Matrix addition | `matrix1.add(matrix2)` | `matrix1 + matrix2` | 元素级加法 / Element-wise addition |
 | 矩阵减法 / Matrix subtraction | `matrix1.sub(matrix2)` | `matrix1 - matrix2` | 元素级减法 / Element-wise subtraction |
 | 矩阵乘法 / Matrix multiplication | `matrix1.mmul(matrix2)` | `matrix1 @ matrix2` | 矩阵乘法 / Matrix multiplication |
+| 元素级除法 / Element-wise division | `matrix1.divide(matrix2)` | `matrix1 / matrix2` | 元素级除法 / Element-wise division |
 | 标量运算 / Scalar operations | `matrix.mmul(scalar)` | `matrix * scalar` | 标量乘法 / Scalar multiplication |
+| 标量减法 / Scalar subtraction | `matrix.sub(scalar)` | `matrix - scalar` | 标量减法 / Scalar subtraction |
+| 矩阵外积 / Matrix outer product | `matrix1.outer(matrix2)` | `np.outer(matrix1, matrix2)` | 矩阵外积 / Matrix outer product |
 | **矩阵变换 / Matrix Transformations** | | | |
-| 转置 / Transpose | `matrix.transpose()` | `matrix.T` | 矩阵转置 / Matrix transpose |
+| 转置 / Transpose | `matrix.transpose(),matrix.t()` | `matrix.T` | 矩阵转置 / Matrix transpose |
 | 幂运算 / Power | `matrix.pow(n)` | `np.power(matrix, n)` | 元素级幂运算 / Element-wise power |
 | 开方 / Square root | `matrix.sqrt()` | `np.sqrt(matrix)` | 元素级开方 / Element-wise square root |
 | 求逆 / Inverse | `matrix.inv()` | `np.linalg.inv(matrix)` | 矩阵求逆 / Matrix inverse |
@@ -502,9 +622,9 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 | 行切片 / Row slicing | `matrix.sliceRows("1:3")` | `matrix[1:3, :]` | 行切片 / Row slicing |
 | 列切片 / Column slicing | `matrix.sliceColumns("0:2")` | `matrix[:, 0:2]` | 列切片 / Column slicing |
 | **矩阵范数 / Matrix Norms** | | | |
-| Frobenius范数 / Frobenius norm | `matrix.frobeniusNorm()` | `np.linalg.norm(matrix, 'fro')` | Frobenius范数 / Frobenius norm |
+| Frobenius范数 / Frobenius norm | `matrix.frobeniusNorm(), matrix.frobenius` | `np.linalg.norm(matrix, 'fro')` | Frobenius范数 / Frobenius norm |
 | **数据转换 / Data Conversion** | | | |
-| 转float数组 / Convert to float array | `matrix.getData()` | `matrix.astype(np.float32)` | 获取float数组 / Get float array |
+| 转float数组 / Convert to float array | `matrix.toFloatArray()` | `matrix.astype(np.float32)` | 获取float数组 / Get float array |
 | 转double数组 / Convert to double array | `matrix.toDoubleArray()` | `matrix.astype(np.float64)` | 转换为double数组 / Convert to double array |
 | 矩阵复制 / Matrix copy | `matrix.copy()` | `matrix.copy()` | 深拷贝矩阵 / Deep copy matrix |
 | 矩阵重塑 / Matrix reshape | `matrix.reshape(rows, cols)` | `matrix.reshape(rows, cols)` | 重塑矩阵维度 / Reshape matrix dimensions |
