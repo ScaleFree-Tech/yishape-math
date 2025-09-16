@@ -43,13 +43,12 @@
             <scope>test</scope>
             <optional>true</optional>
         </dependency>
-        
+        <!--
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.40</version>
         </dependency>
-             
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -60,7 +59,7 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.36</version>
         </dependency>
-        
+        -->
     </dependencies>
     
 </project>
