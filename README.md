@@ -282,22 +282,6 @@ Plots.hist(histData, true)  // true表示显示拟合线
     .ylabel("频次")
     .saveAsHtml("histogram_chart.html");
 
-// 热力图 / Heatmap
-double[][] heatmapArray = {{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}};
-IMatrix<Double> heatmapData = Linalg.matrix(heatmapArray);
-List<String> xLabels = Arrays.asList("X1", "X2", "X3", "X4");
-List<String> yLabels = Arrays.asList("Y1", "Y2", "Y3", "Y4");
-Plots.heatmap(heatmapData, xLabels, yLabels)
-    .title("相关性热力图")
-    .saveAsHtml("heatmap_chart.html");
-
-// 雷达图 / Radar chart
-IVector<Double> radarData = Linalg.vector(new double[]{80, 90, 70, 85, 95, 75});
-List<String> indicators = Arrays.asList("指标1", "指标2", "指标3", "指标4", "指标5", "指标6");
-Plots.radar(radarData, indicators)
-    .title("能力雷达图")
-    .saveAsHtml("radar_chart.html");
-
 // 箱线图 / Box plot
 IVector<Double> boxData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 List<String> labels = Arrays.asList("数据集");
@@ -317,11 +301,6 @@ Plots.candlestick(candlestickData, dates)
     .ylabel("价格（元）")
     .saveAsHtml("candlestick_chart.html");
 
-// 仪表盘 / Gauge chart
-Plots.gauge(75.5f, 100.0f, 0.0f)
-    .title("系统性能监控", "CPU使用率实时监控")
-    .saveAsHtml("gauge_chart.html");
-
 // 小提琴图 / Violin plot
 IVector<Double> violinData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 Plots.violinplot(violinData, labels)
@@ -330,21 +309,6 @@ Plots.violinplot(violinData, labels)
     .ylabel("数值")
     .saveAsHtml("violin_chart.html");
 
-// 桑基图 / Sankey diagram
-Map<String, Object> sankeyData = new HashMap<>();
-sankeyData.put("nodes", Arrays.asList(
-    Map.of("name", "源节点1"),
-    Map.of("name", "源节点2"),
-    Map.of("name", "目标节点1"),
-    Map.of("name", "目标节点2")
-));
-sankeyData.put("links", Arrays.asList(
-    Map.of("source", "源节点1", "target", "目标节点1", "value", 10),
-    Map.of("source", "源节点2", "target", "目标节点2", "value", 20)
-));
-Plots.sankey(sankeyData)
-    .title("数据流向桑基图")
-    .saveAsHtml("sankey_chart.html");
 ```
 
 #### 图表展示 / Chart Gallery

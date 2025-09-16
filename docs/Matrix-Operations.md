@@ -670,9 +670,8 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 
 ### 注意事项 / Important Notes
 1. **方法命名混淆**：`rowSums()`实际是按列求和，`colSums()`实际是按行求和，这与方法名称的字面意思相反 / **Method naming confusion**: `rowSums()` actually sums by columns, `colSums()` actually sums by rows, which is opposite to the literal meaning of the method names
-2. **数据类型**：所有计算都基于float类型，注意精度限制 / **Data types**: All calculations are based on float type, pay attention to precision limitations
-3. **异常处理**：某些操作可能抛出异常，如奇异矩阵求逆、负数开方等 / **Exception handling**: Some operations may throw exceptions, such as singular matrix inversion, negative number square root, etc.
-4. **内存管理**：大矩阵操作时注意内存使用，及时释放不需要的引用 / **Memory management**: Pay attention to memory usage for large matrix operations, release unnecessary references in time
+2. **异常处理**：某些操作可能抛出异常，如奇异矩阵求逆、负数开方等 / **Exception handling**: Some operations may throw exceptions, such as singular matrix inversion, negative number square root, etc.
+3. **内存管理**：大矩阵操作时注意内存使用，及时释放不需要的引用 / **Memory management**: Pay attention to memory usage for large matrix operations, release unnecessary references in time
 
 ---
 

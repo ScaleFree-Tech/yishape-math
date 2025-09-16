@@ -562,220 +562,6 @@ try {
 }
 ```
 
-## 样式系统 / Style System
-
-数据可视化包配备了完整的样式系统，提供强大的图表美化和个性化定制功能。该系统支持自动化样式应用、高级颜色操作、交互状态管理和深度主题集成。
-
-The data visualization package features a complete style system, providing powerful chart styling and personalization capabilities. This system supports automated style application, advanced color operations, interactive state management, and deep theme integration.
-
-### 系统特性 / System Features
-
-#### 1. 通用样式应用器 / Universal Style Applier
-
-[`UniversalStyleApplier`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\UniversalStyleApplier.java) 提供全图表类型的样式应用支持，确保所有图表都能享受一致的样式体验。
-
-```java
-// 自动应用样式到任意图表类型
-PlotStyle style = new PlotStyle()
-    .color("#3498DB")
-    .lineWidth(2.5)
-    .opacity(0.8);
-
-// 系统自动识别图表类型并应用相应样式
-UniversalStyleApplier.applyToSeries(series, style);
-```
-
-**支持的图表类型**:
-- 基础图表：线图、散点图、柱状图、饼图
-- 统计图表：箱线图、小提琴图、直方图
-- 高级图表：仪表盘、K线图、热力图、雷达图
-- 极坐标图表：极坐标线图、柱状图、散点图
-- 特殊图表：漏斗图、桑基图、关系图等
-
-#### 2. 高级颜色操作 / Advanced Color Operations
-
-[`StyleConverter`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\StyleConverter.java) 提供基于HSL色彩空间的智能颜色处理功能。
-
-```java
-// HSL色彩空间转换
-String brighterColor = StyleConverter.adjustBrightness("#3498DB", 0.2);  // 提高亮度20%
-String saturatedColor = StyleConverter.adjustSaturation("#E74C3C", 0.3); // 提高饱和度30%
-String shiftedHue = StyleConverter.shiftHue("#2ECC71", 30);              // 色相偏移30度
-
-// 智能渐变生成
-List<String> gradient = StyleConverter.createLinearGradient(
-    "#FF6B6B", "#4ECDC4", 5  // 5步线性渐变
-);
-
-// 高级渐变算法
-String radialGradient = StyleConverter.createRadialGradient(
-    "#FFD93D", "#FF6B6B", 0.5, 0.5, 0.8  // 径向渐变
-);
-```
-
-**颜色操作功能**:
-- HSL色彩空间转换和操作
-- 智能亮度、饱和度、色相调整
-- 多种渐变算法（线性、径向、圆锥）
-- 颜色和谐度分析
-- 色盲友好色彩生成
-
-#### 3. 交互状态样式 / Interactive State Styling
-
-系统支持hover、blur、select等交互状态的样式定制，提供丰富的用户交互体验。
-
-```java
-// 配置交互状态样式
-PlotStyle style = new PlotStyle()
-    .color("#3498DB")
-    .emphasis(new PlotStyle().color("#E74C3C").lineWidth(3.0))  // hover状态
-    .blur(new PlotStyle().opacity(0.3))                         // 失焦状态
-    .select(new PlotStyle().color("#F39C12").lineWidth(4.0));   // 选中状态
-
-// 应用到图表
-Plots.of(800, 600)
-    .line(x, y, style)
-    .show();
-```
-
-**支持的交互状态**:
-- **emphasis**: 鼠标悬停时的强调样式
-- **blur**: 元素失焦时的样式
-- **select**: 元素被选中时的样式
-- **normal**: 默认状态样式
-
-#### 4. 图表专用转换器 / Chart-Specific Converters
-
-针对复杂图表类型提供专用的样式转换器，确保样式应用的准确性和效果。
-
-```java
-// 关系图专用样式转换
-Map<String, Object> graphStyle = ChartSpecificConverters.convertForGraph(style);
-Map<String, Object> nodeStyle = graphStyle.get("nodeStyle");
-Map<String, Object> linkStyle = graphStyle.get("linkStyle");
-
-// 平行坐标图专用样式转换
-Map<String, Object> parallelStyle = ChartSpecificConverters.convertForParallel(style);
-
-// 漏斗图专用样式转换
-Map<String, Object> funnelStyle = ChartSpecificConverters.convertForFunnel(style);
-```
-
-**专用转换器覆盖**:
-- 关系图：节点和连接样式分离
-- 平行坐标图：多维度样式映射
-- 漏斗图：阶段性颜色渐变
-- 桑基图：流向样式定制
-- 树图：层次结构样式
-
-#### 5. 主题深度集成 / Deep Theme Integration
-
-[`ThemeManager`](e:\work\yishape-math\src\main\java\com\reremouse\lab\math\viz\ThemeManager.java) 提供智能主题推荐和自动样式应用功能。
-
-```java
-// 智能主题推荐
-String recommendedTheme = ThemeManager.recommendTheme(dataType, chartType, userPreference);
-
-// 主题样式融合
-PlotStyle themedStyle = ThemeManager.applyThemeToStyle(originalStyle, "dark");
-
-// 自动样式继承
-PlotStyle inheritedStyle = ThemeManager.inheritFromTheme("vintage", customizations);
-```
-
-**主题集成特性**:
-- 智能主题推荐算法
-- 主题与自定义样式的平滑融合
-- 样式继承和覆盖机制
-- 主题一致性检查
-- 动态主题切换支持
-
-### 使用示例 / Usage Examples
-
-#### 基础样式应用 / Basic Style Application
-
-```java
-import com.reremouse.lab.math.viz.*;
-
-// 创建带高级样式的线图
-PlotStyle advancedStyle = new PlotStyle()
-    .color("#3498DB")
-    .lineStyle("solid")
-    .lineWidth(2.5)
-    .marker("o")
-    .markerSize(6.0)
-    .opacity(0.9)
-    .emphasis(new PlotStyle()
-        .color("#E74C3C")
-        .lineWidth(4.0)
-        .markerSize(8.0))
-    .blur(new PlotStyle()
-        .opacity(0.3));
-
-Plots.of(800, 600)
-    .line(x, y, advancedStyle)
-    .title("高级样式线图")
-    .show();
-```
-
-#### 颜色智能操作 / Intelligent Color Operations
-
-```java
-// 基于HSL的颜色调整
-String baseColor = "#3498DB";
-String lighterColor = StyleConverter.adjustBrightness(baseColor, 0.2);
-String darkerColor = StyleConverter.adjustBrightness(baseColor, -0.2);
-
-// 创建色彩渐变系列
-List<String> colorSeries = StyleConverter.createColorSeries(
-    baseColor, 5, "brightness"  // 基于亮度的5色系列
-);
-
-// 应用到多系列图表
-for (int i = 0; i < dataSeries.size(); i++) {
-    PlotStyle seriesStyle = new PlotStyle().color(colorSeries.get(i));
-    plot.line(x, dataSeries.get(i), seriesStyle);
-}
-```
-
-#### 主题智能应用 / Intelligent Theme Application
-
-```java
-// 智能主题选择和应用
-String theme = ThemeManager.recommendTheme(
-    "financial",  // 数据类型
-    "candlestick", // 图表类型
-    "professional" // 用户偏好
-);
-
-// 创建主题化图表
-Plots.of(800, 600, theme)
-    .candlestick(ohlcData, dates)
-    .title("专业K线图")
-    .show();
-
-// 自定义主题融合
-PlotStyle customStyle = new PlotStyle().color("#FF6B6B");
-PlotStyle themedStyle = ThemeManager.applyThemeToStyle(customStyle, theme);
-```
-
-### 性能优化 / Performance Optimization
-
-样式系统在设计时充分考虑了性能优化：
-
-- **样式缓存**：重复使用的样式配置会被缓存，减少重复计算
-- **延迟计算**：颜色转换和渐变生成采用延迟计算策略
-- **批量处理**：支持批量样式应用，提高大数据集处理效率
-- **内存优化**：智能内存管理，避免样式对象内存泄漏
-
-```java
-// 批量样式应用
-List<PlotStyle> styles = StyleConverter.createBatchStyles(
-    baseStyle, variations, count
-);
-UniversalStyleApplier.applyBatch(seriesList, styles);
-```
-
 ---
 
 ## 主要实现类 / Main Implementation Classes
@@ -2114,84 +1900,9 @@ String json = plot.toJson(); // 获取JSON配置 / Get JSON configuration
 System.out.println(json);
 ```
 
-## 性能特性 / Performance Features
-
-### 数据处理能力 / Data Processing Capabilities
-- **大规模数据支持** / **Large-scale Data Support**: 支持处理大量数据点 / Supports processing large amounts of data points
-- **内存优化** / **Memory Optimization**: 高效的数据结构设计 / Efficient data structure design
-- **渲染性能** / **Rendering Performance**: 基于ECharts的高性能渲染 / High-performance rendering based on ECharts
-
-### 交互功能 / Interactive Features
-- **缩放和平移** / **Zoom and Pan**: 支持图表的缩放和平移操作 / Supports zoom and pan operations on charts
-- **数据点悬停** / **Data Point Hover**: 鼠标悬停显示详细信息 / Mouse hover displays detailed information
-- **图例交互** / **Legend Interaction**: 点击图例显示/隐藏数据系列 / Click legend to show/hide data series
-- **工具提示** / **Tooltip**: 丰富的工具提示信息 / Rich tooltip information
-
-### 主题和样式 / Themes and Styles
-- **内置主题** / **Built-in Themes**: 支持多种内置主题 / Supports multiple built-in themes
-- **自定义样式** / **Custom Styles**: 支持自定义颜色、字体等样式 / Supports custom colors, fonts and other styles
-- **响应式设计** / **Responsive Design**: 支持不同屏幕尺寸的适配 / Supports adaptation to different screen sizes
-
-## 最佳实践 / Best Practices
-
-### 1. 数据准备 / Data Preparation
-
-```java
-// 确保数据质量 / Ensure data quality
-IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-if (data.length() == 0) {
-    throw new IllegalArgumentException("数据不能为空"); // Data cannot be empty
-}
-
-// 处理缺失值 / Handle missing values
-for (int i = 0; i < data.length(); i++) {
-    if (Float.isNaN(data.get(i))) {
-        data.set(i, 0.0f); // 用0替换NaN值 / Replace NaN values with 0
-    }
-}
-```
-
-### 2. 图表选择 / Chart Selection
-
-```java
-// 根据数据类型选择合适的图表 / Choose appropriate chart based on data type
-if (isTimeSeriesData(data)) {
-    plot.line(x, y); // 时间序列数据使用线图 / Use line chart for time series data
-} else if (isCategoricalData(data)) {
-    plot.bar(data); // 分类数据使用柱状图 / Use bar chart for categorical data
-} else if (isDistributionData(data)) {
-    plot.hist(data, true); // 分布数据使用直方图 / Use histogram for distribution data
-}
-```
-
-### 3. 性能优化 / Performance Optimization
-
-```java
-// 对于大数据集，考虑数据采样 / For large datasets, consider data sampling
-if (data.length() > 10000) {
-    data = data.sample(1000); // 随机采样1000个数据点 / Randomly sample 1000 data points
-}
-
-// 使用合适的数据结构 / Use appropriate data structures
-IVector<Double> optimizedData = data.copy(); // 避免不必要的数据复制 / Avoid unnecessary data copying
-```
-
-### 4. 错误处理 / Error Handling
-
-```java
-try {
-    IPlot plot = Plots.of(800, 600);
-    plot.line(x, y);
-    plot.saveAsHtml("chart.html");
-} catch (Exception e) {
-    System.err.println("创建图表时出错: " + e.getMessage()); // Error creating chart
-    // 处理错误情况 / Handle error cases
-}
-```
-
 ---
 
-## 统一样式系统 / Unified Style System
+## 样式系统 / Style System
 
 YiShape-Math 实现了完整的统一样式系统，为所有图表类型提供类似 matplotlib 的样式控制功能，并支持 seaborn 风格的数据分组。该系统通过统一的内部实现彻底消除了代码重复，提供了强大而灵活的绘图能力。
 
@@ -2333,184 +2044,331 @@ plot.line(x, y, hue, lineStyle);   // 同时按颜色和线型分组 / Group by 
 
 ### 调色板系统 / Palette System
 
+[`ColorPalette`](../../src/main/java/com/reremouse/lab/math/viz/ColorPalette.java) 提供丰富的颜色管理功能，支持多种调色板、颜色操作和无障碍访问优化。
+
 #### 内置调色板 / Built-in Palettes
 
-| 名称 / Name | 描述 / Description | 颜色数量 / Color Count |
-|-------------|-------------------|----------------------|
-| `matplotlib` | matplotlib 默认调色板 / matplotlib default palette | 10 |
-| `echarts` | ECharts 默认调色板 / ECharts default palette | 10 |
-| `seaborn` | Seaborn deep 调色板 / Seaborn deep palette | 10 |
-| `muted` | Seaborn muted 调色板 / Seaborn muted palette | 10 |
-| `pastel` | Seaborn pastel 调色板 / Seaborn pastel palette | 10 |
-| `colorblind` | 色盲友好调色板 / Colorblind-friendly palette | 9 |
-| `blues` | 蓝色单色调色板 / Blue monochrome palette | 9 |
-| `reds` | 红色单色调色板 / Red monochrome palette | 9 |
-| `greens` | 绿色单色调色板 / Green monochrome palette | 9 |
+| 名称 / Name | 描述 / Description | 颜色数量 / Color Count | 适用场景 / Use Cases |
+|-------------|-------------------|----------------------|-------------------|
+| `matplotlib` | matplotlib 默认调色板，科学计算标准 | 10 | 科学计算、数据分析 |
+| `echarts` | ECharts 默认调色板，现代Web风格 | 10 | Web应用、现代界面 |
+| `seaborn` | Seaborn deep 调色板，统计可视化 | 10 | 统计图表、数据探索 |
+| `muted` | Seaborn muted 调色板，柔和色调 | 10 | 学术报告、专业展示 |
+| `pastel` | Seaborn pastel 调色板，柔和淡雅 | 10 | 清新设计、温和展示 |
+| `colorblind` | 色盲友好调色板，无障碍访问 | 9 | 无障碍设计、通用展示 |
+| `blues` | 蓝色单色调色板，专业商务 | 9 | 商务报告、专业展示 |
+| `reds` | 红色单色调色板，警示醒目 | 9 | 警告数据、重要指标 |
+| `greens` | 绿色单色调色板，自然环保 | 9 | 环保数据、健康指标 |
 
-### 样式系统详细说明 / Detailed Style System Description
-
-#### 1. StyleExpression - 样式表达式解析器 / Style Expression Parser
-
-`StyleExpression` 类提供类似 matplotlib 的样式字符串解析功能，支持简洁的样式定义。
+#### 调色板使用示例 / Palette Usage Examples
 
 ```java
-// 基础样式表达式
-plot.line(x, y, "r-");        // 红色实线
-plot.line(x, y, "b--o");      // 蓝色虚线带圆圈
-plot.scatter(x, y, "ko");     // 黑色圆圈散点
-plot.line(x, y, "g:^");       // 绿色点线带三角
-
-// 十六进制颜色
-plot.line(x, y, "#FF5733-s"); // 十六进制颜色方形标记
-
-// C0-C9 颜色（matplotlib风格）
-plot.line(x, y, "C0-");       // matplotlib第0个颜色
-plot.line(x, y, "C1--");      // matplotlib第1个颜色
-```
-
-#### 2. StyleConverter - 样式转换器 / Style Converter
-
-`StyleConverter` 类提供高级颜色操作和ECharts样式转换功能。
-
-```java
-// HSL色彩空间操作
-String brighter = StyleConverter.adjustBrightness("#3498DB", 0.3);
-String moreSaturated = StyleConverter.adjustSaturation("#3498DB", 0.2);
-String hueShifted = StyleConverter.shiftHue("#3498DB", 60);
-
-// 智能渐变生成
-List<String> gradient = StyleConverter.createLinearGradient(
-    "#FF6B6B", "#4ECDC4", 5  // 5步线性渐变
-);
-
-// 径向渐变
-String radialGradient = StyleConverter.createRadialGradient(
-    "#FFD93D", "#FF6B6B", 0.5, 0.5, 0.8
-);
-
-// 颜色和谐度分析
-boolean isHarmonious = StyleConverter.isColorHarmonious("#FF6B6B", "#4ECDC4");
-```
-
-#### 3. SeabornStyleMapper - Seaborn风格映射器 / Seaborn Style Mapper
-
-`SeabornStyleMapper` 类提供类似 seaborn 的数据分组和样式映射功能。
-
-```java
-// 创建映射器
-SeabornStyleMapper mapper = new SeabornStyleMapper()
-    .setHuePalette("viridis")           // 设置色调调色板
-    .setStyleSequence(new String[]{"solid", "dashed", "dotted"})  // 设置线条样式序列
-    .setMarkerSequence(new String[]{"o", "s", "^", "v"});         // 设置标记序列
-
-// 获取分组样式
-PlotStyle styleA = mapper.getStyleForGroup("GroupA", "hue");
-PlotStyle styleB = mapper.getStyleForGroup("GroupB", "hue");
-
-// 多维分组
-PlotStyle multiStyle = mapper.getMultiDimensionalStyle(
-    "GroupA", "Type1", "Size1", "hue", "style", "size"
-);
-```
-
-#### 4. UniversalStyleApplier - 通用样式应用器 / Universal Style Applier
-
-`UniversalStyleApplier` 类为所有图表类型提供统一的样式应用功能。
-
-```java
-// 应用到线图
-UniversalStyleApplier.applyToLineSeries(lineSeries, style);
-
-// 应用到散点图
-UniversalStyleApplier.applyToScatterSeries(scatterSeries, style);
-
-// 应用到柱状图
-UniversalStyleApplier.applyToBarSeries(barSeries, style);
-
-// 批量应用
-List<PlotStyle> styles = Arrays.asList(style1, style2, style3);
-UniversalStyleApplier.applyBatch(seriesList, styles);
-```
-
-#### 5. ThemeManager - 主题管理器 / Theme Manager
-
-`ThemeManager` 类提供智能主题推荐和样式融合功能。
-
-```java
-// 智能主题推荐
-String recommendedTheme = ThemeManager.recommendTheme(
-    "financial",    // 数据类型
-    "candlestick",  // 图表类型
-    "professional"  // 用户偏好
-);
-
-// 主题样式融合
-PlotStyle themedStyle = ThemeManager.applyThemeToStyle(
-    customStyle, recommendedTheme
-);
-
-// 主题继承
-PlotStyle inheritedStyle = ThemeManager.inheritFromTheme(
-    "vintage", customizations
-);
-
-// 注册自定义主题
-ThemeManager.registerCustomTheme("myTheme", customThemeConfig);
-```
-
-### 样式系统示例 / Style System Examples
-
-#### 基础样式应用 / Basic Style Application
-
-```java
+import com.reremouse.lab.math.viz.*;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.viz.Plots;
-import com.reremouse.lab.math.viz.PlotStyle;
 
-// 创建数据 / Create data
+// 1. 基础调色板使用
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
+IVector<Double> y1 = Linalg.vector(new double[]{10, 20, 15, 30, 25});
+IVector<Double> y2 = Linalg.vector(new double[]{5, 15, 10, 25, 20});
 
-// 使用样式表达式 / Use style expressions
+// 设置全局调色板
 Plots.of(800, 600)
-    .line(x, y, "r--o")  // 红色虚线带圆圈 / Red dashed line with circles
-    .title("样式示例")
+    .setPalette("matplotlib")
+    .line(x, y1, "C0-")  // 使用matplotlib第0个颜色
+    .line(x, y2, "C1--") // 使用matplotlib第1个颜色
+    .title("matplotlib调色板示例")
     .show();
 
-// 使用PlotStyle对象 / Use PlotStyle object
-PlotStyle style = new PlotStyle()
+// 2. 获取调色板颜色
+String[] seabornColors = ColorPalette.getPalette("seaborn");
+String specificColor = ColorPalette.getColor("echarts", 2); // 获取第3个颜色
+
+// 3. 创建多系列图表，使用不同调色板
+String[] palettes = {"matplotlib", "seaborn", "echarts", "colorblind"};
+for (int i = 0; i < 4; i++) {
+    String color = ColorPalette.getColor(palettes[i], i);
+    PlotStyle style = new PlotStyle()
+        .color(color)
+        .lineWidth(2.0 + i * 0.5)
+        .marker(Character.toString((char)('o' + i)));
+    
+    Plots.of(400, 300)
+        .line(x, y1, style)
+        .title("调色板: " + palettes[i])
+        .show();
+}
+
+// 4. 生成渐变色系列
+String[] gradientColors = ColorPalette.generateAdvancedGradient(
+    "#FF6B6B",    // 起始颜色
+    "#4ECDC4",    // 结束颜色
+    5,            // 步数
+    "ease-in-out" // 算法
+);
+
+// 应用渐变色到多系列图表
+for (int i = 0; i < 5; i++) {
+    PlotStyle gradientStyle = new PlotStyle()
+        .color(gradientColors[i])
+        .lineWidth(2.0)
+        .marker("o")
+        .markerSize(6.0);
+    
+    Plots.of(400, 300)
+        .line(x, y1, gradientStyle)
+        .title("渐变色系列 " + (i + 1))
+        .show();
+}
+
+// 5. 无障碍访问优化
+String[] originalColors = {"#FF0000", "#00FF00", "#0000FF"};
+if (!ColorPalette.isColorBlindFriendly(originalColors)) {
+    String[] adjustedColors = ColorPalette.adjustForColorBlindness(
+        originalColors, "deuteranopia"  // 绿色盲
+    );
+    
+    // 使用调整后的颜色创建图表
+    for (int i = 0; i < adjustedColors.length; i++) {
+        PlotStyle accessibleStyle = new PlotStyle()
+            .color(adjustedColors[i])
+            .lineWidth(3.0)
+            .marker("s");
+        
+        Plots.of(400, 300)
+            .line(x, y1, accessibleStyle)
+            .title("无障碍优化颜色 " + (i + 1))
+            .show();
+    }
+}
+
+// 6. 语义化颜色使用
+String successColor = ColorPalette.getSemanticColor("success", 3);
+String warningColor = ColorPalette.getSemanticColor("warning", 4);
+String errorColor = ColorPalette.getSemanticColor("error", 5);
+
+PlotStyle successStyle = new PlotStyle().color(successColor).lineWidth(3.0);
+PlotStyle warningStyle = new PlotStyle().color(warningColor).lineWidth(3.0);
+PlotStyle errorStyle = new PlotStyle().color(errorColor).lineWidth(3.0);
+
+Plots.of(800, 400)
+    .line(x, y1, successStyle)
+    .line(x, y2, warningStyle)
+    .title("语义化颜色示例")
+    .show();
+```
+
+### 主题系统 / Theme System
+
+[`ThemeManager`](../../src/main/java/com/reremouse/lab/math/viz/ThemeManager.java) 提供完整的主题管理功能，支持14种内置主题和自定义主题创建。
+
+#### 内置主题列表 / Built-in Themes
+
+| 主题名称 / Theme Name | 风格特色 / Style Features | 适用场景 / Use Cases | 背景色 / Background | 主色调 / Primary Colors |
+|---------------------|-------------------------|-------------------|-------------------|----------------------|
+| **default** | 经典默认风格，平衡美观与可读性 | 通用场景，适合大多数图表 | 白色 (#ffffff) | ECharts经典蓝绿色系 |
+| **light** | 明亮清新，适合日间使用 | 报告、演示、日常分析 | 纯白 (#ffffff) | 柔和蓝绿色调 |
+| **dark** | 深色护眼，现代科技感 | 夜间使用、科技展示 | 深灰 (#1e1e1e) | 明亮蓝绿色系 |
+| **blue** | 专业蓝色主题，商务风格 | 商务报告、金融分析 | 淡蓝 (#f0f8ff) | 蓝色渐变系列 |
+| **green** | 自然绿色主题，环保清新 | 环保、健康、自然数据 | 淡绿 (#f0fdf4) | 绿色渐变系列 |
+| **red** | 热情红色主题，警示醒目 | 警告、紧急、重要数据 | 淡红 (#fef2f2) | 红色渐变系列 |
+| **purple** | 优雅紫色主题，高端典雅 | 高端产品、艺术展示 | 淡紫 (#faf5ff) | 紫色渐变系列 |
+| **orange** | 活力橙色主题，温暖活泼 | 活力数据、运动统计 | 淡橙 (#fff7ed) | 橙色渐变系列 |
+| **academic** | 学术风格，严谨专业 | 学术论文、研究报告 | 浅灰 (#fafafa) | 学术蓝绿色系 |
+| **business** | 商务风格，现代专业 | 商业报告、企业展示 | 浅灰 (#f8fafc) | 商务蓝绿色系 |
+| **minimal** | 极简风格，简洁清晰 | 简约设计、数据展示 | 纯白 (#ffffff) | 灰色系渐变 |
+| **rainbow** | 彩虹风格，生动多彩 | 创意展示、艺术图表 | 近白 (#fefefe) | 彩虹色彩系列 |
+| **vintage** | 复古风格，温暖经典 | 怀旧主题、经典展示 | 米色 (#f4f1de) | 复古暖色调 |
+| **futuristic** | 未来风格，科技感强 | 科技展示、未来主题 | 深蓝黑 (#0f0f23) | 霓虹色彩系 |
+
+#### 主题使用示例 / Theme Usage Examples
+
+```java
+import com.reremouse.lab.math.viz.*;
+import com.reremouse.lab.math.linalg.Linalg;
+
+// 1. 基础主题应用
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+IVector<Double> sales = Linalg.vector(new double[]{100, 120, 110, 140, 130, 160, 150, 180, 170, 200});
+IVector<Double> profit = Linalg.vector(new double[]{20, 25, 22, 30, 28, 35, 32, 40, 38, 45});
+
+// 深色主题
+Plots.of(800, 600, "dark")
+    .line(x, sales)
+    .title("深色主题销售数据")
+    .xlabel("月份")
+    .ylabel("销售额")
+    .show();
+
+// 学术主题
+Plots.of(800, 600, "academic")
+    .scatter(x, profit)
+    .title("学术风格利润分析")
+    .xlabel("月份")
+    .ylabel("利润")
+    .show();
+
+// 2. 智能主题推荐
+String recommendedTheme = ThemeManager.recommendTheme(
+    "business",      // 数据类型：business, scientific, creative, academic
+    "line",          // 图表类型
+    "professional"   // 用户偏好：professional, colorful, minimal
+);
+// 推荐结果: "business"
+
+Plots.of(800, 600, recommendedTheme)
+    .line(x, sales)
+    .line(x, profit)
+    .title("智能推荐主题: " + recommendedTheme)
+    .legend(true)
+    .show();
+
+// 3. 主题样式融合
+PlotStyle customStyle = new PlotStyle()
     .color("#FF6B6B")
-    .lineStyle("dashed")
-    .lineWidth(2.0)
-    .marker("s")
+    .lineWidth(2.5)
+    .marker("o")
     .markerSize(6.0);
 
-Plots.of(800, 600)
-    .line(x, y, style)
-    .title("自定义样式")
+// 将自定义样式与主题融合
+PlotStyle themedStyle = ThemeManager.applyThemeToStyle(customStyle, "vintage");
+
+Plots.of(800, 600, "vintage")
+    .line(x, sales, themedStyle)
+    .title("主题融合示例")
+    .show();
+
+// 4. 创建季节性主题
+ThemeManager.CustomTheme springTheme = ThemeManager.createSeasonalTheme("spring");
+ThemeManager.registerCustomTheme("mySpring", springTheme);
+
+Plots.of(800, 600, "mySpring")
+    .scatter(x, sales)
+    .title("春季主题")
+    .show();
+
+// 5. 创建行业主题
+ThemeManager.CustomTheme financeTheme = ThemeManager.createIndustryTheme("finance");
+ThemeManager.registerCustomTheme("myFinance", financeTheme);
+
+Plots.of(800, 600, "myFinance")
+    .line(x, sales)
+    .line(x, profit)
+    .title("金融行业主题")
+    .legend(true)
+    .show();
+
+// 6. 主题对比展示
+String[] themes = {"light", "dark", "academic", "business", "vintage", "futuristic"};
+for (String theme : themes) {
+    Plots.of(400, 300, theme)
+        .line(x, sales)
+        .title("主题: " + theme)
+        .show();
+}
+
+// 7. 渐变主题创建
+ThemeManager.CustomTheme gradientTheme = ThemeManager.createGradientTheme(
+    "sunset",           // 主题名称
+    "#FF6B6B",          // 起始颜色
+    "#4ECDC4",          // 结束颜色
+    "#F8F9FA"           // 背景颜色
+);
+ThemeManager.registerCustomTheme("sunset", gradientTheme);
+
+Plots.of(800, 600, "sunset")
+    .line(x, sales)
+    .title("自定义渐变主题")
+    .show();
+
+// 8. 无障碍访问主题
+ThemeManager.CustomTheme accessibilityTheme = ThemeManager.createAccessibilityTheme();
+ThemeManager.registerCustomTheme("accessible", accessibilityTheme);
+
+Plots.of(800, 600, "accessible")
+    .line(x, sales)
+    .line(x, profit)
+    .title("无障碍访问主题")
+    .legend(true)
     .show();
 ```
 
-#### 分组显示示例 / Grouping Display Examples
+
+
+
+## 性能特性 / Performance Features
+
+### 数据处理能力 / Data Processing Capabilities
+- **大规模数据支持** / **Large-scale Data Support**: 支持处理大量数据点 / Supports processing large amounts of data points
+- **内存优化** / **Memory Optimization**: 高效的数据结构设计 / Efficient data structure design
+- **渲染性能** / **Rendering Performance**: 基于ECharts的高性能渲染 / High-performance rendering based on ECharts
+
+### 交互功能 / Interactive Features
+- **缩放和平移** / **Zoom and Pan**: 支持图表的缩放和平移操作 / Supports zoom and pan operations on charts
+- **数据点悬停** / **Data Point Hover**: 鼠标悬停显示详细信息 / Mouse hover displays detailed information
+- **图例交互** / **Legend Interaction**: 点击图例显示/隐藏数据系列 / Click legend to show/hide data series
+- **工具提示** / **Tooltip**: 丰富的工具提示信息 / Rich tooltip information
+
+### 主题和样式 / Themes and Styles
+- **内置主题** / **Built-in Themes**: 支持多种内置主题 / Supports multiple built-in themes
+- **自定义样式** / **Custom Styles**: 支持自定义颜色、字体等样式 / Supports custom colors, fonts and other styles
+- **响应式设计** / **Responsive Design**: 支持不同屏幕尺寸的适配 / Supports adaptation to different screen sizes
+
+## 最佳实践 / Best Practices
+
+### 1. 数据准备 / Data Preparation
 
 ```java
-// 按颜色分组 / Group by color
-List<String> categories = Arrays.asList("A", "A", "B", "B", "C");
-Plots.of(800, 600)
-    .scatter(x, y, categories)
-    .title("分组散点图")
-    .show();
+// 确保数据质量 / Ensure data quality
+IVector<Double> data = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+if (data.length() == 0) {
+    throw new IllegalArgumentException("数据不能为空"); // Data cannot be empty
+}
 
-// 多维分组 / Multi-dimensional grouping
-List<String> hue = Arrays.asList("Group1", "Group1", "Group2", "Group2", "Group1");
-List<String> style = Arrays.asList("solid", "dashed", "solid", "dashed", "dotted");
-Plots.of(800, 600)
-    .line(x, y, hue, style)
-    .title("多维分组线图")
-    .show();
+// 处理缺失值 / Handle missing values
+for (int i = 0; i < data.length(); i++) {
+    if (Float.isNaN(data.get(i))) {
+        data.set(i, 0.0f); // 用0替换NaN值 / Replace NaN values with 0
+    }
+}
 ```
 
----
+### 2. 图表选择 / Chart Selection
+
+```java
+// 根据数据类型选择合适的图表 / Choose appropriate chart based on data type
+if (isTimeSeriesData(data)) {
+    plot.line(x, y); // 时间序列数据使用线图 / Use line chart for time series data
+} else if (isCategoricalData(data)) {
+    plot.bar(data); // 分类数据使用柱状图 / Use bar chart for categorical data
+} else if (isDistributionData(data)) {
+    plot.hist(data, true); // 分布数据使用直方图 / Use histogram for distribution data
+}
+```
+
+### 3. 性能优化 / Performance Optimization
+
+```java
+// 对于大数据集，考虑数据采样 / For large datasets, consider data sampling
+if (data.length() > 10000) {
+    data = data.sample(1000); // 随机采样1000个数据点 / Randomly sample 1000 data points
+}
+
+// 使用合适的数据结构 / Use appropriate data structures
+IVector<Double> optimizedData = data.copy(); // 避免不必要的数据复制 / Avoid unnecessary data copying
+```
+
+### 4. 错误处理 / Error Handling
+
+```java
+try {
+    IPlot plot = Plots.of(800, 600);
+    plot.line(x, y);
+    plot.saveAsHtml("chart.html");
+} catch (Exception e) {
+    System.err.println("创建图表时出错: " + e.getMessage()); // Error creating chart
+    // 处理错误情况 / Handle error cases
+}
+```
 
 ## 注意事项 / Notes
 
@@ -2558,3 +2416,4 @@ Plots.of(800, 600)
 ---
 
 **数据可视化** - 让数据说话，让洞察更清晰！ / **Data Visualization** - Let data speak, make insights clearer!
+
