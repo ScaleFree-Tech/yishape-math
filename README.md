@@ -579,18 +579,6 @@ src/main/java/com/reremouse/lab/
 ```
 
 
-### 快速入门指南 / Quick Start Guide
-
-这些示例文档提供了详细的使用指南和代码示例，帮助您快速上手：
-
-These example documents provide detailed usage guides and code examples to help you get started quickly:
-
-- **基础数学运算** / **Basic Mathematical Operations**: 向量和矩阵的基本操作 / Basic vector and matrix operations
-- **统计学应用** / **Statsistical Applications**: 概率分布和统计分析的实践 / Practical probability distributions and statistical analysis
-- **数据可视化** / **Data Visualization**: 丰富的图表类型和可视化功能 / Rich chart types and visualization capabilities
-- **机器学习实践** / **Machine Learning Practice**: 回归和分类算法的实际应用 / Real-world applications of regression and classification algorithms
-- **高级功能** / **Advanced Features**: 优化算法和降维技术的使用 / Usage of optimization algorithms and dimensionality reduction techniques
-
 
 ## 性能特性 / Performance Features
 
