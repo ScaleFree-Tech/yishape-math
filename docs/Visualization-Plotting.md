@@ -1914,11 +1914,7 @@ YiShape-Math implements a complete unified style system that provides matplotlib
 - **完整的样式对象系统**（PlotStyle）/ **Complete style object system** (PlotStyle)
 - **丰富的调色板管理**（matplotlib, seaborn, echarts 等）/ **Rich palette management** (matplotlib, seaborn, echarts, etc.)
 - **seaborn 风格的分组显示**（hue, style, size 映射）/ **seaborn-style grouping display** (hue, style, size mapping)
-- **统一的内部实现**（消除所有代码重复）/ **Unified internal implementation** (eliminates all code duplication)
-- **单参数绘图支持**（自动使用索引作为 X 轴）/ **Single parameter plotting support** (automatically uses index as X-axis)
 - **多维数据分组**（同时按颜色、线型、标记分组）/ **Multi-dimensional data grouping** (grouping by color, line style, and markers simultaneously)
-- **高级颜色操作**（HSL色彩空间、智能渐变）/ **Advanced color operations** (HSL color space, intelligent gradients)
-- **交互状态样式**（hover、blur、select等）/ **Interactive state styling** (hover, blur, select, etc.)
 - **智能主题管理**（自动推荐、样式融合）/ **Intelligent theme management** (auto-recommendation, style fusion)
 
 ### 快速开始 / Quick Start
