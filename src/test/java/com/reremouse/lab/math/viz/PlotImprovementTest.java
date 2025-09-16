@@ -37,22 +37,22 @@ public class PlotImprovementTest {
             // 测试2: 图表类型专用工厂方法
             System.out.println("\n2. 测试图表类型专用工厂方法...");
             
-            IPlot linePlot = Plots.line(x, y);
+            IPlot linePlot = Plots.of().line(x, y);
             System.out.println("✓ Plots.line(x, y) 创建成功");
             
-            IPlot scatterPlot = Plots.scatter(x, y);
+            IPlot scatterPlot = Plots.of().scatter(x, y);
             System.out.println("✓ Plots.scatter(x, y) 创建成功");
             
-            IPlot barPlot = Plots.bar(x);
+            IPlot barPlot = Plots.of().bar(x);
             System.out.println("✓ Plots.bar(x) 创建成功");
             
-            IPlot piePlot = Plots.pie(x);
+            IPlot piePlot = Plots.of().pie(x);
             System.out.println("✓ Plots.pie(x) 创建成功");
             
             // 测试3: 流式API
             System.out.println("\n3. 测试流式API...");
             
-            IPlot fluentPlot = Plots.line(x, y)
+            IPlot fluentPlot = Plots.of().line(x, y)
                 .title("测试图表", "这是一个测试副标题")
                 .xlabel("X轴标签")
                 .ylabel("Y轴标签")
@@ -88,7 +88,7 @@ public class PlotImprovementTest {
             // 测试6: 工具方法
             System.out.println("\n6. 测试工具方法...");
             
-            IPlot toolPlot = Plots.scatter(x, y);
+            IPlot toolPlot = Plots.of().scatter(x, y);
             String html = toolPlot.toHtml();
             String json = toolPlot.toJson();
             
