@@ -655,7 +655,7 @@ public interface IMatrix<T extends Number> {
      * @throws IndexOutOfBoundsException 如果行列索引超出范围 / if row or column index is
      * out of bounds
      */
-    public void put(int row, int col, T value);
+    public IMatrix put(int row, int col, T value);
 
     /**
      * 矩阵加法运算 / Matrix addition
@@ -906,8 +906,15 @@ public interface IMatrix<T extends Number> {
     /**
      * 设置指定列 / Set specified column
      */
-    public void putColumn(int colIndex, IMatrix<T> column);
+    public IMatrix putColumn(int colIndex, IMatrix<T> column);
+    
+    
+    public IMatrix setColumn(int colIndex, IVector<T> column);
 
+    public IMatrix setRow(int rowIndex, IVector<T> column);
+
+    
+    
     /**
      * 获取多个指定列 / Get multiple specified columns
      */
@@ -1388,7 +1395,7 @@ public interface IMatrix<T extends Number> {
      * @throws IllegalArgumentException 如果子矩阵尺寸不匹配 / if submatrix dimensions
      * don't match
      */
-    public void setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<T> subMatrix);
+    public IMatrix setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<T> subMatrix);
 
     /**
      * 设置指定位置的元素值 (alias for put) / Set element value at specified position
@@ -1397,7 +1404,7 @@ public interface IMatrix<T extends Number> {
      * intuitive naming
      * </p>
      */
-    public void set(int row, int col, T value);
+    public IMatrix set(int row, int col, T value);
 
     /**
      * QR算法特征分解的辅助方法 / QR algorithm eigendecomposition auxiliary method

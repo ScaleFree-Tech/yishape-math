@@ -523,7 +523,7 @@ public class RereFloatMatrix implements IFloatMatrix {
      * bounds
      */
     @Override
-    public void putColumn(int colIndex, IMatrix<Float> column1) {
+    public IMatrix<Float> putColumn(int colIndex, IMatrix<Float> column1) {
         if (column1 == null) {
             throw new IllegalArgumentException("列矩阵不能为null / Column matrix cannot be null");
         }
@@ -541,6 +541,7 @@ public class RereFloatMatrix implements IFloatMatrix {
         for (int i = 0; i < data.length; i++) {
             data[i][colIndex] = columnData[i][0];
         }
+        return this;
     }
 
     /**
@@ -610,11 +611,12 @@ public class RereFloatMatrix implements IFloatMatrix {
      * @param col 列索引（从0开始，支持负数索引） / Column index (0-based, supports negative
      * indexing)
      * @param value 要设置的值 / Value to set
+     * @return 
      * @throws IndexOutOfBoundsException 如果行列索引超出范围 / if row or column index is
      * out of bounds
      */
     @Override
-    public void put(int row, int col, Float value) {
+    public IMatrix<Float> put(int row, int col, Float value) {
         // 处理负数索引
         if (row < 0) {
             row = data.length + row;
@@ -631,6 +633,7 @@ public class RereFloatMatrix implements IFloatMatrix {
         }
 
         data[row][col] = value;
+        return this;
     }
 
     // Method removed - now inherited from IMatrix via IMatrix<Float>
@@ -6141,7 +6144,7 @@ public class RereFloatMatrix implements IFloatMatrix {
     }
 
     @Override
-    public void setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Float> subMatrix) {
+    public IMatrix<Float> setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Float> subMatrix) {
         if (startRow < 0 || endRow > data.length || startCol < 0 || endCol > data[0].length) {
             throw new IndexOutOfBoundsException("索引超出范围");
         }
@@ -6155,6 +6158,7 @@ public class RereFloatMatrix implements IFloatMatrix {
         if (subMatrix.rows() != rows || subMatrix.cols() != cols) {
             throw new IllegalArgumentException("子矩阵尺寸不匹配");
         }
+        return this;
     }
 
     // ========== IMatrix 接口缺失方法实现 / Missing IMatrix interface method implementations ==========
@@ -6433,7 +6437,7 @@ public class RereFloatMatrix implements IFloatMatrix {
     }
 
     @Override
-    public void set(int row, int col, Float value) {
+    public IMatrix<Float> set(int row, int col, Float value) {
         if (row < 0 || row >= data.length) {
             throw new IndexOutOfBoundsException("行索引超出范围: " + row + " / Row index out of bounds: " + row);
         }
@@ -6441,6 +6445,7 @@ public class RereFloatMatrix implements IFloatMatrix {
             throw new IndexOutOfBoundsException("列索引超出范围: " + col + " / Column index out of bounds: " + col);
         }
         data[row][col] = value;
+        return this;
     }
 
 
@@ -6565,6 +6570,50 @@ public class RereFloatMatrix implements IFloatMatrix {
     public IMatrix<Float> getColumnAsCloumnVector(int i) {
         return this.getColumn(i).asColumnVector();
     
+    }
+
+    @Override
+    public IMatrix<Float> setColumn(int colIndex, IVector<Float> column) {
+        if (column == null) {
+            throw new IllegalArgumentException("列向量不能为null / Column vector cannot be null");
+        }
+        if (colIndex < 0 || colIndex >= data[0].length) {
+            throw new IllegalArgumentException("列索引超出范围 / Column index out of bounds: " + colIndex);
+        }
+        if (column.length() != data.length) {
+            throw new IllegalArgumentException("列向量长度与矩阵行数不匹配 / Column vector length does not match matrix rows: " + column.length() + " vs " + data.length);
+        }
+        
+        // 获取列向量的数据
+        float[] columnData = column.toFloatArray();
+        
+        // 设置指定列的数据
+        for (int i = 0; i < data.length; i++) {
+            data[i][colIndex] = columnData[i];
+        }
+        
+        return this;
+    }
+
+    @Override
+    public IMatrix<Float> setRow(int rowIndex, IVector<Float> row) {
+        if (row == null) {
+            throw new IllegalArgumentException("行向量不能为null / Row vector cannot be null");
+        }
+        if (rowIndex < 0 || rowIndex >= data.length) {
+            throw new IllegalArgumentException("行索引超出范围 / Row index out of bounds: " + rowIndex);
+        }
+        if (row.length() != data[0].length) {
+            throw new IllegalArgumentException("行向量长度与矩阵列数不匹配 / Row vector length does not match matrix columns: " + row.length() + " vs " + data[0].length);
+        }
+        
+        // 获取行向量的数据
+        float[] rowData = row.toFloatArray();
+        
+        // 设置指定行的数据
+        System.arraycopy(rowData, 0, data[rowIndex], 0, data[0].length);
+        
+        return this;
     }
     
     

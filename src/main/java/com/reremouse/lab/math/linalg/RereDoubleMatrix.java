@@ -523,7 +523,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
      * bounds
      */
     @Override
-    public void putColumn(int colIndex, IMatrix<Double> column1) {
+    public IMatrix<Double> putColumn(int colIndex, IMatrix<Double> column1) {
         if (column1 == null) {
             throw new IllegalArgumentException("列矩阵不能为null / Column matrix cannot be null");
         }
@@ -541,6 +541,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
         for (int i = 0; i < data.length; i++) {
             data[i][colIndex] = columnData[i][0];
         }
+        return this;
     }
 
     /**
@@ -614,7 +615,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
      * out of bounds
      */
     @Override
-    public void put(int row, int col, Double value) {
+    public IMatrix<Double> put(int row, int col, Double value) {
         // 处理负数索引
         if (row < 0) {
             row = data.length + row;
@@ -631,6 +632,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
         }
 
         data[row][col] = value;
+        return this;
     }
 
     // Method removed - now inherited from IMatrix via IMatrix<Double>
@@ -6146,7 +6148,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
     }
 
     @Override
-    public void setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Double> subMatrix) {
+    public IMatrix<Double> setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Double> subMatrix) {
         if (startRow < 0 || endRow > data.length || startCol < 0 || endCol > data[0].length) {
             throw new IndexOutOfBoundsException("索引超出范围");
         }
@@ -6160,6 +6162,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
         if (subMatrix.rows() != rows || subMatrix.cols() != cols) {
             throw new IllegalArgumentException("子矩阵尺寸不匹配");
         }
+        return this;
     }
 
     // ========== IMatrix 接口缺失方法实现 / Missing IMatrix interface method implementations ==========
@@ -6438,7 +6441,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
     }
 
     @Override
-    public void set(int row, int col, Double value) {
+    public IMatrix<Double> set(int row, int col, Double value) {
         if (row < 0 || row >= data.length) {
             throw new IndexOutOfBoundsException("行索引超出范围: " + row + " / Row index out of bounds: " + row);
         }
@@ -6446,6 +6449,7 @@ public class RereDoubleMatrix implements IDoubleMatrix {
             throw new IndexOutOfBoundsException("列索引超出范围: " + col + " / Column index out of bounds: " + col);
         }
         data[row][col] = value;
+        return this;
     }
 
 
@@ -6571,5 +6575,51 @@ public class RereDoubleMatrix implements IDoubleMatrix {
         return this.getColumn(i).asColumnVector();
     
     }
+
+    @Override
+    public IMatrix<Double> setColumn(int colIndex, IVector<Double> column) {
+        if (column == null) {
+            throw new IllegalArgumentException("列向量不能为null / Column vector cannot be null");
+        }
+        if (colIndex < 0 || colIndex >= data[0].length) {
+            throw new IllegalArgumentException("列索引超出范围 / Column index out of bounds: " + colIndex);
+        }
+        if (column.length() != data.length) {
+            throw new IllegalArgumentException("列向量长度与矩阵行数不匹配 / Column vector length does not match matrix rows: " + column.length() + " vs " + data.length);
+        }
+        
+        // 获取列向量的数据
+        double[] columnData = column.toDoubleArray();
+        
+        // 设置指定列的数据
+        for (int i = 0; i < data.length; i++) {
+            data[i][colIndex] = columnData[i];
+        }
+        
+        return this;
+    }
+
+    @Override
+    public IMatrix<Double> setRow(int rowIndex, IVector<Double> row) {
+        if (row == null) {
+            throw new IllegalArgumentException("行向量不能为null / Row vector cannot be null");
+        }
+        if (rowIndex < 0 || rowIndex >= data.length) {
+            throw new IllegalArgumentException("行索引超出范围 / Row index out of bounds: " + rowIndex);
+        }
+        if (row.length() != data[0].length) {
+            throw new IllegalArgumentException("行向量长度与矩阵列数不匹配 / Row vector length does not match matrix columns: " + row.length() + " vs " + data[0].length);
+        }
+        
+        // 获取行向量的数据
+        double[] rowData = row.toDoubleArray();
+        
+        // 设置指定行的数据
+        System.arraycopy(rowData, 0, data[rowIndex], 0, data[0].length);
+        
+        return this;
+    }
+    
+    
 
 }

@@ -298,7 +298,7 @@ public interface IVector {
     
     // 元素访问 / Element access
     float get(int index);                    // Get element at index
-    void set(int index, float value);        // Set element at index
+    IVector set(int index, float value);        // Set element at index
     IVector slice(int start, int end);       // Get slice of vector
     IVector slice(int[] indices);            // Get elements at specific indices
     
@@ -387,11 +387,11 @@ public interface IMatrix {
     
     // 元素访问 / Element access
     float get(int row, int col);             // Get element at (row, col)
-    void set(int row, int col, float value); // Set element at (row, col)
+    IVector set(int row, int col, float value); // Set element at (row, col)
     IVector getRow(int row);                 // Get row vector
     IVector getColumn(int col);              // Get column vector
-    void setRow(int row, IVector vector);    // Set row vector
-    void setColumn(int col, IVector vector); // Set column vector
+    IVector setRow(int row, IVector vector);    // Set row vector
+    IVector setColumn(int col, IVector vector); // Set column vector
     IMatrix slice(int startRow, int endRow, int startCol, int endCol); // Get submatrix
     
     // 基本数学运算 / Basic mathematical operations
