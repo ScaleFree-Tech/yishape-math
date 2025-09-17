@@ -14,6 +14,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.function.Function;
 
 /**
  * 向量操作实现类 / Vector Operations Implementation Class
@@ -1079,6 +1080,53 @@ public class RereDoubleVector implements IDoubleVector {
     }
 
     /**
+     * 行向量与矩阵相乘 / Row vector matrix multiplication
+     * <p>
+     * 计算行向量与矩阵的乘积，结果仍是行向量 Computes the product of row vector and matrix,
+     * result is still a row vector
+     * </p>
+     * <p>
+     * 数学公式：v * M = [v1, v2, ..., vn] * [[m11, m12, ...], [m21, m22, ...], ...]
+     * 结果：[v1*m11 + v2*m21 + ..., v1*m12 + v2*m22 + ..., ...]
+     * </p>
+     *
+     * @param matrix 矩阵 / Matrix
+     * @return 结果行向量 / Result row vector
+     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length
+     * doesn't match matrix row count
+     * @throws NullPointerException 如果matrix为null / if matrix is null
+     */
+    @Override
+    public IVector<Double> mmul(IMatrix<Double> matrix) {
+        if (matrix == null) {
+            throw new NullPointerException("矩阵不能为null / Matrix cannot be null");
+        }
+        
+        IDoubleMatrix m = (IDoubleMatrix) matrix;
+        int vectorLen = this.data.length;
+        int matrixRows = m.getRowNum();
+        int matrixCols = m.getColNum();
+        
+        if (vectorLen != matrixRows) {
+            throw new IllegalArgumentException(
+                String.format("向量长度与矩阵行数不匹配: %d != %d / Vector length doesn't match matrix row count: %d != %d", 
+                    vectorLen, matrixRows, vectorLen, matrixRows));
+        }
+        
+        // 计算行向量与矩阵的乘积
+        double[] result = new double[matrixCols];
+        for (int j = 0; j < matrixCols; j++) {
+            double sum = 0.0;
+            for (int i = 0; i < vectorLen; i++) {
+                sum += this.data[i] * m.get(i, j);
+            }
+            result[j] = sum;
+        }
+        
+        return IDoubleVector.of(result);
+    }
+
+    /**
      * 向量减标量 / Vector sub scalar
      * <p>
      * 向量中每个元素减去标量值 Subtracts a scalar value from each element in the vector
@@ -1640,7 +1688,7 @@ public class RereDoubleVector implements IDoubleVector {
                     + " / Boolean index array length doesn't match vector length: " + booleanIndex.length + " != " + this.data.length);
         }
 
-        List<Double> ls = new ArrayList();
+        List<Double> ls = new ArrayList<>();
         for (int i = 0; i < booleanIndex.length; i++) {
             if (booleanIndex[i]) {
                 ls.add(data[i]);
@@ -2562,7 +2610,7 @@ public class RereDoubleVector implements IDoubleVector {
     }
 
     @Override
-    public Double percentile(Double q) {
+    public Double percentile(double q) {
         if (q < 0.0f || q > 100.0f) {
             throw new IllegalArgumentException("百分位数必须在[0,100]范围内: " + q + " / Percentile must be in range [0,100]: " + q);
         }
@@ -2737,6 +2785,265 @@ public class RereDoubleVector implements IDoubleVector {
         
         return new RereDoubleMatrix(columnMatrix);
     }
+
+    /**
+     * 动态时间规整（Dynamic Time Warping）算法
+     * <p>
+     * 计算两个时间序列之间的DTW距离，用于衡量时间序列的相似性。
+     * DTW算法能够处理不同长度的时间序列，并找到最优的对齐路径。
+     * </p>
+     * <p>
+     * 算法原理：
+     * <ul>
+     * <li>构建距离矩阵：计算两个序列中每对元素之间的距离</li>
+     * <li>动态规划：使用DP算法找到从起点到终点的最小累积距离路径</li>
+     * <li>路径约束：通常使用Sakoe-Chiba band或Itakura parallelogram约束搜索空间</li>
+     * </ul>
+     * </p>
+     * <p>
+     * 时间复杂度：O(m×n)，其中m和n是两个序列的长度
+     * 空间复杂度：O(m×n)，用于存储距离矩阵
+     * </p>
+     * 
+     * @param other 另一个时间序列向量
+     * @return DTW距离值，值越小表示序列越相似
+     * @throws IllegalArgumentException 如果输入向量为null
+     */
+    @Override
+    public Double dtw(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        
+        int m = this.data.length;
+        int n = other.length();
+        
+        // 如果任一序列为空，返回无穷大距离
+        if (m == 0 || n == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
+        // 如果两个序列完全相同，直接返回0
+        if (m == n) {
+            boolean identical = true;
+            for (int i = 0; i < m; i++) {
+                if (Math.abs(this.data[i] - other.get(i)) > 1e-10) {
+                    identical = false;
+                    break;
+                }
+            }
+            if (identical) {
+                return 0.0;
+            }
+        }
+        
+        // 创建距离矩阵，使用动态规划
+        double[][] dtwMatrix = new double[m + 1][n + 1];
+        
+        // 初始化边界条件
+        for (int i = 0; i <= m; i++) {
+            dtwMatrix[i][0] = Double.POSITIVE_INFINITY;
+        }
+        for (int j = 0; j <= n; j++) {
+            dtwMatrix[0][j] = Double.POSITIVE_INFINITY;
+        }
+        dtwMatrix[0][0] = 0.0;
+        
+        // 填充DTW矩阵
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                // 计算当前元素对的距离
+                double distance = Math.abs(this.data[i - 1] - other.get(j - 1));
+                
+                // 取三个方向的最小值：左、上、左上
+                double minPrev = Math.min(
+                    Math.min(dtwMatrix[i - 1][j], dtwMatrix[i][j - 1]),
+                    dtwMatrix[i - 1][j - 1]
+                );
+                
+                dtwMatrix[i][j] = distance + minPrev;
+            }
+        }
+        
+        return dtwMatrix[m][n];
+    }
+
+    /**
+     * 计算与另一个向量的皮尔逊相关系数 / Compute Pearson correlation coefficient with another vector
+     * <p>
+     * 计算当前向量与另一个向量之间的皮尔逊相关系数，衡量两个向量的线性相关性。
+     * 相关系数的取值范围为[-1, 1]，其中1表示完全正相关，-1表示完全负相关，0表示无线性相关。
+     * </p>
+     * <p>
+     * 数学公式：r = cov(X,Y) / (σX × σY)
+     * <ul>
+     * <li>cov(X,Y) 是两个向量的协方差</li>
+     * <li>σX 和 σY 分别是两个向量的标准差</li>
+     * </ul>
+     * </p>
+     * 
+     * @param other 另一个向量，必须与当前向量长度相同
+     * @return 皮尔逊相关系数，取值范围[-1, 1]
+     * @throws IllegalArgumentException 如果输入向量为null或长度不匹配
+     * @throws ArithmeticException 如果任一向量的标准差为0（无法计算相关系数）
+     */
+    @Override
+    public Double corr(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        if (this.data.length != other.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + other.length()
+                    + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
+        }
+        
+        int len = this.data.length;
+        
+        // 如果向量长度为0或1，无法计算相关系数
+        if (len < 2) {
+            throw new ArithmeticException("向量长度必须大于等于2才能计算相关系数 / Vector length must be at least 2 to calculate correlation");
+        }
+        
+        // 计算协方差：调用cov方法
+        double covariance = this.cov(other);
+        
+        // 计算标准差
+        double stdX = this.std();
+        double stdY = other.std();
+        
+        // 检查分母是否为零
+        if (stdX == 0.0 || stdY == 0.0) {
+            throw new ArithmeticException("向量标准差为0，无法计算相关系数 / Vector standard deviation is 0, cannot calculate correlation");
+        }
+        
+        // 计算相关系数
+        return covariance / (stdX * stdY);
+    }
+
+    /**
+     * 计算与另一个向量的协方差 / Compute covariance with another vector
+     * <p>
+     * 计算当前向量与另一个向量之间的协方差，衡量两个向量的线性相关性。
+     * 协方差的计算公式为：cov(X,Y) = E[(X-μX)(Y-μY)] = E[XY] - μXμY
+     * </p>
+     * <p>
+     * 协方差的性质：
+     * <ul>
+     * <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大</li>
+     * <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小</li>
+     * <li>cov(X,Y) = 0: 无线性相关</li>
+     * <li>cov(X,X) = var(X): 自协方差等于方差</li>
+     * </ul>
+     * </p>
+     * 
+     * @param other 另一个向量，必须与当前向量长度相同
+     * @return 协方差值
+     * @throws IllegalArgumentException 如果输入向量为null或长度不匹配
+     * @throws ArithmeticException 如果向量长度为0（无法计算协方差）
+     */
+    @Override
+    public Double cov(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        if (this.data.length != other.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + other.length()
+                    + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
+        }
+        
+        int len = this.data.length;
+        
+        // 如果向量长度为0，无法计算协方差
+        if (len == 0) {
+            throw new ArithmeticException("向量长度为0，无法计算协方差 / Vector length is 0, cannot calculate covariance");
+        }
+        
+        // 如果向量长度为1，协方差为0（只有一个点无法计算协方差）
+        if (len == 1) {
+            return 0.0;
+        }
+        
+        // 计算协方差：使用中心化向量的内积
+        IVector<Double> centeredX = this.subScalar(this.mean());
+        IVector<Double> centeredY = other.subScalar(other.mean());
+        double covariance = centeredX.innerProduct(centeredY) / len;
+        
+        return covariance;
+    }
+
+    @Override
+    public IVector<Double> apply(Function<Double, Double> fun) {
+        if (fun == null) {
+            throw new IllegalArgumentException("函数不能为null / Function cannot be null");
+        }
+        
+        double[] result = new double[data.length];
+        for (int i = 0; i < data.length; i++) {
+            result[i] = fun.apply(data[i]);
+        }
+        
+        return new RereDoubleVector(result);
+    }
+
+    /**
+     * 第一四分位数（25%分位数）/ First quartile (25th percentile)
+     * <p>
+     * 计算向量的第一四分位数，即25%分位数。第一四分位数是将数据按升序排列后，
+     * 位于25%位置的值，表示有25%的数据小于等于该值。
+     * </p>
+     * <p>
+     * 计算方法：
+     * <ul>
+     * <li>将向量数据按升序排序</li>
+     * <li>计算位置索引：index = 0.25 * (n - 1)，其中n是数据长度</li>
+     * <li>如果索引是整数，直接取该位置的值</li>
+     * <li>如果索引不是整数，使用线性插值计算</li>
+     * </ul>
+     * </p>
+     * 
+     * @return 第一四分位数 / First quartile
+     * @throws ArithmeticException 如果向量为空 / if vector is empty
+     */
+    @Override
+    public Double q1() {
+        if (this.data.length == 0) {
+            throw new ArithmeticException("空向量无法计算第一四分位数 / Cannot compute first quartile for empty vector");
+        }
+        
+        // 使用已有的percentile方法计算25%分位数
+        return this.percentile(25.0);
+    }
+
+    /**
+     * 第三四分位数（75%分位数）/ Third quartile (75th percentile)
+     * <p>
+     * 计算向量的第三四分位数，即75%分位数。第三四分位数是将数据按升序排列后，
+     * 位于75%位置的值，表示有75%的数据小于等于该值。
+     * </p>
+     * <p>
+     * 计算方法：
+     * <ul>
+     * <li>将向量数据按升序排序</li>
+     * <li>计算位置索引：index = 0.75 * (n - 1)，其中n是数据长度</li>
+     * <li>如果索引是整数，直接取该位置的值</li>
+     * <li>如果索引不是整数，使用线性插值计算</li>
+     * </ul>
+     * </p>
+     * 
+     * @return 第三四分位数 / Third quartile
+     * @throws ArithmeticException 如果向量为空 / if vector is empty
+     */
+    @Override
+    public Double q3() {
+        if (this.data.length == 0) {
+            throw new ArithmeticException("空向量无法计算第三四分位数 / Cannot compute third quartile for empty vector");
+        }
+        
+        // 使用已有的percentile方法计算75%分位数
+        return this.percentile(75.0);
+    }
+
+    
 
     
 

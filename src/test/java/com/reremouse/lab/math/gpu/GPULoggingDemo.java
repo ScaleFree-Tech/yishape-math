@@ -64,7 +64,7 @@ public class GPULoggingDemo {
         GPUComputeFloatUtils.setDetailedLoggingEnabled(true);
         matrixA.add(matrixB);
         vectorA.add(vectorB);
-        matrixA.mmul(2.0f);
+        matrixA.multiplyScalar(2.0f);
         vectorA.sum();
         System.out.println("(显示GPU/CPU标识、操作详情和性能统计)\n");
         
@@ -82,7 +82,7 @@ public class GPULoggingDemo {
         System.out.println("---------------");
         System.out.println("矩阵操作:");
         matrixA.sub(matrixB);
-        matrixA.mmul(1.5f);
+        matrixA.multiplyScalar(1.5f);
         matrixA.sub(0.5f);
         matrixA.transposeNew();
         

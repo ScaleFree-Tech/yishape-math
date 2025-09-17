@@ -109,7 +109,7 @@ public class GPUAccelerationTest {
         
         double scalar = 2.5f;
         long startTime = System.currentTimeMillis();
-        IMatrix<Double> result = largeMatrixA.mmul(scalar);
+        IMatrix<Double> result = largeMatrixA.multiplyScalar(scalar);
         long endTime = System.currentTimeMillis();
         
         System.out.println("矩阵标量乘法耗时: " + (endTime - startTime) + "ms");

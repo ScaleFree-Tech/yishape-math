@@ -123,7 +123,7 @@ public class IMatrixGenericTest {
         assertEquals(Double.valueOf(3.0), diff.get(1, 0));
         
         // Test scalar multiplication
-        IMatrix<Double> scaled = floatMatrix.mmul(2.0);
+        IMatrix<Double> scaled = floatMatrix.multiplyScalar(2.0);
         assertNotNull(scaled);
         assertEquals(Double.valueOf(2.0), scaled.get(0, 0));
         assertEquals(Double.valueOf(4.0), scaled.get(0, 1));

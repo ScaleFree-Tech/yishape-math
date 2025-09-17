@@ -68,6 +68,7 @@ IMatrix<Float> matrix3f = Linalg.matrixFromFloatList(floatRows);
 IVector<Double>[] vectors = {Linalg.vector(new double[]{1, 2}), Linalg.vector(new double[]{3, 4})};
 IMatrix<Double> matrix4 = IMatrix.of(vectors);
 
+
 // 创建特殊矩阵 / Create special matrices
 IMatrix<Double> ones = Linalg.ones(3, 3);        // 全1矩阵 / Matrix of ones
 IMatrix<Float> onesF = Linalg.ones(3, 3, Float.class); // Float类型全1矩阵
@@ -116,6 +117,10 @@ IMatrix<Double> diff = matrix1.sub(matrix2);
 
 // 矩阵乘法 / Matrix multiplication
 IMatrix<Double> matrixProduct = matrix1.mmul(matrix2);
+
+// 矩阵与向量乘法 / Matrix-vector multiplication
+IVector<Double> vector = Linalg.vector(new double[]{1.0, 2.0});
+IVector<Double> matrixVectorProduct = matrix1.mmul(vector);
 
 // 元素级除法 / Element-wise division
 IMatrix<Double> quotient = matrix1.divide(matrix2);
@@ -278,6 +283,9 @@ boolean isPositiveDefinite = matrix1.isPositiveDefinite(); // 是否为正定矩
 
 // 矩阵对角线操作 / Matrix diagonal operations
 IVector<Double> diagonal = matrix1.diag();       // 获取对角线元素
+
+// 数据访问 / Data access
+double[][] data = matrix1.getData();              // 获取原始数据（仅IDoubleMatrix）
 ```
 
 #### 矩阵切片操作 / Matrix Slicing Operations
@@ -574,6 +582,7 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 | 矩阵加法 / Matrix addition | `matrix1.add(matrix2)` | `matrix1 + matrix2` | 元素级加法 / Element-wise addition |
 | 矩阵减法 / Matrix subtraction | `matrix1.sub(matrix2)` | `matrix1 - matrix2` | 元素级减法 / Element-wise subtraction |
 | 矩阵乘法 / Matrix multiplication | `matrix1.mmul(matrix2)` | `matrix1 @ matrix2` | 矩阵乘法 / Matrix multiplication |
+| 矩阵与向量乘法 / Matrix-vector multiplication | `matrix.mmul(vector)` | `matrix @ vector` | 矩阵与向量乘法 / Matrix-vector multiplication |
 | 元素级除法 / Element-wise division | `matrix1.divide(matrix2)` | `matrix1 / matrix2` | 元素级除法 / Element-wise division |
 | 标量运算 / Scalar operations | `matrix.mmul(scalar)` | `matrix * scalar` | 标量乘法 / Scalar multiplication |
 | 标量减法 / Scalar subtraction | `matrix.sub(scalar)` | `matrix - scalar` | 标量减法 / Scalar subtraction |

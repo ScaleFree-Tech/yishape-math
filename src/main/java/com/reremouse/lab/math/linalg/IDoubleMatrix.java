@@ -271,7 +271,7 @@ public interface IDoubleMatrix extends IMatrix<Double> {
         double[][] data = new double[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                data[i][j] = (float) random.nextGaussian(); // 生成标准正态分布随机数 / Generate standard normal distribution random numbers
+                data[i][j] = random.nextGaussian(); // 生成标准正态分布随机数 / Generate standard normal distribution random numbers
             }
         }
         return new RereDoubleMatrix(data);
@@ -301,7 +301,7 @@ public interface IDoubleMatrix extends IMatrix<Double> {
         double[][] data = new double[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                data[i][j] = (float) random.nextGaussian(); // 生成标准正态分布随机数 / Generate standard normal distribution random numbers
+                data[i][j] = random.nextGaussian(); // 生成标准正态分布随机数 / Generate standard normal distribution random numbers
             }
         }
         return new RereDoubleMatrix(data);
@@ -338,7 +338,7 @@ public interface IDoubleMatrix extends IMatrix<Double> {
             for (int j = 0; j < cols; j++) {
                 // 生成标准正态分布随机数，然后按公式 X = mean + std * Z 转换为指定均值和标准差的正态分布
                 // Generate standard normal distribution random number, then convert to normal distribution with specified mean and std using formula X = mean + std * Z
-                data[i][j] = mean + std * (float) random.nextGaussian();
+                data[i][j] = mean + std * random.nextGaussian();
             }
         }
         return new RereDoubleMatrix(data);

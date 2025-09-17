@@ -207,7 +207,7 @@ public class RereTSNE {
             IMatrix gradient = computeGradient(P, Q, Y);
             
             // 更新速度（应用动量）
-            velocity = (IMatrix)velocity.mmul(momentum).sub(gradient.mmul(learningRate));
+            velocity = (IMatrix)velocity.multiplyScalar(momentum).sub(gradient.multiplyScalar(learningRate));
             
             // 更新Y
             Y = (IMatrix)Y.add(velocity);

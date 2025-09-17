@@ -28,6 +28,12 @@ public class Tuple2<E1, E2> implements Serializable{
     
     }
     
+    public E1 getFirst(){
+    return this._1;
+    }
     
+    public E2 getSecond(){
+    return this._2;
+    }
     
 }

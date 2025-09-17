@@ -16,6 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 /**
  * 矩阵操作实现类 / Matrix Operations Implementation Class 本类按行存储向量数据
@@ -354,7 +355,7 @@ public class RereFloatMatrix implements IFloatMatrix {
      * @return 新的矩阵对象，包含运算结果 / New matrix object containing the result
      */
     @Override
-    public IMatrix<Float> mmul(Float scalar) {
+    public IMatrix<Float> multiplyScalar(Float scalar) {
         int rows = data.length;
         int cols = data[0].length;
         long complexity = (long) rows * cols;
@@ -4155,7 +4156,7 @@ public class RereFloatMatrix implements IFloatMatrix {
         IMatrix<Float> product = ((RereFloatMatrix) transposed).mmul(this);
 
         // 除以 (n-1) 得到协方差矩阵
-        return product.mmul(1.0f / (n - 1));
+        return product.multiplyScalar(1.0f / (n - 1));
     }
 
     /**
@@ -6125,19 +6126,25 @@ public class RereFloatMatrix implements IFloatMatrix {
 
     @Override
     public IMatrix<Float> subMatrix(int startRow, int endRow, int startCol, int endCol) {
-        if (startRow < 0 || endRow > data.length || startCol < 0 || endCol > data[0].length) {
+        // 支持负数索引：负数表示从末尾开始计算
+        int actualStartRow = startRow < 0 ? data.length + startRow : startRow;
+        int actualEndRow = endRow < 0 ? data.length + endRow : endRow;
+        int actualStartCol = startCol < 0 ? data[0].length + startCol : startCol;
+        int actualEndCol = endCol < 0 ? data[0].length + endCol : endCol;
+        
+        if (actualStartRow < 0 || actualEndRow > data.length || actualStartCol < 0 || actualEndCol > data[0].length) {
             throw new IndexOutOfBoundsException("索引超出范围");
         }
-        if (startRow >= endRow || startCol >= endCol) {
+        if (actualStartRow >= actualEndRow || actualStartCol >= actualEndCol) {
             throw new IllegalArgumentException("起始索引必须小于结束索引");
         }
 
-        int rows = endRow - startRow;
-        int cols = endCol - startCol;
+        int rows = actualEndRow - actualStartRow;
+        int cols = actualEndCol - actualStartCol;
         float[][] subData = new float[rows][cols];
 
         for (int i = 0; i < rows; i++) {
-            System.arraycopy(data[startRow + i], startCol, subData[i], 0, cols);
+            System.arraycopy(data[actualStartRow + i], actualStartCol, subData[i], 0, cols);
         }
 
         return new RereFloatMatrix(subData);
@@ -6145,19 +6152,33 @@ public class RereFloatMatrix implements IFloatMatrix {
 
     @Override
     public IMatrix<Float> setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Float> subMatrix) {
-        if (startRow < 0 || endRow > data.length || startCol < 0 || endCol > data[0].length) {
+        // 支持负数索引：负数表示从末尾开始计算
+        int actualStartRow = startRow < 0 ? data.length + startRow : startRow;
+        int actualEndRow = endRow < 0 ? data.length + endRow : endRow;
+        int actualStartCol = startCol < 0 ? data[0].length + startCol : startCol;
+        int actualEndCol = endCol < 0 ? data[0].length + endCol : endCol;
+        
+        if (actualStartRow < 0 || actualEndRow > data.length || actualStartCol < 0 || actualEndCol > data[0].length) {
             throw new IndexOutOfBoundsException("索引超出范围");
         }
-        if (startRow >= endRow || startCol >= endCol) {
+        if (actualStartRow >= actualEndRow || actualStartCol >= actualEndCol) {
             throw new IllegalArgumentException("起始索引必须小于结束索引");
         }
 
-        int rows = endRow - startRow;
-        int cols = endCol - startCol;
+        int rows = actualEndRow - actualStartRow;
+        int cols = actualEndCol - actualStartCol;
 
         if (subMatrix.rows() != rows || subMatrix.cols() != cols) {
             throw new IllegalArgumentException("子矩阵尺寸不匹配");
         }
+        
+        // 将子矩阵数据复制到指定位置
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                data[actualStartRow + i][actualStartCol + j] = subMatrix.get(i, j);
+            }
+        }
+        
         return this;
     }
 
@@ -6614,6 +6635,57 @@ public class RereFloatMatrix implements IFloatMatrix {
         System.arraycopy(rowData, 0, data[rowIndex], 0, data[0].length);
         
         return this;
+    }
+
+        /**
+     * 针对矩阵中的每一个元素施加操作并且返回同形状的被操作后矩阵
+     * <p>
+     * 对矩阵中每个元素应用指定的函数，返回新的矩阵对象
+     * Applies the specified function to each element in the matrix, returns a new matrix object
+     * </p>
+     * <p>
+     * 使用示例 / Usage Example:
+     * <pre>{@code
+     * RereDoubleMatrix matrix = new RereDoubleMatrix(new double[][]{{1, 2}, {3, 4}});
+     * IMatrix<Double> squared = matrix.apply(x -> x * x);  // 结果: [[1, 4], [9, 16]]
+     * IMatrix<Double> abs = matrix.apply(Math::abs);      // 结果: [[1, 2], [3, 4]]
+     * }</pre>
+     * </p>
+     *
+     * @param fun 要应用的函数，接受Double类型参数并返回Double类型结果
+     *            Function to apply, accepts Double parameter and returns Double result
+     * @return 新的矩阵对象，包含应用函数后的结果
+     *         New matrix object containing the results after applying the function
+     * @throws IllegalArgumentException 如果函数为null
+     *                                  if function is null
+     */
+    @Override
+    public IMatrix<Float> apply(Function<Float, Float> fun) {
+        if (fun == null) {
+            throw new IllegalArgumentException("函数不能为null / Function cannot be null");
+        }
+        
+        int rows = data.length;
+        int cols = data[0].length;
+        float[][] result = new float[rows][cols];
+        
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = fun.apply(data[i][j]);
+            }
+        }
+        
+        return new RereFloatMatrix(result);
+    }
+
+    @Override
+    public IMatrix<Float> slice(int rowStart, int rowEnd, int colStart, int colEnd) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public IVector<Float> mmul(IVector<Float> other) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     
     

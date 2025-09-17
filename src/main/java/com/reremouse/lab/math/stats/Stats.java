@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.stats;
 
+import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.stats.anova.ANOVA;
 import com.reremouse.lab.math.stats.testing.ParameterEstimation;
 import com.reremouse.lab.math.stats.testing.HypothesisTesting;
@@ -679,4 +680,107 @@ public class Stats {
     public static GammaDistribution gamma(double alpha, double beta) {
         return new GammaDistribution(alpha, beta);
     }
+    
+    /**
+     * 计算两个向量的皮尔逊相关系数 / Calculate Pearson correlation coefficient between two vectors
+     * 
+     * <p>皮尔逊相关系数衡量两个向量之间的线性相关性，取值范围为[-1, 1]。
+     * 其中1表示完全正相关，-1表示完全负相关，0表示无线性相关。</p>
+     * 
+     * <p>Pearson correlation coefficient measures the linear correlation between two vectors,
+     * with values in the range [-1, 1]. 1 indicates perfect positive correlation,
+     * -1 indicates perfect negative correlation, and 0 indicates no linear correlation.</p>
+     * 
+     * <h4>数学公式 / Mathematical Formula:</h4>
+     * <p>r = cov(X,Y) / (σX × σY)</p>
+     * <ul>
+     *   <li>cov(X,Y) 是两个向量的协方差 / cov(X,Y) is the covariance of the two vectors</li>
+     *   <li>σX 和 σY 分别是两个向量的标准差 / σX and σY are the standard deviations of the two vectors</li>
+     * </ul>
+     * 
+     * <h4>应用场景 / Applications:</h4>
+     * <ul>
+     *   <li>特征相关性分析 / Feature correlation analysis</li>
+     *   <li>数据预处理 / Data preprocessing</li>
+     *   <li>降维分析 / Dimensionality reduction</li>
+     *   <li>统计建模 / Statistical modeling</li>
+     * </ul>
+     * 
+     * @param x1 第一个向量，不能为null / First vector, cannot be null
+     * @param x2 第二个向量，不能为null，长度必须与x1相同 / Second vector, cannot be null, must have same length as x1
+     * @return 皮尔逊相关系数，取值范围[-1, 1] / Pearson correlation coefficient, range [-1, 1]
+     * @throws IllegalArgumentException 如果输入向量为null或长度不匹配 / if input vectors are null or lengths don't match
+     * @throws ArithmeticException 如果任一向量的标准差为0（无法计算相关系数）/ if any vector's standard deviation is 0 (cannot calculate correlation)
+     * 
+     * @see IVector#corr(IVector) 向量实例方法 / Vector instance method
+     * @since 1.0
+     */
+    public static <T extends Number> double corr(IVector<T> x1, IVector<T> x2) {
+        // 参数验证 / Parameter validation
+        if (x1 == null) {
+            throw new IllegalArgumentException("第一个向量不能为null / First vector cannot be null");
+        }
+        if (x2 == null) {
+            throw new IllegalArgumentException("第二个向量不能为null / Second vector cannot be null");
+        }
+        if (x1.length() != x2.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + x1.length() + " != " + x2.length()
+                    + " / Vector lengths don't match: " + x1.length() + " != " + x2.length());
+        }
+        
+        // 调用向量实例的corr方法 / Call vector instance's corr method
+        return x1.corr(x2).doubleValue();
+    }
+    
+    /**
+     * 计算两个向量的协方差 / Calculate covariance between two vectors
+     * 
+     * <p>协方差衡量两个向量之间的线性相关性。协方差的计算公式为：
+     * cov(X,Y) = E[(X-μX)(Y-μY)] = E[XY] - μXμY</p>
+     * 
+     * <p>Covariance measures the linear relationship between two vectors. The formula is:
+     * cov(X,Y) = E[(X-μX)(Y-μY)] = E[XY] - μXμY</p>
+     * 
+     * <h4>协方差的性质 / Properties of Covariance:</h4>
+     * <ul>
+     *   <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大 / Positive correlation, Y tends to increase when X increases</li>
+     *   <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小 / Negative correlation, Y tends to decrease when X increases</li>
+     *   <li>cov(X,Y) = 0: 无线性相关 / No linear correlation</li>
+     *   <li>cov(X,X) = var(X): 自协方差等于方差 / Auto-covariance equals variance</li>
+     * </ul>
+     * 
+     * <h4>应用场景 / Applications:</h4>
+     * <ul>
+     *   <li>特征相关性分析 / Feature correlation analysis</li>
+     *   <li>投资组合分析 / Portfolio analysis</li>
+     *   <li>风险分析 / Risk analysis</li>
+     *   <li>统计建模 / Statistical modeling</li>
+     * </ul>
+     * 
+     * @param x1 第一个向量，不能为null / First vector, cannot be null
+     * @param x2 第二个向量，不能为null，长度必须与x1相同 / Second vector, cannot be null, must have same length as x1
+     * @return 协方差值 / Covariance value
+     * @throws IllegalArgumentException 如果输入向量为null或长度不匹配 / if input vectors are null or lengths don't match
+     * @throws ArithmeticException 如果向量长度为0（无法计算协方差）/ if vector length is 0 (cannot calculate covariance)
+     * 
+     * @see IVector#cov(IVector) 向量实例方法 / Vector instance method
+     * @since 1.0
+     */
+    public static <T extends Number> double cov(IVector<T> x1, IVector<T> x2) {
+        // 参数验证 / Parameter validation
+        if (x1 == null) {
+            throw new IllegalArgumentException("第一个向量不能为null / First vector cannot be null");
+        }
+        if (x2 == null) {
+            throw new IllegalArgumentException("第二个向量不能为null / Second vector cannot be null");
+        }
+        if (x1.length() != x2.length()) {
+            throw new IllegalArgumentException("向量长度不匹配: " + x1.length() + " != " + x2.length()
+                    + " / Vector lengths don't match: " + x1.length() + " != " + x2.length());
+        }
+        
+        // 调用向量实例的cov方法 / Call vector instance's cov method
+        return x1.cov(x2).doubleValue();
+    }
+    
 }

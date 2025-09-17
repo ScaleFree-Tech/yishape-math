@@ -329,6 +329,22 @@ public interface IFloatVector extends IVector<Float> {
         }
         return IFloatVector.of(v);
     }
+    
+        public static IFloatVector randn(int length) {
+        if (length <= 0) {
+            throw new IllegalArgumentException("向量长度必须大于0 / IVector length must be greater than 0");
+        }
+
+        float[] v = new float[length];
+        for (int i = 0; i < length; i++) {
+            // Box-Muller变换生成正态分布随机数 / Box-Muller transform for normal distribution
+            double u1 = Math.random();
+            double u2 = Math.random();
+            double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            v[i] = (float) z0;
+        }
+        return IFloatVector.of(v);
+    }
 
     // ========== 线性空间生成 / Linear Space Generation ==========
     /**

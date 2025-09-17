@@ -325,7 +325,22 @@ public interface IDoubleVector extends IVector<Double> {
             double u1 = Math.random();
             double u2 = Math.random();
             double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-            v[i] = (float) (mean + std * z0);
+            v[i] = mean + std * z0;
+        }
+        return IDoubleVector.of(v);
+    }
+    
+    public static IDoubleVector randn(int length) {
+        if (length <= 0) {
+            throw new IllegalArgumentException("向量长度必须大于0 / IVector length must be greater than 0");
+        }
+        double[] v = new double[length];
+        for (int i = 0; i < length; i++) {
+            // Box-Muller变换生成正态分布随机数 / Box-Muller transform for normal distribution
+            double u1 = Math.random();
+            double u2 = Math.random();
+            double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            v[i] = z0;
         }
         return IDoubleVector.of(v);
     }

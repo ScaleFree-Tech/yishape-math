@@ -68,18 +68,73 @@ public class Linalg {
     // 'of' methods renamed to 'matrix' methods, all others keep original names
     // Note: Generic matrix method removed due to type system limitations
     
+    /**
+     * 创建Double类型矩阵（double数组） / Create Double matrix (double array)
+     * <p>
+     * 使用给定的double二维数组创建矩阵实例。此方法委托给 {@link IMatrix#of(double[][])} 实现。
+     * Creates a matrix instance with the given double 2D array. This method delegates to {@link IMatrix#of(double[][])}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+     * IMatrix<Double> matrix = Linalg.matrix(data);
+     * }</pre>
+     * </p>
+     *
+     * @param data double二维数组，表示矩阵数据 / double 2D array representing matrix data
+     * @return 新的矩阵实例（IDoubleMatrix）/ New matrix instance (IDoubleMatrix)
+     * @throws IllegalArgumentException 如果数据为null或空数组 / if data is null or empty array
+     * @see IMatrix#of(double[][]) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> matrix(double[][] data) { 
         return IMatrix.of(data); 
     }
     
+    /**
+     * 创建Float类型矩阵（float数组） / Create Float matrix (float array)
+     * <p>
+     * 使用给定的float二维数组创建矩阵实例。此方法委托给 {@link IMatrix#of(float[][])} 实现。
+     * Creates a matrix instance with the given float 2D array. This method delegates to {@link IMatrix#of(float[][])}.
+     * </p>
+     *
+     * @param data float二维数组，表示矩阵数据 / float 2D array representing matrix data
+     * @return 新的矩阵实例（IFloatMatrix）/ New matrix instance (IFloatMatrix)
+     * @throws IllegalArgumentException 如果数据为null或空数组 / if data is null or empty array
+     * @see IMatrix#of(float[][]) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Float> matrix(float[][] data) { 
         return IMatrix.of(data); 
     }
     
+    /**
+     * 创建Double类型矩阵（Double包装类数组） / Create Double matrix (Double wrapper array)
+     * <p>
+     * 使用给定的Double包装类二维数组创建矩阵实例。此方法委托给 {@link IMatrix#of(Double[][])} 实现。
+     * Creates a matrix instance with the given Double wrapper 2D array. This method delegates to {@link IMatrix#of(Double[][])}.
+     * </p>
+     *
+     * @param data Double二维数组，表示矩阵数据 / Double 2D array representing matrix data
+     * @return 新的矩阵实例（IDoubleMatrix）/ New matrix instance (IDoubleMatrix)
+     * @throws IllegalArgumentException 如果数据为null或空数组 / if data is null or empty array
+     * @see IMatrix#of(Double[][]) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> matrix(Double[][] data) { 
         return IMatrix.of(data); 
     }
     
+    /**
+     * 创建Float类型矩阵（Float包装类数组） / Create Float matrix (Float wrapper array)
+     * <p>
+     * 使用给定的Float包装类二维数组创建矩阵实例。此方法委托给 {@link IMatrix#of(Float[][])} 实现。
+     * Creates a matrix instance with the given Float wrapper 2D array. This method delegates to {@link IMatrix#of(Float[][])}.
+     * </p>
+     *
+     * @param data Float二维数组，表示矩阵数据 / Float 2D array representing matrix data
+     * @return 新的矩阵实例（IFloatMatrix）/ New matrix instance (IFloatMatrix)
+     * @throws IllegalArgumentException 如果数据为null或空数组 / if data is null or empty array
+     * @see IMatrix#of(Float[][]) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Float> matrix(Float[][] data) { 
         return IMatrix.of(data); 
     }
@@ -93,18 +148,83 @@ public class Linalg {
     }
     
     // All other methods delegate to IMatrix with same names
+    
+    /**
+     * 创建随机矩阵（默认Double类型） / Create random matrix (default Double type)
+     * <p>
+     * 创建指定大小的随机矩阵，元素值在[0,1)范围内。此方法委托给 {@link IMatrix#rand(int, int)} 实现。
+     * Creates a random matrix of specified size with elements in [0,1) range. This method delegates to {@link IMatrix#rand(int, int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> randomMatrix = Linalg.rand(3, 4);  // 3x4随机矩阵
+     * }</pre>
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#rand(int, int) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> rand(int rows, int cols) { 
         return IMatrix.rand(rows, cols); 
     }
     
+    /**
+     * 创建指定类型的随机矩阵 / Create random matrix of specified type
+     * <p>
+     * 创建指定大小和类型的随机矩阵，元素值在[0,1)范围内。此方法委托给 {@link IMatrix#rand(int, int, Class)} 实现。
+     * Creates a random matrix of specified size and type with elements in [0,1) range. This method delegates to {@link IMatrix#rand(int, int, Class)}.
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#rand(int, int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IMatrix<T> rand(int rows, int cols, Class<T> type) {
         return IMatrix.rand(rows, cols, type);
     }
     
+    /**
+     * 创建随机矩阵（指定种子，默认Double类型） / Create random matrix (specified seed, default Double type)
+     * <p>
+     * 创建指定大小的随机矩阵，使用指定的种子值确保结果可重现。此方法委托给 {@link IMatrix#rand(int, int, long)} 实现。
+     * Creates a random matrix of specified size using the specified seed value to ensure reproducible results. This method delegates to {@link IMatrix#rand(int, int, long)}.
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param seed 随机数种子 / Random number seed
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#rand(int, int, long) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> rand(int rows, int cols, long seed) { 
         return IMatrix.rand(rows, cols, seed); 
     }
     
+    /**
+     * 创建指定类型的随机矩阵（指定种子） / Create random matrix of specified type (specified seed)
+     * <p>
+     * 创建指定大小、类型和种子的随机矩阵，元素值在[0,1)范围内。此方法委托给 {@link IMatrix#rand(int, int, long, Class)} 实现。
+     * Creates a random matrix of specified size, type and seed with elements in [0,1) range. This method delegates to {@link IMatrix#rand(int, int, long, Class)}.
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param seed 随机数种子 / Random number seed
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#rand(int, int, long, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IMatrix<T> rand(int rows, int cols, long seed, Class<T> type) {
         return IMatrix.rand(rows, cols, seed, type);
     }
@@ -129,26 +249,126 @@ public class Linalg {
         return IMatrix.randn(rows, cols, mean, std);
     }
     
+    /**
+     * 创建全1矩阵（默认Double类型） / Create ones matrix (default Double type)
+     * <p>
+     * 创建指定大小的全1矩阵，所有元素都为1。此方法委托给 {@link IMatrix#ones(int, int)} 实现。
+     * Creates a matrix of specified size with all elements set to 1. This method delegates to {@link IMatrix#ones(int, int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> onesMatrix = Linalg.ones(3, 4);  // 3x4全1矩阵
+     * }</pre>
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @return 全1矩阵 / Ones matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#ones(int, int) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> ones(int rows, int cols) { 
         return IMatrix.ones(rows, cols); 
     }
     
+    /**
+     * 创建指定类型的全1矩阵 / Create ones matrix of specified type
+     * <p>
+     * 创建指定大小和类型的全1矩阵，所有元素都为1。此方法委托给 {@link IMatrix#ones(int, int, Class)} 实现。
+     * Creates a matrix of specified size and type with all elements set to 1. This method delegates to {@link IMatrix#ones(int, int, Class)}.
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 全1矩阵 / Ones matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#ones(int, int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IMatrix<T> ones(int rows, int cols, Class<T> type) {
         return IMatrix.ones(rows, cols, type);
     }
     
+    /**
+     * 创建零矩阵（默认Double类型） / Create zeros matrix (default Double type)
+     * <p>
+     * 创建指定大小的零矩阵，所有元素都为0。此方法委托给 {@link IMatrix#zeros(int, int)} 实现。
+     * Creates a matrix of specified size with all elements set to 0. This method delegates to {@link IMatrix#zeros(int, int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> zerosMatrix = Linalg.zeros(3, 4);  // 3x4零矩阵
+     * }</pre>
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @return 零矩阵 / Zeros matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#zeros(int, int) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> zeros(int rows, int cols) { 
         return IMatrix.zeros(rows, cols); 
     }
     
+    /**
+     * 创建指定类型的零矩阵 / Create zeros matrix of specified type
+     * <p>
+     * 创建指定大小和类型的零矩阵，所有元素都为0。此方法委托给 {@link IMatrix#zeros(int, int, Class)} 实现。
+     * Creates a matrix of specified size and type with all elements set to 0. This method delegates to {@link IMatrix#zeros(int, int, Class)}.
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 零矩阵 / Zeros matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     * @see IMatrix#zeros(int, int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IMatrix<T> zeros(int rows, int cols, Class<T> type) {
         return IMatrix.zeros(rows, cols, type);
     }
     
+    /**
+     * 创建单位矩阵（默认Double类型） / Create identity matrix (default Double type)
+     * <p>
+     * 创建指定大小的单位矩阵（方阵），主对角线元素为1，其他元素为0。此方法委托给 {@link IMatrix#eye(int)} 实现。
+     * Creates an identity matrix of specified size (square matrix) with 1s on the main diagonal and 0s elsewhere. This method delegates to {@link IMatrix#eye(int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> identityMatrix = Linalg.eye(3);  // 3x3单位矩阵
+     * }</pre>
+     * </p>
+     *
+     * @param size 矩阵大小（行数和列数相同） / Matrix size (rows and columns are the same)
+     * @return 单位矩阵 / Identity matrix
+     * @throws IllegalArgumentException 如果大小小于等于0 / if size is less than or equal to 0
+     * @see IMatrix#eye(int) 实际实现方法 / Actual implementation method
+     */
     public static IMatrix<Double> eye(int size) { 
         return IMatrix.eye(size); 
     }
     
+    /**
+     * 创建指定类型的单位矩阵 / Create identity matrix of specified type
+     * <p>
+     * 创建指定大小和类型的单位矩阵（方阵），主对角线元素为1，其他元素为0。此方法委托给 {@link IMatrix#eye(int, Class)} 实现。
+     * Creates an identity matrix of specified size and type (square matrix) with 1s on the main diagonal and 0s elsewhere. This method delegates to {@link IMatrix#eye(int, Class)}.
+     * </p>
+     *
+     * @param size 矩阵大小（行数和列数相同） / Matrix size (rows and columns are the same)
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 单位矩阵 / Identity matrix
+     * @throws IllegalArgumentException 如果大小小于等于0 / if size is less than or equal to 0
+     * @see IMatrix#eye(int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IMatrix<T> eye(int size, Class<T> type) {
         return IMatrix.eye(size, type);
     }
@@ -223,26 +443,111 @@ public class Linalg {
     
     // 'of' methods renamed to 'vector' methods, all others keep original names
     
+    /**
+     * 创建向量（double数组） / Create vector (double array)
+     * <p>
+     * 使用给定的double数组创建向量实例。此方法委托给 {@link IVector#of(double[])} 实现。
+     * Creates a vector instance with the given double array. This method delegates to {@link IVector#of(double[])}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * double[] data = {1.0, 2.0, 3.0, 4.0};
+     * IVector<Double> vector = Linalg.vector(data);
+     * }</pre>
+     * </p>
+     *
+     * @param data double数组，表示向量数据 / double array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(double[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(double[] data) {
         return IVector.of(data);
     }
     
+    /**
+     * 创建向量（Double包装类数组） / Create vector (Double wrapper array)
+     * <p>
+     * 使用给定的Double包装类数组创建向量实例。此方法委托给 {@link IVector#of(Double[])} 实现。
+     * Creates a vector instance with the given Double wrapper array. This method delegates to {@link IVector#of(Double[])}.
+     * </p>
+     *
+     * @param data Double数组，表示向量数据 / Double array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(Double[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(Double[] data) {
         return IVector.of(data);
     }
     
+    /**
+     * 创建向量（float数组） / Create vector (float array)
+     * <p>
+     * 使用给定的float数组创建向量实例。此方法委托给 {@link IVector#of(float[])} 实现。
+     * Creates a vector instance with the given float array. This method delegates to {@link IVector#of(float[])}.
+     * </p>
+     *
+     * @param data float数组，表示向量数据 / float array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IFloatVector）/ New vector instance (IFloatVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(float[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(float[] data) {
         return IVector.of(data);
     }
     
+    /**
+     * 创建向量（Float包装类数组） / Create vector (Float wrapper array)
+     * <p>
+     * 使用给定的Float包装类数组创建向量实例。此方法委托给 {@link IVector#of(Float[])} 实现。
+     * Creates a vector instance with the given Float wrapper array. This method delegates to {@link IVector#of(Float[])}.
+     * </p>
+     *
+     * @param data Float数组，表示向量数据 / Float array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IFloatVector）/ New vector instance (IFloatVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(Float[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(Float[] data) {
         return IVector.of(data);
     }
     
+    /**
+     * 创建向量（int数组） / Create vector (int array)
+     * <p>
+     * 使用给定的int数组创建向量实例，自动转换为Double类型。此方法委托给 {@link IVector#of(int[])} 实现。
+     * Creates a vector instance with the given int array, automatically converted to Double type. This method delegates to {@link IVector#of(int[])}.
+     * </p>
+     *
+     * @param data int数组，表示向量数据 / int array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(int[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(int[] data) {
         return IVector.of(data);
     }
     
+    /**
+     * 创建向量（Integer包装类数组） / Create vector (Integer wrapper array)
+     * <p>
+     * 使用给定的Integer包装类数组创建向量实例，自动转换为Double类型。此方法委托给 {@link IVector#of(Integer[])} 实现。
+     * Creates a vector instance with the given Integer wrapper array, automatically converted to Double type. This method delegates to {@link IVector#of(Integer[])}.
+     * </p>
+     *
+     * @param data Integer数组，表示向量数据 / Integer array representing vector data
+     * @param <T> 数值类型 / Numeric type
+     * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
+     * @throws IllegalArgumentException 如果数据为null / if data is null
+     * @see IVector#of(Integer[]) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> vector(Integer[] data) {
         return IVector.of(data);
     }
@@ -264,26 +569,131 @@ public class Linalg {
     }
     
     // Range vector creation methods
+    
+    /**
+     * 创建范围向量（指定类型和步长） / Create range vector (specified type and step)
+     * <p>
+     * 创建指定类型的范围向量，从start到end（不包含end），步长为step。此方法委托给 {@link IVector#range(int, int, int, Class)} 实现。
+     * Creates a range vector of specified type from start to end (exclusive) with specified step. This method delegates to {@link IVector#range(int, int, int, Class)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> range = Linalg.range(0, 10, 2, Double.class);  // [0, 2, 4, 6, 8]
+     * }</pre>
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param step 步长 / Step size
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     * @throws IllegalArgumentException 如果step为0或负数 / if step is 0 or negative
+     * @see IVector#range(int, int, int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> range(int start, int end, int step, Class<T> type) {
         return IVector.range(start, end, step, type);
     }
     
+    /**
+     * 创建范围向量（默认Double类型，指定步长） / Create range vector (default Double type, specified step)
+     * <p>
+     * 创建范围向量，从start到end（不包含end），步长为step，默认Double类型。此方法委托给 {@link IVector#range(int, int, int)} 实现。
+     * Creates a range vector from start to end (exclusive) with specified step, default Double type. This method delegates to {@link IVector#range(int, int, int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> range = Linalg.range(0, 10, 2);  // [0, 2, 4, 6, 8]
+     * }</pre>
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param step 步长 / Step size
+     * @return 范围向量 / Range vector
+     * @throws IllegalArgumentException 如果step为0或负数 / if step is 0 or negative
+     * @see IVector#range(int, int, int) 实际实现方法 / Actual implementation method
+     */
     public static IVector<Double> range(int start, int end, int step) {
         return IVector.range(start, end, step);
     }
     
+    /**
+     * 创建范围向量（指定类型，步长为1） / Create range vector (specified type, step size 1)
+     * <p>
+     * 创建指定类型的范围向量，从start到end（不包含end），步长为1。此方法委托给 {@link IVector#range(int, int, Class)} 实现。
+     * Creates a range vector of specified type from start to end (exclusive) with step size 1. This method delegates to {@link IVector#range(int, int, Class)}.
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     * @see IVector#range(int, int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> range(int start, int end, Class<T> type) {
         return IVector.range(start, end, type);
     }
     
+    /**
+     * 创建范围向量（默认Double类型，步长为1） / Create range vector (default Double type, step size 1)
+     * <p>
+     * 创建范围向量，从start到end（不包含end），步长为1，默认Double类型。此方法委托给 {@link IVector#range(int, int)} 实现。
+     * Creates a range vector from start to end (exclusive) with step size 1, default Double type. This method delegates to {@link IVector#range(int, int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> range = Linalg.range(0, 5);  // [0, 1, 2, 3, 4]
+     * }</pre>
+     * </p>
+     *
+     * @param start 起始值 / Start value
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @return 范围向量 / Range vector
+     * @see IVector#range(int, int) 实际实现方法 / Actual implementation method
+     */
     public static IVector<Double> range(int start, int end) {
         return IVector.range(start, end);
     }
     
+    /**
+     * 创建范围向量（指定类型，从0开始） / Create range vector (specified type, starting from 0)
+     * <p>
+     * 创建指定类型的范围向量，从0到end（不包含end），步长为1。此方法委托给 {@link IVector#range(int, Class)} 实现。
+     * Creates a range vector of specified type from 0 to end (exclusive) with step size 1. This method delegates to {@link IVector#range(int, Class)}.
+     * </p>
+     *
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 范围向量 / Range vector
+     * @see IVector#range(int, Class) 实际实现方法 / Actual implementation method
+     */
     public static <T extends Number> IVector<T> range(int end, Class<T> type) {
         return IVector.range(end, type);
     }
     
+    /**
+     * 创建范围向量（默认Double类型，从0开始） / Create range vector (default Double type, starting from 0)
+     * <p>
+     * 创建范围向量，从0到end（不包含end），步长为1，默认Double类型。此方法委托给 {@link IVector#range(int)} 实现。
+     * Creates a range vector from 0 to end (exclusive) with step size 1, default Double type. This method delegates to {@link IVector#range(int)}.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> range = Linalg.range(5);  // [0, 1, 2, 3, 4]
+     * }</pre>
+     * </p>
+     *
+     * @param end 结束值（不包含） / End value (exclusive)
+     * @return 范围向量 / Range vector
+     * @see IVector#range(int) 实际实现方法 / Actual implementation method
+     */
     public static IVector<Double> range(int end) {
         return IVector.range(end);
     }
@@ -320,6 +730,14 @@ public class Linalg {
     
     public static IVector<Double> randn(int length, Double mean, Double std) {
         return IVector.randn(length, mean, std);
+    }
+    
+    public static <T extends Number> IVector<T> randn(int length, Class<T> type) {
+        return IVector.randn(length,  type);
+    }
+    
+    public static IVector<Double> randn(int length) {
+        return IVector.randn(length);
     }
     
     // Linear space generation methods

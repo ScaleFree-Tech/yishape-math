@@ -84,6 +84,28 @@ IVector<Float> v25 = Linalg.logspace(0.0f, 2.0f, 4, Float.class); // Float类型
 // 直接使用 IVector 接口（不推荐） / Direct use of IVector interface (not recommended)
 IVector<Double> v26 = IVector.of(new double[]{1.0, 2.0, 3.0, 4.0});
 IVector<Float> v27 = IVector.of(new float[]{1.0f, 2.0f, 3.0f, 4.0f});
+
+// 使用 IDoubleVector 和 IFloatVector 接口 / Use IDoubleVector and IFloatVector interfaces
+IDoubleVector v28 = IDoubleVector.of(new double[]{1.0, 2.0, 3.0, 4.0});
+IFloatVector v29 = IFloatVector.of(new float[]{1.0f, 2.0f, 3.0f, 4.0f});
+
+// IDoubleVector 专用工厂方法 / IDoubleVector specific factory methods
+IDoubleVector v30 = IDoubleVector.range(10);                      // [0.0, 1.0, 2.0, ..., 9.0]
+IDoubleVector v31 = IDoubleVector.ones(5);                        // [1.0, 1.0, 1.0, 1.0, 1.0]
+IDoubleVector v32 = IDoubleVector.zeros(5);                       // [0.0, 0.0, 0.0, 0.0, 0.0]
+IDoubleVector v33 = IDoubleVector.rand(5);                        // 随机向量
+IDoubleVector v34 = IDoubleVector.randn(5);                       // 正态分布随机向量
+IDoubleVector v35 = IDoubleVector.linspace(0.0, 1.0, 5);         // 线性空间向量
+IDoubleVector v36 = IDoubleVector.logspace(0.0, 2.0, 4);         // 对数空间向量
+
+// IFloatVector 专用工厂方法 / IFloatVector specific factory methods
+IFloatVector v37 = IFloatVector.range(10);                        // [0.0f, 1.0f, 2.0f, ..., 9.0f]
+IFloatVector v38 = IFloatVector.ones(5);                          // [1.0f, 1.0f, 1.0f, 1.0f, 1.0f]
+IFloatVector v39 = IFloatVector.zeros(5);                         // [0.0f, 0.0f, 0.0f, 0.0f, 0.0f]
+IFloatVector v40 = IFloatVector.rand(5);                          // 随机向量
+IFloatVector v41 = IFloatVector.randn(5);                         // 正态分布随机向量
+IFloatVector v42 = IFloatVector.linspace(0.0f, 1.0f, 5);         // 线性空间向量
+IFloatVector v43 = IFloatVector.logspace(0.0f, 2.0f, 4);         // 对数空间向量
 ```
 
 ### 2. 基本数学运算 / Basic Mathematical Operations
@@ -106,10 +128,11 @@ IVector<Double> product = v1.multiply(v2);
 
 // 内积 / Inner product (dot product)
 Double dotProduct = v1.innerProduct(v2);
+Double dotProduct2 = v1.dot(v2);  // 简写形式
 
-// 向量与矩阵点积 / Vector-matrix dot product
+// 向量与矩阵乘法 / Vector-matrix multiplication
 IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1.0, 2.0}, {3.0, 4.0}});
-IMatrix<Double> result = v1.dot(matrix);
+IVector<Double> result = v1.mmul(matrix);  // 向量乘以矩阵
 
 // 向量外积 / Vector outer product
 IMatrix<Double> outerProduct = v1.outer(v2);
@@ -163,6 +186,10 @@ Double mode = v1.mode();         // 众数 / Mode
 Double percentile = v1.percentile(75.0); // 75%分位数 / 75th percentile
 Double skewness = v1.skewness(); // 偏度 / Skewness
 Double kurtosis = v1.kurtosis(); // 峰度 / Kurtosis
+
+// 分位数 / Quantiles
+Double q1 = v1.q1();             // 第一四分位数 / First quartile
+Double q3 = v1.q3();             // 第三四分位数 / Third quartile
 ```
 
 ### 4. 通用函数 / Universal Functions
@@ -426,6 +453,9 @@ IVector<Double> v1 = Linalg.vector(new double[]{3.0, 4.0, 0.0});
 
 // 线性代数扩展 / Extended linear algebra
 IVector<Double> normalized = v1.normalize();           // 向量归一化 / Vector normalization
+
+// 向量转换为列矩阵 / Convert vector to column matrix
+IMatrix<Double> columnMatrix = v1.asColumnVector();    // 将向量转换为列矩阵
 ```
 
 
@@ -493,6 +523,7 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.sub(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
 | `v1.multiply(v2)` | `v1 * v2` | 元素级乘法 / Element-wise multiplication |
 | `v1.innerProduct(v2)、v1.dot(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
+| `v1.mmul(matrix)` | `v1 @ matrix` | 向量与矩阵乘法 / Vector-matrix multiplication |
 | `v1.outer(v2)` | `np.outer(v1, v2)` | 外积 / Outer product |
 | `v1.addScalar(s)` | `v1 + s` | 标量加法 / Scalar addition |
 | `v1.subScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
@@ -558,6 +589,8 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.ptp()` | `np.ptp(v1)` | 峰峰值 / Peak-to-peak |
 | `v1.median()` | `np.median(v1)` | 中位数 / Median |
 | `v1.percentile(q)` | `np.percentile(v1, q)` | 百分位数 / Percentile |
+| `v1.q1()` | `np.percentile(v1, 25)` | 第一四分位数 / First quartile |
+| `v1.q3()` | `np.percentile(v1, 75)` | 第三四分位数 / Third quartile |
 | `v1.mode()` | `scipy.stats.mode(v1)` | 众数 / Mode |
 | `v1.cumsum()` | `np.cumsum(v1)` | 累积求和 / Cumulative sum |
 | `v1.cumprod()` | `np.cumprod(v1)` | 累积乘积 / Cumulative product |
@@ -568,6 +601,7 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.logicalNot()` | `np.logical_not(v1, v2)` | 逻辑非 / Logical NOT |
 | `v1.logicalXor(v2)` | `np.logical_xor(v1, v2)` | 逻辑异或 / Logical XOR |
 | `v1.normalize()` | `v1 / np.linalg.norm(v1)` | 向量归一化 / Vector normalization |
+| `v1.asColumnVector()` | `v1.reshape(-1, 1)` | 向量转换为列矩阵 / Convert vector to column matrix |
 
 
 ## 与NumPy的兼容性 / NumPy Compatibility

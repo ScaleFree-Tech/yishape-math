@@ -44,7 +44,7 @@ public class CPUGPUStrategyVerificationTest {
         IMatrix<Double> result1 = m1.add(m2);
         IMatrix<Double> result2 = m1.sub(m2);  
         IMatrix<Double> result3 = m1.mmul(m2);
-        IMatrix<Double> result4 = m1.mmul(2.0);
+        IMatrix<Double> result4 = m1.multiplyScalar(2.0);
         IMatrix<Double> result5 = m1.transposeNew();
         
         // 验证结果
@@ -157,7 +157,7 @@ public class CPUGPUStrategyVerificationTest {
         
         // 即使在异常情况下，运算也应该成功（通过CPU回退）
         try {
-            IMatrix<Double> result = matrix.mmul(2.0);
+            IMatrix<Double> result = matrix.multiplyScalar(2.0);
             assertNotNull(result);
             System.out.println("标量乘法成功（通过CPU回退机制）");
             

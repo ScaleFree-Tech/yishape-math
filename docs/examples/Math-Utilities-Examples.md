@@ -22,10 +22,11 @@ public class TypeConversionExample {
         
         double[] doubleArray = {1.1, 2.2, 3.3, 4.4, 5.5};
         int[] intArray = {1, 2, 3, 4, 5};
+        float[] floatArray = {1.5f, 2.7f, 3.2f, 4.9f, 5.1f};
         
         // double[] 转 float[] / Convert double[] to float[]
-        float[] floatArray = RereMathUtil.doubleToFloat(doubleArray);
-        System.out.println("double[] -> float[]: " + Arrays.toString(floatArray));
+        float[] doubleToFloatArray = RereMathUtil.doubleToFloat(doubleArray);
+        System.out.println("double[] -> float[]: " + Arrays.toString(doubleToFloatArray));
         
         // int[] 转 float[] / Convert int[] to float[]
         float[] intToFloatArray = RereMathUtil.intToFloat(intArray);
@@ -35,38 +36,61 @@ public class TypeConversionExample {
         double[] floatToDoubleArray = RereMathUtil.floatToDouble(floatArray);
         System.out.println("float[] -> double[]: " + Arrays.toString(floatToDoubleArray));
         
-        // 2. 向量类型转换 / Vector type conversion
-        System.out.println("\n2. 向量类型转换 / Vector Type Conversion");
+        // int[] 转 double[] / Convert int[] to double[]
+        double[] intToDoubleArray = RereMathUtil.intToDouble(intArray);
+        System.out.println("int[] -> double[]: " + Arrays.toString(intToDoubleArray));
         
-        IVector floatVector = IVector.of(new float[]{1.1f, 2.2f, 3.3f});
-        System.out.println("原始float向量: " + floatVector);
+        // double[] 转 int[] / Convert double[] to int[]
+        int[] doubleToIntArray = RereMathUtil.doubleToInt(doubleArray);
+        System.out.println("double[] -> int[]: " + Arrays.toString(doubleToIntArray));
         
-        // 转换为double数组 / Convert to double array
-        double[] doubleVector = RereMathUtil.vectorToDoubleArray(floatVector);
-        System.out.println("转换为double数组: " + Arrays.toString(doubleVector));
+        // float[] 转 int[] / Convert float[] to int[]
+        int[] floatToIntArray = RereMathUtil.floatToInt(floatArray);
+        System.out.println("float[] -> int[]: " + Arrays.toString(floatToIntArray));
         
-        // 转换为int数组 / Convert to int array
-        int[] intVector = RereMathUtil.vectorToIntArray(floatVector);
-        System.out.println("转换为int数组: " + Arrays.toString(intVector));
+        // 2. 包装类转换 / Wrapper class conversion
+        System.out.println("\n2. 包装类转换 / Wrapper Class Conversion");
         
-        // 3. 矩阵类型转换 / Matrix type conversion
-        System.out.println("\n3. 矩阵类型转换 / Matrix Type Conversion");
+        // 一维数组转换 / 1D array conversion
+        Float[] wrapperFloatArray = {1.1f, 2.2f, 3.3f, 4.4f};
+        Double[] wrapperDoubleArray = {1.1, 2.2, 3.3, 4.4};
+        Integer[] wrapperIntArray = {1, 2, 3, 4};
         
-        float[][] floatMatrixData = {{1.1f, 2.2f}, {3.3f, 4.4f}};
-        IMatrix floatMatrix = IMatrix.of(floatMatrixData);
-        System.out.println("原始float矩阵: " + floatMatrix);
+        // 包装类转基本类型 / Wrapper to primitive
+        float[] primitiveFloat = RereMathUtil.toPrimitive(wrapperFloatArray);
+        double[] primitiveDouble = RereMathUtil.toPrimitive(wrapperDoubleArray);
+        int[] primitiveInt = RereMathUtil.toPrimitive(wrapperIntArray);
         
-        // 转换为double二维数组 / Convert to double 2D array
-        double[][] doubleMatrix = RereMathUtil.matrixToDoubleArray(floatMatrix);
-        System.out.println("转换为double矩阵:");
-        for (double[] row : doubleMatrix) {
+        System.out.println("Float[] -> float[]: " + Arrays.toString(primitiveFloat));
+        System.out.println("Double[] -> double[]: " + Arrays.toString(primitiveDouble));
+        System.out.println("Integer[] -> int[]: " + Arrays.toString(primitiveInt));
+        
+        // 基本类型转包装类 / Primitive to wrapper
+        Float[] backToWrapperFloat = RereMathUtil.toClassArray(primitiveFloat);
+        Double[] backToWrapperDouble = RereMathUtil.toClassArray(primitiveDouble);
+        Integer[] backToWrapperInt = RereMathUtil.toClassArray(primitiveInt);
+        
+        System.out.println("float[] -> Float[]: " + Arrays.toString(backToWrapperFloat));
+        System.out.println("double[] -> Double[]: " + Arrays.toString(backToWrapperDouble));
+        System.out.println("int[] -> Integer[]: " + Arrays.toString(backToWrapperInt));
+        
+        // 3. 二维数组转换 / 2D array conversion
+        System.out.println("\n3. 二维数组转换 / 2D Array Conversion");
+        
+        Float[][] wrapperFloat2D = {{1.1f, 2.2f}, {3.3f, 4.4f}};
+        Double[][] wrapperDouble2D = {{1.1, 2.2}, {3.3, 4.4}};
+        
+        // 二维包装类转基本类型 / 2D wrapper to primitive
+        float[][] primitiveFloat2D = RereMathUtil.toPrimitive(wrapperFloat2D);
+        double[][] primitiveDouble2D = RereMathUtil.toPrimitive(wrapperDouble2D);
+        
+        System.out.println("Float[][] -> float[][]:");
+        for (float[] row : primitiveFloat2D) {
             System.out.println("  " + Arrays.toString(row));
         }
         
-        // 转换为int二维数组 / Convert to int 2D array
-        int[][] intMatrix = RereMathUtil.matrixToIntArray(floatMatrix);
-        System.out.println("转换为int矩阵:");
-        for (int[] row : intMatrix) {
+        System.out.println("Double[][] -> double[][]:");
+        for (double[] row : primitiveDouble2D) {
             System.out.println("  " + Arrays.toString(row));
         }
     }
@@ -84,52 +108,191 @@ public class RandomNumberExample {
     public static void main(String[] args) {
         System.out.println("=== 随机数生成示例 / Random Number Generation Example ===");
         
-        // 1. 生成随机向量 / Generate random vectors
-        System.out.println("1. 随机向量生成 / Random Vector Generation");
+        // 1. 生成随机数组 / Generate random arrays
+        System.out.println("1. 随机数组生成 / Random Array Generation");
         
-        // 生成标准正态分布随机向量 / Generate standard normal random vector
-        IVector normalVector = RereMathUtil.randn(10);
-        System.out.println("标准正态分布随机向量 (长度10): " + normalVector);
+        // 生成随机float数组 / Generate random float array
+        float[] randomFloats = RereMathUtil.generateRandomFloats(10);
+        System.out.println("随机float数组 (长度10): " + Arrays.toString(randomFloats));
         
-        // 生成均匀分布随机向量 / Generate uniform random vector
-        IVector uniformVector = RereMathUtil.rand(10);
-        System.out.println("均匀分布随机向量 (长度10): " + uniformVector);
+        // 生成带种子的随机float数组 / Generate random float array with seed
+        float[] randomFloatsSeeded = RereMathUtil.generateRandomFloats(42, 10);
+        System.out.println("种子42的随机float数组: " + Arrays.toString(randomFloatsSeeded));
         
-        // 生成指定范围的随机向量 / Generate random vector in specified range
-        IVector rangeVector = RereMathUtil.rand(10, -5.0f, 5.0f);
-        System.out.println("范围[-5,5]随机向量: " + rangeVector);
+        // 生成随机int数组 / Generate random int array
+        int[] randomInts = RereMathUtil.generateRandomInts(1, 100, 10);
+        System.out.println("范围[1,100]随机int数组: " + Arrays.toString(randomInts));
         
-        // 2. 生成随机矩阵 / Generate random matrices
-        System.out.println("\n2. 随机矩阵生成 / Random Matrix Generation");
+        // 生成带种子的随机int数组 / Generate random int array with seed
+        int[] randomIntsSeeded = RereMathUtil.generateRandomInts(42, 1, 100, 10);
+        System.out.println("种子42的随机int数组: " + Arrays.toString(randomIntsSeeded));
         
-        // 生成标准正态分布随机矩阵 / Generate standard normal random matrix
-        IMatrix normalMatrix = RereMathUtil.randn(3, 4);
-        System.out.println("标准正态分布随机矩阵 (3x4): " + normalMatrix);
+        // 2. 正态分布随机数 / Normal distribution random numbers
+        System.out.println("\n2. 正态分布随机数 / Normal Distribution Random Numbers");
         
-        // 生成均匀分布随机矩阵 / Generate uniform random matrix
-        IMatrix uniformMatrix = RereMathUtil.rand(4, 3);
-        System.out.println("均匀分布随机矩阵 (4x3): " + uniformMatrix);
+        // 生成标准正态分布随机数 / Generate standard normal random numbers
+        double[] normalSamples = new double[10];
+        for (int i = 0; i < 10; i++) {
+            normalSamples[i] = RereMathUtil.normalSample(0.0, 1.0);
+        }
+        System.out.println("标准正态分布随机数: " + Arrays.toString(normalSamples));
         
-        // 生成指定范围的随机矩阵 / Generate random matrix in specified range
-        IMatrix rangeMatrix = RereMathUtil.rand(3, 3, 0.0f, 10.0f);
-        System.out.println("范围[0,10]随机矩阵 (3x3): " + rangeMatrix);
+        // 生成自定义参数的正态分布随机数 / Generate normal random numbers with custom parameters
+        double[] customNormalSamples = new double[10];
+        for (int i = 0; i < 10; i++) {
+            customNormalSamples[i] = RereMathUtil.normalSample(5.0, 2.0);
+        }
+        System.out.println("均值5，标准差2的正态分布随机数: " + Arrays.toString(customNormalSamples));
         
-        // 3. 随机数种子设置 / Random number seed setting
-        System.out.println("\n3. 随机数种子设置 / Random Number Seed Setting");
+        // 3. 随机数种子验证 / Random number seed verification
+        System.out.println("\n3. 随机数种子验证 / Random Number Seed Verification");
         
-        // 设置种子以获得可重复的结果 / Set seed for reproducible results
-        RereMathUtil.setSeed(42L);
-        IVector reproducibleVector1 = RereMathUtil.randn(5);
-        System.out.println("种子42的随机向量1: " + reproducibleVector1);
+        // 使用相同种子生成两组随机数 / Generate two sets of random numbers with same seed
+        int[] randomInts1 = RereMathUtil.generateRandomInts(42, 1, 100, 5);
+        int[] randomInts2 = RereMathUtil.generateRandomInts(42, 1, 100, 5);
+        System.out.println("种子42的随机int数组1: " + Arrays.toString(randomInts1));
+        System.out.println("种子42的随机int数组2: " + Arrays.toString(randomInts2));
+        System.out.println("两组数组是否相同: " + Arrays.equals(randomInts1, randomInts2));
         
-        IVector reproducibleVector2 = RereMathUtil.randn(5);
-        System.out.println("种子42的随机向量2: " + reproducibleVector2);
+        // 使用不同种子生成随机数 / Generate random numbers with different seeds
+        int[] randomInts3 = RereMathUtil.generateRandomInts(123, 1, 100, 5);
+        System.out.println("种子123的随机int数组: " + Arrays.toString(randomInts3));
+        System.out.println("不同种子的数组是否相同: " + Arrays.equals(randomInts1, randomInts3));
+    }
+}
+```
+
+## 概率分布和组合数学示例 / Probability Distribution and Combinatorics Examples
+
+### 概率分布函数 / Probability Distribution Functions
+
+```java
+import com.reremouse.lab.math.RereMathUtil;
+
+public class ProbabilityDistributionExample {
+    public static void main(String[] args) {
+        System.out.println("=== 概率分布函数示例 / Probability Distribution Functions Example ===");
         
-        // 重置种子 / Reset seed
-        RereMathUtil.setSeed(42L);
-        IVector reproducibleVector3 = RereMathUtil.randn(5);
-        System.out.println("重置种子后的随机向量: " + reproducibleVector3);
-        System.out.println("向量1和向量3是否相同: " + reproducibleVector1.equals(reproducibleVector3));
+        // 1. 伽马函数和贝塔函数 / Gamma and Beta functions
+        System.out.println("1. 伽马函数和贝塔函数 / Gamma and Beta Functions");
+        
+        // 伽马函数 / Gamma function
+        double gamma5 = RereMathUtil.gamma(5.0);
+        double gamma10 = RereMathUtil.gamma(10.0);
+        System.out.println("Γ(5) = " + gamma5);
+        System.out.println("Γ(10) = " + gamma10);
+        
+        // 贝塔函数 / Beta function
+        double beta23 = RereMathUtil.beta(2.0, 3.0);
+        double beta55 = RereMathUtil.beta(5.0, 5.0);
+        System.out.println("B(2,3) = " + beta23);
+        System.out.println("B(5,5) = " + beta55);
+        
+        // 2. 不完全函数 / Incomplete functions
+        System.out.println("\n2. 不完全函数 / Incomplete Functions");
+        
+        // 不完全伽马函数 / Incomplete gamma function
+        double incompleteGamma21 = RereMathUtil.incompleteGamma(2.0, 1.0);
+        double incompleteGamma52 = RereMathUtil.incompleteGamma(5.0, 2.0);
+        System.out.println("γ(2,1) = " + incompleteGamma21);
+        System.out.println("γ(5,2) = " + incompleteGamma52);
+        
+        // 不完全贝塔函数 / Incomplete beta function
+        double incompleteBeta235 = RereMathUtil.incompleteBeta(2.0, 3.0, 0.5);
+        double incompleteBeta551 = RereMathUtil.incompleteBeta(5.0, 5.0, 0.1);
+        System.out.println("B(2,3,0.5) = " + incompleteBeta235);
+        System.out.println("B(5,5,0.1) = " + incompleteBeta551);
+        
+        // 正则化不完全函数 / Regularized incomplete functions
+        double regIncompleteBeta235 = RereMathUtil.regularizedIncompleteBeta(2.0, 3.0, 0.5);
+        double regIncompleteGamma21 = RereMathUtil.regularizedIncompleteGamma(2, 1.0);
+        System.out.println("I(2,3,0.5) = " + regIncompleteBeta235);
+        System.out.println("P(2,1) = " + regIncompleteGamma21);
+        
+        // 3. 误差函数和逆正态分布 / Error function and inverse normal distribution
+        System.out.println("\n3. 误差函数和逆正态分布 / Error Function and Inverse Normal Distribution");
+        
+        // 误差函数 / Error function
+        double erf1 = RereMathUtil.erf(1.0);
+        double erf2 = RereMathUtil.erf(2.0);
+        System.out.println("erf(1.0) = " + erf1);
+        System.out.println("erf(2.0) = " + erf2);
+        
+        // 逆正态累积分布函数 / Inverse normal CDF
+        double invNormal95 = RereMathUtil.inverseNormalCDF(0.95);
+        double invNormal99 = RereMathUtil.inverseNormalCDF(0.99);
+        System.out.println("Φ⁻¹(0.95) = " + invNormal95);
+        System.out.println("Φ⁻¹(0.99) = " + invNormal99);
+    }
+}
+```
+
+### 组合数学函数 / Combinatorics Functions
+
+```java
+import com.reremouse.lab.math.RereMathUtil;
+
+public class CombinatoricsExample {
+    public static void main(String[] args) {
+        System.out.println("=== 组合数学函数示例 / Combinatorics Functions Example ===");
+        
+        // 1. 组合数 / Combinations
+        System.out.println("1. 组合数 / Combinations");
+        
+        // 基本组合数 / Basic combinations
+        long c10_3 = RereMathUtil.combination(10, 3);
+        long c20_5 = RereMathUtil.combination(20, 5);
+        System.out.println("C(10,3) = " + c10_3);
+        System.out.println("C(20,5) = " + c20_5);
+        
+        // 大数组合数（使用对数避免溢出）/ Large combinations (using log to avoid overflow)
+        double logC100_50 = RereMathUtil.logCombination(100, 50);
+        double logC200_100 = RereMathUtil.logCombination(200, 100);
+        System.out.println("ln C(100,50) = " + logC100_50);
+        System.out.println("ln C(200,100) = " + logC200_100);
+        
+        // 2. 阶乘 / Factorials
+        System.out.println("\n2. 阶乘 / Factorials");
+        
+        // 基本阶乘 / Basic factorials
+        long fact10 = RereMathUtil.factorial(10);
+        long fact15 = RereMathUtil.factorial(15);
+        System.out.println("10! = " + fact10);
+        System.out.println("15! = " + fact15);
+        
+        // 大数阶乘（使用对数）/ Large factorials (using log)
+        double logFact100 = RereMathUtil.logFactorial(100);
+        double logFact1000 = RereMathUtil.logFactorial(1000);
+        System.out.println("ln 100! = " + logFact100);
+        System.out.println("ln 1000! = " + logFact1000);
+        
+        // 3. Stirling数 / Stirling numbers
+        System.out.println("\n3. Stirling数 / Stirling Numbers");
+        
+        // 第二类Stirling数 / Stirling numbers of the second kind
+        double s52 = RereMathUtil.stirlingNumber2(5, 2);
+        double s73 = RereMathUtil.stirlingNumber2(7, 3);
+        double s84 = RereMathUtil.stirlingNumber2(8, 4);
+        System.out.println("S(5,2) = " + s52);
+        System.out.println("S(7,3) = " + s73);
+        System.out.println("S(8,4) = " + s84);
+        
+        // 4. 实际应用示例 / Practical application examples
+        System.out.println("\n4. 实际应用示例 / Practical Application Examples");
+        
+        // 计算概率 / Calculate probabilities
+        int n = 20, k = 5;
+        double p = 0.3;
+        
+        // 二项分布概率 / Binomial distribution probability
+        double logProb = RereMathUtil.logCombination(n, k) + k * Math.log(p) + (n - k) * Math.log(1 - p);
+        double prob = Math.exp(logProb);
+        System.out.println("二项分布 P(X=" + k + ") = " + prob);
+        
+        // 泊松分布近似 / Poisson distribution approximation
+        double lambda = n * p;
+        double poissonProb = Math.exp(-lambda + k * Math.log(lambda) - RereMathUtil.logFactorial(k));
+        System.out.println("泊松分布近似 P(X=" + k + ") = " + poissonProb);
     }
 }
 ```
@@ -419,11 +582,15 @@ public class DataPreprocessingExample {
         
         // 生成包含噪声的数据 / Generate data with noise
         int samples = 1000;
-        float[] trueValues = RereMathUtil.linspace(0.0f, 10.0f, samples);
-        float[] noise = RereMathUtil.randn(samples).multiplyByScalar(0.5f).toArray();
+        float[] trueValues = new float[samples];
+        float[] noise = RereMathUtil.generateRandomFloats(samples);
         float[] noisyData = new float[samples];
         
+        // 生成线性趋势数据 / Generate linear trend data
         for (int i = 0; i < samples; i++) {
+            trueValues[i] = (float) i / samples * 10.0f;
+            // 添加正态分布噪声 / Add normal distribution noise
+            noise[i] = (float) RereMathUtil.normalSample(0.0, 0.5);
             noisyData[i] = trueValues[i] + noise[i];
         }
         
@@ -452,7 +619,12 @@ public class DataPreprocessingExample {
         System.out.println("\n3. 数据标准化 / Data Standardization");
         
         // Z-score标准化 / Z-score standardization
-        float[] zScoreData = RereMathUtil.standardize(noisyData);
+        float[] zScoreData = new float[samples];
+        float mean = RereMathUtil.mean(noisyData);
+        float std = RereMathUtil.std(noisyData);
+        for (int i = 0; i < samples; i++) {
+            zScoreData[i] = (noisyData[i] - mean) / std;
+        }
         float zScoreMean = RereMathUtil.mean(zScoreData);
         float zScoreStd = RereMathUtil.std(zScoreData);
         
@@ -461,7 +633,12 @@ public class DataPreprocessingExample {
         System.out.println("  标准差: " + zScoreStd);
         
         // Min-Max归一化 / Min-Max normalization
-        float[] minMaxData = RereMathUtil.normalize(noisyData);
+        float[] minMaxData = new float[samples];
+        float minVal = RereMathUtil.min(noisyData);
+        float maxVal = RereMathUtil.max(noisyData);
+        for (int i = 0; i < samples; i++) {
+            minMaxData[i] = (noisyData[i] - minVal) / (maxVal - minVal);
+        }
         float minMaxMin = RereMathUtil.min(minMaxData);
         float minMaxMax = RereMathUtil.max(minMaxData);
         
@@ -473,7 +650,10 @@ public class DataPreprocessingExample {
         System.out.println("\n4. 特征工程 / Feature Engineering");
         
         // 创建多项式特征 / Create polynomial features
-        float[] x = RereMathUtil.linspace(-2.0f, 2.0f, 100);
+        float[] x = new float[100];
+        for (int i = 0; i < 100; i++) {
+            x[i] = -2.0f + 4.0f * i / 99.0f;  // 从-2到2的线性空间
+        }
         float[] xSquared = new float[x.length];
         float[] xCubed = new float[x.length];
         
@@ -483,28 +663,25 @@ public class DataPreprocessingExample {
         }
         
         // 计算特征间的相关性 / Calculate correlation between features
-        float corrX_X2 = RereMathUtil.correlation(x, xSquared);
-        float corrX_X3 = RereMathUtil.correlation(x, xCubed);
-        float corrX2_X3 = RereMathUtil.correlation(xSquared, xCubed);
-        
-        System.out.println("特征相关性:");
-        System.out.println("  x与x²: " + corrX_X2);
-        System.out.println("  x与x³: " + corrX_X3);
-        System.out.println("  x²与x³: " + corrX2_X3);
+        // 注意：这里需要实现correlation方法，或者使用其他方式计算
+        System.out.println("特征工程完成:");
+        System.out.println("  原始特征x: 长度 " + x.length);
+        System.out.println("  二次特征x²: 长度 " + xSquared.length);
+        System.out.println("  三次特征x³: 长度 " + xCubed.length);
         
         // 5. 数据采样 / Data sampling
         System.out.println("\n5. 数据采样 / Data Sampling");
         
         // 随机采样 / Random sampling
         int sampleSize = 100;
-        float[] sampledData = RereMathUtil.sample(noisyData, sampleSize);
+        int[] randomIndices = RereMathUtil.generateRandomInts(0, samples, sampleSize);
+        float[] sampledData = new float[sampleSize];
+        for (int i = 0; i < sampleSize; i++) {
+            sampledData[i] = noisyData[randomIndices[i]];
+        }
         
         System.out.println("随机采样 " + sampleSize + " 个样本");
         System.out.println("采样后数据范围: [" + RereMathUtil.min(sampledData) + ", " + RereMathUtil.max(sampledData) + "]");
-        
-        // 分层采样 / Stratified sampling (简化版本)
-        float[] stratifiedSample = RereMathUtil.stratifiedSample(noisyData, 5, sampleSize);
-        System.out.println("分层采样 " + sampleSize + " 个样本");
     }
 }
 ```

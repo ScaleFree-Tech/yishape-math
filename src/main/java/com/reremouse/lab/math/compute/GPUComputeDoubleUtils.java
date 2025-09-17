@@ -1668,7 +1668,7 @@ public class GPUComputeDoubleUtils {
                     outer.set(i, j, v.get(i) * v.get(j));
                 }
             }
-            IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.mmul(2.0));
+            IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.multiplyScalar(2.0));
             
             // 应用变换到T的子矩阵
             IMatrix<Double> subT = (IMatrix<Double>)T.subMatrix(k + 1, n, k, n);
@@ -1712,7 +1712,7 @@ public class GPUComputeDoubleUtils {
                     outer.set(i, j, v.get(i) * v.get(j));
                 }
             }
-            IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.mmul(2.0));
+            IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.multiplyScalar(2.0));
             
             // 应用变换到H的子矩阵
             IMatrix<Double> subH = (IMatrix<Double>)H.subMatrix(k + 1, n, k, n);
@@ -2121,7 +2121,7 @@ public class GPUComputeDoubleUtils {
                             outer.set(i, j, v.get(i) * v.get(j));
                         }
                     }
-                    IMatrix<Double> P = Linalg.eye(m - k).sub(outer.mmul(2.0));
+                    IMatrix<Double> P = Linalg.eye(m - k).sub(outer.multiplyScalar(2.0));
                     
                     IMatrix<Double> subB = (IMatrix<Double>)B.subMatrix(k, m, k, n);
                     IMatrix<Double> PsubB = (IMatrix<Double>)P.mmul(subB);
@@ -2150,7 +2150,7 @@ public class GPUComputeDoubleUtils {
                             outer.set(i, j, v.get(i) * v.get(j));
                         }
                     }
-                    IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.mmul(2.0));
+                    IMatrix<Double> P = Linalg.eye(n - k - 1).sub(outer.multiplyScalar(2.0));
                     
                     IMatrix<Double> subB = (IMatrix<Double>)B.subMatrix(k, m, k + 1, n);
                     IMatrix<Double> subBP = (IMatrix<Double>)subB.mmul(P);

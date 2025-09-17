@@ -4,6 +4,7 @@ import com.reremouse.lab.math.RereMathUtil;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.util.Tuple3;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * 泛型矩阵操作接口 / Generic Matrix Operations Interface
@@ -301,7 +302,7 @@ public interface IMatrix<T extends Number> {
         if (type == Float.class) {
             return (IMatrix<T>) IFloatMatrix.fromArray((Float[]) data, rows, cols);
         } else if (type == Double.class) {
-            throw new UnsupportedOperationException("Double类型尚未实现 / Double type not implemented yet");
+            return (IMatrix<T>) IDoubleMatrix.fromArray((Double[]) data, rows, cols);
         } else {
             throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName());
         }
@@ -371,7 +372,7 @@ public interface IMatrix<T extends Number> {
         if (type == Float.class) {
             return (IMatrix<T>) IFloatMatrix.diag((Float[]) diagonal);
         } else if (type == Double.class) {
-            throw new UnsupportedOperationException("Double类型尚未实现 / Double type not implemented yet");
+            return (IMatrix<T>) IDoubleMatrix.diag((Double[]) diagonal);
         } else {
             throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName());
         }
@@ -427,7 +428,7 @@ public interface IMatrix<T extends Number> {
         if (type == Float.class) {
             return (IMatrix<T>) IFloatMatrix.rand(rows, cols, seed);
         } else if (type == Double.class) {
-            throw new UnsupportedOperationException("Double类型尚未实现 / Double type not implemented yet");
+            return (IMatrix<T>) IDoubleMatrix.rand(rows, cols, seed);
         } else {
             throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName());
         }
@@ -461,7 +462,7 @@ public interface IMatrix<T extends Number> {
         if (type == Float.class) {
             return (IMatrix<T>) IFloatMatrix.randn(rows, cols, seed);
         } else if (type == Double.class) {
-            throw new UnsupportedOperationException("Double类型尚未实现 / Double type not implemented yet");
+            return (IMatrix<T>) IDoubleMatrix.randn(rows, cols, seed);
         } else {
             throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName());
         }
@@ -682,9 +683,20 @@ public interface IMatrix<T extends Number> {
      * @return 新的矩阵对象，包含运算结果 / New matrix object containing the result
      * @throws IllegalArgumentException 如果矩阵维度不匹配 / if matrix dimensions don't
      * match
+     * @throws NullPointerException 如果other为null / if other is null
      */
     public IMatrix<T> sub(IMatrix<T> other);
 
+    /**
+     * 矩阵减法运算（标量） / Matrix subtraction with scalar
+     * <p>
+     * 矩阵中的每个元素减去标量值 Subtracts a scalar value from each element in the matrix
+     * </p>
+     *
+     * @param scalar 标量值 / The scalar value
+     * @return 新的矩阵对象，包含运算结果 / New matrix object containing the result
+     * @throws IllegalArgumentException 如果标量为null / if scalar is null
+     */
     public IMatrix<T> sub(T scalar);
 
     /**
@@ -696,10 +708,41 @@ public interface IMatrix<T extends Number> {
      * @param scalar 标量乘数 / The scalar multiplier
      * @return 新的矩阵对象，包含运算结果 / New matrix object containing the result
      */
-    public IMatrix<T> mmul(T scalar);
+    public IMatrix<T> multiplyScalar(T scalar);
 
+    /**
+     * 矩阵除法运算（矩阵） / Matrix division with another matrix
+     * <p>
+     * 对应元素相除，要求两个矩阵维度相同 Element-wise division, requires both matrices to have
+     * the same dimensions
+     * </p>
+     *
+     * @param other 另一个矩阵 / The other matrix
+     * @return 新的矩阵对象，包含运算结果 / New matrix object containing the result
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / if matrix dimensions don't
+     * match
+     * @throws ArithmeticException 如果other矩阵中有零元素 / if other matrix contains
+     * zero elements
+     * @throws NullPointerException 如果other为null / if other is null
+     */
     public IMatrix<T> divide(IMatrix<T> other);
 
+    /**
+     * 矩阵点积运算 / Matrix dot product
+     * <p>
+     * 计算两个矩阵的Frobenius内积（对应元素相乘后求和） Calculates the Frobenius inner product of
+     * two matrices (sum of element-wise multiplication)
+     * </p>
+     * <p>
+     * 公式：dot = Σᵢⱼ Aᵢⱼ × Bᵢⱼ Formula: dot = Σᵢⱼ Aᵢⱼ × Bᵢⱼ
+     * </p>
+     *
+     * @param other 另一个矩阵 / The other matrix
+     * @return 点积结果 / Dot product result
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / if matrix dimensions don't
+     * match
+     * @throws NullPointerException 如果other为null / if other is null
+     */
     public T dot(IMatrix<T> other);
 
     /**
@@ -709,13 +752,45 @@ public interface IMatrix<T extends Number> {
      * requires the number of columns of the first matrix to equal the number of
      * rows of the second matrix
      * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> A = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+     * IMatrix<Double> B = Linalg.matrix(new double[][]{{5, 6}, {7, 8}});
+     * IMatrix<Double> C = A.mmul(B);  // 结果: [[19, 22], [43, 50]]
+     * }</pre>
+     * </p>
      *
      * @param other 另一个矩阵 / The other matrix
      * @return 矩阵乘法结果 / Matrix multiplication result
      * @throws IllegalArgumentException 如果矩阵维度不匹配进行乘法运算 / if matrix dimensions
      * don't match for multiplication
+     * @throws NullPointerException 如果other为null / if other is null
      */
     public IMatrix<T> mmul(IMatrix<T> other);
+    
+    
+    /**
+     * 矩阵与向量乘法 / Matrix-vector multiplication
+     * <p>
+     * 计算矩阵与列向量的乘积，结果仍为列向量。要求矩阵的列数等于向量的长度。
+     * Computes the product of a matrix with a column vector, result is still a column vector. Requires matrix column count to equal vector length.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = Linalg.vector(new double[]{5, 6});
+     * IVector<Double> result = matrix.mmul(vector);  // 结果: [17, 39]
+     * }</pre>
+     * </p>
+     *
+     * @param other 要相乘的向量 / Vector to multiply with
+     * @return 矩阵与向量的乘积结果 / Matrix-vector multiplication result
+     * @throws IllegalArgumentException 如果矩阵列数与向量长度不匹配 / if matrix column count doesn't match vector length
+     * @throws NullPointerException 如果other为null / if other is null
+     */
+    public IVector<T> mmul(IVector<T> other);
 
     /**
      * 矩阵复制 / Matrix copy
@@ -794,8 +869,34 @@ public interface IMatrix<T extends Number> {
      */
     public int cols();
 
+    /**
+     * 矩阵转置（就地操作） / Matrix transpose (in-place operation)
+     * <p>
+     * 对当前矩阵进行就地转置操作，修改原矩阵 Performs in-place transpose operation on the current matrix, modifying the original matrix
+     * </p>
+     * <p>
+     * <strong>注意：</strong>此操作会修改原矩阵，请谨慎使用 <strong>Note:</strong> This operation modifies the original matrix, use with caution
+     * </p>
+     *
+     * @return 转置后的矩阵（原矩阵被修改）/ Transposed matrix (original matrix is modified)
+     */
     public IMatrix<T> transposeInPlace();
 
+    /**
+     * 矩阵转置（创建新对象） / Matrix transpose (create new object)
+     * <p>
+     * 创建一个新的转置矩阵，不修改原矩阵 Creates a new transposed matrix without modifying the original matrix
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+     * IMatrix<Double> transposed = matrix.transposeNew();  // 结果: [[1, 3], [2, 4]]
+     * }</pre>
+     * </p>
+     *
+     * @return 转置后的新矩阵 / New transposed matrix
+     */
     public IMatrix<T> transposeNew();
 
     /**
@@ -826,28 +927,79 @@ public interface IMatrix<T extends Number> {
 
     // ========== 矩阵分解方法 / Matrix Decomposition Methods ==========
     /**
-     * 特征分解，返回的特征值按大小排列，返回的矩阵的列为各个特征向量，与特征值的顺序对应
+     * 特征分解 / Eigenvalue decomposition
+     * <p>
+     * 计算矩阵的特征值和特征向量，将矩阵A分解为A = VΛV⁻¹的形式，其中V是特征向量矩阵，Λ是对角特征值矩阵 Computes
+     * eigenvalues and eigenvectors of the matrix, decomposing matrix A into A =
+     * VΛV⁻¹ form, where V is the eigenvector matrix and Λ is the diagonal
+     * eigenvalue matrix
+     * </p>
+     * <p>
+     * 特征值按大小排列（从大到小），特征向量矩阵的列与特征值顺序对应 Eigenvalues are ordered by magnitude
+     * (largest to smallest), eigenvector matrix columns correspond to
+     * eigenvalue order
+     * </p>
      *
-     * @return 返回特征向量和特征值，其中返回的矩阵的列为各个特征向量，返回的向量中包含所有特征值
+     * @return 包含特征值和特征向量的元组，第一个元素是特征值向量，第二个元素是特征向量矩阵（列为特征向量） Tuple containing
+     * eigenvalues and eigenvectors, first element is eigenvalue vector, second
+     * element is eigenvector matrix (columns are eigenvectors)
+     * @throws IllegalArgumentException 如果矩阵不是方阵 / if matrix is not square
+     * @throws ArithmeticException 如果矩阵无法进行特征分解 / if matrix cannot be
+     * eigendecomposed
      */
     public Tuple2<IVector<T>, IMatrix<T>> eigen();
 
     /**
-     * 奇异值分解
+     * 奇异值分解 / Singular Value Decomposition (SVD)
+     * <p>
+     * 将矩阵A分解为A = UΣV^T的形式，其中U和V是正交矩阵，Σ是对角奇异值矩阵 Decomposes matrix A into A =
+     * UΣV^T form, where U and V are orthogonal matrices and Σ is the diagonal
+     * singular values matrix
+     * </p>
+     * <p>
+     * 奇异值按降序排列，U的列是左奇异向量，V^T的行是右奇异向量 Singular values are ordered in descending
+     * order, columns of U are left singular vectors, rows of V^T are right
+     * singular vectors
+     * </p>
      *
-     * @return 返回U、奇异值向量、V^T / Returns U, singular values vector, and V^T
+     * @return 包含U矩阵、奇异值向量和V^T矩阵的三元组 Tuple containing U matrix, singular values
+     * vector, and V^T matrix
+     * @throws ArithmeticException 如果矩阵无法进行奇异值分解 / if matrix cannot be SVD
+     * decomposed
      */
     public Tuple3<IMatrix<T>, IVector<T>, IMatrix<T>> svd();
 
     /**
-     * QR分解
+     * QR分解 / QR decomposition
+     * <p>
+     * 将矩阵A分解为A = QR的形式，其中Q是正交矩阵，R是上三角矩阵 Decomposes matrix A into A = QR form,
+     * where Q is an orthogonal matrix and R is an upper triangular matrix
+     * </p>
+     * <p>
+     * QR分解常用于求解线性方程组和最小二乘问题 QR decomposition is commonly used for solving
+     * linear systems and least squares problems
+     * </p>
      *
-     * @return 返回Q和R矩阵 / Returns Q and R matrices
+     * @return 包含Q矩阵和R矩阵的元组 Tuple containing Q matrix and R matrix
+     * @throws ArithmeticException 如果矩阵无法进行QR分解 / if matrix cannot be QR
+     * decomposed
      */
     public Tuple2<IMatrix<T>, IMatrix<T>> qr();
 
     /**
      * 求解矩阵的逆 / Matrix inverse
+     * <p>
+     * 计算方阵的逆矩阵，使得A × A⁻¹ = I（单位矩阵） Computes the inverse of a square matrix such
+     * that A × A⁻¹ = I (identity matrix)
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> A = Linalg.matrix(new double[][]{{2, 1}, {1, 1}});
+     * IMatrix<Double> A_inv = A.inv();  // 结果: [[1, -1], [-1, 2]]
+     * IMatrix<Double> identity = A.mmul(A_inv);  // 结果: [[1, 0], [0, 1]]
+     * }</pre>
+     * </p>
      *
      * @return 逆矩阵 / Inverse matrix
      * @throws IllegalArgumentException 如果矩阵不是方阵 / if matrix is not square
@@ -858,91 +1010,264 @@ public interface IMatrix<T extends Number> {
 
     /**
      * 求解矩阵的伪逆 / Matrix pseudo-inverse
+     * <p>
+     * 计算矩阵的Moore-Penrose伪逆，适用于非方阵或奇异矩阵 Computes the Moore-Penrose pseudo-inverse of the matrix,
+     * suitable for non-square or singular matrices
+     * </p>
+     * <p>
+     * 伪逆满足以下性质：Pseudo-inverse satisfies the following properties:
+     * <ul>
+     * <li>A A⁺ A = A</li>
+     * <li>A⁺ A A⁺ = A⁺</li>
+     * <li>(A A⁺)ᵀ = A A⁺</li>
+     * <li>(A⁺ A)ᵀ = A⁺ A</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}, {5, 6}});
+     * IMatrix<Double> pseudoInverse = matrix.pinv();
+     * }</pre>
+     * </p>
      *
      * @return 伪逆矩阵 / Pseudo-inverse matrix
+     * @throws ArithmeticException 如果矩阵无法进行伪逆计算 / if matrix cannot be pseudo-inverted
      */
     public IMatrix<T> pinv();
 
     // ========== 行列操作方法 / Row and Column Operations ==========
     /**
      * 计算行求和 / Calculate row sums
+     * <p>
+     * 计算矩阵每一行的元素和，返回一个向量，其中每个元素对应原矩阵一行的和 Calculates the sum of elements in each
+     * row of the matrix, returns a vector where each element corresponds to the
+     * sum of a row in the original matrix
+     * </p>
      *
-     * @return
+     * @return 包含每行和的向量，长度为矩阵行数 / Vector containing row sums, length equals
+     * matrix row count
      */
     public IVector<T> rowSums();
 
     /**
      * 计算行均值 / Calculate row means
+     * <p>
+     * 计算矩阵每一行的元素均值，返回一个向量，其中每个元素对应原矩阵一行的均值 Calculates the mean of elements in
+     * each row of the matrix, returns a vector where each element corresponds
+     * to the mean of a row in the original matrix
+     * </p>
+     *
+     * @return 包含每行均值的向量，长度为矩阵行数 / Vector containing row means, length equals
+     * matrix row count
      */
     public IVector<T> rowMeans();
 
     /**
      * 计算列求和 / Calculate column sums
+     * <p>
+     * 计算矩阵每一列的元素和，返回一个向量，其中每个元素对应原矩阵一列的和 Calculates the sum of elements in each
+     * column of the matrix, returns a vector where each element corresponds to
+     * the sum of a column in the original matrix
+     * </p>
+     *
+     * @return 包含每列和的向量，长度为矩阵列数 / Vector containing column sums, length equals
+     * matrix column count
      */
     public IVector<T> colSums();
 
     /**
      * 计算列均值 / Calculate column means
+     * <p>
+     * 计算矩阵每一列的元素均值，返回一个向量，其中每个元素对应原矩阵一列的均值 Calculates the mean of elements in
+     * each column of the matrix, returns a vector where each element
+     * corresponds to the mean of a column in the original matrix
+     * </p>
+     *
+     * @return 包含每列均值的向量，长度为矩阵列数 / Vector containing column means, length equals
+     * matrix column count
      */
     public IVector<T> colMeans();
 
     /**
      * 获取指定列向量 / Get specified column vector
+     * <p>
+     * 获取矩阵中指定索引的列，返回一个向量包含该列的所有元素 Gets the column at the specified index from
+     * the matrix, returns a vector containing all elements of that column
+     * </p>
+     *
+     * @param i 列索引（从0开始）/ Column index (0-based)
+     * @return 包含指定列元素的向量，长度为矩阵行数 / Vector containing column elements, length
+     * equals matrix row count
+     * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of
+     * bounds
      */
     public IVector<T> getColumn(int i);
 
+    /**
+     * 获取指定列作为列向量矩阵 / Get specified column as column vector matrix
+     * <p>
+     * 获取矩阵中指定索引的列，返回一个n×1的矩阵（列向量） Gets the column at the specified index from
+     * the matrix, returns an n×1 matrix (column vector)
+     * </p>
+     *
+     * @param i 列索引（从0开始）/ Column index (0-based)
+     * @return n×1的矩阵，包含指定列元素 / n×1 matrix containing column elements
+     * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of
+     * bounds
+     */
     public IMatrix<T> getColumnAsCloumnVector(int i);
 
     /**
      * 获取指定行向量 / Get specified row vector
+     * <p>
+     * 获取矩阵中指定索引的行，返回一个向量包含该行的所有元素 Gets the row at the specified index from the
+     * matrix, returns a vector containing all elements of that row
+     * </p>
+     *
+     * @param i 行索引（从0开始）/ Row index (0-based)
+     * @return 包含指定行元素的向量，长度为矩阵列数 / Vector containing row elements, length
+     * equals matrix column count
+     * @throws IndexOutOfBoundsException 如果行索引超出范围 / if row index is out of
+     * bounds
      */
     public IVector<T> getRow(int i);
 
     /**
      * 获取指定列矩阵 / Get specified column as matrix
+     * <p>
+     * 获取矩阵中指定索引的列，返回一个n×1的矩阵（列向量） Gets the column at the specified index from
+     * the matrix, returns an n×1 matrix (column vector)
+     * </p>
+     *
+     * @param colIndex 列索引（从0开始）/ Column index (0-based)
+     * @return n×1的矩阵，包含指定列元素 / n×1 matrix containing column elements
+     * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of bounds
      */
     public IMatrix<T> getColumnMatrix(int colIndex);
 
     /**
-     * 设置指定列 / Set specified column
+     * 设置指定列（矩阵形式） / Set specified column (matrix form)
+     * <p>
+     * 将指定列设置为给定的列矩阵 Sets the specified column to the given column matrix
+     * </p>
+     *
+     * @param colIndex 列索引（从0开始）/ Column index (0-based)
+     * @param column 要设置的列矩阵 / Column matrix to set
+     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
+     * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of bounds
+     * @throws IllegalArgumentException 如果列矩阵尺寸不匹配 / if column matrix dimensions don't match
      */
     public IMatrix putColumn(int colIndex, IMatrix<T> column);
-    
-    
+
+    /**
+     * 设置指定列（向量形式） / Set specified column (vector form)
+     * <p>
+     * 将指定列设置为给定的向量 Sets the specified column to the given vector
+     * </p>
+     *
+     * @param colIndex 列索引（从0开始）/ Column index (0-based)
+     * @param column 要设置的列向量 / Column vector to set
+     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
+     * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of bounds
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector length doesn't match
+     */
     public IMatrix setColumn(int colIndex, IVector<T> column);
 
-    public IMatrix setRow(int rowIndex, IVector<T> column);
+    /**
+     * 设置指定行（向量形式） / Set specified row (vector form)
+     * <p>
+     * 将指定行设置为给定的向量 Sets the specified row to the given vector
+     * </p>
+     *
+     * @param rowIndex 行索引（从0开始）/ Row index (0-based)
+     * @param row 要设置的行向量 / Row vector to set
+     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
+     * @throws IndexOutOfBoundsException 如果行索引超出范围 / if row index is out of bounds
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector length doesn't match
+     */
+    public IMatrix setRow(int rowIndex, IVector<T> row);
 
-    
-    
     /**
      * 获取多个指定列 / Get multiple specified columns
+     * <p>
+     * 根据列索引数组获取多个列，返回列向量数组 Gets multiple columns based on column index array, returns column vector array
+     * </p>
+     *
+     * @param indices 列索引数组 / Array of column indices
+     * @return 列向量数组 / Array of column vectors
+     * @throws IndexOutOfBoundsException 如果任何列索引超出范围 / if any column index is out of bounds
+     * @throws IllegalArgumentException 如果indices为null或空 / if indices is null or empty
      */
     public IVector<T>[] getColumns(int[] indices);
 
     // ========== 元素操作 / Element Operations ==========
     /**
      * 矩阵平方根运算 / Matrix square root operation
+     * <p>
+     * 对矩阵中每个元素进行平方根运算（√x） Performs square root operation (√x) on each element
+     * in the matrix
+     * </p>
+     *
+     * @return 新的矩阵对象，包含平方根运算结果 / New matrix object containing square root
+     * operation results
+     * @throws ArithmeticException 如果任何元素为负数 / if any element is negative
      */
     public IMatrix<T> sqrt();
 
     /**
      * 矩阵幂运算 / Matrix power operation
+     * <p>
+     * 对矩阵中每个元素进行幂运算（x^power） Performs power operation (x^power) on each element
+     * in the matrix
+     * </p>
+     *
+     * @param power 幂指数 / Power exponent
+     * @return 新的矩阵对象，包含幂运算结果 / New matrix object containing power operation
+     * results
+     * @throws IllegalArgumentException 如果幂指数为null / if power is null
+     * @throws ArithmeticException 如果底数为负数且幂指数不是整数 / if base is negative and
+     * power is not an integer
      */
     public IMatrix<T> pow(T power);
 
     /**
      * 矩阵指数运算 / Matrix exponential operation
+     * <p>
+     * 对矩阵中每个元素进行指数运算（e^x） Performs exponential operation (e^x) on each element
+     * in the matrix
+     * </p>
+     *
+     * @return 新的矩阵对象，包含指数运算结果 / New matrix object containing exponential
+     * operation results
      */
     public IMatrix<T> exp();
 
     /**
      * 矩阵自然对数运算 / Matrix natural logarithm operation
+     * <p>
+     * 对矩阵中每个元素进行自然对数运算（ln(x)） Performs natural logarithm operation (ln(x)) on
+     * each element in the matrix
+     * </p>
+     *
+     * @return 新的矩阵对象，包含自然对数运算结果 / New matrix object containing natural
+     * logarithm operation results
+     * @throws ArithmeticException 如果任何元素小于等于0 / if any element is less than or
+     * equal to 0
      */
     public IMatrix<T> log();
 
     /**
      * 计算Frobenius范数 / Compute Frobenius norm
+     * <p>
+     * 计算矩阵的Frobenius范数，即所有元素平方和的平方根 Calculates the Frobenius norm of the
+     * matrix, which is the square root of the sum of squares of all elements
+     * </p>
+     * <p>
+     * 公式：||A||_F = √(Σᵢⱼ |aᵢⱼ|²) Formula: ||A||_F = √(Σᵢⱼ |aᵢⱼ|²)
+     * </p>
+     *
+     * @return Frobenius范数 / Frobenius norm
      */
     public T frobeniusNorm();
 
@@ -990,8 +1315,8 @@ public interface IMatrix<T extends Number> {
      * 计算协方差矩阵 / Compute covariance matrix
      */
     public IMatrix<T> covariance();
-    
-       /**
+
+    /**
      * 计算协方差矩阵 / Compute covariance matrix
      */
     public IMatrix<T> cov();
@@ -1317,6 +1642,18 @@ public interface IMatrix<T extends Number> {
      */
     public IMatrix<T> slice(String rowSlice, String colSlice);
 
+    public default IMatrix<T> slice(int rowStart, int rowEnd, int colStart, int colEnd) {
+        return this.subMatrix(rowStart, rowEnd, colStart, colEnd);
+    }
+
+    public default IMatrix<T> sliceRows(int rowStart, int rowEnd) {
+        return this.subMatrix(rowStart, rowEnd, 0, this.cols());
+    }
+
+    public default IMatrix<T> slice(int colStart, int colEnd) {
+        return this.subMatrix(0, this.rows(), colStart, colEnd);
+    }
+
     /**
      * 矩阵行切片操作 / Matrix row slice operation
      * <p>
@@ -1409,11 +1746,27 @@ public interface IMatrix<T extends Number> {
     /**
      * QR算法特征分解的辅助方法 / QR algorithm eigendecomposition auxiliary method
      * <p>
-     * 专门用于Float类型的QR算法特征分解辅助方法 Specialized QR algorithm eigendecomposition
-     * auxiliary method for Float type
+     * 使用QR算法进行特征分解的辅助方法，专门用于Float类型的特征分解辅助方法 Auxiliary method for eigendecomposition using QR algorithm,
+     * specialized auxiliary method for Float type eigendecomposition
+     * </p>
+     * <p>
+     * QR算法是一种迭代方法，通过重复应用QR分解来逼近特征值 QR algorithm is an iterative method that approximates eigenvalues
+     * by repeatedly applying QR decomposition
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Float> matrix = Linalg.matrix(new float[][]{{4, 1}, {1, 3}});
+     * Tuple2<IVector<Float>, IMatrix<Float>> result = matrix.qrEigenDecomposition();
+     * IVector<Float> eigenvalues = result.getFirst();
+     * IMatrix<Float> eigenvectors = result.getSecond();
+     * }</pre>
      * </p>
      *
-     * @return 特征值和特征向量 / Eigenvalues and eigenvectors
+     * @return 包含特征值和特征向量的元组，第一个元素是特征值向量，第二个元素是特征向量矩阵 Tuple containing
+     * eigenvalues and eigenvectors, first element is eigenvalue vector, second element is eigenvector matrix
+     * @throws IllegalArgumentException 如果矩阵不是方阵 / if matrix is not square
+     * @throws ArithmeticException 如果矩阵无法进行特征分解 / if matrix cannot be eigendecomposed
      */
     public Tuple2<IVector<T>, IMatrix<T>> qrEigenDecomposition();
 
@@ -1457,5 +1810,65 @@ public interface IMatrix<T extends Number> {
      */
     public float[][] toFloatArray();
 
+    /**
+     * 转换为整数二维数组 / Convert to integer 2D array
+     * <p>
+     * 将矩阵转换为int类型的二维数组，便于与其他库或系统集成 Converts the matrix to an int 2D array
+     * for easy integration with other libraries or systems
+     * </p>
+     * <p>
+     * 转换后的数组结构：result[row][col] = matrix.get(row, col) Converted array
+     * structure: result[row][col] = matrix.get(row, col)
+     * </p>
+     * <p>
+     * 注意：如果原矩阵是浮点类型，转换时可能会有精度损失 Note: If the original matrix is floating-point type,
+     * there may be precision loss during conversion
+     * </p>
+     *
+     * @return 整数二维数组，行数为矩阵行数，列数为矩阵列数 / Integer 2D array with rows equal to
+     * matrix rows and columns equal to matrix columns
+     * @throws UnsupportedOperationException 如果矩阵包含非数值类型或无法转换 / if matrix
+     * contains non-numeric types or cannot be converted
+     */
     public int[][] toIntArray();
+
+    /**
+     * 矩阵元素映射操作 / Matrix element mapping operation
+     * <p>
+     * 对矩阵中的每个元素应用指定的函数，返回同形状的新矩阵 Applies the specified function to each element in the matrix,
+     * returns a new matrix of the same shape
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}});
+     * IMatrix<Double> squared = matrix.apply(x -> x * x);  // 结果: [[1, 4], [9, 16]]
+     * IMatrix<Double> doubled = matrix.apply(x -> x * 2);  // 结果: [[2, 4], [6, 8]]
+     * }</pre>
+     * </p>
+     *
+     * @param fun 要应用的函数，接受一个元素并返回转换后的元素 / Function to apply, takes an element and returns transformed element
+     * @return 新的矩阵对象，包含应用函数后的结果 / New matrix object containing results after applying the function
+     * @throws IllegalArgumentException 如果fun为null / if fun is null
+     */
+    public IMatrix<T> apply(Function<T, T> fun);
+
+    /**
+     * 矩阵元素映射操作（别名） / Matrix element mapping operation (alias)
+     * <p>
+     * apply函数的别名，提供更直观的命名 Alias for apply function, providing more intuitive naming
+     * </p>
+     * <p>
+     * 对矩阵中的每个元素应用指定的函数，返回同形状的新矩阵 Applies the specified function to each element in the matrix,
+     * returns a new matrix of the same shape
+     * </p>
+     *
+     * @param fun 要应用的函数，接受一个元素并返回转换后的元素 / Function to apply, takes an element and returns transformed element
+     * @return 新的矩阵对象，包含应用函数后的结果 / New matrix object containing results after applying the function
+     * @throws IllegalArgumentException 如果fun为null / if fun is null
+     * @see #apply(Function) 实际实现方法 / Actual implementation method
+     */
+    public default IMatrix<T> map(Function<T, T> fun) {
+        return this.apply(fun);
+    }
 }

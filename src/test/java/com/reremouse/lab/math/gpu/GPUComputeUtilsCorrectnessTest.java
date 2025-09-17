@@ -857,7 +857,7 @@ public class GPUComputeUtilsCorrectnessTest {
             
             // 计算 λ * v
             double lambda = eigenvalues.get(i);
-            IMatrix<Double> lambdaV = vMatrix.mmul(lambda);
+            IMatrix<Double> lambdaV = vMatrix.multiplyScalar(lambda);
             
             // 比较 A*v 和 λ*v
             for (int j = 0; j < n; j++) {

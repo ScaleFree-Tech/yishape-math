@@ -21,4 +21,16 @@ public class Tuple3<E1, E2, E3> extends Tuple2<E1, E2> implements Serializable {
         return _1 + ", " + _2 + ", " + _3;
     }
 
+    public E1 getFirst() {
+        return this._1;
+    }
+
+    public E2 getSecond() {
+        return this._2;
+    }
+
+    public E3 getThird() {
+        return this._3;
+    }
+
 }
