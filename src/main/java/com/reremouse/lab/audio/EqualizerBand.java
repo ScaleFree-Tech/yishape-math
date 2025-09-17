@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 /**
  * 均衡器频段类 / Equalizer Band Class

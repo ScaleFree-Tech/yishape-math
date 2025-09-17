@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 /**
  * 混响设置类 / Reverb Settings Class

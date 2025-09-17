@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;

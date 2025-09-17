@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 /**
  * 音频特征类 / Audio Features Class

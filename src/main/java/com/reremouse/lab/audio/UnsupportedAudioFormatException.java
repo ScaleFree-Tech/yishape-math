@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 /**
  * 不支持的音频格式异常 / Unsupported Audio Format Exception

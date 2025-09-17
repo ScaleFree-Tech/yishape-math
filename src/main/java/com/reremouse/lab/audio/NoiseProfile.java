@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.audio;
+package com.reremouse.lab.audio;
 
 /**
  * 噪声配置文件类 / Noise Profile Class

@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.image;
+package com.reremouse.lab.image;
 
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
