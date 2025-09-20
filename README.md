@@ -477,7 +477,7 @@ Plots.of(800, 400)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
 - [降维算法示例](./docs/examples/Dimensionality-Reduction-Examples.md) / [Dimensionality Reduction Examples](./docs/examples/Dimensionality-Reduction-Examples.md)
 - [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
-- [时间序列分析示例](./docs/examples/Time-Series-Analysis-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Analysis-Examples.md)
+- [时间序列分析示例](./docs/examples/Time-Series-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Examples.md)
 
 ## 项目结构 / Project Structure
 
@@ -635,7 +635,15 @@ src/main/java/com/reremouse/lab/
 │   │   │   ├── BernoulliDistribution.java   # 伯努利分布 / Bernoulli Distribution
 │   │   │   ├── DiscreteUniformDistribution.java # 离散均匀分布 / Discrete Uniform Distribution
 │   │   │   ├── IContinuousDistribution.java # 连续分布接口 / Continuous Distribution Interface
-│   │   │   └── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│   │   │   ├── IDiscreteDistribution.java   # 离散分布接口 / Discrete Distribution Interface
+│   │   │   └── multiv/              # 多变量分布 / Multivariate Distributions
+│   │   │       ├── IMultivariateDistribution.java # 多变量分布接口 / Multivariate Distribution Interface
+│   │   │       ├── MultivariateDistributions.java # 多变量分布工厂类 / Multivariate Distributions Factory
+│   │   │       ├── MultivariateNormalDistribution.java # 多变量正态分布 / Multivariate Normal Distribution
+│   │   │       ├── MultivariateTDistribution.java # 多变量t分布 / Multivariate t-Distribution
+│   │   │       ├── MultivariateBetaDistribution.java # 多变量Beta分布 / Multivariate Beta Distribution
+│   │   │       ├── MultivariateExponentialDistribution.java # 多变量指数分布 / Multivariate Exponential Distribution
+│   │   │       └── MultivariateUniformDistribution.java # 多变量均匀分布 / Multivariate Uniform Distribution
 │   │   ├── anova/            # 方差分析模块 / ANOVA Module
 │   │   │   ├── ANOVA.java                   # 方差分析 / ANOVA
 │   │   │   ├── ANOVAResult.java             # 方差分析结果 / ANOVA Result
@@ -690,32 +698,39 @@ src/main/java/com/reremouse/lab/
 │   │   ├── WaveletFilters.java   # 小波滤波器 / Wavelet Filters
 │   │   ├── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
 │   │   ├── WaveletVisualizer.java # 小波可视化 / Wavelet Visualizer
+│   │   ├── Complex.java           # 复数类 / Complex Number Class
 │   │   ├── analysis/             # 信号分析 / Signal Analysis
 │   │   │   ├── ISignalAnalyzer.java    # 信号分析接口 / Signal Analysis Interface
 │   │   │   └── SpectrumAnalyzer.java   # 频谱分析器 / Spectrum Analyzer
 │   │   ├── core/                 # 核心接口 / Core Interfaces
+│   │   │   ├── AbstractSignalProcessor.java # 抽象信号处理器 / Abstract Signal Processor
 │   │   │   ├── ISignalProcessor.java   # 信号处理接口 / Signal Processing Interface
 │   │   │   └── SignalProcessingException.java # 信号处理异常 / Signal Processing Exception
+│   │   ├── factory/              # 信号处理器工厂 / Signal Processor Factory
+│   │   │   └── SignalProcessorFactory.java # 信号处理器工厂类 / Signal Processor Factory Class
 │   │   ├── filter/               # 信号滤波器 / Signal Filters
 │   │   │   ├── ISignalFilter.java      # 信号滤波接口 / Signal Filter Interface
+│   │   │   ├── BandpassFilter.java     # 带通滤波器 / Bandpass Filter
+│   │   │   ├── BandStopFilter.java     # 带阻滤波器 / Band Stop Filter
+│   │   │   ├── BesselFilter.java       # 贝塞尔滤波器 / Bessel Filter
 │   │   │   ├── ButterworthFilter.java  # 巴特沃斯滤波器 / Butterworth Filter
 │   │   │   ├── ChebyshevFilter.java    # 切比雪夫滤波器 / Chebyshev Filter
 │   │   │   ├── EllipticFilter.java     # 椭圆滤波器 / Elliptic Filter
-│   │   │   ├── BesselFilter.java       # 贝塞尔滤波器 / Bessel Filter
 │   │   │   ├── GaussianFilter.java     # 高斯滤波器 / Gaussian Filter
-│   │   │   ├── BandpassFilter.java     # 带通滤波器 / Bandpass Filter
+│   │   │   ├── KalmanFilter.java       # 卡尔曼滤波器 / Kalman Filter
 │   │   │   ├── MedianFilter.java       # 中值滤波器 / Median Filter
-│   │   │   └── MovingAverageFilter.java # 移动平均滤波器 / Moving Average Filter
+│   │   │   ├── MovingAverageFilter.java # 移动平均滤波器 / Moving Average Filter
+│   │   │   └── WienerFilter.java       # 维纳滤波器 / Wiener Filter
 │   │   ├── generation/           # 信号生成 / Signal Generation
 │   │   │   ├── ISignalGenerator.java   # 信号生成接口 / Signal Generator Interface
 │   │   │   └── SignalGenerator.java    # 信号生成器 / Signal Generator
 │   │   └── transform/            # 信号变换 / Signal Transforms
 │   │       ├── ISignalTransform.java   # 信号变换接口 / Signal Transform Interface
-│   │       ├── HilbertTransform.java   # 希尔伯特变换 / Hilbert Transform
-│   │       ├── WaveletTransform.java   # 小波变换 / Wavelet Transform
-│   │       ├── ZTransform.java         # Z变换 / Z Transform
 │   │       ├── ChirpZTransform.java    # Chirp Z变换 / Chirp Z Transform
-│   │       └── WalshHadamardTransform.java # 沃尔什-哈达玛变换 / Walsh-Hadamard Transform
+│   │       ├── HilbertTransform.java   # 希尔伯特变换 / Hilbert Transform
+│   │       ├── WalshHadamardTransform.java # 沃尔什-哈达玛变换 / Walsh-Hadamard Transform
+│   │       ├── WaveletTransform.java   # 小波变换 / Wavelet Transform
+│   │       └── ZTransform.java         # Z变换 / Z Transform
 │   ├── timeseries/           # 时间序列分析模块 / Time Series Analysis Module
 │   │   ├── Series.java           # 时间序列类 / Time Series Class
 │   │   ├── TimeSeriesData.java   # 时间序列数据 / Time Series Data
@@ -725,6 +740,7 @@ src/main/java/com/reremouse/lab/
 │   │   ├── TimeSeriesForecasting.java # 时间序列预测 / Time Series Forecasting
 │   │   ├── TimeSeriesUtils.java  # 时间序列工具类 / Time Series Utilities
 │   │   ├── TimeSeriesVisualizer.java # 时间序列可视化 / Time Series Visualizer
+│   │   ├── TimeSeriesUnifiedExample.java # 时间序列统一示例 / Time Series Unified Example
 │   │   ├── CointegrationAnalysis.java # 协整分析 / Cointegration Analysis
 │   │   └── model/               # 时间序列模型 / Time Series Models
 │   │       ├── ITimeSeriesModel.java      # 时间序列模型接口 / Time Series Model Interface
@@ -749,7 +765,6 @@ src/main/java/com/reremouse/lab/
 │   │   ├── SeabornStyleMapper.java # Seaborn样式映射器 / Seaborn Style Mapper
 │   │   ├── StyleConverter.java   # 样式转换器 / Style Converter
 │   │   ├── StyleExpression.java  # 样式表达式 / Style Expression
-│   │   ├── StyleSystemEnhancementDemo.java # 样式系统增强演示 / Style System Enhancement Demo
 │   │   ├── ThemeManager.java     # 主题管理器 / Theme Manager
 │   │   └── UniversalStyleApplier.java # 通用样式应用器 / Universal Style Applier
 │   └── examples/             # 示例代码模块 / Examples Module
