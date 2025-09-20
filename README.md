@@ -14,7 +14,7 @@
 
 ### 🔢 核心数学运算 / Core Mathematical Operations
 - **向量运算** / **Vector Operations**: 向量创建、数学运算、统计运算、切片索引等 / Vector creation, mathematical operations, statistical operations, slicing and indexing
-- **矩阵运算** / **Matrix Operations**: 矩阵创建、基本运算、线性代数、矩阵变换等 / Matrix creation, basic operations, linear algebra, matrix transformations
+- **矩阵运算** / **Matrix Operations**: 矩阵创建、基本运算、线性代数、矩阵变换、矩阵分解等 / Matrix creation, basic operations, linear algebra, matrix transformations, matrix decompositions
 - **数学工具** / **Math Utilities**: 类型转换、随机数生成、数学函数 / Type conversion, random number generation, mathematical functions
 
 ### 📋 数据框操作 / DataFrame Operations
@@ -124,7 +124,7 @@
 
 **Maven:**
 
-``xml
+```xml
 <dependency>
     <groupId>com.reremouse.lab</groupId>
     <artifactId>yishape-math</artifactId>
@@ -137,7 +137,7 @@
 ### 基本使用示例 / Basic Usage Examples
 
 #### 向量运算 / Vector Operations
-``java
+```java
 // 创建向量 / Create vectors
 IVector<Double> v1 = Linalg.vector(new double[]{1, 2, 3, 4});
 IVector<Double> v2 = Linalg.range(10);
