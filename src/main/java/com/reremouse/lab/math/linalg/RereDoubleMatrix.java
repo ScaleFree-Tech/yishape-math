@@ -6686,13 +6686,40 @@ public class RereDoubleMatrix implements IDoubleMatrix {
     }
 
     @Override
-    public IMatrix<Double> slice(int rowStart, int rowEnd, int colStart, int colEnd) {
-        return this.subMatrix(colStart, colEnd, colStart, colEnd);
+    public IVector<Double> mmul(IVector<Double> other) {
+        if (other == null) {
+            throw new NullPointerException("向量不能为null / Vector cannot be null");
+        }
+        
+        int matrixRows = this.data.length;
+        int matrixCols = this.data[0].length;
+        int vectorLen = other.length();
+        
+        if (matrixCols != vectorLen) {
+            throw new IllegalArgumentException(
+                String.format("矩阵列数与向量长度不匹配: %d != %d / Matrix column count doesn't match vector length: %d != %d", 
+                    matrixCols, vectorLen, matrixCols, vectorLen));
+        }
+        
+        // 计算矩阵与列向量的乘积
+        double[] result = new double[matrixRows];
+        for (int i = 0; i < matrixRows; i++) {
+            double sum = 0.0;
+            for (int j = 0; j < matrixCols; j++) {
+                sum += this.data[i][j] * other.get(j);
+            }
+            result[i] = sum;
+        }
+        
+        return IDoubleVector.of(result);
     }
 
     @Override
-    public IVector<Double> mmul(IVector<Double> other) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public IMatrix<Double> divideByScalar(Double scalar) {
+        if (scalar == 0.0) {
+            throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
+        }
+        return this.multiplyScalar(1.0 / scalar);
     }
     
     

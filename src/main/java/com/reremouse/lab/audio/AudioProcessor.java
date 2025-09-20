@@ -2,7 +2,7 @@ package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalFiltering;
+import com.reremouse.lab.math.signal.Signals;
 
 /**
  * 音频处理器类 / Audio Processor Class
@@ -283,7 +283,7 @@ public class AudioProcessor {
         int windowSize = (int) (sampleRate / cutoffFreq);
         windowSize = Math.max(3, Math.min(windowSize, 100)); // 限制窗口大小 / Limit window size
         
-        return SignalFiltering.movingAverage(samples, windowSize);
+        return Signals.movingAverage(samples, windowSize);
     }
     
     /**

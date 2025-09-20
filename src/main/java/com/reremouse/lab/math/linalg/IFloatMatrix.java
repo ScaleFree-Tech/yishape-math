@@ -437,10 +437,6 @@ public interface IFloatMatrix extends IMatrix<Float> {
         return RereFloatMatrix.loadFromFile(path);
     }
 
-    /**
-     * 将矩阵数据保存在本地指定位置 / Save matrix data to specified local path
-     */
-    public void save(String path);
 
     /**
      * 创建单位矩阵 / Create identity matrix

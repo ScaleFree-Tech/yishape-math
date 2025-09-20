@@ -666,3 +666,4 @@ public class TimeSeriesForecasting {
         return errors.mean() * 100;
     }
 }
+

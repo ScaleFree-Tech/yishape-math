@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import com.reremouse.lab.util.Tuple2;
 
 /**
  * 时间序列数据类 / Time Series Data Class
@@ -74,12 +76,49 @@ public class TimeSeriesData {
     }
     
     /**
+     * 构造函数 - 从数组创建单变量时间序列 / Constructor - Create univariate time series from arrays
+     *
+     * @param timestamps 时间戳数组 / Timestamp array
+     * @param values 数值数组 / Values array
+     * @param columnName 列名 / Column name
+     */
+    public TimeSeriesData(LocalDateTime[] timestamps, double[] values, String columnName) {
+        this.timestamps = Arrays.asList(timestamps);
+        this.columnNames = new String[]{columnName};
+        this.data = Linalg.matrix(new double[][]{values});
+        this.samplingRate = calculateSamplingRate();
+    }
+    
+    /**
+     * 构造函数 - 从数组创建多变量时间序列 / Constructor - Create multivariate time series from arrays
+     *
+     * @param timestamps 时间戳数组 / Timestamp array
+     * @param data 数据二维数组 / Data 2D array
+     * @param columnNames 列名数组 / Column names array
+     */
+    public TimeSeriesData(LocalDateTime[] timestamps, double[][] data, String[] columnNames) {
+        this.timestamps = Arrays.asList(timestamps);
+        this.columnNames = columnNames.clone();
+        this.data = Linalg.matrix(data);
+        this.samplingRate = calculateSamplingRate();
+    }
+    
+    /**
      * 获取时间戳列表 / Get timestamps list
      *
      * @return 时间戳列表 / Timestamps list
      */
     public List<LocalDateTime> getTimestamps() {
         return new ArrayList<>(timestamps);
+    }
+    
+    /**
+     * 获取时间戳数组 / Get timestamps array
+     *
+     * @return 时间戳数组 / Timestamps array
+     */
+    public LocalDateTime[] getTimestampsArray() {
+        return timestamps.toArray(new LocalDateTime[0]);
     }
     
     /**
@@ -137,7 +176,7 @@ public class TimeSeriesData {
     }
     
     /**
-     * 是否为多变量时间序列 / Check if multivariate time series
+     * 是否为多变量时间序列 / Check if multivariate time序列
      *
      * @return 是否为多变量 / Whether multivariate
      */
@@ -331,10 +370,320 @@ public class TimeSeriesData {
         return stats;
     }
     
+    /**
+     * 转换为双数组格式 / Convert to double array format
+     *
+     * @return 包含时间戳和数据的双数组 / Double arrays containing timestamps and data
+     */
+    public Tuple2<double[], double[][]> toDoubleArrays() {
+        // Convert timestamps to double array (seconds since epoch)
+        double[] timeArray = new double[timestamps.size()];
+        for (int i = 0; i < timestamps.size(); i++) {
+            timeArray[i] = timestamps.get(i).atZone(java.time.ZoneId.systemDefault()).toEpochSecond();
+        }
+        
+        // Convert data to double array
+        double[][] dataArray = data.toDoubleArray();
+        
+        return new Tuple2<>(timeArray, dataArray);
+    }
+    
+    /**
+     * 合并时间序列 / Merge time series
+     *
+     * @param other 另一个时间序列 / Another time series
+     * @param newName 新列名 / New column name
+     * @return 合并后的时间序列 / Merged time series
+     */
+    public TimeSeriesData merge(TimeSeriesData other, String newName) {
+        // For simplicity, we'll assume same timestamps and merge as multivariate
+        String[] newColumnNames = new String[columnNames.length + other.columnNames.length];
+        System.arraycopy(columnNames, 0, newColumnNames, 0, columnNames.length);
+        System.arraycopy(other.columnNames, 0, newColumnNames, columnNames.length, other.columnNames.length);
+        
+        IMatrix<Double> newData = data.hstack(other.data);
+        
+        return new TimeSeriesData(timestamps, newData, newColumnNames);
+    }
+    
+    /**
+     * 标准化时间序列 / Normalize time series
+     *
+     * @return 标准化后的时间序列 / Normalized time series
+     */
+    public TimeSeriesData normalize() {
+        IMatrix<Double> normalizedData = data.copy();
+        
+        for (int i = 0; i < getNumVariables(); i++) {
+            IVector<Double> variable = getVariable(i);
+            double mean = variable.mean();
+            double std = variable.std();
+            if (std > 0) {
+                IVector<Double> normalizedVariable = variable.subScalar(mean).divideByScalar(std);
+                normalizedData.setColumn(i, normalizedVariable);
+            }
+        }
+        
+        return new TimeSeriesData(timestamps, normalizedData, columnNames);
+    }
+    
+    /**
+     * 移动窗口操作 / Moving window operation
+     *
+     * @param windowSize 窗口大小 / Window size
+     * @param operation 操作函数 / Operation function
+     * @return 处理后的时间序列 / Processed time series
+     */
+    public TimeSeriesData movingWindow(int windowSize, java.util.function.Function<IVector<Double>, Double> operation) {
+        if (windowSize <= 0 || windowSize > getLength()) {
+            throw new IllegalArgumentException("无效的窗口大小");
+        }
+        
+        int resultLength = getLength() - windowSize + 1;
+        double[] result = new double[resultLength];
+        
+        for (int i = 0; i < resultLength; i++) {
+            IVector<Double> window = data.sliceRows(i, i + windowSize).getColumn(0); // Assuming univariate for simplicity
+            result[i] = operation.apply(window);
+        }
+        
+        LocalDateTime[] newTimestamps = new LocalDateTime[resultLength];
+        for (int i = 0; i < resultLength; i++) {
+            newTimestamps[i] = timestamps.get(i + windowSize - 1);
+        }
+        
+        return new TimeSeriesData(newTimestamps, result, columnNames[0] + "_windowed");
+    }
+    
     @Override
     public String toString() {
         return String.format("TimeSeriesData{length=%d, variables=%d, samplingRate=%.2fHz, columns=%s}",
                 getLength(), getNumVariables(), samplingRate, String.join(",", columnNames));
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        TimeSeriesData that = (TimeSeriesData) obj;
+        
+        if (Double.compare(that.samplingRate, samplingRate) != 0) return false;
+        if (!timestamps.equals(that.timestamps)) return false;
+        if (!data.equals(that.data)) return false;
+        return Arrays.equals(columnNames, that.columnNames);
+    }
+    
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = timestamps.hashCode();
+        result = 31 * result + data.hashCode();
+        result = 31 * result + Arrays.hashCode(columnNames);
+        temp = Double.doubleToLongBits(samplingRate);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        return result;
+    }
+    
+    // ========== 静态工厂方法 / Static Factory Methods ==========
+    
+    /**
+     * 创建时间序列数据对象 / Create time series data object
+     *
+     * @param values 数值向量 / Values vector
+     * @param name 列名 / Column name
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(IVector<Double> values, String name) {
+        LocalDateTime startTime = LocalDateTime.now();
+        return new TimeSeriesData(values, 1.0, name, startTime);
+    }
+    
+    /**
+     * 创建时间序列数据对象 / Create time series data object
+     *
+     * @param values 数值向量 / Values vector
+     * @param samplingRate 采样率 / Sampling rate
+     * @param name 列名 / Column name
+     * @param startTime 开始时间 / Start time
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(IVector<Double> values, double samplingRate, String name, LocalDateTime startTime) {
+        return new TimeSeriesData(values, samplingRate, name, startTime);
+    }
+    
+    /**
+     * 创建时间序列数据对象 / Create time series data object
+     *
+     * @param timestamps 时间戳数组 / Timestamp array
+     * @param values 数值数组 / Values array
+     * @param name 列名 / Column name
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(LocalDateTime[] timestamps, double[] values, String name) {
+        return new TimeSeriesData(timestamps, values, name);
+    }
+    
+    /**
+     * 创建多变量时间序列数据对象 / Create multivariate time series data object
+     *
+     * @param timestamps 时间戳数组 / Timestamp array
+     * @param data 数据二维数组 / Data 2D array
+     * @param names 列名数组 / Column names array
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(LocalDateTime[] timestamps, double[][] data, String[] names) {
+        return new TimeSeriesData(timestamps, data, names);
+    }
+    
+    /**
+     * 创建时间序列数据对象 / Create time series data object
+     *
+     * @param values 数值向量 / Values vector
+     * @param name 列名 / Column name
+     * @param frequency 时间间隔 (秒) / Time interval (seconds)
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(IVector<Double> values, String name, double frequency) {
+        LocalDateTime startTime = LocalDateTime.now();
+        return new TimeSeriesData(values, 1.0/frequency, name, startTime);
+    }
+    
+    /**
+     * 创建时间序列数据对象（从双数组） / Create time series data object (from double arrays)
+     *
+     * @param timeArray 时间戳数组 (秒 since epoch) / Timestamp array (seconds since epoch)
+     * @param dataArray 数据数组 / Data array
+     * @param names 列名数组 / Column names array
+     * @return 时间序列数据对象 / Time series data object
+     */
+    public static TimeSeriesData of(double[] timeArray, double[][] dataArray, String[] names) {
+        LocalDateTime[] timestamps = new LocalDateTime[timeArray.length];
+        for (int i = 0; i < timeArray.length; i++) {
+            timestamps[i] = LocalDateTime.ofEpochSecond((long) timeArray[i], 0, java.time.ZoneOffset.UTC);
+        }
+        return new TimeSeriesData(timestamps, dataArray, names);
+    }
+    
+    /**
+     * 创建示例时间序列数据 / Create sample time series data
+     *
+     * @param length 长度 / Length
+     * @param name 名称 / Name
+     * @return 示例时间序列数据 / Sample time series data
+     */
+    public static TimeSeriesData sample(int length, String name) {
+        IVector<Double> data = Linalg.randn(length);
+        return TimeSeriesData.of(data, name);
+    }
+    
+    /**
+     * 创建正弦波时间序列 / Create sine wave time series
+     *
+     * @param length 长度 / Length
+     * @param frequency 频率 / Frequency
+     * @param name 名称 / Name
+     * @return 正弦波时间序列 / Sine wave time series
+     */
+    public static TimeSeriesData sineWave(int length, double frequency, String name) {
+        double[] values = new double[length];
+        for (int i = 0; i < length; i++) {
+            values[i] = Math.sin(2 * Math.PI * frequency * i / length);
+        }
+        return TimeSeriesData.of(Linalg.vector(values), name);
+    }
+    
+    // ========== 构建器模式 / Builder Pattern ==========
+    
+    /**
+     * 创建构建器 / Create builder
+     *
+     * @return 时间序列数据构建器 / Time series data builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+    
+    /**
+     * 时间序列数据构建器 / Time series data builder
+     */
+    public static class Builder {
+        private List<LocalDateTime> timestamps;
+        private IMatrix<Double> data;
+        private String[] columnNames;
+        private double samplingRate = 1.0;
+        private LocalDateTime startTime = LocalDateTime.now();
+        
+        public Builder timestamps(LocalDateTime[] timestamps) {
+            this.timestamps = Arrays.asList(timestamps);
+            return this;
+        }
+        
+        public Builder timestamps(List<LocalDateTime> timestamps) {
+            this.timestamps = new ArrayList<>(timestamps);
+            return this;
+        }
+        
+        public Builder data(IVector<Double> data, String columnName) {
+            this.data = Linalg.matrix(new double[][]{data.toDoubleArray()});
+            this.columnNames = new String[]{columnName};
+            return this;
+        }
+        
+        public Builder data(IMatrix<Double> data, String[] columnNames) {
+            this.data = data.copy();
+            this.columnNames = columnNames.clone();
+            return this;
+        }
+        
+        public Builder data(double[] data, String columnName) {
+            this.data = Linalg.matrix(new double[][]{data});
+            this.columnNames = new String[]{columnName};
+            return this;
+        }
+        
+        public Builder data(double[][] data, String[] columnNames) {
+            this.data = Linalg.matrix(data);
+            this.columnNames = columnNames.clone();
+            return this;
+        }
+        
+        public Builder samplingRate(double samplingRate) {
+            this.samplingRate = samplingRate;
+            return this;
+        }
+        
+        public Builder startTime(LocalDateTime startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+        
+        public Builder frequency(double frequency) {
+            this.samplingRate = frequency;
+            return this;
+        }
+        
+        public TimeSeriesData build() {
+            if (data == null) {
+                throw new IllegalStateException("数据不能为空 / Data cannot be null");
+            }
+            
+            if (timestamps == null) {
+                // Generate timestamps based on data length and sampling rate
+                timestamps = TimeSeriesData.generateTimestamps(data.rows(), samplingRate, startTime);
+            }
+            
+            if (columnNames == null) {
+                // Generate default column names
+                columnNames = new String[data.getColNum()];
+                for (int i = 0; i < columnNames.length; i++) {
+                    columnNames[i] = "Variable" + (i + 1);
+                }
+            }
+            
+            return new TimeSeriesData(timestamps, data, columnNames);
+        }
     }
     
     // ========== 私有辅助方法 / Private Helper Methods ==========
@@ -354,7 +703,7 @@ public class TimeSeriesData {
     /**
      * 生成时间戳 / Generate timestamps
      */
-    private List<LocalDateTime> generateTimestamps(int length, double samplingRate, LocalDateTime startTime) {
+    private static List<LocalDateTime> generateTimestamps(int length, double samplingRate, LocalDateTime startTime) {
         List<LocalDateTime> timestamps = new ArrayList<>();
         double intervalSeconds = 1.0 / samplingRate;
         
@@ -381,7 +730,7 @@ public class TimeSeriesData {
     /**
      * 线性插值 / Linear interpolation
      */
-    private IVector<Double> interpolate(IVector<Double> data, IVector<Double> indices) {
+    private static IVector<Double> interpolate(IVector<Double> data, IVector<Double> indices) {
         int length = indices.length();
         IVector<Double> result = Linalg.zeros(length);
         

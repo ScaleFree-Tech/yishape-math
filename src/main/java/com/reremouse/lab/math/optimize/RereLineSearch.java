@@ -47,35 +47,35 @@ public class RereLineSearch {
 
         double alpha = initialStepSize;
         double currentValue = objFun.computeObjective(x);
-        double directionalDerivative = (double)grad.innerProduct(direction);
+        double directionalDerivative = (Double) grad.innerProduct(direction);
 
         // 如果方向导数为正，说明不是下降方向，返回小步长 / If directional derivative is positive, not a descent direction
         if (directionalDerivative >= 0) {
-            return 1e-8f;
+            return 1e-8;
         }
 
         // 回溯线搜索 / Backtracking line search
         int maxLineSearchIterations = 50;
         for (int i = 0; i < maxLineSearchIterations; i++) {
-            IVector newX = (IVector)x.add(direction.multiplyScalar(alpha));
+            IVector newX = x.add(direction.multiplyScalar(alpha));
             double newValue = objFun.computeObjective(newX);
 
             // 检查Armijo条件 / Check Armijo condition
             if (newValue <= currentValue + c1 * alpha * directionalDerivative) {
                 IVector newGrad = grdFun.computeGradient(newX);
-                double newDirectionalDerivative = (double)newGrad.innerProduct(direction);
+                double newDirectionalDerivative = (Double) newGrad.innerProduct(direction);
 
                 // 检查曲率条件 / Check curvature condition
-                if (newDirectionalDerivative >= c2 * directionalDerivative) {
+                if (Math.abs(newDirectionalDerivative) <= c2 * Math.abs(directionalDerivative)) {
                     return alpha;
                 }
             }
 
             // 减小步长 / Reduce step size
-            alpha *= 0.5f;
+            alpha *= 0.5;
 
             // 如果步长太小，停止搜索 / If step size too small, stop search
-            if (alpha < 1e-10f) {
+            if (alpha < 1e-10) {
                 break;
             }
         }

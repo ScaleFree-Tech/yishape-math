@@ -2,9 +2,7 @@ package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalGeneration;
-import com.reremouse.lab.math.signal.SignalFiltering;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.signal.Signals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -204,7 +202,7 @@ public class MusicGenerator {
         IVector<Double> ascendingSamples = Linalg.zeros(0);
         for (int note : scale) {
             double frequency = MusicTheory.noteToFrequency(MusicTheory.NOTE_NAMES[note], octave);
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 (int)(noteDuration * sampleRate), frequency, sampleRate, 0.3, 0.0);
             ascendingSamples = concatenateAudio(ascendingSamples, noteSamples);
         }
@@ -214,7 +212,7 @@ public class MusicGenerator {
         for (int i = scale.length - 1; i >= 0; i--) {
             int note = scale[i];
             double frequency = MusicTheory.noteToFrequency(MusicTheory.NOTE_NAMES[note], octave);
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 (int)(noteDuration * sampleRate), frequency, sampleRate, 0.3, 0.0);
             descendingSamples = concatenateAudio(descendingSamples, noteSamples);
         }
@@ -254,7 +252,7 @@ public class MusicGenerator {
             double frequency = beat % accentEvery == 0 ? 1000 : 800; // 重音频率更高 / Accent has higher frequency
             double amplitude = beat % accentEvery == 0 ? 0.5 : 0.3; // 重音幅度更大 / Accent has higher amplitude
             
-            IVector<Double> beatAudio = SignalGeneration.sineWave(
+            IVector<Double> beatAudio = Signals.sineWave(
                 beatSamples, frequency, sampleRate, amplitude, 0.0);
             
             // 添加短促的节拍音 / Add short beat sound
@@ -288,7 +286,7 @@ public class MusicGenerator {
         // 上行琶音 / Ascending arpeggio
         for (int note : chordNotes) {
             double frequency = MusicTheory.noteToFrequency(MusicTheory.NOTE_NAMES[note], octave);
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 (int)(noteDuration * sampleRate), frequency, sampleRate, 0.3, 0.0);
             totalSamples = concatenateAudio(totalSamples, noteSamples);
         }
@@ -297,7 +295,7 @@ public class MusicGenerator {
         for (int i = chordNotes.length - 1; i >= 0; i--) {
             int note = chordNotes[i];
             double frequency = MusicTheory.noteToFrequency(MusicTheory.NOTE_NAMES[note], octave);
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 (int)(noteDuration * sampleRate), frequency, sampleRate, 0.3, 0.0);
             totalSamples = concatenateAudio(totalSamples, noteSamples);
         }
@@ -369,7 +367,7 @@ public class MusicGenerator {
             int startSample = (int)(note.getStartTime() * beatDuration * sampleRate);
             int noteSamples = (int)(note.getDuration() * beatDuration * sampleRate);
             
-            IVector<Double> noteAudio = SignalGeneration.sineWave(
+            IVector<Double> noteAudio = Signals.sineWave(
                 noteSamples, frequency, sampleRate, note.getVelocity() * 0.5, 0.0);
             
             // 添加音符到总音频中 / Add note to total audio

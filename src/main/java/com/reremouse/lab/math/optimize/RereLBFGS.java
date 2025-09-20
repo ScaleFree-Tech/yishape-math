@@ -32,7 +32,7 @@ public class RereLBFGS implements IOptimizer{
 
     // LBFGS算法参数 / LBFGS algorithm parameters
     private int m = 10;                    // 存储的历史信息对数 / Number of stored history pairs
-    private double tolerance = 1e-6f;       // 收敛容差 / Convergence tolerance
+    private double tolerance = 1e-6;       // 收敛容差 / Convergence tolerance
     private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
 
     
@@ -89,7 +89,7 @@ public class RereLBFGS implements IOptimizer{
         }
         
         // 初始化变量 / Initialize variables
-        IVector x = (IVector)initX.copy();  // 当前点 / Current point
+        IVector x = initX.copy();  // 当前点 / Current point
         int n = x.length();       // 问题维度 / Problem dimension
         
         // 历史信息存储 / History information storage
@@ -99,25 +99,26 @@ public class RereLBFGS implements IOptimizer{
         
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
+        double initialGradNorm = (Double) grad.norm2();
         
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
             // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
-            double gradNorm = (double)grad.norm2();
-            if (gradNorm < tolerance) {
+            double gradNorm = (Double) grad.norm2();
+            if (gradNorm < tolerance * Math.max(1.0, initialGradNorm)) {
                 double optimalValue = objFun.computeObjective(x);
                 return new Tuple2<>(optimalValue, x);
             }
             
             // 计算搜索方向：使用两循环递归 / Compute search direction: two-loop recursion
             IVector direction = computeSearchDirection(grad, s_history, y_history, rho_history);
-            direction = (IVector)direction.multiplyScalar(-1.0); // 负梯度方向 / Negative gradient direction
+            // direction is already the descent direction from computeSearchDirection
             
             // 线搜索确定步长 / Line search to determine step size
             double stepSize = new RereLineSearch().search(x, direction, objFun, grdFun, grad);
             
             // 更新位置 / Update position
-            IVector newX = (IVector)x.add(direction.multiplyScalar(stepSize));
+            IVector newX = x.add(direction.multiplyScalar(stepSize));
             IVector newGrad = grdFun.computeGradient(newX);
             
             // 更新历史信息 / Update history information
@@ -151,14 +152,14 @@ public class RereLBFGS implements IOptimizer{
     private IVector computeSearchDirection(IVector grad, List<IVector> s_history, 
                                         List<IVector> y_history, List<Double> rho_history) {
         
-        IVector q = (IVector)grad.copy();
+        IVector q = grad.copy();
         int historySize = s_history.size();
         double[] alpha = new double[historySize];
         
         // 第一个循环：向后递归 / First loop: backward recursion
         for (int i = historySize - 1; i >= 0; i--) {
-            alpha[i] = rho_history.get(i) * (double)s_history.get(i).innerProduct(q);
-            q = (IVector)q.sub(y_history.get(i).multiplyScalar(alpha[i]));
+            alpha[i] = rho_history.get(i) * (Double) s_history.get(i).innerProduct(q);
+            q = q.sub(y_history.get(i).multiplyScalar(alpha[i]));
         }
         
         // 应用初始Hessian近似 / Apply initial Hessian approximation
@@ -166,11 +167,12 @@ public class RereLBFGS implements IOptimizer{
         
         // 第二个循环：向前递归 / Second loop: forward recursion
         for (int i = 0; i < historySize; i++) {
-            double beta = rho_history.get(i) * (double)y_history.get(i).innerProduct(r);
-            r = (IVector)r.add(s_history.get(i).multiplyScalar(alpha[i] - beta));
+            double beta = rho_history.get(i) * (Double) y_history.get(i).innerProduct(r);
+            r = r.add(s_history.get(i).multiplyScalar(alpha[i] - beta));
         }
         
-        return r;
+        // Return the negative direction (descent direction)
+        return r.multiplyScalar(-1.0);
     }
     
     /**
@@ -196,9 +198,18 @@ public class RereLBFGS implements IOptimizer{
         IVector s_k = s_history.get(s_history.size() - 1);
         IVector y_k = y_history.get(y_history.size() - 1);
         
-        double gamma = (double)s_k.innerProduct(y_k) / (double)y_k.innerProduct(y_k);
+        double yTy = (Double) y_k.innerProduct(y_k);
+        if (Math.abs(yTy) < 1e-12) {
+            // 避免除零 / Avoid division by zero
+            return q;
+        }
         
-        return (IVector)q.multiplyScalar(gamma);
+        double gamma = (Double) s_k.innerProduct(y_k) / yTy;
+        
+        // 确保gamma为正值以保持正定性 / Ensure gamma is positive to maintain positive definiteness
+        gamma = Math.max(gamma, 1e-12);
+        
+        return q.multiplyScalar(gamma);
     }
     
     
@@ -225,15 +236,15 @@ public class RereLBFGS implements IOptimizer{
                              List<IVector> s_history, List<IVector> y_history, List<Double> rho_history) {
         
         // 计算位置差和梯度差 / Compute position and gradient differences
-        IVector s_k = (IVector)newX.sub(oldX);
-        IVector y_k = (IVector)newGrad.sub(oldGrad);
+        IVector s_k = newX.sub(oldX);
+        IVector y_k = newGrad.sub(oldGrad);
         
         // 计算ρ值 / Compute rho value
-        double sTy = (double)s_k.innerProduct(y_k);
+        double sTy = (Double) s_k.innerProduct(y_k);
         
         // 检查曲率条件：s^T * y > 0，确保正定性 / Check curvature condition: s^T * y > 0 for positive definiteness
-        if (sTy > 1e-10f) {
-            double rho_k = 1.0f / sTy;
+        if (sTy > 1e-10) {
+            double rho_k = 1.0 / sTy;
             
             // 添加新的历史信息 / Add new history information
             s_history.add(s_k);
@@ -247,6 +258,7 @@ public class RereLBFGS implements IOptimizer{
                 rho_history.remove(0);
             }
         }
+        // If curvature condition is not satisfied, we simply don't update the history
     }
     
     // Getter和Setter方法 / Getter and Setter methods
@@ -280,7 +292,7 @@ public class RereLBFGS implements IOptimizer{
      * @param tolerance 收敛容差 / Convergence tolerance
      */
     public void setTolerance(double tolerance) {
-        this.tolerance = Math.max(1e-12f, tolerance);
+        this.tolerance = Math.max(1e-12, tolerance);
     }
     
     /**

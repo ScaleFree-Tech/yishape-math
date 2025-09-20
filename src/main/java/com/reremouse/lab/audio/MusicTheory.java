@@ -2,7 +2,7 @@ package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalGeneration;
+import com.reremouse.lab.math.signal.Signals;
 
 /**
  * 音乐理论类 / Music Theory Class
@@ -308,7 +308,7 @@ public class MusicTheory {
             int endSample = Math.min(startSample + samplesPerNote, totalSamples);
             
             // 生成正弦波 / Generate sine wave
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 endSample - startSample, frequency, sampleRate, amplitude, 0.0);
             
             // 添加淡入淡出效果 / Add fade in/out effect
@@ -348,7 +348,7 @@ public class MusicTheory {
         // 为每个音符生成正弦波并叠加 / Generate sine wave for each note and superimpose
         for (int note : chord) {
             double frequency = noteToFrequency(NOTE_NAMES[note], octave);
-            IVector<Double> noteSamples = SignalGeneration.sineWave(
+            IVector<Double> noteSamples = Signals.sineWave(
                 totalSamples, frequency, sampleRate, amplitude / chord.length, 0.0);
             
             samples = samples.add(noteSamples);

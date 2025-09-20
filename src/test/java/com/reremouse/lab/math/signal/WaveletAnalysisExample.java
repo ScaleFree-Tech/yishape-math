@@ -2,10 +2,6 @@ package com.reremouse.lab.math.signal;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalGeneration;
-import com.reremouse.lab.math.signal.WaveletAnalysis;
-import com.reremouse.lab.math.signal.WaveletFilters;
-import com.reremouse.lab.math.signal.WaveletUtilities;
 
 /**
  * 小波分析示例类 / Wavelet Analysis Example Class
@@ -28,10 +24,10 @@ public class WaveletAnalysisExample {
         double samplingRate = 1000.0; // 1kHz
         
         // 生成复合信号：多个频率成分 + 噪声 / Generate composite signal: multiple frequency components + noise
-        IVector<Double> signal = SignalGeneration.sineWave(length, 10.0, samplingRate, 1.0, 0.0)
-                .add(SignalGeneration.sineWave(length, 50.0, samplingRate, 0.8, 0.0))
-                .add(SignalGeneration.sineWave(length, 100.0, samplingRate, 0.5, 0.0))
-                .add(SignalGeneration.whiteNoise(length, 0.2));
+        IVector<Double> signal = Signals.sineWave(length, 10.0, samplingRate, 1.0, 0.0)
+                .add(Signals.sineWave(length, 50.0, samplingRate, 0.8, 0.0))
+                .add(Signals.sineWave(length, 100.0, samplingRate, 0.5, 0.0))
+                .add(Signals.whiteNoise(length, 0.2));
         
         System.out.println("原始信号统计:");
         System.out.println("  长度: " + signal.length());
@@ -167,9 +163,9 @@ public class WaveletAnalysisExample {
         System.out.println("\n=== 小波相干性分析 / Wavelet Coherence Analysis ===");
         
         // 生成第二个信号 / Generate second signal
-        IVector<Double> signal2 = SignalGeneration.sineWave(length, 20.0, samplingRate, 0.8, 0.0)
-                .add(SignalGeneration.sineWave(length, 60.0, samplingRate, 0.6, 0.0))
-                .add(SignalGeneration.whiteNoise(length, 0.15));
+        IVector<Double> signal2 = Signals.sineWave(length, 20.0, samplingRate, 0.8, 0.0)
+                .add(Signals.sineWave(length, 60.0, samplingRate, 0.6, 0.0))
+                .add(Signals.whiteNoise(length, 0.15));
         
         var coherence = WaveletUtilities.calculateWaveletCoherence(
                 signal, signal2, WaveletAnalysis.WaveletType.MORLET, scales, 5.0);

@@ -458,7 +458,7 @@ public class SignalUtilities {
      * @return 平滑后的信号 / Smoothed signal
      */
     public static IVector<Double> smooth(IVector<Double> signal, int windowSize) {
-        return SignalFiltering.movingAverage(signal, windowSize);
+        return Signals.movingAverage(signal, windowSize);
     }
 
     // ========== 辅助方法 / Helper Methods ==========

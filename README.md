@@ -12,31 +12,18 @@
 
 ## 主要特性 / Key Features
 
-### 🚀 核心数学运算 / Core Mathematical Operations
-- **向量运算** / **Vector Operations**: 完整的向量数学运算和统计功能
-  - *Complete vector mathematical operations and statistical functions*
-  - 向量创建：支持多种数据类型、范围向量、特殊向量（全1、全0、随机） / Vector creation: multiple data types, range vectors, special vectors (ones, zeros, random)
-  - 数学运算：向量间运算、标量运算、内积、外积、叉积 / Mathematical operations: vector-to-vector, scalar operations, inner product, outer product, cross product
-  - 统计运算：均值、方差、标准差、中位数、众数、偏度、峰度等 / Statsistical operations: mean, variance, standard deviation, median, mode, skewness, kurtosis
-  - 切片索引：支持NumPy风格切片、布尔索引、条件筛选 / Slicing and indexing: NumPy-style slicing, boolean indexing, conditional filtering
-  - 通用函数：数学函数、三角函数、对数函数、指数函数 / Universal functions: mathematical, trigonometric, logarithmic, exponential functions
-- **矩阵运算** / **Matrix Operations**: 完整的矩阵数学运算和线性代数功能
-  - *Complete matrix mathematical operations and linear algebra functions*
-  - 矩阵创建：多种构造方式、特殊矩阵（单位、对角、随机）、文件加载 / Matrix creation: multiple construction methods, special matrices (identity, diagonal, random), file loading
-  - 基本运算：矩阵加减乘除、标量运算、元素级运算 / Basic operations: matrix addition/subtraction/multiplication/division, scalar operations, element-wise operations
-  - 线性代数：矩阵分解、特征值分解、奇异值分解、QR分解 / Linear algebra: matrix decomposition, eigenvalue decomposition, SVD, QR decomposition
-  - 矩阵变换：转置、幂运算、逆矩阵、伪逆矩阵、行列式 / Matrix transformations: transpose, power, inverse, pseudo-inverse, determinant
-  - 统计功能：协方差矩阵、相关系数矩阵、矩阵范数 / Statsistical functions: covariance matrix, correlation matrix, matrix norms
-- **数学工具** / **Math Utilities**: 类型转换、随机数生成、数学函数
-  - *Type conversion, random number generation, and mathematical functions*
+### 🔢 核心数学运算 / Core Mathematical Operations
+- **向量运算** / **Vector Operations**: 向量创建、数学运算、统计运算、切片索引等 / Vector creation, mathematical operations, statistical operations, slicing and indexing
+- **矩阵运算** / **Matrix Operations**: 矩阵创建、基本运算、线性代数、矩阵变换等 / Matrix creation, basic operations, linear algebra, matrix transformations
+- **数学工具** / **Math Utilities**: 类型转换、随机数生成、数学函数 / Type conversion, random number generation, mathematical functions
 
-### 📊 数据框操作 / DataFrame Operations
+### 📋 数据框操作 / DataFrame Operations
 - **结构化数据处理** / **Structured Data Processing**: 完整的DataFrame数据处理功能
   - *Complete DataFrame data processing functionality*
   - CSV文件读写：支持自定义分隔符、表头、编码设置 / CSV file read/write: custom delimiters, headers, encoding settings
   - 灵活数据切片：行切片、列切片、通用切片，支持负数索引和步长 / Flexible data slicing: row, column, general slicing with negative indices and steps
 
-### 📊 统计学运算 / Statsistical Methods
+### 📈 统计学运算 / Statsistical Methods
 - **分布函数** / **Statsistical Distributions**: 正态分布、t分布、卡方分布、F分布、均匀分布、指数分布等
   - *Normal, t, Chi-squared, F, Uniform, Exponential distributions and more*
 - **概率密度函数** / **Probability Density Functions**: 完整的PDF和CDF计算
@@ -50,7 +37,7 @@
 - **方差分析** / **ANOVA**: Analysis of Variance
   - *Analysis of Variance*
 
-### 📈 数据可视化 / Data Visualization
+### 📊 数据可视化 / Data Visualization
 - **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图
   - *Line, scatter, pie, bar, histogram charts*
 - **极坐标图表** / **Polar Charts**: 极坐标柱状图、极坐标线图、极坐标散点图
@@ -71,7 +58,7 @@
   - 内置主题 / Built-in themes：light、dark、vintage、chalk、essos、infographic、macarons、purple-passion、roma、shine、walden、westeros、wonderland
 
 
-### 🤖 机器学习算法 / Machine Learning Algorithms
+### 🧠 机器学习算法 / Machine Learning Algorithms
 - **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化
   - *Support for L1, L2, ElasticNet regularization with LBFGS optimization*
 - **逻辑回归** / **Logistic Regression**: 二分类和多分类逻辑回归
@@ -81,15 +68,15 @@
 - **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析
   - *Regression result analysis and classification result analysis*
 
-### 🔧 优化算法 / Optimization Algorithms
-- **L-BFGS优化器** / **L-BFGS Optimizer**: 拟牛顿法优化算法
+### ⚡ 优化算法 / Optimization Algorithms
+- **优化器** / **Optimizers**: L-BFGS、SGD、Adam
   - *Quasi-Newton optimization algorithm*
 - **线搜索** / **Line Search**: 一维搜索优化方法
   - *One-dimensional search optimization methods*
 - **目标函数接口** / **Objective Function Interface**: 灵活的优化目标定义
   - *Flexible optimization objective definition*
 
-### 📊 降维算法 / Dimensionality Reduction
+### 🔍 降维算法 / Dimensionality Reduction
 - **PCA** / **Principal Component Analysis**: 主成分分析降维
   - *Principal Component Analysis for dimensionality reduction*
 - **SVD** / **Singular Value Decomposition**: 奇异值分解
@@ -99,7 +86,22 @@
 - **UMAP** / **Uniform Manifold Approximation and Projection**: 流形学习降维
   - *Manifold learning for dimensionality reduction*
 
-### ⚡ GPU加速计算 / GPU-Accelerated Computing
+### 📡 信号处理 / Signal Processing
+
+- **信号生成与滤波** / **Signal Generation & Filtering**: 基本波形生成、噪声信号、移动平均、中值滤波、巴特沃斯滤波器等 / Basic waveform generation, noise signals, moving average, median filtering, Butterworth filters
+- **频谱分析** / **Spectral Analysis**: FFT变换、功率谱密度、短时傅里叶变换、自相关分析等 / FFT transform, power spectral density, STFT, autocorrelation analysis
+- **小波分析** / **Wavelet Analysis**: 离散小波变换(DWT)、连续小波变换(CWT)、小波去噪、小波压缩等 / Discrete Wavelet Transform (DWT), Continuous Wavelet Transform (CWT), wavelet denoising, wavelet compression
+- **信号工具** / **Signal Utilities**: 窗函数、信号重采样、峰值检测、信号预处理等 / Window functions, signal resampling, peak detection, signal preprocessing
+
+### ⏰ 时间序列分析 / Time Series Analysis
+
+- **数据管理** / **Data Management**: 单变量/多变量时间序列、数据切片、重采样、时间戳处理等 / Univariate/multivariate time series, data slicing, resampling, timestamp handling
+- **预测方法** / **Forecasting Methods**: 移动平均、指数平滑、ARIMA模型、Holt-Winters、自动模型选择等 / Moving average, exponential smoothing, ARIMA models, Holt-Winters, automatic model selection
+- **滤波与分解** / **Filtering & Decomposition**: 时域/频域滤波、趋势/季节性分解、STL分解、小波分解等 / Time/frequency domain filtering, trend/seasonal decomposition, STL decomposition, wavelet decomposition
+- **可视化分析** / **Visualization Analysis**: 时间序列图、预测图、自相关图、功率谱图等 / Time series plots, forecast plots, ACF plots, power spectral plots
+
+
+### 🚀 GPU加速计算 / GPU-Accelerated Computing
 - **GPU并行计算** / **GPU Parallel Computing**: 
   - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
   - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
@@ -122,11 +124,11 @@
 
 **Maven:**
 
-```xml
+``xml
 <dependency>
     <groupId>com.reremouse.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.1</version>
+    <version>0.2.x</version>
 </dependency>
 ```
 
@@ -135,7 +137,7 @@
 ### 基本使用示例 / Basic Usage Examples
 
 #### 向量运算 / Vector Operations
-```java
+``java
 // 创建向量 / Create vectors
 IVector<Double> v1 = Linalg.vector(new double[]{1, 2, 3, 4});
 IVector<Double> v2 = Linalg.range(10);
@@ -397,6 +399,55 @@ int prediction = lr.predict(newFeatureVector);
 double[] probabilities = lr.predictProbabilities(newFeatureVector);
 ```
 
+#### 信号处理 / Signal Processing
+```java
+// 生成信号 / Generate signals
+IVector<Double> time = Signals.linspace(0, 1, 1000);
+IVector<Double> signal = Signals.sin(2 * Math.PI * 5 * time);  // 5Hz正弦波 / 5Hz sine wave
+
+// 添加噪声 / Add noise
+IVector<Double> noise = Signals.randn(1000).mul(0.1);
+IVector<Double> noisySignal = signal.add(noise);
+
+// 信号滤波 / Signal filtering
+IVector<Double> filteredSignal = Signals.filter(noisySignal, 0.1);
+
+// 信号可视化 / Signal visualization
+Plots.of(800, 400)
+    .line(time, signal, "b-", "原始信号 / Original Signal")
+    .line(time, noisySignal, "r-", "含噪声信号 / Noisy Signal")
+    .line(time, filteredSignal, "g-", "滤波后信号 / Filtered Signal")
+    .xlabel("时间 (秒) / Time (s)")
+    .ylabel("幅度 / Amplitude")
+    .title("信号处理示例 / Signal Processing Example")
+    .legend()
+    .show();
+```
+
+#### 时间序列分析 / Time Series Analysis
+```java
+// 创建时间序列数据 / Create time series data
+IVector<Double> timestamps = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+IVector<Double> values = Linalg.vector(new double[]{10, 12, 13, 15, 18, 20, 22, 25, 28, 30});
+
+// 创建时间序列对象 / Create time series object
+TimeSeriesData ts = new TimeSeriesData(timestamps, values);
+
+// 时间序列分析 / Time series analysis
+TimeSeriesAnalyzer analyzer = new TimeSeriesAnalyzer();
+double trend = analyzer.calculateTrend(ts);  // 计算趋势 / Calculate trend
+double[] forecast = analyzer.forecast(ts, 3);  // 预测未来3个点 / Forecast next 3 points
+
+// 时间序列可视化 / Time series visualization
+Plots.of(800, 400)
+    .line(timestamps, values, "bo-", "历史数据 / Historical Data")
+    .scatter(Linalg.vector(new double[]{11, 12, 13}), Linalg.vector(forecast), "ro-", "预测数据 / Forecast Data")
+    .xlabel("时间 / Time")
+    .ylabel("数值 / Value")
+    .title("时间序列分析示例 / Time Series Analysis Example")
+    .legend()
+    .show();
+```
 
 ## 核心类文档 / Core Classes Documentation
 
@@ -409,6 +460,8 @@ double[] probabilities = lr.predictProbabilities(newFeatureVector);
 - [机器学习 (Machine-Learning)](./docs/Machine-Learning.md) / [Machine-Learning Documentation](./docs/Machine-Learning.md)
 - [优化算法 (Optimization Algorithms)](./docs/Optimization-Algorithms.md) / [Optimization Algorithms Documentation](./docs/Optimization-Algorithms.md)
 - [降维算法 (Dimensionality Reduction)](./docs/Dimensionality-Reduction.md) / [Dimensionality Reduction Documentation](./docs/Dimensionality-Reduction.md)
+- [信号处理 (Signal Processing)](./docs/Signal-Processing.md) / [Signal Processing Documentation](./docs/Signal-Processing.md)
+- [时间序列分析 (Time Series Analysis)](./docs/Time-Series-Analysis.md) / [Time Series Analysis Documentation](./docs/Time-Series-Analysis.md)
 - [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
 
 
@@ -423,7 +476,8 @@ double[] probabilities = lr.predictProbabilities(newFeatureVector);
 - [机器学习示例](./docs/examples/Machine-Learning-Examples.md) / [Machine Learning Examples](./docs/examples/Machine-Learning-Examples.md)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
 - [降维算法示例](./docs/examples/Dimensionality-Reduction-Examples.md) / [Dimensionality Reduction Examples](./docs/examples/Dimensionality-Reduction-Examples.md)
-
+- [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
+- [时间序列分析示例](./docs/examples/Time-Series-Analysis-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Analysis-Examples.md)
 
 ## 项目结构 / Project Structure
 
@@ -433,19 +487,23 @@ double[] probabilities = lr.predictProbabilities(newFeatureVector);
 graph TB
     subgraph "应用层 (Application Layer)"
         VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot, Plots<br/>ColorPalette, ThemeManager]
-        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression<br/>RereLogisticRegression]
+        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression<br/>RereLogisticRegression<br/>KMeansPlusPlus, GMMClustering]
         DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA, RereSVD<br/>RereTSNE, RereUMAP]
-        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions<br/>ANOVA, HypothesisTesting]
+        STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions<br/>ANOVA, HypothesisTesting<br/>GaussianMixtureModel, EMAlgorithm]
+        TS[时间序列层<br/>Time Series Layer<br/>Series, TimeSeriesData<br/>TimeSeriesAnalyzer, TimeSeriesForecasting<br/>ARIMA, GARCH, VAR]
+        SIG[信号处理层<br/>Signal Processing Layer<br/>Signals, SignalGeneration<br/>SignalUtilities, WaveletAnalysis<br/>RereFFT, RereDCT, RereHilbert]
+        AUD[音频处理层<br/>Audio Processing Layer<br/>AudioAnalyzer, AudioProcessor<br/>MusicAnalyzer, MusicGenerator<br/>AudioFeatures, AudioVisualizer]
+        IMG[图像处理层<br/>Image Processing Layer<br/>ImageData, ImageFilter<br/>ImageSegmentation, ImageTransform<br/>SIFTFeatureDetector, SURFFeatureDetector]
     end
     
     subgraph "中间层 (Middle Layer)"
         DATA[数据处理层<br/>Data Processing Layer<br/>DataFrame, Column<br/>ColumnType]
-        OPT[优化算法层<br/>Optimization Layer<br/>RereLBFGS, RereLineSearch<br/>IOptimizer, IObjectiveFunction]
+        OPT[优化算法层<br/>Optimization Layer<br/>RereLBFGS, RereLineSearch<br/>RereOnlineAdam, RereOnlineSGD<br/>IOptimizer, IObjectiveFunction]
         COMP[计算加速层<br/>Computing Acceleration Layer<br/>CPUComputeUtils, GPUComputeUtils<br/>GPUConfig]
     end
     
     subgraph "基础层 (Foundation Layer)"
-        MATH[基础数学层<br/>Core Math Layer<br/>IMatrix, IVector, IMatrix<br/>RereDoubleMatrix, RereFloatMatrix<br/>RereDoubleVector, RereFloatVector<br/>Linalg, SliceExpressionParser]
+        MATH[基础数学层<br/>Core Math Layer<br/>IMatrix, IVector<br/>RereDoubleMatrix, RereFloatMatrix<br/>RereDoubleVector, RereFloatVector<br/>Linalg, SliceExpressionParser]
         UTIL[工具类层<br/>Utility Layer<br/>RereMathUtil, StringUtils<br/>Tuple2-9, RereTree]
     end
     
@@ -459,6 +517,18 @@ graph TB
     DIM --> COMP
     STAT --> MATH
     STAT --> COMP
+    TS --> MATH
+    TS --> DATA
+    TS --> COMP
+    SIG --> MATH
+    SIG --> DATA
+    SIG --> COMP
+    AUD --> MATH
+    AUD --> DATA
+    AUD --> COMP
+    IMG --> MATH
+    IMG --> DATA
+    IMG --> COMP
     DATA --> MATH
     DATA --> UTIL
     OPT --> MATH
@@ -466,10 +536,61 @@ graph TB
     COMP --> MATH
 ```
 
+
 ### 文件结构 / File Structure
 
 ```
 src/main/java/com/reremouse/lab/
+├── audio/                    # 音频处理模块 / Audio Processing Module
+│   ├── AudioAnalyzer.java    # 音频分析器 / Audio Analyzer
+│   ├── AudioData.java        # 音频数据类 / Audio Data Class
+│   ├── AudioEnhancer.java    # 音频增强器 / Audio Enhancer
+│   ├── AudioFeatures.java    # 音频特征提取 / Audio Features
+│   ├── AudioIO.java          # 音频输入输出 / Audio I/O
+│   ├── AudioProcessor.java   # 音频处理器 / Audio Processor
+│   ├── AudioStatistics.java  # 音频统计分析 / Audio Statistics
+│   ├── AudioVisualizer.java  # 音频可视化 / Audio Visualizer
+│   ├── MusicAnalyzer.java    # 音乐分析器 / Music Analyzer
+│   ├── MusicGenerator.java   # 音乐生成器 / Music Generator
+│   ├── MusicTheory.java      # 音乐理论 / Music Theory
+│   ├── core/                 # 核心接口 / Core Interfaces
+│   │   ├── IAudioAnalyzer.java    # 音频分析接口 / Audio Analysis Interface
+│   │   ├── IAudioProcessor.java   # 音频处理接口 / Audio Processing Interface
+│   │   ├── IMusicAnalyzer.java    # 音乐分析接口 / Music Analysis Interface
+│   │   └── IMusicProcessor.java   # 音乐处理接口 / Music Processing Interface
+│   ├── embedding/            # 音频嵌入 / Audio Embedding
+│   │   ├── IAudioEmbedding.java   # 音频嵌入接口 / Audio Embedding Interface
+│   │   └── IVectorModel.java      # 向量模型接口 / Vector Model Interface
+│   ├── features/             # 高级特征 / Advanced Features
+│   │   └── AdvancedAudioFeatures.java # 高级音频特征 / Advanced Audio Features
+│   ├── music/                # 音乐处理 / Music Processing
+│   │   ├── AdvancedMusicFeatureAnalyzer.java # 高级音乐特征分析 / Advanced Music Feature Analysis
+│   │   ├── IntegratedMusicAnalyzer.java      # 集成音乐分析器 / Integrated Music Analyzer
+│   │   └── MusicTheoryProcessor.java         # 音乐理论处理器 / Music Theory Processor
+│   └── processing/           # 高级处理 / Advanced Processing
+│       └── AdvancedAudioProcessing.java # 高级音频处理 / Advanced Audio Processing
+├── image/                    # 图像处理模块 / Image Processing Module
+│   ├── ImageData.java        # 图像数据类 / Image Data Class
+│   ├── ImageFeatures.java    # 图像特征提取 / Image Features
+│   ├── ImageFilter.java      # 图像滤波器 / Image Filter
+│   ├── ImageMorphology.java  # 图像形态学 / Image Morphology
+│   ├── ImageSegmentation.java # 图像分割 / Image Segmentation
+│   ├── ImageTransform.java   # 图像变换 / Image Transform
+│   ├── ImageUtils.java       # 图像工具类 / Image Utilities
+│   ├── core/                 # 核心接口 / Core Interfaces
+│   │   ├── IImageAnalyzer.java    # 图像分析接口 / Image Analysis Interface
+│   │   ├── IImageProcessor.java   # 图像处理接口 / Image Processing Interface
+│   │   └── IImageSegmenter.java   # 图像分割接口 / Image Segmentation Interface
+│   ├── detection/            # 特征检测 / Feature Detection
+│   │   └── AdvancedFeatureDetection.java # 高级特征检测 / Advanced Feature Detection
+│   ├── enhancement/          # 图像增强 / Image Enhancement
+│   │   └── AdvancedImageEnhancement.java # 高级图像增强 / Advanced Image Enhancement
+│   ├── features/             # 图像特征 / Image Features
+│   │   ├── AdvancedImageFeatures.java # 高级图像特征 / Advanced Image Features
+│   │   ├── SIFTFeatureDetector.java   # SIFT特征检测器 / SIFT Feature Detector
+│   │   └── SURFFeatureDetector.java   # SURF特征检测器 / SURF Feature Detector
+│   └── tracking/             # 目标跟踪 / Object Tracking
+│       └── OpticalFlowTracker.java # 光流跟踪器 / Optical Flow Tracker
 ├── math/                     # 数学计算模块 / Mathematical Computing Module
 │   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
 │   ├── YishapeMath.java      # 主入口类 / Main Entry Class
@@ -521,6 +642,9 @@ src/main/java/com/reremouse/lab/
 │   │   │   ├── ANOVATest.java               # 方差分析测试 / ANOVA Test
 │   │   │   ├── RepeatedMeasuresANOVAResult.java # 重复测量方差分析结果 / Repeated Measures ANOVA Result
 │   │   │   └── TwoWayANOVAResult.java       # 双因素方差分析结果 / Two-Way ANOVA Result
+│   │   ├── model/            # 统计模型 / Statistical Models
+│   │   │   ├── EMAlgorithm.java             # EM算法 / EM Algorithm
+│   │   │   └── GaussianMixtureModel.java    # 高斯混合模型 / Gaussian Mixture Model
 │   │   └── testing/          # 假设检验模块 / Hypothesis Testing Module
 │   │       ├── HypothesisTesting.java      # 假设检验 / Hypothesis Testing
 │   │       ├── ParameterEstimation.java    # 参数估计 / Parameter Estimation
@@ -530,23 +654,90 @@ src/main/java/com/reremouse/lab/
 │   │   │   ├── IRegression.java             # 回归接口 / Regression Interface
 │   │   │   ├── RereLinearRegression.java    # 线性回归实现 / Linear Regression Implementation
 │   │   │   └── RegressionResult.java        # 回归结果 / Regression Result
-│   │   └── cls/              # 分类算法 / Classification Algorithms
-│   │       ├── IClassification.java         # 分类接口 / Classification Interface
-│   │       ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
-│   │       ├── ClassificationResult.java    # 分类结果 / Classification Result
-│   │       └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
+│   │   ├── cls/              # 分类算法 / Classification Algorithms
+│   │   │   ├── IClassification.java         # 分类接口 / Classification Interface
+│   │   │   ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
+│   │   │   ├── ClassificationResult.java    # 分类结果 / Classification Result
+│   │   │   └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
+│   │   └── clustering/       # 聚类算法 / Clustering Algorithms
+│   │       ├── IClustering.java             # 聚类接口 / Clustering Interface
+│   │       ├── KMeansPlusPlus.java          # K-Means++聚类 / K-Means++ Clustering
+│   │       ├── GMMClustering.java           # 高斯混合模型聚类 / GMM Clustering
+│   │       └── ClusteringMetrics.java       # 聚类评估指标 / Clustering Metrics
 │   ├── optimize/             # 优化算法 / Optimization Algorithms
 │   │   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
 │   │   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
 │   │   ├── IGradientFunction.java  # 梯度函数接口 / Gradient Function Interface
+│   │   ├── IOnlineOptimizer.java  # 在线优化器接口 / Online Optimizer Interface
 │   │   ├── Opts.java             # 优化工具类 / Optimization Utilities
 │   │   ├── RereLBFGS.java        # L-BFGS优化器 / L-BFGS Optimizer
-│   │   └── RereLineSearch.java   # 线搜索 / Line Search
+│   │   ├── RereLineSearch.java   # 线搜索 / Line Search
+│   │   ├── RereOnlineAdam.java   # 在线Adam优化器 / Online Adam Optimizer
+│   │   └── RereOnlineSGD.java    # 在线SGD优化器 / Online SGD Optimizer
 │   ├── dimreduce/            # 降维算法 / Dimensionality Reduction Algorithms
 │   │   ├── RerePCA.java          # PCA降维 / PCA Dimensionality Reduction
 │   │   ├── RereSVD.java          # SVD降维 / SVD Dimensionality Reduction
 │   │   ├── RereTSNE.java         # t-SNE降维 / t-SNE Dimensionality Reduction
 │   │   └── RereUMAP.java         # UMAP降维 / UMAP Dimensionality Reduction
+│   ├── signal/               # 信号处理模块 / Signal Processing Module
+│   │   ├── Signals.java          # 信号处理工具类 / Signal Processing Utilities
+│   │   ├── SignalUtilities.java  # 信号工具类 / Signal Utilities
+│   │   ├── SignalVisualizer.java # 信号可视化 / Signal Visualizer
+│   │   ├── RereFFT.java          # 快速傅里叶变换 / Fast Fourier Transform
+│   │   ├── RereDCT.java          # 离散余弦变换 / Discrete Cosine Transform
+│   │   ├── RereHilbert.java      # 希尔伯特变换 / Hilbert Transform
+│   │   ├── WaveletAnalysis.java  # 小波分析 / Wavelet Analysis
+│   │   ├── WaveletFilters.java   # 小波滤波器 / Wavelet Filters
+│   │   ├── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
+│   │   ├── WaveletVisualizer.java # 小波可视化 / Wavelet Visualizer
+│   │   ├── analysis/             # 信号分析 / Signal Analysis
+│   │   │   ├── ISignalAnalyzer.java    # 信号分析接口 / Signal Analysis Interface
+│   │   │   └── SpectrumAnalyzer.java   # 频谱分析器 / Spectrum Analyzer
+│   │   ├── core/                 # 核心接口 / Core Interfaces
+│   │   │   ├── ISignalProcessor.java   # 信号处理接口 / Signal Processing Interface
+│   │   │   └── SignalProcessingException.java # 信号处理异常 / Signal Processing Exception
+│   │   ├── filter/               # 信号滤波器 / Signal Filters
+│   │   │   ├── ISignalFilter.java      # 信号滤波接口 / Signal Filter Interface
+│   │   │   ├── ButterworthFilter.java  # 巴特沃斯滤波器 / Butterworth Filter
+│   │   │   ├── ChebyshevFilter.java    # 切比雪夫滤波器 / Chebyshev Filter
+│   │   │   ├── EllipticFilter.java     # 椭圆滤波器 / Elliptic Filter
+│   │   │   ├── BesselFilter.java       # 贝塞尔滤波器 / Bessel Filter
+│   │   │   ├── GaussianFilter.java     # 高斯滤波器 / Gaussian Filter
+│   │   │   ├── BandpassFilter.java     # 带通滤波器 / Bandpass Filter
+│   │   │   ├── MedianFilter.java       # 中值滤波器 / Median Filter
+│   │   │   └── MovingAverageFilter.java # 移动平均滤波器 / Moving Average Filter
+│   │   ├── generation/           # 信号生成 / Signal Generation
+│   │   │   ├── ISignalGenerator.java   # 信号生成接口 / Signal Generator Interface
+│   │   │   └── SignalGenerator.java    # 信号生成器 / Signal Generator
+│   │   └── transform/            # 信号变换 / Signal Transforms
+│   │       ├── ISignalTransform.java   # 信号变换接口 / Signal Transform Interface
+│   │       ├── HilbertTransform.java   # 希尔伯特变换 / Hilbert Transform
+│   │       ├── WaveletTransform.java   # 小波变换 / Wavelet Transform
+│   │       ├── ZTransform.java         # Z变换 / Z Transform
+│   │       ├── ChirpZTransform.java    # Chirp Z变换 / Chirp Z Transform
+│   │       └── WalshHadamardTransform.java # 沃尔什-哈达玛变换 / Walsh-Hadamard Transform
+│   ├── timeseries/           # 时间序列分析模块 / Time Series Analysis Module
+│   │   ├── Series.java           # 时间序列类 / Time Series Class
+│   │   ├── TimeSeriesData.java   # 时间序列数据 / Time Series Data
+│   │   ├── TimeSeriesAnalyzer.java # 时间序列分析器 / Time Series Analyzer
+│   │   ├── TimeSeriesDecomposition.java # 时间序列分解 / Time Series Decomposition
+│   │   ├── TimeSeriesFiltering.java # 时间序列滤波 / Time Series Filtering
+│   │   ├── TimeSeriesForecasting.java # 时间序列预测 / Time Series Forecasting
+│   │   ├── TimeSeriesUtils.java  # 时间序列工具类 / Time Series Utilities
+│   │   ├── TimeSeriesVisualizer.java # 时间序列可视化 / Time Series Visualizer
+│   │   ├── CointegrationAnalysis.java # 协整分析 / Cointegration Analysis
+│   │   └── model/               # 时间序列模型 / Time Series Models
+│   │       ├── ITimeSeriesModel.java      # 时间序列模型接口 / Time Series Model Interface
+│   │       ├── ITimeSeriesDiagnostics.java # 时间序列诊断接口 / Time Series Diagnostics Interface
+│   │       ├── ITimeSeriesForecastResult.java # 时间序列预测结果接口 / Time Series Forecast Result Interface
+│   │       ├── TimeSeriesModelFactory.java # 时间序列模型工厂 / Time Series Model Factory
+│   │       ├── TimeSeriesForecastResult.java # 时间序列预测结果 / Time Series Forecast Result
+│   │       ├── UnifiedARIMAModel.java     # 统一ARIMA模型 / Unified ARIMA Model
+│   │       ├── ARIMADiagnostics.java     # ARIMA诊断 / ARIMA Diagnostics
+│   │       ├── ExponentialSmoothingModels.java # 指数平滑模型 / Exponential Smoothing Models
+│   │       ├── GARCHModel.java           # GARCH模型 / GARCH Model
+│   │       ├── StateSpaceModel.java      # 状态空间模型 / State Space Model
+│   │       └── VARModel.java             # VAR模型 / VAR Model
 │   ├── viz/                  # 数据可视化模块 / Data Visualization Module
 │   │   ├── IPlot.java            # 绘图接口 / Plotting Interface
 │   │   ├── RerePlot.java         # 绘图实现类 / Plotting Implementation Class
@@ -645,51 +836,25 @@ If you encounter any issues while using the library, you can get help through th
 
 ## 更新日志 / Changelog
 
+### v0.2.1 (2025-09)
+- 📡 信号处理模块：信号生成、滤波、频谱分析、小波分析 / Signal processing: generation, filtering, spectral analysis, wavelet analysis
+- ⏰ 时间序列分析：数据管理、预测方法、滤波分解、可视化 / Time series: data management, forecasting, filtering, visualization
+
 ### v0.2.0 (2025-09)
-- ⚡ GPU加速计算 / GPU-Accelerated Computing
-  - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
-  - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
-  - GPU高级运算：特征分解、奇异值分解、伪逆矩阵计算等 / GPU advanced operations: eigenvalue decomposition, SVD decomposition, pseudo-inverse computation
-  - 智能阈值控制：根据数据大小自动选择CPU或GPU计算 / Smart threshold control: automatically choose CPU or GPU based on data size
-  - 自动回退机制：GPU计算失败时自动切换到CPU计算 / Automatic fallback: automatically switch to CPU when GPU computation fails
+- ⚡ GPU加速计算：矩阵运算、向量运算、高级运算，支持自动回退 / GPU acceleration: matrix/vector operations, advanced computing with auto-fallback
 
 ### v0.1.2 (2025-09)
-- 📊 DataFrame 数据框操作 / DataFrame Operations: 完整的结构化数据处理功能
-  - *Complete structured data processing functionality*
-  - CSV文件读写支持，支持自定义分隔符和表头 / CSV file read/write support with custom delimiters and headers
-  - 灵活的数据切片操作，支持行切片、列切片和通用切片 / Flexible data slicing operations supporting row, column, and general slicing
-- 🔧 切片表达式解析器 / Slice Expression Parser: 支持类似NumPy的切片语法
-  - *Support for NumPy-like slicing syntax*
-  - 支持负数索引、步长切片、范围切片 / Support for negative indices, step slicing, range slicing
-  - 通用切片表达式：`df.slice("1:3", "0:2")` 支持行列同时切片 / General slicing expressions: `df.slice("1:3", "0:2")` supporting simultaneous row and column slicingefficiency
-- 📊 数据可视化功能 / Data Visualization Features: 丰富的图表绘制能力
-  - *Rich charting capabilities*
-  - 基础图表：线图、散点图、饼图、柱状图、直方图 / Basic charts: line, scatter, pie, bar, histogram charts
-  - 统计图表：箱线图、K线图、热力图、雷达图、仪表盘 / Statsistical charts: boxplot, candlestick, heatmap, radar, gauge charts
-  - 特殊图表：漏斗图、桑基图、旭日图、主题河流图、树图等 / Special charts: funnel, Sankey, sunburst, theme river, tree charts
-  - ECharts集成：基于ECharts-Java的流式API和主题支持 / ECharts integration: fluent API and theme support based on ECharts-Java
-- 📈 统计学功能增强 / Enhanced Statsistical Features: 完整的概率分布和统计计算
-  - *Complete probability distributions and statistical computations*
-  - 14种概率分布：8种连续分布和6种离散分布 / 14 probability distributions: 8 continuous and 6 discrete distributions
-  - 统计描述：均值、方差、中位数、众数、偏度、峰度等 / Statsistical descriptions: mean, variance, median, mode, skewness, kurtosis
-  - 假设检验：均值检验、方差检验、参数估计 / Hypothesis testing: mean tests, variance tests, parameter estimation
-  - 随机数生成：支持各种分布的随机采样 / Random number generation: random sampling for various distributions
+- 📊 DataFrame数据框：CSV读写、数据切片、NumPy风格切片语法 / DataFrame: CSV I/O, data slicing, NumPy-style slicing
+- 📊 数据可视化：基础图表、统计图表、特殊图表，ECharts集成 / Visualization: basic/statistical/special charts, ECharts integration
+- 📈 统计学增强：14种概率分布、统计描述、假设检验 / Statistics: 14 distributions, statistical descriptions, hypothesis testing
 
 ### v0.1.1 (2025-09)
-- 📊 完整的统计学分布函数库（正态、t、卡方、F、均匀、指数分布） / Complete statistical distribution library (Normal, t, Chi-squared, F, Uniform, Exponential distributions)
-- 🔢 完整的概率密度函数和累积分布函数 / Complete probability density and cumulative distribution functions
-- 📋 丰富的统计描述功能（均值、方差、中位数、众数等） / Rich statistical description functions (mean, variance, median, mode, etc.)
-- 🎯 支持统计矩计算（偏度、峰度、分位数等） / Support for statistical moment calculations (skewness, kurtosis, quantiles, etc.)
-- ⚡ 优化的随机数生成器，支持多种分布 / Optimized random number generators supporting multiple distributions
-- 🔧 完整的分布接口设计，易于扩展 / Complete distribution interface design for easy extension
+- 📊 统计学分布函数库：正态、t、卡方、F、均匀、指数分布 / Statistical distributions: normal, t, chi-squared, F, uniform, exponential
+- 🔢 概率密度函数和累积分布函数 / PDF and CDF functions
+- 📋 统计描述功能：均值、方差、中位数、众数等 / Statistical descriptions: mean, variance, median, mode
 
 ### v0.1 (2025-08)
-- ✨ 初始版本发布 / Initial release
-- 🚀 核心向量和矩阵运算功能 / Core vector and matrix operations
-- 🤖 线性回归和逻辑回归机器学习算法 / Linear regression and logistic regression machine learning algorithms
-- 🔧 L-BFGS优化器和线搜索算法 / L-BFGS optimizer and line search algorithms
-- 📈 PCA、SVD、t-SNE、UMAP降维算法 / PCA, SVD, t-SNE, UMAP dimensionality reduction algorithms
-- 🎯 支持L1、L2、ElasticNet正则化 / Support for L1, L2, ElasticNet regularization
+- ✨ 初始版本：核心向量矩阵运算、机器学习算法、优化算法、降维算法 / Initial release: core operations, ML algorithms, optimization, dimensionality reduction
 
 ---
 

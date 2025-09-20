@@ -2,9 +2,7 @@ package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalFiltering;
-import com.reremouse.lab.math.signal.SignalUtilities;
-import com.reremouse.lab.math.stats.Stats;
+import com.reremouse.lab.math.signal.Signals;
 
 /**
  * 音频增强器类 / Audio Enhancer Class
@@ -268,7 +266,7 @@ public class AudioEnhancer {
         
         // 使用简单的移动平均滤波器 / Use simple moving average filter
         int windowSize = (int) (1.0 / normalizedFreq);
-        return SignalFiltering.movingAverage(samples, windowSize);
+        return Signals.movingAverage(samples, windowSize);
     }
     
     /**

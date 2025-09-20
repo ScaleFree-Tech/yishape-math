@@ -125,7 +125,7 @@ public class SignalVisualizer {
         
         // 计算功率谱密度 / Calculate PSD
         Tuple2<IVector<Double>, IVector<Double>> psdResult = 
-            SignalAnalysis.powerSpectralDensity(signal, windowSize, overlap, samplingRate);
+            Signals.powerSpectralDensity(signal, windowSize, overlap, samplingRate);
         
         IVector<Double> frequencies = psdResult.getFirst();
         IVector<Double> psd = psdResult.getSecond();
@@ -157,7 +157,7 @@ public class SignalVisualizer {
         plot.ylabel("自相关系数 / Autocorrelation");
         
         // 计算自相关 / Calculate autocorrelation
-        IVector<Double> autocorr = SignalAnalysis.autocorrelation(signal);
+        IVector<Double> autocorr = Signals.autocorrelation(signal);
         
         // 创建滞后轴 / Create lag axis
         double[] lagArray = new double[maxLag + 1];
@@ -194,7 +194,7 @@ public class SignalVisualizer {
         plot.ylabel("互相关系数 / Cross-correlation");
         
         // 计算互相关 / Calculate cross-correlation
-        IVector<Double> crosscorr = SignalAnalysis.crossCorrelation(signal1, signal2, maxLag);
+        IVector<Double> crosscorr = Signals.crossCorrelation(signal1, signal2, maxLag);
         
         // 创建滞后轴 / Create lag axis
         double[] lagArray = new double[2 * maxLag + 1];
@@ -308,7 +308,7 @@ public class SignalVisualizer {
         plot.ylabel("数值 / Value");
         
         // 计算质量指标 / Calculate quality metrics
-        double snr = SignalAnalysis.signalToNoiseRatio(signal, signal); // 使用信号本身作为噪声估计
+        double snr = Signals.signalToNoiseRatio(signal, signal); // 使用信号本身作为噪声估计
         double thd = 0.0; // 总谐波失真需要专门的计算方法
         double dynamicRange = signal.max() - signal.min();
         double crestFactor = signal.abs().max() / Math.sqrt(signal.apply(x -> x * x).mean());

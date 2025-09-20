@@ -25,9 +25,9 @@ public class SignalProcessingExample {
         double samplingRate = 1000.0; // 1kHz
         
         // 生成复合信号：正弦波 + 噪声 / Generate composite signal: sine wave + noise
-        IVector<Double> signal = SignalGeneration.sineWave(length, 10.0, samplingRate, 1.0, 0.0)
-                .add(SignalGeneration.sineWave(length, 50.0, samplingRate, 0.5, 0.0))
-                .add(SignalGeneration.whiteNoise(length, 0.1));
+        IVector<Double> signal = Signals.sineWave(length, 10.0, samplingRate, 1.0, 0.0)
+                .add(Signals.sineWave(length, 50.0, samplingRate, 0.5, 0.0))
+                .add(Signals.whiteNoise(length, 0.1));
         
         System.out.println("原始信号统计:");
         System.out.println("  长度: " + signal.length());
@@ -39,19 +39,19 @@ public class SignalProcessingExample {
         System.out.println("\n=== 信号滤波 / Signal Filtering ===");
         
         // 移动平均滤波 / Moving average filter
-        IVector<Double> filteredMA = SignalFiltering.movingAverage(signal, 20);
+        IVector<Double> filteredMA = Signals.movingAverage(signal, 20);
         System.out.println("移动平均滤波后:");
         System.out.println("  均值: " + filteredMA.mean());
         System.out.println("  标准差: " + filteredMA.std());
         
         // 高斯滤波 / Gaussian filter
-        IVector<Double> filteredGaussian = SignalFiltering.gaussianFilter(signal, 2.0, 0);
+        IVector<Double> filteredGaussian = Signals.gaussianFilter(signal, 2.0, 0);
         System.out.println("高斯滤波后:");
         System.out.println("  均值: " + filteredGaussian.mean());
         System.out.println("  标准差: " + filteredGaussian.std());
         
         // 巴特沃斯低通滤波 / Butterworth low-pass filter
-        IVector<Double> filteredLP = SignalFiltering.butterworthLowPass(signal, 50.0, 1000.0, 1);
+        IVector<Double> filteredLP = Signals.butterworthLowPass(signal, 50.0, 1000.0, 1);
         System.out.println("巴特沃斯低通滤波后:");
         System.out.println("  均值: " + filteredLP.mean());
         System.out.println("  标准差: " + filteredLP.std());
@@ -61,7 +61,7 @@ public class SignalProcessingExample {
         
         // 计算功率谱密度 / Calculate power spectral density
         Tuple2<IVector<Double>, IVector<Double>> psd = 
-                SignalAnalysis.powerSpectralDensity(signal, 256, 0.5, samplingRate);
+                Signals.powerSpectralDensity(signal, 256, 0.5, samplingRate);
         System.out.println("功率谱密度:");
         System.out.println("  频率范围: " + psd._1.get(0) + " - " + psd._1.get(psd._1.length()-1) + " Hz");
         // 找到最大功率的索引 / Find index of maximum power
@@ -77,7 +77,7 @@ public class SignalProcessingExample {
                 psd._1.get(maxIndex) + " Hz");
         
         // 计算自相关 / Calculate autocorrelation
-        IVector<Double> autocorr = SignalAnalysis.autocorrelation(signal);
+        IVector<Double> autocorr = Signals.autocorrelation(signal);
         System.out.println("自相关函数:");
         System.out.println("  最大值: " + autocorr.max());
         System.out.println("  零延迟值: " + autocorr.get(0));

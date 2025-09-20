@@ -3,7 +3,7 @@ package com.reremouse.lab.math.timeseries;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.SignalFiltering;
+import com.reremouse.lab.math.signal.Signals;
 import com.reremouse.lab.math.signal.SignalUtilities;
 import com.reremouse.lab.util.Tuple2;
 
@@ -56,7 +56,7 @@ public class TimeSeriesFiltering {
      */
     public static FilterResult movingAverage(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
-        IVector<Double> filtered = SignalFiltering.movingAverage(data, windowSize);
+        IVector<Double> filtered = Signals.movingAverage(data, windowSize);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -164,7 +164,7 @@ public class TimeSeriesFiltering {
      */
     public static FilterResult gaussianFilter(TimeSeriesData timeSeries, int variableIndex, double sigma) {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
-        IVector<Double> filtered = SignalFiltering.gaussianFilter(data, sigma, 0);
+        IVector<Double> filtered = Signals.gaussianFilter(data, sigma);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -216,7 +216,7 @@ public class TimeSeriesFiltering {
      */
     public static FilterResult medianFilter(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
-        IVector<Double> filtered = SignalFiltering.medianFilter(data, windowSize);
+        IVector<Double> filtered = Signals.medianFilter(data, windowSize);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -272,7 +272,7 @@ public class TimeSeriesFiltering {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
         double samplingRate = timeSeries.getSamplingRate();
         
-        IVector<Double> filtered = SignalFiltering.butterworthLowPass(data, cutoffFreq, samplingRate, order);
+        IVector<Double> filtered = Signals.butterworthLowPass(data, cutoffFreq, samplingRate, order);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -330,7 +330,7 @@ public class TimeSeriesFiltering {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
         double samplingRate = timeSeries.getSamplingRate();
         
-        IVector<Double> filtered = SignalFiltering.butterworthHighPass(data, cutoffFreq, samplingRate, order);
+        IVector<Double> filtered = Signals.butterworthHighPass(data, cutoffFreq, samplingRate, order);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -388,8 +388,7 @@ public class TimeSeriesFiltering {
                                             double lowFreq, double highFreq, int order) {
         IVector<Double> data = timeSeries.getVariable(variableIndex);
         double samplingRate = timeSeries.getSamplingRate();
-        
-        IVector<Double> filtered = SignalFiltering.bandPass(data, lowFreq, highFreq, samplingRate, order);
+        IVector<Double> filtered = Signals.bandPass(data, lowFreq, highFreq, samplingRate, order);
         
         // 计算噪声 / Calculate noise
         IVector<Double> noise = data.sub(filtered);
@@ -523,3 +522,4 @@ public class TimeSeriesFiltering {
         return filtered;
     }
 }
+

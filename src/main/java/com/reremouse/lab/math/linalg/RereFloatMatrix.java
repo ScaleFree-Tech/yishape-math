@@ -6679,13 +6679,40 @@ public class RereFloatMatrix implements IFloatMatrix {
     }
 
     @Override
-    public IMatrix<Float> slice(int rowStart, int rowEnd, int colStart, int colEnd) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public IVector<Float> mmul(IVector<Float> other) {
+        if (other == null) {
+            throw new NullPointerException("向量不能为null / Vector cannot be null");
+        }
+        
+        int matrixRows = this.data.length;
+        int matrixCols = this.data[0].length;
+        int vectorLen = other.length();
+        
+        if (matrixCols != vectorLen) {
+            throw new IllegalArgumentException(
+                String.format("矩阵列数与向量长度不匹配: %d != %d / Matrix column count doesn't match vector length: %d != %d", 
+                    matrixCols, vectorLen, matrixCols, vectorLen));
+        }
+        
+        // 计算矩阵与列向量的乘积
+        float[] result = new float[matrixRows];
+        for (int i = 0; i < matrixRows; i++) {
+            float sum = 0.0f;
+            for (int j = 0; j < matrixCols; j++) {
+                sum += this.data[i][j] * other.get(j);
+            }
+            result[i] = sum;
+        }
+        
+        return IFloatVector.of(result);
     }
 
     @Override
-    public IVector<Float> mmul(IVector<Float> other) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public IMatrix<Float> divideByScalar(Float scalar) {
+        if (scalar == 0.0f) {
+            throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
+        }
+        return this.multiplyScalar(1.0f / scalar);
     }
     
     

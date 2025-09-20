@@ -3,10 +3,7 @@ package com.reremouse.lab.audio;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.SignalAnalysis;
-import com.reremouse.lab.math.signal.RereFFT;
-import com.reremouse.lab.math.signal.Complex;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.signal.Signals;
 
 /**
  * 音乐分析器类 / Music Analyzer Class
@@ -300,7 +297,7 @@ public class MusicAnalyzer {
     private static double calculateBpm(IVector<Double> spectralFlux, double sampleRate, 
                                      int hopSize, double minBpm, double maxBpm) {
         // 计算自相关 / Calculate autocorrelation
-        IVector<Double> autocorr = SignalAnalysis.autocorrelation(spectralFlux);
+        IVector<Double> autocorr = Signals.autocorrelation(spectralFlux);
         
         // 在BPM范围内寻找峰值 / Find peaks in BPM range
         double minPeriod = 60.0 / maxBpm * sampleRate / hopSize;

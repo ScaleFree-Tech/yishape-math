@@ -1,8 +1,7 @@
 package com.reremouse.lab.math.timeseries;
-import com.reremouse.lab.math.signal.SignalAnalysis;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.signal.SignalFiltering;
+import com.reremouse.lab.math.signal.Signals;
 
 /**
  * 测试SignalAnalysis.movingAverage方法
@@ -38,7 +37,7 @@ public class test_moving_average {
             System.out.println("移动平均结果 / Moving Average Result:");
             
             try {
-                IVector<Double> smoothed = SignalFiltering.movingAverage(signal, windowSize);
+                IVector<Double> smoothed = Signals.movingAverage(signal, windowSize);
                 
                 for (int i = 0; i < smoothed.length(); i++) {
                     System.out.printf("smoothed[%d] = %.3f\n", i, smoothed.get(i));
@@ -55,7 +54,7 @@ public class test_moving_average {
         // 测试窗口大小等于信号长度
         // Test window size equals signal length
         try {
-            IVector<Double> result1 = SignalFiltering.movingAverage(signal, length);
+            IVector<Double> result1 = Signals.movingAverage(signal, length);
             System.out.println("窗口大小等于信号长度测试通过 / Window size equals signal length test passed");
         } catch (Exception e) {
             System.out.println("窗口大小等于信号长度测试失败 / Window size equals signal length test failed: " + e.getMessage());
@@ -64,14 +63,14 @@ public class test_moving_average {
         // 测试无效窗口大小
         // Test invalid window sizes
         try {
-            SignalFiltering.movingAverage(signal, 0);
+            Signals.movingAverage(signal, 0);
             System.out.println("无效窗口大小测试失败 / Invalid window size test failed");
         } catch (Exception e) {
             System.out.println("无效窗口大小测试通过 / Invalid window size test passed: " + e.getMessage());
         }
         
         try {
-            SignalFiltering.movingAverage(signal, length + 1);
+            Signals.movingAverage(signal, length + 1);
             System.out.println("窗口大小大于信号长度测试失败 / Window size greater than signal length test failed");
         } catch (Exception e) {
             System.out.println("窗口大小大于信号长度测试通过 / Window size greater than signal length test passed: " + e.getMessage());

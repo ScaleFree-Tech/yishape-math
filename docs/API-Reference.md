@@ -2,9 +2,9 @@
 
 ## 概述 / Overview
 
-本文档提供了 `yishape-math` 包中所有公共类和方法的详细API参考。yishape-math是一个功能强大的Java数学计算库，提供线性代数、统计分析、机器学习、数据可视化、优化算法、降维算法等全面的数学计算功能。
+本文档提供了 `yishape-math` 包中所有公共类和方法的详细API参考。yishape-math是一个功能强大的Java数学计算库，提供线性代数、统计分析、机器学习、数据可视化、优化算法、降维算法、时间序列分析等全面的数学计算功能。
 
-This document provides detailed API reference for all public classes and methods in the `yishape-math` package. yishape-math is a powerful Java mathematical computing library that provides comprehensive mathematical computing capabilities including linear algebra, statistical analysis, machine learning, data visualization, optimization algorithms, and dimensionality reduction algorithms.
+This document provides detailed API reference for all public classes and methods in the `yishape-math` package. yishape-math is a powerful Java mathematical computing library that provides comprehensive mathematical computing capabilities including linear algebra, statistical analysis, machine learning, data visualization, optimization algorithms, dimensionality reduction algorithms, and time series analysis.
 
 ## 用户指南 / User Guide
 
@@ -15,6 +15,7 @@ This document provides detailed API reference for all public classes and methods
 - **`Stats`** - 统计工厂类，创建概率分布和统计工具（**推荐使用**）
 - **`Plots`** - 绘图工厂类，创建各种图表（**推荐使用**）
 - **`RereMathUtil`** - 数学工具类，提供常用数学函数
+- **`TimeSeriesAnalyzer`** - 时间序列分析工具类（**推荐使用**）
 
 #### 核心接口 / Core Interfaces
 - **`IMatrix<T>`** - 矩阵操作接口，用户操作矩阵的主要接口
@@ -31,11 +32,15 @@ This document provides detailed API reference for all public classes and methods
 - **`RereSVD`** - 奇异值分解
 - **`RereTSNE`** - t-SNE降维
 - **`RereUMAP`** - UMAP降维
+- **`TimeSeriesForecasting`** - 时间序列预测
+- **`TimeSeriesFiltering`** - 时间序列滤波
+- **`TimeSeriesDecomposition`** - 时间序列分解
 
 #### 数据结构 / Data Structures
 - **`DataFrame`** - 数据框类
 - **`Column`** - 列数据结构
 - **`Tuple2` 到 `Tuple9`** - 元组类
+- **`TimeSeriesData`** - 时间序列数据类
 
 #### 可视化类 / Visualization Classes
 - **`RerePlot`** - 绘图实现类
@@ -99,6 +104,25 @@ These classes are automatically called by the framework internally. When users u
 
 ### 8. 数学工具 (Mathematical Utilities)
 - **RereMathUtil**: 数学工具类，提供类型转换、随机数生成、统计函数等
+
+### 9. 时间序列分析 (Time Series Analysis)
+- **TimeSeriesData**: 时间序列数据类，支持单变量和多变量时间序列
+- **TimeSeriesAnalyzer**: 统一时间序列分析工具类，提供完整分析功能
+- **TimeSeriesForecasting**: 时间序列预测类，支持多种预测方法
+- **TimeSeriesFiltering**: 时间序列滤波类，提供多种滤波方法
+- **TimeSeriesDecomposition**: 时间序列分解类，支持趋势、季节性分解
+
+### 10. 信号处理 (Signal Processing)
+- **SignalGeneration**: 信号生成类，提供各种波形和噪声信号生成
+- **SignalFiltering**: 信号滤波类，提供多种数字滤波器
+- **SignalAnalysis**: 信号分析类，提供频谱分析、功率谱密度等功能
+- **SignalUtilities**: 信号工具类，提供窗函数、重采样、信号检测等工具
+- **WaveletAnalysis**: 小波分析类，提供小波变换和小波分析功能
+- **RereFFT**: 快速傅里叶变换类，提供FFT和IFFT功能
+- **RereDCT**: 离散余弦变换类，提供DCT变换和压缩功能
+- **RereHilbert**: 希尔伯特变换类，提供解析信号分析功能
+- **SignalVisualizer**: 信号可视化类，提供信号数据可视化功能
+- **Complex**: 复数类，提供复数运算功能
 
 ## 核心工厂类 / Core Factory Classes
 
@@ -1379,6 +1403,368 @@ IMatrix<Double> embedded = tsne.fitTransform(data);
 3. **错误处理**: 检查输入数据的有效性，处理可能的异常
 4. **性能优化**: 对于大规模数据，框架会自动选择GPU加速
 5. **内存管理**: 及时释放不需要的大型矩阵和向量对象
+
+## 时间序列分析 / Time Series Analysis
+
+### TimeSeriesData 类 / TimeSeriesData Class
+
+时间序列数据容器类，支持单变量和多变量时间序列，提供基本的数据操作和访问方法。
+
+Time series data container class supporting univariate and multivariate time series with basic data operations and access methods.
+
+```java
+public class TimeSeriesData {
+    // ========== 构造函数 / Constructors ==========
+    
+    // 从时间戳和向量数据创建 / Create from timestamps and vector data
+    public TimeSeriesData(List<LocalDateTime> timestamps, IVector<Double> values, String columnName);
+    
+    // 从时间戳和矩阵数据创建 / Create from timestamps and matrix data
+    public TimeSeriesData(List<LocalDateTime> timestamps, IMatrix<Double> data, String[] columnNames);
+    
+    // 从向量和采样率创建 / Create from vector and sampling rate
+    public TimeSeriesData(IVector<Double> values, double samplingRate, String columnName, LocalDateTime startTime);
+    
+    // ========== 数据访问 / Data Access ==========
+    
+    // 获取时间戳列表 / Get timestamps list
+    List<LocalDateTime> getTimestamps();
+    
+    // 获取数据矩阵 / Get data matrix
+    IMatrix<Double> getData();
+    
+    // 获取列名数组 / Get column names array
+    String[] getColumnNames();
+    
+    // 获取采样率 / Get sampling rate
+    double getSamplingRate();
+    
+    // 获取时间序列长度 / Get time series length
+    int getLength();
+    
+    // 获取变量数量 / Get number of variables
+    int getNumVariables();
+    
+    // 是否为单变量时间序列 / Check if univariate time series
+    boolean isUnivariate();
+    
+    // 是否为多变量时间序列 / Check if multivariate time series
+    boolean isMultivariate();
+    
+    // 获取指定变量的数据 / Get data for specified variable
+    IVector<Double> getVariable(int variableIndex);
+    IVector<Double> getVariable(String columnName);
+    
+    // 获取变量索引 / Get variable index
+    int getVariableIndex(String columnName);
+    
+    // ========== 数据操作 / Data Operations ==========
+    
+    // 切片时间序列 / Slice time series
+    TimeSeriesData slice(int startIndex, int endIndex);
+    TimeSeriesData slice(LocalDateTime startTime, LocalDateTime endTime);
+    
+    // 重采样时间序列 / Resample time series
+    TimeSeriesData resample(double newSamplingRate);
+    
+    // 添加噪声 / Add noise
+    TimeSeriesData addNoise(double noiseLevel);
+    
+    // 转换为单变量时间序列 / Convert to univariate time series
+    TimeSeriesData toUnivariate(int variableIndex);
+    TimeSeriesData toUnivariate(String columnName);
+    
+    // 计算基本统计信息 / Calculate basic statistics
+    IMatrix<Double> getStatistics();
+}
+```
+
+### TimeSeriesAnalyzer 类 / TimeSeriesAnalyzer Class
+
+统一时间序列分析工具类，提供完整的时间序列分析功能，包括数据预处理、模型选择、预测、诊断等。
+
+Unified time series analysis tool class providing comprehensive time series analysis functionality including data preprocessing, model selection, forecasting, and diagnostics.
+
+```java
+public class TimeSeriesAnalyzer {
+    // ========== 构造函数 / Constructors ==========
+    
+    // 从向量数据创建 / Create from vector data
+    public TimeSeriesAnalyzer(IVector<Double> data, String name);
+    
+    // 从向量数据和时间戳创建 / Create from vector data and timestamps
+    public TimeSeriesAnalyzer(IVector<Double> data, String name, LocalDateTime[] timestamps);
+    
+    // ========== 分析配置 / Analysis Configuration ==========
+    
+    // 分析配置类 / Analysis configuration class
+    public static class AnalysisConfig {
+        public final ITimeSeriesModel.ModelType[] candidateModels;
+        public final TimeSeriesModelFactory.SelectionCriterion selectionCriterion;
+        public final int forecastSteps;
+        public final double confidenceLevel;
+        public final boolean performDiagnostics;
+        public final boolean autoPreprocess;
+        public final Map<String, Object> modelParameters;
+        
+        // 配置构建器 / Configuration builder
+        public static class Builder {
+            public Builder setCandidateModels(ITimeSeriesModel.ModelType[] candidateModels);
+            public Builder setSelectionCriterion(TimeSeriesModelFactory.SelectionCriterion selectionCriterion);
+            public Builder setForecastSteps(int forecastSteps);
+            public Builder setConfidenceLevel(double confidenceLevel);
+            public Builder setPerformDiagnostics(boolean performDiagnostics);
+            public Builder setAutoPreprocess(boolean autoPreprocess);
+            public Builder addModelParameter(String key, Object value);
+            public AnalysisConfig build();
+        }
+    }
+    
+    // ========== 分析结果 / Analysis Results ==========
+    
+    // 分析结果类 / Analysis result class
+    public static class AnalysisResult {
+        public final ITimeSeriesModel bestModel;
+        public final ITimeSeriesForecastResult forecast;
+        public final ITimeSeriesDiagnostics diagnostics;
+        public final String summary;
+        public final Map<String, Object> metadata;
+    }
+    
+    // ========== 主要方法 / Main Methods ==========
+    
+    // 执行完整分析 / Perform complete analysis
+    AnalysisResult analyze(AnalysisConfig config);
+    
+    // 快速分析 / Quick analysis
+    AnalysisResult quickAnalyze();
+    
+    // 预测 / Forecast
+    ITimeSeriesForecastResult forecast(int steps, double confidenceLevel);
+    
+    // 诊断 / Diagnose
+    ITimeSeriesDiagnostics diagnose();
+    
+    // 设置模型 / Set model
+    void setModel(ITimeSeriesModel model);
+    
+    // ========== 特征分析 / Feature Analysis ==========
+    
+    // 获取数据统计信息 / Get data statistics
+    Map<String, Object> getDataStatistics();
+    
+    // 获取趋势分析 / Get trend analysis
+    Map<String, Object> getTrendAnalysis();
+    
+    // 获取季节性分析 / Get seasonal analysis
+    Map<String, Object> getSeasonalAnalysis(int period);
+    
+    // ========== 报告生成 / Report Generation ==========
+    
+    // 导出分析报告 / Export analysis report
+    String exportReport(String format);
+    
+    // ========== Getter方法 / Getter Methods ==========
+    
+    IVector<Double> getData();
+    String getName();
+    LocalDateTime[] getTimestamps();
+    ITimeSeriesModel getCurrentModel();
+    ITimeSeriesForecastResult getLastForecast();
+    ITimeSeriesDiagnostics getLastDiagnostics();
+}
+```
+
+### TimeSeriesForecasting 类 / TimeSeriesForecasting Class
+
+时间序列预测类，提供多种预测方法，包括ARIMA模型、指数平滑、线性回归预测等。
+
+Time series forecasting class providing various forecasting methods including ARIMA models, exponential smoothing, and linear regression forecasting.
+
+```java
+public class TimeSeriesForecasting {
+    // ========== 预测结果类 / Forecast Result Class ==========
+    
+    public static class ForecastResult {
+        public final IVector<Double> forecast;
+        public final IVector<Double> lowerBound;
+        public final IVector<Double> upperBound;
+        public final double mse;
+        public final double mae;
+        public final double mape;
+        public final String modelType;
+        public final double confidenceLevel;
+    }
+    
+    // ========== 简单预测方法 / Simple Forecasting Methods ==========
+    
+    // 简单移动平均预测 / Simple moving average forecasting
+    static ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, int variableIndex, 
+                                           int windowSize, int forecastSteps, double confidenceLevel);
+    static ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, String columnName, 
+                                           int windowSize, int forecastSteps, double confidenceLevel);
+    
+    // 指数平滑预测 / Exponential smoothing forecasting
+    static ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, 
+                                            double alpha, int forecastSteps, double confidenceLevel);
+    static ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, 
+                                            double alpha, int forecastSteps, double confidenceLevel);
+    
+    // 线性回归预测 / Linear regression forecasting
+    static ForecastResult linearRegression(TimeSeriesData timeSeries, int variableIndex, 
+                                        int forecastSteps, double confidenceLevel);
+    static ForecastResult linearRegression(TimeSeriesData timeSeries, String columnName, 
+                                        int forecastSteps, double confidenceLevel);
+    
+    // ========== 高级预测方法 / Advanced Forecasting Methods ==========
+    
+    // ARIMA模型预测 / ARIMA model forecasting
+    static ForecastResult arimaForecast(TimeSeriesData timeSeries, int variableIndex, 
+                                     int p, int d, int q, int forecastSteps, double confidenceLevel);
+    static ForecastResult arimaForecast(TimeSeriesData timeSeries, String columnName, 
+                                     int p, int d, int q, int forecastSteps, double confidenceLevel);
+    
+    // 季节性预测 / Seasonal forecasting
+    static ForecastResult seasonalForecast(TimeSeriesData timeSeries, int variableIndex, 
+                                        int period, int forecastSteps, double confidenceLevel);
+    static ForecastResult seasonalForecast(TimeSeriesData timeSeries, String columnName, 
+                                        int period, int forecastSteps, double confidenceLevel);
+    
+    // Holt-Winters预测 / Holt-Winters forecasting
+    static ForecastResult holtWintersForecast(TimeSeriesData timeSeries, int variableIndex,
+                                           double alpha, double beta, double gamma, int period,
+                                           int forecastSteps, double confidenceLevel);
+    
+    // GARCH预测 / GARCH forecasting
+    static ForecastResult garchForecast(TimeSeriesData timeSeries, int variableIndex,
+                                     int p, int q, int forecastSteps, double confidenceLevel);
+    
+    // 状态空间模型预测 / State space model forecasting
+    static ForecastResult stateSpaceForecast(TimeSeriesData timeSeries, int variableIndex,
+                                          double sigmaEta, double sigmaZeta, double sigmaEpsilon,
+                                          int forecastSteps, double confidenceLevel);
+    
+    // 自动模型选择预测 / Automatic model selection forecasting
+    static ForecastResult autoForecast(TimeSeriesData timeSeries, int variableIndex,
+                                    int forecastSteps, double confidenceLevel);
+}
+```
+
+### TimeSeriesFiltering 类 / TimeSeriesFiltering Class
+
+时间序列滤波类，提供多种滤波方法，包括移动平均、指数平滑、卡尔曼滤波、小波滤波等。
+
+Time series filtering class providing various filtering methods including moving average, exponential smoothing, Kalman filtering, and wavelet filtering.
+
+```java
+public class TimeSeriesFiltering {
+    // ========== 滤波结果类 / Filter Result Class ==========
+    
+    public static class FilterResult {
+        public final TimeSeriesData filtered;
+        public final TimeSeriesData noise;
+        public final double snr;
+        public final String filterType;
+    }
+    
+    // ========== 基础滤波方法 / Basic Filtering Methods ==========
+    
+    // 移动平均滤波 / Moving average filtering
+    static FilterResult movingAverage(TimeSeriesData timeSeries, int variableIndex, int windowSize);
+    static FilterResult movingAverage(TimeSeriesData timeSeries, String columnName, int windowSize);
+    
+    // 指数平滑滤波 / Exponential smoothing filtering
+    static FilterResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, double alpha);
+    static FilterResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, double alpha);
+    
+    // 高斯滤波 / Gaussian filtering
+    static FilterResult gaussianFilter(TimeSeriesData timeSeries, int variableIndex, double sigma);
+    static FilterResult gaussianFilter(TimeSeriesData timeSeries, String columnName, double sigma);
+    
+    // 中值滤波 / Median filtering
+    static FilterResult medianFilter(TimeSeriesData timeSeries, int variableIndex, int windowSize);
+    static FilterResult medianFilter(TimeSeriesData timeSeries, String columnName, int windowSize);
+    
+    // ========== 频域滤波方法 / Frequency Domain Filtering Methods ==========
+    
+    // 低通滤波 / Low pass filtering
+    static FilterResult lowPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+                                    double cutoffFreq, int order);
+    static FilterResult lowPassFilter(TimeSeriesData timeSeries, String columnName, 
+                                    double cutoffFreq, int order);
+    
+    // 高通滤波 / High pass filtering
+    static FilterResult highPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+                                     double cutoffFreq, int order);
+    static FilterResult highPassFilter(TimeSeriesData timeSeries, String columnName, 
+                                     double cutoffFreq, int order);
+    
+    // 带通滤波 / Band pass filtering
+    static FilterResult bandPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+                                     double lowFreq, double highFreq, int order);
+    static FilterResult bandPassFilter(TimeSeriesData timeSeries, String columnName, 
+                                     double lowFreq, double highFreq, int order);
+    
+    // 自适应滤波 / Adaptive filtering
+    static FilterResult adaptiveFilter(TimeSeriesData timeSeries, int variableIndex, double learningRate);
+    static FilterResult adaptiveFilter(TimeSeriesData timeSeries, String columnName, double learningRate);
+}
+```
+
+### TimeSeriesDecomposition 类 / TimeSeriesDecomposition Class
+
+时间序列分解类，提供时间序列分解功能，包括趋势、季节性、周期性成分的分离。
+
+Time series decomposition class providing time series decomposition functionality including trend, seasonal, and cyclical component separation.
+
+```java
+public class TimeSeriesDecomposition {
+    // ========== 分解模型类型枚举 / Decomposition Model Type Enum ==========
+    
+    public enum DecompositionModel {
+        ADDITIVE,      // 加法模型 / Additive model
+        MULTIPLICATIVE // 乘法模型 / Multiplicative model
+    }
+    
+    // ========== 分解结果类 / Decomposition Result Class ==========
+    
+    public static class DecompositionResult {
+        public final IVector<Double> trend;
+        public final IVector<Double> seasonal;
+        public final IVector<Double> residual;
+        public final IVector<Double> original;
+        public final DecompositionModel model;
+        public final int period;
+        public final double trendStrength;
+        public final double seasonalStrength;
+        public final double residualStrength;
+    }
+    
+    // ========== 分解方法 / Decomposition Methods ==========
+    
+    // 经典分解 / Classical decomposition
+    static DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+                                                    int period, DecompositionModel model);
+    static DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, String columnName, 
+                                                    int period, DecompositionModel model);
+    
+    // X-13ARIMA-SEATS分解 / X-13ARIMA-SEATS decomposition
+    static DecompositionResult x13Decomposition(TimeSeriesData timeSeries, int variableIndex, int period);
+    static DecompositionResult x13Decomposition(TimeSeriesData timeSeries, String columnName, int period);
+    
+    // STL分解 / STL decomposition
+    static DecompositionResult stlDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+                                              int period, int seasonalWindow, int trendWindow);
+    static DecompositionResult stlDecomposition(TimeSeriesData timeSeries, String columnName, 
+                                              int period, int seasonalWindow, int trendWindow);
+    
+    // 小波分解 / Wavelet decomposition
+    static DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+                                                  String wavelet, int levels);
+    static DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, String columnName, 
+                                                  String wavelet, int levels);
+}
+```
 
 ---
 

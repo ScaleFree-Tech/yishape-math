@@ -3,9 +3,9 @@ package com.reremouse.lab.audio;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.SignalAnalysis;
 import com.reremouse.lab.math.signal.RereFFT;
 import com.reremouse.lab.math.signal.Complex;
+import com.reremouse.lab.math.signal.Signals;
 import com.reremouse.lab.util.Tuple2;
 
 /**
@@ -54,7 +54,7 @@ public class AudioAnalyzer {
             AudioProcessor.stereoToMono(audioData).getSamples();
         
         // 使用Welch方法计算功率谱密度 / Use Welch's method to calculate power spectral density
-        Tuple2<IVector<Double>, IVector<Double>> psdResult = SignalAnalysis.powerSpectralDensity(
+        Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
             samples, windowSize, overlap, audioData.getSampleRate());
         
         IVector<Double> frequencies = psdResult._1;

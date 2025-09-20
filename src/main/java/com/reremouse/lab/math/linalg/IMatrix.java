@@ -581,6 +581,72 @@ public interface IMatrix<T extends Number> {
             throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
         }
     }
+    
+    /**
+     * 计算两个矩阵的平均值 / Calculate average of two matrices
+     * <p>
+     * 计算两个相同维度的矩阵对应元素的平均值 Calculates the average of corresponding elements in
+     * two matrices of the same dimensions
+     * </p>
+     *
+     * @param a 第一个矩阵 / First matrix
+     * @param b 第二个矩阵 / Second matrix
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 平均值矩阵 / Average matrix
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / if matrix dimensions don't match
+     * @throws NullPointerException 如果任何参数为null / if any parameter is null
+     */
+    @SuppressWarnings("unchecked")
+    static <T extends Number> IMatrix<T> average(IMatrix<T> a, IMatrix<T> b, Class<T> type) {
+        if (a == null || b == null) {
+            throw new NullPointerException("矩阵不能为null / Matrix cannot be null");
+        }
+        
+        if (a.getRowNum() != b.getRowNum() || a.getColNum() != b.getColNum()) {
+            throw new IllegalArgumentException("矩阵维度不匹配 / Matrix dimensions don't match: " +
+                    "a[" + a.getRowNum() + "x" + a.getColNum() + "] vs " +
+                    "b[" + b.getRowNum() + "x" + b.getColNum() + "]");
+        }
+        
+        if (type == Float.class) {
+            // Convert to Float matrices and calculate average
+            IFloatMatrix floatA = (IFloatMatrix) a;
+            IFloatMatrix floatB = (IFloatMatrix) b;
+            
+            int rows = a.getRowNum();
+            int cols = a.getColNum();
+            IFloatMatrix result = IFloatMatrix.zeros(rows, cols);
+            
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    float avg = (floatA.get(row, col) + floatB.get(row, col)) / 2.0f;
+                    result.put(row, col, avg);
+                }
+            }
+            
+            return (IMatrix<T>) result;
+        } else if (type == Double.class) {
+            // Convert to Double matrices and calculate average
+            IDoubleMatrix doubleA = (IDoubleMatrix) a;
+            IDoubleMatrix doubleB = (IDoubleMatrix) b;
+            
+            int rows = a.getRowNum();
+            int cols = a.getColNum();
+            IDoubleMatrix result = IDoubleMatrix.zeros(rows, cols);
+            
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    double avg = (doubleA.get(row, col) + doubleB.get(row, col)) / 2.0;
+                    result.put(row, col, avg);
+                }
+            }
+            
+            return (IMatrix<T>) result;
+        } else {
+            throw new UnsupportedOperationException("不支持的数值类型: " + type.getSimpleName() + " / Unsupported numeric type: " + type.getSimpleName());
+        }
+    }
 
     /**
      * 从本地指定位置path加载恢复矩阵 / Load matrix from specified local path
@@ -726,6 +792,13 @@ public interface IMatrix<T extends Number> {
      * @throws NullPointerException 如果other为null / if other is null
      */
     public IMatrix<T> divide(IMatrix<T> other);
+    
+    /**
+     * 标量除
+     * @param scalar
+     * @return 
+     */
+    public IMatrix<T> divideByScalar(T scalar);
 
     /**
      * 矩阵点积运算 / Matrix dot product
@@ -1871,4 +1944,11 @@ public interface IMatrix<T extends Number> {
     public default IMatrix<T> map(Function<T, T> fun) {
         return this.apply(fun);
     }
+    
+    
+
+    /**
+     * 将矩阵数据保存在本地指定位置 / Save matrix data to specified local path
+     */
+    public void save(String path);
 }

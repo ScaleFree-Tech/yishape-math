@@ -1,8 +1,7 @@
 package com.reremouse.lab.audio;
 
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.SignalGeneration;
+import com.reremouse.lab.math.signal.Signals;
 import com.reremouse.lab.math.viz.IPlot;
 
 import java.util.List;
@@ -59,10 +58,10 @@ public class AudioExample {
      */
     private static AudioData generateTestAudio() {
         // 生成440Hz的正弦波（A4音符） / Generate 440Hz sine wave (A4 note)
-        IVector<Double> sineWave = SignalGeneration.sineWave(44100, 440.0, 44100.0, 0.5, 0.0);
+        IVector<Double> sineWave = Signals.sineWave(44100, 440.0, 44100.0, 0.5, 0.0);
         
         // 生成一些噪声 / Generate some noise
-        IVector<Double> noise = SignalGeneration.whiteNoise(44100, 0.1);
+        IVector<Double> noise = Signals.whiteNoise(44100, 0.1);
         
         // 混合信号 / Mix signals
         IVector<Double> mixedSignal = sineWave.add(noise);
