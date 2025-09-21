@@ -10,7 +10,59 @@
 
 **YiShape-Math** is a Java-based mathematical computing library that provides functionalities including  vector & matrix operations, data visualization, statistics, optimization, time series, signal processing, audio analysis, image processing and machine learning models. Its API design closely mirrors that of the Python NumPy and SciPy API. The initial purpose of this library is to be used for the experimental teaching of courses such as Business Statistics, Business Big Data, Data Analysis and Decision Making, Machine Learning and Data Mining, and Theory and Application of Artificial Intelligence at UESTC, SWUFE and HAUT. Through hands-on programming, students can learn the underlying computational principles of algorithms in fields such as linear algebra, statistics, optimization, and machine learning. The library now also serves as the underlying mathematical infrastructure for the [YiShape Vector DataBase](https://github.com/ScaleFree-Tech/YiShape-VecDB). The library supports OpenCL GPUs computing, with excellent performance. It is suitable for a wide range of applications such as large-scale scientific computing, data analysis, and machine learning.
 
-## 主要特性 / Key Features
+
+### 核心模块
+
+```mermaid
+mindmap
+  root((YiShape-Math核心模块))
+    基础数学层
+      linalg
+        向量运算
+        矩阵运算
+        线性代数
+      工具类
+        数学工具
+        字符串工具
+        数据结构
+    应用功能层
+      机器学习
+        回归算法
+        分类算法
+        聚类算法
+        降维算法
+      数据可视化
+        基础图表
+        统计图表
+        特殊图表
+        极坐标图表
+      统计分析
+        概率分布
+        假设检验
+        方差分析
+        参数估计
+      信号处理
+        信号生成
+        滤波分析
+        频谱分析
+        小波变换
+      时间序列
+        趋势分析
+        季节性分析
+        预测模型
+        异常检测
+    计算加速层
+      CPU优化
+        并行计算
+        内存优化
+        算法优化
+      GPU加速
+        OpenCL支持
+        华为昇腾优化
+        自动回退机制
+```
+
+## 主要功能 / Key Functions
 
 ### 🔢 核心数学运算 / Core Mathematical Operations
 - **向量运算** / **Vector Operations**: 向量创建、数学运算、统计运算、切片索引等 / Vector creation, mathematical operations, statistical operations, slicing and indexing
