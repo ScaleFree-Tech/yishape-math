@@ -771,6 +771,12 @@ src/main/java/com/reremouse/lab/
   - *Multi-threaded parallel computing support, improving efficiency for large-scale data processing*
 
 
+## 扩展计算 / Extentions
+
+Java的主流社区主要面向Server端应用开发。虽然我们已尽最大努力实现Java数值计算，但终归而言，Java数值计算的社区生态有限。为了弥补Java天生的数值计算能力不足，我们构建了一个专门的与Julia语言\（数学专用语言\）进行桥接的中间件库：[Ju4Ja](https://github.com/lteb2002/ju4ja), [https://github.com/lteb2002/ju4ja](https://github.com/lteb2002/ju4ja)。如果您有复杂的数值计算需求，可以使用Julia语言实现，然后在Java中通过Ju4Ja库来调用Julia功能。
+
+Java's mainstream community is oriented towards server-side application development. While we've done our best to implement numerical computing in Java, the community ecosystem for Java numerical computing is ultimately limited. To address the inherent limitations of Java's numerical computing capabilities, we've built a specialized middleware library, [Ju4Ja](https://github.com/lteb2002/ju4ja), [https://github.com/lteb2002/ju4ja](https://github.com/lteb2002/ju4ja), to bridge the gap with the mathematically specialized Julia language. If you have complex numerical computing needs, you can implement them in Julia and call Julia functionality from Java using the Ju4Ja library.
+
 ## 贡献指南 / Contributing
 
 我们欢迎社区贡献！请遵循以下步骤：
