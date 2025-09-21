@@ -799,17 +799,31 @@ public interface IVector<T extends Number> {
     public IVector<T> sub(IVector<T> vec);
 
     /**
-     * 向量乘法运算（元素级） / Vector multiplication (element-wise)
+     * 向量逐元素乘法运算（Hadamard乘积） / Vector element-wise multiplication (Hadamard product)
      * <p>
-     * 对应元素相乘，要求两个向量长度相同 Element-wise multiplication, requires both vectors to
-     * have the same length
+     * 对应元素相乘，要求两个向量长度相同。这是逐元素乘法，不是内积运算。
+     * Element-wise multiplication, requires both vectors to have the same length. 
+     * This is element-wise multiplication, not inner product.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> v1 = Linalg.vector(new double[]{1, 2, 3});
+     * IVector<Double> v2 = Linalg.vector(new double[]{4, 5, 6});
+     * IVector<Double> result = v1.multiply(v2);  // 结果: [4, 10, 18]
+     * }</pre>
+     * </p>
+     * <p>
+     * <strong>注意：</strong>此方法执行逐元素乘法，如需计算内积请使用 {@link #dot(IVector)} 或 {@link #innerProduct(IVector)}。
+     * <br><strong>Note:</strong> This method performs element-wise multiplication. For inner product, use {@link #dot(IVector)} or {@link #innerProduct(IVector)}.
      * </p>
      *
      * @param vec 另一个向量 / The other vector
-     * @return 新的向量对象，包含乘法结果 / New vector object containing multiplication
-     * result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
-     * match
+     * @return 新的向量对象，包含逐元素乘法结果 / New vector object containing element-wise multiplication result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     * @throws NullPointerException 如果vec为null / if vec is null
+     * @see #dot(IVector) 内积运算 / Inner product operation
+     * @see #innerProduct(IVector) 内积运算（别名）/ Inner product operation (alias)
      */
     public IVector<T> multiply(IVector<T> vec);
     
@@ -915,10 +929,31 @@ public interface IVector<T extends Number> {
     public IVector<T> divideByScalar(T p);
 
     /**
-     * 按位除
+     * 向量逐元素除法运算 / Vector element-wise division
+     * <p>
+     * 对应元素相除，要求两个向量长度相同。此方法通过计算除数向量的倒数然后进行逐元素乘法来实现。
+     * Element-wise division, requires both vectors to have the same length. 
+     * This method is implemented by computing the reciprocal of the divisor vector and then performing element-wise multiplication.
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> v1 = Linalg.vector(new double[]{8, 12, 15});
+     * IVector<Double> v2 = Linalg.vector(new double[]{2, 3, 5});
+     * IVector<Double> result = v1.divide(v2);  // 结果: [4, 4, 3]
+     * }</pre>
+     * </p>
+     * <p>
+     * <strong>注意：</strong>此方法执行逐元素除法，如果除数向量中包含零值，将产生无穷大或NaN结果。
+     * <br><strong>Note:</strong> This method performs element-wise division. If the divisor vector contains zero values, it will produce infinity or NaN results.
+     * </p>
      *
-     * @param other
-     * @return
+     * @param other 除数向量 / Divisor vector
+     * @return 新的向量对象，包含逐元素除法结果 / New vector object containing element-wise division result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     * @throws NullPointerException 如果other为null / if other is null
+     * @see #multiply(IVector) 逐元素乘法 / Element-wise multiplication
+     * @see #reciprocal() 倒数运算 / Reciprocal operation
      */
     public default IVector<T> divide(IVector<T> other) {
         var oo = other.reciprocal();
@@ -1514,21 +1549,81 @@ public interface IVector<T extends Number> {
     // Note: Most methods are now defined in IVector, keeping type-specific methods here
     /**
      * 向量与矩阵的点积 / Vector-matrix dot product
+     * <p>
+     * 计算向量与矩阵的点积运算 Computes the dot product between vector and matrix
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector = Linalg.vector(new double[]{1, 2, 3});
+     * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}, {5, 6}});
+     * IMatrix<Double> result = vector.dot(matrix);  // 结果: [22, 28]
+     * }</pre>
+     * </p>
+     *
+     * @param m 矩阵 / Matrix
+     * @return 点积结果矩阵 / Dot product result matrix
+     * @throws IllegalArgumentException 如果矩阵为null或维度不匹配 / if matrix is null or dimensions don't match
      */
     public IMatrix<T> dot(IMatrix<T> m);
 
     /**
      * 向量相等比较 / Vector equality comparison
+     * <p>
+     * 逐元素比较两个向量是否相等 Compares two vectors element-wise for equality
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector1 = Linalg.vector(new double[]{1, 2, 3});
+     * IVector<Double> vector2 = Linalg.vector(new double[]{1, 3, 3});
+     * boolean[] result = vector1.equals(vector2);  // 结果: [true, false, true]
+     * }</pre>
+     * </p>
+     *
+     * @param other 另一个向量 / The other vector
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
      */
     public boolean[] equals(IVector<T> other);
 
     /**
      * 向量小于比较 / Vector less-than comparison
+     * <p>
+     * 逐元素比较当前向量是否小于另一个向量 Compares current vector element-wise to check if less than another vector
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector1 = Linalg.vector(new double[]{1, 3, 2});
+     * IVector<Double> vector2 = Linalg.vector(new double[]{2, 2, 3});
+     * boolean[] result = vector1.lessThan(vector2);  // 结果: [true, false, true]
+     * }</pre>
+     * </p>
+     *
+     * @param other 另一个向量 / The other vector
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
      */
     public boolean[] lessThan(IVector<T> other);
 
     /**
      * 向量大于比较 / Vector greater-than comparison
+     * <p>
+     * 逐元素比较当前向量是否大于另一个向量 Compares current vector element-wise to check if greater than another vector
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector1 = Linalg.vector(new double[]{3, 1, 4});
+     * IVector<Double> vector2 = Linalg.vector(new double[]{2, 2, 3});
+     * boolean[] result = vector1.greaterThan(vector2);  // 结果: [true, false, true]
+     * }</pre>
+     * </p>
+     *
+     * @param other 另一个向量 / The other vector
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
      */
     public boolean[] greaterThan(IVector<T> other);
 
@@ -1686,6 +1781,14 @@ public interface IVector<T extends Number> {
      */
     public double[] toDoubleArray();
 
+    /**
+     * 转换为单精度浮点数组 / Convert to float array
+     * <p>
+     * 将向量转换为单精度浮点数组 Converts the vector to a float array
+     * </p>
+     *
+     * @return 单精度浮点数组 / Float array
+     */
     public float[] toFloatArray();
 
     /**
@@ -2194,23 +2297,67 @@ public interface IVector<T extends Number> {
     /**
      * 向量拼接
      * @param other
-     * @return 
+/**
+     * 向量连接 / Vector concatenation
+     * <p>
+     * 将当前向量与另一个向量连接，形成一个新的向量 Concatenates current vector with another vector to form a new vector
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector1 = Linalg.vector(new double[]{1, 2, 3});
+     * IVector<Double> vector2 = Linalg.vector(new double[]{4, 5, 6});
+     * IVector<Double> result = vector1.concat(vector2);  // 结果: [1, 2, 3, 4, 5, 6]
+     * }</pre>
+     * </p>
+     *
+     * @param other 要连接的向量 / Vector to concatenate
+     * @return 连接后的新向量 / New concatenated vector
+     * @throws IllegalArgumentException 如果向量为null / if vector is null
      */
     public IVector<T> concat(IVector<T> other);
     
     /**
-     * Returns the signum function of the argument; zero if the argument
-     * is zero, 1.0 if the argument is greater than zero, -1.0 if the
-     * argument is less than zero.
-     * @return 
-    */
+     * 向量符号函数 / Vector sign function
+     * <p>
+     * 对向量中每个元素计算符号函数：如果元素为零则返回0，如果元素大于零则返回1，如果元素小于零则返回-1
+     * Computes the sign function for each element in the vector: returns 0 if element is zero, 
+     * 1 if element is greater than zero, -1 if element is less than zero
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector = Linalg.vector(new double[]{-3, 0, 2.5});
+     * IVector<Double> result = vector.sign();  // 结果: [-1, 0, 1]
+     * }</pre>
+     * </p>
+     *
+     * @return 符号函数结果向量 / Sign function result vector
+     */
     public IVector<T> sign();
     
     /**
-     * 将向量转换为矩阵，但需要重新构型
-     * @param rows
-     * @param cols
-     * @return 
+     * 向量重塑为矩阵 / Reshape vector to matrix
+     * <p>
+     * 将向量重新构型为指定行数和列数的矩阵 Reshapes the vector into a matrix with specified rows and columns
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IVector<Double> vector = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6});
+     * IMatrix<Double> matrix = vector.reshape(2, 3);  // 结果: [[1, 2, 3], [4, 5, 6]]
+     * }</pre>
+     * </p>
+     * <p>
+     * <strong>注意 / Note:</strong> 向量长度必须等于 rows × cols
+     * Vector length must equal rows × cols
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows in the matrix
+     * @param cols 矩阵列数 / Number of columns in the matrix
+     * @return 重塑后的矩阵 / Reshaped matrix
+     * @throws IllegalArgumentException 如果rows或cols小于等于0，或者rows×cols不等于向量长度 / 
+     *         if rows or cols is less than or equal to 0, or rows×cols doesn't equal vector length
      */
     public IMatrix<T> reshape(int rows, int cols);
     

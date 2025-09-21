@@ -73,18 +73,86 @@ public interface IMatrix<T extends Number> {
     // 注意：这些方法直接委托给具体实现类（IFloatMatrix/IDoubleMatrix）。推荐使用 Linalg 类的工厂方法。
     // Note: These methods directly delegate to concrete implementations (IFloatMatrix/IDoubleMatrix). 
     // It's recommended to use factory methods from the Linalg class.
+    /**
+     * 从二维double数组创建矩阵 / Create matrix from 2D double array
+     * <p>
+     * 将二维double数组转换为矩阵对象 Converts a 2D double array to a matrix object
+     * </p>
+     * 
+     * @param data 二维double数组 / 2D double array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+     * IMatrix&lt;Double&gt; matrix = IMatrix.of(data);
+     * </pre>
+     */
     public static <T extends Number> IMatrix<T> of(double[][] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
     }
 
+    /**
+     * 从二维Double包装类数组创建矩阵 / Create matrix from 2D Double wrapper array
+     * <p>
+     * 将二维Double包装类数组转换为矩阵对象 Converts a 2D Double wrapper array to a matrix object
+     * </p>
+     * 
+     * @param data 二维Double包装类数组 / 2D Double wrapper array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * Double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+     * IMatrix&lt;Double&gt; matrix = IMatrix.of(data);
+     * </pre>
+     */
     public static <T extends Number> IMatrix<T> of(Double[][] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
     }
 
+    /**
+     * 从二维float数组创建矩阵 / Create matrix from 2D float array
+     * <p>
+     * 将二维float数组转换为矩阵对象 Converts a 2D float array to a matrix object
+     * </p>
+     * 
+     * @param data 二维float数组 / 2D float array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * float[][] data = {{1.0f, 2.0f}, {3.0f, 4.0f}};
+     * IMatrix&lt;Float&gt; matrix = IMatrix.of(data);
+     * </pre>
+     */
     public static <T extends Number> IMatrix<T> of(float[][] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
     }
 
+    /**
+     * 从二维Float包装类数组创建矩阵 / Create matrix from 2D Float wrapper array
+     * <p>
+     * 将二维Float包装类数组转换为矩阵对象 Converts a 2D Float wrapper array to a matrix object
+     * </p>
+     * 
+     * @param data 二维Float包装类数组 / 2D Float wrapper array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * Float[][] data = {{1.0f, 2.0f}, {3.0f, 4.0f}};
+     * IMatrix&lt;Float&gt; matrix = IMatrix.of(data);
+     * </pre>
+     */
     public static <T extends Number> IMatrix<T> of(Float[][] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
     }
@@ -103,6 +171,26 @@ public interface IMatrix<T extends Number> {
      * @throws IllegalArgumentException 如果数据为null、空数组或行长度不一致 / if data is null,
      * empty array, or row lengths are inconsistent
      */
+    /**
+     * 从IDoubleVector数组创建矩阵 / Create matrix from IDoubleVector array
+     * <p>
+     * 将IDoubleVector数组转换为矩阵对象，每个向量作为矩阵的一行 Converts an IDoubleVector array to a matrix object, with each vector as a row
+     * </p>
+     * 
+     * @param data IDoubleVector数组 / IDoubleVector array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * IDoubleVector[] vectors = {
+     *     IDoubleVector.of(1.0, 2.0),
+     *     IDoubleVector.of(3.0, 4.0)
+     * };
+     * IMatrix&lt;Double&gt; matrix = IMatrix.of(vectors);
+     * </pre>
+     */
     public static <T extends Number> IMatrix<T> of(IDoubleVector[] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
     }
@@ -120,6 +208,26 @@ public interface IMatrix<T extends Number> {
      * @return 新的矩阵实例 / New matrix instance
      * @throws IllegalArgumentException 如果数据为null、空数组或行长度不一致 / if data is null,
      * empty array, or row lengths are inconsistent
+     */
+    /**
+     * 从IFloatVector数组创建矩阵 / Create matrix from IFloatVector array
+     * <p>
+     * 将IFloatVector数组转换为矩阵对象，每个向量作为矩阵的一行 Converts an IFloatVector array to a matrix object, with each vector as a row
+     * </p>
+     * 
+     * @param data IFloatVector数组 / IFloatVector array
+     * @param <T> 数值类型 / Numeric type
+     * @return 矩阵对象 / Matrix object
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     * 
+     * @example
+     * <pre>
+     * IFloatVector[] vectors = {
+     *     IFloatVector.of(1.0f, 2.0f),
+     *     IFloatVector.of(3.0f, 4.0f)
+     * };
+     * IMatrix&lt;Float&gt; matrix = IMatrix.of(vectors);
+     * </pre>
      */
     public static <T extends Number> IMatrix<T> of(IFloatVector[] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
@@ -185,6 +293,18 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建全1矩阵（默认Double类型） / Create matrix of ones (default Double type)
+     * <p>
+     * 创建一个指定大小的全1矩阵，默认使用Double类型 Creates a matrix of specified size filled with ones, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param <T> 数值类型 / Numeric type
+     * @return 全1矩阵 / Matrix of ones
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> ones(int rows, int cols) {
         Class type = Double.class;
         return ones(rows, cols, type);
@@ -216,6 +336,18 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建全0矩阵（默认Double类型） / Create matrix of zeros (default Double type)
+     * <p>
+     * 创建一个指定大小的全0矩阵，默认使用Double类型 Creates a matrix of specified size filled with zeros, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param <T> 数值类型 / Numeric type
+     * @return 全0矩阵 / Matrix of zeros
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> zeros(int rows, int cols) {
         Class type = Double.class;
         return zeros(rows, cols, type);
@@ -246,6 +378,17 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建单位矩阵（默认Double类型） / Create identity matrix (default Double type)
+     * <p>
+     * 创建一个指定大小的单位矩阵，默认使用Double类型 Creates an identity matrix of specified size, using Double type by default
+     * </p>
+     *
+     * @param size 矩阵大小（正方形矩阵的边长） / Matrix size (side length of square matrix)
+     * @param <T> 数值类型 / Numeric type
+     * @return 单位矩阵 / Identity matrix
+     * @throws IllegalArgumentException 如果大小小于等于0 / if size is less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> eye(int size) {
         Class type = Double.class;
         return eye(size, type);
@@ -277,6 +420,18 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建随机矩阵（默认Double类型） / Create random matrix (default Double type)
+     * <p>
+     * 创建一个指定大小的随机矩阵，元素值在[0,1)范围内，默认使用Double类型 Creates a random matrix of specified size with elements in [0,1) range, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param <T> 数值类型 / Numeric type
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> rand(int rows, int cols) {
         Class type = Double.class;
         return rand(rows, cols, type);
@@ -309,6 +464,25 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 从一维数组创建矩阵 / Create matrix from 1D array
+     * <p>
+     * 将一维数组重塑为指定大小的矩阵 Reshapes a 1D array into a matrix of specified size
+     * </p>
+     * 
+     * @param data 一维数组数据 / 1D array data
+     * @param rows 目标矩阵行数 / Target matrix rows
+     * @param cols 目标矩阵列数 / Target matrix columns
+     * @param <T> 数值类型 / Numeric type
+     * @return 重塑后的矩阵 / Reshaped matrix
+     * @throws IllegalArgumentException 如果数组为null或空，或数组长度与目标尺寸不匹配 / if array is null or empty, or array length doesn't match target dimensions
+     * 
+     * @example
+     * <pre>
+     * Double[] data = {1.0, 2.0, 3.0, 4.0};
+     * IMatrix&lt;Double&gt; matrix = IMatrix.fromArray(data, 2, 2);
+     * </pre>
+     */
     static <T extends Number> IMatrix<T> fromArray(T[] data, int rows, int cols) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("数组不能为null或空 / Array cannot be null or empty");
@@ -379,11 +553,34 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建对角矩阵（默认Double类型） / Create diagonal matrix (default Double type)
+     * <p>
+     * 从给定的对角线元素创建对角矩阵，默认使用Double类型 Creates a diagonal matrix from the given diagonal elements, using Double type by default
+     * </p>
+     * 
+     * @param diagonal 对角线元素数组 / Array of diagonal elements
+     * @param <T> 数值类型 / Numeric type
+     * @return 对角矩阵 / Diagonal matrix
+     * @throws IllegalArgumentException 如果对角线数组为null或空 / if diagonal array is null or empty
+     */
     static <T extends Number> IMatrix<T> diag(T[] diagonal) {
         Class type = Double.class;
         return diag(diagonal, type);
     }
 
+    /**
+     * 从向量创建对角矩阵 / Create diagonal matrix from vector
+     * <p>
+     * 从给定的向量创建对角矩阵 Creates a diagonal matrix from the given vector
+     * </p>
+     * 
+     * @param diagonal 对角线元素向量 / Vector of diagonal elements
+     * @param type 数值类型的类对象 / Class object of the numeric type
+     * @param <T> 数值类型 / Numeric type
+     * @return 对角矩阵 / Diagonal matrix
+     * @throws IllegalArgumentException 如果向量为null或空 / if vector is null or empty
+     */
     static <T extends Number> IMatrix<T> diag(IVector<T> diagonal, Class<T> type) {
         if (type == Float.class) {
             return (IMatrix<T>) IFloatMatrix.diag(diagonal.toFloatArray());
@@ -394,15 +591,48 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 从向量创建对角矩阵（默认Double类型） / Create diagonal matrix from vector (default Double type)
+     * <p>
+     * 从给定的向量创建对角矩阵，默认使用Double类型 Creates a diagonal matrix from the given vector, using Double type by default
+     * </p>
+     * 
+     * @param diagonal 对角线元素向量 / Vector of diagonal elements
+     * @param <T> 数值类型 / Numeric type
+     * @return 对角矩阵 / Diagonal matrix
+     * @throws IllegalArgumentException 如果向量为null或空 / if vector is null or empty
+     */
     static <T extends Number> IMatrix<T> diag(IVector<T> diagonal) {
         return diag(diagonal.toDoubleArray());
     }
 
+    /**
+     * 从double数组创建对角矩阵 / Create diagonal matrix from double array
+     * <p>
+     * 从给定的double数组创建对角矩阵 Creates a diagonal matrix from the given double array
+     * </p>
+     * 
+     * @param diagonal 对角线元素数组 / Array of diagonal elements
+     * @param <T> 数值类型 / Numeric type
+     * @return 对角矩阵 / Diagonal matrix
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     */
     static <T extends Number> IMatrix<T> diag(double[] diagonal) {
         Class type = Double.class;
         return diag(RereMathUtil.toClassArray(diagonal), type);
     }
 
+    /**
+     * 从float数组创建对角矩阵 / Create diagonal matrix from float array
+     * <p>
+     * 从给定的float数组创建对角矩阵 Creates a diagonal matrix from the given float array
+     * </p>
+     * 
+     * @param diagonal 对角线元素数组 / Array of diagonal elements
+     * @param <T> 数值类型 / Numeric type
+     * @return 对角矩阵 / Diagonal matrix
+     * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
+     */
     static <T extends Number> IMatrix<T> diag(float[] diagonal) {
         Class type = Float.class;
         return diag(RereMathUtil.toClassArray(diagonal), type);
@@ -435,6 +665,19 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建随机矩阵（指定种子，默认Double类型） / Create random matrix with specified seed (default Double type)
+     * <p>
+     * 创建一个指定大小的随机矩阵，使用指定的种子值确保结果可重现，默认使用Double类型 Creates a random matrix of specified size using the specified seed value to ensure reproducible results, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param seed 随机数种子 / Random number seed
+     * @param <T> 数值类型 / Numeric type
+     * @return 随机矩阵 / Random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> rand(int rows, int cols, long seed) {
         Class type = Double.class;
         return rand(rows, cols, seed, type);
@@ -469,6 +712,19 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建随机矩阵（正态分布，指定种子，默认Double类型） / Create random matrix with normal distribution and specified seed (default Double type)
+     * <p>
+     * 创建一个指定大小的正态随机矩阵，使用指定的种子值确保结果可重现，默认使用Double类型 Creates a normal random matrix of specified size using the specified seed value to ensure reproducible results, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param seed 随机数种子 / Random number seed
+     * @param <T> 数值类型 / Numeric type
+     * @return 正态随机矩阵 / Normal random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> randn(int rows, int cols, long seed) {
         Class type = Double.class;
         return randn(rows, cols, seed, type);
@@ -500,6 +756,18 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建随机矩阵（正态分布，默认Double类型） / Create random matrix with normal distribution (default Double type)
+     * <p>
+     * 创建一个指定大小的正态随机矩阵，元素值服从标准正态分布，默认使用Double类型 Creates a normal random matrix of specified size with elements following standard normal distribution, using Double type by default
+     * </p>
+     *
+     * @param rows 矩阵行数 / Number of rows
+     * @param cols 矩阵列数 / Number of columns
+     * @param <T> 数值类型 / Numeric type
+     * @return 正态随机矩阵 / Normal random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0 / if rows or columns are less than or equal to 0
+     */
     static <T extends Number> IMatrix<T> randn(int rows, int cols) {
         Class type = Double.class;
         return randn(rows, cols, type);
@@ -535,6 +803,24 @@ public interface IMatrix<T extends Number> {
         }
     }
 
+    /**
+     * 创建指定均值和标准差的正态分布随机矩阵 / Create a normal distribution random matrix with specified mean and standard deviation
+     * <p>使用指定的均值和标准差生成正态分布的随机矩阵。</p>
+     * <p>Generates a random matrix with normal distribution using specified mean and standard deviation.</p>
+     * 
+     * <p>使用示例 / Usage example:</p>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.randn(3, 3, 0.0, 1.0);
+     * }</pre>
+     * 
+     * @param rows 行数 / Number of rows
+     * @param cols 列数 / Number of columns
+     * @param mean 均值 / Mean value
+     * @param std 标准差 / Standard deviation
+     * @param <T> 数值类型 / Numeric type
+     * @return 正态分布随机矩阵 / Normal distribution random matrix
+     * @throws IllegalArgumentException 如果行数或列数小于等于0，或均值、标准差为null / If rows or cols <= 0, or mean/std is null
+     */
     static <T extends Number> IMatrix<T> randn(int rows, int cols, T mean, T std) {
         if (mean == null || std == null) {
             throw new IllegalArgumentException("均值和标准差不能为null / Mean and std cannot be null");
@@ -796,10 +1082,26 @@ public interface IMatrix<T extends Number> {
     public IMatrix<T> divide(IMatrix<T> other);
 
     /**
-     * 标量除
+     * 矩阵标量除法运算 / Matrix scalar division
+     * <p>
+     * 将矩阵中的每个元素除以指定的标量值 Divides each element of the matrix by the specified scalar value
+     * </p>
+     * <p>
+     * 公式：Cᵢⱼ = Aᵢⱼ / scalar Formula: Cᵢⱼ = Aᵢⱼ / scalar
+     * </p>
+     * <p>
+     * 使用示例 Usage example:
+     * <pre>
+     * IMatrix&lt;Double&gt; matrix = IMatrix.of(new double[][]{{4.0, 8.0}, {12.0, 16.0}});
+     * IMatrix&lt;Double&gt; result = matrix.divideByScalar(2.0);
+     * // result: [[2.0, 4.0], [6.0, 8.0]]
+     * </pre>
+     * </p>
      *
-     * @param scalar
-     * @return
+     * @param scalar 除数标量 / The divisor scalar
+     * @return 新的矩阵，包含除法运算结果 / A new matrix containing the division result
+     * @throws ArithmeticException 如果标量为零 / if scalar is zero
+     * @throws NullPointerException 如果scalar为null / if scalar is null
      */
     public IMatrix<T> divideByScalar(T scalar);
 
@@ -934,15 +1236,21 @@ public interface IMatrix<T extends Number> {
 
     /**
      * 获取矩阵行数 / Get number of rows (alias for getRowNum)
+     * <p>
+     * 返回矩阵的行数，这是getRowNum()方法的别名 Returns the number of rows in the matrix, this is an alias for getRowNum()
+     * </p>
      *
-     * @return
+     * @return 矩阵的行数 / Number of rows in the matrix
      */
     public int rows();
 
     /**
      * 获取矩阵列数 / Get number of columns (alias for getColNum)
+     * <p>
+     * 返回矩阵的列数，这是getColNum()方法的别名 Returns the number of columns in the matrix, this is an alias for getColNum()
+     * </p>
      *
-     * @return
+     * @return 矩阵的列数 / Number of columns in the matrix
      */
     public int cols();
 
@@ -1376,12 +1684,55 @@ public interface IMatrix<T extends Number> {
         return this.cols() == this.rows();
     }
 
+    /**
+     * 检查矩阵是否为对称矩阵 / Check if the matrix is symmetric
+     * <p>
+     * 对称矩阵满足 A = A^T，即矩阵等于其转置 A symmetric matrix satisfies A = A^T, i.e., the matrix equals its transpose
+     * </p>
+     * <p>
+     * 注意：只有方阵才可能是对称的 Note: Only square matrices can be symmetric
+     * </p>
+     *
+     * @return 如果矩阵是对称的则返回true / true if the matrix is symmetric
+     * @throws IllegalStateException 如果矩阵不是方阵 / if the matrix is not square
+     */
     public boolean isSymmetric();
 
+    /**
+     * 检查矩阵是否为正定矩阵 / Check if the matrix is positive definite
+     * <p>
+     * 正定矩阵是对称矩阵，且所有特征值都为正数 A positive definite matrix is symmetric and all eigenvalues are positive
+     * </p>
+     * <p>
+     * 等价条件：对于任意非零向量x，都有x^T * A * x > 0 Equivalent condition: for any non-zero vector x, x^T * A * x > 0
+     * </p>
+     *
+     * @return 如果矩阵是正定的则返回true / true if the matrix is positive definite
+     * @throws IllegalStateException 如果矩阵不是方阵 / if the matrix is not square
+     */
     public boolean isPositiveDefinite();
 
     // 便利转换方法
-    public IVector<T> flatten();         // 展平为向量
+    /**
+     * 矩阵展平为向量 / Flatten matrix to vector
+     * <p>
+     * 将矩阵按行优先顺序展平为一维向量 Flattens the matrix to a 1D vector in row-major order
+     * </p>
+     * <p>
+     * 对于m×n矩阵，结果向量长度为m*n For an m×n matrix, the resulting vector has length m*n
+     * </p>
+     * <p>
+     * 使用示例 Usage example:
+     * <pre>
+     * IMatrix&lt;Double&gt; matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector&lt;Double&gt; vector = matrix.flatten();
+     * // vector: [1, 2, 3, 4]
+     * </pre>
+     * </p>
+     *
+     * @return 展平后的向量 / Flattened vector
+     */
+    public IVector<T> flatten();
 
     /**
      * 计算Frobenius距离 / Compute Frobenius distance
@@ -1923,8 +2274,16 @@ public interface IMatrix<T extends Number> {
      * structure: result[row][col] = matrix.get(row, col)
      * </p>
      * <p>
-     * 注意：如果原矩阵是浮点类型，转换时可能会有精度损失 Note: If the original matrix is floating-point
-     * type, there may be precision loss during conversion
+     * 注意：如果原矩阵是浮点类型，转换时会进行截断操作 Note: If the original matrix is floating-point
+     * type, truncation will occur during conversion
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1.7, 2.3}, {3.9, 4.1}});
+     * int[][] intArray = matrix.toIntArray();
+     * // 结果: [[1, 2], [3, 4]] (浮点数被截断)
+     * }</pre>
      * </p>
      *
      * @return 整数二维数组，行数为矩阵行数，列数为矩阵列数 / Integer 2D array with rows equal to
@@ -1980,87 +2339,239 @@ public interface IMatrix<T extends Number> {
     }
 
     /**
-     * 将矩阵数据保存在本地指定位置 / Save matrix data to specified local path
+     * 将矩阵数据保存到本地指定路径 / Save matrix data to specified local path
+     * <p>
+     * 将矩阵数据以特定格式保存到本地文件系统，便于数据持久化和后续加载 Saves matrix data in a specific format to the local file system for data persistence and subsequent loading
+     * </p>
+     * <p>
+     * 支持的文件格式通常包括CSV、二进制格式等，具体格式由实现决定 Supported file formats typically include CSV, binary formats, etc., with specific format determined by implementation
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * matrix.save("data/matrix.csv");  // 保存为CSV格式
+     * matrix.save("data/matrix.bin");  // 保存为二进制格式
+     * }</pre>
+     * </p>
      *
-     * @param path
+     * @param path 保存路径，包括文件名和扩展名 / Save path including filename and extension
+     * @throws IllegalArgumentException 如果路径为null或无效 / if path is null or invalid
+     * @throws IOException 如果文件写入失败 / if file writing fails
+     * @throws SecurityException 如果没有写入权限 / if write permission is denied
      */
     public void save(String path);
 
     /**
-     * 计算矩阵的L1范数
+     * 计算矩阵的L1范数 / Compute L1 norm of the matrix
+     * <p>
+     * L1范数是矩阵所有元素绝对值的和，也称为曼哈顿范数 The L1 norm is the sum of absolute values of all matrix elements, also known as Manhattan norm
+     * </p>
+     * <p>
+     * 公式：||A||₁ = Σᵢⱼ |aᵢⱼ| Formula: ||A||₁ = Σᵢⱼ |aᵢⱼ|
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{-1, 2}, {3, -4}});
+     * Double l1Norm = matrix.norm1();  // 结果: 10.0 (1+2+3+4)
+     * }</pre>
+     * </p>
      *
-     * @return
+     * @return L1范数值 / L1 norm value
      */
     public default T norm1() {
         return this.abs().sum();
     }
 
     /**
-     * Set the diagonal elements of the matrix
+     * 设置矩阵的对角线元素 / Set the diagonal elements of the matrix
+     * <p>
+     * 将矩阵的主对角线元素设置为给定向量的元素 Sets the main diagonal elements of the matrix to the elements of the given vector
+     * </p>
+     * <p>
+     * 对于m×n矩阵，对角线长度为min(m,n) For an m×n matrix, the diagonal length is min(m,n)
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.zeros(3, 3);
+     * IVector<Double> diagonal = IVector.of(new double[]{1, 2, 3});
+     * matrix.setDiag(diagonal);
+     * // 结果矩阵: [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
+     * }</pre>
+     * </p>
      *
-     * @param diagonal
-     * @return
+     * @param diagonal 对角线向量，长度应不超过min(rows, cols) / Diagonal vector, length should not exceed min(rows, cols)
+     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
+     * @throws IllegalArgumentException 如果diagonal为null或长度超过对角线长度 / if diagonal is null or length exceeds diagonal length
      */
     public IMatrix<T> setDiag(IVector<T> diagonal);
 
     /**
-     * 在矩阵的列上与向量广播运算
-     * @param colVector
-     * @param fun
-     * @return 
+     * 在矩阵的列上与向量进行广播运算 / Broadcast operation between matrix columns and vector
+     * <p>
+     * 将给定向量与矩阵的每一列进行指定的运算操作 Performs specified operation between the given vector and each column of the matrix
+     * </p>
+     * <p>
+     * 广播规则：向量长度必须等于矩阵的行数 Broadcasting rule: vector length must equal matrix row count
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = IVector.of(new double[]{10, 20});
+     * IMatrix<Double> result = matrix.broadcastColumn(vector, (col, vec) -> col.add(vec));
+     * // 结果: [[11, 12], [23, 24]]
+     * }</pre>
+     * </p>
+     *
+     * @param colVector 用于广播的向量，长度必须等于矩阵行数 / Vector for broadcasting, length must equal matrix row count
+     * @param fun 双参数函数，定义列向量与广播向量的运算规则 / Binary function defining operation between column vector and broadcast vector
+     * @return 广播运算后的新矩阵 / New matrix after broadcast operation
+     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配或fun为null / if vector length doesn't match matrix row count or fun is null
      */
     public IMatrix<T> broadcastColumn(IVector<T> colVector, BiFunction<IVector<T>, IVector<T>, IVector<T>> fun);
 
     /**
-     * 在矩阵的行上与向量广播运算
-     * @param colVector
-     * @param fun
-     * @return 
+     * 在矩阵的行上与向量进行广播运算 / Broadcast operation between matrix rows and vector
+     * <p>
+     * 将给定向量与矩阵的每一行进行指定的运算操作 Performs specified operation between the given vector and each row of the matrix
+     * </p>
+     * <p>
+     * 广播规则：向量长度必须等于矩阵的列数 Broadcasting rule: vector length must equal matrix column count
+     * </p>
+     * <p>
+     * <strong>使用示例 / Usage Example:</strong>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = IVector.of(new double[]{10, 20});
+     * IMatrix<Double> result = matrix.broadcastRow(vector, (row, vec) -> row.add(vec));
+     * // 结果: [[11, 22], [13, 24]]
+     * }</pre>
+     * </p>
+     *
+     * @param colVector 用于广播的向量，长度必须等于矩阵列数 / Vector for broadcasting, length must equal matrix column count
+     * @param fun 双参数函数，定义行向量与广播向量的运算规则 / Binary function defining operation between row vector and broadcast vector
+     * @return 广播运算后的新矩阵 / New matrix after broadcast operation
+     * @throws IllegalArgumentException 如果向量长度与矩阵列数不匹配或fun为null / if vector length doesn't match matrix column count or fun is null
      */
     public IMatrix<T> broadcastRow(IVector<T> colVector, BiFunction<IVector<T>, IVector<T>, IVector<T>> fun);
 
+    /**
+     * 矩阵列向量广播加法 / Matrix column vector broadcast addition
+     * <p>
+     * 将向量与矩阵的每一列进行加法运算 Performs addition between the vector and each column of the matrix
+     * </p>
+     *
+     * @param colVector 用于加法的向量 / Vector for addition
+     * @return 加法运算后的新矩阵 / New matrix after addition
+     */
     default IMatrix<T> broadcastAddColumn(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.add(v2);
         });
     }
     
+    /**
+     * 矩阵行向量广播加法 / Matrix row vector broadcast addition
+     * <p>
+     * 将向量与矩阵的每一行进行加法运算 Performs addition between the vector and each row of the matrix
+     * </p>
+     *
+     * @param colVector 用于加法的向量 / Vector for addition
+     * @return 加法运算后的新矩阵 / New matrix after addition
+     */
     default IMatrix<T> broadcastAddRow(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.add(v2);
         });
     }
     
+    /**
+     * 矩阵列向量广播减法 / Matrix column vector broadcast subtraction
+     * <p>
+     * 将矩阵的每一列减去向量 Subtracts the vector from each column of the matrix
+     * </p>
+     *
+     * @param colVector 用于减法的向量 / Vector for subtraction
+     * @return 减法运算后的新矩阵 / New matrix after subtraction
+     */
     default IMatrix<T> broadcastSubColumn(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.sub(v2);
         });
     }
     
+    /**
+     * 矩阵行向量广播减法 / Matrix row vector broadcast subtraction
+     * <p>
+     * 将矩阵的每一行减去向量 Subtracts the vector from each row of the matrix
+     * </p>
+     *
+     * @param colVector 用于减法的向量 / Vector for subtraction
+     * @return 减法运算后的新矩阵 / New matrix after subtraction
+     */
     default IMatrix<T> broadcastSubRow(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.sub(v2);
         });
     }
     
+    /**
+     * 矩阵列向量广播乘法（默认） / Matrix column vector broadcast multiplication (default)
+     * <p>
+     * 将向量与矩阵的每一列进行逐元素乘法运算 Performs element-wise multiplication between the vector and each column of the matrix
+     * </p>
+     *
+     * @param colVector 用于乘法的向量 / Vector for multiplication
+     * @return 乘法运算后的新矩阵 / New matrix after multiplication
+     */
     default IMatrix<T> broadcastColumn(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.multiply(v2);
         });
     }
     
+    /**
+     * 矩阵列向量广播乘法 / Matrix column vector broadcast multiplication
+     * <p>
+     * 将向量与矩阵的每一列进行逐元素乘法运算 Performs element-wise multiplication between the vector and each column of the matrix
+     * </p>
+     *
+     * @param colVector 用于乘法的向量 / Vector for multiplication
+     * @return 乘法运算后的新矩阵 / New matrix after multiplication
+     */
     default IMatrix<T> broadcastMultipyColumn(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.multiply(v2);
         });
     }
     
+    /**
+     * 矩阵列向量广播除法 / Matrix column vector broadcast division
+     * <p>
+     * 将矩阵的每一列除以向量 Divides each column of the matrix by the vector
+     * </p>
+     *
+     * @param colVector 用于除法的向量 / Vector for division
+     * @return 除法运算后的新矩阵 / New matrix after division
+     */
     default IMatrix<T> broadcastDivideColumn(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.divide(v2);
         });
     }
     
+    /**
+     * 矩阵行向量广播除法 / Matrix row vector broadcast division
+     * <p>
+     * 将矩阵的每一行除以向量 Divides each row of the matrix by the vector
+     * </p>
+     *
+     * @param colVector 用于除法的向量 / Vector for division
+     * @return 除法运算后的新矩阵 / New matrix after division
+     */
     default IMatrix<T> broadcastDivideRow(IVector<T> colVector) {
         return this.broadcastColumn(colVector, (v1, v2) -> {
             return v1.divide(v2);
@@ -2068,31 +2579,72 @@ public interface IMatrix<T extends Number> {
     }
     
     /**
-     * Conduct element wise multiply
-     * @param other
-     * @return 
+     * 逐元素乘法 / Element-wise multiplication
+     * <p>对两个矩阵进行逐元素乘法运算，返回新的矩阵。</p>
+     * <p>Performs element-wise multiplication of two matrices and returns a new matrix.</p>
+     * 
+     * <p>使用示例 / Usage example:</p>
+     * <pre>{@code
+     * IMatrix<Double> a = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IMatrix<Double> b = IMatrix.of(new double[][]{{2, 3}, {4, 5}});
+     * IMatrix<Double> result = a.multiply(b); // {{2, 6}, {12, 20}}
+     * }</pre>
+     * 
+     * @param other 另一个矩阵 / The other matrix
+     * @return 逐元素乘法的结果矩阵 / The result matrix of element-wise multiplication
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / If matrix dimensions don't match
      */
     public IMatrix<T> multiply(IMatrix<T> other);
     
     
     /**
-     * 矩阵相等比较 / Vector equality comparison
-     * @param other
-     * @return 
+     * 矩阵与向量的逐元素相等比较 / Element-wise equality comparison between matrix and vector
+     * <p>将矩阵的每个元素与向量进行相等比较，返回布尔矩阵。</p>
+     * <p>Compares each element of the matrix with the vector for equality and returns a boolean matrix.</p>
+     * 
+     * <p>使用示例 / Usage example:</p>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = IVector.of(new double[]{2, 3});
+     * boolean[][] result = matrix.equals(vector);
+     * }</pre>
+     * 
+     * @param other 比较的向量 / The vector to compare with
+     * @return 相等比较的布尔矩阵 / Boolean matrix of equality comparison results
      */
     public boolean[][] equals(IVector<T> other);
 
     /**
-     * 向量小于比较 / Vector less-than comparison
-     * @param other
-     * @return 
+     * 矩阵与向量的逐元素小于比较 / Element-wise less-than comparison between matrix and vector
+     * <p>将矩阵的每个元素与向量进行小于比较，返回布尔矩阵。</p>
+     * <p>Compares each element of the matrix with the vector for less-than and returns a boolean matrix.</p>
+     * 
+     * <p>使用示例 / Usage example:</p>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = IVector.of(new double[]{2, 3});
+     * boolean[][] result = matrix.lessThan(vector);
+     * }</pre>
+     * 
+     * @param other 比较的向量 / The vector to compare with
+     * @return 小于比较的布尔矩阵 / Boolean matrix of less-than comparison results
      */
     public boolean[][] lessThan(IVector<T> other);
 
     /**
-     * 向量大于比较 / Vector greater-than comparison
-     * @param other
-     * @return 
+     * 矩阵与向量的逐元素大于比较 / Element-wise greater-than comparison between matrix and vector
+     * <p>将矩阵的每个元素与向量进行大于比较，返回布尔矩阵。</p>
+     * <p>Compares each element of the matrix with the vector for greater-than and returns a boolean matrix.</p>
+     * 
+     * <p>使用示例 / Usage example:</p>
+     * <pre>{@code
+     * IMatrix<Double> matrix = IMatrix.of(new double[][]{{1, 2}, {3, 4}});
+     * IVector<Double> vector = IVector.of(new double[]{2, 3});
+     * boolean[][] result = matrix.greaterThan(vector);
+     * }</pre>
+     * 
+     * @param other 比较的向量 / The vector to compare with
+     * @return 大于比较的布尔矩阵 / Boolean matrix of greater-than comparison results
      */
     public boolean[][] greaterThan(IVector<T> other);
     
