@@ -170,18 +170,15 @@ double[] samples = normal.sample(1000);  // 随机采样 / Random sampling
 IVector<Double> sample = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 
 // 参数估计 / Parameter estimation
-ParameterEstimation estimator = Stats.estimator;
-Tuple2<Double, Double> meanInterval = estimator.estimateMeanIntevalWithT(sample, 0.95);  // 均值置信区间 / Mean confidence interval
+Tuple2<Double, Double> meanInterval = Stats.estimator.estimateMeanIntevalWithT(sample, 0.95);  // 均值置信区间 / Mean confidence interval
 
 // 假设检验 / Hypothesis testing
-HypothesisTesting tester = Stats.testor;
-TestingResult meanTest = tester.testMeanEqualWithT(2.0, sample, 0.95);  // 均值检验 / Mean test
+TestingResult meanTest = Stats.tester.testMeanEqualWithT(2.0, sample, 0.95);  // 均值检验 / Mean test
 
 // 方差分析 / Analysis of Variance
-ANOVA anova = Stats.anova;
 IVector<Double> group1 = Linalg.vector(new double[]{1, 2, 3, 4, 5});
 IVector<Double> group2 = Linalg.vector(new double[]{2, 3, 4, 5, 6});
-ANOVAResult result = anova.performOneWayANOVA(group1, group2);  // 单因素方差分析 / One-way ANOVA
+ANOVAResult result = Stats.anova.performOneWayANOVA(group1, group2);  // 单因素方差分析 / One-way ANOVA
 
 // 相关性分析 / Correlation analysis
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});

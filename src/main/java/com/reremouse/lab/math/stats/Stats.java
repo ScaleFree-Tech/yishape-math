@@ -194,7 +194,7 @@ public class Stats {
      * 假设检验 / Hypothesis testing
      * Hypothesis testing
      */
-    public static HypothesisTesting testor = new HypothesisTesting();//假设检验
+    public static HypothesisTesting tester = new HypothesisTesting();//假设检验
     
     /**
      * 方差分析/ANAVA
