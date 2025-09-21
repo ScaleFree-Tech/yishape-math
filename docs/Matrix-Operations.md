@@ -285,7 +285,7 @@ boolean isPositiveDefinite = matrix1.isPositiveDefinite(); // 是否为正定矩
 IVector<Double> diagonal = matrix1.diag();       // 获取对角线元素
 
 // 数据访问 / Data access
-double[][] data = matrix1.getData();              // 获取原始数据（仅IDoubleMatrix）
+double[][] data = matrix1.toDoubleArray();              // 获取原始数据（仅IDoubleMatrix）
 ```
 
 #### 矩阵切片操作 / Matrix Slicing Operations
@@ -456,6 +456,7 @@ IMatrix<Double> copied = matrix1.copy();            // 深拷贝
 // 矩阵范数 / Matrix norms
 Double frobeniusNorm = matrix1.frobeniusNorm(); // Frobenius范数
 Double frobeniusDistance = matrix1.frobeniusDistance(matrix2); // Frobenius距离
+Double l1Norm = matrix1.norm1(); // 矩阵L1范数
 ```
 
 ### 10. 高级矩阵操作 / Advanced Matrix Operations

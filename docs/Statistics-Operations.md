@@ -1,4 +1,4 @@
-# 统计操作 (Statsistics Operations)
+# 统计操作 (Statistics Operations)
 
 ## 概述 / Overview
 
@@ -979,14 +979,22 @@ public class CustomDistribution implements IContinuousDistribution {
 | 均值Z估计 / Mean Z-estimation | `estimator.estimateMeanIntevalWithZ(sample, conf, σ)` | `scipy.stats.norm.interval(conf, loc=mean, scale=σ/√n)` | 已知方差的均值估计 / Mean estimation with known variance |
 | 均值t估计 / Mean t-estimation | `estimator.estimateMeanIntevalWithT(sample, conf)` | `scipy.stats.t.interval(conf, df, loc=mean, scale=s/√n)` | 未知方差的均值估计 / Mean estimation with unknown variance |
 | 方差估计 / Variance estimation | `estimator.estimateVarIntevalWithChi2(sample, conf)` | `scipy.stats.chi2.interval(conf, df, scale=s²)` | 方差置信区间估计 / Variance confidence interval estimation |
-
-|| **方差分析 / Analysis of Variance** | | | |
-|| 单因素方差分析 / One-way ANOVA | `Stats.anova.performOneWayANOVA(groups...)` | `scipy.stats.f_oneway(*groups)` | 单因素方差分析 / One-way analysis of variance |
-|| 两因素方差分析 / Two-way ANOVA | `Stats.anova.performTwoWayANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 两因素方差分析 / Two-way analysis of variance |
-|| 重复测量方差分析 / Repeated measures ANOVA | `Stats.anova.performRepeatedMeasuresANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 重复测量方差分析 / Repeated measures analysis of variance |
-|| 正态性检验 / Normality test | `Stats.anova.testNormality(sample)` | `scipy.stats.normaltest(sample)` | 正态性检验 / Normality test |
-|| 方差齐性检验 / Homogeneity of variance test | `Stats.anova.testHomogeneityOfVariance(groups...)` | `scipy.stats.levene(*groups)` | 方差齐性检验 / Homogeneity of variance test |
-|| Tukey HSD多重比较 / Tukey HSD multiple comparisons | `Stats.anova.performTukeyHSD(groups...)` | `scipy.stats.tukey_hsd(*groups)` | Tukey HSD多重比较 / Tukey HSD multiple comparisons |
+| **方差分析 / Analysis of Variance** | | | |
+| 单因素方差分析 / One-way ANOVA | `Stats.anova.performOneWayANOVA(groups...)` | `scipy.stats.f_oneway(*groups)` | 单因素方差分析 / One-way analysis of variance |
+| 两因素方差分析 / Two-way ANOVA | `Stats.anova.performTwoWayANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 两因素方差分析 / Two-way analysis of variance |
+| 重复测量方差分析 / Repeated measures ANOVA | `Stats.anova.performRepeatedMeasuresANOVA(data)` | `scipy.stats.f_oneway(*groups)` | 重复测量方差分析 / Repeated measures analysis of variance |
+| 正态性检验 / Normality test | `Stats.anova.testNormality(sample)` | `scipy.stats.normaltest(sample)` | 正态性检验 / Normality test |
+| 方差齐性检验 / Homogeneity of variance test | `Stats.anova.testHomogeneityOfVariance(groups...)` | `scipy.stats.levene(*groups)` | 方差齐性检验 / Homogeneity of variance test |
+| Tukey HSD多重比较 / Tukey HSD multiple comparisons | `Stats.anova.performTukeyHSD(groups...)` | `scipy.stats.tukey_hsd(*groups)` | Tukey HSD多重比较 / Tukey HSD multiple comparisons |
+| **多元分布 / Multivariate Distributions** | | | |
+| 多元正态分布 / Multivariate normal | `MultivariateDistributions.normal(mean, cov)` | `scipy.stats.multivariate_normal(mean, cov)` | 多元正态分布 / Multivariate normal distribution |
+| 多元t分布 / Multivariate t | `MultivariateDistributions.t(mean, scale, df)` | `scipy.stats.multivariate_t(mean, scale, df)` | 多元t分布 / Multivariate t-distribution |
+| 多元均匀分布 / Multivariate uniform | `MultivariateDistributions.uniform(low, high)` | `scipy.stats.uniform(low, high)` | 多元均匀分布 / Multivariate uniform distribution |
+| **高斯混合模型 / Gaussian Mixture Model** | | | |
+| GMM创建 / GMM creation | `new GaussianMixtureModel(n_components, dimension)` | `sklearn.mixture.GaussianMixture(n_components)` | 高斯混合模型 / Gaussian Mixture Model |
+| EM算法训练 / EM training | `em.fit(gmm, data)` | `gmm.fit(data)` | EM算法训练 / EM algorithm training |
+| 聚类预测 / Cluster prediction | `gmm.predict(data)` | `gmm.predict(data)` | 聚类预测 / Cluster prediction |
+| 概率密度 / Probability density | `gmm.score(data)` | `gmm.score_samples(data)` | 概率密度计算 / Probability density calculation |
 
 ## 最佳实践建议 / Best Practices Recommendations
 
@@ -1026,17 +1034,3 @@ public class CustomDistribution implements IContinuousDistribution {
 **统计操作** - 概率论与数理统计的Java实现，让数据分析更简单！
 
 **Statsistics Operations** - Java implementation of probability theory and mathematical statistics, making data analysis simpler!
-
-## 新增功能对照表 / New Features Comparison Table
-
-| 功能类别 / Function Category | Stats/分布类 / Stats/Distribution Classes | SciPy | 说明 / Description |
-|---------|-------------------|-------|------|
-| **多元分布 / Multivariate Distributions** | | | |
-| 多元正态分布 / Multivariate normal | `MultivariateDistributions.normal(mean, cov)` | `scipy.stats.multivariate_normal(mean, cov)` | 多元正态分布 / Multivariate normal distribution |
-| 多元t分布 / Multivariate t | `MultivariateDistributions.t(mean, scale, df)` | `scipy.stats.multivariate_t(mean, scale, df)` | 多元t分布 / Multivariate t-distribution |
-| 多元均匀分布 / Multivariate uniform | `MultivariateDistributions.uniform(low, high)` | `scipy.stats.uniform(low, high)` | 多元均匀分布 / Multivariate uniform distribution |
-| **高斯混合模型 / Gaussian Mixture Model** | | | |
-| GMM创建 / GMM creation | `new GaussianMixtureModel(n_components, dimension)` | `sklearn.mixture.GaussianMixture(n_components)` | 高斯混合模型 / Gaussian Mixture Model |
-| EM算法训练 / EM training | `em.fit(gmm, data)` | `gmm.fit(data)` | EM算法训练 / EM algorithm training |
-| 聚类预测 / Cluster prediction | `gmm.predict(data)` | `gmm.predict(data)` | 聚类预测 / Cluster prediction |
-| 概率密度 / Probability density | `gmm.score(data)` | `gmm.score_samples(data)` | 概率密度计算 / Probability density calculation |

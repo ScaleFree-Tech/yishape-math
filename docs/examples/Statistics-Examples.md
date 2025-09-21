@@ -1059,53 +1059,6 @@ public class MonteCarloSimulationExample {
 
 ---
 
-## 学习路径建议 / Learning Path Recommendations
-
-### 初学者路径 / Beginner Path
-1. 从第一部分开始，掌握基本统计量计算 / Start with Part 1, master basic statistical calculations
-2. 理解正态分布和均匀分布的基本概念 / Understand basic concepts of normal and uniform distributions
-3. 学习简单的随机采样和概率计算 / Learn simple random sampling and probability calculations
-
-### 中级用户路径 / Intermediate Path
-1. 掌握t分布、卡方分布、F分布等统计分布 / Master statistical distributions like t-distribution, chi-squared, F-distribution
-2. 学习参数估计和假设检验方法 / Learn parameter estimation and hypothesis testing methods
-3. 理解不同分布的应用场景 / Understand application scenarios of different distributions
-
-### 高级用户路径 / Advanced Path
-1. 掌握复杂的统计分析方法 / Master complex statistical analysis methods
-2. 学习实际业务场景的应用 / Learn applications in real business scenarios
-3. 理解统计推断的原理和实践 / Understand principles and practice of statistical inference
-
-### 专业用户路径 / Professional Path
-1. 掌握蒙特卡洛模拟等高级方法 / Master advanced methods like Monte Carlo simulation
-2. 能够设计复杂的统计分析方案 / Be able to design complex statistical analysis solutions
-3. 能够处理实际业务中的复杂统计问题 / Be able to handle complex statistical problems in real business
-
----
-
-## 总结 / Summary
-
-本文档按照从简单到复杂的顺序，系统性地介绍了统计操作包的各种功能。通过循序渐进的学习，您可以：
-
-This document systematically introduces various functions of the statistics package in order from simple to complex. Through progressive learning, you can:
-
-- **掌握基础**：从基本统计量开始，逐步建立统计基础 / **Master the basics**: Start with basic statistics and gradually build statistical foundations
-- **应用实践**：通过实际案例学习不同统计方法的使用场景 / **Apply in practice**: Learn usage scenarios of different statistical methods through real cases
-- **进阶提升**：掌握高级统计方法和专业应用 / **Advance and improve**: Master advanced statistical methods and professional applications
-- **灵活运用**：根据实际需求选择合适的统计分析方法 / **Use flexibly**: Choose appropriate statistical analysis methods based on actual needs
-
-### 新增功能亮点 / New Feature Highlights
-
-- **方差分析 (ANOVA)**：完整的单因素、两因素和重复测量方差分析功能 / **Analysis of Variance (ANOVA)**: Complete one-way, two-way, and repeated measures ANOVA functionality
-- **假设检验**：正态性检验和方差齐性检验 / **Assumption Testing**: Normality tests and homogeneity of variance tests
-- **多重比较**：Tukey HSD多重比较方法 / **Multiple Comparisons**: Tukey HSD multiple comparison methods
-- **中英文对照**：完整的双语文档支持 / **Bilingual Support**: Complete bilingual documentation support
-
----
-
-**统计操作示例** - 让统计分析更简单！
-
-**Statsistics Examples** - Make statistical analysis simpler!
 
 ## 第六部分：高级统计建模 (Level 6 - 高级统计建模) / Part 6: Advanced Statistical Modeling (Level 6 - Advanced Statistical Modeling)
 
@@ -1692,3 +1645,56 @@ public class RealWorldApplicationExample {
     }
 }
 ```
+
+
+---
+
+## 学习路径建议 / Learning Path Recommendations
+
+### 初学者路径 / Beginner Path
+1. 从第一部分开始，掌握基本统计量计算 / Start with Part 1, master basic statistical calculations
+2. 理解正态分布和均匀分布的基本概念 / Understand basic concepts of normal and uniform distributions
+3. 学习简单的随机采样和概率计算 / Learn simple random sampling and probability calculations
+
+### 中级用户路径 / Intermediate Path
+1. 掌握t分布、卡方分布、F分布等统计分布 / Master statistical distributions like t-distribution, chi-squared, F-distribution
+2. 学习参数估计和假设检验方法 / Learn parameter estimation and hypothesis testing methods
+3. 理解不同分布的应用场景 / Understand application scenarios of different distributions
+
+### 高级用户路径 / Advanced Path
+1. 掌握复杂的统计分析方法 / Master complex statistical analysis methods
+2. 学习实际业务场景的应用 / Learn applications in real business scenarios
+3. 理解统计推断的原理和实践 / Understand principles and practice of statistical inference
+
+### 专业用户路径 / Professional Path
+1. 掌握蒙特卡洛模拟等高级方法 / Master advanced methods like Monte Carlo simulation
+2. 能够设计复杂的统计分析方案 / Be able to design complex statistical analysis solutions
+3. 能够处理实际业务中的复杂统计问题 / Be able to handle complex statistical problems in real business
+
+---
+
+## 总结 / Summary
+
+本文档按照从简单到复杂的顺序，系统性地介绍了统计操作包的各种功能。通过循序渐进的学习，您可以：
+
+This document systematically introduces various functions of the statistics package in order from simple to complex. Through progressive learning, you can:
+
+- **掌握基础**：从基本统计量开始，逐步建立统计基础 / **Master the basics**: Start with basic statistics and gradually build statistical foundations
+- **应用实践**：通过实际案例学习不同统计方法的使用场景 / **Apply in practice**: Learn usage scenarios of different statistical methods through real cases
+- **进阶提升**：掌握高级统计方法和专业应用 / **Advance and improve**: Master advanced statistical methods and professional applications
+- **灵活运用**：根据实际需求选择合适的统计分析方法 / **Use flexibly**: Choose appropriate statistical analysis methods based on actual needs
+
+### 新增功能亮点 / New Feature Highlights
+
+- **方差分析 (ANOVA)**：完整的单因素、两因素和重复测量方差分析功能 / **Analysis of Variance (ANOVA)**: Complete one-way, two-way, and repeated measures ANOVA functionality
+- **假设检验**：正态性检验和方差齐性检验 / **Assumption Testing**: Normality tests and homogeneity of variance tests
+- **多重比较**：Tukey HSD多重比较方法 / **Multiple Comparisons**: Tukey HSD multiple comparison methods
+- **中英文对照**：完整的双语文档支持 / **Bilingual Support**: Complete bilingual documentation support
+
+---
+
+**统计操作示例** - 让统计分析更简单！
+
+**Statsistics Examples** - Make statistical analysis simpler!
+
+
