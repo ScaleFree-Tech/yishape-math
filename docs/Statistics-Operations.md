@@ -16,9 +16,9 @@ The `Stats` class and related probability distribution classes provide comprehen
 
 ### 假设检验类 / Hypothesis Testing Class
 
-`HypothesisTesting` 类提供了常用的假设检验功能，包括均值检验和方差检验。通过 `Stats.testor` 静态实例访问。
+`HypothesisTesting` 类提供了常用的假设检验功能，包括均值检验和方差检验。通过 `Stats.tester` 静态实例访问。
 
-`HypothesisTesting` class provides common hypothesis testing functionality, including mean tests and variance tests. Access via `Stats.testor` static instance.
+`HypothesisTesting` class provides common hypothesis testing functionality, including mean tests and variance tests. Access via `Stats.tester` static instance.
 
 **主要方法 / Main Methods:**
 - `testMeanEqualWithT(h0, sample, confidence)` - t检验均值是否等于指定值
@@ -630,10 +630,10 @@ P(X=k) = 1/n, k = a,a+1,...,b
 #### 均值检验 / Mean Testing
 
 ```java
-// 使用Stats.testor进行假设检验 / Use Stats.testor for hypothesis testing
+// 使用Stats.tester进行假设检验 / Use Stats.tester for hypothesis testing
 
 // t检验：检验样本均值是否等于指定值 / t-test: test if sample mean equals specified value
-TestingResult result = Stats.testor.testMeanEqualWithT(h0, sample, confidence);
+TestingResult result = Stats.tester.testMeanEqualWithT(h0, sample, confidence);
 
 // 检查检验结果 / Check test results
 if (result.pass) {
@@ -649,7 +649,7 @@ System.out.println("置信区间: [" + result.criticalInteval._1 + ", " + result
 
 ```java
 // 卡方检验：检验样本方差是否等于指定值 / Chi-squared test: test if sample variance equals specified value
-TestingResult result = Stats.testor.testVarEqualWithChi2(h0, sample, confidence);
+TestingResult result = Stats.tester.testVarEqualWithChi2(h0, sample, confidence);
 ```
 
 ### 5. 参数估计功能 / Parameter Estimation Features
