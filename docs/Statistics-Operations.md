@@ -16,21 +16,68 @@ The `Stats` class and related probability distribution classes provide comprehen
 
 ### 假设检验类 / Hypothesis Testing Class
 
-`HypothesisTesting` 类提供了常用的假设检验功能，包括均值检验和方差检验。
+`HypothesisTesting` 类提供了常用的假设检验功能，包括均值检验和方差检验。通过 `Stats.testor` 静态实例访问。
 
-`HypothesisTesting` class provides common hypothesis testing functionality, including mean tests and variance tests.
+`HypothesisTesting` class provides common hypothesis testing functionality, including mean tests and variance tests. Access via `Stats.testor` static instance.
+
+**主要方法 / Main Methods:**
+- `testMeanEqualWithT(h0, sample, confidence)` - t检验均值是否等于指定值
+- `testVarEqualWithChi2(h0, sample, confidence)` - 卡方检验方差是否等于指定值
 
 ### 参数估计类 / Parameter Estimation Class
 
-`ParameterEstimation` 类提供了参数估计功能，包括均值和方差的置信区间估计。
+`ParameterEstimation` 类提供了参数估计功能，包括均值和方差的置信区间估计。通过 `Stats.estimator` 静态实例访问。
 
-`ParameterEstimation` class provides parameter estimation functionality, including confidence interval estimation for means and variances.
+`ParameterEstimation` class provides parameter estimation functionality, including confidence interval estimation for means and variances. Access via `Stats.estimator` static instance.
+
+**主要方法 / Main Methods:**
+- `estimateMeanIntevalWithZ(sample, confidence, sigma)` - 使用Z分布估计均值（已知总体标准差）
+- `estimateMeanIntevalWithT(sample, confidence)` - 使用t分布估计均值（未知总体标准差）
+- `estimateVarIntevalWithChi2(sample, confidence)` - 使用卡方分布估计方差
 
 ### 方差分析类 / Analysis of Variance (ANOVA) Classes
 
-`ANOVA` 类提供了完整的方差分析功能，包括单因素方差分析、两因素方差分析、重复测量方差分析等。
+`ANOVA` 类提供了完整的方差分析功能，包括单因素方差分析、两因素方差分析、重复测量方差分析等。通过 `Stats.anova` 静态实例访问。
 
-`ANOVA` class provides comprehensive analysis of variance functionality, including one-way ANOVA, two-way ANOVA, repeated measures ANOVA, etc.
+`ANOVA` class provides comprehensive analysis of variance functionality, including one-way ANOVA, two-way ANOVA, repeated measures ANOVA, etc. Access via `Stats.anova` static instance.
+
+### 多元分布类 / Multivariate Distribution Classes
+
+`MultivariateDistributions` 类提供了创建各种多元统计分布的工厂方法，支持高维数据的概率建模。
+
+`MultivariateDistributions` class provides factory methods for creating various multivariate statistical distributions, supporting high-dimensional data probability modeling.
+
+**支持的多元分布 / Supported Multivariate Distributions:**
+- `MultivariateNormalDistribution` - 多元正态分布
+- `MultivariateTDistribution` - 多元t分布
+- `MultivariateUniformDistribution` - 多元均匀分布
+- `MultivariateExponentialDistribution` - 多元指数分布
+- `MultivariateBetaDistribution` - 多元Beta分布（Dirichlet分布）
+
+### 高斯混合模型类 / Gaussian Mixture Model Classes
+
+`GaussianMixtureModel` 类实现了高斯混合模型，用于聚类和密度估计。
+
+`GaussianMixtureModel` class implements Gaussian Mixture Model for clustering and density estimation.
+
+**主要功能 / Main Features:**
+- 多分量高斯分布混合
+- 参数估计和模型拟合
+- 聚类分析
+- 密度估计
+- 概率计算
+
+### EM算法类 / Expectation-Maximization Algorithm Class
+
+`EMAlgorithm` 类实现了期望最大化算法，用于高斯混合模型的参数估计。
+
+`EMAlgorithm` class implements Expectation-Maximization algorithm for parameter estimation in Gaussian Mixture Models.
+
+**主要功能 / Main Features:**
+- 迭代参数优化
+- 收敛性检测
+- 并行计算支持
+- 数值稳定性保证
 
 #### 单因素方差分析 / One-Way ANOVA
 
@@ -583,11 +630,10 @@ P(X=k) = 1/n, k = a,a+1,...,b
 #### 均值检验 / Mean Testing
 
 ```java
-// 创建假设检验对象 / Create hypothesis testing object
-HypothesisTesting tester = new HypothesisTesting();
+// 使用Stats.testor进行假设检验 / Use Stats.testor for hypothesis testing
 
 // t检验：检验样本均值是否等于指定值 / t-test: test if sample mean equals specified value
-TestingResult result = tester.testMeanEqualWithT(h0, sample, confidence);
+TestingResult result = Stats.testor.testMeanEqualWithT(h0, sample, confidence);
 
 // 检查检验结果 / Check test results
 if (result.pass) {
@@ -603,7 +649,7 @@ System.out.println("置信区间: [" + result.criticalInteval._1 + ", " + result
 
 ```java
 // 卡方检验：检验样本方差是否等于指定值 / Chi-squared test: test if sample variance equals specified value
-TestingResult result = tester.testVarEqualWithChi2(h0, sample, confidence);
+TestingResult result = Stats.testor.testVarEqualWithChi2(h0, sample, confidence);
 ```
 
 ### 5. 参数估计功能 / Parameter Estimation Features
@@ -611,32 +657,108 @@ TestingResult result = tester.testVarEqualWithChi2(h0, sample, confidence);
 #### 均值估计 / Mean Estimation
 
 ```java
-// 创建参数估计对象 / Create parameter estimation object
-ParameterEstimation estimator = new ParameterEstimation();
+// 使用Stats.estimator进行参数估计 / Use Stats.estimator for parameter estimation
 
 // 使用Z分布估计均值（已知总体标准差）/ Estimate mean using Z-distribution (known population std)
-Tuple2<Float, Float> meanIntervalZ = estimator.estimateMeanIntevalWithZ(sample, sigma, confidence);
+Tuple2<Double, Double> meanIntervalZ = Stats.estimator.estimateMeanIntevalWithZ(sample, sigma, confidence);
 
 // 使用t分布估计均值（未知总体标准差）/ Estimate mean using t-distribution (unknown population std)
-Tuple2<Float, Float> meanIntervalT = estimator.estimateMeanIntevalWithT(sample, confidence);
+Tuple2<Double, Double> meanIntervalT = Stats.estimator.estimateMeanIntevalWithT(sample, confidence);
 ```
 
 #### 方差估计 / Variance Estimation
 
 ```java
 // 使用卡方分布估计方差 / Estimate variance using chi-squared distribution
-Tuple2<Float, Float> varInterval = estimator.estimateVarIntevalWithChi2(sample, confidence);
+Tuple2<Double, Double> varInterval = Stats.estimator.estimateVarIntevalWithChi2(sample, confidence);
 ```
 
-### 6. 方差分析功能 / Analysis of Variance (ANOVA) Features
+### 6. 多元分布功能 / Multivariate Distribution Features
+
+#### 多元正态分布 / Multivariate Normal Distribution
+
+```java
+// 创建标准多元正态分布 / Create standard multivariate normal distribution
+MultivariateNormalDistribution stdMvn = MultivariateDistributions.standardNormal(3);
+
+// 创建自定义多元正态分布 / Create custom multivariate normal distribution
+double[] mean = {1.0, 2.0, 3.0};
+double[][] covariance = {
+    {1.0, 0.5, 0.2},
+    {0.5, 1.0, 0.3},
+    {0.2, 0.3, 1.0}
+};
+MultivariateNormalDistribution mvn = MultivariateDistributions.normal(mean, covariance);
+
+// 计算概率密度函数 / Calculate probability density function
+double[] x = {1.5, 2.5, 3.5};
+double pdfValue = mvn.pdf(x);
+
+// 生成随机样本 / Generate random samples
+double[][] samples = mvn.sample(1000);
+```
+
+#### 多元t分布 / Multivariate t-Distribution
+
+```java
+// 创建多元t分布 / Create multivariate t-distribution
+IVector<Double> mean = Linalg.vector(new double[]{0.0, 0.0});
+IMatrix<Double> scale = Linalg.eye(2);
+MultivariateTDistribution mvt = MultivariateDistributions.t(mean, scale, 5.0); // 自由度=5
+
+// 计算概率密度函数 / Calculate probability density function
+double[] x = {1.0, 2.0};
+double pdfValue = mvt.pdf(x);
+```
+
+### 7. 高斯混合模型功能 / Gaussian Mixture Model Features
+
+#### 创建和训练GMM / Create and Train GMM
+
+```java
+// 创建高斯混合模型 / Create Gaussian Mixture Model
+GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2); // 3个分量，2维数据
+
+// 准备训练数据 / Prepare training data
+double[][] data = {
+    {1.0, 2.0}, {1.5, 2.5}, {2.0, 3.0},
+    {5.0, 6.0}, {5.5, 6.5}, {6.0, 7.0},
+    {9.0, 10.0}, {9.5, 10.5}, {10.0, 11.0}
+};
+
+// 使用EM算法训练模型 / Train model using EM algorithm
+EMAlgorithm em = new EMAlgorithm();
+EMAlgorithm.EMResult result = em.fit(gmm, data);
+
+// 检查训练结果 / Check training results
+System.out.println("收敛: " + result.converged + " / Converged: " + result.converged);
+System.out.println("迭代次数: " + result.iterations + " / Iterations: " + result.iterations);
+System.out.println("对数似然: " + result.logLikelihood + " / Log-likelihood: " + result.logLikelihood);
+```
+
+#### 聚类和密度估计 / Clustering and Density Estimation
+
+```java
+// 对新数据进行聚类 / Cluster new data
+double[][] newData = {{1.2, 2.3}, {5.8, 6.9}, {9.1, 10.2}};
+int[] clusterAssignments = gmm.predict(newData);
+
+// 计算概率密度 / Calculate probability density
+double[] densities = gmm.score(newData);
+
+// 计算后验概率 / Calculate posterior probabilities
+double[][] posteriors = gmm.predictProbs(newData);
+```
+
+### 8. 方差分析功能 / Analysis of Variance (ANOVA) Features
 
 #### 单因素方差分析 / One-Way ANOVA
 
 ```java
 // 创建样本数据 / Create sample data
-IVector group1 = IVector.of(new float[]{1.2f, 2.3f, 1.8f, 3.1f, 2.7f});
-IVector group2 = IVector.of(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
-IVector group3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
+IDoubleVector group1 = IDoubleVector.of(new double[]{1.2, 2.3, 1.8, 3.1, 2.7});
+IDoubleVector group2 = IDoubleVector.of(new double[]{2.1, 3.2, 2.8, 4.1, 3.5});
+IDoubleVector group3 = IDoubleVector.of(new double[]{3.2, 4.1, 3.8, 5.2, 4.6});
 
 // 执行单因素方差分析 / Perform one-way ANOVA
 ANOVAResult result = Stats.anova.performOneWayANOVA(group1, group2, group3);
@@ -904,3 +1026,17 @@ public class CustomDistribution implements IContinuousDistribution {
 **统计操作** - 概率论与数理统计的Java实现，让数据分析更简单！
 
 **Statsistics Operations** - Java implementation of probability theory and mathematical statistics, making data analysis simpler!
+
+## 新增功能对照表 / New Features Comparison Table
+
+| 功能类别 / Function Category | Stats/分布类 / Stats/Distribution Classes | SciPy | 说明 / Description |
+|---------|-------------------|-------|------|
+| **多元分布 / Multivariate Distributions** | | | |
+| 多元正态分布 / Multivariate normal | `MultivariateDistributions.normal(mean, cov)` | `scipy.stats.multivariate_normal(mean, cov)` | 多元正态分布 / Multivariate normal distribution |
+| 多元t分布 / Multivariate t | `MultivariateDistributions.t(mean, scale, df)` | `scipy.stats.multivariate_t(mean, scale, df)` | 多元t分布 / Multivariate t-distribution |
+| 多元均匀分布 / Multivariate uniform | `MultivariateDistributions.uniform(low, high)` | `scipy.stats.uniform(low, high)` | 多元均匀分布 / Multivariate uniform distribution |
+| **高斯混合模型 / Gaussian Mixture Model** | | | |
+| GMM创建 / GMM creation | `new GaussianMixtureModel(n_components, dimension)` | `sklearn.mixture.GaussianMixture(n_components)` | 高斯混合模型 / Gaussian Mixture Model |
+| EM算法训练 / EM training | `em.fit(gmm, data)` | `gmm.fit(data)` | EM算法训练 / EM algorithm training |
+| 聚类预测 / Cluster prediction | `gmm.predict(data)` | `gmm.predict(data)` | 聚类预测 / Cluster prediction |
+| 概率密度 / Probability density | `gmm.score(data)` | `gmm.score_samples(data)` | 概率密度计算 / Probability density calculation |

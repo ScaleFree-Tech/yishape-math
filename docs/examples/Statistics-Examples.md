@@ -15,10 +15,16 @@ This document systematically organizes detailed usage examples for the statistic
 #### 导入必要的类 / Import Required Classes
 
 ```java
-import com.reremouse.lab.math.stat.Stats;
-import com.reremouse.lab.math.stat.distribution.*;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.RereVector;
+import com.reremouse.lab.math.stats.Stats;
+import com.reremouse.lab.math.stats.distribution.*;
+import com.reremouse.lab.math.stats.distribution.multiv.*;
+import com.reremouse.lab.math.stats.model.*;
+import com.reremouse.lab.math.stats.testing.*;
+import com.reremouse.lab.math.stats.anova.*;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IDoubleVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.util.Tuple2;
 import java.util.Arrays;
 import java.util.List;
 ```
@@ -29,8 +35,8 @@ import java.util.List;
 public class BasicStatsisticsExample {
     public static void main(String[] args) {
         // 创建示例数据 / Create sample data
-        float[] data = {1.2f, 2.3f, 1.8f, 3.1f, 2.7f, 1.5f, 2.9f, 3.2f, 2.1f, 2.8f};
-        IVector vector = IVector.of(data);
+        double[] data = {1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8};
+        IDoubleVector vector = Linalg.vector(data);
         
         // 计算基本统计量 / Calculate basic statistics
         System.out.println("=== 基本统计量 / Basic Statsistics ===");
@@ -154,7 +160,7 @@ public class RandomSamplingBasicExample {
         System.out.println("生成了 " + samples.length + " 个随机样本 / Generated " + samples.length + " random samples");
         
         // 计算样本统计量 / Calculate sample statistics
-        IVector sampleVector = IVector.of(samples);
+        IVector sampleVector = Linalg.vector(samples);
         System.out.println("\n样本统计量: / Sample statistics:");
         System.out.printf("样本均值: %.4f (理论值: %.4f) / Sample mean: %.4f (theoretical: %.4f)%n", sampleVector.mean(), normal.mean(), sampleVector.mean(), normal.mean());
         System.out.printf("样本标准差: %.4f (理论值: %.4f) / Sample std: %.4f (theoretical: %.4f)%n", sampleVector.std(), normal.std(), sampleVector.std(), normal.std());
@@ -348,7 +354,7 @@ public class ParameterEstimationExample {
         // 生成样本数据 / Generate sample data
         NormalDistribution trueDist = Stats.norm(10.0f, 2.0f);
         float[] samples = trueDist.sample(100);
-        IVector sampleVector = IVector.of(samples);
+        IVector sampleVector = Linalg.vector(samples);
         
         System.out.println("=== 参数估计示例 / Parameter Estimation Example ===");
         System.out.println("真实参数: μ=10.0, σ=2.0 / True parameters: μ=10.0, σ=2.0");
@@ -383,7 +389,7 @@ public class HypothesisTestingExample {
         // 生成样本数据 / Generate sample data
         NormalDistribution trueDist = Stats.norm(10.0f, 2.0f);
         float[] samples = trueDist.sample(50);
-        IVector sampleVector = IVector.of(samples);
+        IVector sampleVector = Linalg.vector(samples);
         
         System.out.println("=== 假设检验示例 / Hypothesis Testing Example ===");
         System.out.println("样本数据: / Sample data:");
@@ -472,7 +478,7 @@ public class QualityControlAnalysisExample {
         
         // 生成样本数据（模拟实际测量结果） / Generate sample data (simulate actual measurement results)
         float[] measurements = targetDist.sample(50);
-        IVector sample = IVector.of(measurements);
+        IVector sample = Linalg.vector(measurements);
         
         System.out.println("产品重量测量数据: / Product weight measurement data:");
         System.out.println("  样本大小: " + sample.length() + " / Sample size: " + sample.length());
@@ -532,7 +538,7 @@ public class FinancialRiskAssessmentExample {
         // 模拟股票收益率数据（假设服从正态分布） / Simulate stock return data (assume normal distribution)
         NormalDistribution returnDist = Stats.norm(0.001f, 0.02f); // 日收益率：均值0.1%，标准差2% / Daily return: mean 0.1%, std 2%
         float[] dailyReturns = returnDist.sample(252); // 一年的交易日数据 / One year of trading day data
-        IVector returns = IVector.of(dailyReturns);
+        IVector returns = Linalg.vector(dailyReturns);
         
         System.out.println("股票收益率统计: / Stock return statistics:");
         System.out.println("  样本大小: " + returns.length() + " / Sample size: " + returns.length());
@@ -605,7 +611,7 @@ public class ReliabilityAnalysisExample {
         // 模拟设备故障时间数据（假设服从指数分布） / Simulate equipment failure time data (assume exponential distribution)
         ExponentialDistribution failureDist = Stats.exponential(0.01f); // 故障率λ=0.01/小时 / Failure rate λ=0.01/hour
         float[] failureTimes = failureDist.sample(100); // 100个故障时间样本 / 100 failure time samples
-        IVector failures = IVector.of(failureTimes);
+        IVector failures = Linalg.vector(failureTimes);
         
         System.out.println("设备故障时间统计: / Equipment failure time statistics:");
         System.out.println("  样本大小: " + failures.length() + " / Sample size: " + failures.length());
@@ -703,12 +709,12 @@ public class ExperimentalDesignAnalysisExample {
             treatmentData[i] = treatmentDist.sample();
         }
         
-        IVector controlVector = IVector.of(controlData);
-        IVector treatmentVector = IVector.of(treatmentData);
+        IVector controlVector = Linalg.vector(controlData);
+        IVector treatmentVector = Linalg.vector(treatmentData);
         
         // 检验两组均值是否相等 / Test if two group means are equal
         TestingResult meanTest = tester.testMeanEqualWithT(0.0f, 
-            IVector.of(new float[]{rateDifference}), 0.95f);
+            Linalg.vector(new float[]{rateDifference}), 0.95f);
         
         System.out.println("\n假设检验 (H0: 转化率差异 = 0): / Hypothesis test (H0: conversion rate difference = 0):");
         System.out.println("  检验结果: " + (meanTest.pass ? "接受原假设" : "拒绝原假设") + " / Test result: " + (meanTest.pass ? "Accept null hypothesis" : "Reject null hypothesis"));
@@ -754,9 +760,9 @@ public class ANOVAApplicationExample {
         
         // 创建三个组的数据 / Create data for three groups
         // 假设研究不同教学方法对学生成绩的影响 / Assume studying the impact of different teaching methods on student performance
-        IVector traditionalMethod = IVector.of(new float[]{75, 78, 82, 85, 88, 90, 92, 95});
-        IVector onlineMethod = IVector.of(new float[]{70, 73, 76, 79, 82, 85, 87, 90});
-        IVector hybridMethod = IVector.of(new float[]{80, 83, 86, 89, 92, 95, 97, 100});
+        IVector traditionalMethod = Linalg.vector(new float[]{75, 78, 82, 85, 88, 90, 92, 95});
+        IVector onlineMethod = Linalg.vector(new float[]{70, 73, 76, 79, 82, 85, 87, 90});
+        IVector hybridMethod = Linalg.vector(new float[]{80, 83, 86, 89, 92, 95, 97, 100});
         
         System.out.println("教学方法数据: / Teaching method data:");
         System.out.println("  传统方法: " + traditionalMethod.mean() + " ± " + traditionalMethod.std() + " / Traditional method: " + traditionalMethod.mean() + " ± " + traditionalMethod.std());
@@ -863,9 +869,9 @@ public class ANOVAApplicationExample {
         System.out.println("\n--- 假设检验示例 / Assumption Tests Example ---");
         
         // 创建示例数据 / Create sample data
-        IVector sample1 = IVector.of(new float[]{1.2f, 2.3f, 1.8f, 3.1f, 2.7f});
-        IVector sample2 = IVector.of(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
-        IVector sample3 = IVector.of(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
+        IVector sample1 = Linalg.vector(new float[]{1.2f, 2.3f, 1.8f, 3.1f, 2.7f});
+        IVector sample2 = Linalg.vector(new float[]{2.1f, 3.2f, 2.8f, 4.1f, 3.5f});
+        IVector sample3 = Linalg.vector(new float[]{3.2f, 4.1f, 3.8f, 5.2f, 4.6f});
         
         System.out.println("假设检验: / Assumption tests:");
         
@@ -1100,3 +1106,589 @@ This document systematically introduces various functions of the statistics pack
 **统计操作示例** - 让统计分析更简单！
 
 **Statsistics Examples** - Make statistical analysis simpler!
+
+## 第六部分：高级统计建模 (Level 6 - 高级统计建模) / Part 6: Advanced Statistical Modeling (Level 6 - Advanced Statistical Modeling)
+
+### 6.1 多元分布应用 / Multivariate Distribution Applications
+
+```java
+public class MultivariateDistributionExample {
+    public static void main(String[] args) {
+        System.out.println("=== 多元分布应用示例 / Multivariate Distribution Application Example ===");
+        
+        // 多元正态分布示例 / Multivariate normal distribution example
+        demonstrateMultivariateNormal();
+        
+        // 多元t分布示例 / Multivariate t-distribution example
+        demonstrateMultivariateT();
+        
+        // 多元均匀分布示例 / Multivariate uniform distribution example
+        demonstrateMultivariateUniform();
+    }
+    
+    public static void demonstrateMultivariateNormal() {
+        System.out.println("\n--- 多元正态分布示例 / Multivariate Normal Distribution Example ---");
+        
+        // 创建3维多元正态分布 / Create 3D multivariate normal distribution
+        double[] mean = {1.0, 2.0, 3.0};
+        double[][] covariance = {
+            {1.0, 0.5, 0.2},
+            {0.5, 1.0, 0.3},
+            {0.2, 0.3, 1.0}
+        };
+        
+        MultivariateNormalDistribution mvn = MultivariateDistributions.normal(mean, covariance);
+        
+        System.out.println("多元正态分布参数: / Multivariate normal distribution parameters:");
+        System.out.println("  均值向量: " + Arrays.toString(mean) + " / Mean vector: " + Arrays.toString(mean));
+        System.out.println("  协方差矩阵: / Covariance matrix:");
+        for (double[] row : covariance) {
+            System.out.println("    " + Arrays.toString(row));
+        }
+        
+        // 计算概率密度函数 / Calculate probability density function
+        double[] x = {1.5, 2.5, 3.5};
+        double pdfValue = mvn.pdf(x);
+        System.out.println("PDF值: " + pdfValue + " / PDF value: " + pdfValue);
+        
+        // 生成随机样本 / Generate random samples
+        double[][] samples = mvn.sample(1000);
+        System.out.println("生成了 " + samples.length + " 个随机样本 / Generated " + samples.length + " random samples");
+        
+        // 计算样本统计量 / Calculate sample statistics
+        IDoubleVector sample1 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[0]).toArray());
+        IDoubleVector sample2 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[1]).toArray());
+        IDoubleVector sample3 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[2]).toArray());
+        
+        System.out.println("样本统计量: / Sample statistics:");
+        System.out.println("  第1维均值: " + sample1.mean() + " (理论值: " + mean[0] + ") / Dim 1 mean: " + sample1.mean() + " (theoretical: " + mean[0] + ")");
+        System.out.println("  第2维均值: " + sample2.mean() + " (理论值: " + mean[1] + ") / Dim 2 mean: " + sample2.mean() + " (theoretical: " + mean[1] + ")");
+        System.out.println("  第3维均值: " + sample3.mean() + " (理论值: " + mean[2] + ") / Dim 3 mean: " + sample3.mean() + " (theoretical: " + mean[2] + ")");
+    }
+    
+    public static void demonstrateMultivariateT() {
+        System.out.println("\n--- 多元t分布示例 / Multivariate t-Distribution Example ---");
+        
+        // 创建2维多元t分布 / Create 2D multivariate t-distribution
+        IDoubleVector mean = Linalg.vector(new double[]{0.0, 0.0});
+        IMatrix<Double> scale = Linalg.eye(2);
+        double degreesOfFreedom = 5.0;
+        
+        MultivariateTDistribution mvt = MultivariateDistributions.t(mean, scale, degreesOfFreedom);
+        
+        System.out.println("多元t分布参数: / Multivariate t-distribution parameters:");
+        System.out.println("  自由度: " + degreesOfFreedom + " / Degrees of freedom: " + degreesOfFreedom);
+        
+        // 计算概率密度函数 / Calculate probability density function
+        double[] x = {1.0, 2.0};
+        double pdfValue = mvt.pdf(x);
+        System.out.println("PDF值: " + pdfValue + " / PDF value: " + pdfValue);
+        
+        // 生成随机样本 / Generate random samples
+        double[][] samples = mvt.sample(1000);
+        System.out.println("生成了 " + samples.length + " 个随机样本 / Generated " + samples.length + " random samples");
+    }
+    
+    public static void demonstrateMultivariateUniform() {
+        System.out.println("\n--- 多元均匀分布示例 / Multivariate Uniform Distribution Example ---");
+        
+        // 创建2维多元均匀分布 / Create 2D multivariate uniform distribution
+        double[] low = {0.0, 0.0};
+        double[] high = {1.0, 2.0};
+        
+        MultivariateUniformDistribution mvu = MultivariateDistributions.uniform(low, high);
+        
+        System.out.println("多元均匀分布参数: / Multivariate uniform distribution parameters:");
+        System.out.println("  下界: " + Arrays.toString(low) + " / Lower bound: " + Arrays.toString(low));
+        System.out.println("  上界: " + Arrays.toString(high) + " / Upper bound: " + Arrays.toString(high));
+        
+        // 计算概率密度函数 / Calculate probability density function
+        double[] x = {0.5, 1.0};
+        double pdfValue = mvu.pdf(x);
+        System.out.println("PDF值: " + pdfValue + " / PDF value: " + pdfValue);
+        
+        // 生成随机样本 / Generate random samples
+        double[][] samples = mvu.sample(1000);
+        System.out.println("生成了 " + samples.length + " 个随机样本 / Generated " + samples.length + " random samples");
+    }
+}
+```
+
+### 6.2 高斯混合模型应用 / Gaussian Mixture Model Applications
+
+```java
+public class GaussianMixtureModelExample {
+    public static void main(String[] args) {
+        System.out.println("=== 高斯混合模型应用示例 / Gaussian Mixture Model Application Example ===");
+        
+        // 创建和训练GMM / Create and train GMM
+        demonstrateGMMTraining();
+        
+        // 聚类分析 / Clustering analysis
+        demonstrateClustering();
+        
+        // 密度估计 / Density estimation
+        demonstrateDensityEstimation();
+    }
+    
+    public static void demonstrateGMMTraining() {
+        System.out.println("\n--- GMM训练示例 / GMM Training Example ---");
+        
+        // 创建模拟数据 / Create simulated data
+        double[][] data = generateSimulatedData();
+        
+        System.out.println("训练数据: " + data.length + " 个样本, " + data[0].length + " 维 / Training data: " + data.length + " samples, " + data[0].length + " dimensions");
+        
+        // 创建GMM模型 / Create GMM model
+        GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2); // 3个分量，2维数据
+        
+        // 使用EM算法训练模型 / Train model using EM algorithm
+        EMAlgorithm em = new EMAlgorithm();
+        EMAlgorithm.EMResult result = em.fit(gmm, data);
+        
+        System.out.println("训练结果: / Training results:");
+        System.out.println("  收敛: " + result.converged + " / Converged: " + result.converged);
+        System.out.println("  迭代次数: " + result.iterations + " / Iterations: " + result.iterations);
+        System.out.println("  最终对数似然: " + result.logLikelihood + " / Final log-likelihood: " + result.logLikelihood);
+        
+        // 显示模型参数 / Display model parameters
+        System.out.println("模型参数: / Model parameters:");
+        for (int i = 0; i < gmm.getNumComponents(); i++) {
+            System.out.println("  分量 " + i + " 权重: " + gmm.getWeights().get(i) + " / Component " + i + " weight: " + gmm.getWeights().get(i));
+        }
+    }
+    
+    public static void demonstrateClustering() {
+        System.out.println("\n--- 聚类分析示例 / Clustering Analysis Example ---");
+        
+        // 创建GMM模型 / Create GMM model
+        GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2);
+        
+        // 准备测试数据 / Prepare test data
+        double[][] testData = {
+            {1.2, 2.3}, {1.5, 2.6}, {1.8, 2.9},
+            {5.1, 6.2}, {5.4, 6.5}, {5.7, 6.8},
+            {9.0, 10.1}, {9.3, 10.4}, {9.6, 10.7}
+        };
+        
+        // 对新数据进行聚类 / Cluster new data
+        int[] clusterAssignments = gmm.predict(testData);
+        
+        System.out.println("聚类结果: / Clustering results:");
+        for (int i = 0; i < testData.length; i++) {
+            System.out.println("  数据点 " + i + ": " + Arrays.toString(testData[i]) + " -> 聚类 " + clusterAssignments[i] + " / Data point " + i + ": " + Arrays.toString(testData[i]) + " -> Cluster " + clusterAssignments[i]);
+        }
+        
+        // 计算后验概率 / Calculate posterior probabilities
+        double[][] posteriors = gmm.predictProbs(testData);
+        System.out.println("后验概率: / Posterior probabilities:");
+        for (int i = 0; i < testData.length; i++) {
+            System.out.println("  数据点 " + i + ": " + Arrays.toString(posteriors[i]) + " / Data point " + i + ": " + Arrays.toString(posteriors[i]));
+        }
+    }
+    
+    public static void demonstrateDensityEstimation() {
+        System.out.println("\n--- 密度估计示例 / Density Estimation Example ---");
+        
+        // 创建GMM模型 / Create GMM model
+        GaussianMixtureModel gmm = new GaussianMixtureModel(2, 2);
+        
+        // 准备测试数据 / Prepare test data
+        double[][] testData = {
+            {1.0, 2.0}, {1.5, 2.5}, {2.0, 3.0},
+            {5.0, 6.0}, {5.5, 6.5}, {6.0, 7.0}
+        };
+        
+        // 计算概率密度 / Calculate probability density
+        double[] densities = gmm.score(testData);
+        
+        System.out.println("密度估计结果: / Density estimation results:");
+        for (int i = 0; i < testData.length; i++) {
+            System.out.println("  数据点 " + i + ": " + Arrays.toString(testData[i]) + " -> 密度 " + densities[i] + " / Data point " + i + ": " + Arrays.toString(testData[i]) + " -> Density " + densities[i]);
+        }
+    }
+    
+    private static double[][] generateSimulatedData() {
+        // 生成模拟的聚类数据 / Generate simulated clustering data
+        double[][] data = new double[300][2];
+        Random random = new Random(42);
+        
+        // 第一个聚类 / First cluster
+        for (int i = 0; i < 100; i++) {
+            data[i][0] = 1.0 + random.nextGaussian() * 0.5;
+            data[i][1] = 2.0 + random.nextGaussian() * 0.5;
+        }
+        
+        // 第二个聚类 / Second cluster
+        for (int i = 100; i < 200; i++) {
+            data[i][0] = 5.0 + random.nextGaussian() * 0.5;
+            data[i][1] = 6.0 + random.nextGaussian() * 0.5;
+        }
+        
+        // 第三个聚类 / Third cluster
+        for (int i = 200; i < 300; i++) {
+            data[i][0] = 9.0 + random.nextGaussian() * 0.5;
+            data[i][1] = 10.0 + random.nextGaussian() * 0.5;
+        }
+        
+        return data;
+    }
+}
+```
+
+### 6.3 EM算法高级应用 / EM Algorithm Advanced Applications
+
+```java
+public class EMAlgorithmAdvancedExample {
+    public static void main(String[] args) {
+        System.out.println("=== EM算法高级应用示例 / EM Algorithm Advanced Application Example ===");
+        
+        // 参数估计示例 / Parameter estimation example
+        demonstrateParameterEstimation();
+        
+        // 模型选择示例 / Model selection example
+        demonstrateModelSelection();
+        
+        // 收敛性分析示例 / Convergence analysis example
+        demonstrateConvergenceAnalysis();
+    }
+    
+    public static void demonstrateParameterEstimation() {
+        System.out.println("\n--- 参数估计示例 / Parameter Estimation Example ---");
+        
+        // 创建已知参数的GMM / Create GMM with known parameters
+        List<MultivariateNormalDistribution> trueComponents = new ArrayList<>();
+        List<Double> trueWeights = new ArrayList<>();
+        
+        // 第一个分量 / First component
+        IDoubleVector mean1 = Linalg.vector(new double[]{1.0, 2.0});
+        IMatrix<Double> cov1 = Linalg.eye(2);
+        trueComponents.add(new MultivariateNormalDistribution(mean1, cov1));
+        trueWeights.add(0.4);
+        
+        // 第二个分量 / Second component
+        IDoubleVector mean2 = Linalg.vector(new double[]{5.0, 6.0});
+        IMatrix<Double> cov2 = Linalg.eye(2);
+        trueComponents.add(new MultivariateNormalDistribution(mean2, cov2));
+        trueWeights.add(0.6);
+        
+        GaussianMixtureModel trueGMM = new GaussianMixtureModel(trueComponents, trueWeights);
+        
+        // 生成训练数据 / Generate training data
+        double[][] data = trueGMM.sample(1000);
+        
+        System.out.println("真实模型参数: / True model parameters:");
+        for (int i = 0; i < trueGMM.getNumComponents(); i++) {
+            System.out.println("  分量 " + i + " 权重: " + trueWeights.get(i) + " / Component " + i + " weight: " + trueWeights.get(i));
+        }
+        
+        // 使用EM算法估计参数 / Estimate parameters using EM algorithm
+        GaussianMixtureModel estimatedGMM = new GaussianMixtureModel(2, 2);
+        EMAlgorithm em = new EMAlgorithm();
+        EMAlgorithm.EMResult result = em.fit(estimatedGMM, data);
+        
+        System.out.println("估计结果: / Estimation results:");
+        System.out.println("  收敛: " + result.converged + " / Converged: " + result.converged);
+        System.out.println("  迭代次数: " + result.iterations + " / Iterations: " + result.iterations);
+        
+        System.out.println("估计的模型参数: / Estimated model parameters:");
+        for (int i = 0; i < estimatedGMM.getNumComponents(); i++) {
+            System.out.println("  分量 " + i + " 权重: " + estimatedGMM.getWeights().get(i) + " / Component " + i + " weight: " + estimatedGMM.getWeights().get(i));
+        }
+    }
+    
+    public static void demonstrateModelSelection() {
+        System.out.println("\n--- 模型选择示例 / Model Selection Example ---");
+        
+        // 生成测试数据 / Generate test data
+        double[][] data = generateTestData();
+        
+        // 测试不同数量的分量 / Test different numbers of components
+        int[] componentCounts = {1, 2, 3, 4, 5};
+        double[] logLikelihoods = new double[componentCounts.length];
+        
+        for (int i = 0; i < componentCounts.length; i++) {
+            GaussianMixtureModel gmm = new GaussianMixtureModel(componentCounts[i], 2);
+            EMAlgorithm em = new EMAlgorithm();
+            EMAlgorithm.EMResult result = em.fit(gmm, data);
+            logLikelihoods[i] = result.logLikelihood;
+            
+            System.out.println("分量数: " + componentCounts[i] + ", 对数似然: " + logLikelihoods[i] + " / Components: " + componentCounts[i] + ", Log-likelihood: " + logLikelihoods[i]);
+        }
+        
+        // 使用AIC进行模型选择 / Use AIC for model selection
+        double[] aicScores = new double[componentCounts.length];
+        for (int i = 0; i < componentCounts.length; i++) {
+            int k = componentCounts[i] * 6 - 1; // 参数数量 / Number of parameters
+            aicScores[i] = 2 * k - 2 * logLikelihoods[i];
+        }
+        
+        int bestModel = 0;
+        for (int i = 1; i < aicScores.length; i++) {
+            if (aicScores[i] < aicScores[bestModel]) {
+                bestModel = i;
+            }
+        }
+        
+        System.out.println("最佳模型: " + componentCounts[bestModel] + " 个分量 (AIC = " + aicScores[bestModel] + ") / Best model: " + componentCounts[bestModel] + " components (AIC = " + aicScores[bestModel] + ")");
+    }
+    
+    public static void demonstrateConvergenceAnalysis() {
+        System.out.println("\n--- 收敛性分析示例 / Convergence Analysis Example ---");
+        
+        // 创建测试数据 / Create test data
+        double[][] data = generateTestData();
+        
+        // 使用不同的收敛阈值 / Use different convergence thresholds
+        double[] tolerances = {1e-3, 1e-4, 1e-5, 1e-6};
+        
+        for (double tolerance : tolerances) {
+            GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2);
+            EMAlgorithm em = new EMAlgorithm(1000, tolerance, false, false, 4);
+            EMAlgorithm.EMResult result = em.fit(gmm, data);
+            
+            System.out.println("收敛阈值: " + tolerance + ", 迭代次数: " + result.iterations + ", 收敛: " + result.converged + " / Tolerance: " + tolerance + ", Iterations: " + result.iterations + ", Converged: " + result.converged);
+        }
+    }
+    
+    private static double[][] generateTestData() {
+        // 生成测试数据 / Generate test data
+        double[][] data = new double[200][2];
+        Random random = new Random(42);
+        
+        // 两个聚类 / Two clusters
+        for (int i = 0; i < 100; i++) {
+            data[i][0] = 1.0 + random.nextGaussian() * 0.5;
+            data[i][1] = 2.0 + random.nextGaussian() * 0.5;
+        }
+        
+        for (int i = 100; i < 200; i++) {
+            data[i][0] = 5.0 + random.nextGaussian() * 0.5;
+            data[i][1] = 6.0 + random.nextGaussian() * 0.5;
+        }
+        
+        return data;
+    }
+}
+```
+
+### 6.4 实际应用案例 / Real-World Application Cases
+
+```java
+public class RealWorldApplicationExample {
+    public static void main(String[] args) {
+        System.out.println("=== 实际应用案例 / Real-World Application Cases ===");
+        
+        // 客户细分案例 / Customer segmentation case
+        demonstrateCustomerSegmentation();
+        
+        // 异常检测案例 / Anomaly detection case
+        demonstrateAnomalyDetection();
+        
+        // 图像分割案例 / Image segmentation case
+        demonstrateImageSegmentation();
+    }
+    
+    public static void demonstrateCustomerSegmentation() {
+        System.out.println("\n--- 客户细分案例 / Customer Segmentation Case ---");
+        
+        // 模拟客户数据 (年龄, 收入, 消费金额) / Simulate customer data (age, income, spending)
+        double[][] customerData = generateCustomerData();
+        
+        System.out.println("客户数据: " + customerData.length + " 个客户, " + customerData[0].length + " 个特征 / Customer data: " + customerData.length + " customers, " + customerData[0].length + " features");
+        
+        // 使用GMM进行客户细分 / Use GMM for customer segmentation
+        GaussianMixtureModel gmm = new GaussianMixtureModel(4, 3); // 4个客户群体，3个特征
+        EMAlgorithm em = new EMAlgorithm();
+        EMAlgorithm.EMResult result = em.fit(gmm, customerData);
+        
+        // 预测客户群体 / Predict customer segments
+        int[] segments = gmm.predict(customerData);
+        
+        // 分析各群体的特征 / Analyze characteristics of each segment
+        System.out.println("客户群体分析: / Customer segment analysis:");
+        for (int segment = 0; segment < 4; segment++) {
+            List<double[]> segmentData = new ArrayList<>();
+            for (int i = 0; i < customerData.length; i++) {
+                if (segments[i] == segment) {
+                    segmentData.add(customerData[i]);
+                }
+            }
+            
+            if (!segmentData.isEmpty()) {
+                double[] avgAge = segmentData.stream().mapToDouble(d -> d[0]).average().orElse(0);
+                double[] avgIncome = segmentData.stream().mapToDouble(d -> d[1]).average().orElse(0);
+                double[] avgSpending = segmentData.stream().mapToDouble(d -> d[2]).average().orElse(0);
+                
+                System.out.println("  群体 " + segment + ": " + segmentData.size() + " 个客户 / Segment " + segment + ": " + segmentData.size() + " customers");
+                System.out.println("    平均年龄: " + avgAge + " / Average age: " + avgAge);
+                System.out.println("    平均收入: " + avgIncome + " / Average income: " + avgIncome);
+                System.out.println("    平均消费: " + avgSpending + " / Average spending: " + avgSpending);
+            }
+        }
+    }
+    
+    public static void demonstrateAnomalyDetection() {
+        System.out.println("\n--- 异常检测案例 / Anomaly Detection Case ---");
+        
+        // 生成正常数据和异常数据 / Generate normal and anomalous data
+        double[][] normalData = generateNormalData();
+        double[][] anomalousData = generateAnomalousData();
+        
+        // 使用GMM建模正常数据 / Use GMM to model normal data
+        GaussianMixtureModel gmm = new GaussianMixtureModel(2, 2);
+        EMAlgorithm em = new EMAlgorithm();
+        em.fit(gmm, normalData);
+        
+        // 计算密度阈值 / Calculate density threshold
+        double[] normalDensities = gmm.score(normalData);
+        double threshold = Arrays.stream(normalDensities).min().orElse(0.0) * 0.1; // 使用10%的密度作为阈值
+        
+        System.out.println("密度阈值: " + threshold + " / Density threshold: " + threshold);
+        
+        // 检测异常 / Detect anomalies
+        double[] anomalousDensities = gmm.score(anomalousData);
+        int anomalyCount = 0;
+        
+        for (int i = 0; i < anomalousData.length; i++) {
+            if (anomalousDensities[i] < threshold) {
+                anomalyCount++;
+                System.out.println("检测到异常: " + Arrays.toString(anomalousData[i]) + " (密度: " + anomalousDensities[i] + ") / Anomaly detected: " + Arrays.toString(anomalousData[i]) + " (density: " + anomalousDensities[i] + ")");
+            }
+        }
+        
+        System.out.println("异常检测结果: " + anomalyCount + "/" + anomalousData.length + " 个异常 / Anomaly detection result: " + anomalyCount + "/" + anomalousData.length + " anomalies");
+    }
+    
+    public static void demonstrateImageSegmentation() {
+        System.out.println("\n--- 图像分割案例 / Image Segmentation Case ---");
+        
+        // 模拟图像像素数据 (RGB值) / Simulate image pixel data (RGB values)
+        double[][] pixelData = generatePixelData();
+        
+        System.out.println("图像数据: " + pixelData.length + " 个像素, " + pixelData[0].length + " 个颜色通道 / Image data: " + pixelData.length + " pixels, " + pixelData[0].length + " color channels");
+        
+        // 使用GMM进行图像分割 / Use GMM for image segmentation
+        GaussianMixtureModel gmm = new GaussianMixtureModel(5, 3); // 5个颜色区域，3个RGB通道
+        EMAlgorithm em = new EMAlgorithm();
+        em.fit(gmm, pixelData);
+        
+        // 预测像素区域 / Predict pixel regions
+        int[] regions = gmm.predict(pixelData);
+        
+        // 分析各区域的颜色特征 / Analyze color characteristics of each region
+        System.out.println("图像区域分析: / Image region analysis:");
+        for (int region = 0; region < 5; region++) {
+            List<double[]> regionData = new ArrayList<>();
+            for (int i = 0; i < pixelData.length; i++) {
+                if (regions[i] == region) {
+                    regionData.add(pixelData[i]);
+                }
+            }
+            
+            if (!regionData.isEmpty()) {
+                double[] avgR = regionData.stream().mapToDouble(d -> d[0]).average().orElse(0);
+                double[] avgG = regionData.stream().mapToDouble(d -> d[1]).average().orElse(0);
+                double[] avgB = regionData.stream().mapToDouble(d -> d[2]).average().orElse(0);
+                
+                System.out.println("  区域 " + region + ": " + regionData.size() + " 个像素 / Region " + region + ": " + regionData.size() + " pixels");
+                System.out.println("    平均RGB: (" + avgR + ", " + avgG + ", " + avgB + ") / Average RGB: (" + avgR + ", " + avgG + ", " + avgB + ")");
+            }
+        }
+    }
+    
+    private static double[][] generateCustomerData() {
+        double[][] data = new double[1000][3];
+        Random random = new Random(42);
+        
+        // 生成4个不同的客户群体 / Generate 4 different customer segments
+        for (int i = 0; i < 250; i++) {
+            data[i][0] = 25 + random.nextGaussian() * 5; // 年龄 / Age
+            data[i][1] = 30000 + random.nextGaussian() * 5000; // 收入 / Income
+            data[i][2] = 500 + random.nextGaussian() * 100; // 消费 / Spending
+        }
+        
+        for (int i = 250; i < 500; i++) {
+            data[i][0] = 35 + random.nextGaussian() * 5;
+            data[i][1] = 60000 + random.nextGaussian() * 10000;
+            data[i][2] = 1500 + random.nextGaussian() * 300;
+        }
+        
+        for (int i = 500; i < 750; i++) {
+            data[i][0] = 45 + random.nextGaussian() * 5;
+            data[i][1] = 80000 + random.nextGaussian() * 15000;
+            data[i][2] = 3000 + random.nextGaussian() * 500;
+        }
+        
+        for (int i = 750; i < 1000; i++) {
+            data[i][0] = 55 + random.nextGaussian() * 5;
+            data[i][1] = 100000 + random.nextGaussian() * 20000;
+            data[i][2] = 5000 + random.nextGaussian() * 1000;
+        }
+        
+        return data;
+    }
+    
+    private static double[][] generateNormalData() {
+        double[][] data = new double[500][2];
+        Random random = new Random(42);
+        
+        for (int i = 0; i < 500; i++) {
+            data[i][0] = 5.0 + random.nextGaussian() * 1.0;
+            data[i][1] = 5.0 + random.nextGaussian() * 1.0;
+        }
+        
+        return data;
+    }
+    
+    private static double[][] generateAnomalousData() {
+        double[][] data = new double[50][2];
+        Random random = new Random(123);
+        
+        for (int i = 0; i < 50; i++) {
+            data[i][0] = 10.0 + random.nextGaussian() * 2.0; // 远离正常数据 / Far from normal data
+            data[i][1] = 10.0 + random.nextGaussian() * 2.0;
+        }
+        
+        return data;
+    }
+    
+    private static double[][] generatePixelData() {
+        double[][] data = new double[10000][3];
+        Random random = new Random(42);
+        
+        // 生成5个不同的颜色区域 / Generate 5 different color regions
+        for (int i = 0; i < 2000; i++) {
+            data[i][0] = 100 + random.nextGaussian() * 20; // 红色区域 / Red region
+            data[i][1] = 50 + random.nextGaussian() * 10;
+            data[i][2] = 50 + random.nextGaussian() * 10;
+        }
+        
+        for (int i = 2000; i < 4000; i++) {
+            data[i][0] = 50 + random.nextGaussian() * 10; // 绿色区域 / Green region
+            data[i][1] = 150 + random.nextGaussian() * 20;
+            data[i][2] = 50 + random.nextGaussian() * 10;
+        }
+        
+        for (int i = 4000; i < 6000; i++) {
+            data[i][0] = 50 + random.nextGaussian() * 10; // 蓝色区域 / Blue region
+            data[i][1] = 50 + random.nextGaussian() * 10;
+            data[i][2] = 150 + random.nextGaussian() * 20;
+        }
+        
+        for (int i = 6000; i < 8000; i++) {
+            data[i][0] = 200 + random.nextGaussian() * 30; // 黄色区域 / Yellow region
+            data[i][1] = 200 + random.nextGaussian() * 30;
+            data[i][2] = 50 + random.nextGaussian() * 10;
+        }
+        
+        for (int i = 8000; i < 10000; i++) {
+            data[i][0] = 100 + random.nextGaussian() * 20; // 紫色区域 / Purple region
+            data[i][1] = 50 + random.nextGaussian() * 10;
+            data[i][2] = 150 + random.nextGaussian() * 20;
+        }
+        
+        return data;
+    }
+}
+```

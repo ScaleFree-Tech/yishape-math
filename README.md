@@ -23,11 +23,14 @@
   - CSV文件读写：支持自定义分隔符、表头、编码设置 / CSV file read/write: custom delimiters, headers, encoding settings
   - 灵活数据切片：行切片、列切片、通用切片，支持负数索引和步长 / Flexible data slicing: row, column, general slicing with negative indices and steps
 
-### 📈 统计学运算 / Statsistical Methods
-- **分布函数** / **Statsistical Distributions**: 正态分布、t分布、卡方分布、F分布、均匀分布、指数分布等 / Normal, t, Chi-squared, F, Uniform, Exponential distributions and more
-- **概率密度函数** / **Probability Density Functions**: 完整的PDF和CDF计算 / Complete PDF and CDF calculations
-- **统计描述** / **Statsistical Descriptions**: 均值、方差、标准差、中位数、众数等 / Mean, variance, standard deviation, median, mode, and more
-- **假设检验** / **Hypothesis Testing**: 假设检验、参数估计、方差分析 / Hypothesis testing, parameter estimation, ANOVA
+### 📈 统计学运算 / Statistical Methods
+- **概率分布** / **Probability Distributions**: 14种概率分布（正态、t、卡方、F、均匀、指数、Beta、Gamma、伯努利、二项、泊松、几何、负二项、离散均匀）和多元分布 / 14 probability distributions (Normal, t, Chi-squared, F, Uniform, Exponential, Beta, Gamma, Bernoulli, Binomial, Poisson, Geometric, Negative Binomial, Discrete Uniform) and multivariate distributions
+- **概率函数** / **Probability Functions**: PDF、CDF、PPF、SF、ISF计算 / PDF, CDF, PPF, SF, ISF calculations
+- **统计描述** / **Statistical Descriptions**: 均值、方差、标准差、中位数、众数、偏度、峰度等 / Mean, variance, standard deviation, median, mode, skewness, kurtosis and more
+- **假设检验** / **Hypothesis Testing**: t检验、卡方检验、F检验、参数估计、置信区间估计 / t-tests, Chi-squared tests, F-tests, parameter estimation, confidence interval estimation
+- **方差分析** / **Analysis of Variance**: 单因素ANOVA、双因素ANOVA、重复测量ANOVA / One-way ANOVA, Two-way ANOVA, Repeated Measures ANOVA
+- **统计模型** / **Statistical Models**: 高斯混合模型(GMM)、EM算法 / Gaussian Mixture Model (GMM), EM Algorithm
+- **相关性分析** / **Correlation Analysis**: 皮尔逊相关系数、协方差计算 / Pearson correlation coefficient, covariance calculation
 
 ### 📊 数据可视化 / Data Visualization
 - **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图 / Line, scatter, pie, bar, histogram charts
@@ -137,43 +140,53 @@ IMatrix<Double> matrix = df.toMatrix();
 df.toCsv("output.csv");
 ```
 
-#### 统计学分布 / Statsistical Distributions
+#### 统计学分布 / Statistical Distributions
 ```java
-// 创建正态分布 / Create normal distribution
-NormalDistribution normal = Stats.norm(0, 1);  // 均值0，标准差1 / Mean=0, std=1
-NormalDistribution standardNormal = Stats.norm();  // 标准正态分布 / Standard normal distribution
+// 创建分布 / Create distributions
+NormalDistribution normal = Stats.norm(0, 1);  // 正态分布 / Normal distribution
+StudentDistribution tDist = Stats.t(10);  // t分布 / t-distribution
+Chi2Distribution chi2Dist = Stats.chi2(5);  // 卡方分布 / Chi-squared distribution
+FDistribution fDist = Stats.f(3, 7);  // F分布 / F-distribution
+UniformDistribution uniform = Stats.uniform(0, 1);  // 均匀分布 / Uniform distribution
+ExponentialDistribution exp = Stats.exponential(2.0);  // 指数分布 / Exponential distribution
+BetaDistribution beta = Stats.beta(2, 3);  // Beta分布 / Beta distribution
+GammaDistribution gamma = Stats.gamma(2, 1);  // Gamma分布 / Gamma distribution
+BernoulliDistribution bernoulli = Stats.bernoulli(0.3);  // 伯努利分布 / Bernoulli distribution
+BinomialDistribution binomial = Stats.binomial(10, 0.5);  // 二项分布 / Binomial distribution
+PoissonDistribution poisson = Stats.poisson(2.5);  // 泊松分布 / Poisson distribution
 
-// 计算概率密度和累积分布函数 / Calculate PDF and CDF
-double pdf = normal.pdf(1.0f);  // 概率密度函数 / Probability density function
-double cdf = normal.cdf(1.0f);  // 累积分布函数 / Cumulative distribution function
+// 概率函数计算 / Probability function calculations
+double pdf = normal.pdf(1.0);  // 概率密度函数 / PDF
+double cdf = normal.cdf(1.0);  // 累积分布函数 / CDF
+double ppf = normal.ppf(0.95);  // 百分点函数 / PPF
+double mean_val = normal.mean();  // 均值 / Mean
+double variance = normal.var();  // 方差 / Variance
+double[] samples = normal.sample(1000);  // 随机采样 / Random sampling
+```
 
-// 生成随机数 / Generate random numbers
-double[] randomSamples = normal.sample(1000);  // 生成1000个随机样本 / Generate 1000 random samples
+#### 假设检验与参数估计 / Hypothesis Testing and Parameter Estimation
+```java
+// 创建样本数据 / Create sample data
+IVector<Double> sample = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 
-// 其他分布 / Other distributions
-StudentDistribution tDist = Stats.t(10);  // t分布，自由度10 / t-distribution with 10 degrees of freedom
-Chi2Distribution chi2Dist = Stats.chi2(5);  // 卡方分布，自由度5 / Chi-squared distribution with 5 degrees of freedom
-FDistribution fDist = Stats.f(3, 7);  // F分布，自由度(3,7) / F-distribution with degrees of freedom (3,7)
-UniformDistribution uniform = Stats.uniform(0, 1);  // 均匀分布[0,1] / Uniform distribution [0,1]
-ExponentialDistribution exp = Stats.exponential(2.0f);  // 指数分布，参数2 / Exponential distribution with rate 2
+// 参数估计 / Parameter estimation
+ParameterEstimation estimator = Stats.estimator;
+Tuple2<Double, Double> meanInterval = estimator.estimateMeanIntevalWithT(sample, 0.95);  // 均值置信区间 / Mean confidence interval
 
-// 统计描述 / Statsistical descriptions
-double mean = normal.mean();        // 均值 / Mean
-double variance = normal.var();     // 方差 / Variance
-double stdDev = normal.std();       // 标准差 / Standard deviation
-double median = normal.median();    // 中位数 / Median
-double mode = normal.mode();        // 众数 / Mode
-double skewness = normal.skewness(); // 偏度 / Skewness
-double kurtosis = normal.kurtosis(); // 峰度 / Kurtosis
+// 假设检验 / Hypothesis testing
+HypothesisTesting tester = Stats.testor;
+TestingResult meanTest = tester.testMeanEqualWithT(2.0, sample, 0.95);  // 均值检验 / Mean test
 
-// 分位数计算 / Quantile calculations
-double q1 = normal.q1();            // 第一四分位数 / First quartile
-double q3 = normal.q3();            // 第三四分位数 / Third quartile
-double ppf = normal.ppf(0.95f);     // 95%分位数 / 95th percentile
+// 方差分析 / Analysis of Variance
+ANOVA anova = Stats.anova;
+IVector<Double> group1 = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> group2 = Linalg.vector(new double[]{2, 3, 4, 5, 6});
+ANOVAResult result = anova.performOneWayANOVA(group1, group2);  // 单因素方差分析 / One-way ANOVA
 
-// 生存函数 / Survival function
-double sf = normal.sf(1.0f);        // 生存函数值 / Survival function value
-double isf = normal.isf(0.05f);     // 逆生存函数值 / Inverse survival function value
+// 相关性分析 / Correlation analysis
+IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+IVector<Double> y = Linalg.vector(new double[]{2, 4, 6, 8, 10});
+double correlation = Stats.corr(x, y);  // 皮尔逊相关系数 / Pearson correlation coefficient
 ```
 
 #### 数据可视化 / Data Visualization
