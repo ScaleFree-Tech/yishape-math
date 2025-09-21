@@ -1,8 +1,6 @@
-package com.reremouse.lab.math.dimreduce;
+package com.reremouse.lab.math.ml.dimreduce;
 
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 
@@ -29,7 +27,7 @@ import com.reremouse.lab.math.linalg.IVector;
  * 
  * @author lteb2
  */
-public class RerePCA {
+public class RerePCA implements IDimReduce{
     
     
     /**
@@ -99,15 +97,8 @@ public class RerePCA {
         IMatrix eigenVectors = (IMatrix)eigenResult._2;   // 特征向量（列为特征向量）/ Eigenvectors (columns are eigenvectors)
         
         // 步骤4：选择前dim个主成分 / Step 4: Select first dim principal components
-        double[][] principalComponentsData = new double[originalCols][dim];
-        for (int i = 0; i < dim; i++) {
-            IVector eigenVec = (IVector)eigenVectors.getColumn(i);
-            // 将特征向量作为主成分矩阵的列
-            for (int j = 0; j < originalCols; j++) {
-                principalComponentsData[j][i] = (double)eigenVec.get(j);
-            }
-        }
-        IMatrix principalComponents = IMatrix.of(principalComponentsData);
+        // 使用slice方法直接提取前dim列，替代手动循环
+        IMatrix principalComponents = (IMatrix)eigenVectors.slice(0, originalCols, 0, dim);
         
         // 步骤5：将中心化数据投影到主成分空间 / Step 5: Project centered data to principal component space
         IMatrix reducedData = (IMatrix)centeredData.mmul(principalComponents);

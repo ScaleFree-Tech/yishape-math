@@ -1,8 +1,6 @@
-package com.reremouse.lab.math.dimreduce;
+package com.reremouse.lab.math.ml.dimreduce;
 
 import com.reremouse.lab.util.Tuple3;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 
@@ -20,7 +18,7 @@ import com.reremouse.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-public class RereSVD {
+public class RereSVD  implements IDimReduce{
     
     
     /**
@@ -83,17 +81,8 @@ public class RereSVD {
         
         // 从VT中提取前dim个主成分（V的前dim列，即VT的前dim行）
         // Extract first dim principal components from VT (first dim columns of V, i.e., first dim rows of VT)
-        IMatrix V = (IMatrix)VT.transposeNew(); // V = (V^T)^T
-        
-        // 创建包含前dim个主成分的投影矩阵（V的前dim列）
-        // Create projection matrix containing first dim principal components (first dim columns of V)
-        double[][] projectionData = new double[originalCols][dim];
-        for (int i = 0; i < originalCols; i++) {
-            for (int j = 0; j < dim; j++) {
-                projectionData[i][j] = (double)V.get(i, j);
-            }
-        }
-        IMatrix projectionMatrix = IMatrix.of(projectionData);
+        // 使用slice方法直接提取前dim行，替代手动循环
+        IMatrix projectionMatrix = (IMatrix)VT.slice(0, dim, 0, originalCols).transposeNew();
         
         // 将原始数据投影到低维空间：A_reduced = A * V[:, :dim]
         // Project original data to low-dimensional space: A_reduced = A * V[:, :dim]
@@ -103,4 +92,3 @@ public class RereSVD {
     }
     
 }
-

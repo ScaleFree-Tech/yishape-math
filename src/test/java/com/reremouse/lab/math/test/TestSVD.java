@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.dimreduce.RereSVD;
+import com.reremouse.lab.math.ml.dimreduce.RereSVD;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
 

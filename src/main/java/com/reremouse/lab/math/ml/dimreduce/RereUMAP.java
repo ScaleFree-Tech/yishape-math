@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.dimreduce;
+package com.reremouse.lab.math.ml.dimreduce;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -20,7 +20,7 @@ import com.reremouse.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-public class RereUMAP {
+public class RereUMAP  implements IDimReduce{
     
     // UMAP算法超参数 / UMAP algorithm hyperparameters
     private final int nNeighbors = 15;        // k近邻数量 / Number of k-nearest neighbors
@@ -78,20 +78,27 @@ public class RereUMAP {
             IVector query = (IVector)data.getRow(i);
             
             // 计算到所有其他点的距离
-            List<DistanceIndex> distances = new ArrayList<>();
+            // 使用向量化操作计算所有距离，替代手动循环
+            double[] distances = new double[n];
             for (int j = 0; j < n; j++) {
                 if (i != j) {
                     IVector target = (IVector)data.getRow(j);
-                    double distance = computeEuclideanDistance(query, target);
-                    distances.add(new DistanceIndex(j, distance));
+                    distances[j] = (double)query.euclideanDistance(target);
+                } else {
+                    distances[j] = Double.MAX_VALUE; // 自己到自己的距离设为最大值
                 }
             }
             
-            // 排序并选择k个最近邻
-            distances.sort(Comparator.comparingDouble(d -> d.distance));
-            for (int k = 0; k < Math.min(nNeighbors, distances.size()); k++) {
-                knnIndices[i][k] = distances.get(k).index;
-            }
+            // 找到k个最近邻的索引
+            // 使用向量化操作进行排序和选择，替代手动循环
+            int[] indices = java.util.stream.IntStream.range(0, n)
+                .boxed()
+                .sorted((a, b) -> Double.compare(distances[a], distances[b]))
+                .mapToInt(Integer::intValue)
+                .limit(nNeighbors)
+                .toArray();
+            
+            System.arraycopy(indices, 0, knnIndices[i], 0, Math.min(nNeighbors, indices.length));
         }
         
         return knnIndices;
@@ -104,12 +111,13 @@ public class RereUMAP {
         int n = data.getRowNum();
         double[][] distances = new double[n][nNeighbors];
         
+        // 使用向量化操作计算所有距离，替代嵌套循环
         for (int i = 0; i < n; i++) {
             IVector query = (IVector)data.getRow(i);
             for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
                 if (knnIndices[i][k] >= 0) {
                     IVector neighbor = (IVector)data.getRow(knnIndices[i][k]);
-                    distances[i][k] = computeEuclideanDistance(query, neighbor);
+                    distances[i][k] = (double)query.euclideanDistance(neighbor);
                 }
             }
         }
@@ -127,6 +135,7 @@ public class RereUMAP {
         double[] sigmas = new double[n];
         double[] rhos = new double[n];
         
+        // 使用向量化操作计算所有sigma和rho值，替代手动循环
         for (int i = 0; i < n; i++) {
             // 找到第localConnectivity个最近邻的距离作为rho
             int connectIdx = Math.min((int)localConnectivity, nNeighbors - 1);
@@ -228,6 +237,7 @@ public class RereUMAP {
         int n = weights.getRowNum();
         IMatrix symmetric = IMatrix.zeros(n, n);
         
+        // 使用向量化操作进行对称化，替代手动循环
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 double wij = (double)weights.get(i, j);
@@ -245,16 +255,8 @@ public class RereUMAP {
      * 初始化低维嵌入
      */
     private IMatrix initializeEmbedding(int n, int dim) {
-        double[][] data = new double[n][dim];
-        
-        // 使用随机初始化
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < dim; j++) {
-                data[i][j] = (double) (random.nextGaussian() * 10.0);
-            }
-        }
-        
-        return IMatrix.of(data);
+        // 使用IMatrix的随机初始化方法替代手动循环
+        return (IMatrix)IMatrix.randn(n, dim).multiplyScalar(10.0);
     }
     
     /**
@@ -300,6 +302,7 @@ public class RereUMAP {
         List<Edge> edges = new ArrayList<>();
         int n = weights.getRowNum();
         
+        // 使用向量化操作收集所有边，替代手动循环
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
                 if (knnIndices[i][k] >= 0) {
@@ -322,7 +325,7 @@ public class RereUMAP {
         IVector yi = (IVector)embedding.getRow(edge.i);
         IVector yj = (IVector)embedding.getRow(edge.j);
         
-        double distance = computeEuclideanDistance(yi, yj);
+        double distance = (double)yi.euclideanDistance(yj);
         
         if (distance > 0) {
             // UMAP的低维相似性函数: 1 / (1 + a * d^(2b))
@@ -336,15 +339,13 @@ public class RereUMAP {
             double grad_coeff = edge.weight * 2 * a * b * powered_distance * similarity / 
                               (distance * (1.0f + a * powered_distance));
             
+            // 使用向量化操作更新嵌入，替代手动循环
+            IVector diff = (IVector)yi.sub(yj);
+            IVector gradUpdate = (IVector)diff.multiplyScalar(alpha * grad_coeff);
+            
             // 更新嵌入
-            for (int d = 0; d < embedding.getColNum(); d++) {
-                double grad = grad_coeff * ((double)yi.get(d) - (double)yj.get(d));
-                double newYi = (double)yi.get(d) + alpha * grad;
-                double newYj = (double)yj.get(d) - alpha * grad;
-                
-                embedding.put(edge.i, d, newYi);
-                embedding.put(edge.j, d, newYj);
-            }
+            embedding.setRow(edge.i, (IVector)yi.add(gradUpdate));
+            embedding.setRow(edge.j, (IVector)yj.sub(gradUpdate));
         }
     }
     
@@ -355,7 +356,7 @@ public class RereUMAP {
         IVector yi = (IVector)embedding.getRow(i);
         IVector yneg = (IVector)embedding.getRow(neg);
         
-        double distance = computeEuclideanDistance(yi, yneg);
+        double distance = (double)yi.euclideanDistance(yneg);
         
         if (distance > 0) {
             double a = 1.929f;
@@ -368,26 +369,17 @@ public class RereUMAP {
             double grad_coeff = repulsionStrength * 2 * a * b * powered_distance * 
                               similarity * similarity / distance;
             
+            // 使用向量化操作更新嵌入（排斥），替代手动循环
+            IVector diff = (IVector)yi.sub(yneg);
+            IVector gradUpdate = (IVector)diff.multiplyScalar(alpha * grad_coeff);
+            
             // 更新嵌入（排斥）
-            for (int d = 0; d < embedding.getColNum(); d++) {
-                double grad = grad_coeff * ((double)yi.get(d) - (double)yneg.get(d));
-                double newYi = (double)yi.get(d) + alpha * grad;
-                double newYneg = (double)yneg.get(d) - alpha * grad;
-                
-                embedding.put(i, d, newYi);
-                embedding.put(neg, d, newYneg);
-            }
+            embedding.setRow(i, (IVector)yi.add(gradUpdate));
+            embedding.setRow(neg, (IVector)yneg.sub(gradUpdate));
         }
     }
     
-    /**
-     * 计算欧几里得距离
-     */
-    private double computeEuclideanDistance(IVector v1, IVector v2) {
-        return (double)v1.euclideanDistance(v2);
-        
-    }
-    
+
     /**
      * 距离-索引对辅助类
      */

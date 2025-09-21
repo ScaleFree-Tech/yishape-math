@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.dimreduce.RereTSNE;
+import com.reremouse.lab.math.ml.dimreduce.RereTSNE;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
 

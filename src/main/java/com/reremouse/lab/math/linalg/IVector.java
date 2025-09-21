@@ -2190,5 +2190,30 @@ public interface IVector<T extends Number> {
         // 使用已有的percentile方法计算75%分位数
         return this.percentile(75.0);
     }
+    
+    /**
+     * 向量拼接
+     * @param other
+     * @return 
+     */
+    public IVector<T> concat(IVector<T> other);
+    
+    /**
+     * Returns the signum function of the argument; zero if the argument
+     * is zero, 1.0 if the argument is greater than zero, -1.0 if the
+     * argument is less than zero.
+     * @return 
+    */
+    public IVector<T> sign();
+    
+    /**
+     * 将向量转换为矩阵，但需要重新构型
+     * @param rows
+     * @param cols
+     * @return 
+     */
+    public IMatrix<T> reshape(int rows, int cols);
+    
+   
 
 }

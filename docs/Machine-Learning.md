@@ -2,21 +2,65 @@
 
 ## 概述 / Overview
 
-本文档介绍了 `com.reremouse.lab.math.ml` 包中实现的机器学习算法。该包提供了完整的机器学习解决方案，包括线性回归和逻辑回归算法，支持多种正则化选项和灵活的模型配置。
+本文档介绍了 `com.reremouse.lab.math.ml` 包中实现的机器学习算法。该包提供了完整的机器学习解决方案，包括监督学习、无监督学习和降维算法，支持多种正则化选项和灵活的模型配置。
 
-This document introduces the machine learning algorithms implemented in the `com.reremouse.lab.math.ml` package. The package provides a complete machine learning solution, including linear regression and logistic regression algorithms, with support for multiple regularization options and flexible model configuration.
+This document introduces the machine learning algorithms implemented in the `com.reremouse.lab.math.ml` package. The package provides a complete machine learning solution, including supervised learning, unsupervised learning, and dimensionality reduction algorithms, with support for multiple regularization options and flexible model configuration.
 
 ## 算法列表 / Algorithm List
 
-### 1. 线性回归 (Linear Regression)
+### 监督学习算法 / Supervised Learning Algorithms
+
+#### 1. 线性回归 (Linear Regression)
 - **类名 / Class**: `RereLinearRegression`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.lr`
 - **功能 / Function**: 回归预测，支持多种正则化
 - **应用 / Application**: 连续值预测，特征重要性分析
 
-### 2. 逻辑回归 (Logistic Regression)  
+#### 2. 逻辑回归 (Logistic Regression)  
 - **类名 / Class**: `RereLogisticRegression`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.cls`
 - **功能 / Function**: 分类预测，支持二分类和多分类
 - **应用 / Application**: 分类问题，概率预测
+
+### 无监督学习算法 / Unsupervised Learning Algorithms
+
+#### 3. K-Means++聚类 (K-Means++ Clustering)
+- **类名 / Class**: `KMeansPlusPlus`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.clustering`
+- **功能 / Function**: 基于距离的聚类算法，改进的初始化策略
+- **应用 / Application**: 数据聚类，模式识别
+
+#### 4. 高斯混合模型聚类 (Gaussian Mixture Model Clustering)
+- **类名 / Class**: `GMMClustering`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.clustering`
+- **功能 / Function**: 基于概率的聚类算法，支持软聚类
+- **应用 / Application**: 复杂数据分布建模，概率聚类
+
+### 降维算法 / Dimensionality Reduction Algorithms
+
+#### 5. 主成分分析 (Principal Component Analysis)
+- **类名 / Class**: `RerePCA`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **功能 / Function**: 线性降维，保留主要变化方向
+- **应用 / Application**: 特征降维，数据可视化
+
+#### 6. 奇异值分解 (Singular Value Decomposition)
+- **类名 / Class**: `RereSVD`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **功能 / Function**: 矩阵分解降维
+- **应用 / Application**: 推荐系统，数据压缩
+
+#### 7. t-SNE降维 (t-Distributed Stochastic Neighbor Embedding)
+- **类名 / Class**: `RereTSNE`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **功能 / Function**: 非线性降维，保持局部结构
+- **应用 / Application**: 高维数据可视化，流形学习
+
+#### 8. UMAP降维 (Uniform Manifold Approximation and Projection)
+- **类名 / Class**: `RereUMAP`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **功能 / Function**: 非线性降维，保持全局和局部结构
+- **应用 / Application**: 高维数据可视化，特征学习
 
 ---
 
@@ -24,9 +68,17 @@ This document introduces the machine learning algorithms implemented in the `com
 
 ## 概述 / Overview
 
-`RereLinearRegression` 类实现了标准的线性回归算法，使用最小二乘法优化目标函数。该实现支持多种正则化选项，包括L1（Lasso）、L2（Ridge）和ElasticNet正则化，并提供了灵活的模型配置选项。
+`RereLinearRegression` 类实现了标准的线性回归算法，使用LBFGS优化器求解最优权重。该实现支持多种正则化选项，包括L1（Lasso）、L2（Ridge）和ElasticNet正则化，并提供了灵活的模型配置选项。
 
-The `RereLinearRegression` class implements the standard linear regression algorithm using least squares optimization. This implementation supports multiple regularization options including L1 (Lasso), L2 (Ridge), and ElasticNet regularization, and provides flexible model configuration options.
+The `RereLinearRegression` class implements the standard linear regression algorithm using LBFGS optimizer to solve for optimal weights. This implementation supports multiple regularization options including L1 (Lasso), L2 (Ridge), and ElasticNet regularization, and provides flexible model configuration options.
+
+## 算法特点 / Algorithm Features
+
+- **模型形式 / Model Form**: y = w^T * x + b
+- **优化器 / Optimizer**: LBFGS (Limited-memory BFGS)
+- **正则化支持 / Regularization Support**: L1, L2, ElasticNet
+- **自动特征增广 / Automatic Feature Augmentation**: 自动添加偏置列
+- **数值稳定性 / Numerical Stability**: 采用数值稳定的算法实现
 
 ## 核心类 / Core Classes
 
@@ -37,6 +89,17 @@ The main linear regression implementation class that implements the following in
 - `IRegression`: 回归模型接口 / Regression model interface
 - `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
 - `IObjectiveFunction`: 目标函数接口 / Objective function interface
+
+### 正则化类型 / Regularization Types
+
+```java
+public enum RegularizationType {
+    NONE,        // 无正则化 / No regularization
+    L1,          // L1正则化（Lasso）/ L1 regularization (Lasso)
+    L2,          // L2正则化（Ridge）/ L2 regularization (Ridge)
+    ELASTIC_NET  // ElasticNet正则化 / ElasticNet regularization
+}
+```
 
 ### IRegression 接口 / IRegression Interface
 
@@ -390,7 +453,7 @@ System.out.println("平均R²: " + (totalR2 / foldCount));
 
 ## 性能特性 / Performance Features
 
-### 优化算法 / Optimization Algorithm
+### 算法优化 / Algorithm Optimization
 - 使用L-BFGS优化器，收敛速度快 / Uses L-BFGS optimizer with fast convergence
 - 支持线搜索，提高优化稳定性 / Supports line search to improve optimization stability
 - 自动梯度计算，无需手动实现 / Automatic gradient calculation, no manual implementation needed
@@ -807,7 +870,7 @@ public class ModelEvaluationExample {
 
 ## 性能特性 / Performance Features
 
-### 优化算法 / Optimization Algorithm
+### 算法优化 / Algorithm Optimization
 - 使用L-BFGS优化器，收敛速度快 / Uses L-BFGS optimizer with fast convergence
 - 支持线搜索，提高优化稳定性 / Supports line search to improve optimization stability
 - 自动梯度计算，无需手动实现 / Automatic gradient calculation, no manual implementation needed
@@ -858,6 +921,162 @@ The `RereLogisticRegression` class is designed to support extensions:
 **逻辑回归** - 分类问题的经典解决方案，让预测更准确！
 
 **Logistic Regression** - The classic solution for classification problems, making predictions more accurate!
+
+---
+
+# 聚类算法 (Clustering Algorithms)
+
+## 概述 / Overview
+
+聚类算法是无监督学习的重要组成部分，用于发现数据中的隐藏模式和结构。`com.reremouse.lab.math.ml.clustering` 包提供了两种主要的聚类算法实现。
+
+Clustering algorithms are an important part of unsupervised learning, used to discover hidden patterns and structures in data. The `com.reremouse.lab.math.ml.clustering` package provides implementations of two main clustering algorithms.
+
+## K-Means++聚类 / K-Means++ Clustering
+
+### 算法特点 / Algorithm Features
+
+- **改进的初始化策略** / **Improved Initialization Strategy**: 使用K-means++算法选择初始聚类中心
+- **数值稳定性** / **Numerical Stability**: 采用数值稳定的算法实现
+- **自动参数调优** / **Automatic Parameter Tuning**: 支持多次初始化尝试
+- **收敛保证** / **Convergence Guarantee**: 保证算法收敛到局部最优解
+
+### 核心接口 / Core Interface
+
+```java
+public interface IClustering {
+    // 训练聚类模型 / Train clustering model
+    IClustering fit(List<IVector<Double>> data);
+    IClustering fit(IMatrix<Double> data);
+    
+    // 预测聚类标签 / Predict cluster labels
+    int[] fitPredict(List<IVector<Double>> data);
+    int[] fitPredict(IMatrix<Double> data);
+    int[] predict(List<IVector<Double>> data);
+    int predict(IVector<Double> point);
+    
+    // 获取聚类结果 / Get clustering results
+    List<IVector<Double>> getClusterCenters();
+    int[] getLabels();
+    int getNumClusters();
+    double getInertia();
+    boolean isConverged();
+    int getIterations();
+    
+    // 评估聚类质量 / Evaluate clustering quality
+    ClusteringMetrics evaluateQuality(List<IVector<Double>> data);
+}
+```
+
+## 高斯混合模型聚类 / Gaussian Mixture Model Clustering
+
+### 算法特点 / Algorithm Features
+
+- **概率聚类** / **Probabilistic Clustering**: 基于概率的软聚类方法
+- **EM算法训练** / **EM Algorithm Training**: 使用期望最大化算法训练模型
+- **多重启动策略** / **Multiple Restart Strategy**: 提高算法鲁棒性
+- **后验概率计算** / **Posterior Probability Calculation**: 提供数据点属于各分量的概率
+
+### 核心功能 / Core Functions
+
+```java
+public class GMMClustering implements IClustering {
+    // 计算后验概率 / Compute posterior probabilities
+    List<IVector<Double>> computePosteriorProbabilities(List<IVector<Double>> data);
+    
+    // 计算对数似然 / Compute log-likelihood
+    double computeLogLikelihood(List<IVector<Double>> data);
+    
+    // 从模型采样 / Sample from model
+    List<IVector<Double>> sample(int numSamples);
+    
+    // 获取训练好的模型 / Get trained model
+    GaussianMixtureModel getTrainedModel();
+}
+```
+
+## 聚类质量评估 / Clustering Quality Evaluation
+
+### ClusteringMetrics 类 / ClusteringMetrics Class
+
+提供多种聚类质量评估指标：
+
+```java
+public class ClusteringMetrics {
+    // 惯性（类内平方和）/ Inertia (within-cluster sum of squares)
+    public double getInertia();
+    
+    // 轮廓系数 / Silhouette coefficient
+    public double getSilhouetteScore();
+    
+    // Calinski-Harabasz指数 / Calinski-Harabasz index
+    public double getCalinskiHarabaszIndex();
+    
+    // Davies-Bouldin指数 / Davies-Bouldin index
+    public double getDaviesBouldinIndex();
+    
+    // 类间距离 / Between-cluster distance
+    public double getBetweenClusterDistance();
+    
+    // 类内距离 / Within-cluster distance
+    public double getWithinClusterDistance();
+}
+```
+
+---
+
+# 降维算法 (Dimensionality Reduction Algorithms)
+
+## 概述 / Overview
+
+降维算法用于减少数据的维度，同时保留重要的信息。`com.reremouse.lab.math.ml.dimreduce` 包提供了多种降维算法的实现。
+
+Dimensionality reduction algorithms are used to reduce the dimensionality of data while preserving important information. The `com.reremouse.lab.math.ml.dimreduce` package provides implementations of various dimensionality reduction algorithms.
+
+## 主成分分析 (PCA) / Principal Component Analysis
+
+### 算法特点 / Algorithm Features
+
+- **线性降维** / **Linear Dimensionality Reduction**: 基于线性变换的降维方法
+- **方差最大化** / **Variance Maximization**: 保留数据的主要变化方向
+- **特征分解** / **Eigendecomposition**: 基于协方差矩阵的特征分解
+- **可解释性** / **Interpretability**: 主成分具有明确的数学意义
+
+### 核心接口 / Core Interface
+
+```java
+public interface IDimReduce {
+    // 降维 / Dimensionality reduction
+    IMatrix dimensionReduction(IMatrix originalData, int dim);
+}
+```
+
+## 奇异值分解 (SVD) / Singular Value Decomposition
+
+### 算法特点 / Algorithm Features
+
+- **矩阵分解** / **Matrix Decomposition**: 将矩阵分解为三个矩阵的乘积
+- **低秩近似** / **Low-rank Approximation**: 用低秩矩阵近似原矩阵
+- **数值稳定性** / **Numerical Stability**: 数值稳定的分解算法
+- **广泛应用** / **Wide Applications**: 推荐系统、数据压缩等
+
+## t-SNE降维 / t-Distributed Stochastic Neighbor Embedding
+
+### 算法特点 / Algorithm Features
+
+- **非线性降维** / **Non-linear Dimensionality Reduction**: 保持数据的局部结构
+- **概率分布** / **Probability Distribution**: 基于t分布的相似性度量
+- **可视化友好** / **Visualization-friendly**: 特别适合数据可视化
+- **参数敏感** / **Parameter Sensitive**: 需要仔细调整参数
+
+## UMAP降维 / Uniform Manifold Approximation and Projection
+
+### 算法特点 / Algorithm Features
+
+- **流形学习** / **Manifold Learning**: 基于流形假设的降维
+- **全局和局部结构** / **Global and Local Structure**: 同时保持全局和局部结构
+- **计算效率** / **Computational Efficiency**: 比t-SNE更快的计算速度
+- **参数鲁棒** / **Parameter Robust**: 对参数变化相对鲁棒
 
 ---
 

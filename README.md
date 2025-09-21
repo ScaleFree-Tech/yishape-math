@@ -24,49 +24,24 @@
   - 灵活数据切片：行切片、列切片、通用切片，支持负数索引和步长 / Flexible data slicing: row, column, general slicing with negative indices and steps
 
 ### 📈 统计学运算 / Statsistical Methods
-- **分布函数** / **Statsistical Distributions**: 正态分布、t分布、卡方分布、F分布、均匀分布、指数分布等
-  - *Normal, t, Chi-squared, F, Uniform, Exponential distributions and more*
-- **概率密度函数** / **Probability Density Functions**: 完整的PDF和CDF计算
-  - *Complete PDF and CDF calculations*
-- **随机数生成** / **Random Number Generation**: 各种分布的随机数生成器
-  - *Random number generators for various distributions*
-- **统计描述** / **Statsistical Descriptions**: 均值、方差、标准差、中位数、众数等
-  - *Mean, variance, standard deviation, median, mode, and more*
-- **假设检验** / **Hypothesis Testing**: 假设检验、参数估计
-  - *Hypothesis testing and parameter estimation*
-- **方差分析** / **ANOVA**: Analysis of Variance
-  - *Analysis of Variance*
+- **分布函数** / **Statsistical Distributions**: 正态分布、t分布、卡方分布、F分布、均匀分布、指数分布等 / Normal, t, Chi-squared, F, Uniform, Exponential distributions and more
+- **概率密度函数** / **Probability Density Functions**: 完整的PDF和CDF计算 / Complete PDF and CDF calculations
+- **统计描述** / **Statsistical Descriptions**: 均值、方差、标准差、中位数、众数等 / Mean, variance, standard deviation, median, mode, and more
+- **假设检验** / **Hypothesis Testing**: 假设检验、参数估计、方差分析 / Hypothesis testing, parameter estimation, ANOVA
 
 ### 📊 数据可视化 / Data Visualization
-- **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图
-  - *Line, scatter, pie, bar, histogram charts*
-- **极坐标图表** / **Polar Charts**: 极坐标柱状图、极坐标线图、极坐标散点图
-  - *Polar bar, polar line, polar scatter charts*
-- **统计图表** / **Statsistical Charts**: 箱线图、K线图、小提琴图
-  - *Boxplot, candlestick charts, violinplot*
-- **特殊图表** / **Special Charts**: 漏斗图、桑基图、旭日图、主题河流图、树图、矩形树图、关系图、平行坐标图
-  - *Funnel, Sankey, Sunburst, Theme River, Tree, Treemap, Graph, Parallel charts*
-- **扩展图表** / **Enhanced Charts**: 热力图、雷达图、仪表盘
-  - *Heatmap, radar, gauge charts*
-- **统一样式系统** / **Unified Style System**: 完整的样式管理和应用系统
-  - *Complete style management and application system*
-  - matplotlib风格样式表达式：支持"r-", "b--o", "g:^"等简洁样式定义 / matplotlib-style style expressions: support for "r-", "b--o", "g:^" etc.
-- **流式API** / **Fluent API**: 支持链式调用的简洁API设计
-  - *Fluent API design supporting chained method calls*
-- **主题管理** / **Theme Management**: 多种内置主题和自定义主题支持
-  - *Multiple built-in themes and custom theme support*
-  - 内置主题 / Built-in themes：light、dark、vintage、chalk、essos、infographic、macarons、purple-passion、roma、shine、walden、westeros、wonderland
+- **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图 / Line, scatter, pie, bar, histogram charts
+- **统计图表** / **Statsistical Charts**: 箱线图、K线图、小提琴图 / Boxplot, candlestick charts, violinplot
+- **特殊图表** / **Special Charts**: 漏斗图、桑基图、旭日图、热力图、雷达图等 / Funnel, Sankey, Sunburst, heatmap, radar charts
+- **统一样式系统** / **Unified Style System**: matplotlib风格样式表达式、流式API、主题管理 / matplotlib-style expressions, fluent API, theme management
 
 
 ### 🧠 机器学习算法 / Machine Learning Algorithms
-- **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化
-  - *Support for L1, L2, ElasticNet regularization with LBFGS optimization*
-- **逻辑回归** / **Logistic Regression**: 二分类和多分类逻辑回归
-  - *Binary and multi-class logistic regression*
-- **分类算法** / **Classification Algorithms**: 完整的分类器接口和实现
-  - *Complete classifier interfaces and implementations*
-- **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析
-  - *Regression result analysis and classification result analysis*
+- **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化 / Support for L1, L2, ElasticNet regularization with LBFGS optimization
+- **逻辑回归** / **Logistic Regression**: 二分类和多分类逻辑回归 / Binary and multi-class logistic regression
+- **聚类算法** / **Clustering Algorithms**: K-Means++聚类、高斯混合模型聚类、聚类质量评估 / K-Means++ clustering, Gaussian Mixture Model clustering, clustering quality evaluation
+- **降维算法** / **Dimensionality Reduction**: PCA、SVD、t-SNE、UMAP等降维方法 / PCA, SVD, t-SNE, UMAP dimensionality reduction methods
+- **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析 / Regression and classification result analysis
 
 ### ⚡ 优化算法 / Optimization Algorithms
 - **优化器** / **Optimizers**: L-BFGS、SGD、Adam
@@ -76,37 +51,21 @@
 - **目标函数接口** / **Objective Function Interface**: 灵活的优化目标定义
   - *Flexible optimization objective definition*
 
-### 🔍 降维算法 / Dimensionality Reduction
-- **PCA** / **Principal Component Analysis**: 主成分分析降维
-  - *Principal Component Analysis for dimensionality reduction*
-- **SVD** / **Singular Value Decomposition**: 奇异值分解
-  - *Singular Value Decomposition*
-- **t-SNE** / **t-Distributed Stochastic Neighbor Embedding**: 非线性降维
-  - *Non-linear dimensionality reduction*
-- **UMAP** / **Uniform Manifold Approximation and Projection**: 流形学习降维
-  - *Manifold learning for dimensionality reduction*
+
 
 ### 📡 信号处理 / Signal Processing
-
 - **信号生成与滤波** / **Signal Generation & Filtering**: 基本波形生成、噪声信号、移动平均、中值滤波、巴特沃斯滤波器等 / Basic waveform generation, noise signals, moving average, median filtering, Butterworth filters
 - **频谱分析** / **Spectral Analysis**: FFT变换、功率谱密度、短时傅里叶变换、自相关分析等 / FFT transform, power spectral density, STFT, autocorrelation analysis
 - **小波分析** / **Wavelet Analysis**: 离散小波变换(DWT)、连续小波变换(CWT)、小波去噪、小波压缩等 / Discrete Wavelet Transform (DWT), Continuous Wavelet Transform (CWT), wavelet denoising, wavelet compression
-- **信号工具** / **Signal Utilities**: 窗函数、信号重采样、峰值检测、信号预处理等 / Window functions, signal resampling, peak detection, signal preprocessing
 
 ### ⏰ 时间序列分析 / Time Series Analysis
-
 - **数据管理** / **Data Management**: 单变量/多变量时间序列、数据切片、重采样、时间戳处理等 / Univariate/multivariate time series, data slicing, resampling, timestamp handling
 - **预测方法** / **Forecasting Methods**: 移动平均、指数平滑、ARIMA模型、Holt-Winters、自动模型选择等 / Moving average, exponential smoothing, ARIMA models, Holt-Winters, automatic model selection
 - **滤波与分解** / **Filtering & Decomposition**: 时域/频域滤波、趋势/季节性分解、STL分解、小波分解等 / Time/frequency domain filtering, trend/seasonal decomposition, STL decomposition, wavelet decomposition
-- **可视化分析** / **Visualization Analysis**: 时间序列图、预测图、自相关图、功率谱图等 / Time series plots, forecast plots, ACF plots, power spectral plots
 
 
 ### 🚀 GPU加速计算 / GPU-Accelerated Computing
-- **GPU并行计算** / **GPU Parallel Computing**: 
-  - GPU矩阵运算：矩阵乘法、加法、减法、转置、标量运算等 / GPU matrix operations: multiplication, addition, subtraction, transpose, scalar operations
-  - GPU向量运算：向量加法、减法、内积、标量运算、数学函数等 / GPU vector operations: addition, subtraction, inner product, scalar operations, mathematical functions
-  - GPU高级运算：特征分解、奇异值分解、伪逆矩阵计算等 / GPU advanced operations: eigenvalue decomposition, SVD decomposition, pseudo-inverse computation
-  - 自动回退机制：GPU计算失败时自动切换到CPU计算 / Automatic fallback: automatically switch to CPU when GPU computation fails
+- **GPU并行计算** / **GPU Parallel Computing**: GPU矩阵运算、向量运算、高级运算，支持自动回退机制 / GPU matrix/vector operations, advanced computing with automatic fallback
 
 
 ## 快速开始 / Quick Start
@@ -459,7 +418,6 @@ Plots.of(800, 400)
 - [数据可视化 (Data Visualization)](./docs/Visualization-Plotting.md) / [Data Visualization Documentation](./docs/Visualization-Plotting.md)
 - [机器学习 (Machine-Learning)](./docs/Machine-Learning.md) / [Machine-Learning Documentation](./docs/Machine-Learning.md)
 - [优化算法 (Optimization Algorithms)](./docs/Optimization-Algorithms.md) / [Optimization Algorithms Documentation](./docs/Optimization-Algorithms.md)
-- [降维算法 (Dimensionality Reduction)](./docs/Dimensionality-Reduction.md) / [Dimensionality Reduction Documentation](./docs/Dimensionality-Reduction.md)
 - [信号处理 (Signal Processing)](./docs/Signal-Processing.md) / [Signal Processing Documentation](./docs/Signal-Processing.md)
 - [时间序列分析 (Time Series Analysis)](./docs/Time-Series-Analysis.md) / [Time Series Analysis Documentation](./docs/Time-Series-Analysis.md)
 - [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
@@ -475,7 +433,6 @@ Plots.of(800, 400)
 - [数据可视化示例](./docs/examples/Visualization-Plotting-Examples.md) / [Data Visualization Examples](./docs/examples/Visualization-Plotting-Examples.md)
 - [机器学习示例](./docs/examples/Machine-Learning-Examples.md) / [Machine Learning Examples](./docs/examples/Machine-Learning-Examples.md)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
-- [降维算法示例](./docs/examples/Dimensionality-Reduction-Examples.md) / [Dimensionality Reduction Examples](./docs/examples/Dimensionality-Reduction-Examples.md)
 - [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
 - [时间序列分析示例](./docs/examples/Time-Series-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Examples.md)
 
@@ -487,8 +444,7 @@ Plots.of(800, 400)
 graph TB
     subgraph "应用层 (Application Layer)"
         VIZ[数据可视化层<br/>Data Visualization Layer<br/>RerePlot, IPlot, Plots<br/>ColorPalette, ThemeManager]
-        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression<br/>RereLogisticRegression<br/>KMeansPlusPlus, GMMClustering]
-        DIM[降维算法层<br/>Dimensionality Reduction Layer<br/>RerePCA, RereSVD<br/>RereTSNE, RereUMAP]
+        ML[机器学习层<br/>Machine Learning Layer<br/>RereLinearRegression, RereLogisticRegression<br/>KMeansPlusPlus, GMMClustering<br/>RerePCA, RereSVD, RereTSNE, RereUMAP]
         STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions<br/>ANOVA, HypothesisTesting<br/>GaussianMixtureModel, EMAlgorithm]
         TS[时间序列层<br/>Time Series Layer<br/>Series, TimeSeriesData<br/>TimeSeriesAnalyzer, TimeSeriesForecasting<br/>ARIMA, GARCH, VAR]
         SIG[信号处理层<br/>Signal Processing Layer<br/>Signals, SignalGeneration<br/>SignalUtilities, WaveletAnalysis<br/>RereFFT, RereDCT, RereHilbert]
@@ -513,8 +469,6 @@ graph TB
     ML --> MATH
     ML --> OPT
     ML --> COMP
-    DIM --> MATH
-    DIM --> COMP
     STAT --> MATH
     STAT --> COMP
     TS --> MATH
@@ -667,11 +621,17 @@ src/main/java/com/reremouse/lab/
 │   │   │   ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
 │   │   │   ├── ClassificationResult.java    # 分类结果 / Classification Result
 │   │   │   └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
-│   │   └── clustering/       # 聚类算法 / Clustering Algorithms
-│   │       ├── IClustering.java             # 聚类接口 / Clustering Interface
-│   │       ├── KMeansPlusPlus.java          # K-Means++聚类 / K-Means++ Clustering
-│   │       ├── GMMClustering.java           # 高斯混合模型聚类 / GMM Clustering
-│   │       └── ClusteringMetrics.java       # 聚类评估指标 / Clustering Metrics
+│   │   ├── clustering/       # 聚类算法 / Clustering Algorithms
+│   │   │   ├── IClustering.java             # 聚类接口 / Clustering Interface
+│   │   │   ├── KMeansPlusPlus.java          # K-Means++聚类 / K-Means++ Clustering
+│   │   │   ├── GMMClustering.java           # 高斯混合模型聚类 / GMM Clustering
+│   │   │   └── ClusteringMetrics.java       # 聚类评估指标 / Clustering Metrics
+│   │   └── dimreduce/        # 降维算法 / Dimensionality Reduction Algorithms
+│   │       ├── IDimReduce.java              # 降维接口 / Dimensionality Reduction Interface
+│   │       ├── RerePCA.java                 # PCA降维 / PCA Dimensionality Reduction
+│   │       ├── RereSVD.java                 # SVD降维 / SVD Dimensionality Reduction
+│   │       ├── RereTSNE.java                # t-SNE降维 / t-SNE Dimensionality Reduction
+│   │       └── RereUMAP.java                # UMAP降维 / UMAP Dimensionality Reduction
 │   ├── optimize/             # 优化算法 / Optimization Algorithms
 │   │   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
 │   │   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
@@ -682,11 +642,6 @@ src/main/java/com/reremouse/lab/
 │   │   ├── RereLineSearch.java   # 线搜索 / Line Search
 │   │   ├── RereOnlineAdam.java   # 在线Adam优化器 / Online Adam Optimizer
 │   │   └── RereOnlineSGD.java    # 在线SGD优化器 / Online SGD Optimizer
-│   ├── dimreduce/            # 降维算法 / Dimensionality Reduction Algorithms
-│   │   ├── RerePCA.java          # PCA降维 / PCA Dimensionality Reduction
-│   │   ├── RereSVD.java          # SVD降维 / SVD Dimensionality Reduction
-│   │   ├── RereTSNE.java         # t-SNE降维 / t-SNE Dimensionality Reduction
-│   │   └── RereUMAP.java         # UMAP降维 / UMAP Dimensionality Reduction
 │   ├── signal/               # 信号处理模块 / Signal Processing Module
 │   │   ├── Signals.java          # 信号处理工具类 / Signal Processing Utilities
 │   │   ├── SignalUtilities.java  # 信号工具类 / Signal Utilities

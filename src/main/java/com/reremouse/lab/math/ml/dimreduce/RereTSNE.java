@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.ml.lr.dimreduce;
+package com.reremouse.lab.math.ml.dimreduce;
 
 import java.util.Random;
 import com.reremouse.lab.math.linalg.IMatrix;

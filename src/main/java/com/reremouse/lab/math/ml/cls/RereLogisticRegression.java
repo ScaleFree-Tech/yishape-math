@@ -38,19 +38,19 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private IVector bias;
     
     /** 学习率 */
-    private double learningRate = 0.01f;
+    private double learningRate = 0.01;
     
     /** 最大迭代次数 */
     private int maxIterations = 1000;
     
     /** 收敛阈值 */
-    private double tolerance = 1e-6f;
+    private double tolerance = 1e-6;
     
     /** L1正则化系数（λ₁） */
-    private double lambda1 = 0.0f;
+    private double lambda1 = 0.0;
     
     /** L2正则化系数（λ₂） */
-    private double lambda2 = 0.0f;
+    private double lambda2 = 0.0;
     
     /**
      * 正则化类型枚举
@@ -155,17 +155,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         // 创建并返回训练结果
         LogisticRegressionResult result = new LogisticRegressionResult();
         
-        // 对于多分类，使用第一个类别的权重作为兼容
+        // 正确设置权重和偏置
         if (isBinaryClassification) {
             result.setWeights(weights.getRow(0));
-        } else {
-            result.setWeights(weights.getRow(0));
-        }
-        
-        // 设置偏置（多分类时使用第一个偏置作为兼容）
-        if (isBinaryClassification) {
             result.setBias(Linalg.vector(new double[]{(double)bias.get(0)}));
         } else {
+            // 对于多分类，返回第一个类别的权重和偏置作为默认值
+            // 注意：完整权重信息存储在模型内部，可通过getWeights()获取
+            result.setWeights(weights.getRow(0));
             result.setBias(Linalg.vector(new double[]{(double)bias.get(0)}));
         }
         
@@ -215,14 +212,9 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         } else {
             // 多分类：使用softmax函数
             double[] probabilities = predictProbabilities(x);
-            int predictedClass = 0;
-            double maxProb = probabilities[0];
-            for (int i = 1; i < numClasses; i++) {
-                if (probabilities[i] > maxProb) {
-                    maxProb = probabilities[i];
-                    predictedClass = i;
-                }
-            }
+            // 使用向量的argMax方法找到最大概率的类别
+            IVector<Double> probVector = Linalg.vector(probabilities);
+            int predictedClass = probVector.argMax();
             return reverseLabelMapping.get(predictedClass);
         }
     }
@@ -239,7 +231,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
         
-        // 计算线性组合：z = w^T * x + b
+        // 使用向量内积计算线性组合
         double z = (double)weights.getRow(0).innerProduct(x) + (double)bias.get(0);
         
         // 应用sigmoid函数：P(y=1|x) = 1 / (1 + e^(-z))
@@ -260,15 +252,12 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
         
-        // 计算每个类别的线性组合
-        double[] logits = new double[numClasses];
-        for (int k = 0; k < numClasses; k++) {
-            IVector classWeights = (IVector)weights.getRow(k);
-            logits[k] = (double)classWeights.innerProduct(x) + (double)bias.get(k);
-        }
+        // 使用矩阵运算计算所有类别的线性组合，替代手动循环
+        // 计算 W * x + b
+        IVector<Double> logits = weights.mmul(x).add(bias);
         
         // 应用softmax函数
-        return softmax(logits);
+        return softmax(logits.toDoubleArray());
     }
     
     /**
@@ -277,16 +266,14 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private Object predictProbabilityInternal(IVector x) {
         if (isBinaryClassification) {
             // 二分类：返回单个概率值
+            // 使用向量内积计算线性组合
             double z = (double)weights.getRow(0).innerProduct(x) + (double)bias.get(0);
             return sigmoid(z);
         } else {
             // 多分类：返回概率数组
-            double[] logits = new double[numClasses];
-            for (int k = 0; k < numClasses; k++) {
-                IVector classWeights = (IVector)weights.getRow(k);
-                logits[k] = (double)classWeights.innerProduct(x) + (double)bias.get(k);
-            }
-            return softmax(logits);
+            // 使用矩阵运算计算所有类别的线性组合，替代手动循环
+            IVector<Double> logits = weights.mmul(x).add(bias);
+            return softmax(logits.toDoubleArray());
         }
     }
     
@@ -306,14 +293,60 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             throw new IllegalArgumentException("特征维度与训练特征维度不匹配");
         }
         
-        String[] predictions = new String[features.getRowNum()];
-        
-        for (int i = 0; i < features.getRowNum(); i++) {
-            IVector sample = (IVector)features.getRow(i);
-            predictions[i] = predict(sample);
+        if (isBinaryClassification) {
+            // 二分类：使用矩阵乘法进行批量预测
+            // 计算线性组合：Z = X * W^T + b
+            IMatrix weightMatrix = weights.transpose(); // 转置权重矩阵以匹配维度
+            IMatrix linearOutput = features.mmul(weightMatrix);
+            
+            // 添加偏置值到每一行
+            final double biasValue = (double)bias.get(0);
+            linearOutput = linearOutput.apply(x -> (double)x + biasValue);
+            
+            // 应用sigmoid函数
+            IMatrix probabilities = linearOutput.apply(x -> sigmoid((double)x));
+            
+            // 转换为预测标签
+            // 使用向量化操作替代手动循环
+            String[] predictions = new String[features.getRowNum()];
+            IVector<Double> probVector = probabilities.getColumn(0);
+            for (int i = 0; i < features.getRowNum(); i++) {
+                double prob = (double)probVector.get(i);
+                predictions[i] = prob >= 0.5 ? reverseLabelMapping.get(1) : reverseLabelMapping.get(0);
+            }
+            return predictions;
+        } else {
+            // 多分类：使用矩阵运算进行批量预测
+            // 计算线性组合：Z = X * W^T + B (广播加法)
+            IMatrix weightMatrix = weights.transpose(); // 转置权重矩阵以匹配维度
+            IMatrix linearOutput = features.mmul(weightMatrix);
+            
+            // 使用广播加法添加偏置，替代手动循环
+            linearOutput = linearOutput.broadcastAddRow(bias);
+            
+            // 应用softmax函数（按行）
+            // 先计算指数值
+            IMatrix expOutput = linearOutput.apply(x -> Math.exp((double)x));
+            
+            // 对每行进行归一化处理
+            for (int i = 0; i < expOutput.getRowNum(); i++) {
+                IVector<Double> row = expOutput.getRow(i);
+                double rowSum = (double)row.sum();
+                if (rowSum != 0) {
+                    IVector<Double> normalizedRow = row.divideByScalar(rowSum);
+                    expOutput.setRow(i, normalizedRow);
+                }
+            }
+            
+            // 转换为预测标签
+            String[] result = new String[features.getRowNum()];
+            for (int i = 0; i < features.getRowNum(); i++) {
+                IVector<Double> row = expOutput.getRow(i);
+                int predictedClass = row.argMax(); // 使用argMax方法找到最大概率的类别
+                result[i] = reverseLabelMapping.get(predictedClass);
+            }
+            return result;
         }
-        
-        return predictions;
     }
     
     // ==================== 损失函数和梯度计算 ====================
@@ -327,7 +360,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         // 从参数向量中提取权重和偏置
         extractParametersFromVector(x);
         
-        double totalLoss = 0.0f;
+        double totalLoss = 0.0;
         int m = trainingFeatures.getRowNum();
         
         // 计算每个样本的损失
@@ -338,13 +371,13 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             if (isBinaryClassification) {
                 // 二分类：使用sigmoid和交叉熵损失
                 double probability = (Double) predictProbabilityInternal(sample);
-                double sampleLoss = -label * (double) Math.log(probability + 1e-15f) - 
-                                  (1 - label) * (double) Math.log(1 - probability + 1e-15f);
+                double sampleLoss = -label * Math.log(probability + 1e-15) - 
+                                  (1 - label) * Math.log(1 - probability + 1e-15);
                 totalLoss += sampleLoss;
             } else {
                 // 多分类：使用softmax和交叉熵损失
                 double[] probabilities = (double[]) predictProbabilityInternal(sample);
-                double sampleLoss = -(double) Math.log(probabilities[label] + 1e-15f);
+                double sampleLoss = -Math.log(probabilities[label] + 1e-15);
                 totalLoss += sampleLoss;
             }
         }
@@ -382,81 +415,100 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * 计算二分类梯度
      */
     private IVector computeBinaryClassificationGradient(int m) {
-        int n = featureDimension;
+        // 使用矩阵运算计算梯度，而不是手动循环
         
-        // 初始化梯度向量
-        double[] weightGradients = new double[n];
-        double biasGradient = 0.0f;
+        // 计算所有样本的预测概率
+        IMatrix predictions = trainingFeatures.mmul(weights.transpose());
+        final double biasValue = (double)bias.get(0);
+        predictions = predictions.apply(x -> sigmoid((double)x + biasValue));
         
-        // 计算每个样本的梯度
+        // 计算误差矩阵 (predictions - labels)
+        // 创建标签矩阵
+        double[][] labelArray = new double[m][1];
         for (int i = 0; i < m; i++) {
-            IVector sample = (IVector)trainingFeatures.getRow(i);
-            int label = trainingLabels[i];
-            
-            // 计算预测概率
-            double probability = (Double) predictProbabilityInternal(sample);
-            
-            // 计算误差
-            double error = probability - label;
-            
-            // 累积权重梯度
-            for (int j = 0; j < n; j++) {
-                weightGradients[j] += error * (double)sample.get(j);
-            }
-            
-            // 累积偏置梯度
-            biasGradient += error;
+            labelArray[i][0] = trainingLabels[i];
         }
+        IMatrix labelsMatrix = Linalg.matrix(labelArray);
         
-        // 平均梯度
-        for (int j = 0; j < n; j++) {
-            weightGradients[j] /= m;
-        }
-        biasGradient /= m;
+        // 使用矩阵运算计算误差
+        IMatrix errors = predictions.sub(labelsMatrix);
+        
+        // 计算权重梯度：features^T * errors / m
+        IMatrix weightGradientsMatrix = trainingFeatures.transpose().mmul(errors).divideByScalar((double)m);
+        IVector weightGradients = weightGradientsMatrix.getRow(0);
+        
+        // 计算偏置梯度：sum(errors) / m
+        double biasGradient = (double)errors.sum() / m;
         
         // 添加正则化梯度
-        addRegularizationGradients(weightGradients);
+        // 直接使用向量操作，避免手动循环
+        double[] weightGradArray = weightGradients.toDoubleArray();
+        addRegularizationGradients(weightGradArray);
+        
+        // 重新创建权重梯度向量
+        weightGradients = Linalg.vector(weightGradArray);
         
         // 创建梯度向量
-        return createGradientVector(weightGradients, biasGradient);
+        return createGradientVector(weightGradArray, biasGradient);
     }
     
     /**
      * 计算多分类梯度
      */
     private IVector computeMulticlassClassificationGradient(int m) {
-        // 初始化梯度矩阵和向量
-        double[][] weightGradients = new double[numClasses][featureDimension];
-        double[] biasGradients = new double[numClasses];
+        // 使用矩阵运算计算梯度，而不是手动循环
         
-        // 计算每个样本的梯度
-        for (int i = 0; i < m; i++) {
-            IVector sample = (IVector)trainingFeatures.getRow(i);
-            int label = trainingLabels[i];
-            
-            // 计算预测概率
-            double[] probabilities = (double[]) predictProbabilityInternal(sample);
-            
-            // 计算每个类别的梯度
-            for (int k = 0; k < numClasses; k++) {
-                double error = probabilities[k] - (k == label ? 1.0f : 0.0f);
-                
-                // 权重梯度
-                for (int j = 0; j < featureDimension; j++) {
-                    weightGradients[k][j] += error * (double)sample.get(j);
-                }
-                
-                // 偏置梯度
-                biasGradients[k] += error;
+        // 计算所有样本的线性输出
+        IMatrix linearOutput = trainingFeatures.mmul(weights.transpose());
+        
+        // 添加偏置到每一行
+        // 使用广播加法替代手动循环
+        linearOutput = linearOutput.broadcastAddRow(bias);
+        
+        // 应用softmax函数到每一行
+        IMatrix probabilities = linearOutput.copy();
+        // 先计算指数值
+        probabilities = probabilities.apply(x -> Math.exp((double)x));
+        
+        // 对每行进行归一化处理
+        for (int i = 0; i < probabilities.getRowNum(); i++) {
+            IVector<Double> row = probabilities.getRow(i);
+            double rowSum = (double)row.sum();
+            if (rowSum != 0) {
+                IVector<Double> normalizedRow = row.divideByScalar(rowSum);
+                probabilities.setRow(i, normalizedRow);
             }
         }
         
-        // 平均梯度
+        // 计算误差矩阵 (probabilities - one_hot_labels)
+        // 创建one-hot编码的标签矩阵
+        double[][] labelArray = new double[m][numClasses];
+        for (int i = 0; i < m; i++) {
+            int trueLabel = trainingLabels[i];
+            labelArray[i][trueLabel] = 1.0;
+        }
+        IMatrix oneHotLabels = Linalg.matrix(labelArray);
+        
+        // 使用矩阵运算计算误差
+        IMatrix errors = probabilities.sub(oneHotLabels);
+        
+        // 计算权重梯度：features^T * errors / m
+        IMatrix weightGradientsMatrix = trainingFeatures.transpose().mmul(errors).divideByScalar((double)m);
+        
+        // 计算偏置梯度：colSums(errors) / m
+        // 使用向量的toDoubleArray方法替代手动循环
+        IVector biasGradientsVector = errors.colSums().divideByScalar((double)m);
+        double[] biasGradients = biasGradientsVector.toDoubleArray();
+        
+        // 转换权重梯度矩阵为数组格式
+        // 使用矩阵的转置和flatten方法替代手动循环
+        IMatrix weightGradientsMatrixT = weightGradientsMatrix.transpose();
+        double[] weightGradientsFlat = weightGradientsMatrixT.flatten().toDoubleArray();
+        
+        // 重塑为二维数组格式
+        double[][] weightGradients = new double[numClasses][featureDimension];
         for (int k = 0; k < numClasses; k++) {
-            for (int j = 0; j < featureDimension; j++) {
-                weightGradients[k][j] /= m;
-            }
-            biasGradients[k] /= m;
+            System.arraycopy(weightGradientsFlat, k * featureDimension, weightGradients[k], 0, featureDimension);
         }
         
         // 添加正则化梯度
@@ -508,30 +560,18 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         
         if (isBinaryClassification) {
             // 二分类：权重向量 + 单个偏置
-            double scale = (double) Math.sqrt(2.0 / featureDimension);
-            double[] weightData = new double[featureDimension];
-            for (int i = 0; i < featureDimension; i++) {
-                weightData[i] = (random.nextDouble() - 0.5f) * 2.0f * scale;
-            }
+            double scale = Math.sqrt(2.0 / featureDimension);
             
-            this.weights = new RereDoubleMatrix(new double[][]{weightData});
-            this.bias = new RereDoubleVector(new double[]{0.0f});
+            // 使用Linalg工厂方法创建随机矩阵
+            this.weights = Linalg.randn(1, featureDimension, 0.0, scale);
+            this.bias = Linalg.zeros(1);
         } else {
             // 多分类：权重矩阵 + 偏置向量
-            double scale = (double) Math.sqrt(2.0 / featureDimension);
-            double[][] weightData = new double[numClasses][featureDimension];
-            for (int k = 0; k < numClasses; k++) {
-                for (int j = 0; j < featureDimension; j++) {
-                    weightData[k][j] = (random.nextDouble() - 0.5f) * 2.0f * scale;
-                }
-            }
+            double scale = Math.sqrt(2.0 / featureDimension);
             
-            this.weights = new RereDoubleMatrix(weightData);
-            double[] biasData = new double[numClasses];
-            for (int k = 0; k < numClasses; k++) {
-                biasData[k] = 0.0f;
-            }
-            this.bias = new RereDoubleVector(biasData);
+            // 使用Linalg工厂方法创建随机矩阵
+            this.weights = Linalg.randn(numClasses, featureDimension, 0.0, scale);
+            this.bias = Linalg.zeros(numClasses);
         }
     }
     
@@ -541,38 +581,15 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private IVector createParameterVector() {
         if (isBinaryClassification) {
             // 二分类：[w1, w2, ..., wn, b]
-            int n = featureDimension;
-            double[] paramData = new double[n + 1];
-            
-            // 复制权重
-            for (int i = 0; i < n; i++) {
-                paramData[i] = (double)weights.get(0, i);
-            }
-            
-            // 添加偏置
-            paramData[n] = (double)bias.get(0);
-            
-            return new RereDoubleVector(paramData);
+            // 使用矩阵和向量的连接操作来创建参数向量
+            IVector weightVector = weights.getRow(0);
+            IVector biasScalar = Linalg.vector(new double[]{(double)bias.get(0)});
+            return weightVector.concat(biasScalar);
         } else {
             // 多分类：[w11, w12, ..., w1n, w21, w22, ..., w2n, ..., wk1, wk2, ..., wkn, b1, b2, ..., bk]
-            int totalParams = numClasses * featureDimension + numClasses;
-            double[] paramData = new double[totalParams];
-            
-            int index = 0;
-            
-            // 复制权重
-            for (int k = 0; k < numClasses; k++) {
-                for (int j = 0; j < featureDimension; j++) {
-                    paramData[index++] = (double)weights.get(k, j);
-                }
-            }
-            
-            // 复制偏置
-            for (int k = 0; k < numClasses; k++) {
-                paramData[index++] = (double)bias.get(k);
-            }
-            
-            return new RereDoubleVector(paramData);
+            // 将权重矩阵展平并连接偏置向量
+            IVector weightVector = weights.flatten();
+            return weightVector.concat(bias);
         }
     }
     
@@ -584,35 +601,24 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             // 二分类：提取权重向量和单个偏置
             int n = paramVector.length() - 1;
             
-            // 提取权重
-            double[] weightData = new double[n];
-            for (int i = 0; i < n; i++) {
-                weightData[i] = (double)paramVector.get(i);
-            }
-            this.weights = Linalg.matrix(new double[][]{weightData});
+            // 使用切片操作提取权重和偏置
+            IVector weightVector = paramVector.slice(0, n);
+            this.weights = weightVector.asColumnVector().transpose();
             
             // 提取偏置
             double biasValue = (double)paramVector.get(n);
-            this.bias = new RereDoubleVector(new double[]{biasValue});
+            this.bias = Linalg.vector(new double[]{biasValue});
         } else {
             // 多分类：提取权重矩阵和偏置向量
-            int index = 0;
+            int weightElements = numClasses * featureDimension;
             
-            // 提取权重
-            double[][] weightData = new double[numClasses][featureDimension];
-            for (int k = 0; k < numClasses; k++) {
-                for (int j = 0; j < featureDimension; j++) {
-                    weightData[k][j] = (double)paramVector.get(index++);
-                }
-            }
-            this.weights = new RereDoubleMatrix(weightData);
+            // 使用切片操作提取权重和偏置
+            IVector weightVector = paramVector.slice(0, weightElements);
+            IVector biasVector = paramVector.slice(weightElements, paramVector.length());
             
-            // 提取偏置
-            double[] biasData = new double[numClasses];
-            for (int k = 0; k < numClasses; k++) {
-                biasData[k] = (double)paramVector.get(index++);
-            }
-            this.bias = new RereDoubleVector(biasData);
+            // 使用reshape方法重塑权重向量为矩阵
+            this.weights = weightVector.reshape(numClasses, featureDimension);
+            this.bias = biasVector;
         }
     }
     
@@ -620,40 +626,21 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * 创建梯度向量（二分类）
      */
     private IVector createGradientVector(double[] weightGradients, double biasGradient) {
-        int n = weightGradients.length;
-        double[] gradientData = new double[n + 1];
-        
-        // 复制权重梯度
-        System.arraycopy(weightGradients, 0, gradientData, 0, n);
-        
-        // 添加偏置梯度
-        gradientData[n] = biasGradient;
-        
-        return new RereDoubleVector(gradientData);
+        // 使用Linalg工厂方法创建向量并连接
+        IVector weightGradVector = Linalg.vector(weightGradients);
+        IVector biasGradVector = Linalg.vector(new double[]{biasGradient});
+        return weightGradVector.concat(biasGradVector);
     }
     
     /**
      * 创建梯度向量（多分类）
      */
     private IVector createGradientVector(double[][] weightGradients, double[] biasGradients) {
-        int totalParams = numClasses * featureDimension + numClasses;
-        double[] gradientData = new double[totalParams];
-        
-        int index = 0;
-        
-        // 复制权重梯度
-        for (int k = 0; k < numClasses; k++) {
-            for (int j = 0; j < featureDimension; j++) {
-                gradientData[index++] = weightGradients[k][j];
-            }
-        }
-        
-        // 复制偏置梯度
-        for (int k = 0; k < numClasses; k++) {
-            gradientData[index++] = biasGradients[k];
-        }
-        
-        return new RereDoubleVector(gradientData);
+        // 使用Linalg工厂方法创建矩阵和向量并连接
+        IMatrix weightGradMatrix = Linalg.matrix(weightGradients);
+        IVector weightGradVector = weightGradMatrix.flatten();
+        IVector biasGradVector = Linalg.vector(biasGradients);
+        return weightGradVector.concat(biasGradVector);
     }
     
     /**
@@ -675,45 +662,29 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * 计算正则化项
      */
     private double computeRegularizationTerm() {
-        double regularizationTerm = 0.0f;
+        double regularizationTerm = 0.0;
         
         switch (regularizationType) {
             case L1:
-                for (int i = 0; i < weights.getRowNum(); i++) {
-                    for (int j = 0; j < weights.getColNum(); j++) {
-                        regularizationTerm += Math.abs((double)weights.get(i, j));
-                    }
-                }
-                regularizationTerm *= lambda1;
+                // 使用矩阵的L1范数计算正则化项
+                regularizationTerm = lambda1 * (double)weights.abs().sum();
                 break;
             case L2:
-                for (int i = 0; i < weights.getRowNum(); i++) {
-                    for (int j = 0; j < weights.getColNum(); j++) {
-                        regularizationTerm += (double)weights.get(i, j) * (double)weights.get(i, j);
-                    }
-                }
-                regularizationTerm *= lambda2 / 2.0f;
+                // 使用矩阵的Frobenius范数计算L2正则化项
+                double frobenius = (double)weights.frobeniusNorm();
+                regularizationTerm = lambda2 * frobenius * frobenius / 2.0;
                 break;
             case ELASTIC_NET:
                 // L1部分
-                double l1Term = 0.0f;
-                for (int i = 0; i < weights.getRowNum(); i++) {
-                    for (int j = 0; j < weights.getColNum(); j++) {
-                        l1Term += Math.abs((double)weights.get(i, j));
-                    }
-                }
+                double l1Term = (double)weights.abs().sum();
                 // L2部分
-                double l2Term = 0.0f;
-                for (int i = 0; i < weights.getRowNum(); i++) {
-                    for (int j = 0; j < weights.getColNum(); j++) {
-                        l2Term += (double)weights.get(i, j) * (double)weights.get(i, j);
-                    }
-                }
-                regularizationTerm = lambda1 * l1Term + lambda2 * l2Term / 2.0f;
+                double frobeniusNorm = (double)weights.frobeniusNorm();
+                double l2Term = frobeniusNorm * frobeniusNorm;
+                regularizationTerm = lambda1 * l1Term + lambda2 * l2Term / 2.0;
                 break;
             case NONE:
             default:
-                regularizationTerm = 0.0f;
+                regularizationTerm = 0.0;
                 break;
         }
         
@@ -726,19 +697,37 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private void addRegularizationGradients(double[] weightGradients) {
         switch (regularizationType) {
             case L1:
-                for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += (double)lambda1 * Math.signum((double)weights.get(0, i));
-                }
+                // 使用向量操作计算L1正则化梯度
+                IVector weightsRow = weights.getRow(0);
+                IVector signVector = weightsRow.sign(); // 使用新添加的sign方法
+                IVector l1Grad = signVector.multiplyScalar(lambda1);
+                IVector weightGradVector = Linalg.vector(weightGradients);
+                IVector result = weightGradVector.add(l1Grad);
+                // 使用toDoubleArray方法替代手动循环
+                double[] resultArray = result.toDoubleArray();
+                System.arraycopy(resultArray, 0, weightGradients, 0, weightGradients.length);
                 break;
             case L2:
-                for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += lambda2 * (double)weights.get(0, i);
-                }
+                // 使用向量操作计算L2正则化梯度
+                IVector l2Grad = weights.getRow(0).multiplyScalar(lambda2);
+                IVector weightGradVector2 = Linalg.vector(weightGradients);
+                IVector result2 = weightGradVector2.add(l2Grad);
+                // 使用toDoubleArray方法替代手动循环
+                double[] resultArray2 = result2.toDoubleArray();
+                System.arraycopy(resultArray2, 0, weightGradients, 0, weightGradients.length);
                 break;
             case ELASTIC_NET:
-                for (int i = 0; i < weightGradients.length; i++) {
-                    weightGradients[i] += lambda1 * Math.signum((double)weights.get(0, i)) + lambda2 * (double)weights.get(0, i);
-                }
+                // 使用向量操作计算ElasticNet正则化梯度
+                IVector weightsRow2 = weights.getRow(0);
+                IVector signVector2 = weightsRow2.sign(); // 使用新添加的sign方法
+                IVector l1Component = signVector2.multiplyScalar(lambda1);
+                IVector l2Component = weights.getRow(0).multiplyScalar(lambda2);
+                IVector elasticGrad = l1Component.add(l2Component);
+                IVector weightGradVector3 = Linalg.vector(weightGradients);
+                IVector result3 = weightGradVector3.add(elasticGrad);
+                // 使用toDoubleArray方法替代手动循环
+                double[] resultArray3 = result3.toDoubleArray();
+                System.arraycopy(resultArray3, 0, weightGradients, 0, weightGradients.length);
                 break;
             case NONE:
             default:
@@ -753,24 +742,55 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     private void addRegularizationGradients(double[][] weightGradients) {
         switch (regularizationType) {
             case L1:
+                // 使用矩阵操作计算L1正则化梯度
+                IMatrix signMatrix = weights.sign(); // 使用sign方法
+                IMatrix l1Grad = signMatrix.multiplyScalar(lambda1);
+                IMatrix weightGradMatrix = Linalg.matrix(weightGradients);
+                IMatrix result = weightGradMatrix.add(l1Grad);
+                // 使用toDoubleArray方法替代手动循环
+                double[][] resultArray = new double[numClasses][featureDimension];
                 for (int k = 0; k < numClasses; k++) {
-                    for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda1 * Math.signum((double)weights.get(k, j));
-                    }
+                    IVector<Double> row = result.getRow(k);
+                    resultArray[k] = row.toDoubleArray();
+                }
+                // 复制结果回原数组
+                for (int k = 0; k < numClasses; k++) {
+                    System.arraycopy(resultArray[k], 0, weightGradients[k], 0, featureDimension);
                 }
                 break;
             case L2:
+                // 使用矩阵操作计算L2正则化梯度
+                IMatrix l2Grad = weights.multiplyScalar(lambda2);
+                IMatrix weightGradMatrix2 = Linalg.matrix(weightGradients);
+                IMatrix result2 = weightGradMatrix2.add(l2Grad);
+                // 使用toDoubleArray方法替代手动循环
+                double[][] resultArray2 = new double[numClasses][featureDimension];
                 for (int k = 0; k < numClasses; k++) {
-                    for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda2 * (double)weights.get(k, j);
-                    }
+                    IVector<Double> row = result2.getRow(k);
+                    resultArray2[k] = row.toDoubleArray();
+                }
+                // 复制结果回原数组
+                for (int k = 0; k < numClasses; k++) {
+                    System.arraycopy(resultArray2[k], 0, weightGradients[k], 0, featureDimension);
                 }
                 break;
             case ELASTIC_NET:
+                // 使用矩阵操作计算ElasticNet正则化梯度
+                IMatrix signMatrix2 = weights.sign(); // 使用sign方法
+                IMatrix l1Component = signMatrix2.multiplyScalar(lambda1);
+                IMatrix l2Component = weights.multiplyScalar(lambda2);
+                IMatrix elasticGrad = l1Component.add(l2Component);
+                IMatrix weightGradMatrix3 = Linalg.matrix(weightGradients);
+                IMatrix result3 = weightGradMatrix3.add(elasticGrad);
+                // 使用toDoubleArray方法替代手动循环
+                double[][] resultArray3 = new double[numClasses][featureDimension];
                 for (int k = 0; k < numClasses; k++) {
-                    for (int j = 0; j < featureDimension; j++) {
-                        weightGradients[k][j] += lambda1 * Math.signum((double)weights.get(k, j)) + lambda2 * (double)weights.get(k, j);
-                    }
+                    IVector<Double> row = result3.getRow(k);
+                    resultArray3[k] = row.toDoubleArray();
+                }
+                // 复制结果回原数组
+                for (int k = 0; k < numClasses; k++) {
+                    System.arraycopy(resultArray3[k], 0, weightGradients[k], 0, featureDimension);
                 }
                 break;
             case NONE:
@@ -785,11 +805,12 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      */
     private double sigmoid(double z) {
         // 处理数值稳定性
-        if (z > 0) {
-            return 1.0f / (1.0f + (double) Math.exp(-z));
+        if (z >= 0) {
+            double expNegZ = Math.exp(-z);
+            return 1.0 / (1.0 + expNegZ);
         } else {
-            double expZ = (double) Math.exp(z);
-            return expZ / (1.0f + expZ);
+            double expZ = Math.exp(z);
+            return expZ / (1.0 + expZ);
         }
     }
     
@@ -797,29 +818,27 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * Softmax激活函数
      */
     private double[] softmax(double[] logits) {
-        double[] probabilities = new double[numClasses];
+        // 使用向量操作来实现softmax函数，提高数值稳定性和效率
+        IVector<Double> logitVector = Linalg.vector(logits);
         
         // 找到最大值以提高数值稳定性
-        double maxLogit = logits[0];
-        for (int i = 1; i < numClasses; i++) {
-            if (logits[i] > maxLogit) {
-                maxLogit = logits[i];
-            }
-        }
+        double maxLogit = (double)logitVector.max();
         
-        // 计算指数并求和
-        double sum = 0.0f;
-        for (int i = 0; i < numClasses; i++) {
-            probabilities[i] = (double) Math.exp(logits[i] - maxLogit);
-            sum += probabilities[i];
-        }
+        // 计算指数并求和: exp(logits - maxLogit)
+        IVector<Double> shifted = logitVector.subScalar(maxLogit);
+        IVector<Double> expVector = shifted.exp();
+        double sum = (double)expVector.sum();
         
-        // 归一化
-        for (int i = 0; i < numClasses; i++) {
-            probabilities[i] /= sum;
+        // 避免除零错误并归一化
+        if (sum == 0) {
+            // 如果所有概率都接近零，返回均匀分布
+            IVector<Double> uniform = Linalg.ones(numClasses).divideByScalar((double)numClasses);
+            return uniform.toDoubleArray();
+        } else {
+            // 归一化
+            IVector<Double> probabilities = expVector.divideByScalar(sum);
+            return probabilities.toDoubleArray();
         }
-        
-        return probabilities;
     }
     
     // ==================== Getter和Setter方法 ====================

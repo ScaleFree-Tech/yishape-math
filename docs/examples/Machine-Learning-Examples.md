@@ -10,8 +10,9 @@ This document provides detailed usage examples for machine learning algorithms i
 
 1. [线性回归示例 / Linear Regression Examples](#线性回归示例--linear-regression-examples)
 2. [逻辑回归示例 / Logistic Regression Examples](#逻辑回归示例--logistic-regression-examples)
-3. [优化算法示例 / Optimization Algorithm Examples](#优化算法示例--optimization-algorithm-examples)
-4. [总结 / Summary](#总结--summary)
+3. [聚类算法示例 / Clustering Algorithm Examples](#聚类算法示例--clustering-algorithm-examples)
+4. [降维算法示例 / Dimensionality Reduction Examples](#降维算法示例--dimensionality-reduction-examples)
+5. [总结 / Summary](#总结--summary)
 
 ## 线性回归示例 / Linear Regression Examples
 
@@ -73,60 +74,6 @@ public class RegularizedLinearRegressionExample {
         // 查看正则化效果 / View regularization effects
         System.out.println("L2正则化系数: " + lr.getLambda2());
         System.out.println("最终损失: " + result.getLoss());
-    }
-}
-```
-
-## 优化算法示例 / Optimization Algorithm Examples
-
-### L-BFGS优化器应用 / L-BFGS Optimizer Application
-
-```java
-import com.reremouse.lab.math.optimize.RereLBFGS;
-import com.reremouse.lab.math.optimize.IObjectiveFunction;
-import com.reremouse.lab.math.optimize.IGradientFunction;
-
-public class LBFGSExample {
-    public static void main(String[] args) {
-        // 创建L-BFGS优化器 / Create L-BFGS optimizer
-        RereLBFGS optimizer = new RereLBFGS();
-        optimizer.setMaxIterations(1000);
-        optimizer.setTolerance(1e-6f);
-        
-        // 定义目标函数 / Define objective function
-        IObjectiveFunction objFun = new IObjectiveFunction() {
-            @Override
-            public float compute(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
-                return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
-            }
-        };
-        
-        // 定义梯度函数 / Define gradient function
-        IGradientFunction grdFun = new IGradientFunction() {
-            @Override
-            public IVector compute(IVector x) {
-                float x1 = x.get(0);
-                float x2 = x.get(1);
-                
-                float[] grad = new float[2];
-                grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
-                grad[1] = 200 * (x2 - x1 * x1);
-                
-                return IVector.of(grad);
-            }
-        };
-        
-        // 执行优化 / Execute optimization
-        IVector initX = IVector.of(new float[]{-1.0f, -1.0f});
-        Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
-        
-        float optimalValue = result._1;
-        IVector optimalPoint = result._2;
-        
-        System.out.println("最优值: " + optimalValue);
-        System.out.println("最优点: " + optimalPoint);
     }
 }
 ```
@@ -380,16 +327,287 @@ public class AdvancedConfigurationExample {
 }
 ```
 
+## 聚类算法示例 / Clustering Algorithm Examples
+
+### K-Means++聚类示例 / K-Means++ Clustering Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.clustering.KMeansPlusPlus;
+import com.reremouse.lab.math.ml.clustering.ClusteringMetrics;
+
+public class KMeansExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        double[][] data = {
+            {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0}, 
+            {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
+        };
+        
+        IMatrix dataMatrix = Linalg.matrix(data);
+        
+        // 创建K-Means++聚类器 / Create K-Means++ clusterer
+        KMeansPlusPlus kmeans = new KMeansPlusPlus();
+        
+        // 设置聚类数量 / Set number of clusters
+        kmeans.setParameters(Map.of("numClusters", 3));
+        
+        // 训练模型 / Train model
+        kmeans.fit(dataMatrix);
+        
+        // 获取聚类结果 / Get clustering results
+        int[] labels = kmeans.getLabels();
+        List<IVector<Double>> centers = kmeans.getClusterCenters();
+        
+        System.out.println("聚类标签: " + Arrays.toString(labels));
+        System.out.println("聚类中心数量: " + centers.size());
+        System.out.println("是否收敛: " + kmeans.isConverged());
+        System.out.println("迭代次数: " + kmeans.getIterations());
+        
+        // 评估聚类质量 / Evaluate clustering quality
+        ClusteringMetrics metrics = kmeans.evaluateQuality(dataMatrix);
+        System.out.println("轮廓系数: " + metrics.getSilhouetteScore());
+        System.out.println("惯性: " + metrics.getInertia());
+    }
+}
+```
+
+### 高斯混合模型聚类示例 / Gaussian Mixture Model Clustering Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.clustering.GMMClustering;
+
+public class GMMExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        double[][] data = {
+            {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0}, 
+            {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
+        };
+        
+        IMatrix dataMatrix = Linalg.matrix(data);
+        
+        // 创建GMM聚类器 / Create GMM clusterer
+        GMMClustering gmm = new GMMClustering();
+        
+        // 设置参数 / Set parameters
+        gmm.setParameters(Map.of(
+            "numClusters", 3,
+            "maxIterations", 100,
+            "tolerance", 1e-6,
+            "verbose", true
+        ));
+        
+        // 训练模型 / Train model
+        gmm.fit(dataMatrix);
+        
+        // 获取聚类结果 / Get clustering results
+        int[] labels = gmm.getLabels();
+        List<IVector<Double>> centers = gmm.getClusterCenters();
+        
+        System.out.println("聚类标签: " + Arrays.toString(labels));
+        System.out.println("聚类中心数量: " + centers.size());
+        
+        // 计算后验概率 / Compute posterior probabilities
+        List<IVector<Double>> posteriors = gmm.computePosteriorProbabilities(dataMatrix);
+        System.out.println("后验概率矩阵大小: " + posteriors.size() + " x " + posteriors.get(0).size());
+        
+        // 计算对数似然 / Compute log-likelihood
+        double logLikelihood = gmm.computeLogLikelihood(dataMatrix);
+        System.out.println("对数似然: " + logLikelihood);
+        
+        // 从模型采样 / Sample from model
+        List<IVector<Double>> samples = gmm.sample(10);
+        System.out.println("采样数据点数量: " + samples.size());
+    }
+}
+```
+
+## 降维算法示例 / Dimensionality Reduction Examples
+
+### PCA降维示例 / PCA Dimensionality Reduction Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.dimreduce.RerePCA;
+
+public class PCAExample {
+    public static void main(String[] args) {
+        // 准备高维数据 / Prepare high-dimensional data
+        double[][] data = {
+            {1.0, 2.0, 3.0, 4.0, 5.0},
+            {2.0, 3.0, 4.0, 5.0, 6.0},
+            {3.0, 4.0, 5.0, 6.0, 7.0},
+            {4.0, 5.0, 6.0, 7.0, 8.0},
+            {5.0, 6.0, 7.0, 8.0, 9.0}
+        };
+        
+        IMatrix originalData = Linalg.matrix(data);
+        System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
+        
+        // 创建PCA降维器 / Create PCA reducer
+        RerePCA pca = new RerePCA();
+        
+        // 降维到2维 / Reduce to 2 dimensions
+        IMatrix reducedData = pca.dimensionReduction(originalData, 2);
+        System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
+        
+        // 显示降维结果 / Display reduction results
+        System.out.println("降维后的数据:");
+        for (int i = 0; i < reducedData.getRowNum(); i++) {
+            System.out.println("样本 " + i + ": [" + 
+                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+        }
+    }
+}
+```
+
+### SVD降维示例 / SVD Dimensionality Reduction Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.dimreduce.RereSVD;
+
+public class SVDExample {
+    public static void main(String[] args) {
+        // 准备数据矩阵 / Prepare data matrix
+        double[][] data = {
+            {1.0, 2.0, 3.0, 4.0},
+            {5.0, 6.0, 7.0, 8.0},
+            {9.0, 10.0, 11.0, 12.0}
+        };
+        
+        IMatrix originalData = Linalg.matrix(data);
+        System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
+        
+        // 创建SVD降维器 / Create SVD reducer
+        RereSVD svd = new RereSVD();
+        
+        // 降维到2维 / Reduce to 2 dimensions
+        IMatrix reducedData = svd.dimensionReduction(originalData, 2);
+        System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
+        
+        // 显示降维结果 / Display reduction results
+        System.out.println("SVD降维后的数据:");
+        for (int i = 0; i < reducedData.getRowNum(); i++) {
+            System.out.println("样本 " + i + ": [" + 
+                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+        }
+    }
+}
+```
+
+### t-SNE降维示例 / t-SNE Dimensionality Reduction Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.dimreduce.RereTSNE;
+
+public class TSNEExample {
+    public static void main(String[] args) {
+        // 准备高维数据 / Prepare high-dimensional data
+        double[][] data = {
+            {1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
+            {2.0, 3.0, 4.0, 5.0, 6.0, 7.0},
+            {3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
+            {4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
+            {5.0, 6.0, 7.0, 8.0, 9.0, 10.0}
+        };
+        
+        IMatrix originalData = Linalg.matrix(data);
+        System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
+        
+        // 创建t-SNE降维器 / Create t-SNE reducer
+        RereTSNE tsne = new RereTSNE();
+        
+        // 设置t-SNE参数 / Set t-SNE parameters
+        tsne.setParameters(Map.of(
+            "perplexity", 30.0,
+            "learningRate", 200.0,
+            "maxIterations", 1000
+        ));
+        
+        // 降维到2维 / Reduce to 2 dimensions
+        IMatrix reducedData = tsne.dimensionReduction(originalData, 2);
+        System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
+        
+        // 显示降维结果 / Display reduction results
+        System.out.println("t-SNE降维后的数据:");
+        for (int i = 0; i < reducedData.getRowNum(); i++) {
+            System.out.println("样本 " + i + ": [" + 
+                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+        }
+    }
+}
+```
+
+### UMAP降维示例 / UMAP Dimensionality Reduction Example
+
+```java
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.ml.dimreduce.RereUMAP;
+
+public class UMAPExample {
+    public static void main(String[] args) {
+        // 准备高维数据 / Prepare high-dimensional data
+        double[][] data = {
+            {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
+            {2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
+            {3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
+            {4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0},
+            {5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}
+        };
+        
+        IMatrix originalData = Linalg.matrix(data);
+        System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
+        
+        // 创建UMAP降维器 / Create UMAP reducer
+        RereUMAP umap = new RereUMAP();
+        
+        // 设置UMAP参数 / Set UMAP parameters
+        umap.setParameters(Map.of(
+            "nNeighbors", 15,
+            "minDist", 0.1,
+            "nComponents", 2,
+            "metric", "euclidean"
+        ));
+        
+        // 降维到2维 / Reduce to 2 dimensions
+        IMatrix reducedData = umap.dimensionReduction(originalData, 2);
+        System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
+        
+        // 显示降维结果 / Display reduction results
+        System.out.println("UMAP降维后的数据:");
+        for (int i = 0; i < reducedData.getRowNum(); i++) {
+            System.out.println("样本 " + i + ": [" + 
+                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+        }
+    }
+}
+```
+
 ## 总结 / Summary
 
 本文档展示了机器学习算法的基本使用方法。建议在实际使用中：
 
 1. 根据数据特点选择合适的正则化方法
 2. 使用交叉验证评估模型性能
-3. 合理设置优化算法参数
-4. 注意数据预处理和特征工程
-5. 对于分类问题，根据类别数量选择合适的模型类型
-6. 使用概率预测来获得更详细的信息
+3. 注意数据预处理和特征工程
+4. 对于分类问题，根据类别数量选择合适的模型类型
+5. 使用概率预测来获得更详细的信息
+6. 对于聚类问题，选择合适的聚类算法和参数
+7. 对于降维问题，根据数据特点选择线性或非线性降维方法
+8. 使用聚类质量评估指标来验证聚类效果
+9. 降维后可以用于数据可视化或进一步的特征学习
 
 ---
 

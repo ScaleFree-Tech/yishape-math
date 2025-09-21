@@ -67,9 +67,11 @@
             <plugin>  
                 <groupId>org.apache.maven.plugins</groupId>  
                 <artifactId>maven-compiler-plugin</artifactId>  
-                <version>3.11.0</version>  
+                <version>3.14.0</version>  
                 <configuration>  
-                    <skipTests>true</skipTests>  
+                    <skipTests>true</skipTests>
+					<release>21</release>
+                    <encoding>utf8</encoding>
                 </configuration>  
             </plugin>  
         </plugins>

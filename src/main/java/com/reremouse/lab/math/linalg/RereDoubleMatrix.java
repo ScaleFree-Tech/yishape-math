@@ -16,6 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -6720,6 +6721,235 @@ public class RereDoubleMatrix implements IDoubleMatrix {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
         return this.multiplyScalar(1.0 / scalar);
+    }
+
+    @Override
+    public IMatrix<Double> normalize() {
+        int rows = this.data.length;
+        int cols = this.data[0].length;
+        double[][] result = new double[rows][cols];
+        
+        // 计算每行的L2范数
+        for (int i = 0; i < rows; i++) {
+            double norm = 0.0;
+            for (int j = 0; j < cols; j++) {
+                norm += this.data[i][j] * this.data[i][j];
+            }
+            norm = Math.sqrt(norm);
+            
+            if (norm == 0.0) {
+                throw new ArithmeticException("第" + i + "行的L2范数为零，无法归一化 / Row " + i + " L2 norm is zero, cannot normalize");
+            }
+            
+            // 归一化每行
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = this.data[i][j] / norm;
+            }
+        }
+        
+        return IDoubleMatrix.of(result);
+    }
+
+    @Override
+    public IMatrix<Double> setDiag(IVector<Double> diagonal) {
+        if (diagonal == null) {
+            throw new IllegalArgumentException("对角线向量不能为null / Diagonal vector cannot be null");
+        }
+        
+        int rows = this.data.length;
+        int cols = this.data[0].length;
+        int diagLen = Math.min(rows, cols);
+        
+        if (diagonal.length() != diagLen) {
+            throw new IllegalArgumentException("对角线向量长度必须等于矩阵的最小维度: " + diagonal.length() + " != " + diagLen + " / Diagonal vector length must equal matrix minimum dimension: " + diagonal.length() + " != " + diagLen);
+        }
+        
+        // 创建矩阵副本
+        double[][] result = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(this.data[i], 0, result[i], 0, cols);
+        }
+        
+        // 设置对角线元素
+        for (int i = 0; i < diagLen; i++) {
+            result[i][i] = diagonal.get(i);
+        }
+        
+        return IDoubleMatrix.of(result);
+    }
+
+    @Override
+    public IMatrix<Double> broadcastColumn(IVector<Double> colVector, BiFunction<IVector<Double>, IVector<Double>, IVector<Double>> fun) {
+        if (colVector == null) {
+            throw new IllegalArgumentException("列向量不能为null / Column vector cannot be null");
+        }
+        if (fun == null) {
+            throw new IllegalArgumentException("函数不能为null / Function cannot be null");
+        }
+        
+        int rows = this.data.length;
+        int cols = this.data[0].length;
+        
+        if (colVector.length() != rows) {
+            throw new IllegalArgumentException("列向量长度必须等于矩阵行数: " + colVector.length() + " != " + rows + " / Column vector length must equal matrix row count: " + colVector.length() + " != " + rows);
+        }
+        
+        double[][] result = new double[rows][cols];
+        
+        for (int j = 0; j < cols; j++) {
+            // 获取当前列
+            double[] currentCol = new double[rows];
+            for (int i = 0; i < rows; i++) {
+                currentCol[i] = this.data[i][j];
+            }
+            IDoubleVector currentColVector = IDoubleVector.of(currentCol);
+            
+            // 应用函数
+            IVector<Double> resultCol = fun.apply(currentColVector, colVector);
+            
+            // 将结果放回矩阵
+            for (int i = 0; i < rows; i++) {
+                result[i][j] = resultCol.get(i);
+            }
+        }
+        
+        return IDoubleMatrix.of(result);
+    }
+
+    @Override
+    public IMatrix<Double> broadcastRow(IVector<Double> rowVector, BiFunction<IVector<Double>, IVector<Double>, IVector<Double>> fun) {
+        if (rowVector == null) {
+            throw new IllegalArgumentException("行向量不能为null / Row vector cannot be null");
+        }
+        if (fun == null) {
+            throw new IllegalArgumentException("函数不能为null / Function cannot be null");
+        }
+        
+        int rows = this.data.length;
+        int cols = this.data[0].length;
+        
+        if (rowVector.length() != cols) {
+            throw new IllegalArgumentException("行向量长度必须等于矩阵列数: " + rowVector.length() + " != " + cols + " / Row vector length must equal matrix column count: " + rowVector.length() + " != " + cols);
+        }
+        
+        double[][] result = new double[rows][cols];
+        
+        for (int i = 0; i < rows; i++) {
+            // 获取当前行
+            IDoubleVector currentRowVector = IDoubleVector.of(this.data[i]);
+            
+            // 应用函数
+            IVector<Double> resultRow = fun.apply(currentRowVector, rowVector);
+            
+            // 将结果放回矩阵
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = resultRow.get(j);
+            }
+        }
+        
+        return IDoubleMatrix.of(result);
+    }
+
+    @Override
+    public IMatrix<Double> multiply(IMatrix<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入矩阵不能为null / Input matrix cannot be null");
+        }
+        IDoubleMatrix otherMatrix = (IDoubleMatrix) other;
+        double[][] otherData = otherMatrix.getData();
+        
+        if (data.length != otherData.length || data[0].length != otherData[0].length) {
+            throw new IllegalArgumentException("矩阵维度不匹配 / Matrix dimensions don't match");
+        }
+        
+        int rows = data.length;
+        int cols = data[0].length;
+        long complexity = (long) rows * cols;
+        
+        // 尝试GPU计算（如果启用且满足条件）
+        if (GPU_ENABLED && complexity > GPU_THRESHOLD) {
+            try {
+                return GPUComputeDoubleUtils.matrixElementWiseMultiply(this, otherMatrix);
+            } catch (Exception e) {
+                // GPU失败时回退到CPU
+                System.out.println("GPU矩阵元素级乘法失败，回退到CPU: " + e.getMessage());
+            }
+        }
+        
+        // 使用CPU计算工具类
+        return CPUComputeDoubleUtils.matrixElementWiseMultiply(this, other);
+    }
+
+    @Override
+    public boolean[][] equals(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        
+        int rows = data.length;
+        int cols = data[0].length;
+        
+        if (other.length() != cols) {
+            throw new IllegalArgumentException("向量长度必须等于矩阵列数: " + other.length() + " != " + cols + " / Vector length must equal matrix column count: " + other.length() + " != " + cols);
+        }
+        
+        boolean[][] result = new boolean[rows][cols];
+        
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = (data[i][j] == other.get(j));
+            }
+        }
+        
+        return result;
+    }
+
+    @Override
+    public boolean[][] lessThan(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        
+        int rows = data.length;
+        int cols = data[0].length;
+        
+        if (other.length() != cols) {
+            throw new IllegalArgumentException("向量长度必须等于矩阵列数: " + other.length() + " != " + cols + " / Vector length must equal matrix column count: " + other.length() + " != " + cols);
+        }
+        
+        boolean[][] result = new boolean[rows][cols];
+        
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = (data[i][j] < other.get(j));
+            }
+        }
+        
+        return result;
+    }
+
+    @Override
+    public boolean[][] greaterThan(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        
+        int rows = data.length;
+        int cols = data[0].length;
+        
+        if (other.length() != cols) {
+            throw new IllegalArgumentException("向量长度必须等于矩阵列数: " + other.length() + " != " + cols + " / Vector length must equal matrix column count: " + other.length() + " != " + cols);
+        }
+        
+        boolean[][] result = new boolean[rows][cols];
+        
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = (data[i][j] > other.get(j));
+            }
+        }
+        
+        return result;
     }
     
     

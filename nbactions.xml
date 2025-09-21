@@ -10,6 +10,7 @@
             </goals>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
+                <Dmaven.test.skip>true</Dmaven.test.skip>
             </properties>
         </action>
         <action>
@@ -23,6 +24,7 @@
             </goals>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
+                <Dmaven.test.skip>true</Dmaven.test.skip>
             </properties>
         </action>
     </actions>

@@ -3043,6 +3043,63 @@ public class RereDoubleVector implements IDoubleVector {
         return this.percentile(75.0);
     }
 
+    @Override
+    public IVector<Double> concat(IVector<Double> other) {
+        if (other == null) {
+            throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
+        }
+        
+        int thisLen = this.data.length;
+        int otherLen = other.length();
+        double[] result = new double[thisLen + otherLen];
+        
+        // 复制当前向量的数据
+        System.arraycopy(this.data, 0, result, 0, thisLen);
+        
+        // 复制另一个向量的数据
+        for (int i = 0; i < otherLen; i++) {
+            result[thisLen + i] = other.get(i);
+        }
+        
+        return IDoubleVector.of(result);
+    }
+
+    @Override
+    public IVector<Double> sign() {
+        double[] result = new double[this.data.length];
+        for (int i = 0; i < this.data.length; i++) {
+            if (this.data[i] > 0) {
+                result[i] = 1.0;
+            } else if (this.data[i] < 0) {
+                result[i] = -1.0;
+            } else {
+                result[i] = 0.0;
+            }
+        }
+        return IDoubleVector.of(result);
+    }
+
+    @Override
+    public IMatrix<Double> reshape(int rows, int cols) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("行数和列数必须大于0: rows=" + rows + ", cols=" + cols + " / Rows and columns must be greater than 0: rows=" + rows + ", cols=" + cols);
+        }
+        
+        int totalElements = rows * cols;
+        if (totalElements != this.data.length) {
+            throw new IllegalArgumentException("重塑后的元素总数必须等于原向量长度: " + totalElements + " != " + this.data.length + " / Reshaped total elements must equal original vector length: " + totalElements + " != " + this.data.length);
+        }
+        
+        double[][] result = new double[rows][cols];
+        for (int i = 0; i < this.data.length; i++) {
+            int row = i / cols;
+            int col = i % cols;
+            result[row][col] = this.data[i];
+        }
+        
+        return IDoubleMatrix.of(result);
+    }
+
     
 
     

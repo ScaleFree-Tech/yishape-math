@@ -231,7 +231,7 @@ public class CPUComputeDoubleUtils {
         // 三重循环实现矩阵乘法
         for (int i = 0; i < m; i++) {        // 遍历结果矩阵的行
             for (int j = 0; j < p; j++) {    // 遍历结果矩阵的列
-                double  sum = 0.0f;            // 累加器，计算内积
+                double  sum = 0.0;            // 累加器，计算内积
                 for (int k = 0; k < n; k++) { // 计算A的第i行与B的第j列的内积
                     sum += dataA[i][k] * dataB[k][j];
                 }
@@ -405,7 +405,7 @@ public class CPUComputeDoubleUtils {
             throw new IllegalArgumentException("向量维度不匹配进行内积运算");
         }
         
-        double  sum = 0.0f;
+        double  sum = 0.0;
         for (int i = 0; i < length; i++) {
             sum += a.get(i) * b.get(i);
         }
@@ -467,7 +467,7 @@ public class CPUComputeDoubleUtils {
         if (a == null) {
             throw new IllegalArgumentException("输入向量不能为null");
         }
-        if (scalar == 0.0f) {
+        if (scalar == 0.0) {
             throw new ArithmeticException("除数不能为零");
         }
         
@@ -521,7 +521,7 @@ public class CPUComputeDoubleUtils {
         }
         
         int length = a.length();
-        double  sum = 0.0f;
+        double  sum = 0.0;
         for (int i = 0; i < length; i++) {
             sum += a.get(i);
         }
@@ -543,9 +543,9 @@ public class CPUComputeDoubleUtils {
         for (int i = 0; i < dataA.length; i++) {
             double  value = dataA[i];
             if (Math.abs(value) > tolerance) {
-                result[i] = 1.0f / value;
+                result[i] = 1.0 / value;
             } else {
-                result[i] = 0.0f;
+                result[i] = 0.0;
             }
         }
         
@@ -562,7 +562,7 @@ public class CPUComputeDoubleUtils {
             throw new IllegalArgumentException("输入矩阵不能为null");
         }
         
-        final double  tolerance = 1e-10f;
+        final double  tolerance = 1e-10;
         
         // 进行奇异值分解：A = U * S * V^T
         var svdResult = A.svd();
@@ -581,7 +581,7 @@ public class CPUComputeDoubleUtils {
         for (int i = 0; i < singularValuesLength; i++) {
             double  sv = singularValues.get(i);
             if (Math.abs(sv) > tolerance) {
-                pseudoSingularValues.set(i, 1.0f / sv);  // 非零奇异值的倒数
+                pseudoSingularValues.set(i, 1.0 / sv);  // 非零奇异值的倒数
             } else {
                 pseudoSingularValues.set(i, 0.0);       // 零奇异值保持为零
             }
@@ -596,10 +596,10 @@ public class CPUComputeDoubleUtils {
         // 逐元素计算伪逆：A⁺[i,j] = Σ(k=0 to rank-1) V[i,k] * (1/σ[k]) * U[j,k]
         for (int i = 0; i < originalCols; i++) {
             for (int j = 0; j < originalRows; j++) {
-                double  sum = 0.0f;
+                double  sum = 0.0;
                 for (int k = 0; k < singularValuesLength; k++) {
-                    double  vValue = (k < V.cols()) ? V.get(i, k) : 0.0f;
-                    double  uValue = (k < U.cols()) ? U.get(j, k) : 0.0f;
+                    double  vValue = (k < V.cols()) ? V.get(i, k) : 0.0;
+                    double  uValue = (k < U.cols()) ? U.get(j, k) : 0.0;
                     double  sigmaInv = pseudoSingularValues.get(k);
                     sum += vValue * sigmaInv * uValue;
                 }
@@ -694,4 +694,68 @@ public class CPUComputeDoubleUtils {
             return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
+    
+    
+    /**
+     * CPU矩阵逐元素乘法（CPU Matrix Element-wise Multiplication）
+     * 
+     * <p>计算两个矩阵的逐元素乘法，即result[i][j] = A[i][j] * B[i][j]。
+     * 这是线性代数中的基本运算，要求两个矩阵具有相同的维度。</p>
+     * 
+     * <p>数学定义：</p>
+     * <ul>
+     *   <li>对于矩阵A = [aᵢⱼ]和B = [bᵢⱼ]，逐元素乘法结果C = A ⊙ B = [aᵢⱼ * bᵢⱼ]</li>
+     *   <li>要求A和B都是m×n矩阵，结果C也是m×n矩阵</li>
+     *   <li>满足交换律：A ⊙ B = B ⊙ A</li>
+     *   <li>满足结合律：(A ⊙ B) ⊙ C = A ⊙ (B ⊙ C)</li>
+     * </ul>
+     * 
+     * <p>算法特点：</p>
+     * <ul>
+     *   <li><strong>时间复杂度</strong>：O(m×n)，其中m和n是矩阵的维度</li>
+     *   <li><strong>空间复杂度</strong>：O(m×n)，需要存储结果矩阵</li>
+     *   <li><strong>内存访问</strong>：顺序访问，缓存友好的访问模式</li>
+     *   <li><strong>数值稳定性</strong>：简单的乘法运算，数值误差最小</li>
+     * </ul>
+     * 
+     * <p>应用场景：</p>
+     * <ul>
+     *   <li>图像处理中的像素级运算</li>
+     *   <li>神经网络中的激活函数应用</li>
+     *   <li>数值分析中的权重矩阵运算</li>
+     *   <li>机器学习中的特征缩放</li>
+     * </ul>
+     * 
+     * @param first 第一个矩阵，不能为null
+     * @param other 第二个矩阵，不能为null，维度必须与first相同
+     * @return 新的矩阵对象，包含逐元素乘法运算结果
+     * @throws IllegalArgumentException 当输入矩阵为null或维度不匹配时抛出异常
+     */
+    public static IMatrix<Double> matrixElementWiseMultiply(IMatrix<Double> first, IMatrix<Double> other) {
+        // 参数验证：确保输入矩阵不为null
+        if (first == null || other == null) {
+            throw new IllegalArgumentException("输入矩阵不能为null");
+        }
+        
+        // 维度检查：确保两个矩阵具有相同的维度
+        if (first.rows() != other.rows() || first.cols() != other.cols()) {
+            throw new IllegalArgumentException("矩阵维度不匹配进行逐元素乘法运算");
+        }
+        
+        int m = first.rows();    // 矩阵行数
+        int n = first.cols();    // 矩阵列数
+        
+        // 预分配结果矩阵，避免动态扩容
+        double[][] result = new double[m][n];
+        
+        // 执行矩阵逐元素乘法：对应元素相乘
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                result[i][j] = first.get(i, j) * other.get(i, j);
+            }
+        }
+        
+        return new RereDoubleMatrix(result);  // 创建并返回结果矩阵
+    }
+    
 }

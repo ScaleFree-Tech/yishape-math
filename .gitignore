@@ -1,6 +1,8 @@
 target/
 ECharts-Java-1.1.0/
 book/
+promotion/
+prompt/
 temp/
 .vscode/
 backups/

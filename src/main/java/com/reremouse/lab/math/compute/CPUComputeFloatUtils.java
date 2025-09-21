@@ -694,4 +694,66 @@ public class CPUComputeFloatUtils {
             return new Tuple3(svd._1,svd._2,svd._3);
         }
     }
+    
+    /**
+     * CPU矩阵逐元素乘法（CPU Matrix Element-wise Multiplication）
+     * 
+     * <p>计算两个矩阵的逐元素乘法，即result[i][j] = A[i][j] * B[i][j]。
+     * 这是线性代数中的基本运算，要求两个矩阵具有相同的维度。</p>
+     * 
+     * <p>数学定义：</p>
+     * <ul>
+     *   <li>对于矩阵A = [aᵢⱼ]和B = [bᵢⱼ]，逐元素乘法结果C = A ⊙ B = [aᵢⱼ * bᵢⱼ]</li>
+     *   <li>要求A和B都是m×n矩阵，结果C也是m×n矩阵</li>
+     *   <li>满足交换律：A ⊙ B = B ⊙ A</li>
+     *   <li>满足结合律：(A ⊙ B) ⊙ C = A ⊙ (B ⊙ C)</li>
+     * </ul>
+     * 
+     * <p>算法特点：</p>
+     * <ul>
+     *   <li><strong>时间复杂度</strong>：O(m×n)，其中m和n是矩阵的维度</li>
+     *   <li><strong>空间复杂度</strong>：O(m×n)，需要存储结果矩阵</li>
+     *   <li><strong>内存访问</strong>：顺序访问，缓存友好的访问模式</li>
+     *   <li><strong>数值稳定性</strong>：简单的乘法运算，数值误差最小</li>
+     * </ul>
+     * 
+     * <p>应用场景：</p>
+     * <ul>
+     *   <li>图像处理中的像素级运算</li>
+     *   <li>神经网络中的激活函数应用</li>
+     *   <li>数值分析中的权重矩阵运算</li>
+     *   <li>机器学习中的特征缩放</li>
+     * </ul>
+     * 
+     * @param first 第一个矩阵，不能为null
+     * @param other 第二个矩阵，不能为null，维度必须与first相同
+     * @return 新的矩阵对象，包含逐元素乘法运算结果
+     * @throws IllegalArgumentException 当输入矩阵为null或维度不匹配时抛出异常
+     */
+    public static IMatrix<Float> matrixElementWiseMultiply(IMatrix<Float> first, IMatrix<Float> other) {
+        // 参数验证：确保输入矩阵不为null
+        if (first == null || other == null) {
+            throw new IllegalArgumentException("输入矩阵不能为null");
+        }
+        
+        // 维度检查：确保两个矩阵具有相同的维度
+        if (first.rows() != other.rows() || first.cols() != other.cols()) {
+            throw new IllegalArgumentException("矩阵维度不匹配进行逐元素乘法运算");
+        }
+        
+        int m = first.rows();    // 矩阵行数
+        int n = first.cols();    // 矩阵列数
+        
+        // 预分配结果矩阵，避免动态扩容
+        float[][] result = new float[m][n];
+        
+        // 执行矩阵逐元素乘法：对应元素相乘
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                result[i][j] = first.get(i, j) * other.get(i, j);
+            }
+        }
+        
+        return Linalg.matrix(result);  // 创建并返回结果矩阵
+    }
 }

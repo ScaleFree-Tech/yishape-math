@@ -4,6 +4,9 @@ import com.aparapi.Kernel;
 import com.aparapi.Range;
 import com.aparapi.device.Device;
 import static com.reremouse.lab.math.compute.GPUConfig.GPU_THRESHOLD;
+import static com.reremouse.lab.math.compute.GPUConfig.GPU_MATRIX_MULTIPLY_THRESHOLD;
+import static com.reremouse.lab.math.compute.GPUConfig.GPU_MATRIX_SCALAR_THRESHOLD;
+import static com.reremouse.lab.math.compute.GPUConfig.GPU_VECTOR_THRESHOLD;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -40,6 +43,7 @@ import java.util.*;
  * <p>性能优化策略：</p>
  * <ul>
  *   <li><strong>阈值控制</strong>：小数据（< GPU_THRESHOLD）使用CPU，避免GPU设备访问开销</li>
+ *   <li><strong>向量运算</strong>：向量运算使用GPU_VECTOR_THRESHOLD阈值</li>
  *   <li><strong>算法选择</strong>：复杂迭代算法（特征分解、SVD）主要使用CPU优化实现</li>
  *   <li><strong>并行优化</strong>：简单并行运算（矩阵乘法、向量运算）充分利用GPU加速</li>
  *   <li><strong>批处理</strong>：支持批量运算，减少GPU设备切换开销</li>
@@ -213,7 +217,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量倒数", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorReciprocal(a, tolerance);
         }
@@ -272,7 +276,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("伪逆矩阵", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.pseudoInverse(A);
         }
@@ -477,9 +481,9 @@ public class GPUComputeFloatUtils {
         long startTime = System.currentTimeMillis();  // 性能计时开始
         int dataSize = a.length();  // 获取向量长度
         
-        // 小数据优化策略：小于阈值的向量使用CPU计算
+        // 小数据优化策略：小于GPU_VECTOR_THRESHOLD的向量使用CPU计算
         // 避免GPU设备访问开销，提高小数据计算效率
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量加法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorAdd(a, b);
         }
@@ -548,7 +552,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量内积", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorDot(a, b);
         }
@@ -663,7 +667,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("矩阵加法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.matrixAdd(A.toFloatArray(), B.toFloatArray());
         }
@@ -734,7 +738,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("矩阵减法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.matrixSub(A.toFloatArray(), B.toFloatArray());
         }
@@ -859,7 +863,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPUConfig.GPU_MATRIX_SCALAR_THRESHOLD) {
             logCPUFallback("矩阵标量加法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.matrixScalarAdd(A.toFloatArray(), scalar);
         }
@@ -918,7 +922,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPUConfig.GPU_MATRIX_SCALAR_THRESHOLD) {
             logCPUFallback("矩阵标量减法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.matrixScalarSub(A.toFloatArray(), scalar);
         }
@@ -1036,7 +1040,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量减法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorSub(a, b);
         }
@@ -1089,7 +1093,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量乘法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorMultiply(a, b);
         }
@@ -1142,7 +1146,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量标量加法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorScalarAdd(a, scalar);
         }
@@ -1189,7 +1193,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量标量减法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorScalarSub(a, scalar);
         }
@@ -1236,7 +1240,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量标量乘法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorScalarMultiply(a, scalar);
         }
@@ -1283,7 +1287,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量标量除法", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorScalarDivide(a, scalar);
         }
@@ -1334,7 +1338,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量平方", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorSquare(a);
         }
@@ -1382,7 +1386,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量开方", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorSqrt(a);
         }
@@ -1429,7 +1433,7 @@ public class GPUComputeFloatUtils {
         int dataSize = a.length();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("向量求和", "数据量小于阈值，使用CPU");
             return CPUComputeFloatUtils.vectorSum(a);
         }
@@ -1933,7 +1937,7 @@ public class GPUComputeFloatUtils {
         int dataSize = A.rows() * A.cols();
         
         // 小数据无条件使用CPU
-        if (dataSize < GPU_THRESHOLD) {
+        if (dataSize < GPU_VECTOR_THRESHOLD) {
             logCPUFallback("SVD分解", "数据量小于阈值，使用CPU");
             var svd = A.svd();
             return new Tuple3(svd._1,svd._2,svd._3);
@@ -2792,6 +2796,129 @@ public class GPUComputeFloatUtils {
             this.matrix = matrix;
             this.type = type;
             this.timestamp = System.currentTimeMillis();
+        }
+    }
+    
+    /**
+     * GPU矩阵逐元素乘法（GPU Matrix Element-wise Multiplication）
+     * 
+     * <p>使用Aparapi框架实现GPU加速的矩阵逐元素乘法运算。该方法利用GPU的并行计算能力
+     * 大幅提升大规模矩阵逐元素乘法的性能，特别适用于机器学习、图像处理等需要处理
+     * 大量矩阵运算的场景。</p>
+     * 
+     * <p>算法原理：</p>
+     * <ul>
+     *   <li>将矩阵逐元素乘法运算分解为独立的并行任务</li>
+     *   <li>每个GPU线程处理一个元素：result[i][j] = A[i][j] * B[i][j]</li>
+     *   <li>利用GPU的SIMD（单指令多数据）架构同时处理多个元素</li>
+     *   <li>通过内存合并访问优化数据传输效率</li>
+     * </ul>
+     * 
+     * <p>性能优化策略：</p>
+     * <ul>
+     *   <li><strong>阈值控制</strong>：小矩阵使用CPU，避免GPU设备访问开销</li>
+     *   <li><strong>自动回退</strong>：GPU计算失败时自动回退到CPU计算</li>
+     *   <li><strong>内存优化</strong>：使用连续内存布局，提高缓存命中率</li>
+     *   <li><strong>资源管理</strong>：及时释放GPU资源，避免内存泄漏</li>
+     * </ul>
+     * 
+     * <p>GPU并行化优势：</p>
+     * <ul>
+     *   <li>理论上可达到O(m×n/p)的时间复杂度，其中p是并行处理器数量</li>
+     *   <li>对于大矩阵（>10000元素），性能提升可达10-100倍</li>
+     *   <li>充分利用现代GPU的数千个并行核心</li>
+     * </ul>
+     * 
+     * <p>适用场景：</p>
+     * <ul>
+     *   <li>大规模矩阵运算（元素数量 > GPU_THRESHOLD）</li>
+     *   <li>机器学习中的批量数据处理</li>
+     *   <li>图像处理中的像素级运算</li>
+     *   <li>科学计算中的矩阵场运算</li>
+     * </ul>
+     * 
+     * @param first 第一个矩阵，不能为null
+     * @param other 第二个矩阵，不能为null，维度必须与first相同
+     * @return 新的矩阵对象，包含逐元素乘法运算结果
+     * @throws IllegalArgumentException 当矩阵为null或维度不匹配时抛出异常
+     */
+    public static IMatrix<Float> matrixElementWiseMultiply(IMatrix<Float> first, IMatrix<Float> other) {
+        long startTime = System.currentTimeMillis();
+        int dataSize = first.rows() * first.cols();
+        
+        // 小数据优化策略：小于阈值的矩阵使用CPU计算
+        // 避免GPU设备访问开销，提高小数据计算效率
+        if (dataSize < GPU_THRESHOLD) {
+            logCPUFallback("矩阵逐元素乘法", "数据量小于阈值，使用CPU");
+            return CPUComputeFloatUtils.matrixElementWiseMultiply(first, other);
+        }
+        
+        // GPU可用性检查：确保GPU环境正常
+        if (!gpuAvailable) {
+            logCPUFallback("矩阵逐元素乘法", "GPU不可用");
+            return CPUComputeFloatUtils.matrixElementWiseMultiply(first, other);
+        }
+        
+        // 参数验证：确保输入矩阵不为null
+        if (first == null || other == null) {
+            throw new IllegalArgumentException("输入矩阵不能为null");
+        }
+        
+        // 维度检查：确保两个矩阵具有相同的维度
+        if (first.rows() != other.rows() || first.cols() != other.cols()) {
+            throw new IllegalArgumentException("矩阵维度不匹配进行逐元素乘法运算");
+        }
+        
+        int m = first.rows();    // 矩阵行数
+        int n = first.cols();    // 矩阵列数
+        logGPUOperation("矩阵逐元素乘法", "维度: " + m + "x" + n);
+        
+        // 预分配结果矩阵，避免动态扩容
+        float[][] result = new float[m][n];
+        
+        // 将2D数组转换为1D数组用于GPU计算
+        float[] flatFirst = flattenMatrix(first.toFloatArray());
+        float[] flatOther = flattenMatrix(other.toFloatArray());
+        float[] flatResult = new float[m * n];
+        
+        // 创建Aparapi GPU Kernel
+        // Kernel是GPU并行计算的核心，定义了每个线程要执行的操作
+        Kernel kernel = new Kernel() {
+            @Override
+            public void run() {
+                // 获取当前线程的全局ID，对应矩阵元素的索引
+                int i = getGlobalId(0);
+                int j = getGlobalId(1);
+                
+                if (i < m && j < n) {
+                    // 执行矩阵逐元素乘法：result[i][j] = first[i][j] * other[i][j]
+                    flatResult[i * n + j] = flatFirst[i * n + j] * flatOther[i * n + j];
+                }
+            }
+        };
+        
+        try {
+            // 执行GPU并行计算
+            // 使用JTP模式，让Aparapi自动选择最优设备
+            Range range = Range.create2D(m, n);  // 创建二维计算范围
+            kernel.execute(range);  // 启动GPU并行计算
+            
+            // 将1D结果转换回2D数组
+            result = unflattenMatrix(flatResult, m, n);
+            
+            long endTime = System.currentTimeMillis();  // 性能计时结束
+            logPerformance("矩阵逐元素乘法", startTime, endTime, dataSize);  // 记录性能日志
+            
+            return new RereFloatMatrix(result);  // 创建并返回结果矩阵
+            
+        } catch (Exception e) {
+            // GPU计算失败时的容错处理
+            logCPUFallback("矩阵逐元素乘法", "GPU执行失败: " + e.getMessage());
+            // 自动回退到CPU计算，确保计算能够完成
+            return CPUComputeFloatUtils.matrixElementWiseMultiply(first, other);
+        } finally {
+            // 资源清理：释放GPU Kernel资源，避免内存泄漏
+            kernel.dispose();
         }
     }
 }

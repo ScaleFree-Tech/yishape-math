@@ -87,12 +87,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
     /**
      * L1正则化系数（λ₁）
      */
-    private double lambda1 = 0.0f;
+    private double lambda1 = 0.0;
     
     /**
      * L2正则化系数（λ₂）
      */
-    private double lambda2 = 0.0f;
+    private double lambda2 = 0.0;
     
     /**
      * 训练特征矩阵（增广后的）
@@ -124,7 +124,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * </p>
      */
     public RereLinearRegression() {
-        this(true, 0.0f, 0.0f);
+        this(true, 0.0, 0.0);
     }
     
     /**
@@ -133,10 +133,11 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @param includeBias 是否包含偏置项
      * @param lambda L2正则化系数（已废弃，建议使用新的构造函数）
      * @deprecated 建议使用 {@link #RereLinearRegression(boolean, double, double)}
+     *             此构造函数将lambda参数用作L2正则化系数，L1正则化系数设置为0.0
      */
     @Deprecated
     public RereLinearRegression(boolean includeBias, double lambda) {
-        this(includeBias, 0.0f, lambda);
+        this(includeBias, 0.0, lambda);
     }
     
     /**
@@ -309,14 +310,10 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             int featureWeightCount = this.trainedWeights.length() - 1;
             
             // 提取特征权重（不包括偏置项）
-            double[] featureWeights = new double[featureWeightCount];
-            for (int i = 0; i < featureWeightCount; i++) {
-                featureWeights[i] = this.trainedWeights.toDoubleArray()[i];
-            }
-            IVector featureWeightVector = IVector.of(featureWeights);
+            IVector featureWeightVector = this.trainedWeights.slice(0, featureWeightCount);
             
             // 提取偏置项（权重向量的最后一个元素）
-            double biasValue = this.trainedWeights.toDoubleArray()[featureWeightCount];
+            double biasValue = (double)this.trainedWeights.get(featureWeightCount);
             IVector biasVector = IVector.of(new double[]{biasValue});
             
             result.setWeights(featureWeightVector);
@@ -324,7 +321,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         } else {
             // 不包含偏置项：整个权重向量都是特征权重
             result.setWeights(this.trainedWeights);
-            result.setBias(IVector.of(new double[]{0.0f})); // 偏置项为0
+            result.setBias(IVector.of(new double[]{0.0})); // 偏置项为0
         }
         
         result.setLoss(finalLoss);
@@ -443,7 +440,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector residuals = (IVector)predictions.sub(this.trainingLabels);
         
         // 计算均方误差：(1/2n) * ||residuals||^2
-        double mse = (double)residuals.innerProduct(residuals) / (2.0d * this.sampleCount);
+        double mse = (double)residuals.innerProduct(residuals) / (2.0 * this.sampleCount);
         
         // 计算正则化项
         double regularization = computeRegularizationTerm(w);
@@ -462,9 +459,9 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             case L1:
                 return lambda1 * computeL1Norm(w);
             case L2:
-                return lambda2 * (double)w.innerProduct(w) / 2.0f;
+                return lambda2 * (double)w.innerProduct(w) / 2.0;
             case ELASTIC_NET:
-                return lambda1 * computeL1Norm(w) + lambda2 * (double)w.innerProduct(w) / 2.0d;
+                return lambda1 * computeL1Norm(w) + lambda2 * (double)w.innerProduct(w) / 2.0;
             case NONE:
             default:
                 return 0.0f;
@@ -498,12 +495,8 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @return L1范数值
      */
     private double computeL1Norm(IVector w) {
-        double[] data = w.toDoubleArray();
-        double sum = 0.0f;
-        for (int i = 0; i < data.length; i++) {
-            sum += Math.abs(data[i]);
-        }
-        return sum;
+        // 使用向量内置的L1范数计算方法
+        return (double)w.norm1();
     }
     
     /**
@@ -517,21 +510,9 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @return L1正则化的梯度向量
      */
     private IVector computeL1Gradient(IVector w) {
-        double[] data = w.toDoubleArray();
-        double[] gradient = new double[data.length];
-        
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] > 0) {
-                gradient[i] = lambda1;
-            } else if (data[i] < 0) {
-                gradient[i] = -lambda1;
-            } else {
-                // 当wᵢ = 0时，使用次梯度，这里选择0
-                gradient[i] = 0.0f;
-            }
-        }
-        
-        return IVector.of(gradient);
+        // 使用向量的sign方法计算L1正则化梯度，替代手动循环
+        IVector signVector = w.sign();
+        return (IVector)signVector.multiplyScalar(lambda1);
     }
     
     /**
@@ -573,21 +554,15 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         }
         
         int rows = feature.getRowNum();
-        int cols = feature.getColNum();
         
-        // 创建增广矩阵：原特征 + 偏置列
-        double[][] augmentedData = new double[rows][cols + 1];
+        // 创建一列全1的偏置列向量
+        IVector onesVector = IVector.ones(rows);
         
-        // 复制原特征数据
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                augmentedData[i][j] = (double)feature.get(i, j);
-            }
-            // 添加偏置列（全1）
-            augmentedData[i][cols] = 1.0f;
-        }
+        // 将向量转换为列矩阵
+        IMatrix biasColumn = onesVector.asColumnVector();
         
-        return IMatrix.of(augmentedData);
+        // 使用水平连接将偏置列添加到特征矩阵右侧
+        return feature.hstack(biasColumn);
     }
     
     /**
@@ -607,17 +582,10 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             return x;
         }
         
-        int length = x.length();
-        double[] augmentedData = new double[length + 1];
-        
-        // 复制原特征数据
-        for (int i = 0; i < length; i++) {
-            augmentedData[i] = x.toDoubleArray()[i];
-        }
-        // 添加偏置项
-        augmentedData[length] = 1.0f;
-        
-        return IVector.of(augmentedData);
+        // 使用向量连接将偏置项添加到特征向量末尾
+        // 使用concat方法替代手动数组操作
+        IVector biasElement = IVector.of(new double[]{1.0});
+        return x.concat(biasElement);
     }
     
     /**
@@ -631,21 +599,8 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      */
     private IVector computePredictions(IVector w) {
         // 使用矩阵-向量乘法计算预测值
-        // 这里需要将矩阵转换为向量形式进行计算
-        // 由于IMatrix接口的限制，我们手动实现矩阵-向量乘法
-        
-        int rows = this.augmentedFeatures.getRowNum();
-        double[] predictions = new double[rows];
-        
-        for (int i = 0; i < rows; i++) {
-            double prediction = 0.0f;
-            for (int j = 0; j < w.length(); j++) {
-                prediction += (double)this.augmentedFeatures.get(i, j) * w.toDoubleArray()[j];
-            }
-            predictions[i] = prediction;
-        }
-        
-        return IVector.of(predictions);
+        // 现在使用IMatrix接口提供的mmul方法进行矩阵-向量乘法
+        return this.augmentedFeatures.mmul(w);
     }
     
     /**
@@ -658,19 +613,13 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      * @return 梯度向量
      */
     private IVector computeMatrixVectorGradient(IVector residuals) {
-        int cols = this.augmentedFeatures.getColNum();
-        double[] gradient = new double[cols];
-        
         // 计算 (1/n) * X^T * residuals
-        for (int j = 0; j < cols; j++) {
-            double sum = 0.0f;
-            for (int i = 0; i < this.sampleCount; i++) {
-                sum += (double)this.augmentedFeatures.get(i, j) * residuals.toDoubleArray()[i];
-            }
-            gradient[j] = sum / this.sampleCount;
-        }
+        // 使用矩阵转置与向量的乘法：先转置矩阵，再与向量相乘
+        IMatrix transposedFeatures = this.augmentedFeatures.transpose();
+        IVector gradient = transposedFeatures.mmul(residuals);
         
-        return IVector.of(gradient);
+        // 除以样本数量n
+        return gradient.multiplyScalar(1.0 / this.sampleCount);
     }
     
     /**
@@ -825,12 +774,8 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         
         if (this.includeBias) {
             // 包含偏置项：权重向量的最后一个元素是偏置项
-            int featureWeightCount = this.trainedWeights.length() - 1;
-            double[] featureWeights = new double[featureWeightCount];
-            for (int i = 0; i < featureWeightCount; i++) {
-                featureWeights[i] = this.trainedWeights.toDoubleArray()[i];
-            }
-            return IVector.of(featureWeights);
+            // 使用向量切片获取除最后一个元素外的所有元素
+            return this.trainedWeights.slice(0, this.trainedWeights.length() - 1);
         } else {
             // 不包含偏置项：整个权重向量都是特征权重
             return this.trainedWeights;
@@ -844,15 +789,16 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      */
     public double getBias() {
         if (this.trainedWeights == null) {
-            return 0.0f;
+            return 0.0;
         }
         
         if (this.includeBias) {
             // 包含偏置项：权重向量的最后一个元素是偏置项
-            return this.trainedWeights.toDoubleArray()[this.trainedWeights.length() - 1];
+            // 直接使用get方法替代手动数组访问
+            return (double)this.trainedWeights.get(this.trainedWeights.length() - 1);
         } else {
             // 不包含偏置项
-            return 0.0f;
+            return 0.0;
         }
     }
     

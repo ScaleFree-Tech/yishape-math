@@ -1,6 +1,6 @@
 package com.reremouse.lab.math.test;
 
-import com.reremouse.lab.math.dimreduce.RerePCA;
+import com.reremouse.lab.math.ml.dimreduce.RerePCA;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
