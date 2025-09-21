@@ -378,8 +378,8 @@ IVector<Double> signal = Signals.sin(2 * Math.PI * 5 * time);  // 5Hz正弦波 /
 IVector<Double> noise = Signals.randn(1000).mul(0.1);
 IVector<Double> noisySignal = signal.add(noise);
 
-// 信号滤波 / Signal filtering
-IVector<Double> filteredSignal = Signals.filter(noisySignal, 0.1);
+// 卡尔曼滤波 / Signal filtering
+IVector<Double> filteredSignal = Signals.kalmanFilter(noisySignal, 0.1);
 
 // 信号可视化 / Signal visualization
 Plots.of(800, 400)
