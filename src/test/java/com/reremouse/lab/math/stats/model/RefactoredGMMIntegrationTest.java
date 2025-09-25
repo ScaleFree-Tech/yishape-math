@@ -4,7 +4,7 @@ import com.reremouse.lab.math.stats.distribution.multiv.MultivariateNormalDistri
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.audio.embedding.IVectorModel;
+import com.reremouse.lab.audio.embedding.IVectorEmbedding;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,7 +15,7 @@ import java.util.Random;
 
 /**
  * 重构后的GMM和IVectorModel集成测试
- * Integration test for refactored GMM and IVectorModel
+ Integration test for refactored GMM and IVectorEmbedding
  */
 public class RefactoredGMMIntegrationTest {
     
@@ -106,7 +106,7 @@ public class RefactoredGMMIntegrationTest {
         int numComponents = 2;
         int featureDim = 3;
         int ivectorDim = 2;
-        IVectorModel model = new IVectorModel(ivectorDim, numComponents, featureDim);
+        IVectorEmbedding model = new IVectorEmbedding(ivectorDim, numComponents, featureDim);
         
         // 生成训练数据
         List<IMatrix<Double>> trainingData = generateMFCCData(5, 10, featureDim);
@@ -173,8 +173,8 @@ public class RefactoredGMMIntegrationTest {
         int featureDim = 3;
         int ivectorDim = 2;
         
-        IVectorModel model1 = new IVectorModel(ivectorDim, numComponents, featureDim);
-        IVectorModel model2 = new IVectorModel(ivectorDim, numComponents, featureDim);
+        IVectorEmbedding model1 = new IVectorEmbedding(ivectorDim, numComponents, featureDim);
+        IVectorEmbedding model2 = new IVectorEmbedding(ivectorDim, numComponents, featureDim);
         
         // 使用相同的训练数据
         List<IMatrix<Double>> trainingData = generateMFCCData(3, 8, featureDim);

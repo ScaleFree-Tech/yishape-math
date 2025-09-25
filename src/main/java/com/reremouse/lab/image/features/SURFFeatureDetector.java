@@ -13,7 +13,7 @@ import java.util.HashMap;
  * SURF (Speeded Up Robust Features) feature detector implementation
  * 加速稳健特征（SURF）特征检测器实现
  * 
- * @author Qoder AI
+ * @author RereMouse
  * @version 1.0
  */
 public class SURFFeatureDetector implements IImageProcessor {

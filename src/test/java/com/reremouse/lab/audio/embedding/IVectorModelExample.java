@@ -1,6 +1,6 @@
 package com.reremouse.lab.audio.embedding;
 
-import com.reremouse.lab.audio.embedding.IVectorModel;
+import com.reremouse.lab.audio.embedding.IVectorEmbedding;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -26,7 +26,7 @@ public class IVectorModelExample {
         int numComponents = 64;    // UBM高斯分量数（减少以加快示例运行）
         int featureDim = 13;       // MFCC特征维度
         
-        IVectorModel model = new IVectorModel(ivectorDim, numComponents, featureDim);
+        IVectorEmbedding model = new IVectorEmbedding(ivectorDim, numComponents, featureDim);
         
         System.out.println("创建i-vector模型:");
         System.out.println("- i-vector维度: " + model.getIVectorDimension());

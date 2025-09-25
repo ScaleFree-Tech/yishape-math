@@ -11,7 +11,7 @@ package com.reremouse.lab.image.core;
  * Provides detailed error information and exception type classification.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

@@ -2,7 +2,7 @@ package com.reremouse.lab.math.signal.transform;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.Complex;
+import com.reremouse.lab.math.signal.core.Complex;
 import com.reremouse.lab.math.signal.core.ISignalProcessor;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
 

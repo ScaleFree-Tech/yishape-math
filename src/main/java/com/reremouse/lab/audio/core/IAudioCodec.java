@@ -1,6 +1,6 @@
 package com.reremouse.lab.audio.core;
 
-import com.reremouse.lab.audio.AudioData;
+import com.reremouse.lab.audio.core.AudioData;
 import com.reremouse.lab.audio.exception.AudioProcessingException;
 
 /**

@@ -11,16 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * IVectorModel 基本功能测试
+ * IVectorEmbedding 基本功能测试
  */
 public class IVectorModelTest {
     
-    private IVectorModel model;
+    private IVectorEmbedding model;
     
     @BeforeEach
     public void setUp() {
         // 创建一个小的模型用于测试
-        model = new IVectorModel(10, 4, 3); // 10维i-vector，4个高斯分量，3维特征
+        model = new IVectorEmbedding(10, 4, 3); // 10维i-vector，4个高斯分量，3维特征
     }
     
     @Test

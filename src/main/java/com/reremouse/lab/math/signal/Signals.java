@@ -1,5 +1,7 @@
 package com.reremouse.lab.math.signal;
 
+import com.reremouse.lab.math.signal.wavele.WaveletAnalysis;
+import com.reremouse.lab.math.signal.wavele.WaveletVisualizer;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.util.Tuple2;
@@ -10,11 +12,15 @@ import com.reremouse.lab.math.signal.filter.ISignalFilter;
 import com.reremouse.lab.math.signal.transform.ISignalTransform;
 import com.reremouse.lab.math.signal.generation.ISignalGenerator;
 import com.reremouse.lab.math.signal.factory.SignalProcessorFactory;
-import com.reremouse.lab.math.signal.core.SignalProcessingException;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereDCT;
+import com.reremouse.lab.math.signal.core.RereFFT;
+import com.reremouse.lab.math.signal.core.RereHilbert;
 import com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters;
 import com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType;
 import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer.AnalysisParameters;
 import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer.AnalysisType;
+import com.reremouse.lab.math.signal.wavele.WaveletCoefficients;
 
 /**
  * 信号处理入口工厂类 / Signal Processing Entry Factory Class
@@ -626,7 +632,7 @@ public class Signals {
     /**
      * 离散小波变换 (DWT) / Discrete Wavelet Transform (DWT)
      */
-    public static WaveletAnalysis.WaveletCoefficients discreteWaveletTransform(IVector<Double> signal, 
+    public static WaveletCoefficients discreteWaveletTransform(IVector<Double> signal, 
             WaveletAnalysis.WaveletType waveletType, int levels, double param) {
         // This is a low-level method that doesn't use the factory pattern
         return WaveletAnalysis.discreteWaveletTransform(signal, waveletType, levels, param);
@@ -635,7 +641,7 @@ public class Signals {
     /**
      * 小波逆变换 (IDWT) / Inverse Discrete Wavelet Transform (IDWT)
      */
-    public static IVector<Double> inverseDiscreteWaveletTransform(WaveletAnalysis.WaveletCoefficients coefficients, 
+    public static IVector<Double> inverseDiscreteWaveletTransform(WaveletCoefficients coefficients, 
             WaveletAnalysis.WaveletType waveletType, double param) {
         // This is a low-level method that doesn't use the factory pattern
         return WaveletAnalysis.inverseDiscreteWaveletTransform(coefficients, waveletType, param);

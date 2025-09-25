@@ -2,6 +2,8 @@ package com.reremouse.lab.math.signal;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereFFT;
 import com.reremouse.lab.math.viz.Plots;
 import com.reremouse.lab.math.viz.IPlot;
 import com.reremouse.lab.util.Tuple2;
@@ -80,7 +82,9 @@ public class SignalVisualizer {
         for (int i = 0; i < signal.length(); i++) {
             signalComplex[i] = new Complex(signal.get(i), 0);
         }
-        Complex[] fftResult = RereFFT.fft(signalComplex);
+        // 零填充确保长度为2的幂
+        Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(signalComplex);
+        Complex[] fftResult = RereFFT.fft(paddedSignal);
         int n = fftResult.length;
         int halfN = n / 2;
         

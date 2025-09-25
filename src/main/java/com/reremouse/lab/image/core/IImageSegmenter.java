@@ -15,7 +15,7 @@ import java.util.Map;
  * Extends IImageProcessor interface and provides segmentation-specific functionality.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

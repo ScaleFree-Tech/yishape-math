@@ -105,12 +105,15 @@ public class RereMathUtil {
      *
      * @param v 要转换的Float数组
      * @return 转换后的float数组
-     * @throws NullPointerException 如果输入数组为null或包含null元素
+     * @throws NullPointerException 如果输入数组为null
      */
     public static float[] toPrimitive(Float[] v) {
+        if (v == null) {
+            throw new NullPointerException("Input array cannot be null");
+        }
         float[] vv = new float[v.length];
         for (int i = 0; i < v.length; i++) {
-            vv[i] = v[i];
+            vv[i] = (v[i] == null) ? 0.0f : v[i];
         }
         return vv;
     }
@@ -120,7 +123,7 @@ public class RereMathUtil {
      *
      * @param v 要转换的Float二维数组
      * @return 转换后的float二维数组
-     * @throws NullPointerException 如果输入数组为null或包含null行/元素
+     * @throws NullPointerException 如果输入数组为null
      */
     public static float[][] toPrimitive(Float[][] v) {
         if (v == null) {
@@ -130,14 +133,12 @@ public class RereMathUtil {
         float[][] result = new float[v.length][];
         for (int i = 0; i < v.length; i++) {
             if (v[i] == null) {
-                throw new NullPointerException("Row " + i + " cannot be null");
+                result[i] = new float[0]; // Empty row for null rows
+                continue;
             }
             result[i] = new float[v[i].length];
             for (int j = 0; j < v[i].length; j++) {
-                if (v[i][j] == null) {
-                    throw new NullPointerException("Element at [" + i + "][" + j + "] cannot be null");
-                }
-                result[i][j] = v[i][j];
+                result[i][j] = (v[i][j] == null) ? 0.0f : v[i][j];
             }
         }
         return result;
@@ -156,12 +157,15 @@ public class RereMathUtil {
      *
      * @param v 要转换的Double数组
      * @return 转换后的double数组
-     * @throws NullPointerException 如果输入数组为null或包含null元素
+     * @throws NullPointerException 如果输入数组为null
      */
     public static double[] toPrimitive(Double[] v) {
+        if (v == null) {
+            throw new NullPointerException("Input array cannot be null");
+        }
         double[] vv = new double[v.length];
         for (int i = 0; i < v.length; i++) {
-            vv[i] = v[i];
+            vv[i] = (v[i] == null) ? 0.0 : v[i];
         }
         return vv;
     }
@@ -171,7 +175,7 @@ public class RereMathUtil {
      *
      * @param v 要转换的Double二维数组
      * @return 转换后的double二维数组
-     * @throws NullPointerException 如果输入数组为null或包含null行/元素
+     * @throws NullPointerException 如果输入数组为null
      */
     public static double[][] toPrimitive(Double[][] v) {
         if (v == null) {
@@ -181,14 +185,12 @@ public class RereMathUtil {
         double[][] result = new double[v.length][];
         for (int i = 0; i < v.length; i++) {
             if (v[i] == null) {
-                throw new NullPointerException("Row " + i + " cannot be null");
+                result[i] = new double[0]; // Empty row for null rows
+                continue;
             }
             result[i] = new double[v[i].length];
             for (int j = 0; j < v[i].length; j++) {
-                if (v[i][j] == null) {
-                    throw new NullPointerException("Element at [" + i + "][" + j + "] cannot be null");
-                }
-                result[i][j] = v[i][j];
+                result[i][j] = (v[i][j] == null) ? 0.0 : v[i][j];
             }
         }
         return result;
@@ -207,12 +209,15 @@ public class RereMathUtil {
      *
      * @param v 要转换的Integer数组
      * @return 转换后的int数组
-     * @throws NullPointerException 如果输入数组为null或包含null元素
+     * @throws NullPointerException 如果输入数组为null
      */
     public static int[] toPrimitive(Integer[] v) {
+        if (v == null) {
+            throw new NullPointerException("Input array cannot be null");
+        }
         int[] vv = new int[v.length];
         for (int i = 0; i < v.length; i++) {
-            vv[i] = v[i];
+            vv[i] = (v[i] == null) ? 0 : v[i];
         }
         return vv;
     }

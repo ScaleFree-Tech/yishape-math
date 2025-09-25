@@ -1,7 +1,12 @@
 package com.reremouse.lab.math.signal;
 
+import com.reremouse.lab.math.signal.core.SignalUtilities;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereDCT;
+import com.reremouse.lab.math.signal.core.RereFFT;
+import com.reremouse.lab.math.signal.core.RereHilbert;
 import com.reremouse.lab.util.Tuple2;
 
 /**

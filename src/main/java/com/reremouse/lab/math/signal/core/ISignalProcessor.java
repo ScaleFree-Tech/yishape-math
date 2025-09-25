@@ -2,7 +2,6 @@ package com.reremouse.lab.math.signal.core;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.Complex;
 
 /**
  * 信号处理器基础接口 / Signal Processor Base Interface

@@ -1,7 +1,5 @@
 package com.reremouse.lab.audio.core;
 
-import com.reremouse.lab.audio.AudioData;
-
 /**
  * 音频监听器接口 / Audio Listener Interface
  * <p>
@@ -140,8 +138,8 @@ public interface IAudioListener {
      * @param error 错误信息 / Error information
      */
     default void onProcessingFailed(Object source, AudioData audioData, Throwable error) {
-        onAudioEvent(new AudioEvent(AudioEventType.PROCESSING_FAILED, source, audioData, 
-                                  "Processing failed: " + error.getMessage(), error));
+        onAudioEvent(new AudioEvent(AudioEventType.PROCESSING_FAILED, source, audioData,
+                                   "Processing failed: " + error.getMessage(), error));
     }
     
     /**
@@ -153,11 +151,11 @@ public interface IAudioListener {
      *
      * @param source 事件源 / Event source
      * @param audioData 音频数据 / Audio data
-     * @param progress 进度百分比 (0-100) / Progress percentage (0-100)
+     * @param progress 进度百分比(0-100) / Progress percentage (0-100)
      */
     default void onProgressUpdate(Object source, AudioData audioData, double progress) {
-        onAudioEvent(new AudioEvent(AudioEventType.PROGRESS_UPDATE, source, audioData, 
-                                  String.format("Progress: %.1f%%", progress), progress));
+        onAudioEvent(new AudioEvent(AudioEventType.PROGRESS_UPDATE, source, audioData,
+                                   String.format("Progress: %.1f%%", progress), progress));
     }
     
     /**
@@ -173,8 +171,8 @@ public interface IAudioListener {
      * @param newValue 新值 / New value
      */
     default void onParameterChanged(Object source, String parameterName, Object oldValue, Object newValue) {
-        onAudioEvent(new AudioEvent(AudioEventType.PARAMETER_CHANGED, source, null, 
-                                  String.format("Parameter '%s' changed from %s to %s", parameterName, oldValue, newValue)));
+        onAudioEvent(new AudioEvent(AudioEventType.PARAMETER_CHANGED, source, null,
+                                   String.format("Parameter '%s' changed from %s to %s", parameterName, oldValue, newValue)));
     }
     
     /**
@@ -189,7 +187,7 @@ public interface IAudioListener {
      * @param clippingLevel 削波程度 / Clipping level
      */
     default void onClippingDetected(Object source, AudioData audioData, double clippingLevel) {
-        onAudioEvent(new AudioEvent(AudioEventType.CLIPPING_DETECTED, source, audioData, 
-                                  String.format("Clipping detected: %.2f", clippingLevel), clippingLevel));
+        onAudioEvent(new AudioEvent(AudioEventType.CLIPPING_DETECTED, source, audioData,
+                                   String.format("Clipping detected: %.2f", clippingLevel), clippingLevel));
     }
 }

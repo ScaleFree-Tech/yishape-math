@@ -4,7 +4,7 @@ import java.util.UUID;
 
 /**
  *
- * @author RereMouse
+ * @author lteb2
  */
 public class RereTree {
 
@@ -26,5 +26,4 @@ public class RereTree {
     public void setRoot(RereTreeNode root) {
         this.root = root;
     }
-
 }

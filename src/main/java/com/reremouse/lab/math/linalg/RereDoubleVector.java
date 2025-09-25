@@ -49,22 +49,22 @@ import java.util.function.Function;
  * <h3>使用示例 / Usage Example:</h3>
  * <pre>
  * {@code
- // 创建向量 / Create vector
- double[] data = {1.0f, 2.0f, 3.0f, 4.0f};
- IVector<Double> vector = new RereDoubleVector(data);
-
- // 基本运算 / Basic operations
- IVector<Double> doubled = vector.multiplyScala(2.0f);
- Double norm = vector.norm2();
-
- // 统计运算 / Statistical operations
- Double mean = vector.mean();
- Double std = vector.std();
-
- // 切片操作 / Slicing operations
- IVector<Double> slice = vector.slice(1, 3);
- IVector<Double> squared = vector.squre();
- }
+ * // 创建向量 / Create vector
+ * double[] data = {1.0f, 2.0f, 3.0f, 4.0f};
+ * IVector<Double> vector = new RereDoubleVector(data);
+ *
+ * // 基本运算 / Basic operations
+ * IVector<Double> doubled = vector.multiplyScala(2.0f);
+ * Double norm = vector.norm2();
+ *
+ * // 统计运算 / Statistical operations
+ * Double mean = vector.mean();
+ * Double std = vector.std();
+ *
+ * // 切片操作 / Slicing operations
+ * IVector<Double> slice = vector.slice(1, 3);
+ * IVector<Double> squared = vector.squre();
+ * }
  * </pre>
  *
  * @author lteb2
@@ -177,7 +177,6 @@ public class RereDoubleVector implements IDoubleVector {
         THREAD_POOL.shutdown();
         GPUComputeDoubleUtils.cleanup(); // 清理GPU资源
     }
-
 
     /**
      * 检查GPU是否启用 / Check if GPU is enabled
@@ -301,7 +300,7 @@ public class RereDoubleVector implements IDoubleVector {
             throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + vec1.length()
                     + " / Vector lengths don't match: " + this.data.length + " != " + vec1.length());
         }
-        IDoubleVector vec0 = (IDoubleVector)vec1;
+        IDoubleVector vec0 = (IDoubleVector) vec1;
 
         int len = this.data.length;  // 向量长度
 
@@ -389,7 +388,7 @@ public class RereDoubleVector implements IDoubleVector {
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
                 // 尝试使用GPU进行向量加法计算
-                return GPUComputeDoubleUtils.gpuVectorAdd(this, (IDoubleVector)vec);
+                return GPUComputeDoubleUtils.gpuVectorAdd(this, (IDoubleVector) vec);
             } catch (Exception e) {
                 // GPU计算失败时的容错处理：自动回退到CPU计算
                 System.out.println("GPU向量加法失败，回退到CPU: " + e.getMessage());
@@ -436,7 +435,7 @@ public class RereDoubleVector implements IDoubleVector {
      */
     private IVector<Double> cpuVectorAdd(IVector<Double> vec1) {
         int len = this.data.length;        // 向量长度
-        IDoubleVector vec0 = (IDoubleVector)vec1;
+        IDoubleVector vec0 = (IDoubleVector) vec1;
         double[] otherData = vec0.getData(); // 获取加数向量的数据
         double[] result = new double[len];   // 预分配结果数组
 
@@ -588,7 +587,7 @@ public class RereDoubleVector implements IDoubleVector {
         // 尝试GPU计算（如果启用且满足条件）
         if (GPU_ENABLED && len > GPU_THRESHOLD) {
             try {
-                return GPUComputeDoubleUtils.gpuVectorDot(this, (IDoubleVector)vec);
+                return GPUComputeDoubleUtils.gpuVectorDot(this, (IDoubleVector) vec);
             } catch (Exception e) {
                 // GPU失败时回退到CPU
                 System.out.println("GPU向量内积失败，回退到CPU: " + e.getMessage());
@@ -599,13 +598,12 @@ public class RereDoubleVector implements IDoubleVector {
         return cpuInnerProduct(vec);
     }
 
-
     /**
      * CPU向量内积（原有算法） / CPU vector inner product (original algorithm)
      */
     private Double cpuInnerProduct(IVector<Double> vec1) {
         int len = this.data.length;
-        IDoubleVector vec0 = (IDoubleVector)vec1;
+        IDoubleVector vec0 = (IDoubleVector) vec1;
         double[] otherData = vec0.getData();
 
         // 优化的算法选择策略
@@ -1023,7 +1021,7 @@ public class RereDoubleVector implements IDoubleVector {
      */
     @Override
     public IVector<Double> multiply(IVector<Double> vec1) {
-        IDoubleVector vec0 = (IDoubleVector)vec1;
+        IDoubleVector vec0 = (IDoubleVector) vec1;
         if (vec1 == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
@@ -1066,7 +1064,7 @@ public class RereDoubleVector implements IDoubleVector {
      */
     @Override
     public IMatrix<Double> dot(IMatrix<Double> m) {
-        IDoubleMatrix m0 = (IDoubleMatrix)m;
+        IDoubleMatrix m0 = (IDoubleMatrix) m;
         double[][] mm = new double[m.getRowNum()][m.getColNum()];
         for (int i = 0; i < data.length; i++) {
             double w = data[i];
@@ -1082,8 +1080,8 @@ public class RereDoubleVector implements IDoubleVector {
     /**
      * 行向量与矩阵相乘 / Row vector matrix multiplication
      * <p>
-     * 计算行向量与矩阵的乘积，结果仍是行向量 Computes the product of row vector and matrix,
-     * result is still a row vector
+     * 计算行向量与矩阵的乘积，结果仍是行向量 Computes the product of row vector and matrix, result
+     * is still a row vector
      * </p>
      * <p>
      * 数学公式：v * M = [v1, v2, ..., vn] * [[m11, m12, ...], [m21, m22, ...], ...]
@@ -1101,18 +1099,18 @@ public class RereDoubleVector implements IDoubleVector {
         if (matrix == null) {
             throw new NullPointerException("矩阵不能为null / Matrix cannot be null");
         }
-        
+
         IDoubleMatrix m = (IDoubleMatrix) matrix;
         int vectorLen = this.data.length;
         int matrixRows = m.getRowNum();
         int matrixCols = m.getColNum();
-        
+
         if (vectorLen != matrixRows) {
             throw new IllegalArgumentException(
-                String.format("向量长度与矩阵行数不匹配: %d != %d / Vector length doesn't match matrix row count: %d != %d", 
-                    vectorLen, matrixRows, vectorLen, matrixRows));
+                    String.format("向量长度与矩阵行数不匹配: %d != %d / Vector length doesn't match matrix row count: %d != %d",
+                            vectorLen, matrixRows, vectorLen, matrixRows));
         }
-        
+
         // 计算行向量与矩阵的乘积
         double[] result = new double[matrixCols];
         for (int j = 0; j < matrixCols; j++) {
@@ -1122,7 +1120,7 @@ public class RereDoubleVector implements IDoubleVector {
             }
             result[j] = sum;
         }
-        
+
         return IDoubleVector.of(result);
     }
 
@@ -2076,7 +2074,7 @@ public class RereDoubleVector implements IDoubleVector {
         // 使用原有的CPU算法
         var data2 = new double[this.data.length];
         for (int i = 0; i < this.length(); i++) {
-            data2[i] =  Math.pow(data[i], 2);
+            data2[i] = Math.pow(data[i], 2);
         }
         return IDoubleVector.of(data2);
     }
@@ -2196,7 +2194,6 @@ public class RereDoubleVector implements IDoubleVector {
         return RereMathUtil.doubleToInt(data);
     }
 
-
     /**
      * 计算与另一个向量的欧几里得距离 / Compute Euclidean distance to another vector
      * <p>
@@ -2264,10 +2261,9 @@ public class RereDoubleVector implements IDoubleVector {
         double norm1 = this.norm2();
         double norm2 = other.norm2();
 
-        if (norm1 == 0.0f || norm2 == 0.0f) {
-            throw new ArithmeticException("向量长度为零 / Vector norm is zero");
+        if (norm1 == 0 || norm2 == 0) {
+            return 0.0;
         }
-
         return dotProduct / (norm1 * norm2);
     }
 
@@ -2284,7 +2280,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> sin() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.sin(this.data[i]);
+            result[i] = Math.sin(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2293,7 +2289,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> cos() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.cos(this.data[i]);
+            result[i] = Math.cos(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2302,7 +2298,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> tan() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.tan(this.data[i]);
+            result[i] = Math.tan(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2315,7 +2311,7 @@ public class RereDoubleVector implements IDoubleVector {
                 throw new ArithmeticException("反正弦函数输入值超出范围[-1,1]: " + this.data[i]
                         + " / Arcsine input value outside range [-1,1]: " + this.data[i]);
             }
-            result[i] =  Math.asin(this.data[i]);
+            result[i] = Math.asin(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2328,7 +2324,7 @@ public class RereDoubleVector implements IDoubleVector {
                 throw new ArithmeticException("反余弦函数输入值超出范围[-1,1]: " + this.data[i]
                         + " / Arccosine input value outside range [-1,1]: " + this.data[i]);
             }
-            result[i] =  Math.acos(this.data[i]);
+            result[i] = Math.acos(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2337,7 +2333,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> arctan() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.atan(this.data[i]);
+            result[i] = Math.atan(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2347,7 +2343,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> sinh() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.sinh(this.data[i]);
+            result[i] = Math.sinh(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2356,7 +2352,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> cosh() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.cosh(this.data[i]);
+            result[i] = Math.cosh(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2365,7 +2361,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> tanh() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.tanh(this.data[i]);
+            result[i] = Math.tanh(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2384,7 +2380,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> floor() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.floor(this.data[i]);
+            result[i] = Math.floor(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2393,7 +2389,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> ceil() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.ceil(this.data[i]);
+            result[i] = Math.ceil(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2402,7 +2398,7 @@ public class RereDoubleVector implements IDoubleVector {
     public IVector<Double> trunc() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] =  Math.rint(this.data[i]);
+            result[i] = Math.rint(this.data[i]);
         }
         return IDoubleVector.of(result);
     }
@@ -2741,13 +2737,12 @@ public class RereDoubleVector implements IDoubleVector {
         return new RereDoubleMatrix(result);
     }
 
-
     @Override
     public double[] toDoubleArray() {
-        return this.data;}
-    
-    
-        /**
+        return this.data;
+    }
+
+    /**
      * 转换为双精度数组 / Convert to double array
      * <p>
      * 将向量转换为双精度数组 Converts the vector to a double array
@@ -2763,12 +2758,12 @@ public class RereDoubleVector implements IDoubleVector {
     /**
      * 作为列向量，实质是一个m*1的矩阵
      * <p>
-     * 将向量转换为列向量矩阵，即m×1的矩阵，其中m是向量的长度。
-     * 向量的每个元素成为矩阵对应行的第一列元素。
+     * 将向量转换为列向量矩阵，即m×1的矩阵，其中m是向量的长度。 向量的每个元素成为矩阵对应行的第一列元素。
      * </p>
      * <p>
-     * Converts the vector to a column vector matrix, i.e., an m×1 matrix where m is the vector length.
-     * Each element of the vector becomes the first column element of the corresponding row in the matrix.
+     * Converts the vector to a column vector matrix, i.e., an m×1 matrix where
+     * m is the vector length. Each element of the vector becomes the first
+     * column element of the corresponding row in the matrix.
      * </p>
      *
      * @return 列向量矩阵（m×1）/ Column vector matrix (m×1)
@@ -2777,20 +2772,19 @@ public class RereDoubleVector implements IDoubleVector {
     public IMatrix<Double> asColumnVector() {
         int len = this.data.length;
         double[][] columnMatrix = new double[len][1];
-        
+
         // 将向量的每个元素放入矩阵的第一列
         for (int i = 0; i < len; i++) {
             columnMatrix[i][0] = this.data[i];
         }
-        
+
         return new RereDoubleMatrix(columnMatrix);
     }
 
     /**
      * 动态时间规整（Dynamic Time Warping）算法
      * <p>
-     * 计算两个时间序列之间的DTW距离，用于衡量时间序列的相似性。
-     * DTW算法能够处理不同长度的时间序列，并找到最优的对齐路径。
+     * 计算两个时间序列之间的DTW距离，用于衡量时间序列的相似性。 DTW算法能够处理不同长度的时间序列，并找到最优的对齐路径。
      * </p>
      * <p>
      * 算法原理：
@@ -2801,10 +2795,9 @@ public class RereDoubleVector implements IDoubleVector {
      * </ul>
      * </p>
      * <p>
-     * 时间复杂度：O(m×n)，其中m和n是两个序列的长度
-     * 空间复杂度：O(m×n)，用于存储距离矩阵
+     * 时间复杂度：O(m×n)，其中m和n是两个序列的长度 空间复杂度：O(m×n)，用于存储距离矩阵
      * </p>
-     * 
+     *
      * @param other 另一个时间序列向量
      * @return DTW距离值，值越小表示序列越相似
      * @throws IllegalArgumentException 如果输入向量为null
@@ -2814,15 +2807,15 @@ public class RereDoubleVector implements IDoubleVector {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
-        
+
         int m = this.data.length;
         int n = other.length();
-        
+
         // 如果任一序列为空，返回无穷大距离
         if (m == 0 || n == 0) {
             return Double.POSITIVE_INFINITY;
         }
-        
+
         // 如果两个序列完全相同，直接返回0
         if (m == n) {
             boolean identical = true;
@@ -2836,10 +2829,10 @@ public class RereDoubleVector implements IDoubleVector {
                 return 0.0;
             }
         }
-        
+
         // 创建距离矩阵，使用动态规划
         double[][] dtwMatrix = new double[m + 1][n + 1];
-        
+
         // 初始化边界条件
         for (int i = 0; i <= m; i++) {
             dtwMatrix[i][0] = Double.POSITIVE_INFINITY;
@@ -2848,31 +2841,32 @@ public class RereDoubleVector implements IDoubleVector {
             dtwMatrix[0][j] = Double.POSITIVE_INFINITY;
         }
         dtwMatrix[0][0] = 0.0;
-        
+
         // 填充DTW矩阵
         for (int i = 1; i <= m; i++) {
             for (int j = 1; j <= n; j++) {
                 // 计算当前元素对的距离
                 double distance = Math.abs(this.data[i - 1] - other.get(j - 1));
-                
+
                 // 取三个方向的最小值：左、上、左上
                 double minPrev = Math.min(
-                    Math.min(dtwMatrix[i - 1][j], dtwMatrix[i][j - 1]),
-                    dtwMatrix[i - 1][j - 1]
+                        Math.min(dtwMatrix[i - 1][j], dtwMatrix[i][j - 1]),
+                        dtwMatrix[i - 1][j - 1]
                 );
-                
+
                 dtwMatrix[i][j] = distance + minPrev;
             }
         }
-        
+
         return dtwMatrix[m][n];
     }
 
     /**
-     * 计算与另一个向量的皮尔逊相关系数 / Compute Pearson correlation coefficient with another vector
+     * 计算与另一个向量的皮尔逊相关系数 / Compute Pearson correlation coefficient with another
+     * vector
      * <p>
-     * 计算当前向量与另一个向量之间的皮尔逊相关系数，衡量两个向量的线性相关性。
-     * 相关系数的取值范围为[-1, 1]，其中1表示完全正相关，-1表示完全负相关，0表示无线性相关。
+     * 计算当前向量与另一个向量之间的皮尔逊相关系数，衡量两个向量的线性相关性。 相关系数的取值范围为[-1,
+     * 1]，其中1表示完全正相关，-1表示完全负相关，0表示无线性相关。
      * </p>
      * <p>
      * 数学公式：r = cov(X,Y) / (σX × σY)
@@ -2881,7 +2875,7 @@ public class RereDoubleVector implements IDoubleVector {
      * <li>σX 和 σY 分别是两个向量的标准差</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param other 另一个向量，必须与当前向量长度相同
      * @return 皮尔逊相关系数，取值范围[-1, 1]
      * @throws IllegalArgumentException 如果输入向量为null或长度不匹配
@@ -2896,26 +2890,26 @@ public class RereDoubleVector implements IDoubleVector {
             throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + other.length()
                     + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
         }
-        
+
         int len = this.data.length;
-        
+
         // 如果向量长度为0或1，无法计算相关系数
         if (len < 2) {
             throw new ArithmeticException("向量长度必须大于等于2才能计算相关系数 / Vector length must be at least 2 to calculate correlation");
         }
-        
+
         // 计算协方差：调用cov方法
         double covariance = this.cov(other);
-        
+
         // 计算标准差
         double stdX = this.std();
         double stdY = other.std();
-        
+
         // 检查分母是否为零
         if (stdX == 0.0 || stdY == 0.0) {
             throw new ArithmeticException("向量标准差为0，无法计算相关系数 / Vector standard deviation is 0, cannot calculate correlation");
         }
-        
+
         // 计算相关系数
         return covariance / (stdX * stdY);
     }
@@ -2923,19 +2917,20 @@ public class RereDoubleVector implements IDoubleVector {
     /**
      * 计算与另一个向量的协方差 / Compute covariance with another vector
      * <p>
-     * 计算当前向量与另一个向量之间的协方差，衡量两个向量的线性相关性。
-     * 协方差的计算公式为：cov(X,Y) = E[(X-μX)(Y-μY)] = E[XY] - μXμY
+     * 计算当前向量与另一个向量之间的协方差，衡量两个向量的线性相关性。 协方差的计算公式为：cov(X,Y) = E[(X-μX)(Y-μY)] =
+     * E[XY] - μXμY
      * </p>
      * <p>
      * 协方差的性质：
      * <ul>
      * <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大</li>
      * <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小</li>
-     * <li>cov(X,Y) = 0: 无线性相关</li>
+     * <li>cov(X,Y
+     * ) = 0: 无线性相关</li>
      * <li>cov(X,X) = var(X): 自协方差等于方差</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param other 另一个向量，必须与当前向量长度相同
      * @return 协方差值
      * @throws IllegalArgumentException 如果输入向量为null或长度不匹配
@@ -2950,24 +2945,24 @@ public class RereDoubleVector implements IDoubleVector {
             throw new IllegalArgumentException("向量长度不匹配: " + this.data.length + " != " + other.length()
                     + " / Vector lengths don't match: " + this.data.length + " != " + other.length());
         }
-        
+
         int len = this.data.length;
-        
+
         // 如果向量长度为0，无法计算协方差
         if (len == 0) {
             throw new ArithmeticException("向量长度为0，无法计算协方差 / Vector length is 0, cannot calculate covariance");
         }
-        
+
         // 如果向量长度为1，协方差为0（只有一个点无法计算协方差）
         if (len == 1) {
             return 0.0;
         }
-        
+
         // 计算协方差：使用中心化向量的内积
         IVector<Double> centeredX = this.subScalar(this.mean());
         IVector<Double> centeredY = other.subScalar(other.mean());
         double covariance = centeredX.innerProduct(centeredY) / len;
-        
+
         return covariance;
     }
 
@@ -2976,20 +2971,19 @@ public class RereDoubleVector implements IDoubleVector {
         if (fun == null) {
             throw new IllegalArgumentException("函数不能为null / Function cannot be null");
         }
-        
+
         double[] result = new double[data.length];
         for (int i = 0; i < data.length; i++) {
             result[i] = fun.apply(data[i]);
         }
-        
+
         return new RereDoubleVector(result);
     }
 
     /**
      * 第一四分位数（25%分位数）/ First quartile (25th percentile)
      * <p>
-     * 计算向量的第一四分位数，即25%分位数。第一四分位数是将数据按升序排列后，
-     * 位于25%位置的值，表示有25%的数据小于等于该值。
+     * 计算向量的第一四分位数，即25%分位数。第一四分位数是将数据按升序排列后， 位于25%位置的值，表示有25%的数据小于等于该值。
      * </p>
      * <p>
      * 计算方法：
@@ -3000,7 +2994,7 @@ public class RereDoubleVector implements IDoubleVector {
      * <li>如果索引不是整数，使用线性插值计算</li>
      * </ul>
      * </p>
-     * 
+     *
      * @return 第一四分位数 / First quartile
      * @throws ArithmeticException 如果向量为空 / if vector is empty
      */
@@ -3009,7 +3003,7 @@ public class RereDoubleVector implements IDoubleVector {
         if (this.data.length == 0) {
             throw new ArithmeticException("空向量无法计算第一四分位数 / Cannot compute first quartile for empty vector");
         }
-        
+
         // 使用已有的percentile方法计算25%分位数
         return this.percentile(25.0);
     }
@@ -3017,8 +3011,7 @@ public class RereDoubleVector implements IDoubleVector {
     /**
      * 第三四分位数（75%分位数）/ Third quartile (75th percentile)
      * <p>
-     * 计算向量的第三四分位数，即75%分位数。第三四分位数是将数据按升序排列后，
-     * 位于75%位置的值，表示有75%的数据小于等于该值。
+     * 计算向量的第三四分位数，即75%分位数。第三四分位数是将数据按升序排列后， 位于75%位置的值，表示有75%的数据小于等于该值。
      * </p>
      * <p>
      * 计算方法：
@@ -3029,7 +3022,7 @@ public class RereDoubleVector implements IDoubleVector {
      * <li>如果索引不是整数，使用线性插值计算</li>
      * </ul>
      * </p>
-     * 
+     *
      * @return 第三四分位数 / Third quartile
      * @throws ArithmeticException 如果向量为空 / if vector is empty
      */
@@ -3038,7 +3031,7 @@ public class RereDoubleVector implements IDoubleVector {
         if (this.data.length == 0) {
             throw new ArithmeticException("空向量无法计算第三四分位数 / Cannot compute third quartile for empty vector");
         }
-        
+
         // 使用已有的percentile方法计算75%分位数
         return this.percentile(75.0);
     }
@@ -3048,19 +3041,19 @@ public class RereDoubleVector implements IDoubleVector {
         if (other == null) {
             throw new IllegalArgumentException("输入向量不能为null / Input vector cannot be null");
         }
-        
+
         int thisLen = this.data.length;
         int otherLen = other.length();
         double[] result = new double[thisLen + otherLen];
-        
+
         // 复制当前向量的数据
         System.arraycopy(this.data, 0, result, 0, thisLen);
-        
+
         // 复制另一个向量的数据
         for (int i = 0; i < otherLen; i++) {
             result[thisLen + i] = other.get(i);
         }
-        
+
         return IDoubleVector.of(result);
     }
 
@@ -3084,24 +3077,20 @@ public class RereDoubleVector implements IDoubleVector {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("行数和列数必须大于0: rows=" + rows + ", cols=" + cols + " / Rows and columns must be greater than 0: rows=" + rows + ", cols=" + cols);
         }
-        
+
         int totalElements = rows * cols;
         if (totalElements != this.data.length) {
             throw new IllegalArgumentException("重塑后的元素总数必须等于原向量长度: " + totalElements + " != " + this.data.length + " / Reshaped total elements must equal original vector length: " + totalElements + " != " + this.data.length);
         }
-        
+
         double[][] result = new double[rows][cols];
         for (int i = 0; i < this.data.length; i++) {
             int row = i / cols;
             int col = i % cols;
             result[row][col] = this.data[i];
         }
-        
+
         return IDoubleMatrix.of(result);
     }
-
-    
-
-    
 
 }

@@ -2,9 +2,9 @@ package com.reremouse.lab.math.signal.transform;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.Complex;
-import com.reremouse.lab.math.signal.RereFFT;
 import com.reremouse.lab.math.signal.core.AbstractSignalProcessor;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereFFT;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
 
 /**

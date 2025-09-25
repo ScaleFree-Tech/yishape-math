@@ -22,7 +22,7 @@ import java.util.HashMap;
  * 本类实现了SIFT算法，用于检测和描述图像中的局部特征，
  * 这些特征对尺度、旋转具有不变性，对光照变化和3D视角变化具有部分不变性。
  * 
- * @author Qoder AI
+ * @author RereMouse
  * @version 1.0
  */
 public class SIFTFeatureDetector implements IImageProcessor {

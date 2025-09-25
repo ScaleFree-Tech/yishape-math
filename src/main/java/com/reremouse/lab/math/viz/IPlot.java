@@ -199,6 +199,12 @@ public interface IPlot {
     /**
      * 绘制热力图
      * @param data 二维数据矩阵
+     */
+    public RerePlot heatmap(IMatrix data);
+    
+    /**
+     * 绘制热力图
+     * @param data 二维数据矩阵
      * @param xLabels X轴标签
      * @param yLabels Y轴标签
      */

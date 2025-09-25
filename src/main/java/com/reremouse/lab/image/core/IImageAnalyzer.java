@@ -15,7 +15,7 @@ import java.util.Map;
  * calculating statistics, etc. Supports multiple analysis types and configurable parameters.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

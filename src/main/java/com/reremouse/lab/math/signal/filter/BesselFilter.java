@@ -3,8 +3,8 @@ package com.reremouse.lab.math.signal.filter;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.signal.core.AbstractSignalProcessor;
+import com.reremouse.lab.math.signal.core.Complex;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
-import com.reremouse.lab.math.signal.Complex;
 
 /**
  * 贝塞尔滤波器实现类 / Bessel Filter Implementation Class

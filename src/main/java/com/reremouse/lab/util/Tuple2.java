@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * 二元组
  *
- * @author RereMouse
+ * @author lteb2
  * @param <E1>
  * @param <E2>
  */
@@ -24,16 +24,14 @@ public class Tuple2<E1, E2> implements Serializable{
 
     @Override
     public String toString() {
-        return "("+this._1+", "+this._2+")"; 
-    
+        return "("+this._1+", "+this._2+")";
     }
-    
+
     public E1 getFirst(){
-    return this._1;
+        return this._1;
     }
-    
+
     public E2 getSecond(){
-    return this._2;
+        return this._2;
     }
-    
 }

@@ -3,7 +3,7 @@ package com.reremouse.lab.math.timeseries;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.signal.SignalUtilities;
+import com.reremouse.lab.math.signal.core.SignalUtilities;
 import com.reremouse.lab.util.Tuple3;
 
 /**

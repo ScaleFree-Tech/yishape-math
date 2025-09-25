@@ -58,8 +58,6 @@
 - **目标函数接口** / **Objective Function Interface**: 灵活的优化目标定义
   - *Flexible optimization objective definition*
 
-
-
 ### 📡 信号处理 / Signal Processing
 - **信号生成与滤波** / **Signal Generation & Filtering**: 基本波形生成、噪声信号、移动平均、中值滤波、巴特沃斯滤波器等 / Basic waveform generation, noise signals, moving average, median filtering, Butterworth filters
 - **频谱分析** / **Spectral Analysis**: FFT变换、功率谱密度、短时傅里叶变换、自相关分析等 / FFT transform, power spectral density, STFT, autocorrelation analysis
@@ -69,6 +67,12 @@
 - **数据管理** / **Data Management**: 单变量/多变量时间序列、数据切片、重采样、时间戳处理等 / Univariate/multivariate time series, data slicing, resampling, timestamp handling
 - **预测方法** / **Forecasting Methods**: 移动平均、指数平滑、ARIMA模型、Holt-Winters、自动模型选择等 / Moving average, exponential smoothing, ARIMA models, Holt-Winters, automatic model selection
 - **滤波与分解** / **Filtering & Decomposition**: 时域/频域滤波、趋势/季节性分解、STL分解、小波分解等 / Time/frequency domain filtering, trend/seasonal decomposition, STL decomposition, wavelet decomposition
+
+### 🔊 音频分析 / Audio Analysis
+- **音频特征提取** / **Audio Feature Extraction**: MFCC特征、频谱质心、过零率、频谱分析等 / MFCC features, spectral centroid, zero crossing rate, spectrum analysis
+- **音频处理** / **Audio Processing**: 音高检测、音频增强、音频分割、音频合成等 / Pitch detection, audio enhancement, audio segmentation, audio synthesis
+- **音频嵌入向量** / **Audio Embedding Vectors**: i-vector模型训练、在线增量训练等 / i-vector model training, online incremental training
+- **音频可视化** / **Audio Visualization**: 波形图、频谱图、语谱图等 / Waveform, spectrum, spectrogram visualization
 
 
 ### 🚀 GPU加速计算 / GPU-Accelerated Computing
@@ -422,6 +426,37 @@ Plots.of(800, 400)
     .show();
 ```
 
+#### 音频分析 / Audio Analysis
+```java
+// 读取音频文件 / Read audio file
+AudioData audioData = Audios.readAudio("sample.wav");
+
+// 音频特征提取 / Audio feature extraction
+IMatrix<Double> mfccFeatures = Audios.calculateMFCC(audioData);  // MFCC特征 / MFCC features
+double spectralCentroid = Audios.calculateSpectralCentroid(audioData, 1024);  // 频谱质心 / Spectral centroid
+double zeroCrossingRate = Audios.calculateZeroCrossingRate(audioData);  // 过零率 / Zero crossing rate
+
+// 音频分析 / Audio analysis
+double pitch = Audios.detectPitch(audioData);  // 音高检测 / Pitch detection
+Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.spectrum(audioData);  // 频谱分析 / Spectrum analysis
+
+// 音频可视化 / Audio visualization
+AudioVisualizer.plotWaveform(audioData, "音频波形 / Audio Waveform").show();
+AudioVisualizer.plotSpectrum(audioData, "音频频谱 / Audio Spectrum").show();
+
+// 音频综合特征提取 / Audio comprehensive feature extraction
+IAudioFeatureExtractor extractor = Audios.createStandardFeatureExtractor();
+AudioFeatureResult result = extractor.extractAudioFeatures(audioData);  // 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features
+Tuple2<List<String>, IVector<Double>> result.toNumericalFeatures(); // 转换为数值特征(特征名、特征值)
+
+// 音频嵌入向量 / Audio embedding vector
+IVectorEmbedding embedder = Audios.createAudioEmbedder(64);  // 创建64维嵌入器 / Create 64-dim embedder
+embedder.train(audioDataList); // 训练嵌入器
+IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / Generate embedding vector
+
+
+```
+
 ## 核心类文档 / Core Classes Documentation
 
 - [向量操作 (Vector Operations)](./docs/Vector-Operations.md) / [Vector Operations Documentation](./docs/Vector-Operations.md)
@@ -434,6 +469,7 @@ Plots.of(800, 400)
 - [优化算法 (Optimization Algorithms)](./docs/Optimization-Algorithms.md) / [Optimization Algorithms Documentation](./docs/Optimization-Algorithms.md)
 - [信号处理 (Signal Processing)](./docs/Signal-Processing.md) / [Signal Processing Documentation](./docs/Signal-Processing.md)
 - [时间序列分析 (Time Series Analysis)](./docs/Time-Series-Analysis.md) / [Time Series Analysis Documentation](./docs/Time-Series-Analysis.md)
+- [音频操作 (Audio Operations)](./docs/Audio-Operations.md) / [Audio Operations Documentation](./docs/Audio-Operations.md)
 - [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
 
 
@@ -449,6 +485,7 @@ Plots.of(800, 400)
 - [优化算法示例](./docs/examples/Optimization-Examples.md) / [Optimization Algorithms Examples](./docs/examples/Optimization-Examples.md)
 - [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
 - [时间序列分析示例](./docs/examples/Time-Series-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Examples.md)
+- [音频处理示例](./docs/examples/Audio-Examples.md) / [Audio Processing Examples](./docs/examples/Audio-Examples.md)
 
 ## 项目结构 / Project Structure
 
@@ -507,58 +544,82 @@ graph TB
 
 ### 文件结构 / File Structure
 
-```
 src/main/java/com/reremouse/lab/
 ├── audio/                    # 音频处理模块 / Audio Processing Module
-│   ├── AudioAnalyzer.java    # 音频分析器 / Audio Analyzer
-│   ├── AudioData.java        # 音频数据类 / Audio Data Class
-│   ├── AudioEnhancer.java    # 音频增强器 / Audio Enhancer
-│   ├── AudioFeatures.java    # 音频特征提取 / Audio Features
-│   ├── AudioIO.java          # 音频输入输出 / Audio I/O
-│   ├── AudioProcessor.java   # 音频处理器 / Audio Processor
-│   ├── AudioStatistics.java  # 音频统计分析 / Audio Statistics
 │   ├── AudioVisualizer.java  # 音频可视化 / Audio Visualizer
-│   ├── MusicAnalyzer.java    # 音乐分析器 / Music Analyzer
-│   ├── MusicGenerator.java   # 音乐生成器 / Music Generator
-│   ├── MusicTheory.java      # 音乐理论 / Music Theory
-│   ├── core/                 # 核心接口 / Core Interfaces
-│   │   ├── IAudioAnalyzer.java    # 音频分析接口 / Audio Analysis Interface
-│   │   ├── IAudioProcessor.java   # 音频处理接口 / Audio Processing Interface
-│   │   ├── IMusicAnalyzer.java    # 音乐分析接口 / Music Analysis Interface
-│   │   └── IMusicProcessor.java   # 音乐处理接口 / Music Processing Interface
+│   ├── Audios.java           # 音频处理入口类 / Audio Processing Entry Class
+│   ├── analysis/             # 音频分析 / Audio Analysis
+│   │   ├── AbstractAudioAnalyzer.java  # 抽象音频分析器 / Abstract Audio Analyzer
+│   │   ├── FFTProcessor.java           # FFT处理器 / FFT Processor
+│   │   ├── IAudioAnalyzer.java         # 音频分析接口 / Audio Analyzer Interface
+│   │   ├── PitchDetector.java          # 音高检测器 / Pitch Detector
+│   │   ├── STFTAnalyzer.java           # 短时傅里叶变换分析器 / STFT Analyzer
+│   │   └── SpectrumAnalyzer.java       # 频谱分析器 / Spectrum Analyzer
+│   ├── core/                 # 核心类 / Core Classes
+│   │   ├── AudioData.java              # 音频数据类 / Audio Data Class
+│   │   ├── AudioFormat.java            # 音频格式类 / Audio Format Class
+│   │   ├── AudioIO.java                # 音频输入输出 / Audio I/O
+│   │   ├── AudioProcessor.java         # 音频处理器 / Audio Processor
+│   │   ├── AudioQuality.java           # 音频质量类 / Audio Quality Class
+│   │   ├── AudioStatistics.java        # 音频统计类 / Audio Statistics Class
+│   │   ├── AudioUtil.java              # 音频工具类 / Audio Utilities Class
+│   │   ├── CompressionSettings.java    # 压缩设置 / Compression Settings
+│   │   ├── EqualizerBand.java          # 均衡器频段 / Equalizer Band
+│   │   ├── EqualizerSettings.java      # 均衡器设置 / Equalizer Settings
+│   │   ├── IAudioCodec.java            # 音频编解码接口 / Audio Codec Interface
+│   │   ├── IAudioComponentStandard.java # 音频组件标准接口 / Audio Component Standard Interface
+│   │   ├── IAudioListener.java         # 音频监听器接口 / Audio Listener Interface
+│   │   ├── NoiseProfile.java           # 噪声配置文件 / Noise Profile
+│   │   ├── ReverbSettings.java         # 混响设置 / Reverb Settings
+│   │   └── UnsupportedAudioFormatException.java # 不支持的音频格式异常 / Unsupported Audio Format Exception
+│   ├── effect/               # 音频效果 / Audio Effects
+│   │   ├── AbstractAudioEffect.java    # 抽象音频效果 / Abstract Audio Effect
+│   │   ├── IAudioEffect.java           # 音频效果接口 / Audio Effect Interface
+│   │   └── ReverbEffect.java           # 混响效果 / Reverb Effect
 │   ├── embedding/            # 音频嵌入 / Audio Embedding
-│   │   ├── IAudioEmbedding.java   # 音频嵌入接口 / Audio Embedding Interface
-│   │   └── IVectorModel.java      # 向量模型接口 / Vector Model Interface
-│   ├── features/             # 高级特征 / Advanced Features
-│   │   └── AdvancedAudioFeatures.java # 高级音频特征 / Advanced Audio Features
-│   ├── music/                # 音乐处理 / Music Processing
-│   │   ├── AdvancedMusicFeatureAnalyzer.java # 高级音乐特征分析 / Advanced Music Feature Analysis
-│   │   ├── IntegratedMusicAnalyzer.java      # 集成音乐分析器 / Integrated Music Analyzer
-│   │   └── MusicTheoryProcessor.java         # 音乐理论处理器 / Music Theory Processor
-│   └── processing/           # 高级处理 / Advanced Processing
-│       └── AdvancedAudioProcessing.java # 高级音频处理 / Advanced Audio Processing
-├── image/                    # 图像处理模块 / Image Processing Module
-│   ├── ImageData.java        # 图像数据类 / Image Data Class
-│   ├── ImageFeatures.java    # 图像特征提取 / Image Features
-│   ├── ImageFilter.java      # 图像滤波器 / Image Filter
-│   ├── ImageMorphology.java  # 图像形态学 / Image Morphology
-│   ├── ImageSegmentation.java # 图像分割 / Image Segmentation
-│   ├── ImageTransform.java   # 图像变换 / Image Transform
-│   ├── ImageUtils.java       # 图像工具类 / Image Utilities
-│   ├── core/                 # 核心接口 / Core Interfaces
-│   │   ├── IImageAnalyzer.java    # 图像分析接口 / Image Analysis Interface
-│   │   ├── IImageProcessor.java   # 图像处理接口 / Image Processing Interface
-│   │   └── IImageSegmenter.java   # 图像分割接口 / Image Segmentation Interface
-│   ├── detection/            # 特征检测 / Feature Detection
-│   │   └── AdvancedFeatureDetection.java # 高级特征检测 / Advanced Feature Detection
-│   ├── enhancement/          # 图像增强 / Image Enhancement
-│   │   └── AdvancedImageEnhancement.java # 高级图像增强 / Advanced Image Enhancement
-│   ├── features/             # 图像特征 / Image Features
-│   │   ├── AdvancedImageFeatures.java # 高级图像特征 / Advanced Image Features
-│   │   ├── SIFTFeatureDetector.java   # SIFT特征检测器 / SIFT Feature Detector
-│   │   └── SURFFeatureDetector.java   # SURF特征检测器 / SURF Feature Detector
-│   └── tracking/             # 目标跟踪 / Object Tracking
-│       └── OpticalFlowTracker.java # 光流跟踪器 / Optical Flow Tracker
+│   │   ├── IAudioEmbedding.java        # 音频嵌入接口 / Audio Embedding Interface
+│   │   ├── IVectorEmbedding.java       # 向量嵌入接口 / Vector Embedding Interface
+│   │   └── OnlineIVectorEmbedding.java # 在线i向量嵌入 / Online I-Vector Embedding
+│   ├── enhancement/          # 音频增强 / Audio Enhancement
+│   │   ├── AbstractAudioEnhancer.java  # 抽象音频增强器 / Abstract Audio Enhancer
+│   │   ├── CompressorEnhancer.java     # 压缩器增强 / Compressor Enhancer
+│   │   ├── EqualizerEnhancer.java      # 均衡器增强 / Equalizer Enhancer
+│   │   ├── IAudioEnhancer.java         # 音频增强接口 / Audio Enhancer Interface
+│   │   ├── NoiseReductionEnhancer.java # 噪声抑制增强 / Noise Reduction Enhancer
+│   │   └── ReverbEnhancer.java         # 混响增强 / Reverb Enhancer
+│   ├── exception/            # 音频异常 / Audio Exceptions
+│   │   ├── AudioAnalysisException.java # 音频分析异常 / Audio Analysis Exception
+│   │   └── AudioProcessingException.java # 音频处理异常 / Audio Processing Exception
+│   ├── factory/              # 音频工厂 / Audio Factory
+│   │   └── AudioComponentFactory.java  # 音频组件工厂 / Audio Component Factory
+│   ├── feature/              # 音频特征 / Audio Features
+│   │   ├── AudioFeatureExtractor.java  # 音频特征提取器 / Audio Feature Extractor
+│   │   ├── AudioFeatureExtractorImpl.java # 音频特征提取器实现 / Audio Feature Extractor Implementation
+│   │   ├── AudioFeatureResult.java     # 音频特征结果 / Audio Feature Result
+│   │   ├── FrequencyDomainFeatureResult.java # 频域特征结果 / Frequency Domain Feature Result
+│   │   ├── IAudioFeatureExtractor.java # 音频特征提取接口 / Audio Feature Extractor Interface
+│   │   ├── SpectralFeatureResult.java  # 谱特征结果 / Spectral Feature Result
+│   │   └── TimeDomainFeatureResult.java # 时域特征结果 / Time Domain Feature Result
+│   ├── filter/               # 音频滤波器 / Audio Filters
+│   │   ├── AbstractAdvancedAudioFilter.java # 抽象高级音频滤波器 / Abstract Advanced Audio Filter
+│   │   ├── AbstractAudioFilterStandard.java # 抽象音频滤波器标准 / Abstract Audio Filter Standard
+│   │   ├── AdvancedLowPassFilter.java  # 高级低通滤波器 / Advanced Low Pass Filter
+│   │   ├── IAdvancedAudioFilter.java   # 高级音频滤波器接口 / Advanced Audio Filter Interface
+│   │   ├── IBaseAudioFilter.java       # 基础音频滤波器接口 / Base Audio Filter Interface
+│   │   └── LowPassFilter.java          # 低通滤波器 / Low Pass Filter
+│   ├── pipeline/             # 音频处理管道 / Audio Pipeline
+│   │   └── AudioPipelineBuilder.java   # 音频管道构建器 / Audio Pipeline Builder
+│   ├── preprocessing/        # 音频预处理 / Audio Preprocessing
+│   │   ├── AudioPreprocessingOptions.java # 音频预处理选项 / Audio Preprocessing Options
+│   │   └── AudioPreprocessor.java      # 音频预处理器 / Audio Preprocessor
+│   └── processing/           # 音频处理 / Audio Processing
+│       ├── AbstractAudioProcessorStandard.java # 抽象音频处理器标准 / Abstract Audio Processor Standard
+│       ├── ChannelProcessor.java       # 通道处理器 / Channel Processor
+│       ├── IAdvancedAudioProcessor.java # 高级音频处理器接口 / Advanced Audio Processor Interface
+│       ├── IAudioProcessor.java        # 音频处理器接口 / Audio Processor Interface
+│       ├── IBaseAudioProcessor.java    # 基础音频处理器接口 / Base Audio Processor Interface
+│       ├── NormalizeProcessor.java     # 归一化处理器 / Normalize Processor
+│       ├── VolumeProcessor.java        # 音量处理器 / Volume Processor
 ├── math/                     # 数学计算模块 / Mathematical Computing Module
 │   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
 │   ├── YishapeMath.java      # 主入口类 / Main Entry Class
@@ -587,6 +648,12 @@ src/main/java/com/reremouse/lab/
 │   │   └── SliceExpressionParser.java # 切片表达式解析器 / Slice Expression Parser
 │   ├── stats/                # 统计学模块 / Statistics Module
 │   │   ├── Stats.java         # 统计分布工厂类 / Statistical Distribution Factory Class
+│   │   ├── anova/            # 方差分析模块 / ANOVA Module
+│   │   │   ├── ANOVA.java                   # 方差分析 / ANOVA
+│   │   │   ├── ANOVAResult.java             # 方差分析结果 / ANOVA Result
+│   │   │   ├── ANOVATest.java               # 方差分析测试 / ANOVA Test
+│   │   │   ├── RepeatedMeasuresANOVAResult.java # 重复测量方差分析结果 / Repeated Measures ANOVA Result
+│   │   │   └── TwoWayANOVAResult.java       # 双因素方差分析结果 / Two-Way ANOVA Result
 │   │   ├── distribution/     # 概率分布实现 / Probability Distribution Implementations
 │   │   │   ├── NormalDistribution.java      # 正态分布 / Normal Distribution
 │   │   │   ├── StudentDistribution.java     # t分布 / Student's t-Distribution
@@ -612,12 +679,6 @@ src/main/java/com/reremouse/lab/
 │   │   │       ├── MultivariateBetaDistribution.java # 多变量Beta分布 / Multivariate Beta Distribution
 │   │   │       ├── MultivariateExponentialDistribution.java # 多变量指数分布 / Multivariate Exponential Distribution
 │   │   │       └── MultivariateUniformDistribution.java # 多变量均匀分布 / Multivariate Uniform Distribution
-│   │   ├── anova/            # 方差分析模块 / ANOVA Module
-│   │   │   ├── ANOVA.java                   # 方差分析 / ANOVA
-│   │   │   ├── ANOVAResult.java             # 方差分析结果 / ANOVA Result
-│   │   │   ├── ANOVATest.java               # 方差分析测试 / ANOVA Test
-│   │   │   ├── RepeatedMeasuresANOVAResult.java # 重复测量方差分析结果 / Repeated Measures ANOVA Result
-│   │   │   └── TwoWayANOVAResult.java       # 双因素方差分析结果 / Two-Way ANOVA Result
 │   │   ├── model/            # 统计模型 / Statistical Models
 │   │   │   ├── EMAlgorithm.java             # EM算法 / EM Algorithm
 │   │   │   └── GaussianMixtureModel.java    # 高斯混合模型 / Gaussian Mixture Model
@@ -660,21 +721,17 @@ src/main/java/com/reremouse/lab/
 │   │   ├── Signals.java          # 信号处理工具类 / Signal Processing Utilities
 │   │   ├── SignalUtilities.java  # 信号工具类 / Signal Utilities
 │   │   ├── SignalVisualizer.java # 信号可视化 / Signal Visualizer
-│   │   ├── RereFFT.java          # 快速傅里叶变换 / Fast Fourier Transform
-│   │   ├── RereDCT.java          # 离散余弦变换 / Discrete Cosine Transform
-│   │   ├── RereHilbert.java      # 希尔伯特变换 / Hilbert Transform
-│   │   ├── WaveletAnalysis.java  # 小波分析 / Wavelet Analysis
-│   │   ├── WaveletFilters.java   # 小波滤波器 / Wavelet Filters
-│   │   ├── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
-│   │   ├── WaveletVisualizer.java # 小波可视化 / Wavelet Visualizer
-│   │   ├── Complex.java           # 复数类 / Complex Number Class
 │   │   ├── analysis/             # 信号分析 / Signal Analysis
 │   │   │   ├── ISignalAnalyzer.java    # 信号分析接口 / Signal Analysis Interface
 │   │   │   └── SpectrumAnalyzer.java   # 频谱分析器 / Spectrum Analyzer
 │   │   ├── core/                 # 核心接口 / Core Interfaces
 │   │   │   ├── AbstractSignalProcessor.java # 抽象信号处理器 / Abstract Signal Processor
 │   │   │   ├── ISignalProcessor.java   # 信号处理接口 / Signal Processing Interface
-│   │   │   └── SignalProcessingException.java # 信号处理异常 / Signal Processing Exception
+│   │   │   ├── SignalProcessingException.java # 信号处理异常 / Signal Processing Exception
+│   │   │   ├── Complex.java           # 复数类 / Complex Number Class
+│   │   │   ├── RereDCT.java          # 离散余弦变换 / Discrete Cosine Transform
+│   │   │   ├── RereFFT.java          # 快速傅里叶变换 / Fast Fourier Transform
+│   │   │   └── RereHilbert.java      # 希尔伯特变换 / Hilbert Transform
 │   │   ├── factory/              # 信号处理器工厂 / Signal Processor Factory
 │   │   │   └── SignalProcessorFactory.java # 信号处理器工厂类 / Signal Processor Factory Class
 │   │   ├── filter/               # 信号滤波器 / Signal Filters
@@ -693,13 +750,19 @@ src/main/java/com/reremouse/lab/
 │   │   ├── generation/           # 信号生成 / Signal Generation
 │   │   │   ├── ISignalGenerator.java   # 信号生成接口 / Signal Generator Interface
 │   │   │   └── SignalGenerator.java    # 信号生成器 / Signal Generator
-│   │   └── transform/            # 信号变换 / Signal Transforms
-│   │       ├── ISignalTransform.java   # 信号变换接口 / Signal Transform Interface
-│   │       ├── ChirpZTransform.java    # Chirp Z变换 / Chirp Z Transform
-│   │       ├── HilbertTransform.java   # 希尔伯特变换 / Hilbert Transform
-│   │       ├── WalshHadamardTransform.java # 沃尔什-哈达玛变换 / Walsh-Hadamard Transform
-│   │       ├── WaveletTransform.java   # 小波变换 / Wavelet Transform
-│   │       └── ZTransform.java         # Z变换 / Z Transform
+│   │   ├── transform/            # 信号变换 / Signal Transforms
+│   │   │   ├── ISignalTransform.java   # 信号变换接口 / Signal Transform Interface
+│   │   │   ├── ChirpZTransform.java    # Chirp Z变换 / Chirp Z Transform
+│   │   │   ├── HilbertTransform.java   # 希尔伯特变换 / Hilbert Transform
+│   │   │   ├── WalshHadamardTransform.java # 沃尔什-哈达玛变换 / Walsh-Hadamard Transform
+│   │   │   ├── WaveletTransform.java   # 小波变换 / Wavelet Transform
+│   │   │   └── ZTransform.java         # Z变换 / Z Transform
+│   │   └── wavele/               # 小波分析 / Wavelet Analysis
+│   │       ├── WaveletAnalysis.java  # 小波分析 / Wavelet Analysis
+│   │       ├── WaveletCoefficients.java # 小波系数 / Wavelet Coefficients
+│   │       ├── WaveletFilters.java   # 小波滤波器 / Wavelet Filters
+│   │       ├── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
+│   │       └── WaveletVisualizer.java # 小波可视化 / Wavelet Visualizer
 │   ├── timeseries/           # 时间序列分析模块 / Time Series Analysis Module
 │   │   ├── Series.java           # 时间序列类 / Time Series Class
 │   │   ├── TimeSeriesData.java   # 时间序列数据 / Time Series Data
@@ -723,20 +786,19 @@ src/main/java/com/reremouse/lab/
 │   │       ├── GARCHModel.java           # GARCH模型 / GARCH Model
 │   │       ├── StateSpaceModel.java      # 状态空间模型 / State Space Model
 │   │       └── VARModel.java             # VAR模型 / VAR Model
-│   ├── viz/                  # 数据可视化模块 / Data Visualization Module
-│   │   ├── IPlot.java            # 绘图接口 / Plotting Interface
-│   │   ├── RerePlot.java         # 绘图实现类 / Plotting Implementation Class
-│   │   ├── Plots.java            # 绘图工厂类 / Plotting Factory Class
-│   │   ├── AxisTicks.java        # 坐标轴刻度类 / Axis Ticks Class
-│   │   ├── PlotException.java    # 绘图异常类 / Plotting Exception Class
-│   │   ├── ColorPalette.java     # 颜色调色板类 / Color Palette Class
-│   │   ├── PlotStyle.java        # 绘图样式类 / Plot Style Class
-│   │   ├── SeabornStyleMapper.java # Seaborn样式映射器 / Seaborn Style Mapper
-│   │   ├── StyleConverter.java   # 样式转换器 / Style Converter
-│   │   ├── StyleExpression.java  # 样式表达式 / Style Expression
-│   │   ├── ThemeManager.java     # 主题管理器 / Theme Manager
-│   │   └── UniversalStyleApplier.java # 通用样式应用器 / Universal Style Applier
-│   └── examples/             # 示例代码模块 / Examples Module
+│   └── viz/                  # 数据可视化模块 / Data Visualization Module
+│       ├── IPlot.java            # 绘图接口 / Plotting Interface
+│       ├── RerePlot.java         # 绘图实现类 / Plotting Implementation Class
+│       ├── Plots.java            # 绘图工厂类 / Plotting Factory Class
+│       ├── AxisTicks.java        # 坐标轴刻度类 / Axis Ticks Class
+│       ├── PlotException.java    # 绘图异常类 / Plotting Exception Class
+│       ├── ColorPalette.java     # 颜色调色板类 / Color Palette Class
+│       ├── PlotStyle.java        # 绘图样式类 / Plot Style Class
+│       ├── SeabornStyleMapper.java # Seaborn样式映射器 / Seaborn Style Mapper
+│       ├── StyleConverter.java   # 样式转换器 / Style Converter
+│       ├── StyleExpression.java  # 样式表达式 / Style Expression
+│       ├── ThemeManager.java     # 主题管理器 / Theme Manager
+│       └── UniversalStyleApplier.java # 通用样式应用器 / Universal Style Applier
 └── util/                     # 工具类模块 / Utility Module
     ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class
     ├── RereExecutor.java         # 执行器工具类 / Executor Utility Class
@@ -825,6 +887,9 @@ If you encounter any issues while using the library, you can get help through th
 - **社区**: 参与讨论和分享经验 / Participate in discussions and share experiences
 
 ## 更新日志 / Changelog
+
+### v0.2.2 (2025-09)
+- **新增音频处理功能** / **New Audio Processing Features**: 音频特征提取、音高检测、音频增强、i-vector模型训练等 / Audio feature extraction, pitch detection, audio enhancement, i-vector model training
 
 ### v0.2.1 (2025-09)
 - 📡 信号处理模块：信号生成、滤波、频谱分析、小波分析 / Signal processing: generation, filtering, spectral analysis, wavelet analysis

@@ -2264,8 +2264,8 @@ public class RereFloatVector implements IFloatVector {
         Float norm1 = this.norm2();
         Float norm2 = other.norm2();
 
-        if (norm1 == 0.0f || norm2 == 0.0f) {
-            throw new ArithmeticException("向量长度为零 / Vector norm is zero");
+        if (norm1 == 0 || norm2 == 0) {
+            return 0.0f;
         }
 
         return dotProduct / (norm1 * norm2);

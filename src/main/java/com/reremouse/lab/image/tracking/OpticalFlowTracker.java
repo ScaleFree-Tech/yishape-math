@@ -19,7 +19,7 @@ import java.util.Map;
  * Provides inter-frame motion estimation, object tracking, and motion field analysis functionality.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

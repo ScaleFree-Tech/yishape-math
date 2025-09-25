@@ -3,13 +3,24 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.reremouse.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</maven.surefire.argLine>
     </properties>
+    
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
     
     <dependencies>
         <!-- Support for OpenCL GPUs -->
@@ -33,6 +44,19 @@
             <optional>true</optional>
         </dependency>
         
+        <!-- Support for MP3 decoding -->
+        <dependency>
+            <groupId>javazoom</groupId>
+            <artifactId>jlayer</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        
+        <!-- Support for OGG Vorbis decoding -->
+        <dependency>
+            <groupId>org.jcraft</groupId>
+            <artifactId>jorbis</artifactId>
+            <version>0.0.17</version>
+        </dependency>
 
         
         <!-- JUnit 5 for testing -->
@@ -60,6 +84,7 @@
             <version>1.7.36</version>
         </dependency>
         -->
+
     </dependencies>
     
     <build>  
@@ -70,10 +95,37 @@
                 <version>3.14.0</version>  
                 <configuration>  
                     <skipTests>true</skipTests>
-					<release>21</release>
+                    <release>21</release>
                     <encoding>utf8</encoding>
                 </configuration>  
-            </plugin>  
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>
+                                ${project.build.directory}/libs
+                            </outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     

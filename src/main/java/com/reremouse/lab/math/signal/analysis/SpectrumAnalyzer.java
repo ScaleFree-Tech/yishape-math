@@ -2,9 +2,9 @@ package com.reremouse.lab.math.signal.analysis;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.Complex;
-import com.reremouse.lab.math.signal.RereFFT;
 import com.reremouse.lab.math.signal.core.AbstractSignalProcessor;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereFFT;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
 import com.reremouse.lab.util.Tuple2;
 
@@ -75,7 +75,9 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
             for (int i = 0; i < signalArray.length; i++) {
                 complexSignal[i] = new Complex(signalArray[i], 0);
             }
-            Complex[] fftResult = RereFFT.fft(complexSignal);
+            // 零填充确保长度为2的幂
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            Complex[] fftResult = RereFFT.fft(paddedSignal);
             
             // 计算频率轴 / Calculate frequency axis
             int n = signal.length();
@@ -108,7 +110,9 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
             for (int i = 0; i < signalArray.length; i++) {
                 complexSignal[i] = new Complex(signalArray[i], 0);
             }
-            Complex[] fftResult = RereFFT.fft(complexSignal);
+            // 零填充确保长度为2的幂
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            Complex[] fftResult = RereFFT.fft(paddedSignal);
             
             // 计算功率谱 / Calculate power spectrum
             int n = signal.length();

@@ -20,7 +20,7 @@ import java.util.Map;
  * super-resolution, denoising, etc. Supports GPU acceleration and adaptive parameter adjustment.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

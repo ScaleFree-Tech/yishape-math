@@ -14,7 +14,7 @@ import java.util.Map;
  * All image processing algorithms should implement this interface to ensure consistent behavior and extensibility.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

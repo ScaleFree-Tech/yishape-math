@@ -16,7 +16,7 @@ import java.util.function.Function;
  * Supports method chaining, conditional branching, parallel processing and error handling.
  * </p>
  *
- * @author AI Assistant
+ * @author RereMouse
  * @version 2.0
  * @since 2.0
  */

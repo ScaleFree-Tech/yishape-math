@@ -2,9 +2,9 @@ package com.reremouse.lab.math.signal.transform;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.Complex;
-import com.reremouse.lab.math.signal.RereFFT;
 import com.reremouse.lab.math.signal.core.AbstractSignalProcessor;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereFFT;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
 import com.reremouse.lab.util.Tuple2;
 
@@ -58,8 +58,11 @@ public class HilbertTransform extends AbstractSignalProcessor<Double> implements
                 complexSignal[i] = new Complex(signal.get(i), 0);
             }
             
+            // 零填充确保长度为2的幂
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            
             // 计算FFT / Calculate FFT
-            Complex[] fftSignal = RereFFT.fft(complexSignal);
+            Complex[] fftSignal = RereFFT.fft(paddedSignal);
             
             // 构造希尔伯特变换滤波器 / Construct Hilbert transform filter
             Complex[] hilbertFilter = createHilbertFilter(n);

@@ -3,9 +3,10 @@ package com.reremouse.lab.image;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.signal.RereFFT;
-import com.reremouse.lab.math.signal.Complex;
-import com.reremouse.lab.math.signal.WaveletAnalysis;
+import com.reremouse.lab.math.signal.wavele.WaveletAnalysis;
+import com.reremouse.lab.math.signal.core.Complex;
+import com.reremouse.lab.math.signal.core.RereFFT;
+import com.reremouse.lab.math.signal.wavele.WaveletCoefficients;
 
 /**
  * 图像变换类 / Image Transform Class
@@ -200,14 +201,14 @@ public class ImageTransform {
         int width = channel.getColNum();
         
         // 对每一行进行小波变换 / Perform wavelet transform on each row
-        WaveletAnalysis.WaveletCoefficients[] rowCoeffs = new WaveletAnalysis.WaveletCoefficients[height];
+        WaveletCoefficients[] rowCoeffs = new WaveletCoefficients[height];
         for (int y = 0; y < height; y++) {
             IVector<Double> row = channel.getRow(y);
             rowCoeffs[y] = WaveletAnalysis.discreteWaveletTransform(row, waveletType, levels, 0.0);
         }
         
         // 对每一列进行小波变换 / Perform wavelet transform on each column
-        WaveletAnalysis.WaveletCoefficients[][] coeffs = new WaveletAnalysis.WaveletCoefficients[height][width];
+        WaveletCoefficients[][] coeffs = new WaveletCoefficients[height][width];
         for (int y = 0; y < height; y++) {
             for (int level = 0; level <= levels; level++) {
                 IVector<Double> column;
@@ -217,7 +218,7 @@ public class ImageTransform {
                     column = rowCoeffs[y].details[level];
                 }
                 
-                WaveletAnalysis.WaveletCoefficients colCoeffs = WaveletAnalysis.discreteWaveletTransform(column, waveletType, levels, 0.0);
+                WaveletCoefficients colCoeffs = WaveletAnalysis.discreteWaveletTransform(column, waveletType, levels, 0.0);
                 coeffs[y][level] = colCoeffs;
             }
         }
@@ -240,7 +241,7 @@ public class ImageTransform {
             throw new IllegalArgumentException("小波结果不能为null / Wavelet result cannot be null");
         }
         
-        WaveletAnalysis.WaveletCoefficients[][] coeffs = waveletResult.getCoeffs();
+        WaveletCoefficients[][] coeffs = waveletResult.getCoeffs();
         int height = waveletResult.getHeight();
         int width = waveletResult.getWidth();
         int levels = waveletResult.getLevels();
@@ -251,7 +252,7 @@ public class ImageTransform {
         
         for (int y = 0; y < height; y++) {
             for (int level = 0; level <= levels; level++) {
-                WaveletAnalysis.WaveletCoefficients colCoeffs = coeffs[y][level];
+                WaveletCoefficients colCoeffs = coeffs[y][level];
                 IVector<Double> reconstructedColumn = WaveletAnalysis.inverseDiscreteWaveletTransform(colCoeffs, waveletType, 0.0);
                 
                 // 将重建的列数据放回矩阵 / Put reconstructed column data back to matrix
@@ -608,13 +609,13 @@ public class ImageTransform {
      * 小波变换结果类 / Wavelet Transform Result Class
      */
     public static class ImageWaveletResult {
-        private WaveletAnalysis.WaveletCoefficients[][] coeffs;
+        private WaveletCoefficients[][] coeffs;
         private int height;
         private int width;
         private int levels;
         private WaveletAnalysis.WaveletType waveletType;
         
-        public ImageWaveletResult(WaveletAnalysis.WaveletCoefficients[][] coeffs, int height, int width, 
+        public ImageWaveletResult(WaveletCoefficients[][] coeffs, int height, int width, 
                                 int levels, WaveletAnalysis.WaveletType waveletType) {
             this.coeffs = coeffs;
             this.height = height;
@@ -623,7 +624,7 @@ public class ImageTransform {
             this.waveletType = waveletType;
         }
         
-        public WaveletAnalysis.WaveletCoefficients[][] getCoeffs() { return coeffs; }
+        public WaveletCoefficients[][] getCoeffs() { return coeffs; }
         public int getHeight() { return height; }
         public int getWidth() { return width; }
         public int getLevels() { return levels; }

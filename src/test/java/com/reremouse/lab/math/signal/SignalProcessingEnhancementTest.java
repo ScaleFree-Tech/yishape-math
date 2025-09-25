@@ -2,6 +2,7 @@ package com.reremouse.lab.math.signal;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.signal.core.Complex;
 import com.reremouse.lab.math.signal.core.SignalProcessingException;
 import com.reremouse.lab.math.signal.transform.ZTransform;
 import com.reremouse.lab.math.signal.transform.ChirpZTransform;

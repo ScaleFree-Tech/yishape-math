@@ -1,19 +1,39 @@
 package com.reremouse.lab.audio.factory;
 
-import com.reremouse.lab.audio.core.*;
+import com.reremouse.lab.audio.analysis.PitchDetector;
+import com.reremouse.lab.audio.analysis.SpectrumAnalyzer;
+import com.reremouse.lab.audio.analysis.STFTAnalyzer;
+import com.reremouse.lab.audio.core.IAudioCodec;
+import com.reremouse.lab.audio.effect.ReverbEffect;
+import com.reremouse.lab.audio.filter.IBaseAudioFilter;
+import com.reremouse.lab.audio.filter.LowPassFilter;
+import com.reremouse.lab.audio.filter.AdvancedLowPassFilter;
+import com.reremouse.lab.audio.processing.ChannelProcessor;
+import com.reremouse.lab.audio.processing.IAdvancedAudioProcessor;
+import com.reremouse.lab.audio.processing.NormalizeProcessor;
+import com.reremouse.lab.audio.processing.VolumeProcessor;
+import com.reremouse.lab.audio.enhancement.IAudioEnhancer;
+import com.reremouse.lab.audio.enhancement.NoiseReductionEnhancer;
+import com.reremouse.lab.audio.enhancement.EqualizerEnhancer;
+import com.reremouse.lab.audio.enhancement.CompressorEnhancer;
+import com.reremouse.lab.audio.enhancement.ReverbEnhancer;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
+import com.reremouse.lab.audio.effect.IAudioEffect;
+import com.reremouse.lab.audio.analysis.IAudioAnalyzer;
+import com.reremouse.lab.audio.feature.IAudioFeatureExtractor;
+import com.reremouse.lab.audio.feature.AudioFeatureExtractorImpl;
 
 /**
  * 音频组件工厂类 / Audio Component Factory Class
  * <p>
- * 使用工厂模式创建各种音频处理组件，包括处理器、分析器、滤波器、效果器等。
+ * 使用工厂模式创建各种音频处理组件，包括处理器、分析器、滤波器、效果器、特征提取器等。
  * 支持动态注册和服务发现机制。
  * </p>
  * <p>
- * Uses factory pattern to create various audio processing components including processors, analyzers, filters, effects, etc.
+ * Uses factory pattern to create various audio processing components including processors, analyzers, filters, effects, feature extractors, etc.
  * Supports dynamic registration and service discovery mechanism.
  * </p>
  *
@@ -23,14 +43,26 @@ import java.util.ServiceLoader;
  */
 public class AudioComponentFactory {
     
+    public enum ComponentType {
+        PROCESSOR,
+        ANALYZER,
+        FILTER,
+        EFFECT,
+        CODEC,
+        FEATURE_EXTRACTOR,
+        ENHANCER
+    }
+    
     private static AudioComponentFactory instance;
     
     // 组件注册表 / Component registries
-    private final Map<String, Class<? extends IAudioProcessor>> processorRegistry = new HashMap<>();
+    private final Map<String, Class<? extends IAdvancedAudioProcessor>> processorRegistry = new HashMap<>();
     private final Map<String, Class<? extends IAudioAnalyzer>> analyzerRegistry = new HashMap<>();
-    private final Map<String, Class<? extends IAudioFilter>> filterRegistry = new HashMap<>();
+    private final Map<String, Class<? extends IBaseAudioFilter>> filterRegistry = new HashMap<>();
     private final Map<String, Class<? extends IAudioEffect>> effectRegistry = new HashMap<>();
     private final Map<String, Class<? extends IAudioCodec>> codecRegistry = new HashMap<>();
+    private final Map<String, Class<? extends IAudioFeatureExtractor>> featureExtractorRegistry = new HashMap<>();
+    private final Map<String, Class<? extends IAudioEnhancer>> enhancerRegistry = new HashMap<>();
     
     /**
      * 私有构造函数，实现单例模式 / Private constructor for singleton pattern
@@ -69,8 +101,8 @@ public class AudioComponentFactory {
      * @return 音频处理器实例 / Audio processor instance
      * @throws IllegalArgumentException 当处理器类型不存在时抛出 / Thrown when processor type doesn't exist
      */
-    public IAudioProcessor createProcessor(String processorType) throws IllegalArgumentException {
-        Class<? extends IAudioProcessor> processorClass = processorRegistry.get(processorType.toLowerCase());
+    public IAdvancedAudioProcessor createProcessor(String processorType) throws IllegalArgumentException {
+        Class<? extends IAdvancedAudioProcessor> processorClass = processorRegistry.get(processorType.toLowerCase());
         if (processorClass == null) {
             throw new IllegalArgumentException("Unknown processor type: " + processorType);
         }
@@ -90,8 +122,8 @@ public class AudioComponentFactory {
      * @return 音频处理器实例 / Audio processor instance
      * @throws IllegalArgumentException 当处理器类型不存在时抛出 / Thrown when processor type doesn't exist
      */
-    public IAudioProcessor createProcessor(String processorType, Map<String, Object> parameters) throws IllegalArgumentException {
-        IAudioProcessor processor = createProcessor(processorType);
+    public IAdvancedAudioProcessor createProcessor(String processorType, Map<String, Object> parameters) throws IllegalArgumentException {
+        IAdvancedAudioProcessor processor = createProcessor(processorType);
         
         if (parameters != null) {
             for (Map.Entry<String, Object> entry : parameters.entrySet()) {
@@ -144,17 +176,17 @@ public class AudioComponentFactory {
     }
     
     // ================ 音频滤波器创建方法 / Audio Filter Creation Methods ================
-    
+
     /**
      * 创建音频滤波器 / Create audio filter
      *
      * @param filterType 滤波器类型 / Filter type
      * @return 音频滤波器实例 / Audio filter instance
      */
-    public IAudioFilter createFilter(IAudioFilter.FilterType filterType) {
+    public IBaseAudioFilter createFilter(IBaseAudioFilter.FilterType filterType) {
         return createFilter(filterType.name().toLowerCase());
     }
-    
+
     /**
      * 创建音频滤波器 / Create audio filter
      *
@@ -162,19 +194,19 @@ public class AudioComponentFactory {
      * @return 音频滤波器实例 / Audio filter instance
      * @throws IllegalArgumentException 当滤波器类型不存在时抛出 / Thrown when filter type doesn't exist
      */
-    public IAudioFilter createFilter(String filterType) throws IllegalArgumentException {
-        Class<? extends IAudioFilter> filterClass = filterRegistry.get(filterType.toLowerCase());
+    public IBaseAudioFilter createFilter(String filterType) throws IllegalArgumentException {
+        Class<? extends IBaseAudioFilter> filterClass = filterRegistry.get(filterType.toLowerCase());
         if (filterClass == null) {
             throw new IllegalArgumentException("Unknown filter type: " + filterType);
         }
-        
+
         try {
             return filterClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create filter: " + filterType, e);
         }
     }
-    
+
     /**
      * 创建音频滤波器（带参数） / Create audio filter (with parameters)
      *
@@ -183,8 +215,8 @@ public class AudioComponentFactory {
      * @param order 滤波器阶数 / Filter order
      * @return 音频滤波器实例 / Audio filter instance
      */
-    public IAudioFilter createFilter(IAudioFilter.FilterType filterType, double cutoffFrequency, int order) {
-        IAudioFilter filter = createFilter(filterType);
+    public IBaseAudioFilter createFilter(IBaseAudioFilter.FilterType filterType, double cutoffFrequency, int order) {
+        IBaseAudioFilter filter = createFilter(filterType);
         filter.setCutoffFrequency(cutoffFrequency);
         filter.setOrder(order);
         filter.setFilterType(filterType);
@@ -255,105 +287,47 @@ public class AudioComponentFactory {
         }
     }
     
-    // ================ 音乐组件创建方法 / Music Component Creation Methods ================
+    // ================ 音频增强器创建方法 / Audio Enhancer Creation Methods ================
     
     /**
-     * 创建音乐分析器 / Create music analyzer
+     * 创建音频增强器 / Create audio enhancer
      *
-     * @return 音乐分析器实例 / Music analyzer instance
+     * @param enhancerType 增强器类型名称 / Enhancer type name
+     * @return 音频增强器实例 / Audio enhancer instance
+     * @throws IllegalArgumentException 当增强器类型不存在时抛出 / Thrown when enhancer type doesn't exist
      */
-    public com.reremouse.lab.audio.core.IMusicAnalyzer createMusicAnalyzer() {
-        return (com.reremouse.lab.audio.core.IMusicAnalyzer) createAnalyzer("music");
+    public IAudioEnhancer createEnhancer(String enhancerType) throws IllegalArgumentException {
+        Class<? extends IAudioEnhancer> enhancerClass = enhancerRegistry.get(enhancerType.toLowerCase());
+        if (enhancerClass == null) {
+            throw new IllegalArgumentException("Unknown enhancer type: " + enhancerType);
+        }
+        
+        try {
+            return enhancerClass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create enhancer: " + enhancerType, e);
+        }
     }
     
     /**
-     * 创建音乐分析器（带参数） / Create music analyzer (with parameters)
+     * 创建音频增强器（带参数） / Create audio enhancer (with parameters)
      *
+     * @param enhancerType 增强器类型名称 / Enhancer type name
      * @param parameters 初始化参数 / Initialization parameters
-     * @return 音乐分析器实例 / Music analyzer instance
+     * @return 音频增强器实例 / Audio enhancer instance
      */
-    public com.reremouse.lab.audio.core.IMusicAnalyzer createMusicAnalyzer(Map<String, Object> parameters) {
-        return (com.reremouse.lab.audio.core.IMusicAnalyzer) createAnalyzer("music", parameters);
-    }
-    
-    /**
-     * 创建音乐理论处理器 / Create music theory processor
-     *
-     * @return 音乐理论处理器实例 / Music theory processor instance
-     */
-    public com.reremouse.lab.audio.core.IMusicProcessor createMusicProcessor() {
-        return (com.reremouse.lab.audio.core.IMusicProcessor) createProcessor("music_theory");
-    }
-    
-    /**
-     * 创建音乐理论处理器（带参数） / Create music theory processor (with parameters)
-     *
-     * @param parameters 初始化参数 / Initialization parameters
-     * @return 音乐理论处理器实例 / Music theory processor instance
-     */
-    public com.reremouse.lab.audio.core.IMusicProcessor createMusicProcessor(Map<String, Object> parameters) {
-        return (com.reremouse.lab.audio.core.IMusicProcessor) createProcessor("music_theory", parameters);
-    }
-    
-    /**
-     * 创建音乐处理流水线 / Create music processing pipeline
-     * <p>
-     * 创建包含音乐分析器和处理器的完整流水线。
-     * Create complete pipeline including music analyzer and processor.
-     * </p>
-     *
-     * @return 音乐处理流水线 / Music processing pipeline
-     */
-    public MusicProcessingPipeline createMusicPipeline() {
-        com.reremouse.lab.audio.core.IMusicAnalyzer analyzer = createMusicAnalyzer();
-        com.reremouse.lab.audio.core.IMusicProcessor processor = createMusicProcessor();
-        return new MusicProcessingPipeline(analyzer, processor);
-    }
-    
-    /**
-     * 音乐处理流水线类 / Music Processing Pipeline Class
-     */
-    public static class MusicProcessingPipeline {
-        private final com.reremouse.lab.audio.core.IMusicAnalyzer analyzer;
-        private final com.reremouse.lab.audio.core.IMusicProcessor processor;
+    public IAudioEnhancer createEnhancer(String enhancerType, Map<String, Object> parameters) {
+        IAudioEnhancer enhancer = createEnhancer(enhancerType);
         
-        public MusicProcessingPipeline(com.reremouse.lab.audio.core.IMusicAnalyzer analyzer, 
-                                     com.reremouse.lab.audio.core.IMusicProcessor processor) {
-            this.analyzer = analyzer;
-            this.processor = processor;
+        if (parameters != null) {
+            // Enhancers handle parameters differently than other components
+            // This is kept for API consistency
         }
         
-        public com.reremouse.lab.audio.core.IMusicAnalyzer getAnalyzer() { return analyzer; }
-        public com.reremouse.lab.audio.core.IMusicProcessor getProcessor() { return processor; }
-        
-        /**
-         * 分析音频特征 / Analyze audio features
-         */
-        public com.reremouse.lab.audio.MusicAnalyzer.MusicFeatures analyzeFeatures(com.reremouse.lab.audio.AudioData audioData) 
-                throws com.reremouse.lab.audio.exception.AudioProcessingException {
-            return analyzer.extractMusicFeatures(audioData);
-        }
-        
-        /**
-         * 生成音阶 / Generate scale
-         */
-        public com.reremouse.lab.audio.AudioData generateScale(int rootNote, 
-                com.reremouse.lab.audio.MusicTheory.ScaleType scaleType, int octave, double duration) 
-                throws com.reremouse.lab.audio.exception.AudioProcessingException {
-            return processor.generateScale(rootNote, scaleType, octave, duration);
-        }
-        
-        /**
-         * 生成和弦 / Generate chord
-         */
-        public com.reremouse.lab.audio.AudioData generateChord(int rootNote, 
-                com.reremouse.lab.audio.MusicTheory.ChordType chordType, int octave, double duration) 
-                throws com.reremouse.lab.audio.exception.AudioProcessingException {
-            return processor.generateChord(rootNote, chordType, octave, duration);
-        }
+        return enhancer;
     }
     
-    // ================ 组件注册方法 / Component Registration Methods ================
+    // ================ 组件注册和初始化方法 / Component Registration and Initialization Methods ================
     
     /**
      * 注册音频处理器 / Register audio processor
@@ -361,7 +335,7 @@ public class AudioComponentFactory {
      * @param name 处理器名称 / Processor name
      * @param processorClass 处理器类 / Processor class
      */
-    public void registerProcessor(String name, Class<? extends IAudioProcessor> processorClass) {
+    public void registerProcessor(String name, Class<? extends IAdvancedAudioProcessor> processorClass) {
         processorRegistry.put(name.toLowerCase(), processorClass);
     }
     
@@ -381,7 +355,7 @@ public class AudioComponentFactory {
      * @param name 滤波器名称 / Filter name
      * @param filterClass 滤波器类 / Filter class
      */
-    public void registerFilter(String name, Class<? extends IAudioFilter> filterClass) {
+    public void registerFilter(String name, Class<? extends IBaseAudioFilter> filterClass) {
         filterRegistry.put(name.toLowerCase(), filterClass);
     }
     
@@ -405,119 +379,138 @@ public class AudioComponentFactory {
         codecRegistry.put(name.toLowerCase(), codecClass);
     }
     
-    // ================ 查询方法 / Query Methods ================
-    
     /**
-     * 获取已注册的处理器类型 / Get registered processor types
+     * 注册音频特征提取器 / Register audio feature extractor
      *
-     * @return 处理器类型数组 / Processor type array
+     * @param name 特征提取器名称 / Feature extractor name
+     * @param featureExtractorClass 特征提取器类 / Feature extractor class
      */
-    public String[] getRegisteredProcessorTypes() {
-        return processorRegistry.keySet().toArray(new String[0]);
+    public void registerFeatureExtractor(String name, Class<? extends IAudioFeatureExtractor> featureExtractorClass) {
+        featureExtractorRegistry.put(name.toLowerCase(), featureExtractorClass);
     }
     
     /**
-     * 获取已注册的分析器类型 / Get registered analyzer types
+     * 注册音频增强器 / Register audio enhancer
      *
-     * @return 分析器类型数组 / Analyzer type array
+     * @param name 增强器名称 / Enhancer name
+     * @param enhancerClass 增强器类 / Enhancer class
      */
-    public String[] getRegisteredAnalyzerTypes() {
-        return analyzerRegistry.keySet().toArray(new String[0]);
+    public void registerEnhancer(String name, Class<? extends IAudioEnhancer> enhancerClass) {
+        enhancerRegistry.put(name.toLowerCase(), enhancerClass);
+    }
+    
+    // ================ 音频特征提取器创建方法 / Audio Feature Extractor Creation Methods ================
+    
+    /**
+     * 创建音频特征提取器 / Create audio feature extractor
+     *
+     * @param extractorType 特征提取器类型名称 / Feature extractor type name
+     * @return 音频特征提取器实例 / Audio feature extractor instance
+     * @throws IllegalArgumentException 当特征提取器类型不存在时抛出 / Thrown when feature extractor type doesn't exist
+     */
+    public IAudioFeatureExtractor createFeatureExtractor(String extractorType) throws IllegalArgumentException {
+        Class<? extends IAudioFeatureExtractor> extractorClass = featureExtractorRegistry.get(extractorType.toLowerCase());
+        if (extractorClass == null) {
+            throw new IllegalArgumentException("Unknown feature extractor type: " + extractorType);
+        }
+        
+        try {
+            return extractorClass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create feature extractor: " + extractorType, e);
+        }
     }
     
     /**
-     * 获取已注册的滤波器类型 / Get registered filter types
+     * 创建音频特征提取器（带参数） / Create audio feature extractor (with parameters)
      *
-     * @return 滤波器类型数组 / Filter type array
+     * @param extractorType 特征提取器类型名称 / Feature extractor type name
+     * @param parameters 初始化参数 / Initialization parameters
+     * @return 音频特征提取器实例 / Audio feature extractor instance
      */
-    public String[] getRegisteredFilterTypes() {
-        return filterRegistry.keySet().toArray(new String[0]);
+    public IAudioFeatureExtractor createFeatureExtractor(String extractorType, Map<String, Object> parameters) {
+        IAudioFeatureExtractor extractor = createFeatureExtractor(extractorType);
+        
+        // Note: Feature extractors don't currently support parameter setting like other components
+        // This is kept for API consistency
+        return extractor;
     }
-    
-    /**
-     * 获取已注册的效果器类型 / Get registered effect types
-     *
-     * @return 效果器类型数组 / Effect type array
-     */
-    public String[] getRegisteredEffectTypes() {
-        return effectRegistry.keySet().toArray(new String[0]);
-    }
-    
-    /**
-     * 获取已注册的编解码器类型 / Get registered codec types
-     *
-     * @return 编解码器类型数组 / Codec type array
-     */
-    public String[] getRegisteredCodecTypes() {
-        return codecRegistry.keySet().toArray(new String[0]);
-    }
-    
-    // ================ 私有辅助方法 / Private Helper Methods ================
     
     /**
      * 初始化默认组件 / Initialize default components
      */
     private void initializeDefaultComponents() {
-        // 注册默认处理器 / Register default processors
-        // registerProcessor("volume", VolumeProcessor.class);
-        // registerProcessor("normalize", NormalizeProcessor.class);
-        // registerProcessor("resample", ResampleProcessor.class);
+        // 注册默认的音频处理器 / Register default audio processors
+        registerProcessor("channel", (Class<? extends IAdvancedAudioProcessor>) (Class<?>) ChannelProcessor.class);
+        registerProcessor("normalize", (Class<? extends IAdvancedAudioProcessor>) (Class<?>) NormalizeProcessor.class);
+        registerProcessor("volume", (Class<? extends IAdvancedAudioProcessor>) (Class<?>) VolumeProcessor.class);
+
+        // 注册默认的音频分析器 / Register default audio analyzers
+        registerAnalyzer("spectrum", (Class<? extends IAudioAnalyzer>) (Class<?>) SpectrumAnalyzer.class);
+        registerAnalyzer("pitch", (Class<? extends IAudioAnalyzer>) (Class<?>) PitchDetector.class);
+        registerAnalyzer("stft", (Class<? extends IAudioAnalyzer>) (Class<?>) STFTAnalyzer.class);
+
+        // 注册默认的音频滤波器 / Register default audio filters
+        registerFilter("lowpass", (Class<? extends IBaseAudioFilter>) (Class<?>) LowPassFilter.class);
+        registerFilter("advanced_lowpass", (Class<? extends IBaseAudioFilter>) (Class<?>) AdvancedLowPassFilter.class);
+
+        // 注册默认的音频效果器 / Register default audio effects
+        registerEffect("reverb", (Class<? extends IAudioEffect>) (Class<?>) ReverbEffect.class);
         
-        // 注册音乐处理器 / Register music processors
-        registerProcessor("music_theory", com.reremouse.lab.audio.music.MusicTheoryProcessor.class);
+        // 注册默认的音频特征提取器 / Register default audio feature extractors
+        registerFeatureExtractor("default", (Class<? extends IAudioFeatureExtractor>) (Class<?>) AudioFeatureExtractorImpl.class);
+        registerFeatureExtractor("standard", (Class<? extends IAudioFeatureExtractor>) (Class<?>) AudioFeatureExtractorImpl.class);
         
-        // 注册默认分析器 / Register default analyzers
-        // registerAnalyzer("spectral", SpectralAnalyzer.class);
-        // registerAnalyzer("mfcc", MFCCAnalyzer.class);
-        // registerAnalyzer("chroma", ChromaAnalyzer.class);
-        
-        // 注册音乐分析器 / Register music analyzers
-        registerAnalyzer("music", com.reremouse.lab.audio.music.IntegratedMusicAnalyzer.class);
-        registerAnalyzer("music_integrated", com.reremouse.lab.audio.music.IntegratedMusicAnalyzer.class);
-        
-        // 注册默认滤波器 / Register default filters
-        // registerFilter("low_pass", LowPassFilter.class);
-        // registerFilter("high_pass", HighPassFilter.class);
-        // registerFilter("band_pass", BandPassFilter.class);
-        
-        // 注册默认效果器 / Register default effects
-        // registerEffect("reverb", ReverbEffect.class);
-        // registerEffect("delay", DelayEffect.class);
-        // registerEffect("chorus", ChorusEffect.class);
-        
-        // 注册默认编解码器 / Register default codecs
-        // registerCodec("wav", WavCodec.class);
-        // registerCodec("pcm", PCMCodec.class);
+        // 注册默认的音频增强器 / Register default audio enhancers
+        registerEnhancer("noise_reduction", (Class<? extends IAudioEnhancer>) (Class<?>) NoiseReductionEnhancer.class);
+        registerEnhancer("equalizer", (Class<? extends IAudioEnhancer>) (Class<?>) EqualizerEnhancer.class);
+        registerEnhancer("compressor", (Class<? extends IAudioEnhancer>) (Class<?>) CompressorEnhancer.class);
+        registerEnhancer("reverb_enhancer", (Class<? extends IAudioEnhancer>) (Class<?>) ReverbEnhancer.class);
     }
     
     /**
      * 从类路径加载服务 / Load services from classpath
+     * <p>
+     * 使用ServiceLoader机制自动发现和注册组件。
+     * Use ServiceLoader mechanism for automatic component discovery and registration.
+     * </p>
      */
+    @SuppressWarnings("unused")
     private void loadServicesFromClasspath() {
         // 使用ServiceLoader机制自动发现和注册组件 / Use ServiceLoader mechanism for automatic component discovery and registration
-        ServiceLoader<IAudioProcessor> processorLoader = ServiceLoader.load(IAudioProcessor.class);
-        for (IAudioProcessor processor : processorLoader) {
-            processorRegistry.put(processor.getName().toLowerCase(), processor.getClass());
+        ServiceLoader<IAdvancedAudioProcessor> processorLoader = ServiceLoader.load(IAdvancedAudioProcessor.class);
+        for (IAdvancedAudioProcessor processor : processorLoader) {
+            processorRegistry.put(processor.getName().toLowerCase(), (Class<? extends IAdvancedAudioProcessor>) processor.getClass());
         }
-        
+
         ServiceLoader<IAudioAnalyzer> analyzerLoader = ServiceLoader.load(IAudioAnalyzer.class);
         for (IAudioAnalyzer analyzer : analyzerLoader) {
-            analyzerRegistry.put(analyzer.getName().toLowerCase(), analyzer.getClass());
+            analyzerRegistry.put(analyzer.getName().toLowerCase(), (Class<? extends IAudioAnalyzer>) analyzer.getClass());
         }
-        
-        ServiceLoader<IAudioFilter> filterLoader = ServiceLoader.load(IAudioFilter.class);
-        for (IAudioFilter filter : filterLoader) {
+
+        ServiceLoader<IBaseAudioFilter> filterLoader = ServiceLoader.load(IBaseAudioFilter.class);
+        for (IBaseAudioFilter filter : filterLoader) {
             filterRegistry.put(filter.getName().toLowerCase(), filter.getClass());
         }
-        
+
         ServiceLoader<IAudioEffect> effectLoader = ServiceLoader.load(IAudioEffect.class);
         for (IAudioEffect effect : effectLoader) {
             effectRegistry.put(effect.getName().toLowerCase(), effect.getClass());
         }
-        
+
         ServiceLoader<IAudioCodec> codecLoader = ServiceLoader.load(IAudioCodec.class);
         for (IAudioCodec codec : codecLoader) {
             codecRegistry.put(codec.getCodecInfo().toLowerCase(), codec.getClass());
+        }
+        
+        ServiceLoader<IAudioFeatureExtractor> featureExtractorLoader = ServiceLoader.load(IAudioFeatureExtractor.class);
+        for (IAudioFeatureExtractor featureExtractor : featureExtractorLoader) {
+            featureExtractorRegistry.put(featureExtractor.getExtractorName().toLowerCase(), (Class<? extends IAudioFeatureExtractor>) featureExtractor.getClass());
+        }
+        
+        ServiceLoader<IAudioEnhancer> enhancerLoader = ServiceLoader.load(IAudioEnhancer.class);
+        for (IAudioEnhancer enhancer : enhancerLoader) {
+            enhancerRegistry.put(enhancer.getName().toLowerCase(), (Class<? extends IAudioEnhancer>) enhancer.getClass());
         }
     }
 }

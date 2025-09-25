@@ -1,7 +1,11 @@
 package com.reremouse.lab.math.signal;
 
+import com.reremouse.lab.math.signal.wavele.WaveletUtilities;
+import com.reremouse.lab.math.signal.wavele.WaveletFilters;
+import com.reremouse.lab.math.signal.wavele.WaveletAnalysis;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.signal.wavele.WaveletCoefficients;
 
 /**
  * 小波分析示例类 / Wavelet Analysis Example Class
@@ -39,7 +43,7 @@ public class WaveletAnalysisExample {
         System.out.println("\n=== 小波变换分析 / Wavelet Transform Analysis ===");
         
         // 离散小波变换 / Discrete Wavelet Transform
-        WaveletAnalysis.WaveletCoefficients dwtCoeffs = WaveletAnalysis.discreteWaveletTransform(
+        WaveletCoefficients dwtCoeffs = WaveletAnalysis.discreteWaveletTransform(
                 signal, WaveletAnalysis.WaveletType.DAUBECHIES, 4, 4);
         
         System.out.println("离散小波变换 (DWT):");

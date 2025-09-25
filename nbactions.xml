@@ -10,7 +10,7 @@
             </goals>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
-                <Dmaven.test.skip>true</Dmaven.test.skip>
+                
             </properties>
         </action>
         <action>
@@ -24,7 +24,20 @@
             </goals>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
-                <Dmaven.test.skip>true</Dmaven.test.skip>
+                
+            </properties>
+        </action>
+        <action>
+            <actionName>build-with-dependencies</actionName>
+            <reactor>also-make</reactor>
+            <packagings>
+                <packaging>*</packaging>
+            </packagings>
+            <goals>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
             </properties>
         </action>
     </actions>

@@ -341,6 +341,15 @@ public final class Plots {
     }
     
     /**
+     * 创建热力图
+     * @param data 二维数据矩阵
+     * @return RerePlot实例
+     */
+    public static RerePlot heatmap(IMatrix<?> data) {
+        return new RerePlot().heatmap(data);
+    }
+    
+    /**
      * 创建雷达图
      * @param data 数据
      * @param indicators 指标标签
