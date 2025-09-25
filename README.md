@@ -72,7 +72,6 @@
 - **音频特征提取** / **Audio Feature Extraction**: MFCC特征、频谱质心、过零率、频谱分析等 / MFCC features, spectral centroid, zero crossing rate, spectrum analysis
 - **音频处理** / **Audio Processing**: 音高检测、音频增强、音频分割、音频合成等 / Pitch detection, audio enhancement, audio segmentation, audio synthesis
 - **音频嵌入向量** / **Audio Embedding Vectors**: i-vector模型训练、在线增量训练等 / i-vector model training, online incremental training
-- **音频可视化** / **Audio Visualization**: 波形图、频谱图、语谱图等 / Waveform, spectrum, spectrogram visualization
 
 
 ### 🚀 GPU加速计算 / GPU-Accelerated Computing
