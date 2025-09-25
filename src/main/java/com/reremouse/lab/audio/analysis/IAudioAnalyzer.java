@@ -93,44 +93,7 @@ public interface IAudioAnalyzer {
      */
     int getFeatureDimension(String featureType);
     
-    /**
-     * 提取音频特征 / Extract Audio Features
-     * <p>
-     * 从输入音频中提取特征。
-     * Extract features from input audio.
-     * </p>
-     * 
-     * @param input 输入音频 / Input audio
-     * @return 特征向量 / Feature vector
-     * @throws AudioProcessingException 分析过程中发生错误 / Error occurred during analysis
-     */
-    /**
-     * 提取音频特征 / Extract audio features
-     * <p>
-     * 从音频数据中提取特征向量。特征类型由具体实现决定。
-     * Extract feature vector from audio data. Feature type is determined by specific implementation.
-     * </p>
-     *
-     * @param audioData 输入音频数据 / Input audio data
-     * @return 特征向量 / Feature vector
-     * @throws AudioProcessingException 当分析过程中发生错误时抛出 / Thrown when error occurs during analysis
-     */
-    IVector<Double> extractFeatures(AudioData audioData) throws AudioProcessingException;
-    
-    /**
-     * 使用参数提取音频特征 / Extract Audio Features with Parameters
-     * <p>
-     * 从输入音频中提取特征，使用指定的参数。
-     * Extract features from input audio with specified parameters.
-     * </p>
-     * 
-     * @param input 输入音频 / Input audio
-     * @param parameters 分析参数 / Analysis parameters
-     * @return 特征向量 / Feature vector
-     * @throws AudioProcessingException 分析过程中发生错误 / Error occurred during analysis
-     */
-    IVector<Double> extractFeatures(AudioData input, Map<String, Object> parameters) throws AudioProcessingException;
-    
+
     /**
      * 计算频谱 / Calculate Spectrum
      * <p>

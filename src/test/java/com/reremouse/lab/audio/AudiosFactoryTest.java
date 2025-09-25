@@ -182,11 +182,6 @@ public class AudiosFactoryTest {
         assertNotNull(result._2, "Magnitude values should be returned");
     }
     
-    @Test
-    public void testExtractFeatures() {
-        IVector<Double> result = Audios.extractFeatures(testAudioData);
-        assertNotNull(result, "Features should be returned");
-    }
     
     @Test
     public void testStft() {

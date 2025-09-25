@@ -159,32 +159,6 @@ public class AudioVisualizer {
         return plot;
     }
     
-    /**
-     * 绘制音频特征图 / Plot audio features
-     * <p>
-     * 显示音频的各种特征随时间的变化。
-     * Display various audio features over time.
-     * </p>
-     *
-     * @param audioData 音频数据 / Audio data
-     * @param title 图表标题 / Plot title
-     * @return 特征图对象 / Features plot object
-     */
-    public static IPlot plotAudioFeatures(AudioData audioData, String title) {
-        // 提取音频特征 / Extract audio features
-        IVector<Double> features = Audios.extractFeatures(audioData);
-        
-        // 创建特征图 / Create features plot
-        IPlot plot = Plots.of()
-                .title(title)
-                .xlabel("特征类型 / Feature Type")
-                .ylabel("特征值 / Feature Value");
-        
-        // 添加基本特征 / Add basic features
-        plot.bar(features);
-        
-        return plot;
-    }
     
     /**
      * 绘制MFCC特征图 / Plot MFCC features
@@ -195,7 +169,7 @@ public class AudioVisualizer {
      */
     public static IPlot plotMFCC(AudioData audioData, String title) {
         // 提取MFCC特征 / Extract MFCC features
-        IVector<Double> features = Audios.extractFeatures(audioData);
+        IVector<Double> features = Audios.calculateMFCC(audioData).colMeans();
         // In a real implementation, we would extract actual MFCC features
         
         // 创建MFCC特征图 / Create MFCC features plot
@@ -329,7 +303,6 @@ public class AudioVisualizer {
         plots.add(plotWaveform(audioData, "波形图 / Waveform"));
         plots.add(plotSpectrum(audioData, "频谱图 / Spectrum"));
         plots.add(plotLogSpectrum(audioData, "对数频谱图 / Log Spectrum"));
-        plots.add(plotAudioFeatures(audioData, "音频特征 / Audio Features"));
         plots.add(plotAudioStatistics(audioData, "音频统计 / Audio Statistics"));
         plots.add(plotAudioQuality(audioData, "音频质量 / Audio Quality"));
         

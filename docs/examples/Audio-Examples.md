@@ -191,12 +191,15 @@ public class AudioFeatureExtractionExample {
             
             // 使用特征提取器对象 / Using feature extractor object
             IAudioFeatureExtractor extractor = Audios.createStandardFeatureExtractor();
-            AudioFeatureResult result = extractor.extractAudioFeatures(audioData);
-            
+            AudioFeatureResult result = extractor.extractAudioFeatures(audioData);// 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features
+            Tuple2<List<String>, IVector<Double>> result.toNumericalFeatures(); // 转换为数值特征(特征名、特征的值)
+
             // 获取不同类型的特征 / Get different types of features
-            // TimeDomainFeatureResult timeDomainFeatures = result.getTimeDomainFeatures();
-            // FrequencyDomainFeatureResult frequencyDomainFeatures = result.getFrequencyDomainFeatures();
-            // SpectralFeatureResult spectralFeatures = result.getSpectralFeatures();
+            TimeDomainFeatureResult timeDomainFeatures = result.getTimeDomainFeatures();
+            FrequencyDomainFeatureResult frequencyDomainFeatures = result.getFrequencyDomainFeatures();
+            SpectralFeatureResult spectralFeatures = result.getSpectralFeatures();
+
+
             
         } catch (Exception e) {
             System.err.println("特征提取错误: " + e.getMessage());

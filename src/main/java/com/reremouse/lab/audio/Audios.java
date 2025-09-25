@@ -393,20 +393,6 @@ public class Audios {
         }
     }
 
-    /**
-     * 提取音频特征 / Extract Audio Features
-     */
-    public static IVector<Double> extractFeatures(AudioData audio) {
-        try {
-            // Use spectrum analyzer instead of non-existent "feature" analyzer
-            IAudioAnalyzer analyzer = createSpectrumAnalyzer();
-            Tuple2<IVector<Double>, IVector<Double>> spectrum = analyzer.calculateSpectrum(audio);
-            // Return the magnitude values as features
-            return spectrum._2;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to extract audio features", e);
-        }
-    }
 
     /**
      * STFT分析 / STFT Analysis
@@ -426,9 +412,9 @@ public class Audios {
     public static double detectPitch(AudioData audio) {
         try {
             IAudioAnalyzer analyzer = createPitchDetector();
-            IVector<Double> features = analyzer.extractFeatures(audio);
-            // For simplicity, return the first feature value as pitch
-            return features.length() > 0 ? features.get(0) : 0.0;
+            Tuple2<IVector<Double>, IVector<Double>> result = analyzer.calculateSpectrum(audio);
+            // The pitch detector returns the pitch in the first element of frequencies
+            return result._1.get(0);
         } catch (Exception e) {
             throw new RuntimeException("Failed to detect pitch", e);
         }
@@ -441,9 +427,7 @@ public class Audios {
     public static AudioData lowPassFilter(AudioData audio, double cutoffFreq) {
         try {
             IBaseAudioFilter filter = createLowPassFilter();
-            Map<String, Object> params = new HashMap<>();
-            params.put("cutoffFrequency", cutoffFreq);
-            // The IBaseAudioFilter interface doesn't support parameters in filter method
+            filter.setCutoffFrequency(cutoffFreq);
             return filter.filter(audio);
         } catch (Exception e) {
             throw new RuntimeException("Failed to apply low-pass filter", e);
@@ -457,10 +441,9 @@ public class Audios {
     public static AudioData reverb(AudioData audio, double decay, double wetMix) {
         try {
             IAudioEffect effect = createReverbEffect();
-            Map<String, Object> params = new HashMap<>();
-            params.put("decay", decay);
-            params.put("wetMix", wetMix);
-            // The IAudioEffect interface doesn't support parameters in applyEffect method
+            // Set parameters using the effect's parameter methods
+            effect.setIntensity(decay);
+            effect.setDryWetMix(wetMix);
             return effect.applyEffect(audio);
         } catch (Exception e) {
             throw new RuntimeException("Failed to apply reverb effect", e);

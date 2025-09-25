@@ -447,7 +447,7 @@ AudioVisualizer.plotSpectrum(audioData, "音频频谱 / Audio Spectrum").show();
 // 音频综合特征提取 / Audio comprehensive feature extraction
 IAudioFeatureExtractor extractor = Audios.createStandardFeatureExtractor();
 AudioFeatureResult result = extractor.extractAudioFeatures(audioData);  // 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features
-Tuple2<List<String>, IVector<Double>> result.toNumericalFeatures(); // 转换为数值特征(特征名、特征值)
+Tuple2<List<String>, IVector<Double>> result.toNumericalFeatures(); // 转换为数值特征(特征名、特征的值)
 
 // 音频嵌入向量 / Audio embedding vector
 IVectorEmbedding embedder = Audios.createAudioEmbedder(64);  // 创建64维嵌入器 / Create 64-dim embedder
@@ -813,7 +813,7 @@ src/main/java/com/reremouse/lab/
     ├── Tuple7.java               # 七元组 / Tuple7
     ├── Tuple8.java               # 八元组 / Tuple8
     └── Tuple9.java               # 九元组 / Tuple9
-```
+
 
 
 

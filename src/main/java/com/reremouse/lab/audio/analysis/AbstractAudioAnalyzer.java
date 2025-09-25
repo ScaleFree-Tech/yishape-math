@@ -46,27 +46,6 @@ public abstract class AbstractAudioAnalyzer implements IAudioAnalyzer {
     }
 
     @Override
-    public IVector<Double> extractFeatures(AudioData input) throws AudioProcessingException {
-        return extractFeatures(input, getDefaultParameters());
-    }
-
-    @Override
-    public IVector<Double> extractFeatures(AudioData input, Map<String, Object> parameters) throws AudioProcessingException {
-        // Validate input
-        if (!validateInput(input)) {
-            throw new AudioProcessingException("Invalid input audio data");
-        }
-
-        // Validate parameters
-        if (!validateParameters(parameters)) {
-            throw new AudioProcessingException("Invalid parameters");
-        }
-
-        // Perform feature extraction
-        return doExtractFeatures(input, parameters);
-    }
-
-    @Override
     public Tuple2<IVector<Double>, IVector<Double>> calculateSpectrum(AudioData input) throws AudioProcessingException {
         return calculateSpectrum(input, getDefaultParameters());
     }

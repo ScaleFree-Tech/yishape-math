@@ -175,7 +175,7 @@ public class AudioPipelineBuilder {
                 // 分析器通常不修改音频数据，但可能需要存储结果 / Analyzers typically don't modify audio data, but may need to store results
                 IAudioAnalyzer analyzer = factory.createAnalyzer(step.componentName, step.parameters);
                 // 执行分析但不修改输入 / Execute analysis but don't modify input
-                analyzer.extractFeatures(input);
+                analyzer.calculateSpectrum(input);
                 return input;
                 
             default:
