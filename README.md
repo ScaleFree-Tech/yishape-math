@@ -543,7 +543,7 @@ graph TB
 
 
 ### 文件结构 / File Structure
-
+```
 src/main/java/com/reremouse/lab/
 ├── audio/                    # 音频处理模块 / Audio Processing Module
 │   ├── AudioVisualizer.java  # 音频可视化 / Audio Visualizer
@@ -813,7 +813,7 @@ src/main/java/com/reremouse/lab/
     ├── Tuple7.java               # 七元组 / Tuple7
     ├── Tuple8.java               # 八元组 / Tuple8
     └── Tuple9.java               # 九元组 / Tuple9
-
+```
 
 
 
