@@ -625,8 +625,8 @@ public class RerePlot implements Serializable, IPlot {
     }
 
     @Override
-    public RerePlot bar(IVector x) {
-        return barInternal(x, null, null, null);
+    public RerePlot bar(IVector y) {
+        return barInternal(y, null, null, null);
     }
 
     @Override
@@ -635,8 +635,8 @@ public class RerePlot implements Serializable, IPlot {
     }
 
     @Override
-    public IPlot bar(List<String> xticks, IVector x, List<String> hue) {
-        return barInternalWithLabels(x, null, xticks, hue);
+    public IPlot bar(List<String> xticks, IVector y, List<String> hue) {
+        return barInternalWithLabels(y, null, xticks, hue);
     }
 
     
@@ -695,22 +695,22 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的带标签柱状图内部实现
      *
-     * @param x 数据向量
+     * @param y 数据向量
      * @param style 个体样式
      * @param xticks X轴标签
      * @param hue 颜色分组
      * @return 当前实例
      */
-    private RerePlot barInternalWithLabels(IVector x, PlotStyle style, List<String> xticks, List<String> hue) {
+    private RerePlot barInternalWithLabels(IVector y, PlotStyle style, List<String> xticks, List<String> hue) {
         try {
             // 创建柱状图
             Bar barChart = new Bar();
 
             // 处理分组情况
             if (hue != null) {
-                return createGroupedBarChartWithLabels(barChart, x, style, xticks, hue, null);
+                return createGroupedBarChartWithLabels(barChart, y, style, xticks, hue, null);
             } else {
-                return createSingleBarChartWithLabels(barChart, x, style, xticks);
+                return createSingleBarChartWithLabels(barChart, y, style, xticks);
             }
 
         } catch (Exception e) {
@@ -900,9 +900,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建带标签的分组柱状图
      */
-    private RerePlot createGroupedBarChartWithLabels(Bar barChart, IVector x, PlotStyle baseStyle,
+    private RerePlot createGroupedBarChartWithLabels(Bar barChart, IVector y, PlotStyle baseStyle,
             List<String> xticks, List<String> hue, List<String> styleGroup) {
-        if (x.length() != hue.size()) {
+        if (y.length() != hue.size()) {
             throw new PlotException("X向量和hue列表长度必须相等");
         }
 
@@ -918,9 +918,9 @@ public class RerePlot implements Serializable, IPlot {
         }
         
         // Group the data and keep track of indices
-        for (int i = 0; i < x.length(); i++) {
+        for (int i = 0; i < y.length(); i++) {
             String group = hue.get(i);
-            groupedData.get(group).add((double)x.get(i));
+            groupedData.get(group).add((double)y.get(i));
             groupedIndices.get(group).add(i);
         }
         
