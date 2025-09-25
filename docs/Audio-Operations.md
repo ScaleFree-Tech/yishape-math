@@ -252,38 +252,8 @@ AudioData equalizedAudio = Audios.equalize(audioData, bandGains);
 AudioData compressedAudio = Audios.compress(audioData, 0.7, 4.0); // 阈值0.7，比率4:1
 ```
 
-### 8. 音频可视化 / Audio Visualization
 
-#### 音频可视化器使用 / Audio Visualizer Usage
-
-```java
-import com.reremouse.lab.audio.AudioVisualizer;
-import com.reremouse.lab.math.viz.IPlot;
-import java.util.List;
-
-// 绘制波形图 / Plot waveform
-IPlot waveformPlot = AudioVisualizer.plotWaveform(audioData, "音频波形图");
-
-// 绘制频谱图 / Plot spectrum
-IPlot spectrumPlot = AudioVisualizer.plotSpectrum(audioData, "音频频谱图");
-
-// 绘制对数频谱图 / Plot log spectrum
-IPlot logSpectrumPlot = AudioVisualizer.plotLogSpectrum(audioData, "对数频谱图");
-
-// 绘制频谱图 / Plot spectrogram
-IPlot spectrogramPlot = AudioVisualizer.plotSpectrogram(audioData, "频谱图");
-
-// 绘制MFCC特征图 / Plot MFCC features
-IPlot mfccPlot = AudioVisualizer.plotMFCC(audioData, "MFCC特征图");
-
-// 绘制音频统计信息 / Plot audio statistics
-IPlot statisticsPlot = AudioVisualizer.plotAudioStatistics(audioData, "音频统计信息");
-
-// 创建音频仪表板 / Create audio dashboard
-List<IPlot> dashboard = AudioVisualizer.createAudioDashboard(audioData, "音频分析仪表板");
-```
-
-### 9. 音频嵌入 / Audio Embedding
+### 8. 音频嵌入 / Audio Embedding
 
 #### 音频嵌入向量训练说明 / Audio Embedding Vector Training Instructions
 

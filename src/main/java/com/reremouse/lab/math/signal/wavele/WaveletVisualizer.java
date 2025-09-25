@@ -149,7 +149,7 @@ public class WaveletVisualizer {
             labels.add(label);
         }
         
-        plot.bar(energies, labels);
+        plot.bar(labels,energies);
         
         return plot;
     }
@@ -344,7 +344,7 @@ public class WaveletVisualizer {
             labels.add(name);
         }
         
-        plot.bar(statValuesVector, labels);
+        plot.bar(labels,statValuesVector);
         
         return plot;
     }

@@ -38,6 +38,9 @@ public class FFTProcessor {
     /** 默认重叠率 / Default overlap ratio */
     private static final double DEFAULT_OVERLAP = 0.5;
     
+    /** 大文件采样阈值 / Large file sampling threshold */
+    private static final int LARGE_FILE_THRESHOLD = 1000000; // 1 million samples
+    
     /**
      * 私有构造函数 / Private constructor
      */
@@ -104,8 +107,14 @@ public class FFTProcessor {
     private Tuple2<IVector<Double>, IVector<Double>> calculateFFT(AudioData audioData, int windowSize, double overlap) throws AudioProcessingException {
         IVector<Double> samples = audioData.getSamples();
         
+        // For large files, use downsampling for visualization purposes
+        IVector<Double> processedSamples = samples;
+        if (samples.length() > LARGE_FILE_THRESHOLD) {
+            processedSamples = downsampleForVisualization(samples, LARGE_FILE_THRESHOLD);
+        }
+        
         // 应用窗口函数 / Apply window function
-        IVector<Double> windowedSamples = applyWindow(samples, windowSize);
+        IVector<Double> windowedSamples = applyWindow(processedSamples, windowSize);
         
         // 确保长度是2的幂 / Ensure length is power of 2
         int fftSize = nextPowerOfTwo(windowedSamples.length());
@@ -127,14 +136,45 @@ public class FFTProcessor {
     }
     
     /**
+     * 为可视化目的对大文件进行降采样 / Downsample large files for visualization purposes
+     */
+    private IVector<Double> downsampleForVisualization(IVector<Double> samples, int targetSize) {
+        int originalSize = samples.length();
+        int factor = originalSize / targetSize;
+        if (factor <= 1) {
+            return samples;
+        }
+        
+        int newSize = originalSize / factor;
+        double[] downsampled = new double[newSize];
+        
+        for (int i = 0; i < newSize; i++) {
+            // Take every 'factor' sample or average a small window
+            int startIndex = i * factor;
+            int endIndex = Math.min(startIndex + factor, originalSize);
+            
+            double sum = 0;
+            for (int j = startIndex; j < endIndex; j++) {
+                sum += samples.get(j);
+            }
+            downsampled[i] = sum / (endIndex - startIndex);
+        }
+        
+        return com.reremouse.lab.math.linalg.Linalg.vector(downsampled);
+    }
+    
+    /**
      * 提取频谱信息 / Extract spectrum information
      */
     private Tuple2<IVector<Double>, IVector<Double>> extractSpectrum(Complex[] fftResult, double sampleRate, int fftSize) {
+        // For real signals, we only need the first half of the FFT result (plus the Nyquist frequency)
         int n = fftResult.length;
-        IVector<Double> frequencies = com.reremouse.lab.math.linalg.Linalg.zeros(n);
-        IVector<Double> magnitudes = com.reremouse.lab.math.linalg.Linalg.zeros(n);
+        int halfN = n / 2 + 1;
         
-        for (int i = 0; i < n; i++) {
+        IVector<Double> frequencies = com.reremouse.lab.math.linalg.Linalg.zeros(halfN);
+        IVector<Double> magnitudes = com.reremouse.lab.math.linalg.Linalg.zeros(halfN);
+        
+        for (int i = 0; i < halfN; i++) {
             frequencies.set(i, i * sampleRate / n);
             magnitudes.set(i, fftResult[i].magnitude());
         }

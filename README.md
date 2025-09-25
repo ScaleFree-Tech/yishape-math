@@ -439,10 +439,6 @@ double zeroCrossingRate = Audios.calculateZeroCrossingRate(audioData);  // 过�
 double pitch = Audios.detectPitch(audioData);  // 音高检测 / Pitch detection
 Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.spectrum(audioData);  // 频谱分析 / Spectrum analysis
 
-// 音频可视化 / Audio visualization
-AudioVisualizer.plotWaveform(audioData, "音频波形 / Audio Waveform").show();
-AudioVisualizer.plotSpectrum(audioData, "音频频谱 / Audio Spectrum").show();
-
 // 音频综合特征提取 / Audio comprehensive feature extraction
 IAudioFeatureExtractor extractor = Audios.createStandardFeatureExtractor();
 AudioFeatureResult result = extractor.extractAudioFeatures(audioData);  // 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features

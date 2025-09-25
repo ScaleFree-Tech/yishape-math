@@ -9,6 +9,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -518,6 +520,7 @@ public class RerePlot implements Serializable, IPlot {
         return this;
     }
 
+    @Override
     public RerePlot pie(IVector x) {
         return pieInternal(x, null, null);
     }
@@ -621,10 +624,22 @@ public class RerePlot implements Serializable, IPlot {
         return this;
     }
 
+    @Override
     public RerePlot bar(IVector x) {
         return barInternal(x, null, null, null);
     }
 
+    @Override
+    public IPlot bar(List<String> xticks, IVector y) {
+        return barInternalWithLabels(y, null, xticks, null);
+    }
+
+    @Override
+    public IPlot bar(List<String> xticks, IVector x, List<String> hue) {
+        return barInternalWithLabels(x, null, xticks, hue);
+    }
+
+    
     /**
      * 创建柱状图（支持样式字符串）
      *
@@ -678,6 +693,32 @@ public class RerePlot implements Serializable, IPlot {
     }
 
     /**
+     * 统一的带标签柱状图内部实现
+     *
+     * @param x 数据向量
+     * @param style 个体样式
+     * @param xticks X轴标签
+     * @param hue 颜色分组
+     * @return 当前实例
+     */
+    private RerePlot barInternalWithLabels(IVector x, PlotStyle style, List<String> xticks, List<String> hue) {
+        try {
+            // 创建柱状图
+            Bar barChart = new Bar();
+
+            // 处理分组情况
+            if (hue != null) {
+                return createGroupedBarChartWithLabels(barChart, x, style, xticks, hue, null);
+            } else {
+                return createSingleBarChartWithLabels(barChart, x, style, xticks);
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("创建柱状图失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * 统一的柱状图内部实现
      *
      * @param x 数据向量
@@ -707,10 +748,10 @@ public class RerePlot implements Serializable, IPlot {
      * 创建单组柱状图
      */
     private RerePlot createSingleBarChart(Bar barChart, IVector x, PlotStyle style) {
-        // 设置数据
+        // 设置数据 - 只包含Y值
         Object[] data = new Object[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            data[i] = new Object[]{"类别" + (i + 1), x.get(i)};
+            data[i] = x.get(i);
         }
 
         BarSeries barSeries = new BarSeries();
@@ -732,7 +773,8 @@ public class RerePlot implements Serializable, IPlot {
         CategoryAxis xAxis = new CategoryAxis();
         String[] categories = new String[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            categories[i] = "类别" + (i + 1);
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size()) ? 
+                xticks.getTickLabels().get(i) : "类别" + (i + 1);
         }
         xAxis.setData(categories);
 
@@ -768,10 +810,10 @@ public class RerePlot implements Serializable, IPlot {
         for (SeabornStyleMapper.GroupedData group : groups.values()) {
             BarSeries barSeries = new BarSeries();
 
-            // 转换数据格式
+            // 转换数据格式 - 只包含Y值
             Object[] data = new Object[group.getData().length];
             for (int i = 0; i < group.getData().length; i++) {
-                data[i] = new Object[]{"类别" + (i + 1), group.getData()[i]};
+                data[i] = group.getData()[i];
             }
             barSeries.setData(data);
 
@@ -795,9 +837,133 @@ public class RerePlot implements Serializable, IPlot {
         CategoryAxis xAxis = new CategoryAxis();
         String[] categories = new String[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            categories[i] = "类别" + (i + 1);
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size()) ? 
+                xticks.getTickLabels().get(i) : "类别" + (i + 1);
         }
         xAxis.setData(categories);
+
+        ValueAxis yAxis = new ValueAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    /**
+     * 创建带标签的单组柱状图
+     */
+    private RerePlot createSingleBarChartWithLabels(Bar barChart, IVector x, PlotStyle style, List<String> xticks) {
+        // 设置数据 - 只包含Y值
+        Object[] data = new Object[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            data[i] = x.get(i);
+        }
+
+        BarSeries barSeries = new BarSeries();
+        barSeries.setData(data);
+
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style
+                : (useStyleSystem ? defaultStyle : null);
+
+        if (effectiveStyle != null && useStyleSystem) {
+            UniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+        } else {
+            barSeries.setName("柱状图数据");
+        }
+
+        barChart.addSeries(barSeries);
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = (xticks != null && i < xticks.size()) ? xticks.get(i) : "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+
+        ValueAxis yAxis = new ValueAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    /**
+     * 创建带标签的分组柱状图
+     */
+    private RerePlot createGroupedBarChartWithLabels(Bar barChart, IVector x, PlotStyle baseStyle,
+            List<String> xticks, List<String> hue, List<String> styleGroup) {
+        if (x.length() != hue.size()) {
+            throw new PlotException("X向量和hue列表长度必须相等");
+        }
+
+        // Group the data by hue values
+        Map<String, List<Double>> groupedData = new LinkedHashMap<>();
+        Map<String, List<Integer>> groupedIndices = new LinkedHashMap<>();
+        
+        // Initialize groups
+        Set<String> uniqueHues = new LinkedHashSet<>(hue);
+        for (String group : uniqueHues) {
+            groupedData.put(group, new ArrayList<>());
+            groupedIndices.put(group, new ArrayList<>());
+        }
+        
+        // Group the data and keep track of indices
+        for (int i = 0; i < x.length(); i++) {
+            String group = hue.get(i);
+            groupedData.get(group).add((double)x.get(i));
+            groupedIndices.get(group).add(i);
+        }
+        
+        // For bar charts, we need to create series data aligned with the x-axis labels
+        // Each series needs to have the same length as the number of x-axis labels
+        List<String> allLabels = xticks;
+        
+        // Create series for each group
+        for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
+            String groupName = entry.getKey();
+            List<Double> values = entry.getValue();
+            List<Integer> indices = groupedIndices.get(groupName);
+            
+            BarSeries barSeries = new BarSeries();
+            barSeries.setName(groupName);
+            
+            // Create data array with nulls for missing values
+            Object[] seriesData = new Object[allLabels.size()];
+            for (int i = 0; i < allLabels.size(); i++) {
+                seriesData[i] = null; // Default to null
+            }
+            
+            // Fill in the actual values
+            for (int i = 0; i < indices.size(); i++) {
+                int index = indices.get(i);
+                if (index < seriesData.length) {
+                    seriesData[index] = values.get(i);
+                }
+            }
+            
+            barSeries.setData(seriesData);
+
+            // Apply style
+            if (baseStyle != null && useStyleSystem) {
+                UniversalStyleApplier.applyToBarSeries(barSeries, baseStyle);
+            }
+
+            barChart.addSeries(barSeries);
+        }
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setData(allLabels.toArray(new String[0]));
 
         ValueAxis yAxis = new ValueAxis();
         configureCategoryAxes(xAxis, yAxis);
@@ -2160,14 +2326,23 @@ public class RerePlot implements Serializable, IPlot {
 
     private IPlot violinplotInternal(IVector data, PlotStyle style, List<String> labels) {
         try {
-            if (labels != null && data.length() != labels.size()) {
+            // Handle single group case (no labels provided)
+            if (labels == null || labels.isEmpty()) {
+                // Create a single group with all data
+                labels = new ArrayList<>();
+                for (int i = 0; i < data.length(); i++) {
+                    labels.add("数据集");
+                }
+            }
+            
+            if (data.length() != labels.size()) {
                 throw new PlotException("数据向量和标签列表长度必须相等");
             }
 
-            // 使用Line图表来模拟小提琴图
+            // Use Line chart to simulate violin plot
             Line lineChart = new Line();
 
-            // 按标签分组数据
+            // Group data by labels
             Map<String, List<Double>> groupedData = new HashMap<>();
             for (int i = 0; i < data.length(); i++) {
                 String label = labels.get(i);
@@ -2177,7 +2352,7 @@ public class RerePlot implements Serializable, IPlot {
                 groupedData.get(label).add((double) data.get(i));
             }
 
-            // 为每个组计算核密度估计并添加密度曲线
+            // Create density curves for each group
             String[] colors = {"#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"};
             int colorIndex = 0;
 
@@ -2185,26 +2360,26 @@ public class RerePlot implements Serializable, IPlot {
                 String groupName = entry.getKey();
                 List<Double> groupData = entry.getValue();
 
-                // 转换为IVector格式进行计算
+                // Convert to IVector format for calculation
                 double[] groupArray = new double[groupData.size()];
                 for (int i = 0; i < groupData.size(); i++) {
                     groupArray[i] = groupData.get(i);
                 }
                 IVector groupVector = new com.reremouse.lab.math.linalg.RereDoubleVector(groupArray);
 
-                // 计算核密度估计
+                // Calculate kernel density estimation
                 List<double[]> kdeData = kernelDensityEstimation(groupVector, 2.5);
 
-                // 添加小提琴密度曲线（左右对称）
+                // Add violin density curves (left and right symmetric)
                 String color = colors[colorIndex % colors.length];
                 addViolinDensitySeries(lineChart, kdeData, groupName, color);
 
-                // 添加箱线图数据（多组模式）
+                // Add boxplot data (multi-group mode)
                 addBoxplotToViolin(lineChart, groupVector, groupName + "_箱线", color, true);
                 colorIndex++;
             }
 
-            // 配置坐标轴 - 显示坐标轴作为边框
+            // Configure axes - show axes as borders
             ValueAxis xAxis = new ValueAxis();
             xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
             xAxis.setType("value");
@@ -2221,9 +2396,9 @@ public class RerePlot implements Serializable, IPlot {
 
             this.option = lineChart.getOption();
             this.option.setTitle(title);
-            // 设置legend只显示主要系列，过滤掉箱线图的详细部分
+            // Set legend to only show main series, filter out detailed boxplot parts
             Legend filteredLegend = new Legend();
-            // 只显示每个组的主要系列名称
+            // Only show main series names for each group
             Set<String> groupNames = new HashSet<>();
             for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
                 groupNames.add(entry.getKey());
@@ -2235,7 +2410,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setYAxis(yAxis);
 
         } catch (Exception e) {
-            throw new PlotException("创建多组小提琴图失败: " + e.getMessage(), e);
+            throw new PlotException("创建小提琴图失败: " + e.getMessage(), e);
         }
         return this;
     }
@@ -3103,6 +3278,13 @@ public class RerePlot implements Serializable, IPlot {
         double min = (double) data.min();
         double max = (double) data.max();
         double range = max - min;
+        
+        // Handle edge case where all values are the same
+        if (range == 0) {
+            points.add(new double[]{min, 1.0});
+            return points;
+        }
+        
         double step = range / 100.0;
 
         for (double x = min - range * 0.2; x <= max + range * 0.2; x += step) {

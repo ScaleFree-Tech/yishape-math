@@ -95,7 +95,7 @@ public class RerePlotDemo {
         plot7.setXlabel("类别");
         plot7.setYlabel("数值");
         List<String> barHue = Arrays.asList("组A", "组B", "组A", "组B", "组A");
-        plot7.bar(pieVector, barHue);
+        plot7.bar(barHue,pieVector);
         plot7.saveAsHtml("grouped_bar_chart.html");
         System.out.println("   分组柱状图已保存为 grouped_bar_chart.html\n");
         

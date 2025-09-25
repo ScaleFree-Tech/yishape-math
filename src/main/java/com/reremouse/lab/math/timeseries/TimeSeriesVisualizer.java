@@ -322,7 +322,7 @@ public class TimeSeriesVisualizer {
             labels.add(name);
         }
         
-        plot.bar(statValuesVector, labels);
+        plot.bar(labels,statValuesVector);
         
         return plot;
     }
@@ -404,7 +404,7 @@ public class TimeSeriesVisualizer {
             labels.add(name);
         }
         
-        plot.bar(featureValuesVector, labels);
+        plot.bar(labels,featureValuesVector);
         
         return plot;
     }

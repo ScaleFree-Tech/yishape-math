@@ -63,10 +63,13 @@ public interface IPlot {
     
     /**
      * 绘制分组柱状图
-     * @param x 数据向量
-     * @param hue 分组标签
+     * @param xticks 分组标签
+     * @param y 数据向量
      */
-    IPlot bar(IVector x, List<String> hue);
+    IPlot bar(List<String> xticks, IVector y);
+    
+    
+    IPlot bar(List<String> xticks, IVector x, List<String> hue);
     
     /**
      * 绘制直方图

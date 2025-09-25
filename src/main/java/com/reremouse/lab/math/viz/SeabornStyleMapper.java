@@ -234,8 +234,15 @@ public class SeabornStyleMapper implements Serializable {
      */
     public Map<String, GroupedData> groupData(IVector x, IVector y, List<String> hue, 
                                             GroupStyleMapping mapping) {
-        if (x.length() != y.length() || (hue != null && x.length() != hue.size())) {
-            throw new IllegalArgumentException("数据长度不匹配");
+        // Handle the case where y is null (e.g., for bar charts)
+        if (y == null) {
+            if (hue != null && x.length() != hue.size()) {
+                throw new IllegalArgumentException("数据长度不匹配");
+            }
+        } else {
+            if (x.length() != y.length() || (hue != null && x.length() != hue.size())) {
+                throw new IllegalArgumentException("数据长度不匹配");
+            }
         }
         
         Map<String, GroupedData> groups = new HashMap<>();
@@ -249,7 +256,9 @@ public class SeabornStyleMapper implements Serializable {
                 groups.put(groupKey, new GroupedData(groupKey, style));
             }
             
-            groups.get(groupKey).addPoint((double)x.get(i), (double)y.get(i));
+            // Handle the case where y is null (e.g., for bar charts)
+            double yValue = (y != null) ? (double)y.get(i) : 0.0;
+            groups.get(groupKey).addPoint((double)x.get(i), yValue);
         }
         
         return groups;

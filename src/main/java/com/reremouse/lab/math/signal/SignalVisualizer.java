@@ -249,7 +249,7 @@ public class SignalVisualizer {
             labels.add(name);
         }
         
-        plot.bar(values, labels);
+        plot.bar(labels,values);
         
         return plot;
     }
@@ -327,7 +327,7 @@ public class SignalVisualizer {
             labels.add(name);
         }
         
-        plot.bar(values, labels);
+        plot.bar(labels,values);
         
         return plot;
     }
