@@ -573,8 +573,8 @@ src/main/java/com/reremouse/lab/
 │   │   └── ReverbEffect.java           # 混响效果 / Reverb Effect
 │   ├── embedding/            # 音频嵌入 / Audio Embedding
 │   │   ├── IAudioEmbedding.java        # 音频嵌入接口 / Audio Embedding Interface
-│   │   ├── IVectorEmbedding.java       # 向量嵌入接口 / Vector Embedding Interface
-│   │   └── OnlineIVectorEmbedding.java # 在线i向量嵌入 / Online I-Vector Embedding
+│   │   ├── IVectorEmbedding.java       # i-Vector语音向量嵌入 / i-Vector Audio Embedding
+│   │   └── OnlineIVectorEmbedding.java # i-Vector语音向量嵌入 / Online i-Vector Audio Embedding
 │   ├── enhancement/          # 音频增强 / Audio Enhancement
 │   │   ├── AbstractAudioEnhancer.java  # 抽象音频增强器 / Abstract Audio Enhancer
 │   │   ├── CompressorEnhancer.java     # 压缩器增强 / Compressor Enhancer
