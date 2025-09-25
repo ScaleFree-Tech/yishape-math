@@ -276,7 +276,7 @@ import java.util.List;
 IVectorEmbedding ivectorEmbedder = new IVectorEmbedding(64); // 64维i-vector
 
 // 准备训练数据 / Prepare training data
-List<IMatrix<Double>> trainingData = // MFCC特征矩阵列表 / List of MFCC feature matrices
+List<IMatrix<Double>> trainingData = mfccList; // MFCC特征矩阵列表 / List of MFCC feature matrices
 
 // 训练i-vector模型 / Train i-vector model
 ivectorEmbedder.train(trainingData);
@@ -299,9 +299,10 @@ import com.reremouse.lab.math.linalg.IMatrix;
 OnlineIVectorEmbedding onlineEmbedder = new OnlineIVectorEmbedding(64);
 
 // 逐批次进行增量训练 / Perform incremental training batch by batch
-for (IMatrix<Double> mfccBatch : mfccBatches) {
+for ( var filePath: paths) {
+    IMatrix<Double> mfcc = Audios.readFile(filePath);
     // 使用小批量MFCC样本进行增量训练 / Incremental training with small batch of MFCC samples
-    onlineEmbedder.trainIncrementalBatch(mfccBatch);
+    onlineEmbedder.trainIncremental(mfcc);
 }
 
 // 提取音频嵌入向量 / Extract audio embedding vectors
