@@ -406,13 +406,17 @@ public class LagrangeMultiplierExample {
     public static void main(String[] args) {
         System.out.println("=== 拉格朗日乘数法约束优化示例 / Lagrange Multiplier Constrained Optimization Example ===");
         
-        // 创建拉格朗日乘数求解器 / Create Lagrange multiplier solver
-        LagrangeMultiplierSolver solver = new LagrangeMultiplierSolver();
+        // 定义等式约束：x1 + x2 = 1 / Define equality constraint: x1 + x2 = 1
+        IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+        IVector b_eq = Linalg.vector(new double[]{1.0});
         
-        // 设置参数 / Set parameters
+        // 创建拉格朗日乘数求解器 / Create Lagrange multiplier solver
+        LagrangeMultiplierSolver solver = new LagrangeMultiplierSolver(A_eq, b_eq);
+        
+        // 可选：设置参数 / Optional: Set parameters
         solver.setPenaltyFactor(1000.0);      // 惩罚因子 / Penalty factor
-        solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
-        solver.setTolerance(1e-6);            // 收敛容差 / Convergence tolerance
+        solver.setMaxPenaltyIterations(100);  // 最大惩罚迭代次数 / Maximum penalty iterations
+        solver.setPenaltyIncreaseRate(10.0);  // 惩罚增长率 / Penalty increase rate
         
         // 定义目标函数：最小化 x1² + x2² / Define objective function: minimize x1² + x2²
         IObjectiveFunction objFun = new IObjectiveFunction() {
@@ -434,10 +438,6 @@ public class LagrangeMultiplierExample {
             }
         };
         
-        // 定义等式约束：x1 + x2 = 1 / Define equality constraint: x1 + x2 = 1
-        IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
-        IVector b = Linalg.vector(new double[]{1.0});
-        
         // 初始点 / Initial point
         IVector initX = Linalg.vector(new double[]{0.5, 0.5});
         
@@ -449,7 +449,7 @@ public class LagrangeMultiplierExample {
         // 执行约束优化 / Execute constrained optimization
         System.out.println("\n开始约束优化... / Starting constrained optimization...");
         
-        Tuple2<Double, IVector> result = solver.solve(initX, objFun, grdFun, A, b);
+        Tuple2<Double, IVector> result = solver.optimize(initX, objFun, grdFun);
         
         double optimalValue = result._1;
         IVector optimalPoint = result._2;
@@ -488,16 +488,12 @@ public class SimplexLinProgExample {
         // 创建单纯形法求解器 / Create simplex solver
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
-        // 设置参数 / Set parameters
-        solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
-        solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
-        
         // 定义线性规划问题 / Define linear programming problem
         // minimize 2x1 + 3x2
         // subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
         IVector c = Linalg.vector(new double[]{2.0, 3.0});
-        IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
-        IVector b = Linalg.vector(new double[]{5.0});
+        IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+        IVector b_eq = Linalg.vector(new double[]{5.0});
         
         System.out.println("线性规划问题:");
         System.out.println("minimize 2x1 + 3x2");
@@ -506,11 +502,14 @@ public class SimplexLinProgExample {
         // 求解 / Solve
         System.out.println("\n开始单纯形法求解... / Starting simplex method solving...");
         
-        IVector solution = solver.solve(c, A, b);
+        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        
+        double optimalValue = result._1;
+        IVector solution = result._2;
         
         System.out.println("\n单纯形法求解完成! / Simplex method solving completed!");
         System.out.println("最优解: " + solution);
-        System.out.println("最优值: " + c.innerProduct(solution));
+        System.out.println("最优值: " + optimalValue);
         System.out.println("理论最优解: [5.0, 0.0] / Theoretical optimal solution: [5.0, 0.0]");
         System.out.println("理论最优值: 10.0 / Theoretical optimal value: 10.0");
         
@@ -537,40 +536,386 @@ public class InteriorPointLinProgExample {
         // 创建内点法求解器 / Create interior point solver
         InteriorPointLinProgSolver solver = new InteriorPointLinProgSolver();
         
-        // 设置参数 / Set parameters
-        solver.setMaxIterations(100);         // 最大迭代次数 / Maximum iterations
-        solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
-        solver.setBarrierParameter(0.1);      // 障碍参数 / Barrier parameter
-        
         // 定义线性规划问题 / Define linear programming problem
-        // maximize x1 + 2x2 (转换为 minimize -x1 - 2x2)
-        // subject to x1 + x2 ≤ 3, 2x1 + x2 ≤ 4, x1 ≥ 0, x2 ≥ 0
-        IVector c = Linalg.vector(new double[]{-1.0, -2.0});  // 目标函数系数 / Objective coefficients
-        IMatrix A_ub = Linalg.matrix(new double[][]{{1.0, 1.0}, {2.0, 1.0}});  // 不等式约束矩阵 / Inequality constraint matrix
-        IVector b_ub = Linalg.vector(new double[]{3.0, 4.0});  // 不等式约束右端 / Inequality constraint RHS
+        // 将不等式约束转换为等式约束形式
+        // minimize 2x1 + 3x2
+        // subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
+        IVector c = Linalg.vector(new double[]{2.0, 3.0});
+        IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+        IVector b_eq = Linalg.vector(new double[]{5.0});
         
         System.out.println("线性规划问题:");
-        System.out.println("maximize x1 + 2x2");
-        System.out.println("subject to x1 + x2 ≤ 3, 2x1 + x2 ≤ 4, x1 ≥ 0, x2 ≥ 0");
+        System.out.println("minimize 2x1 + 3x2");
+        System.out.println("subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0");
         
         // 求解 / Solve
         System.out.println("\n开始内点法求解... / Starting interior point method solving...");
         
-        IVector solution = solver.solve(c, A_ub, b_ub, null, null);
+        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        
+        double optimalValue = result._1;
+        IVector solution = result._2;
         
         System.out.println("\n内点法求解完成! / Interior point method solving completed!");
         System.out.println("最优解: " + solution);
-        System.out.println("最优值: " + (-c.innerProduct(solution)));  // 注意符号转换 / Note sign conversion
-        System.out.println("理论最优解: [1.0, 2.0] / Theoretical optimal solution: [1.0, 2.0]");
-        System.out.println("理论最优值: 5.0 / Theoretical optimal value: 5.0");
+        System.out.println("最优值: " + optimalValue);
+        System.out.println("理论最优解: [5.0, 0.0] / Theoretical optimal solution: [5.0, 0.0]");
+        System.out.println("理论最优值: 10.0 / Theoretical optimal value: 10.0");
         
         // 验证约束满足情况 / Verify constraint satisfaction
-        double constraint1 = solution.get(0).doubleValue() + solution.get(1).doubleValue();
-        double constraint2 = 2 * solution.get(0).doubleValue() + solution.get(1).doubleValue();
+        double constraint = solution.get(0).doubleValue() + solution.get(1).doubleValue();
         System.out.println("约束验证:");
-        System.out.println("  x1 + x2 = " + constraint1 + " ≤ 3");
-        System.out.println("  2x1 + x2 = " + constraint2 + " ≤ 4");
+        System.out.println("  x1 + x2 = " + constraint + " (应等于 5.0)");
         System.out.println("  x1 = " + solution.get(0) + " ≥ 0, x2 = " + solution.get(1) + " ≥ 0");
+    }
+}
+```
+
+### 整数规划示例 / Integer Programming Examples
+
+#### 纯整数规划示例 / Pure Integer Programming Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
+import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
+import com.reremouse.lab.util.Tuple2;
+
+public class PureIntegerProgrammingExample {
+    public static void main(String[] args) {
+        // 问题描述 / Problem Description:
+        // 最大化 / Maximize: 3x1 + 2x2
+        // 约束条件 / Subject to:
+        //   x1 + x2 ≤ 4
+        //   2x1 + x2 ≤ 6
+        //   x1, x2 ≥ 0 且为整数 / x1, x2 ≥ 0 and integers
+        
+        // 构造目标函数 / Construct objective function
+        IVector c = Linalg.vector(3.0, 2.0);
+        
+        // 构造约束矩阵 / Construct constraint matrix
+        IMatrix A_ub = Linalg.matrix(new double[][]{
+            {1.0, 1.0},  // x1 + x2 ≤ 4
+            {2.0, 1.0}   // 2x1 + x2 ≤ 6
+        });
+        
+        // 构造约束右端向量 / Construct constraint right-hand side
+        IVector b = Linalg.vector(4.0, 6.0);
+        
+        // 创建整数规划求解器 / Create integer programming solver
+        RereIntegerProg solver = new RereIntegerProg(new SimplexLinProgSolver());
+        
+        // 设置所有变量为整数变量 / Set all variables as integer variables
+        solver.setAllVariablesInteger(2);
+        
+        // 设置算法参数 / Set algorithm parameters
+        solver.setMaxDepth(20);
+        solver.setGapTolerance(1e-6);
+        solver.setTolerance(1e-9);
+        
+        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
+        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        IVector solution = result.getSecond();
+        double optimalValue = result.getFirst();
+        
+        // 输出结果 / Output results
+        System.out.println("=== 纯整数规划示例 / Pure Integer Programming Example ===");
+        System.out.println("最优解 / Optimal solution: " + solution);
+        System.out.println("最优值 / Optimal value: " + optimalValue);
+        System.out.println("理论最优解 / Theoretical optimal solution: [2.0, 2.0]");
+        System.out.println("理论最优值 / Theoretical optimal value: 10.0");
+        
+        // 验证整数约束 / Verify integer constraints
+        System.out.println("\n约束验证 / Constraint verification:");
+        for (int i = 0; i < solution.size(); i++) {
+            double value = solution.get(i).doubleValue();
+            System.out.println("  x" + (i+1) + " = " + value + " (整数: " + (Math.abs(value - Math.round(value)) < 1e-9) + ")");
+        }
+        
+        // 验证线性约束 / Verify linear constraints
+        IVector Ax = A.multiply(solution);
+        System.out.println("\n线性约束验证 / Linear constraint verification:");
+        for (int i = 0; i < Ax.size(); i++) {
+            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b.get(i) + " (" + (Ax.get(i).doubleValue() <= b.get(i).doubleValue() + 1e-9) + ")");
+        }
+    }
+}
+```
+
+#### 混合整数规划示例 / Mixed Integer Programming Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
+import com.reremouse.lab.math.optimize.linpg.InteriorPointLinProgSolver;
+import com.reremouse.lab.util.Tuple2;
+
+public class MixedIntegerProgrammingExample {
+    public static void main(String[] args) {
+        // 问题描述 / Problem Description:
+        // 最大化 / Maximize: 4x1 + 3x2 + 2x3
+        // 约束条件 / Subject to:
+        //   2x1 + x2 + x3 ≤ 8
+        //   x1 + 2x2 + x3 ≤ 7
+        //   x1, x2 ≥ 0 且为整数 / x1, x2 ≥ 0 and integers
+        //   x3 ≥ 0 (连续变量 / continuous variable)
+        
+        // 构造目标函数 / Construct objective function
+        IVector c = Linalg.vector(4.0, 3.0, 2.0);
+        
+        // 构造约束矩阵 / Construct constraint matrix
+        IMatrix A_ub = Linalg.matrix(new double[][]{
+            {2.0, 1.0, 1.0},  // 2x1 + x2 + x3 ≤ 8
+            {1.0, 2.0, 1.0}   // x1 + 2x2 + x3 ≤ 7
+        });
+        
+        // 构造约束右端向量 / Construct constraint right-hand side
+        IVector b_ub = Linalg.vector(8.0, 7.0);
+        
+        // 创建整数规划求解器（使用内点法作为基础求解器）
+        // Create integer programming solver (using interior-point method as base solver)
+        RereIntegerProg solver = new RereIntegerProg(new InteriorPointLinProgSolver());
+        
+        // 只设置前两个变量为整数变量，第三个变量为连续变量
+        // Set only the first two variables as integer variables, the third as continuous
+        solver.addIntegerVariables(0, 1);
+        
+        // 设置算法参数 / Set algorithm parameters
+        solver.setMaxDepth(25);
+        solver.setGapTolerance(1e-8);
+        solver.setTolerance(1e-10);
+        
+        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
+        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        IVector solution = result.getSecond();
+        double optimalValue = result.getFirst();
+        
+        // 输出结果 / Output results
+        System.out.println("=== 混合整数规划示例 / Mixed Integer Programming Example ===");
+        System.out.println("最优解 / Optimal solution: " + solution);
+        System.out.println("最优值 / Optimal value: " + optimalValue);
+        
+        // 验证变量类型 / Verify variable types
+        System.out.println("\n变量类型验证 / Variable type verification:");
+        System.out.println("  x1 = " + solution.get(0) + " (整数变量 / Integer variable)");
+        System.out.println("  x2 = " + solution.get(1) + " (整数变量 / Integer variable)");
+        System.out.println("  x3 = " + solution.get(2) + " (连续变量 / Continuous variable)");
+        
+        // 验证整数约束 / Verify integer constraints
+        System.out.println("\n整数约束验证 / Integer constraint verification:");
+        for (int i = 0; i < 2; i++) {  // 只检查前两个变量 / Only check first two variables
+            double value = solution.get(i).doubleValue();
+            boolean isInteger = Math.abs(value - Math.round(value)) < 1e-9;
+            System.out.println("  x" + (i+1) + " 是整数: " + isInteger);
+        }
+        
+        // 验证线性约束 / Verify linear constraints
+        IVector Ax = A.multiply(solution);
+        System.out.println("\n线性约束验证 / Linear constraint verification:");
+        for (int i = 0; i < Ax.size(); i++) {
+            boolean satisfied = Ax.get(i).doubleValue() <= b.get(i).doubleValue() + 1e-9;
+            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b.get(i) + " (" + satisfied + ")");
+        }
+    }
+}
+```
+
+#### 复杂整数规划示例 / Complex Integer Programming Example
+
+**0-1整数规划说明 / 0-1 Integer Programming Notes:**
+- 0-1整数规划要求变量只能取0或1的值
+- 需要同时设置整数约束和上界约束
+- 使用 `addIntegerVariables()` 设置整数变量
+- 使用不等式约束 `A_ub` 和 `b_ub` 设置上界约束 (x_i ≤ 1)
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
+import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
+import com.reremouse.lab.util.Tuple2;
+
+public class ComplexIntegerProgrammingExample {
+    public static void main(String[] args) {
+        // 背包问题示例（0-1整数规划）/ Knapsack Problem Example (0-1 Integer Programming)
+        // 物品价值 / Item values: [10, 40, 30, 50]
+        // 物品重量 / Item weights: [5, 4, 6, 3]
+        // 背包容量 / Knapsack capacity: 10
+        // 目标：最大化价值 / Objective: Maximize value
+        
+        // 构造目标函数（最大化价值）/ Construct objective function (maximize value)
+        IVector c = Linalg.vector(10.0, 40.0, 30.0, 50.0);
+        
+        // 构造约束矩阵（重量约束）/ Construct constraint matrix (weight constraint)
+        IMatrix A = Linalg.matrix(new double[][]{
+            {5.0, 4.0, 6.0, 3.0}  // 重量约束 / Weight constraint
+        });
+        
+        // 构造约束右端向量（背包容量）/ Construct constraint right-hand side (knapsack capacity)
+        IVector b = Linalg.vector(10.0);
+        
+        // 创建整数规划求解器 / Create integer programming solver
+        RereIntegerProg solver = new RereIntegerProg(new SimplexLinProgSolver());
+        
+        // 设置所有变量为整数变量 / Set all variables as integer variables
+        solver.addIntegerVariables(0, 1, 2, 3);
+        
+        // 添加0-1约束：每个变量的上界为1 / Add 0-1 constraints: upper bound of 1 for each variable
+        // 构造上界约束矩阵：x_i <= 1 for i = 0,1,2,3
+        IMatrix A_ub = Linalg.matrix(new double[][]{
+            {1.0, 0.0, 0.0, 0.0},  // x1 <= 1
+            {0.0, 1.0, 0.0, 0.0},  // x2 <= 1
+            {0.0, 0.0, 1.0, 0.0},  // x3 <= 1
+            {0.0, 0.0, 0.0, 1.0}   // x4 <= 1
+        });
+        IVector b_ub = Linalg.vector(1.0, 1.0, 1.0, 1.0);
+        
+        // 设置算法参数（背包问题可能需要更多节点）
+        // Set algorithm parameters (knapsack problem may need more nodes)
+        solver.setMaxDepth(30);
+        solver.setGapTolerance(1e-6);
+        solver.setTolerance(1e-9);
+        
+        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
+        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, A, b);
+        IVector solution = result.getSecond();
+        double optimalValue = result.getFirst();
+        
+        // 输出结果 / Output results
+        System.out.println("=== 复杂整数规划示例（背包问题）/ Complex Integer Programming Example (Knapsack Problem) ===");
+        System.out.println("最优解 / Optimal solution: " + solution);
+        System.out.println("最优价值 / Optimal value: " + optimalValue);
+        
+        // 分析解的含义 / Analyze solution meaning
+        System.out.println("\n解的分析 / Solution analysis:");
+        String[] items = {"物品1", "物品2", "物品3", "物品4"};
+        double[] values = {10.0, 40.0, 30.0, 50.0};
+        double[] weights = {5.0, 4.0, 6.0, 3.0};
+        
+        double totalWeight = 0;
+        double totalValue = 0;
+        
+        for (int i = 0; i < solution.size(); i++) {
+            int selected = (int) Math.round(solution.get(i).doubleValue());
+            if (selected == 1) {
+                System.out.println("  选择 " + items[i] + " (价值: " + values[i] + ", 重量: " + weights[i] + ")");
+                totalWeight += weights[i];
+                totalValue += values[i];
+            }
+        }
+        
+        System.out.println("\n总重量 / Total weight: " + totalWeight + " ≤ " + b.get(0));
+        System.out.println("总价值 / Total value: " + totalValue);
+        
+        // 验证约束 / Verify constraints
+        IVector Ax = A.multiply(solution);
+        boolean feasible = Ax.get(0).doubleValue() <= b.get(0).doubleValue() + 1e-9;
+        System.out.println("约束满足 / Constraint satisfied: " + feasible);
+        
+        // 验证0-1约束 / Verify 0-1 constraints
+        System.out.println("\n0-1约束验证 / 0-1 constraint verification:");
+        boolean allBinary = true;
+        for (int i = 0; i < solution.size(); i++) {
+            double value = solution.get(i).doubleValue();
+            boolean isBinary = Math.abs(value) < 1e-9 || Math.abs(value - 1.0) < 1e-9;
+            allBinary &= isBinary;
+            System.out.println("  x" + (i+1) + " = " + value + " (0-1变量: " + isBinary + ")");
+        }
+        System.out.println("所有变量都是0-1变量 / All variables are 0-1: " + allBinary);
+    }
+}
+```
+
+#### 求解器性能比较示例 / Solver Performance Comparison Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
+import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
+import com.reremouse.lab.math.optimize.linpg.InteriorPointLinProgSolver;
+import com.reremouse.lab.util.Tuple2;
+
+public class SolverPerformanceComparisonExample {
+    public static void main(String[] args) {
+        // 定义测试问题 / Define test problem
+        IVector c = Linalg.vector(5.0, 3.0, 4.0, 2.0);
+        IMatrix A = Linalg.matrix(new double[][]{
+            {2.0, 1.0, 1.0, 3.0},
+            {1.0, 3.0, 2.0, 1.0},
+            {3.0, 1.0, 2.0, 2.0}
+        });
+        IVector b = Linalg.vector(12.0, 11.0, 15.0);
+        int[] integerVars = {0, 1, 2, 3};
+        
+        System.out.println("=== 求解器性能比较示例 / Solver Performance Comparison Example ===");
+        
+        // 测试单纯形法作为基础求解器 / Test Simplex method as base solver
+        testSolver("单纯形法 / Simplex Method", 
+                  new RereIntegerProg(new SimplexLinProgSolver()), 
+                  c, A, b, integerVars);
+        
+        System.out.println();
+        
+        // 测试内点法作为基础求解器 / Test Interior-point method as base solver
+        testSolver("内点法 / Interior-Point Method", 
+                  new RereIntegerProg(new InteriorPointLinProgSolver()), 
+                  c, A, b, integerVars);
+    }
+    
+    private static void testSolver(String solverName, RereIntegerProg solver, 
+                                 IVector c, IMatrix A, IVector b, int[] integerVars) {
+        System.out.println("--- " + solverName + " ---");
+        
+        // 设置整数变量 / Set integer variables
+        solver.addIntegerVariables(integerVars);
+        
+        // 设置算法参数 / Set algorithm parameters
+        solver.setMaxDepth(25);
+        solver.setGapTolerance(1e-6);
+        solver.setTolerance(1e-9);
+        
+        // 记录开始时间 / Record start time
+        long startTime = System.nanoTime();
+        
+        try {
+            // 求解 / Solve
+            Tuple2<Double, IVector> result = solver.solve(c, A, b);
+            IVector solution = result.getSecond();
+            double optimalValue = result.getFirst();
+            
+            // 记录结束时间 / Record end time
+            long endTime = System.nanoTime();
+            double elapsedTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
+            
+            // 输出结果 / Output results
+            System.out.println("求解时间 / Solving time: " + String.format("%.2f", elapsedTime) + " ms");
+            System.out.println("最优解 / Optimal solution: " + solution);
+            System.out.println("最优值 / Optimal value: " + optimalValue);
+            
+            // 验证解的质量 / Verify solution quality
+            boolean isInteger = true;
+            for (int i : integerVars) {
+                double value = solution.get(i).doubleValue();
+                if (Math.abs(value - Math.round(value)) > 1e-9) {
+                    isInteger = false;
+                    break;
+                }
+            }
+            System.out.println("整数约束满足 / Integer constraints satisfied: " + isInteger);
+            
+        } catch (Exception e) {
+            long endTime = System.nanoTime();
+            double elapsedTime = (endTime - startTime) / 1_000_000.0;
+            System.out.println("求解失败 / Solving failed: " + e.getMessage());
+            System.out.println("失败时间 / Failure time: " + String.format("%.2f", elapsedTime) + " ms");
+        }
     }
 }
 ```
@@ -593,10 +938,10 @@ public class ConjugateGradientExample {
         // 创建共轭梯度优化器 / Create conjugate gradient optimizer
         RereConjugateGradient optimizer = new RereConjugateGradient();
         
-        // 设置参数 / Set parameters
-        optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
-        optimizer.setTolerance(1e-8);         // 收敛容差 / Convergence tolerance
-        optimizer.setRestartFrequency(50);    // 重启频率 / Restart frequency
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+        // optimizer.setTolerance(1e-8);         // 收敛容差 / Convergence tolerance
+        // optimizer.setRestartThreshold(0.5);   // 重启阈值 / Restart threshold
         
         // 定义正定矩阵A / Define positive definite matrix A
         IMatrix A = Linalg.matrix(new double[][]{
@@ -677,9 +1022,9 @@ public class DFPExample {
         // 创建DFP优化器 / Create DFP optimizer
         RereDFP optimizer = new RereDFP();
         
-        // 设置参数 / Set parameters
-        optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
-        optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+        // optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
         
         // 定义Rosenbrock函数 / Define Rosenbrock function
         IObjectiveFunction objFun = new IObjectiveFunction() {
@@ -751,10 +1096,10 @@ public class SteepestDescentExample {
         // 创建最速下降优化器 / Create steepest descent optimizer
         RereSteepestDescent optimizer = new RereSteepestDescent();
         
-        // 设置参数 / Set parameters
-        optimizer.setMaxIterations(10000);    // 最大迭代次数 / Maximum iterations
-        optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
-        optimizer.setStepSize(0.01);          // 步长 / Step size
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(10000);    // 最大迭代次数 / Maximum iterations
+        // optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+        // optimizer.setInitialStepSize(0.01);   // 初始步长 / Initial step size
         
         // 定义二次函数 / Define quadratic function
         IObjectiveFunction objFun = new IObjectiveFunction() {
@@ -816,7 +1161,7 @@ public class SteepestDescentExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -827,8 +1172,9 @@ public class MultiObjectiveOptimizationExample {
         
         // 创建L-BFGS优化器 / Create L-BFGS optimizer
         RereLBFGS optimizer = new RereLBFGS();
-        optimizer.setMaxIterations(1000);
-        optimizer.setTolerance(1e-6);
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(1000);
+        // optimizer.setTolerance(1e-6);
         
         // 权重系数 / Weight coefficients
         double w1 = 0.6;  // 第一个目标的权重 / Weight for first objective
@@ -889,7 +1235,7 @@ public class MultiObjectiveOptimizationExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -903,8 +1249,9 @@ public class RobustOptimizationExample {
         
         // 创建L-BFGS优化器 / Create L-BFGS optimizer
         RereLBFGS optimizer = new RereLBFGS();
-        optimizer.setMaxIterations(1000);
-        optimizer.setTolerance(1e-6);
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(1000);
+        // optimizer.setTolerance(1e-6);
         
         // 不确定性参数 / Uncertainty parameters
         double noiseLevel = 0.1;
@@ -992,7 +1339,7 @@ public class RobustOptimizationExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -1066,8 +1413,9 @@ public class ConstrainedOptimizationExample {
         };
         
         RereLBFGS optimizer = new RereLBFGS();
-        optimizer.setMaxIterations(1000);
-        optimizer.setTolerance(1e-6);
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(1000);
+        // optimizer.setTolerance(1e-6);
         
         // 从可行域内的点开始优化 / Start optimization from feasible point
         IVector initPoint = Linalg.vector(new double[]{0.5, 0.5});
@@ -1103,7 +1451,7 @@ public class ConstrainedOptimizationExample {
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -1161,9 +1509,10 @@ public class LargeScaleOptimizationExample {
         
         // 创建优化器 / Create optimizer
         RereLBFGS optimizer = new RereLBFGS();
-        optimizer.setMaxIterations(2000);
-        optimizer.setTolerance(1e-8);
-        optimizer.setM(20); // 增加内存大小以提高性能 / Increase memory size for better performance
+        // 设置参数（可选）/ Set parameters (optional)
+        // optimizer.setMaxIterations(2000);
+        // optimizer.setTolerance(1e-8);
+        // optimizer.setM(20); // 增加内存大小以提高性能 / Increase memory size for better performance
         
         // 随机初始点 / Random initial point
         double[] initArray = new double[dimension];

@@ -45,7 +45,7 @@
 
 ### 🧠 机器学习算法 / Machine Learning Algorithms
 - **线性回归** / **Linear Regression**: 支持L1、L2、ElasticNet正则化，LBFGS优化 / Support for L1, L2, ElasticNet regularization with LBFGS optimization
-- **逻辑回归** / **Logistic Regression**: 二分类和多分类逻辑回归 / Binary and multi-class logistic regression
+- **分类算法** / **Classification Algorithms**: 逻辑回归、XGBoost、RandomForest、EnsembleClassifier
 - **聚类算法** / **Clustering Algorithms**: K-Means++聚类、高斯混合模型聚类、聚类质量评估 / K-Means++ clustering, Gaussian Mixture Model clustering, clustering quality evaluation
 - **降维算法** / **Dimensionality Reduction**: PCA、SVD、t-SNE、UMAP等降维方法 / PCA, SVD, t-SNE, UMAP dimensionality reduction methods
 - **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析 / Regression and classification result analysis
@@ -57,8 +57,8 @@
   - *Online stochastic optimization algorithms*
 - **线搜索** / **Line Search**: 一维搜索优化方法
   - *One-dimensional search optimization methods*
-- **线性规划求解器** / **Linear Programming Solvers**: 单纯形法、内点法、拉格朗日乘数法
-  - *Linear programming solvers*
+- **线性规划求解器** / **Linear Programming Solvers**: 单纯形法、内点法、拉格朗日乘数法、整数规划求解器
+  - *Linear programming solvers*:Simplex method, interior point method, Lagrange multiplier method, integer programming solvers
 - **约束优化** / **Constrained Optimization**: 拉格朗日乘数法
   - *Lagrange multiplier method*
 
@@ -750,7 +750,20 @@ src/main/java/
 │   │   │   ├── IClassification.java         # 分类接口 / Classification Interface
 │   │   │   ├── RereLogisticRegression.java  # 逻辑回归实现 / Logistic Regression Implementation
 │   │   │   ├── ClassificationResult.java    # 分类结果 / Classification Result
-│   │   │   └── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
+│   │   │   ├── LogisticRegressionResult.java # 逻辑回归结果 / Logistic Regression Result
+│   │   │   ├── EnsembleClassifier.java      # 集成分类器 / Ensemble Classifier
+│   │   │   ├── EnsembleResult.java          # 集成结果 / Ensemble Result
+│   │   │   └── tree/             # 树模型 / Tree Models
+│   │   │       ├── RFTree.java                      # 随机森林树 / Random Forest Tree
+│   │   │       ├── RFTreeNode.java                  # 随机森林树节点 / Random Forest Tree Node
+│   │   │       ├── RandomForestHyperparameterOptimizer.java # 随机森林超参数优化器 / Random Forest Hyperparameter Optimizer
+│   │   │       ├── RandomForestResult.java          # 随机森林结果 / Random Forest Result
+│   │   │       ├── RereRandomForest.java            # 随机森林实现 / Random Forest Implementation
+│   │   │       ├── RereXGboost.java                 # XGBoost实现 / XGBoost Implementation
+│   │   │       ├── XGBoostLossFunction.java         # XGBoost损失函数 / XGBoost Loss Function
+│   │   │       ├── XGBoostResult.java               # XGBoost结果 / XGBoost Result
+│   │   │       ├── XGTree.java                      # XGBoost树 / XGBoost Tree
+│   │   │       └── XGTreeNode.java                  # XGBoost树节点 / XGBoost Tree Node
 │   │   ├── clustering/       # 聚类算法 / Clustering Algorithms
 │   │   │   ├── IClustering.java             # 聚类接口 / Clustering Interface
 │   │   │   ├── KMeansPlusPlus.java          # K-Means++聚类 / K-Means++ Clustering
@@ -777,7 +790,9 @@ src/main/java/
 │   │   │   ├── InteriorPointLinProgSolver.java # 内点法线性规划求解器 / Interior Point Linear Programming Solver
 │   │   │   ├── LangMultiplierLinProgSolver.java # 拉格朗日乘数线性规划求解器 / Lagrange Multiplier Linear Programming Solver
 │   │   │   ├── LinProgUtil.java            # 线性规划工具类 / Linear Programming Utilities
-│   │   │   └── SimplexLinProgSolver.java   # 单纯形法线性规划求解器 / Simplex Linear Programming Solver
+│   │   │   ├── SimplexLinProgSolver.java   # 单纯形法线性规划求解器 / Simplex Linear Programming Solver
+│   │   │   ├── IIntegerProg.java           # 整数规划接口 / Integer Programming Interface
+│   │   │   └── RereIntegerProg.java        # 整数规划实现 / Integer Programming Implementation
 │   │   └── newton/               # 牛顿法优化 / Newton Method Optimization
 │   │       ├── RereConjugateGradient.java  # 共轭梯度法 / Conjugate Gradient Method
 │   │       ├── RereDFP.java                # DFP算法 / DFP Algorithm

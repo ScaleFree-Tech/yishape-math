@@ -463,7 +463,7 @@ public class HistogramExample {
         for (int i = 0; i < 100; i++) {
             histData[i] = (double) (Math.random() * 10 + 5); // 均值5，标准差约2.9
         }
-        IVector<Double> histVector = IVector<Double>.of(histData);
+        IVector<Double> histVector = IVector.of(histData);
         
         // 使用流式API创建直方图（带拟合线）
         Plots.of(800, 600)
@@ -929,7 +929,7 @@ public class ComprehensiveViolinAnalysisExample {
         Arrays.fill(allLabels, 50, 100, "组B");
         Arrays.fill(allLabels, 100, 150, "组C");
         
-        IVector<Double> data = IVector<Double>.of(allData);
+        IVector<Double> data = IVector.of(allData);
         List<String> labels = Arrays.asList(allLabels);
         
         // 使用流式API创建多组小提琴图
@@ -1116,7 +1116,7 @@ public class LargeDatasetExample {
         for (int i = 0; i < 10000; i++) {
             dataArray[i] = (double) Math.sin(i * 0.01) * 100 + (double) Math.random() * 10;
         }
-        IVector<Double> data = IVector<Double>.of(dataArray);
+        IVector<Double> data = IVector.of(dataArray);
         
         // 对于大数据集，考虑数据采样
         if (data.length() > 1000) {

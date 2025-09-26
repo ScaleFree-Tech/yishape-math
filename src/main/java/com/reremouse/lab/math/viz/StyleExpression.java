@@ -120,6 +120,9 @@ public class StyleExpression implements Serializable {
             } else if (markerPart.equals("*")) {
                 style.setMarkerSize(8.0f); // 星形稍大
             }
+        } else {
+            // 当没有指定标记时，使用默认的circle标记
+            style.setMarker("circle");
         }
         
         return style;

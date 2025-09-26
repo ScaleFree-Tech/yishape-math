@@ -81,7 +81,7 @@ public class GPULoggingTest {
         // 执行一些GPU操作
         testMatrixA.add(testMatrixB);
         testVectorA.add(testVectorB);
-        testMatrixA.multiplyScalar(2.0f);
+        testMatrixA.multiplyScalar(2.0);
         
         System.out.println("基本日志模式：只显示GPU/CPU标识");
     }
@@ -98,7 +98,7 @@ public class GPULoggingTest {
         // 执行一些GPU操作
         testMatrixA.add(testMatrixB);
         testVectorA.add(testVectorB);
-        testMatrixA.multiplyScalar(2.0f);
+        testMatrixA.multiplyScalar(2.0);
         testVectorA.sum();
         
         System.out.println("详细日志模式：显示GPU/CPU标识、操作详情和性能统计");
@@ -193,8 +193,8 @@ public class GPULoggingTest {
         System.out.println("\n--- 矩阵操作 ---");
         testMatrixA.add(testMatrixB);
         testMatrixA.sub(testMatrixB);
-        testMatrixA.multiplyScalar(2.0f);
-        testMatrixA.sub(1.0f);
+        testMatrixA.multiplyScalar(2.0);
+        testMatrixA.sub(1.0);
         testMatrixA.transposeNew();
         
         // 向量操作
@@ -202,9 +202,9 @@ public class GPULoggingTest {
         testVectorA.add(testVectorB);
         testVectorA.sub(testVectorB);
         testVectorA.multiply(testVectorB);
-        testVectorA.addScalar(1.0f);
-        testVectorA.subScalar(1.0f);
-        testVectorA.multiplyScalar(2.0f);
+        testVectorA.addScalar(1.0);
+        testVectorA.subScalar(1.0);
+        testVectorA.multiplyScalar(2.0);
         testVectorA.sum();
         testVectorA.square();
         testVectorA.sqrt();

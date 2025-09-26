@@ -435,7 +435,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         
         // 计算权重梯度：features^T * errors / m
         IMatrix weightGradientsMatrix = trainingFeatures.transpose().mmul(errors).divideByScalar((double)m);
-        IVector weightGradients = weightGradientsMatrix.getRow(0);
+        IVector weightGradients = weightGradientsMatrix.getColumn(0);
         
         // 计算偏置梯度：sum(errors) / m
         double biasGradient = (double)errors.sum() / m;

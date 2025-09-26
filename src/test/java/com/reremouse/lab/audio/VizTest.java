@@ -17,9 +17,9 @@ public class VizTest {
 
         try {
             AudioData data = AudioIO.readAudio(f1);
-//        AudioPlots.plotWaveform(data, "音频波形").show();
-//        AudioPlots.plotSpectrum(data, "频谱分析").show();
-//        AudioPlots.plotSpectrogram(data, "频谱图").show();
+        AudioPlots.plotWaveform(data, "音频波形").show();
+        AudioPlots.plotSpectrum(data, "频谱分析").show();
+        AudioPlots.plotSpectrogram(data, "频谱图").show();
         AudioPlots.plotAudioStatistics(data, "统计信息").show();
         AudioPlots.plotAudioQuality(data, "质量分析").show();
         } catch (Exception e) {

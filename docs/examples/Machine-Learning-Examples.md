@@ -10,9 +10,12 @@ This document provides detailed usage examples for machine learning algorithms i
 
 1. [线性回归示例 / Linear Regression Examples](#线性回归示例--linear-regression-examples)
 2. [逻辑回归示例 / Logistic Regression Examples](#逻辑回归示例--logistic-regression-examples)
-3. [聚类算法示例 / Clustering Algorithm Examples](#聚类算法示例--clustering-algorithm-examples)
-4. [降维算法示例 / Dimensionality Reduction Examples](#降维算法示例--dimensionality-reduction-examples)
-5. [总结 / Summary](#总结--summary)
+3. [随机森林示例 / Random Forest Examples](#随机森林示例--random-forest-examples)
+4. [XGBoost示例 / XGBoost Examples](#xgboost示例--xgboost-examples)
+5. [集成分类器示例 / Ensemble Classifier Examples](#集成分类器示例--ensemble-classifier-examples)
+6. [聚类算法示例 / Clustering Algorithm Examples](#聚类算法示例--clustering-algorithm-examples)
+7. [降维算法示例 / Dimensionality Reduction Examples](#降维算法示例--dimensionality-reduction-examples)
+8. [总结 / Summary](#总结--summary)
 
 ## 线性回归示例 / Linear Regression Examples
 
@@ -65,8 +68,7 @@ public class RegularizedLinearRegressionExample {
     public static void main(String[] args) {
         // 创建带L2正则化的模型 / Create model with L2 regularization
         RereLinearRegression lr = new RereLinearRegression();
-        lr.setRegularizationType(RegularizationType.L2);
-        lr.setLambda2(0.1f);
+        lr.setRegularization(0.0, 0.1); // L1=0.0, L2=0.1
         
         // 训练模型 / Train model
         RegressionResult result = lr.fit(features, labels);
@@ -181,7 +183,7 @@ public class RegularizedLogisticRegressionExample {
         
         // 创建带正则化的模型 / Create model with regularization
         RereLogisticRegression lr = new RereLogisticRegression();
-        lr.setRegularization(0.01f, 0.1f); // L1=0.01, L2=0.1
+        lr.setRegularization(0.01, 0.1); // L1=0.01, L2=0.1
         
         // 训练模型 / Train model
         LogisticRegressionResult result = lr.fit(features, labelData);
@@ -302,7 +304,7 @@ public class AdvancedConfigurationExample {
         RereLogisticRegression lr = new RereLogisticRegression();
         
         // 配置学习率 / Configure learning rate
-        lr.setLearningRate(0.01f);
+        lr.setLearningRate(0.01);
         
         // 配置最大迭代次数 / Configure maximum iterations
         lr.setMaxIterations(1000);
@@ -311,7 +313,7 @@ public class AdvancedConfigurationExample {
         lr.setTolerance(1e-6f);
         
         // 配置正则化 / Configure regularization
-        lr.setRegularization(0.01f, 0.1f); // L1=0.01, L2=0.1
+        lr.setRegularization(0.01, 0.1); // L1=0.01, L2=0.1
         
         // 训练模型 / Train model
         LogisticRegressionResult result = lr.fit(features, labelData);
@@ -323,6 +325,457 @@ public class AdvancedConfigurationExample {
         System.out.println("收敛阈值: " + lr.getTolerance()); // Tolerance
         System.out.println("正则化类型: " + lr.getRegularizationDescription()); // Regularization type
         System.out.println("最终损失: " + result.getLoss()); // Final loss
+    }
+}
+```
+
+## 随机森林示例 / Random Forest Examples
+
+### 基本随机森林分类 / Basic Random Forest Classification
+
+```java
+import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.ml.cls.tree.RereRandomForest;
+import com.reremouse.lab.math.ml.cls.tree.RandomForestResult;
+import com.reremouse.lab.math.ml.cls.tree.RFTree;
+
+public class BasicRandomForestExample {
+    public static void main(String[] args) {
+        // 准备训练数据 / Prepare training data
+        float[][] featureData = {
+            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+        };
+        String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建和训练随机森林模型 / Create and train Random Forest model
+        RereRandomForest rf = new RereRandomForest();
+        RandomForestResult result = rf.fit(features, labelData);
+        
+        // 获取结果 / Get results
+        double oobScore = result.getOobScore();
+        IVector featureImportance = result.getFeatureImportance();
+        
+        System.out.println("袋外分数: " + oobScore); // Out-of-bag score
+        System.out.println("特征重要性: " + featureImportance); // Feature importance
+        
+        // 预测新样本 / Predict new sample
+        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        String prediction = rf.predict(newFeatures);
+        System.out.println("预测类别: " + prediction); // Predicted class
+        
+        // 批量预测 / Batch prediction
+        float[][] testData = {{2, 3, 4}, {8, 9, 10}};
+        IMatrix testFeatures = IMatrix.of(testData);
+        String[] predictions = rf.predictBatch(testFeatures);
+        System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
+    }
+}
+```
+
+### 配置随机森林参数 / Configure Random Forest Parameters
+
+```java
+public class ConfiguredRandomForestExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        float[][] featureData = {
+            {1, 2, 3, 4}, {4, 5, 6, 7}, {7, 8, 9, 10}, {10, 11, 12, 13},
+            {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11}, {11, 12, 13, 14}
+        };
+        String[] labelData = {"类别A", "类别A", "类别B", "类别B", "类别A", "类别A", "类别B", "类别B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建随机森林并配置参数 / Create Random Forest and configure parameters
+        RereRandomForest rf = new RereRandomForest();
+        
+        // 配置树的数量 / Configure number of trees
+        rf.setNEstimators(100);
+        
+        // 配置树的最大深度 / Configure maximum tree depth
+        rf.setMaxDepth(10);
+        
+        // 配置最小分裂样本数 / Configure minimum samples for split
+        rf.setMinSamplesSplit(2);
+        
+        // 配置分裂准则 / Configure split criterion
+        rf.setCriterion(RFTree.SplitCriterion.GINI);
+        
+        // 配置特征选择数量 / Configure number of features to select
+        rf.setMaxFeatures(-1); // -1 表示 sqrt(n_features)
+        
+        // 启用Bootstrap采样 / Enable Bootstrap sampling
+        rf.setBootstrap(true);
+        
+        // 训练模型 / Train model
+        RandomForestResult result = rf.fit(features, labelData);
+        
+        // 显示配置信息 / Show configuration information
+        System.out.println("模型配置:"); // Model configuration
+        System.out.println("树的数量: " + rf.getNEstimators()); // Number of trees
+        System.out.println("最大深度: " + rf.getMaxDepth()); // Maximum depth
+        System.out.println("分裂准则: " + rf.getCriterion()); // Split criterion
+        System.out.println("Bootstrap采样: " + rf.isBootstrap()); // Bootstrap sampling
+        
+        // 显示训练结果 / Show training results
+        System.out.println("袋外分数: " + result.getOobScore()); // OOB score
+        System.out.println("特征重要性: " + result.getFeatureImportance()); // Feature importance
+    }
+}
+```
+
+### 随机森林特征重要性分析 / Random Forest Feature Importance Analysis
+
+```java
+import java.util.Arrays;
+
+public class RandomForestFeatureImportanceExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        float[][] featureData = {
+            {1, 2, 3, 4, 5}, {4, 5, 6, 7, 8}, {7, 8, 9, 10, 11}, {10, 11, 12, 13, 14},
+            {2, 3, 4, 5, 6}, {5, 6, 7, 8, 9}, {8, 9, 10, 11, 12}, {11, 12, 13, 14, 15}
+        };
+        String[] labelData = {"正类", "正类", "负类", "负类", "正类", "正类", "负类", "负类"};
+        String[] featureNames = {"特征1", "特征2", "特征3", "特征4", "特征5"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 训练随机森林 / Train Random Forest
+        RereRandomForest rf = new RereRandomForest();
+        rf.setNEstimators(50);
+        RandomForestResult result = rf.fit(features, labelData);
+        
+        // 获取特征重要性 / Get feature importance
+        IVector importance = result.getFeatureImportance();
+        
+        // 排序特征重要性 / Sort feature importance
+        int[] sortedIndices = importance.argsort(false); // 降序排列 / Descending order
+        
+        System.out.println("特征重要性排序:"); // Feature importance ranking
+        for (int i = 0; i < sortedIndices.length; i++) {
+            int featureIndex = sortedIndices[i];
+            double importanceValue = importance.get(featureIndex);
+            System.out.println((i + 1) + ". " + featureNames[featureIndex] + 
+                             ": " + String.format("%.4f", importanceValue));
+        }
+        
+        // 选择最重要的特征 / Select most important features
+        int topK = 3;
+        int[] topFeatures = Arrays.copyOf(sortedIndices, topK);
+        System.out.println("\n前" + topK + "个最重要的特征: " + Arrays.toString(topFeatures));
+    }
+}
+```
+
+## XGBoost示例 / XGBoost Examples
+
+### 基本XGBoost分类 / Basic XGBoost Classification
+
+```java
+import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.ml.cls.tree.RereXGboost;
+import com.reremouse.lab.math.ml.cls.tree.XGBoostResult;
+import java.util.List;
+
+public class BasicXGBoostExample {
+    public static void main(String[] args) {
+        // 准备训练数据 / Prepare training data
+        float[][] featureData = {
+            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+        };
+        String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建和训练XGBoost模型 / Create and train XGBoost model
+        RereXGboost xgb = new RereXGboost();
+        XGBoostResult result = xgb.fit(features, labelData);
+        
+        // 获取结果 / Get results
+        IVector featureImportance = result.getFeatureImportance();
+        List<Double> trainLoss = result.getTrainLossHistory();
+        
+        System.out.println("特征重要性: " + featureImportance); // Feature importance
+        System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1)); // Final training loss
+        
+        // 预测新样本 / Predict new sample
+        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        String prediction = xgb.predict(newFeatures);
+        System.out.println("预测类别: " + prediction); // Predicted class
+        
+        // 批量预测 / Batch prediction
+        float[][] testData = {{2, 3, 4}, {8, 9, 10}};
+        IMatrix testFeatures = IMatrix.of(testData);
+        String[] predictions = xgb.predictBatch(testFeatures);
+        System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
+    }
+}
+```
+
+### 配置XGBoost参数 / Configure XGBoost Parameters
+
+```java
+public class ConfiguredXGBoostExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        float[][] featureData = {
+            {1, 2, 3, 4}, {4, 5, 6, 7}, {7, 8, 9, 10}, {10, 11, 12, 13},
+            {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11}, {11, 12, 13, 14}
+        };
+        String[] labelData = {"类别A", "类别A", "类别B", "类别B", "类别A", "类别A", "类别B", "类别B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建XGBoost并配置参数 / Create XGBoost and configure parameters
+        RereXGboost xgb = new RereXGboost();
+        
+        // 配置学习率 / Configure learning rate
+        xgb.setLearningRate(0.1);
+        
+        // 配置树的数量 / Configure number of trees
+        xgb.setNEstimators(100);
+        
+        // 配置树的最大深度 / Configure maximum tree depth
+        xgb.setMaxDepth(6);
+        
+        // 配置正则化参数 / Configure regularization parameters
+        xgb.setAlpha(0.0);  // L1正则化 / L1 regularization
+        xgb.setLambda(1.0); // L2正则化 / L2 regularization
+        
+        // 配置早停 / Configure early stopping
+        xgb.setEarlyStoppingRounds(10);
+        xgb.setValidationFraction(0.1);
+        
+        // 训练模型 / Train model
+        XGBoostResult result = xgb.fit(features, labelData);
+        
+        // 显示配置信息 / Show configuration information
+        System.out.println("模型配置:"); // Model configuration
+        System.out.println("学习率: " + xgb.getLearningRate()); // Learning rate
+        System.out.println("树的数量: " + xgb.getNEstimators()); // Number of trees
+        System.out.println("最大深度: " + xgb.getMaxDepth()); // Maximum depth
+        System.out.println("L1正则化: " + xgb.getAlpha()); // L1 regularization
+        System.out.println("L2正则化: " + xgb.getLambda()); // L2 regularization
+        
+        // 显示训练结果 / Show training results
+        List<Double> trainLoss = result.getTrainLossHistory();
+        List<Double> validLoss = result.getValidationLossHistory();
+        
+        System.out.println("训练轮数: " + trainLoss.size()); // Training rounds
+        System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1)); // Final training loss
+        if (!validLoss.isEmpty()) {
+            System.out.println("最终验证损失: " + validLoss.get(validLoss.size() - 1)); // Final validation loss
+        }
+    }
+}
+```
+
+### XGBoost早停和验证 / XGBoost Early Stopping and Validation
+
+```java
+public class XGBoostEarlyStoppingExample {
+    public static void main(String[] args) {
+        // 准备较大的数据集 / Prepare larger dataset
+        float[][] featureData = new float[100][5];
+        String[] labelData = new String[100];
+        
+        // 生成模拟数据 / Generate simulated data
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < 5; j++) {
+                featureData[i][j] = (float) (Math.random() * 10);
+            }
+            labelData[i] = (i % 2 == 0) ? "正类" : "负类";
+        }
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建XGBoost并配置早停 / Create XGBoost and configure early stopping
+        RereXGboost xgb = new RereXGboost();
+        xgb.setNEstimators(200); // 设置较大的树数量
+        xgb.setLearningRate(0.1);
+        xgb.setValidationFraction(0.2); // 20%数据用于验证
+        xgb.setEarlyStoppingRounds(10); // 10轮无改善则停止
+        
+        // 训练模型 / Train model
+        XGBoostResult result = xgb.fit(features, labelData);
+        
+        // 分析训练过程 / Analyze training process
+        List<Double> trainLoss = result.getTrainLossHistory();
+        List<Double> validLoss = result.getValidationLossHistory();
+        
+        System.out.println("实际训练轮数: " + trainLoss.size()); // Actual training rounds
+        System.out.println("是否早停: " + (trainLoss.size() < 200)); // Whether early stopped
+        
+        // 绘制损失曲线 / Plot loss curves
+        System.out.println("\n损失变化:"); // Loss changes
+        for (int i = 0; i < Math.min(10, trainLoss.size()); i++) {
+            System.out.println("轮次 " + (i + 1) + 
+                             " - 训练损失: " + String.format("%.4f", trainLoss.get(i)) +
+                             " - 验证损失: " + String.format("%.4f", validLoss.get(i)));
+        }
+        
+        // 特征重要性 / Feature importance
+        IVector importance = result.getFeatureImportance();
+        System.out.println("\n特征重要性: " + importance);
+    }
+}
+```
+
+## 集成分类器示例 / Ensemble Classifier Examples
+
+### 基本集成分类 / Basic Ensemble Classification
+
+```java
+import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.math.IVector;
+import com.reremouse.lab.math.ml.cls.EnsembleClassifier;
+import com.reremouse.lab.math.ml.cls.EnsembleResult;
+import java.util.Map;
+
+public class BasicEnsembleExample {
+    public static void main(String[] args) {
+        // 准备训练数据 / Prepare training data
+        float[][] featureData = {
+            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+        };
+        String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建集成分类器 / Create ensemble classifier
+        EnsembleClassifier ensemble = new EnsembleClassifier(
+            EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING, 42L);
+        
+        // 训练模型 / Train model
+        EnsembleResult result = ensemble.fit(features, labelData);
+        
+        // 获取结果 / Get results
+        Map<String, Double> accuracies = result.getClassifierAccuracies();
+        IVector weights = result.getClassifierWeights();
+        
+        System.out.println("分类器准确率: " + accuracies); // Classifier accuracies
+        System.out.println("分类器权重: " + weights); // Classifier weights
+        
+        // 预测新样本 / Predict new sample
+        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        String prediction = ensemble.predict(newFeatures);
+        System.out.println("预测类别: " + prediction); // Predicted class
+        
+        // 批量预测 / Batch prediction
+        float[][] testData = {{2, 3, 4}, {8, 9, 10}};
+        IMatrix testFeatures = IMatrix.of(testData);
+        String[] predictions = ensemble.predictBatch(testFeatures);
+        System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
+    }
+}
+```
+
+### 不同集成策略比较 / Compare Different Ensemble Strategies
+
+```java
+public class EnsembleStrategyComparisonExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        float[][] featureData = {
+            {1, 2, 3, 4}, {4, 5, 6, 7}, {7, 8, 9, 10}, {10, 11, 12, 13},
+            {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11}, {11, 12, 13, 14},
+            {3, 4, 5, 6}, {6, 7, 8, 9}, {9, 10, 11, 12}, {12, 13, 14, 15}
+        };
+        String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 测试不同的集成策略 / Test different ensemble strategies
+        EnsembleClassifier.EnsembleStrategy[] strategies = {
+            EnsembleClassifier.EnsembleStrategy.VOTING,
+            EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING,
+            EnsembleClassifier.EnsembleStrategy.STACKING
+        };
+        
+        for (EnsembleClassifier.EnsembleStrategy strategy : strategies) {
+            System.out.println("\n=== " + strategy + " ===");
+            
+            // 创建集成分类器 / Create ensemble classifier
+            EnsembleClassifier ensemble = new EnsembleClassifier(strategy, 42L);
+            
+            // 训练模型 / Train model
+            EnsembleResult result = ensemble.fit(features, labelData);
+            
+            // 显示结果 / Show results
+            System.out.println("集成策略: " + result.getStrategy()); // Ensemble strategy
+            System.out.println("分类器准确率: " + result.getClassifierAccuracies()); // Classifier accuracies
+            
+            if (strategy != EnsembleClassifier.EnsembleStrategy.VOTING) {
+                System.out.println("分类器权重: " + result.getClassifierWeights()); // Classifier weights
+            }
+            
+            // 预测测试样本 / Predict test sample
+            IVector testFeatures = IVector.of(new float[]{5, 6, 7, 8});
+            String prediction = ensemble.predict(testFeatures);
+            System.out.println("预测结果: " + prediction); // Prediction result
+        }
+    }
+}
+```
+
+### 集成分类器权重优化 / Ensemble Classifier Weight Optimization
+
+```java
+public class EnsembleWeightOptimizationExample {
+    public static void main(String[] args) {
+        // 准备较大的数据集 / Prepare larger dataset
+        float[][] featureData = new float[50][4];
+        String[] labelData = new String[50];
+        
+        // 生成模拟数据 / Generate simulated data
+        for (int i = 0; i < 50; i++) {
+            for (int j = 0; j < 4; j++) {
+                featureData[i][j] = (float) (Math.random() * 10);
+            }
+            labelData[i] = (i % 3 == 0) ? "类别A" : (i % 3 == 1) ? "类别B" : "类别C";
+        }
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建集成分类器 / Create ensemble classifier
+        EnsembleClassifier ensemble = new EnsembleClassifier(
+            EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING, 42L);
+        
+        // 手动设置初始权重 / Manually set initial weights
+        IVector initialWeights = IVector.of(new float[]{0.4f, 0.3f, 0.3f});
+        ensemble.setClassifierWeights(initialWeights);
+        
+        System.out.println("初始权重: " + initialWeights); // Initial weights
+        
+        // 训练模型 / Train model
+        EnsembleResult result = ensemble.fit(features, labelData);
+        
+        // 显示优化后的权重 / Show optimized weights
+        IVector optimizedWeights = result.getClassifierWeights();
+        System.out.println("优化后权重: " + optimizedWeights); // Optimized weights
+        
+        // 显示各分类器的性能 / Show performance of each classifier
+        Map<String, Double> accuracies = result.getClassifierAccuracies();
+        System.out.println("各分类器准确率: " + accuracies); // Individual classifier accuracies
+        
+        // 使用交叉验证进一步优化权重 / Further optimize weights using cross-validation
+        ensemble.optimizeWeights(features, labelData, 5); // 5折交叉验证
+        
+        // 获取交叉验证优化后的权重 / Get weights after cross-validation optimization
+        EnsembleResult cvResult = ensemble.fit(features, labelData);
+        IVector cvWeights = cvResult.getClassifierWeights();
+        System.out.println("交叉验证优化后权重: " + cvWeights); // Cross-validation optimized weights
     }
 }
 ```

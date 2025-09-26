@@ -422,6 +422,8 @@ public class UniversalStyleApplier implements Serializable {
         // 设置名称/标签
         if (style.getLabel() != null && !style.getLabel().isEmpty()) {
             series.setName(style.getLabel());
+        } else {
+            series.setName("仪表盘");
         }
         
         // 设置颜色
@@ -481,6 +483,8 @@ public class UniversalStyleApplier implements Serializable {
         // 设置名称/标签
         if (style.getLabel() != null && !style.getLabel().isEmpty()) {
             series.setName(style.getLabel());
+        } else {
+            series.setName("箱线图");
         }
         
         // 设置颜色
@@ -550,6 +554,8 @@ public class UniversalStyleApplier implements Serializable {
         // 设置名称/标签
         if (style.getLabel() != null && !style.getLabel().isEmpty()) {
             series.setName(style.getLabel());
+        } else {
+            series.setName("K线图");
         }
         
         // K线图主要通过itemStyle设置颜色

@@ -22,6 +22,24 @@ This document introduces the machine learning algorithms implemented in the `com
 - **功能 / Function**: 分类预测，支持二分类和多分类
 - **应用 / Application**: 分类问题，概率预测
 
+#### 3. 随机森林 (Random Forest)
+- **类名 / Class**: `RereRandomForest`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.cls.tree`
+- **功能 / Function**: 基于Bootstrap聚合和特征随机选择的集成分类算法
+- **应用 / Application**: 分类问题，特征重要性分析，袋外评估
+
+#### 4. XGBoost分类器 (XGBoost Classifier)
+- **类名 / Class**: `RereXGboost`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.cls.tree`
+- **功能 / Function**: 梯度提升决策树分类算法，支持二分类和多分类
+- **应用 / Application**: 高精度分类，特征重要性分析，模型解释
+
+#### 5. 集成分类器 (Ensemble Classifier)
+- **类名 / Class**: `EnsembleClassifier`
+- **包路径 / Package**: `com.reremouse.lab.math.ml.cls`
+- **功能 / Function**: 结合多种分类算法的集成学习方法
+- **应用 / Application**: 提高分类精度，模型融合，降低过拟合风险
+
 ### 无监督学习算法 / Unsupervised Learning Algorithms
 
 #### 3. K-Means++聚类 (K-Means++ Clustering)
@@ -921,6 +939,496 @@ The `RereLogisticRegression` class is designed to support extensions:
 **逻辑回归** - 分类问题的经典解决方案，让预测更准确！
 
 **Logistic Regression** - The classic solution for classification problems, making predictions more accurate!
+
+---
+
+# 随机森林 (Random Forest)
+
+## 概述 / Overview
+
+`RereRandomForest` 类实现了基于Bootstrap聚合和特征随机选择的随机森林算法。该实现支持多线程训练、特征重要性计算和袋外评估，是一种强大的集成学习方法。
+
+The `RereRandomForest` class implements the Random Forest algorithm based on Bootstrap aggregation and random feature selection. This implementation supports multi-threaded training, feature importance calculation, and out-of-bag evaluation, making it a powerful ensemble learning method.
+
+## 算法特点 / Algorithm Features
+
+- **Bootstrap聚合** / **Bootstrap Aggregation**: 使用Bootstrap采样训练多个决策树
+- **特征随机选择** / **Random Feature Selection**: 每棵树随机选择特征子集
+- **袋外评估** / **Out-of-Bag Evaluation**: 使用未参与训练的样本进行模型评估
+- **特征重要性** / **Feature Importance**: 计算特征对分类的重要性
+- **多线程支持** / **Multi-threading Support**: 支持并行训练提高效率
+
+## 核心类 / Core Classes
+
+### RereRandomForest 类 / RereRandomForest Class
+
+主要的随机森林实现类，实现了以下接口：
+The main Random Forest implementation class that implements the following interfaces:
+- `IClassification`: 分类模型接口 / Classification model interface
+- `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
+- `IObjectiveFunction`: 目标函数接口 / Objective function interface
+
+### 分裂准则 / Split Criteria
+
+```java
+public enum SplitCriterion {
+    GINI,        // 基尼不纯度 / Gini impurity
+    ENTROPY      // 信息熵 / Information entropy
+}
+```
+
+### RandomForestResult 类 / RandomForestResult Class
+
+```java
+public class RandomForestResult extends ClassificationResult {
+    private List<RFTree> trees;              // 决策树列表 / List of decision trees
+    private IVector featureImportance;       // 特征重要性 / Feature importance
+    private double oobScore;                 // 袋外分数 / Out-of-bag score
+    private Map<String, Double> classWeights; // 类别权重 / Class weights
+    
+    // getters and setters
+}
+```
+
+## 算法原理 / Algorithm Principles
+
+### 数学模型 / Mathematical Model
+
+随机森林通过投票机制进行预测：
+Random Forest makes predictions through voting mechanism:
+```
+ŷ = mode{h₁(x), h₂(x), ..., hₜ(x)}
+```
+
+其中：
+Where:
+- `hᵢ(x)` 是第i棵决策树的预测结果 / is the prediction of the i-th decision tree
+- `T` 是决策树的总数 / is the total number of decision trees
+- `mode` 是众数函数 / is the mode function
+
+### Bootstrap采样 / Bootstrap Sampling
+
+每棵树使用Bootstrap采样生成训练集：
+Each tree uses Bootstrap sampling to generate training set:
+```
+Dᵢ = Bootstrap(D, n)
+```
+
+其中约1/3的样本不会被选中，称为袋外样本（OOB）。
+About 1/3 of samples will not be selected, called Out-of-Bag (OOB) samples.
+
+### 特征重要性计算 / Feature Importance Calculation
+
+特征重要性基于每个特征在所有树中的平均不纯度减少：
+Feature importance is based on the average impurity decrease of each feature across all trees:
+```
+Importance(fⱼ) = (1/T) * Σᵢ₌₁ᵀ Σₙ∈Nᵢⱼ (pₙ * ΔI(n, fⱼ))
+```
+
+其中：
+Where:
+- `fⱼ` 是第j个特征 / is the j-th feature
+- `Nᵢⱼ` 是第i棵树中使用特征j的节点集合 / is the set of nodes using feature j in the i-th tree
+- `pₙ` 是节点n的样本比例 / is the sample proportion of node n
+- `ΔI(n, fⱼ)` 是特征j在节点n的不纯度减少 / is the impurity decrease of feature j at node n
+
+## 主要特性 / Main Features
+
+### 1. 灵活的模型配置 / Flexible Model Configuration
+
+```java
+// 创建随机森林模型 / Create Random Forest model
+RereRandomForest rf = new RereRandomForest();
+
+// 配置树的数量 / Configure number of trees
+rf.setNEstimators(100);
+
+// 配置树的深度 / Configure tree depth
+rf.setMaxDepth(10);
+
+// 配置分裂准则 / Configure split criterion
+rf.setCriterion(RFTree.SplitCriterion.GINI);
+
+// 配置特征选择 / Configure feature selection
+rf.setMaxFeatures(-1); // -1表示sqrt(n_features)
+```
+
+### 2. 袋外评估 / Out-of-Bag Evaluation
+
+```java
+// 启用Bootstrap采样 / Enable Bootstrap sampling
+rf.setBootstrap(true);
+
+// 训练后获取袋外分数 / Get OOB score after training
+RandomForestResult result = rf.fit(features, labels);
+double oobScore = result.getOobScore();
+```
+
+### 3. 特征重要性分析 / Feature Importance Analysis
+
+```java
+// 获取特征重要性 / Get feature importance
+IVector importance = result.getFeatureImportance();
+
+// 排序特征重要性 / Sort feature importance
+int[] sortedIndices = importance.argsort(false); // 降序排列
+```
+
+## 使用示例 / Usage Examples
+
+### 示例1：基本随机森林 / Example 1: Basic Random Forest
+
+```java
+// 准备数据 / Prepare data
+float[][] featureData = {
+    {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+    {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13}
+};
+String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B"};
+
+IMatrix features = IMatrix.of(featureData);
+
+// 创建和训练模型 / Create and train model
+RereRandomForest rf = new RereRandomForest();
+RandomForestResult result = rf.fit(features, labelData);
+
+// 获取结果 / Get results
+double oobScore = result.getOobScore();
+IVector featureImportance = result.getFeatureImportance();
+
+System.out.println("袋外分数: " + oobScore);
+System.out.println("特征重要性: " + featureImportance);
+
+// 预测新样本 / Predict new sample
+IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+String prediction = rf.predict(newFeatures);
+System.out.println("预测类别: " + prediction);
+```
+
+---
+
+# XGBoost分类器 (XGBoost Classifier)
+
+## 概述 / Overview
+
+`RereXGboost` 类实现了XGBoost（eXtreme Gradient Boosting）算法，支持二分类和多分类。该实现使用梯度提升决策树（GBDT）作为基学习器，通过迭代训练多个决策树来提升模型性能。
+
+The `RereXGboost` class implements the XGBoost (eXtreme Gradient Boosting) algorithm, supporting both binary and multiclass classification. This implementation uses Gradient Boosted Decision Trees (GBDT) as base learners, iteratively training multiple decision trees to improve model performance.
+
+## 算法特点 / Algorithm Features
+
+- **梯度提升** / **Gradient Boosting**: 基于梯度提升的集成学习方法
+- **正则化支持** / **Regularization Support**: 支持L1和L2正则化防止过拟合
+- **早停机制** / **Early Stopping**: 自动停止训练防止过拟合
+- **特征重要性** / **Feature Importance**: 计算特征对模型的贡献度
+- **多种损失函数** / **Multiple Loss Functions**: 支持不同的损失函数
+
+## 核心类 / Core Classes
+
+### RereXGboost 类 / RereXGboost Class
+
+主要的XGBoost实现类，实现了以下接口：
+The main XGBoost implementation class that implements the following interfaces:
+- `IClassification`: 分类模型接口 / Classification model interface
+- `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
+- `IObjectiveFunction`: 目标函数接口 / Objective function interface
+
+### XGBoostResult 类 / XGBoostResult Class
+
+```java
+public class XGBoostResult extends ClassificationResult {
+    private List<XGTree> trees;                    // 决策树列表 / List of decision trees
+    private List<Double> trainLossHistory;         // 训练损失历史 / Training loss history
+    private List<Double> validationLossHistory;    // 验证损失历史 / Validation loss history
+    private IVector featureImportance;             // 特征重要性 / Feature importance
+    private IMatrix initialPredictions;            // 初始预测值 / Initial predictions
+    
+    // getters and setters
+}
+```
+
+### XGBoostLossFunction 类 / XGBoostLossFunction Class
+
+```java
+public class XGBoostLossFunction {
+    // 计算损失值 / Calculate loss value
+    public double computeLoss(IMatrix predictions, IMatrix targets);
+    
+    // 计算一阶梯度 / Calculate first-order gradient
+    public IMatrix computeGradient(IMatrix predictions, IMatrix targets);
+    
+    // 计算二阶梯度（Hessian） / Calculate second-order gradient (Hessian)
+    public IMatrix computeHessian(IMatrix predictions, IMatrix targets);
+}
+```
+
+## 算法原理 / Algorithm Principles
+
+### 数学模型 / Mathematical Model
+
+XGBoost的预测模型为：
+XGBoost prediction model is:
+```
+ŷᵢ = Σₖ₌₁ᴷ fₖ(xᵢ)
+```
+
+其中：
+Where:
+- `fₖ` 是第k棵决策树 / is the k-th decision tree
+- `K` 是决策树的总数 / is the total number of decision trees
+- `xᵢ` 是第i个样本 / is the i-th sample
+
+### 目标函数 / Objective Function
+
+XGBoost的目标函数包含损失函数和正则化项：
+XGBoost objective function includes loss function and regularization term:
+```
+Obj = Σᵢ₌₁ⁿ L(yᵢ, ŷᵢ) + Σₖ₌₁ᴷ Ω(fₖ)
+```
+
+其中：
+Where:
+- `L(yᵢ, ŷᵢ)` 是损失函数 / is the loss function
+- `Ω(fₖ)` 是正则化项 / is the regularization term
+
+### 正则化项 / Regularization Term
+
+```
+Ω(f) = γT + (λ/2) * Σⱼ₌₁ᵀ wⱼ²
+```
+
+其中：
+Where:
+- `T` 是叶子节点数量 / is the number of leaf nodes
+- `wⱼ` 是第j个叶子节点的权重 / is the weight of the j-th leaf node
+- `γ` 是叶子节点数量的正则化参数 / is the regularization parameter for leaf nodes
+- `λ` 是叶子权重的正则化参数 / is the regularization parameter for leaf weights
+
+## 主要特性 / Main Features
+
+### 1. 灵活的模型配置 / Flexible Model Configuration
+
+```java
+// 创建XGBoost模型 / Create XGBoost model
+RereXGboost xgb = new RereXGboost();
+
+// 配置学习率 / Configure learning rate
+xgb.setLearningRate(0.1);
+
+// 配置树的数量 / Configure number of trees
+xgb.setNEstimators(100);
+
+// 配置正则化参数 / Configure regularization parameters
+xgb.setAlpha(0.0);  // L1正则化
+xgb.setLambda(1.0); // L2正则化
+
+// 配置早停 / Configure early stopping
+xgb.setEarlyStoppingRounds(10);
+```
+
+### 2. 早停机制 / Early Stopping Mechanism
+
+```java
+// 设置验证集比例 / Set validation fraction
+xgb.setValidationFraction(0.1);
+
+// 设置早停轮数 / Set early stopping rounds
+xgb.setEarlyStoppingRounds(10);
+
+// 训练模型 / Train model
+XGBoostResult result = xgb.fit(features, labels);
+
+// 查看训练历史 / View training history
+List<Double> trainLoss = result.getTrainLossHistory();
+List<Double> validLoss = result.getValidationLossHistory();
+```
+
+### 3. 特征重要性分析 / Feature Importance Analysis
+
+```java
+// 获取特征重要性 / Get feature importance
+IVector importance = result.getFeatureImportance();
+
+// 分析最重要的特征 / Analyze most important features
+int[] topFeatures = importance.argsort(false).slice(0, 5);
+```
+
+## 使用示例 / Usage Examples
+
+### 示例1：基本XGBoost分类 / Example 1: Basic XGBoost Classification
+
+```java
+// 准备数据 / Prepare data
+float[][] featureData = {
+    {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+    {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13}
+};
+String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B"};
+
+IMatrix features = IMatrix.of(featureData);
+
+// 创建和训练模型 / Create and train model
+RereXGboost xgb = new RereXGboost();
+XGBoostResult result = xgb.fit(features, labelData);
+
+// 获取结果 / Get results
+IVector featureImportance = result.getFeatureImportance();
+List<Double> trainLoss = result.getTrainLossHistory();
+
+System.out.println("特征重要性: " + featureImportance);
+System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1));
+
+// 预测新样本 / Predict new sample
+IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+String prediction = xgb.predict(newFeatures);
+System.out.println("预测类别: " + prediction);
+```
+
+---
+
+# 集成分类器 (Ensemble Classifier)
+
+## 概述 / Overview
+
+`EnsembleClassifier` 类结合多种分类算法进行集成学习，包括随机森林、逻辑回归和XGBoost。该实现支持多种集成策略，能够提高分类精度并降低过拟合风险。
+
+The `EnsembleClassifier` class combines multiple classification algorithms for ensemble learning, including Random Forest, Logistic Regression, and XGBoost. This implementation supports multiple ensemble strategies, improving classification accuracy and reducing overfitting risk.
+
+## 算法特点 / Algorithm Features
+
+- **多算法融合** / **Multi-algorithm Fusion**: 结合不同类型的分类算法
+- **多种集成策略** / **Multiple Ensemble Strategies**: 支持投票法、加权投票法和堆叠法
+- **自动权重优化** / **Automatic Weight Optimization**: 根据各分类器性能自动调整权重
+- **交叉验证** / **Cross Validation**: 使用交叉验证评估分类器性能
+- **模型解释性** / **Model Interpretability**: 提供各分类器的贡献度分析
+
+## 核心类 / Core Classes
+
+### EnsembleClassifier 类 / EnsembleClassifier Class
+
+主要的集成分类器实现类，实现了以下接口：
+The main ensemble classifier implementation class that implements the following interfaces:
+- `IClassification`: 分类模型接口 / Classification model interface
+
+### 集成策略 / Ensemble Strategies
+
+```java
+public enum EnsembleStrategy {
+    VOTING,           // 简单投票 / Simple voting
+    WEIGHTED_VOTING,  // 加权投票 / Weighted voting
+    STACKING          // 堆叠 / Stacking
+}
+```
+
+### EnsembleResult 类 / EnsembleResult Class
+
+```java
+public class EnsembleResult extends ClassificationResult {
+    private EnsembleStrategy strategy;                    // 集成策略 / Ensemble strategy
+    private IVector classifierWeights;                   // 分类器权重 / Classifier weights
+    private Map<String, Double> classifierAccuracies;    // 分类器准确率 / Classifier accuracies
+    private boolean trained;                             // 是否已训练 / Whether trained
+    
+    // getters and setters
+}
+```
+
+## 算法原理 / Algorithm Principles
+
+### 投票法 / Voting Method
+
+简单投票法通过多数投票决定最终预测：
+Simple voting method determines final prediction through majority voting:
+```
+ŷ = mode{h₁(x), h₂(x), h₃(x)}
+```
+
+### 加权投票法 / Weighted Voting Method
+
+加权投票法根据各分类器的性能分配权重：
+Weighted voting method assigns weights based on classifier performance:
+```
+ŷ = argmax_c Σᵢ₌₁ᴹ wᵢ * P(c|x, hᵢ)
+```
+
+其中：
+Where:
+- `wᵢ` 是第i个分类器的权重 / is the weight of the i-th classifier
+- `P(c|x, hᵢ)` 是第i个分类器预测类别c的概率 / is the probability of the i-th classifier predicting class c
+
+### 堆叠法 / Stacking Method
+
+堆叠法使用元学习器组合基分类器的预测：
+Stacking method uses meta-learner to combine base classifier predictions:
+```
+ŷ = g(h₁(x), h₂(x), h₃(x))
+```
+
+其中g是元学习器（通常是逻辑回归）。
+Where g is the meta-learner (usually logistic regression).
+
+## 主要特性 / Main Features
+
+### 1. 灵活的集成配置 / Flexible Ensemble Configuration
+
+```java
+// 创建集成分类器 / Create ensemble classifier
+EnsembleClassifier ensemble = new EnsembleClassifier(
+    EnsembleStrategy.WEIGHTED_VOTING, 42L);
+
+// 配置分类器权重 / Configure classifier weights
+IVector weights = IVector.of(new float[]{0.4f, 0.3f, 0.3f});
+ensemble.setClassifierWeights(weights);
+```
+
+### 2. 自动权重优化 / Automatic Weight Optimization
+
+```java
+// 使用交叉验证优化权重 / Optimize weights using cross-validation
+ensemble.optimizeWeights(features, labels, 5); // 5折交叉验证
+```
+
+### 3. 性能分析 / Performance Analysis
+
+```java
+// 获取各分类器的准确率 / Get accuracy of each classifier
+Map<String, Double> accuracies = result.getClassifierAccuracies();
+
+// 获取最终权重 / Get final weights
+IVector finalWeights = result.getClassifierWeights();
+```
+
+## 使用示例 / Usage Examples
+
+### 示例1：基本集成分类 / Example 1: Basic Ensemble Classification
+
+```java
+// 准备数据 / Prepare data
+float[][] featureData = {
+    {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+    {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13}
+};
+String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B"};
+
+IMatrix features = IMatrix.of(featureData);
+
+// 创建和训练模型 / Create and train model
+EnsembleClassifier ensemble = new EnsembleClassifier(
+    EnsembleStrategy.WEIGHTED_VOTING, 42L);
+EnsembleResult result = ensemble.fit(features, labelData);
+
+// 获取结果 / Get results
+Map<String, Double> accuracies = result.getClassifierAccuracies();
+IVector weights = result.getClassifierWeights();
+
+System.out.println("分类器准确率: " + accuracies);
+System.out.println("分类器权重: " + weights);
+
+// 预测新样本 / Predict new sample
+IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+String prediction = ensemble.predict(newFeatures);
+System.out.println("预测类别: " + prediction);
+```
 
 ---
 
