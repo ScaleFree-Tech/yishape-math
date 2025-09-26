@@ -50,7 +50,7 @@
 - **降维算法** / **Dimensionality Reduction**: PCA、SVD、t-SNE、UMAP等降维方法 / PCA, SVD, t-SNE, UMAP dimensionality reduction methods
 - **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析 / Regression and classification result analysis
 
-### ⚡ 优化算法 / Optimization Algorithms
+### ⚡ 数学最优化 / Optimization Algorithms
 - **优化器** / **Optimizers**: L-BFGS、DFP、共轭梯度法、最速下降法
   - *Quasi-Newton optimization algorithms*
 - **在线优化器** / **Online Optimizers**: SGD、Adam
