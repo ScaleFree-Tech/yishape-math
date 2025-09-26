@@ -551,7 +551,7 @@ graph TB
         STAT[统计分析层<br/>Statistical Analysis Layer<br/>Stats, Distributions<br/>ANOVA, HypothesisTesting<br/>GaussianMixtureModel, EMAlgorithm]
         TS[时间序列层<br/>Time Series Layer<br/>Series, TimeSeriesData<br/>TimeSeriesAnalyzer, TimeSeriesForecasting<br/>ARIMA, GARCH, VAR]
         SIG[信号处理层<br/>Signal Processing Layer<br/>Signals, SignalGeneration<br/>SignalUtilities, WaveletAnalysis<br/>RereFFT, RereDCT, RereHilbert]
-        AUD[音频处理层<br/>Audio Processing Layer<br/>AudioAnalyzer, AudioProcessor<br/>MusicAnalyzer, MusicGenerator<br/>AudioFeatures, AudioVisualizer]
+        AUD[音频处理层<br/>Audio Processing Layer<br/>AudioAnalyzer, AudioProcessor<br/>MusicAnalyzer, MusicGenerator<br/>AudioFeatures, AudioPlots]
         IMG[图像处理层<br/>Image Processing Layer<br/>ImageData, ImageFilter<br/>ImageSegmentation, ImageTransform<br/>SIFTFeatureDetector, SURFFeatureDetector]
     end
     
@@ -788,7 +788,7 @@ src/main/java/
 │   ├── signal/               # 信号处理模块 / Signal Processing Module
 │   │   ├── Signals.java          # 信号处理工具类 / Signal Processing Utilities
 │   │   ├── SignalUtilities.java  # 信号工具类 / Signal Utilities
-│   │   ├── SignalVisualizer.java # 信号可视化 / Signal Visualizer
+│   │   ├── SignalPlots.java # 信号可视化 / Signal Plots
 │   │   ├── analysis/             # 信号分析 / Signal Analysis
 │   │   │   ├── ISignalAnalyzer.java    # 信号分析接口 / Signal Analysis Interface
 │   │   │   └── SpectrumAnalyzer.java   # 频谱分析器 / Spectrum Analyzer
