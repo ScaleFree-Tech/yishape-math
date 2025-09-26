@@ -24,7 +24,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public class WaveletVisualizer {
+public class WaveletPlots {
     
     /**
      * 绘制小波系数图 / Plot wavelet coefficients

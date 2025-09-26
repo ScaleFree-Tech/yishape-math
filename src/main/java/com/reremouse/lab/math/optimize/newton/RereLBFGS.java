@@ -1,9 +1,13 @@
-package com.reremouse.lab.math.optimize;
+package com.reremouse.lab.math.optimize.newton;
 
 import com.reremouse.lab.util.Tuple2;
 import java.util.ArrayList;
 import java.util.List;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.RereLineSearch;
 
 /**
  * LBFGS优化器

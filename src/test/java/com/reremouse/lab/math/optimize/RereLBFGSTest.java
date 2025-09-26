@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.optimize;
 
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.util.Tuple2;

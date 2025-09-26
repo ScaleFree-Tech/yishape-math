@@ -24,14 +24,14 @@ public class AudioStatisticsQualityTestFixed {
             
             System.out.println("Generating audio statistics plot with proper x-axis labels...");
             startTime = System.currentTimeMillis();
-            IPlot statsPlot = AudioVisualizer.plotAudioStatistics(data, "音频统计信息 / Audio Statistics");
+            IPlot statsPlot = AudioPlots.plotAudioStatistics(data, "音频统计信息 / Audio Statistics");
             endTime = System.currentTimeMillis();
             System.out.println("Statistics plot generated in " + (endTime - startTime) + " ms");
             statsPlot.show();
             
             System.out.println("Generating audio quality plot with proper x-axis labels...");
             startTime = System.currentTimeMillis();
-            IPlot qualityPlot = AudioVisualizer.plotAudioQuality(data, "音频质量评估 / Audio Quality Assessment");
+            IPlot qualityPlot = AudioPlots.plotAudioQuality(data, "音频质量评估 / Audio Quality Assessment");
             endTime = System.currentTimeMillis();
             System.out.println("Quality plot generated in " + (endTime - startTime) + " ms");
             qualityPlot.show();

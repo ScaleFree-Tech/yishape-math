@@ -23,31 +23,31 @@ public class VizTestFixed {
             
             System.out.println("Generating waveform plot...");
             startTime = System.currentTimeMillis();
-            AudioVisualizer.plotWaveform(data, "音频波形 / Audio Waveform").show();
+            AudioPlots.plotWaveform(data, "音频波形 / Audio Waveform").show();
             endTime = System.currentTimeMillis();
             System.out.println("Waveform plot generated in " + (endTime - startTime) + " ms");
             
             System.out.println("Generating spectrum plot (line chart)...");
             startTime = System.currentTimeMillis();
-            AudioVisualizer.plotSpectrum(data, "音频频谱 (线图) / Audio Spectrum (Line Chart)", "line").show();
+            AudioPlots.plotSpectrum(data, "音频频谱 (线图) / Audio Spectrum (Line Chart)", "line").show();
             endTime = System.currentTimeMillis();
             System.out.println("Spectrum line plot generated in " + (endTime - startTime) + " ms");
             
             System.out.println("Generating spectrum plot (bar chart)...");
             startTime = System.currentTimeMillis();
-            AudioVisualizer.plotSpectrum(data, "音频频谱 (柱状图) / Audio Spectrum (Bar Chart)", "bar").show();
+            AudioPlots.plotSpectrum(data, "音频频谱 (柱状图) / Audio Spectrum (Bar Chart)", "bar").show();
             endTime = System.currentTimeMillis();
             System.out.println("Spectrum bar plot generated in " + (endTime - startTime) + " ms");
             
             System.out.println("Generating log spectrum plot...");
             startTime = System.currentTimeMillis();
-            AudioVisualizer.plotLogSpectrum(data, "音频对数频谱 / Audio Log Spectrum").show();
+            AudioPlots.plotLogSpectrum(data, "音频对数频谱 / Audio Log Spectrum").show();
             endTime = System.currentTimeMillis();
             System.out.println("Log spectrum plot generated in " + (endTime - startTime) + " ms");
             
             System.out.println("Generating spectrogram plot...");
             startTime = System.currentTimeMillis();
-            AudioVisualizer.plotSpectrogram(data, "音频频谱图 / Audio Spectrogram", 1024, 256).show();
+            AudioPlots.plotSpectrogram(data, "音频频谱图 / Audio Spectrogram", 1024, 256).show();
             endTime = System.currentTimeMillis();
             System.out.println("Spectrogram plot generated in " + (endTime - startTime) + " ms");
             

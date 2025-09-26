@@ -5,7 +5,7 @@ import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.util.Tuple2;
 
 import java.util.HashMap;

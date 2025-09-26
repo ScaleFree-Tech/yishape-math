@@ -1,6 +1,7 @@
-package com.reremouse.lab.math.optimize;
+package com.reremouse.lab.math.optimize.newton;
 
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.optimize.IOnlineOptimizer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 

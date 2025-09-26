@@ -33,7 +33,7 @@ import java.util.HashMap;
  * @version 1.0
  * @since 1.0
  */
-public class AudioVisualizer {
+public class AudioPlots {
     
     // Maximum number of points to display in waveform for visualization
     private static final int MAX_WAVEFORM_POINTS = 10000;

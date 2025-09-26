@@ -24,7 +24,7 @@ public class SpectrogramSizeTest {
             
             System.out.println("Generating spectrogram plot with size limitation...");
             startTime = System.currentTimeMillis();
-            IPlot spectrogram = AudioVisualizer.plotSpectrogram(data, "音频频谱图 / Audio Spectrogram", 1024, 256);
+            IPlot spectrogram = AudioPlots.plotSpectrogram(data, "音频频谱图 / Audio Spectrogram", 1024, 256);
             endTime = System.currentTimeMillis();
             System.out.println("Spectrogram plot generated in " + (endTime - startTime) + " ms");
             

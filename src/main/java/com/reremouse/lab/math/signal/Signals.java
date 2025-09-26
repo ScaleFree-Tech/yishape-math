@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.signal;
 
 import com.reremouse.lab.math.signal.wavele.WaveletAnalysis;
-import com.reremouse.lab.math.signal.wavele.WaveletVisualizer;
+import com.reremouse.lab.math.signal.wavele.WaveletPlots;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.util.Tuple2;
@@ -691,7 +691,7 @@ public class Signals {
      */
     public static IPlot plotWaveletCoefficients(IVector<Double> signal, String waveletType, 
                                               int levels, String title) {
-        return WaveletVisualizer.plotWaveletCoefficients(signal, waveletType, levels, title);
+        return WaveletPlots.plotWaveletCoefficients(signal, waveletType, levels, title);
     }
     
     /**
@@ -699,7 +699,7 @@ public class Signals {
      */
     public static IPlot plotWaveletEnergyDistribution(IVector<Double> signal, String waveletType, 
                                                     int levels, String title) {
-        return WaveletVisualizer.plotWaveletEnergyDistribution(signal, waveletType, levels, title);
+        return WaveletPlots.plotWaveletEnergyDistribution(signal, waveletType, levels, title);
     }
     
     // ========== 工厂方法 / Factory Methods ==========
