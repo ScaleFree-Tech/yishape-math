@@ -92,7 +92,7 @@ Discrete Cosine Transform class providing various types of DCT transforms for si
 
 Hilbert Transform class providing Hilbert transform and analytic signal analysis functionality.
 
-### SignalVisualizer 类 / SignalVisualizer Class
+### SignalPlots 类 / SignalPlots Class
 
 信号可视化类，提供信号数据的可视化功能。
 

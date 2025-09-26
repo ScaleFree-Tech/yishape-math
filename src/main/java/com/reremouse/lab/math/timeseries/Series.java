@@ -585,82 +585,82 @@ public class Series {
     
     /**
      * 绘制时间序列 / Plot Time Series
-     * @see TimeSeriesVisualizer#plotTimeSeries(TimeSeriesData, String)
+     * @see TimeSeriesPlots#plotTimeSeries(TimeSeriesData, String)
      */
     public static IPlot plotTimeSeries(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.plotTimeSeries(timeSeriesData, title);
+        return TimeSeriesPlots.plotTimeSeries(timeSeriesData, title);
     }
     
     /**
      * 绘制趋势分析 / Plot Trend Analysis
-     * @see TimeSeriesVisualizer#plotTrendAnalysis(TimeSeriesData, String)
+     * @see TimeSeriesPlots#plotTrendAnalysis(TimeSeriesData, String)
      */
     public static IPlot plotTrendAnalysis(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.plotTrendAnalysis(timeSeriesData, title);
+        return TimeSeriesPlots.plotTrendAnalysis(timeSeriesData, title);
     }
     
     /**
      * 绘制季节性分解 / Plot Seasonal Decomposition
-     * @see TimeSeriesVisualizer#plotSeasonalDecomposition(TimeSeriesData, int, String)
+     * @see TimeSeriesPlots#plotSeasonalDecomposition(TimeSeriesData, int, String)
      */
     public static IPlot plotSeasonalDecomposition(TimeSeriesData timeSeriesData, int period, String title) {
-        return TimeSeriesVisualizer.plotSeasonalDecomposition(timeSeriesData, period, title);
+        return TimeSeriesPlots.plotSeasonalDecomposition(timeSeriesData, period, title);
     }
     
     /**
      * 绘制自相关图 / Plot Autocorrelation
-     * @see TimeSeriesVisualizer#plotAutocorrelation(TimeSeriesData, int, String)
+     * @see TimeSeriesPlots#plotAutocorrelation(TimeSeriesData, int, String)
      */
     public static IPlot plotAutocorrelation(TimeSeriesData timeSeriesData, int maxLag, String title) {
-        return TimeSeriesVisualizer.plotAutocorrelation(timeSeriesData, maxLag, title);
+        return TimeSeriesPlots.plotAutocorrelation(timeSeriesData, maxLag, title);
     }
     
     /**
      * 绘制偏自相关图 / Plot Partial Autocorrelation
-     * @see TimeSeriesVisualizer#plotPartialAutocorrelation(TimeSeriesData, int, String)
+     * @see TimeSeriesPlots#plotPartialAutocorrelation(TimeSeriesData, int, String)
      */
     public static IPlot plotPartialAutocorrelation(TimeSeriesData timeSeriesData, int maxLag, String title) {
-        return TimeSeriesVisualizer.plotPartialAutocorrelation(timeSeriesData, maxLag, title);
+        return TimeSeriesPlots.plotPartialAutocorrelation(timeSeriesData, maxLag, title);
     }
     
     /**
      * 绘制预测结果 / Plot Forecasting
-     * @see TimeSeriesVisualizer#plotForecasting(TimeSeriesData, int, String)
+     * @see TimeSeriesPlots#plotForecasting(TimeSeriesData, int, String)
      */
     public static IPlot plotForecasting(TimeSeriesData timeSeriesData, int forecastSteps, String title) {
-        return TimeSeriesVisualizer.plotForecasting(timeSeriesData, forecastSteps, title);
+        return TimeSeriesPlots.plotForecasting(timeSeriesData, forecastSteps, title);
     }
     
     /**
      * 绘制时间序列统计信息 / Plot Time Series Statistics
-     * @see TimeSeriesVisualizer#plotTimeSeriesStatistics(TimeSeriesData, String)
+     * @see TimeSeriesPlots#plotTimeSeriesStatistics(TimeSeriesData, String)
      */
     public static IPlot plotTimeSeriesStatistics(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.plotTimeSeriesStatistics(timeSeriesData, title);
+        return TimeSeriesPlots.plotTimeSeriesStatistics(timeSeriesData, title);
     }
     
     /**
      * 绘制多变量时间序列 / Plot Multivariate Time Series
-     * @see TimeSeriesVisualizer#plotMultivariateTimeSeries(TimeSeriesData, String)
+     * @see TimeSeriesPlots#plotMultivariateTimeSeries(TimeSeriesData, String)
      */
     public static IPlot plotMultivariateTimeSeries(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.plotMultivariateTimeSeries(timeSeriesData, title);
+        return TimeSeriesPlots.plotMultivariateTimeSeries(timeSeriesData, title);
     }
     
     /**
      * 绘制时间序列特征 / Plot Time Series Features
-     * @see TimeSeriesVisualizer#plotTimeSeriesFeatures(TimeSeriesData, String)
+     * @see TimeSeriesPlots#plotTimeSeriesFeatures(TimeSeriesData, String)
      */
     public static IPlot plotTimeSeriesFeatures(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.plotTimeSeriesFeatures(timeSeriesData, title);
+        return TimeSeriesPlots.plotTimeSeriesFeatures(timeSeriesData, title);
     }
     
     /**
      * 创建时间序列仪表板 / Create Time Series Dashboard
-     * @see TimeSeriesVisualizer#createTimeSeriesDashboard(TimeSeriesData, String)
+     * @see TimeSeriesPlots#createTimeSeriesDashboard(TimeSeriesData, String)
      */
     public static List<IPlot> createTimeSeriesDashboard(TimeSeriesData timeSeriesData, String title) {
-        return TimeSeriesVisualizer.createTimeSeriesDashboard(timeSeriesData, title);
+        return TimeSeriesPlots.createTimeSeriesDashboard(timeSeriesData, title);
     }
     
     // ========== 时间序列分析器方法 / Time Series Analyzer Methods ==========

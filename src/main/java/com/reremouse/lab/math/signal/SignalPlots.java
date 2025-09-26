@@ -27,7 +27,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public class SignalVisualizer {
+public class SignalPlots {
     
     /**
      * 绘制信号波形图 / Plot signal waveform

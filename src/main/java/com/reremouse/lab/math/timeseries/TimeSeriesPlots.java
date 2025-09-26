@@ -25,7 +25,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public class TimeSeriesVisualizer {
+public class TimeSeriesPlots {
     
     /**
      * 绘制时间序列图 / Plot time series

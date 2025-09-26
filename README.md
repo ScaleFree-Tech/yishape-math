@@ -51,12 +51,16 @@
 - **模型评估** / **Model Evaluation**: 回归结果分析和分类结果分析 / Regression and classification result analysis
 
 ### ⚡ 优化算法 / Optimization Algorithms
-- **优化器** / **Optimizers**: L-BFGS、SGD、Adam
-  - *Quasi-Newton optimization algorithm*
+- **优化器** / **Optimizers**: L-BFGS、DFP、共轭梯度法、最速下降法
+  - *Quasi-Newton optimization algorithms*
+- **在线优化器** / **Online Optimizers**: SGD、Adam
+  - *Online stochastic optimization algorithms*
 - **线搜索** / **Line Search**: 一维搜索优化方法
   - *One-dimensional search optimization methods*
-- **目标函数接口** / **Objective Function Interface**: 灵活的优化目标定义
-  - *Flexible optimization objective definition*
+- **线性规划求解器** / **Linear Programming Solvers**: 单纯形法、内点法、拉格朗日乘数法
+  - *Linear programming solvers*
+- **约束优化** / **Constrained Optimization**: 拉格朗日乘数法
+  - *Lagrange multiplier method*
 
 ### 📡 信号处理 / Signal Processing
 - **信号生成与滤波** / **Signal Generation & Filtering**: 基本波形生成、噪声信号、移动平均、中值滤波、巴特沃斯滤波器等 / Basic waveform generation, noise signals, moving average, median filtering, Butterworth filters
@@ -339,6 +343,59 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 
 
 
+#### 最优化算法 / Optimization Algorithms
+```java
+// L-BFGS优化器示例 / L-BFGS Optimizer Example
+RereLBFGS optimizer = new RereLBFGS();
+
+// 定义目标函数（Rosenbrock函数）/ Define objective function (Rosenbrock function)
+IObjectiveFunction objFun = new IObjectiveFunction() {
+    @Override
+    public double computeObjective(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+    }
+};
+
+// 定义梯度函数 / Define gradient function
+IGradientFunction grdFun = new IGradientFunction() {
+    @Override
+    public IVector computeGradient(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        double[] grad = new double[2];
+        grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+        grad[1] = 200 * (x2 - x1 * x1);
+        return Linalg.vector(grad);
+    }
+};
+
+// 执行优化 / Execute optimization
+IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+```
+
+```java
+// 在线Adam优化器示例 / Online Adam Optimizer Example
+RereOnlineAdam adamOptimizer = new RereOnlineAdam();
+
+// 初始化优化器 / Initialize optimizer
+IVector initialParams = Linalg.vector(new double[]{0.0, 0.0});
+adamOptimizer.initialize(initialParams);
+
+// 在线学习循环 / Online learning loop
+for (int i = 0; i < numIterations; i++) {
+    IVector gradient = computeGradient(adamOptimizer.getCurrentParams());
+    double loss = computeLoss(adamOptimizer.getCurrentParams());
+    
+    // 执行一步优化 / Perform one optimization step
+    IVector updatedParams = adamOptimizer.step(gradient, loss);
+    
+    if (loss < tolerance) break;
+}
+```
+
 #### 线性回归 / Linear Regression
 ```java
 // 创建线性回归模型 / Create linear regression model
@@ -539,9 +596,10 @@ graph TB
 
 ### 文件结构 / File Structure
 ```
-src/main/java/com/reremouse/lab/
+src/main/java/
+└── com/reremouse/lab/
 ├── audio/                    # 音频处理模块 / Audio Processing Module
-│   ├── AudioVisualizer.java  # 音频可视化 / Audio Visualizer
+│   ├── AudioPlots.java       # 音频绘图 / Audio Plots
 │   ├── Audios.java           # 音频处理入口类 / Audio Processing Entry Class
 │   ├── analysis/             # 音频分析 / Audio Analysis
 │   │   ├── AbstractAudioAnalyzer.java  # 抽象音频分析器 / Abstract Audio Analyzer
@@ -602,19 +660,21 @@ src/main/java/com/reremouse/lab/
 │   │   ├── IAdvancedAudioFilter.java   # 高级音频滤波器接口 / Advanced Audio Filter Interface
 │   │   ├── IBaseAudioFilter.java       # 基础音频滤波器接口 / Base Audio Filter Interface
 │   │   └── LowPassFilter.java          # 低通滤波器 / Low Pass Filter
+│   ├── generation/           # 音频生成 / Audio Generation
 │   ├── pipeline/             # 音频处理管道 / Audio Pipeline
 │   │   └── AudioPipelineBuilder.java   # 音频管道构建器 / Audio Pipeline Builder
 │   ├── preprocessing/        # 音频预处理 / Audio Preprocessing
 │   │   ├── AudioPreprocessingOptions.java # 音频预处理选项 / Audio Preprocessing Options
 │   │   └── AudioPreprocessor.java      # 音频预处理器 / Audio Preprocessor
-│   └── processing/           # 音频处理 / Audio Processing
-│       ├── AbstractAudioProcessorStandard.java # 抽象音频处理器标准 / Abstract Audio Processor Standard
-│       ├── ChannelProcessor.java       # 通道处理器 / Channel Processor
-│       ├── IAdvancedAudioProcessor.java # 高级音频处理器接口 / Advanced Audio Processor Interface
-│       ├── IAudioProcessor.java        # 音频处理器接口 / Audio Processor Interface
-│       ├── IBaseAudioProcessor.java    # 基础音频处理器接口 / Base Audio Processor Interface
-│       ├── NormalizeProcessor.java     # 归一化处理器 / Normalize Processor
-│       ├── VolumeProcessor.java        # 音量处理器 / Volume Processor
+│   ├── processing/           # 音频处理 / Audio Processing
+│   │   ├── AbstractAudioProcessorStandard.java # 抽象音频处理器标准 / Abstract Audio Processor Standard
+│   │   ├── ChannelProcessor.java       # 通道处理器 / Channel Processor
+│   │   ├── IAdvancedAudioProcessor.java # 高级音频处理器接口 / Advanced Audio Processor Interface
+│   │   ├── IAudioProcessor.java        # 音频处理器接口 / Audio Processor Interface
+│   │   ├── IBaseAudioProcessor.java    # 基础音频处理器接口 / Base Audio Processor Interface
+│   │   ├── NormalizeProcessor.java     # 归一化处理器 / Normalize Processor
+│   │   └── VolumeProcessor.java        # 音量处理器 / Volume Processor
+│   └── transform/            # 音频变换 / Audio Transform
 ├── math/                     # 数学计算模块 / Mathematical Computing Module
 │   ├── RereMathUtil.java     # 数学工具类 / Math Utilities Class
 │   ├── YishapeMath.java      # 主入口类 / Main Entry Class
@@ -703,15 +763,28 @@ src/main/java/com/reremouse/lab/
 │   │       ├── RereTSNE.java                # t-SNE降维 / t-SNE Dimensionality Reduction
 │   │       └── RereUMAP.java                # UMAP降维 / UMAP Dimensionality Reduction
 │   ├── optimize/             # 优化算法 / Optimization Algorithms
-│   │   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
-│   │   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
 │   │   ├── IGradientFunction.java  # 梯度函数接口 / Gradient Function Interface
+│   │   ├── IObjectiveFunction.java # 目标函数接口 / Objective Function Interface
 │   │   ├── IOnlineOptimizer.java  # 在线优化器接口 / Online Optimizer Interface
+│   │   ├── IOptimizer.java       # 优化器接口 / Optimizer Interface
+│   │   ├── OptimizerExample.java # 优化器示例 / Optimizer Example
 │   │   ├── Opts.java             # 优化工具类 / Optimization Utilities
-│   │   ├── RereLBFGS.java        # L-BFGS优化器 / L-BFGS Optimizer
 │   │   ├── RereLineSearch.java   # 线搜索 / Line Search
-│   │   ├── RereOnlineAdam.java   # 在线Adam优化器 / Online Adam Optimizer
-│   │   └── RereOnlineSGD.java    # 在线SGD优化器 / Online SGD Optimizer
+│   │   ├── constraint/           # 约束优化 / Constraint Optimization
+│   │   │   └── LagrangeMultiplierSolver.java # 拉格朗日乘数求解器 / Lagrange Multiplier Solver
+│   │   ├── linpg/                # 线性规划 / Linear Programming
+│   │   │   ├── ILinProgSolver.java         # 线性规划求解器接口 / Linear Programming Solver Interface
+│   │   │   ├── InteriorPointLinProgSolver.java # 内点法线性规划求解器 / Interior Point Linear Programming Solver
+│   │   │   ├── LangMultiplierLinProgSolver.java # 拉格朗日乘数线性规划求解器 / Lagrange Multiplier Linear Programming Solver
+│   │   │   ├── LinProgUtil.java            # 线性规划工具类 / Linear Programming Utilities
+│   │   │   └── SimplexLinProgSolver.java   # 单纯形法线性规划求解器 / Simplex Linear Programming Solver
+│   │   └── newton/               # 牛顿法优化 / Newton Method Optimization
+│   │       ├── RereConjugateGradient.java  # 共轭梯度法 / Conjugate Gradient Method
+│   │       ├── RereDFP.java                # DFP算法 / DFP Algorithm
+│   │       ├── RereLBFGS.java              # L-BFGS优化器 / L-BFGS Optimizer
+│   │       ├── RereOnlineAdam.java         # 在线Adam优化器 / Online Adam Optimizer
+│   │       ├── RereOnlineSGD.java          # 在线SGD优化器 / Online SGD Optimizer
+│   │       └── RereSteepestDescent.java    # 最速下降法 / Steepest Descent Method
 │   ├── signal/               # 信号处理模块 / Signal Processing Module
 │   │   ├── Signals.java          # 信号处理工具类 / Signal Processing Utilities
 │   │   ├── SignalUtilities.java  # 信号工具类 / Signal Utilities
@@ -756,19 +829,19 @@ src/main/java/com/reremouse/lab/
 │   │       ├── WaveletAnalysis.java  # 小波分析 / Wavelet Analysis
 │   │       ├── WaveletCoefficients.java # 小波系数 / Wavelet Coefficients
 │   │       ├── WaveletFilters.java   # 小波滤波器 / Wavelet Filters
-│   │       ├── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
-│   │       └── WaveletVisualizer.java # 小波可视化 / Wavelet Visualizer
+│   │       ├── WaveletPlots.java     # 小波绘图 / Wavelet Plots
+│   │       └── WaveletUtilities.java # 小波工具类 / Wavelet Utilities
 │   ├── timeseries/           # 时间序列分析模块 / Time Series Analysis Module
+│   │   ├── CointegrationAnalysis.java # 协整分析 / Cointegration Analysis
 │   │   ├── Series.java           # 时间序列类 / Time Series Class
-│   │   ├── TimeSeriesData.java   # 时间序列数据 / Time Series Data
 │   │   ├── TimeSeriesAnalyzer.java # 时间序列分析器 / Time Series Analyzer
+│   │   ├── TimeSeriesData.java   # 时间序列数据 / Time Series Data
 │   │   ├── TimeSeriesDecomposition.java # 时间序列分解 / Time Series Decomposition
 │   │   ├── TimeSeriesFiltering.java # 时间序列滤波 / Time Series Filtering
 │   │   ├── TimeSeriesForecasting.java # 时间序列预测 / Time Series Forecasting
-│   │   ├── TimeSeriesUtils.java  # 时间序列工具类 / Time Series Utilities
-│   │   ├── TimeSeriesVisualizer.java # 时间序列可视化 / Time Series Visualizer
+│   │   ├── TimeSeriesPlots.java  # 时间序列绘图 / Time Series Plots
 │   │   ├── TimeSeriesUnifiedExample.java # 时间序列统一示例 / Time Series Unified Example
-│   │   ├── CointegrationAnalysis.java # 协整分析 / Cointegration Analysis
+│   │   ├── TimeSeriesUtils.java  # 时间序列工具类 / Time Series Utilities
 │   │   └── model/               # 时间序列模型 / Time Series Models
 │   │       ├── ITimeSeriesModel.java      # 时间序列模型接口 / Time Series Model Interface
 │   │       ├── ITimeSeriesDiagnostics.java # 时间序列诊断接口 / Time Series Diagnostics Interface
@@ -794,20 +867,20 @@ src/main/java/com/reremouse/lab/
 │       ├── StyleExpression.java  # 样式表达式 / Style Expression
 │       ├── ThemeManager.java     # 主题管理器 / Theme Manager
 │       └── UniversalStyleApplier.java # 通用样式应用器 / Universal Style Applier
-└── util/                     # 工具类模块 / Utility Module
-    ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class
-    ├── RereExecutor.java         # 执行器工具类 / Executor Utility Class
-    ├── RereTree.java             # 树结构工具类 / Tree Structure Utility Class
-    ├── RereTreeNode.java         # 树节点工具类 / Tree Node Utility Class
-    ├── StringUtils.java          # 字符串工具类 / String Utility Class
-    ├── Tuple2.java               # 二元组 / Tuple2
-    ├── Tuple3.java               # 三元组 / Tuple3
-    ├── Tuple4.java               # 四元组 / Tuple4
-    ├── Tuple5.java               # 五元组 / Tuple5
-    ├── Tuple6.java               # 六元组 / Tuple6
-    ├── Tuple7.java               # 七元组 / Tuple7
-    ├── Tuple8.java               # 八元组 / Tuple8
-    └── Tuple9.java               # 九元组 / Tuple9
+    └── util/                     # 工具类模块 / Utility Module
+        ├── RereCollectionUtil.java   # 集合工具类 / Collection Utility Class
+        ├── RereExecutor.java         # 执行器工具类 / Executor Utility Class
+        ├── RereTree.java             # 树结构工具类 / Tree Structure Utility Class
+        ├── RereTreeNode.java         # 树节点工具类 / Tree Node Utility Class
+        ├── StringUtils.java          # 字符串工具类 / String Utility Class
+        ├── Tuple2.java               # 二元组 / Tuple2
+        ├── Tuple3.java               # 三元组 / Tuple3
+        ├── Tuple4.java               # 四元组 / Tuple4
+        ├── Tuple5.java               # 五元组 / Tuple5
+        ├── Tuple6.java               # 六元组 / Tuple6
+        ├── Tuple7.java               # 七元组 / Tuple7
+        ├── Tuple8.java               # 八元组 / Tuple8
+        └── Tuple9.java               # 九元组 / Tuple9
 ```
 
 

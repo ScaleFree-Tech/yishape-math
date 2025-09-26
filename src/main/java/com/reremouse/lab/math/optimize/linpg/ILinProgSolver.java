@@ -25,6 +25,18 @@ public interface ILinProgSolver {
         Tuple2<IMatrix, IVector> ss = LinProgUtil.convertUbEqToEqConstraits(A_ub, b_ub, A_eq, b_eq);
         return this.solveWithNonNegativeEqualConstraints(c, ss._1, ss._2);
     }
+    
+    /**
+     * 求解线性规划问题
+     *
+     * @param c 目标函数系数（最小化问题）
+     * @param A_eq 等式约束矩阵系数
+     * @param b_eq 等式约束值（不等式右方）
+     * @return
+     */
+    public default Tuple2<Double, IVector> solve(IVector c, IMatrix A_eq, IVector b_eq) {
+        return this.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+    }
 
     
 

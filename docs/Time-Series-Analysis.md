@@ -481,11 +481,11 @@ IPlot plot7 = com.reremouse.lab.math.signal.Signals.plotPowerSpectralDensity(
     timeSeries.getVariable(0), timeSeries.getSamplingRate(), 256, 0.5, "PSD Plot");
 
 // 小波变换图 / Wavelet transform plot
-IPlot plot8 = com.reremouse.lab.math.signal.WaveletVisualizer.plotWaveletCoefficients(
+IPlot plot8 = com.reremouse.lab.math.signal.WaveletPlots.plotWaveletCoefficients(
     timeSeries.getVariable(0), "db4", 4, "Wavelet Transform");
 
 // 滤波结果对比图 / Filter result comparison plot
-IPlot plot9 = TimeSeriesVisualizer.plotTimeSeriesComparison(
+IPlot plot9 = TimeSeriesPlots.plotTimeSeriesComparison(
     Arrays.asList(original, filtered), 
     Arrays.asList("Original", "Filtered"), 
     "Filter Comparison");

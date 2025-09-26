@@ -6,6 +6,14 @@
 
 The optimization algorithms package provides implementations of various mathematical optimization solvers including L-BFGS optimizer, online optimizers (SGD, Adam), line search, and more. These algorithms provide powerful optimization support for machine learning model training, efficiently solving optimal solutions for various objective functions.
 
+## 包结构 / Package Structure
+
+优化算法包按照功能划分为多个子包：
+- `com.reremouse.lab.math.optimize`: 核心接口和通用类
+- `com.reremouse.lab.math.optimize.newton`: 拟牛顿法和相关优化算法
+- `com.reremouse.lab.math.optimize.linpg`: 线性规划求解器
+- `com.reremouse.lab.math.optimize.constraint`: 约束优化算法
+
 ## 核心接口 / Core Interfaces
 
 ### IOptimizer 接口 / IOptimizer Interface
@@ -127,9 +135,41 @@ public interface IGradientFunction {
 }
 ```
 
+### ILinProgSolver 接口 / ILinProgSolver Interface
+
+线性规划求解器接口，用于求解线性规划问题。
+
+```java
+public interface ILinProgSolver {
+    /**
+     * 求解线性规划问题 / Solve linear programming problem
+     * @param c 目标函数系数向量 / Objective function coefficient vector
+     * @param A 约束矩阵 / Constraint matrix
+     * @param b 约束右端向量 / Constraint right-hand side vector
+     * @return 最优解向量 / Optimal solution vector
+     */
+    IVector solve(IVector c, IMatrix A, IVector b);
+    
+    /**
+     * 求解带不等式约束的线性规划问题 / Solve linear programming problem with inequality constraints
+     * @param c 目标函数系数向量 / Objective function coefficient vector
+     * @param A_ub 不等式约束矩阵 / Inequality constraint matrix
+     * @param b_ub 不等式约束右端向量 / Inequality constraint right-hand side vector
+     * @param A_eq 等式约束矩阵 / Equality constraint matrix
+     * @param b_eq 等式约束右端向量 / Equality constraint right-hand side vector
+     * @return 最优解向量 / Optimal solution vector
+     */
+    IVector solve(IVector c, IMatrix A_ub, IVector b_ub, IMatrix A_eq, IVector b_eq);
+}
+```
+
 ## 主要算法 / Main Algorithms
 
 ### 1. L-BFGS优化器 / L-BFGS Optimizer
+
+L-BFGS优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The L-BFGS optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -169,16 +209,16 @@ RereLBFGS optimizer = new RereLBFGS();
 
 // 设置参数 / Set parameters
 optimizer.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
-optimizer.setTolerance(1e-6f);           // 收敛容差 / Convergence tolerance
-optimizer.setMemorySize(10);             // 内存大小（向量对数量）/ Memory size (number of vector pairs)
+optimizer.setTolerance(1e-6);            // 收敛容差 / Convergence tolerance
+optimizer.setM(10);                      // 内存大小（向量对数量）/ Memory size (number of vector pairs)
 
 // 定义目标函数 / Define objective function
 IObjectiveFunction objFun = new IObjectiveFunction() {
     @Override
-    public float compute(IVector x) {
+    public double computeObjective(IVector x) {
         // 示例：Rosenbrock函数 / Example: Rosenbrock function
-        float x1 = x.get(0);
-        float x2 = x.get(1);
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
         return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
     }
 };
@@ -186,33 +226,37 @@ IObjectiveFunction objFun = new IObjectiveFunction() {
 // 定义梯度函数 / Define gradient function
 IGradientFunction grdFun = new IGradientFunction() {
     @Override
-    public IVector compute(IVector x) {
-        float x1 = x.get(0);
-        float x2 = x.get(1);
+    public IVector computeGradient(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
         
-        float[] grad = new float[2];
+        double[] grad = new double[2];
         grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
         grad[1] = 200 * (x2 - x1 * x1);
         
-        return IVector.of(grad);
+        return Linalg.vector(grad);
     }
 };
 
 // 初始点 / Initial point
-IVector initX = IVector.of(new float[]{-1.0f, -1.0f});
+IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
 
 // 执行优化 / Execute optimization
-Tuple2<Float, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
 
 // 获取结果 / Get results
-float optimalValue = result._1;
+double optimalValue = result._1;
 IVector optimalPoint = result._2;
 
-        System.out.println("最优值: " + optimalValue); // Optimal value
-        System.out.println("最优点: " + optimalPoint); // Optimal point
+System.out.println("最优值: " + optimalValue); // Optimal value
+System.out.println("最优点: " + optimalPoint); // Optimal point
 ```
 
 ### 2. 在线随机梯度下降优化器 / Online Stochastic Gradient Descent Optimizer
+
+在线随机梯度下降优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The Online Stochastic Gradient Descent optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -285,6 +329,10 @@ IVector finalParams = optimizer.getCurrentParams();
 ```
 
 ### 3. 在线Adam优化器 / Online Adam Optimizer
+
+在线Adam优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The Online Adam optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -370,6 +418,10 @@ IVector finalParams = optimizer.getCurrentParams();
 
 ### 4. 线搜索 / Line Search
 
+线搜索类位于 `com.reremouse.lab.math.optimize` 包中。
+
+The Line Search class is located in the `com.reremouse.lab.math.optimize` package.
+
 #### 算法原理 / Algorithm Principles
 
 线搜索是一种一维搜索方法，用于确定沿搜索方向的最优步长。常用的线搜索方法包括：
@@ -440,6 +492,316 @@ System.out.println("最优步长: " + optimalStep); // Optimal step size
 IVector newPoint = currentPoint.add(searchDirection.multiplyScalar(optimalStep));
 System.out.println("新点: " + newPoint);
 System.out.println("函数值变化: " + (objFun.computeObjective(newPoint) - objFun.computeObjective(currentPoint)));
+```
+
+### 5. 约束优化 / Constrained Optimization
+
+约束优化类位于 `com.reremouse.lab.math.optimize.constraint` 包中。
+
+The constrained optimization classes are located in the `com.reremouse.lab.math.optimize.constraint` package.
+
+#### 拉格朗日乘数法 / Lagrange Multiplier Method
+
+拉格朗日乘数法用于求解带等式约束的优化问题。
+
+##### 算法原理 / Algorithm Principles
+
+对于约束优化问题：
+```
+minimize f(x)
+subject to g(x) = 0
+```
+
+拉格朗日乘数法将其转换为无约束问题：
+```
+L(x, λ) = f(x) + λ^T g(x)
+```
+
+##### 使用示例 / Usage Examples
+
+```java
+// 创建拉格朗日乘数求解器 / Create Lagrange multiplier solver
+LagrangeMultiplierSolver solver = new LagrangeMultiplierSolver();
+
+// 设置参数 / Set parameters
+solver.setPenaltyFactor(1000.0);      // 惩罚因子 / Penalty factor
+solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
+solver.setTolerance(1e-6);            // 收敛容差 / Convergence tolerance
+
+// 定义目标函数 / Define objective function
+IObjectiveFunction objFun = new IObjectiveFunction() {
+    @Override
+    public double computeObjective(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        return x1 * x1 + x2 * x2;  // minimize x1² + x2²
+    }
+};
+
+// 定义梯度函数 / Define gradient function
+IGradientFunction grdFun = new IGradientFunction() {
+    @Override
+    public IVector computeGradient(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        return Linalg.vector(new double[]{2 * x1, 2 * x2});
+    }
+};
+
+// 定义约束矩阵 / Define constraint matrix
+// 约束: x1 + x2 = 1 / Constraint: x1 + x2 = 1
+IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector b = Linalg.vector(new double[]{1.0});
+
+// 初始点 / Initial point
+IVector initX = Linalg.vector(new double[]{0.5, 0.5});
+
+// 执行约束优化 / Execute constrained optimization
+Tuple2<Double, IVector> result = solver.solve(initX, objFun, grdFun, A, b);
+
+double optimalValue = result._1;
+IVector optimalPoint = result._2;
+
+System.out.println("最优值: " + optimalValue);
+System.out.println("最优点: " + optimalPoint);
+```
+
+### 6. 线性规划 / Linear Programming
+
+线性规划求解器位于 `com.reremouse.lab.math.optimize.linpg` 包中。
+
+The linear programming solvers are located in the `com.reremouse.lab.math.optimize.linpg` package.
+
+#### 单纯形法 / Simplex Method
+
+单纯形法是求解线性规划问题的经典算法。
+
+##### 算法原理 / Algorithm Principles
+
+对于标准形式的线性规划问题：
+```
+minimize c^T x
+subject to Ax = b, x ≥ 0
+```
+
+单纯形法通过在可行域的顶点间移动来寻找最优解。
+
+##### 使用示例 / Usage Examples
+
+```java
+// 创建单纯形法求解器 / Create simplex solver
+SimplexLinProgSolver solver = new SimplexLinProgSolver();
+
+// 设置参数 / Set parameters
+solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
+solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
+
+// 定义线性规划问题 / Define linear programming problem
+// minimize 2x1 + 3x2
+// subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
+IVector c = Linalg.vector(new double[]{2.0, 3.0});
+IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector b = Linalg.vector(new double[]{5.0});
+
+// 求解 / Solve
+IVector solution = solver.solve(c, A, b);
+
+System.out.println("最优解: " + solution);
+System.out.println("最优值: " + c.innerProduct(solution));
+```
+
+#### 内点法 / Interior Point Method
+
+内点法是另一种高效的线性规划求解算法。
+
+##### 使用示例 / Usage Examples
+
+```java
+// 创建内点法求解器 / Create interior point solver
+InteriorPointLinProgSolver solver = new InteriorPointLinProgSolver();
+
+// 设置参数 / Set parameters
+solver.setMaxIterations(100);         // 最大迭代次数 / Maximum iterations
+solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
+solver.setBarrierParameter(0.1);      // 障碍参数 / Barrier parameter
+
+// 定义线性规划问题 / Define linear programming problem
+IVector c = Linalg.vector(new double[]{-1.0, -2.0});  // maximize x1 + 2x2
+IMatrix A_ub = Linalg.matrix(new double[][]{{1.0, 1.0}, {2.0, 1.0}});
+IVector b_ub = Linalg.vector(new double[]{3.0, 4.0});
+
+// 求解 / Solve
+IVector solution = solver.solve(c, A_ub, b_ub, null, null);
+
+System.out.println("最优解: " + solution);
+System.out.println("最优值: " + (-c.innerProduct(solution)));  // 注意符号 / Note the sign
+```
+
+#### 拉格朗日乘数法线性规划求解器 / Lagrange Multiplier Linear Programming Solver
+
+结合拉格朗日乘数法的线性规划求解器。
+
+##### 使用示例 / Usage Examples
+
+```java
+// 创建拉格朗日乘数法线性规划求解器 / Create Lagrange multiplier linear programming solver
+LangMultiplierLinProgSolver solver = new LangMultiplierLinProgSolver();
+
+// 设置参数 / Set parameters
+solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
+solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
+solver.setPenaltyFactor(1000.0);      // 惩罚因子 / Penalty factor
+
+// 定义线性规划问题 / Define linear programming problem
+IVector c = Linalg.vector(new double[]{1.0, 2.0});
+IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}, {2.0, 1.0}});
+IVector b = Linalg.vector(new double[]{3.0, 4.0});
+
+// 求解 / Solve
+IVector solution = solver.solve(c, A, b);
+
+System.out.println("最优解: " + solution);
+System.out.println("最优值: " + c.innerProduct(solution));
+```
+
+### 7. 共轭梯度法 / Conjugate Gradient Method
+
+共轭梯度法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The Conjugate Gradient Method is located in the `com.reremouse.lab.math.optimize.newton` package.
+
+共轭梯度法是一种高效的求解大规模线性系统和二次优化问题的算法。
+
+#### 算法原理 / Algorithm Principles
+
+共轭梯度法通过构造共轭方向来加速收敛：
+```
+p_{k+1} = -r_{k+1} + β_k p_k
+```
+其中 `r_k` 是残差向量，`β_k` 是共轭系数。
+
+#### 使用示例 / Usage Examples
+
+```java
+// 创建共轭梯度优化器 / Create conjugate gradient optimizer
+RereConjugateGradient optimizer = new RereConjugateGradient();
+
+// 设置参数 / Set parameters
+optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+optimizer.setTolerance(1e-8);         // 收敛容差 / Convergence tolerance
+optimizer.setRestartFrequency(50);    // 重启频率 / Restart frequency
+
+// 定义二次目标函数 / Define quadratic objective function
+IObjectiveFunction objFun = new IObjectiveFunction() {
+    @Override
+    public double computeObjective(IVector x) {
+        // f(x) = 0.5 * x^T * A * x - b^T * x
+        IVector Ax = A.mmul(x);
+        return 0.5 * x.innerProduct(Ax) - b.innerProduct(x);
+    }
+};
+
+IGradientFunction grdFun = new IGradientFunction() {
+    @Override
+    public IVector computeGradient(IVector x) {
+        // ∇f(x) = A * x - b
+        return A.mmul(x).subtract(b);
+    }
+};
+
+// 初始点 / Initial point
+IVector initX = Linalg.vector(new double[]{0.0, 0.0});
+
+// 执行优化 / Execute optimization
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+
+System.out.println("最优值: " + result._1);
+System.out.println("最优点: " + result._2);
+```
+
+### 8. DFP算法 / DFP Algorithm
+
+DFP算法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The DFP Algorithm is located in the `com.reremouse.lab.math.optimize.newton` package.
+
+DFP（Davidon-Fletcher-Powell）算法是一种拟牛顿法，通过近似Hessian矩阵来加速收敛。
+
+#### 算法原理 / Algorithm Principles
+
+DFP算法使用以下更新公式来近似Hessian矩阵的逆：
+```
+H_{k+1} = H_k + (s_k s_k^T)/(s_k^T y_k) - (H_k y_k y_k^T H_k)/(y_k^T H_k y_k)
+```
+
+#### 使用示例 / Usage Examples
+
+```java
+// 创建DFP优化器 / Create DFP optimizer
+RereDFP optimizer = new RereDFP();
+
+// 设置参数 / Set parameters
+optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+
+// 定义目标函数 / Define objective function
+IObjectiveFunction objFun = new IObjectiveFunction() {
+    @Override
+    public double computeObjective(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+    }
+};
+
+IGradientFunction grdFun = new IGradientFunction() {
+    @Override
+    public IVector computeGradient(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        
+        double[] grad = new double[2];
+        grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+        grad[1] = 200 * (x2 - x1 * x1);
+        
+        return Linalg.vector(grad);
+    }
+};
+
+// 初始点 / Initial point
+IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
+
+// 执行优化 / Execute optimization
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+
+System.out.println("最优值: " + result._1);
+System.out.println("最优点: " + result._2);
+```
+
+### 9. 最速下降法 / Steepest Descent Method
+
+最速下降法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The Steepest Descent Method is located in the `com.reremouse.lab.math.optimize.newton` package.
+
+最速下降法是最基本的梯度下降算法。
+
+#### 使用示例 / Usage Examples
+
+```java
+// 创建最速下降优化器 / Create steepest descent optimizer
+RereSteepestDescent optimizer = new RereSteepestDescent();
+
+// 设置参数 / Set parameters
+optimizer.setMaxIterations(10000);    // 最大迭代次数 / Maximum iterations
+optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+optimizer.setStepSize(0.01);          // 步长 / Step size
+
+// 执行优化 / Execute optimization
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+
+System.out.println("最优值: " + result._1);
+System.out.println("最优点: " + result._2);
 ```
 
 ## 高级特性 / Advanced Features
@@ -630,6 +992,74 @@ public class LinearRegressionObjective implements IObjectiveFunction, IGradientF
 LinearRegressionObjective objFun = new LinearRegressionObjective(X, y, 0.01, 0.1);
 RereLBFGS optimizer = new RereLBFGS();
 Tuple2<Double, IVector> result = optimizer.optimize(initW, objFun, objFun);
+```
+
+### 8. DFP算法 / DFP Algorithm
+
+DFP算法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+
+The DFP Algorithm is located in the `com.reremouse.lab.math.optimize.newton` package.
+
+DFP（Davidon-Fletcher-Powell）算法是一种拟牛顿法，通过近似Hessian矩阵来加速收敛。
+
+DFP (Davidon-Fletcher-Powell) algorithm is a quasi-Newton method that accelerates convergence by approximating the Hessian matrix.
+
+#### 算法原理 / Algorithm Principles
+
+DFP算法使用以下更新公式来近似Hessian矩阵的逆：
+DFP algorithm uses the following update formula to approximate the inverse of the Hessian matrix:
+```java
+H_{k+1} = H_k + (s_k s_k^T)/(s_k^T y_k) - (H_k y_k y_k^T H_k)/(y_k^T H_k y_k)
+```
+
+其中：
+Where:
+- `s_k = x_{k+1} - x_k` (位置差)
+- `y_k = ∇f(x_{k+1}) - ∇f(x_k)` (梯度差)
+- `H_k` 是Hessian矩阵逆的近似
+
+#### 使用示例 / Usage Examples
+
+```java
+// 创建DFP优化器 / Create DFP optimizer
+RereDFP optimizer = new RereDFP();
+
+// 设置参数 / Set parameters
+optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+
+// 定义目标函数 / Define objective function
+IObjectiveFunction objFun = new IObjectiveFunction() {
+    @Override
+    public double computeObjective(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+    }
+};
+
+IGradientFunction grdFun = new IGradientFunction() {
+    @Override
+    public IVector computeGradient(IVector x) {
+        double x1 = x.get(0).doubleValue();
+        double x2 = x.get(1).doubleValue();
+        
+        double[] grad = new double[2];
+        grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+        grad[1] = 200 * (x2 - x1 * x1);
+        
+        return Linalg.vector(grad);
+    }
+};
+
+// 初始点 / Initial point
+IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
+
+// 执行优化 / Execute optimization
+Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+
+System.out.println("最优值: " + result._1);
+System.out.println("最优点: " + result._2);
 ```
 
 ## 性能特性 / Performance Features

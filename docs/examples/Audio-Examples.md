@@ -318,7 +318,7 @@ public class AudioEnhancementExample {
 
 ```java
 import com.reremouse.lab.audio.core.AudioData;
-import com.reremouse.lab.audio.AudioVisualizer;
+import com.reremouse.lab.audio.AudioPlots;
 import com.reremouse.lab.math.viz.IPlot;
 import java.util.List;
 
@@ -329,35 +329,35 @@ public class AudioVisualizationExample {
             AudioData audioData = Audios.readAudio("input/sample.wav");
             
             // 绘制波形图 / Plot waveform
-            IPlot waveformPlot = AudioVisualizer.plotWaveform(audioData, "音频波形图");
+            IPlot waveformPlot = AudioPlots.plotWaveform(audioData, "音频波形图");
             waveformPlot.show(); // 显示图表
             
             // 绘制频谱图 / Plot spectrum
-            IPlot spectrumPlot = AudioVisualizer.plotSpectrum(audioData, "音频频谱图");
+            IPlot spectrumPlot = AudioPlots.plotSpectrum(audioData, "音频频谱图");
             spectrumPlot.show();
             
             // 绘制对数频谱图 / Plot log spectrum
-            IPlot logSpectrumPlot = AudioVisualizer.plotLogSpectrum(audioData, "对数频谱图");
+            IPlot logSpectrumPlot = AudioPlots.plotLogSpectrum(audioData, "对数频谱图");
             logSpectrumPlot.show();
             
             // 绘制频谱图 / Plot spectrogram
-            IPlot spectrogramPlot = AudioVisualizer.plotSpectrogram(audioData, "频谱图");
+            IPlot spectrogramPlot = AudioPlots.plotSpectrogram(audioData, "频谱图");
             spectrogramPlot.show();
             
             // 绘制MFCC特征图 / Plot MFCC features
-            IPlot mfccPlot = AudioVisualizer.plotMFCC(audioData, "MFCC特征图");
+            IPlot mfccPlot = AudioPlots.plotMFCC(audioData, "MFCC特征图");
             mfccPlot.show();
             
             // 绘制音频统计信息 / Plot audio statistics
-            IPlot statisticsPlot = AudioVisualizer.plotAudioStatistics(audioData, "音频统计信息");
+            IPlot statisticsPlot = AudioPlots.plotAudioStatistics(audioData, "音频统计信息");
             statisticsPlot.show();
             
             // 绘制音频质量信息 / Plot audio quality
-            IPlot qualityPlot = AudioVisualizer.plotAudioQuality(audioData, "音频质量分析");
+            IPlot qualityPlot = AudioPlots.plotAudioQuality(audioData, "音频质量分析");
             qualityPlot.show();
             
             // 创建音频仪表板 / Create audio dashboard
-            List<IPlot> dashboard = AudioVisualizer.createAudioDashboard(audioData, "音频分析仪表板");
+            List<IPlot> dashboard = AudioPlots.createAudioDashboard(audioData, "音频分析仪表板");
             for (IPlot plot : dashboard) {
                 plot.show();
             }
@@ -375,7 +375,7 @@ public class AudioVisualizationExample {
 
 ```java
 import com.reremouse.lab.audio.core.AudioData;
-import com.reremouse.lab.audio.AudioVisualizer;
+import com.reremouse.lab.audio.AudioPlots;
 import com.reremouse.lab.audio.Audios;
 import com.reremouse.lab.math.viz.IPlot;
 
@@ -387,20 +387,20 @@ public class AudioComparisonVisualizationExample {
             AudioData processedAudio = Audios.normalize(originalAudio);
             
             // 对比可视化 / Comparison visualization
-            IPlot comparisonPlot = AudioVisualizer.plotAudioComparison(
+            IPlot comparisonPlot = AudioPlots.plotAudioComparison(
                 originalAudio, processedAudio, "原始音频 vs 处理后音频");
             comparisonPlot.show();
             
             // 分别显示波形 / Show waveforms separately
-            IPlot originalWaveform = AudioVisualizer.plotWaveform(originalAudio, "原始音频波形");
-            IPlot processedWaveform = AudioVisualizer.plotWaveform(processedAudio, "处理后音频波形");
+            IPlot originalWaveform = AudioPlots.plotWaveform(originalAudio, "原始音频波形");
+            IPlot processedWaveform = AudioPlots.plotWaveform(processedAudio, "处理后音频波形");
             
             originalWaveform.show();
             processedWaveform.show();
             
             // 分别显示频谱 / Show spectrums separately
-            IPlot originalSpectrum = AudioVisualizer.plotSpectrum(originalAudio, "原始音频频谱");
-            IPlot processedSpectrum = AudioVisualizer.plotSpectrum(processedAudio, "处理后音频频谱");
+            IPlot originalSpectrum = AudioPlots.plotSpectrum(originalAudio, "原始音频频谱");
+            IPlot processedSpectrum = AudioPlots.plotSpectrum(processedAudio, "处理后音频频谱");
             
             originalSpectrum.show();
             processedSpectrum.show();
@@ -926,7 +926,7 @@ import com.reremouse.lab.audio.core.AudioData;
 import com.reremouse.lab.audio.core.AudioStatistics;
 import com.reremouse.lab.audio.core.AudioQuality;
 import com.reremouse.lab.audio.Audios;
-import com.reremouse.lab.audio.AudioVisualizer;
+import com.reremouse.lab.audio.AudioPlots;
 import com.reremouse.lab.math.viz.IPlot;
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -1028,11 +1028,11 @@ public class AudioQualityAnalysisExample {
     
     private static void generateVisualizationReport(AudioData audioData) throws Exception {
         // 生成各种可视化图表 / Generate various visualization charts
-        IPlot waveformPlot = AudioVisualizer.plotWaveform(audioData, "音频波形");
-        IPlot spectrumPlot = AudioVisualizer.plotSpectrum(audioData, "频谱分析");
-        IPlot spectrogramPlot = AudioVisualizer.plotSpectrogram(audioData, "频谱图");
-        IPlot statisticsPlot = AudioVisualizer.plotAudioStatistics(audioData, "统计信息");
-        IPlot qualityPlot = AudioVisualizer.plotAudioQuality(audioData, "质量分析");
+        IPlot waveformPlot = AudioPlots.plotWaveform(audioData, "音频波形");
+        IPlot spectrumPlot = AudioPlots.plotSpectrum(audioData, "频谱分析");
+        IPlot spectrogramPlot = AudioPlots.plotSpectrogram(audioData, "频谱图");
+        IPlot statisticsPlot = AudioPlots.plotAudioStatistics(audioData, "统计信息");
+        IPlot qualityPlot = AudioPlots.plotAudioQuality(audioData, "质量分析");
         
         // 保存图表 / Save charts
         // (具体保存方法取决于可视化库的实现)

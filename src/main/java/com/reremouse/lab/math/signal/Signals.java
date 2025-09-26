@@ -653,14 +653,14 @@ public class Signals {
      * 绘制信号波形图 / Plot signal waveform
      */
     public static IPlot plotWaveform(IVector<Double> signal, double samplingRate, String title) {
-        return SignalVisualizer.plotWaveform(signal, samplingRate, title);
+        return SignalPlots.plotWaveform(signal, samplingRate, title);
     }
     
     /**
      * 绘制信号频谱图 / Plot signal spectrum
      */
     public static IPlot plotSpectrum(IVector<Double> signal, double samplingRate, String title) {
-        return SignalVisualizer.plotSpectrum(signal, samplingRate, title);
+        return SignalPlots.plotSpectrum(signal, samplingRate, title);
     }
     
     /**
@@ -668,14 +668,14 @@ public class Signals {
      */
     public static IPlot plotPowerSpectralDensity(IVector<Double> signal, double samplingRate, 
                                                int windowSize, double overlap, String title) {
-        return SignalVisualizer.plotPowerSpectralDensity(signal, samplingRate, windowSize, overlap, title);
+        return SignalPlots.plotPowerSpectralDensity(signal, samplingRate, windowSize, overlap, title);
     }
     
     /**
      * 绘制自相关图 / Plot autocorrelation
      */
     public static IPlot plotAutocorrelation(IVector<Double> signal, int maxLag, String title) {
-        return SignalVisualizer.plotAutocorrelation(signal, maxLag, title);
+        return SignalPlots.plotAutocorrelation(signal, maxLag, title);
     }
     
     /**
@@ -683,7 +683,7 @@ public class Signals {
      */
     public static IPlot plotCrossCorrelation(IVector<Double> signal1, IVector<Double> signal2, 
                                            int maxLag, String title) {
-        return SignalVisualizer.plotCrossCorrelation(signal1, signal2, maxLag, title);
+        return SignalPlots.plotCrossCorrelation(signal1, signal2, maxLag, title);
     }
     
     /**

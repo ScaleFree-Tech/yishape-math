@@ -11,7 +11,7 @@
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -89,7 +89,7 @@ public class BasicLBFGSExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereOnlineSGD;
+import com.reremouse.lab.math.optimize.newton.RereOnlineSGD;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 
@@ -190,7 +190,7 @@ public class OnlineSGDExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereOnlineAdam;
+import com.reremouse.lab.math.optimize.newton.RereOnlineAdam;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 
@@ -292,7 +292,7 @@ public class OnlineAdamExample {
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.util.Tuple2;
@@ -390,6 +390,602 @@ public class MultiModalOptimizationExample {
 ```
 
 ## 高级优化示例 / Advanced Optimization Examples
+
+### 拉格朗日乘数法约束优化 / Lagrange Multiplier Constrained Optimization
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.constraint.LagrangeMultiplierSolver;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+
+public class LagrangeMultiplierExample {
+    public static void main(String[] args) {
+        System.out.println("=== 拉格朗日乘数法约束优化示例 / Lagrange Multiplier Constrained Optimization Example ===");
+        
+        // 创建拉格朗日乘数求解器 / Create Lagrange multiplier solver
+        LagrangeMultiplierSolver solver = new LagrangeMultiplierSolver();
+        
+        // 设置参数 / Set parameters
+        solver.setPenaltyFactor(1000.0);      // 惩罚因子 / Penalty factor
+        solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
+        solver.setTolerance(1e-6);            // 收敛容差 / Convergence tolerance
+        
+        // 定义目标函数：最小化 x1² + x2² / Define objective function: minimize x1² + x2²
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                return x1 * x1 + x2 * x2;
+            }
+        };
+        
+        // 定义梯度函数 / Define gradient function
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                return Linalg.vector(new double[]{2 * x1, 2 * x2});
+            }
+        };
+        
+        // 定义等式约束：x1 + x2 = 1 / Define equality constraint: x1 + x2 = 1
+        IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
+        IVector b = Linalg.vector(new double[]{1.0});
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{0.5, 0.5});
+        
+        System.out.println("目标函数: minimize x1² + x2²");
+        System.out.println("约束条件: x1 + x2 = 1");
+        System.out.println("初始点: " + initX);
+        System.out.println("初始函数值: " + objFun.computeObjective(initX));
+        
+        // 执行约束优化 / Execute constrained optimization
+        System.out.println("\n开始约束优化... / Starting constrained optimization...");
+        
+        Tuple2<Double, IVector> result = solver.solve(initX, objFun, grdFun, A, b);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\n约束优化完成! / Constrained optimization completed!");
+        System.out.println("最优值: " + optimalValue);
+        System.out.println("最优点: " + optimalPoint);
+        System.out.println("理论最优解: [0.5, 0.5] / Theoretical optimal solution: [0.5, 0.5]");
+        System.out.println("理论最优值: 0.5 / Theoretical optimal value: 0.5");
+        
+        // 验证约束满足情况 / Verify constraint satisfaction
+        double constraintValue = optimalPoint.get(0).doubleValue() + optimalPoint.get(1).doubleValue();
+        System.out.println("约束验证 x1 + x2 = " + constraintValue + " (应该等于1)");
+        
+        // 验证结果 / Verify results
+        double error = Math.abs(optimalValue - 0.5);
+        System.out.println("与理论最优值的误差: " + error);
+    }
+}
+```
+
+### 线性规划示例 / Linear Programming Examples
+
+#### 单纯形法示例 / Simplex Method Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
+
+public class SimplexLinProgExample {
+    public static void main(String[] args) {
+        System.out.println("=== 单纯形法线性规划示例 / Simplex Method Linear Programming Example ===");
+        
+        // 创建单纯形法求解器 / Create simplex solver
+        SimplexLinProgSolver solver = new SimplexLinProgSolver();
+        
+        // 设置参数 / Set parameters
+        solver.setMaxIterations(1000);        // 最大迭代次数 / Maximum iterations
+        solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
+        
+        // 定义线性规划问题 / Define linear programming problem
+        // minimize 2x1 + 3x2
+        // subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
+        IVector c = Linalg.vector(new double[]{2.0, 3.0});
+        IMatrix A = Linalg.matrix(new double[][]{{1.0, 1.0}});
+        IVector b = Linalg.vector(new double[]{5.0});
+        
+        System.out.println("线性规划问题:");
+        System.out.println("minimize 2x1 + 3x2");
+        System.out.println("subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0");
+        
+        // 求解 / Solve
+        System.out.println("\n开始单纯形法求解... / Starting simplex method solving...");
+        
+        IVector solution = solver.solve(c, A, b);
+        
+        System.out.println("\n单纯形法求解完成! / Simplex method solving completed!");
+        System.out.println("最优解: " + solution);
+        System.out.println("最优值: " + c.innerProduct(solution));
+        System.out.println("理论最优解: [5.0, 0.0] / Theoretical optimal solution: [5.0, 0.0]");
+        System.out.println("理论最优值: 10.0 / Theoretical optimal value: 10.0");
+        
+        // 验证约束满足情况 / Verify constraint satisfaction
+        double constraintValue = solution.get(0).doubleValue() + solution.get(1).doubleValue();
+        System.out.println("约束验证 x1 + x2 = " + constraintValue + " (应该等于5)");
+        System.out.println("非负约束验证: x1 = " + solution.get(0) + " ≥ 0, x2 = " + solution.get(1) + " ≥ 0");
+    }
+}
+```
+
+#### 内点法示例 / Interior Point Method Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.linpg.InteriorPointLinProgSolver;
+
+public class InteriorPointLinProgExample {
+    public static void main(String[] args) {
+        System.out.println("=== 内点法线性规划示例 / Interior Point Method Linear Programming Example ===");
+        
+        // 创建内点法求解器 / Create interior point solver
+        InteriorPointLinProgSolver solver = new InteriorPointLinProgSolver();
+        
+        // 设置参数 / Set parameters
+        solver.setMaxIterations(100);         // 最大迭代次数 / Maximum iterations
+        solver.setTolerance(1e-8);            // 收敛容差 / Convergence tolerance
+        solver.setBarrierParameter(0.1);      // 障碍参数 / Barrier parameter
+        
+        // 定义线性规划问题 / Define linear programming problem
+        // maximize x1 + 2x2 (转换为 minimize -x1 - 2x2)
+        // subject to x1 + x2 ≤ 3, 2x1 + x2 ≤ 4, x1 ≥ 0, x2 ≥ 0
+        IVector c = Linalg.vector(new double[]{-1.0, -2.0});  // 目标函数系数 / Objective coefficients
+        IMatrix A_ub = Linalg.matrix(new double[][]{{1.0, 1.0}, {2.0, 1.0}});  // 不等式约束矩阵 / Inequality constraint matrix
+        IVector b_ub = Linalg.vector(new double[]{3.0, 4.0});  // 不等式约束右端 / Inequality constraint RHS
+        
+        System.out.println("线性规划问题:");
+        System.out.println("maximize x1 + 2x2");
+        System.out.println("subject to x1 + x2 ≤ 3, 2x1 + x2 ≤ 4, x1 ≥ 0, x2 ≥ 0");
+        
+        // 求解 / Solve
+        System.out.println("\n开始内点法求解... / Starting interior point method solving...");
+        
+        IVector solution = solver.solve(c, A_ub, b_ub, null, null);
+        
+        System.out.println("\n内点法求解完成! / Interior point method solving completed!");
+        System.out.println("最优解: " + solution);
+        System.out.println("最优值: " + (-c.innerProduct(solution)));  // 注意符号转换 / Note sign conversion
+        System.out.println("理论最优解: [1.0, 2.0] / Theoretical optimal solution: [1.0, 2.0]");
+        System.out.println("理论最优值: 5.0 / Theoretical optimal value: 5.0");
+        
+        // 验证约束满足情况 / Verify constraint satisfaction
+        double constraint1 = solution.get(0).doubleValue() + solution.get(1).doubleValue();
+        double constraint2 = 2 * solution.get(0).doubleValue() + solution.get(1).doubleValue();
+        System.out.println("约束验证:");
+        System.out.println("  x1 + x2 = " + constraint1 + " ≤ 3");
+        System.out.println("  2x1 + x2 = " + constraint2 + " ≤ 4");
+        System.out.println("  x1 = " + solution.get(0) + " ≥ 0, x2 = " + solution.get(1) + " ≥ 0");
+    }
+}
+```
+
+### 共轭梯度法示例 / Conjugate Gradient Method Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.IMatrix;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.newton.RereConjugateGradient;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+
+public class ConjugateGradientExample {
+    public static void main(String[] args) {
+        System.out.println("=== 共轭梯度法优化示例 / Conjugate Gradient Method Optimization Example ===");
+        
+        // 创建共轭梯度优化器 / Create conjugate gradient optimizer
+        RereConjugateGradient optimizer = new RereConjugateGradient();
+        
+        // 设置参数 / Set parameters
+        optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+        optimizer.setTolerance(1e-8);         // 收敛容差 / Convergence tolerance
+        optimizer.setRestartFrequency(50);    // 重启频率 / Restart frequency
+        
+        // 定义正定矩阵A / Define positive definite matrix A
+        IMatrix A = Linalg.matrix(new double[][]{
+            {4.0, 1.0},
+            {1.0, 3.0}
+        });
+        
+        // 定义向量b / Define vector b
+        IVector b = Linalg.vector(new double[]{1.0, 2.0});
+        
+        // 定义二次目标函数：f(x) = 0.5 * x^T * A * x - b^T * x
+        // Define quadratic objective function: f(x) = 0.5 * x^T * A * x - b^T * x
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                IVector Ax = A.mmul(x);
+                return 0.5 * x.innerProduct(Ax) - b.innerProduct(x);
+            }
+        };
+        
+        // 定义梯度函数：∇f(x) = A * x - b / Define gradient function: ∇f(x) = A * x - b
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                return A.mmul(x).subtract(b);
+            }
+        };
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{0.0, 0.0});
+        
+        System.out.println("二次目标函数: f(x) = 0.5 * x^T * A * x - b^T * x");
+        System.out.println("矩阵A: " + A);
+        System.out.println("向量b: " + b);
+        System.out.println("初始点: " + initX);
+        System.out.println("初始函数值: " + objFun.computeObjective(initX));
+        
+        // 执行优化 / Execute optimization
+        System.out.println("\n开始共轭梯度法优化... / Starting conjugate gradient optimization...");
+        
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\n共轭梯度法优化完成! / Conjugate gradient optimization completed!");
+        System.out.println("最优值: " + optimalValue);
+        System.out.println("最优点: " + optimalPoint);
+        
+        // 理论最优解：x* = A^(-1) * b / Theoretical optimal solution: x* = A^(-1) * b
+        IVector theoreticalSolution = A.inverse().mmul(b);
+        double theoreticalValue = objFun.computeObjective(theoreticalSolution);
+        
+        System.out.println("理论最优解: " + theoreticalSolution);
+        System.out.println("理论最优值: " + theoreticalValue);
+        
+        // 验证结果 / Verify results
+        double error = (Double) optimalPoint.subtract(theoreticalSolution).norm2();
+        System.out.println("与理论最优解的误差: " + error);
+    }
+}
+```
+
+### DFP算法示例 / DFP Algorithm Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.newton.RereDFP;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+
+public class DFPExample {
+    public static void main(String[] args) {
+        System.out.println("=== DFP算法优化示例 / DFP Algorithm Optimization Example ===");
+        
+        // 创建DFP优化器 / Create DFP optimizer
+        RereDFP optimizer = new RereDFP();
+        
+        // 设置参数 / Set parameters
+        optimizer.setMaxIterations(1000);     // 最大迭代次数 / Maximum iterations
+        optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+        
+        // 定义Rosenbrock函数 / Define Rosenbrock function
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+            }
+        };
+        
+        // 定义梯度函数 / Define gradient function
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double[] grad = new double[2];
+                grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+                grad[1] = 200 * (x2 - x1 * x1);
+                
+                return Linalg.vector(grad);
+            }
+        };
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
+        
+        System.out.println("Rosenbrock函数: f(x1, x2) = (1-x1)² + 100(x2-x1²)²");
+        System.out.println("初始点: " + initX);
+        System.out.println("初始函数值: " + objFun.computeObjective(initX));
+        
+        // 执行优化 / Execute optimization
+        System.out.println("\n开始DFP算法优化... / Starting DFP algorithm optimization...");
+        
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\nDFP算法优化完成! / DFP algorithm optimization completed!");
+        System.out.println("最优值: " + optimalValue);
+        System.out.println("最优点: " + optimalPoint);
+        System.out.println("理论最优解: [1.0, 1.0] / Theoretical optimal solution: [1.0, 1.0]");
+        System.out.println("理论最优值: 0.0 / Theoretical optimal value: 0.0");
+        
+        // 验证结果 / Verify results
+        double error = (Double) optimalPoint.subtract(Linalg.vector(new double[]{1.0, 1.0})).norm2();
+        System.out.println("与理论最优解的误差: " + error);
+    }
+}
+```
+
+### 最速下降法示例 / Steepest Descent Method Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.newton.RereSteepestDescent;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+
+public class SteepestDescentExample {
+    public static void main(String[] args) {
+        System.out.println("=== 最速下降法优化示例 / Steepest Descent Method Optimization Example ===");
+        
+        // 创建最速下降优化器 / Create steepest descent optimizer
+        RereSteepestDescent optimizer = new RereSteepestDescent();
+        
+        // 设置参数 / Set parameters
+        optimizer.setMaxIterations(10000);    // 最大迭代次数 / Maximum iterations
+        optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
+        optimizer.setStepSize(0.01);          // 步长 / Step size
+        
+        // 定义二次函数 / Define quadratic function
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                return (x1 - 2) * (x1 - 2) + (x2 - 3) * (x2 - 3);
+            }
+        };
+        
+        // 定义梯度函数 / Define gradient function
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double[] grad = new double[2];
+                grad[0] = 2 * (x1 - 2);
+                grad[1] = 2 * (x2 - 3);
+                
+                return Linalg.vector(grad);
+            }
+        };
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{0.0, 0.0});
+        
+        System.out.println("二次函数: f(x1, x2) = (x1-2)² + (x2-3)²");
+        System.out.println("初始点: " + initX);
+        System.out.println("初始函数值: " + objFun.computeObjective(initX));
+        
+        // 执行优化 / Execute optimization
+        System.out.println("\n开始最速下降法优化... / Starting steepest descent optimization...");
+        
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\n最速下降法优化完成! / Steepest descent optimization completed!");
+        System.out.println("最优值: " + optimalValue);
+        System.out.println("最优点: " + optimalPoint);
+        System.out.println("理论最优解: [2.0, 3.0] / Theoretical optimal solution: [2.0, 3.0]");
+        System.out.println("理论最优值: 0.0 / Theoretical optimal value: 0.0");
+        
+        // 验证结果 / Verify results
+        double error = (Double) optimalPoint.subtract(Linalg.vector(new double[]{2.0, 3.0})).norm2();
+        System.out.println("与理论最优解的误差: " + error);
+    }
+}
+```
+
+### 混合优化示例 / Mixed Optimization Examples
+
+#### 多目标优化示例 / Multi-objective Optimization Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+
+public class MultiObjectiveOptimizationExample {
+    public static void main(String[] args) {
+        System.out.println("=== 多目标优化示例 / Multi-objective Optimization Example ===");
+        
+        // 创建L-BFGS优化器 / Create L-BFGS optimizer
+        RereLBFGS optimizer = new RereLBFGS();
+        optimizer.setMaxIterations(1000);
+        optimizer.setTolerance(1e-6);
+        
+        // 权重系数 / Weight coefficients
+        double w1 = 0.6;  // 第一个目标的权重 / Weight for first objective
+        double w2 = 0.4;  // 第二个目标的权重 / Weight for second objective
+        
+        // 定义多目标优化问题：最小化 w1*(x1-1)² + w2*(x2-2)²
+        // Define multi-objective optimization: minimize w1*(x1-1)² + w2*(x2-2)²
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double obj1 = (x1 - 1) * (x1 - 1);  // 第一个目标 / First objective
+                double obj2 = (x2 - 2) * (x2 - 2);  // 第二个目标 / Second objective
+                
+                return w1 * obj1 + w2 * obj2;  // 加权组合 / Weighted combination
+            }
+        };
+        
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double grad1 = w1 * 2 * (x1 - 1);
+                double grad2 = w2 * 2 * (x2 - 2);
+                
+                return Linalg.vector(new double[]{grad1, grad2});
+            }
+        };
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{0.0, 0.0});
+        
+        System.out.println("多目标优化问题:");
+        System.out.println("目标1: (x1-1)², 权重: " + w1);
+        System.out.println("目标2: (x2-2)², 权重: " + w2);
+        System.out.println("初始点: " + initX);
+        
+        // 执行优化 / Execute optimization
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\n多目标优化完成! / Multi-objective optimization completed!");
+        System.out.println("最优点: " + optimalPoint);
+        System.out.println("加权目标函数值: " + optimalValue);
+        System.out.println("理论最优解: [1.0, 2.0] / Theoretical optimal solution: [1.0, 2.0]");
+    }
+}
+```
+
+#### 鲁棒优化示例 / Robust Optimization Example
+
+```java
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.math.optimize.RereLBFGS;
+import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.IGradientFunction;
+import com.reremouse.lab.util.Tuple2;
+import java.util.Random;
+
+public class RobustOptimizationExample {
+    private static final Random random = new Random(42);
+    
+    public static void main(String[] args) {
+        System.out.println("=== 鲁棒优化示例 / Robust Optimization Example ===");
+        
+        // 创建L-BFGS优化器 / Create L-BFGS optimizer
+        RereLBFGS optimizer = new RereLBFGS();
+        optimizer.setMaxIterations(1000);
+        optimizer.setTolerance(1e-6);
+        
+        // 不确定性参数 / Uncertainty parameters
+        double noiseLevel = 0.1;
+        int numScenarios = 100;
+        
+        // 定义鲁棒优化问题：最小化期望目标函数值
+        // Define robust optimization: minimize expected objective value
+        IObjectiveFunction objFun = new IObjectiveFunction() {
+            @Override
+            public double computeObjective(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double expectedValue = 0.0;
+                
+                // 蒙特卡洛采样计算期望值 / Monte Carlo sampling for expected value
+                for (int i = 0; i < numScenarios; i++) {
+                    // 添加噪声 / Add noise
+                    double noise1 = random.nextGaussian() * noiseLevel;
+                    double noise2 = random.nextGaussian() * noiseLevel;
+                    
+                    double x1_noisy = x1 + noise1;
+                    double x2_noisy = x2 + noise2;
+                    
+                    // 计算带噪声的目标函数值 / Calculate noisy objective value
+                    double scenarioValue = (x1_noisy - 1) * (x1_noisy - 1) + (x2_noisy - 1) * (x2_noisy - 1);
+                    expectedValue += scenarioValue;
+                }
+                
+                return expectedValue / numScenarios;
+            }
+        };
+        
+        IGradientFunction grdFun = new IGradientFunction() {
+            @Override
+            public IVector computeGradient(IVector x) {
+                double x1 = x.get(0).doubleValue();
+                double x2 = x.get(1).doubleValue();
+                
+                double grad1 = 0.0;
+                double grad2 = 0.0;
+                
+                // 数值梯度计算 / Numerical gradient calculation
+                double h = 1e-6;
+                
+                IVector xPlus1 = Linalg.vector(new double[]{x1 + h, x2});
+                IVector xMinus1 = Linalg.vector(new double[]{x1 - h, x2});
+                grad1 = (objFun.computeObjective(xPlus1) - objFun.computeObjective(xMinus1)) / (2 * h);
+                
+                IVector xPlus2 = Linalg.vector(new double[]{x1, x2 + h});
+                IVector xMinus2 = Linalg.vector(new double[]{x1, x2 - h});
+                grad2 = (objFun.computeObjective(xPlus2) - objFun.computeObjective(xMinus2)) / (2 * h);
+                
+                return Linalg.vector(new double[]{grad1, grad2});
+            }
+        };
+        
+        // 初始点 / Initial point
+        IVector initX = Linalg.vector(new double[]{0.0, 0.0});
+        
+        System.out.println("鲁棒优化问题:");
+        System.out.println("目标函数: E[(x1+ε1-1)² + (x2+ε2-1)²]");
+        System.out.println("噪声水平: " + noiseLevel);
+        System.out.println("场景数量: " + numScenarios);
+        System.out.println("初始点: " + initX);
+        
+        // 执行优化 / Execute optimization
+        System.out.println("\n开始鲁棒优化... / Starting robust optimization...");
+        
+        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        
+        double optimalValue = result._1;
+        IVector optimalPoint = result._2;
+        
+        System.out.println("\n鲁棒优化完成! / Robust optimization completed!");
+        System.out.println("最优点: " + optimalPoint);
+        System.out.println("期望目标函数值: " + optimalValue);
+        System.out.println("理论最优解: [1.0, 1.0] / Theoretical optimal solution: [1.0, 1.0]");
+    }
+}
+```
 
 ### 约束优化问题 / Constrained Optimization Problems
 
@@ -664,12 +1260,67 @@ public class LineSearchExample {
 
 ## 总结 / Summary
 
-本文档展示了优化算法的各种使用方法。建议在实际使用中：
+本文档展示了 `yishape-math` 优化算法包的各种使用示例，包括：
 
-1. **选择合适的优化算法** / **Choose appropriate optimization algorithm**
-2. **合理设置参数** / **Set parameters reasonably**
-3. **注意约束处理** / **Pay attention to constraint handling**
-4. **监控收敛性** / **Monitor convergence**
+### 1. 基础优化算法 / Basic Optimization Algorithms
+- **L-BFGS**：适用于大规模无约束优化问题，具有超线性收敛速度
+- **Online SGD**：适用于在线学习和大数据场景，支持动量和权重衰减
+- **Online Adam**：结合动量和自适应学习率的在线优化算法
+
+### 2. 约束优化算法 / Constrained Optimization Algorithms
+- **拉格朗日乘数法**：处理等式约束优化问题的经典方法
+- **惩罚函数方法**：将约束优化转换为无约束优化问题
+
+### 3. 线性规划算法 / Linear Programming Algorithms
+- **单纯形法**：求解线性规划问题的经典算法
+- **内点法**：现代线性规划求解器的核心算法
+
+### 4. 牛顿类方法 / Newton-type Methods
+- **共轭梯度法**：适用于大规模二次优化问题
+- **DFP算法**：拟牛顿方法，适用于中等规模非线性优化
+- **最速下降法**：简单的一阶优化方法
+
+### 5. 高级优化技术 / Advanced Optimization Techniques
+- **多目标优化**：处理多个目标函数的优化问题
+- **鲁棒优化**：考虑不确定性的优化方法
+- **大规模优化**：处理高维优化问题
+- **线搜索**：精确控制步长选择
+
+### 6. 算法选择指南 / Algorithm Selection Guide
+- **无约束优化**：L-BFGS（中大规模）、共轭梯度法（大规模二次问题）、DFP（中等规模）
+- **约束优化**：拉格朗日乘数法（等式约束）、惩罚函数法（一般约束）
+- **线性规划**：单纯形法（小中规模）、内点法（大规模）
+- **在线优化**：Online SGD（简单快速）、Online Adam（自适应学习率）
+
+### 7. 实际应用建议 / Practical Application Recommendations
+
+#### 算法选择 / Algorithm Selection
+- 根据问题特性（规模、约束类型、函数性质）选择最适合的优化算法
+- 对于大规模问题，优先考虑内存效率高的算法（如L-BFGS、共轭梯度法）
+- 对于非凸问题，尝试多个不同的初始点
+
+#### 参数设置 / Parameter Setting
+- 合理设置学习率、容差、最大迭代次数等参数
+- 对于在线学习场景，使用增量式算法（Online SGD、Online Adam）
+- 根据问题的数值特性调整收敛容差
+
+#### 约束处理 / Constraint Handling
+- 对于约束优化问题，选择合适的约束处理方法
+- 等式约束优先使用拉格朗日乘数法
+- 复杂约束可以考虑惩罚函数方法
+
+#### 收敛监控 / Convergence Monitoring
+- 监控优化过程，确保算法收敛到合理解
+- 注意数值稳定性和条件数问题
+- 选择合适的初始点可以显著影响优化效果
+
+### 8. 性能优化提示 / Performance Optimization Tips
+- 对于大规模问题，使用内存高效的算法
+- 对于线性规划问题，内点法通常比单纯形法更快
+- 对于二次规划问题，共轭梯度法是最佳选择
+- 对于一般非线性优化，L-BFGS是首选算法
+
+这些示例为用户提供了完整的优化算法使用指南，涵盖了从基础到高级的各种优化场景，帮助解决各种实际优化问题。
 
 ---
 
