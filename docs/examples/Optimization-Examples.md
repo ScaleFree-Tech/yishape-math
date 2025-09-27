@@ -473,6 +473,12 @@ public class LagrangeMultiplierExample {
 
 ### 线性规划示例 / Linear Programming Examples
 
+
+**重要提示 / Important Note:**
+- 本库的线性规划求解器求解的是**最小化问题** / The linear programming solver in this library solves **minimization problems**
+- 如果要求解最大化问题，需要将目标函数系数取负数 / To solve maximization problems, negate the objective function coefficients
+- 求解器返回的最优值也需要取负数才是真正的最大值 / The optimal value returned by the solver also needs to be negated to get the true maximum value
+
 #### 单纯形法示例 / Simplex Method Example
 
 ```java
@@ -728,17 +734,6 @@ public class MixedIntegerProgrammingExample {
 
 #### 0-1整数规划示例 / Binary Integer Programming Example
 
-**0-1整数规划说明 / 0-1 Integer Programming Notes:**
-- 0-1整数规划要求变量只能取0或1的值
-- 需要同时设置整数约束和上界约束
-- 使用 `addIntegerVariables()` 设置整数变量
-- 使用不等式约束 `A_ub` 和 `b_ub` 设置上界约束 (x_i ≤ 1)
-
-**重要提示 / Important Note:**
-- 本库的整数规划求解器求解的是**最小化问题** / The integer programming solver in this library solves **minimization problems**
-- 如果要求解最大化问题，需要将目标函数系数取负数 / To solve maximization problems, negate the objective function coefficients
-- 求解器返回的最优值也需要取负数才是真正的最大值 / The optimal value returned by the solver also needs to be negated to get the true maximum value
-
 ```java
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
@@ -749,9 +744,8 @@ import com.reremouse.lab.util.Tuple2;
 
 public class ComplexIntegerProgrammingExample {
     public static void main(String[] args) {
-        System.out.println("=== 复杂整数规划示例 / Complex Integer Programming Example ===");
+        System.out.println("=== 0-1整数规划示例 / Complex Integer Programming Example ===");
         
-        // 修改为一个更简单的整数规划问题，确保有可行解
         // 简化的背包问题示例
         // 物品价值: [3, 4, 5]
         // 物品重量: [2, 3, 4]
