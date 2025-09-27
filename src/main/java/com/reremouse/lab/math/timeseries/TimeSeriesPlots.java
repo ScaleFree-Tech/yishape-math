@@ -131,7 +131,7 @@ public class TimeSeriesPlots {
         IVector<Double> values = timeSeriesData.getData().getColumn(0);
         
         // 进行季节性分解 / Perform seasonal decomposition
-        TimeSeriesDecomposition.DecompositionResult decomposition = 
+        DecompositionResult decomposition = 
             TimeSeriesDecomposition.classicalDecomposition(timeSeriesData, 0, period, TimeSeriesDecomposition.DecompositionModel.ADDITIVE);
         
         // 创建时间轴 / Create time axis

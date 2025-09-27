@@ -30,9 +30,9 @@ public class OnlineIVectorModelTest {
     @Test
     public void testModelCreation() {
         assertNotNull(model);
-        assertEquals(10, model.getIVectorDimension());
+        assertEquals(10, model.getLen());
         assertEquals(2, model.getNumComponents()); // Updated to match actual number of components
-        assertEquals(3, model.getFeatureDimension());
+        assertEquals(3, model.getMfccDim());
         assertFalse(model.isTrained());
     }
     
@@ -184,7 +184,7 @@ public class OnlineIVectorModelTest {
         // 测试使用SGD优化器
         OnlineIVectorEmbedding sgdModel = new OnlineIVectorEmbedding(5, 2, 2, false, 0.01);
         assertNotNull(sgdModel);
-        assertEquals(5, sgdModel.getIVectorDimension());
+        assertEquals(5, sgdModel.getLen());
         
         
         // Note: We can't directly verify the batch size as it's a private field

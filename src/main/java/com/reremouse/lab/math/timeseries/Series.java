@@ -88,7 +88,7 @@ public class Series {
      * 简单移动平均预测 / Simple Moving Average Forecasting
      * @see TimeSeriesForecasting#simpleMovingAverage(TimeSeriesData, int, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, int variableIndex, 
+    public static ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, int variableIndex, 
                                                    int windowSize, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.simpleMovingAverage(timeSeries, variableIndex, windowSize, forecastSteps, confidenceLevel);
     }
@@ -97,7 +97,7 @@ public class Series {
      * 简单移动平均预测（按列名） / Simple Moving Average Forecasting (by column name)
      * @see TimeSeriesForecasting#simpleMovingAverage(TimeSeriesData, String, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, String columnName, 
+    public static ForecastResult simpleMovingAverage(TimeSeriesData timeSeries, String columnName, 
                                                    int windowSize, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.simpleMovingAverage(timeSeries, columnName, windowSize, forecastSteps, confidenceLevel);
     }
@@ -106,7 +106,7 @@ public class Series {
      * 指数平滑预测 / Exponential Smoothing Forecasting
      * @see TimeSeriesForecasting#exponentialSmoothing(TimeSeriesData, int, double, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, 
+    public static ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, 
                                                     double alpha, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.exponentialSmoothing(timeSeries, variableIndex, alpha, forecastSteps, confidenceLevel);
     }
@@ -115,7 +115,7 @@ public class Series {
      * 指数平滑预测（按列名） / Exponential Smoothing Forecasting (by column name)
      * @see TimeSeriesForecasting#exponentialSmoothing(TimeSeriesData, String, double, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, 
+    public static ForecastResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, 
                                                     double alpha, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.exponentialSmoothing(timeSeries, columnName, alpha, forecastSteps, confidenceLevel);
     }
@@ -124,7 +124,7 @@ public class Series {
      * 线性回归预测 / Linear Regression Forecasting
      * @see TimeSeriesForecasting#linearRegression(TimeSeriesData, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult linearRegression(TimeSeriesData timeSeries, int variableIndex, 
+    public static ForecastResult linearRegression(TimeSeriesData timeSeries, int variableIndex, 
                                                 int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.linearRegression(timeSeries, variableIndex, forecastSteps, confidenceLevel);
     }
@@ -133,7 +133,7 @@ public class Series {
      * 线性回归预测（按列名） / Linear Regression Forecasting (by column name)
      * @see TimeSeriesForecasting#linearRegression(TimeSeriesData, String, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult linearRegression(TimeSeriesData timeSeries, String columnName, 
+    public static ForecastResult linearRegression(TimeSeriesData timeSeries, String columnName, 
                                                 int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.linearRegression(timeSeries, columnName, forecastSteps, confidenceLevel);
     }
@@ -142,7 +142,7 @@ public class Series {
      * ARIMA预测 / ARIMA Forecasting
      * @see TimeSeriesForecasting#arimaForecast(TimeSeriesData, int, int, int, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult arimaForecast(TimeSeriesData timeSeries, int variableIndex, 
+    public static ForecastResult arimaForecast(TimeSeriesData timeSeries, int variableIndex, 
                                                    int p, int d, int q, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.arimaForecast(timeSeries, variableIndex, p, d, q, forecastSteps, confidenceLevel);
     }
@@ -151,7 +151,7 @@ public class Series {
      * ARIMA预测（按列名） / ARIMA Forecasting (by column name)
      * @see TimeSeriesForecasting#arimaForecast(TimeSeriesData, String, int, int, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult arimaForecast(TimeSeriesData timeSeries, String columnName, 
+    public static ForecastResult arimaForecast(TimeSeriesData timeSeries, String columnName, 
                                                    int p, int d, int q, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.arimaForecast(timeSeries, columnName, p, d, q, forecastSteps, confidenceLevel);
     }
@@ -160,7 +160,7 @@ public class Series {
      * 季节性预测 / Seasonal Forecasting
      * @see TimeSeriesForecasting#seasonalForecast(TimeSeriesData, int, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult seasonalForecast(TimeSeriesData timeSeries, int variableIndex, 
+    public static ForecastResult seasonalForecast(TimeSeriesData timeSeries, int variableIndex, 
                                                      int period, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.seasonalForecast(timeSeries, variableIndex, period, forecastSteps, confidenceLevel);
     }
@@ -169,7 +169,7 @@ public class Series {
      * 季节性预测（按列名） / Seasonal Forecasting (by column name)
      * @see TimeSeriesForecasting#seasonalForecast(TimeSeriesData, String, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult seasonalForecast(TimeSeriesData timeSeries, String columnName, 
+    public static ForecastResult seasonalForecast(TimeSeriesData timeSeries, String columnName, 
                                                      int period, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.seasonalForecast(timeSeries, columnName, period, forecastSteps, confidenceLevel);
     }
@@ -178,7 +178,7 @@ public class Series {
      * Holt-Winters预测 / Holt-Winters Forecasting
      * @see TimeSeriesForecasting#holtWintersForecast(TimeSeriesData, int, double, double, double, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult holtWintersForecast(TimeSeriesData timeSeries, int variableIndex,
+    public static ForecastResult holtWintersForecast(TimeSeriesData timeSeries, int variableIndex,
                                                         double alpha, double beta, double gamma, int period,
                                                         int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.holtWintersForecast(timeSeries, variableIndex, alpha, beta, gamma, period, forecastSteps, confidenceLevel);
@@ -188,7 +188,7 @@ public class Series {
      * GARCH预测 / GARCH Forecasting
      * @see TimeSeriesForecasting#garchForecast(TimeSeriesData, int, int, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult garchForecast(TimeSeriesData timeSeries, int variableIndex,
+    public static ForecastResult garchForecast(TimeSeriesData timeSeries, int variableIndex,
                                                       int p, int q, int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.garchForecast(timeSeries, variableIndex, p, q, forecastSteps, confidenceLevel);
     }
@@ -197,7 +197,7 @@ public class Series {
      * 状态空间模型预测 / State Space Model Forecasting
      * @see TimeSeriesForecasting#stateSpaceForecast(TimeSeriesData, int, double, double, double, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult stateSpaceForecast(TimeSeriesData timeSeries, int variableIndex,
+    public static ForecastResult stateSpaceForecast(TimeSeriesData timeSeries, int variableIndex,
                                                            double sigmaEta, double sigmaZeta, double sigmaEpsilon,
                                                            int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.stateSpaceForecast(timeSeries, variableIndex, sigmaEta, sigmaZeta, sigmaEpsilon, forecastSteps, confidenceLevel);
@@ -207,7 +207,7 @@ public class Series {
      * 自动预测 / Auto Forecasting
      * @see TimeSeriesForecasting#autoForecast(TimeSeriesData, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult autoForecast(TimeSeriesData timeSeries, int variableIndex,
+    public static ForecastResult autoForecast(TimeSeriesData timeSeries, int variableIndex,
                                                      int forecastSteps, double confidenceLevel) {
         return TimeSeriesForecasting.autoForecast(timeSeries, variableIndex, forecastSteps, confidenceLevel);
     }
@@ -216,7 +216,7 @@ public class Series {
      * 自动预测（按列名） / Auto Forecasting (by column name)
      * @see TimeSeriesForecasting#autoForecast(TimeSeriesData, int, int, double)
      */
-    public static TimeSeriesForecasting.ForecastResult autoForecast(TimeSeriesData timeSeries, String columnName,
+    public static ForecastResult autoForecast(TimeSeriesData timeSeries, String columnName,
                                                      int forecastSteps, double confidenceLevel) {
         int index = timeSeries.getVariableIndex(columnName);
         return TimeSeriesForecasting.autoForecast(timeSeries, index, forecastSteps, confidenceLevel);
@@ -228,7 +228,7 @@ public class Series {
      * 经典分解 / Classical Decomposition
      * @see TimeSeriesDecomposition#classicalDecomposition(TimeSeriesData, int, int, DecompositionModel)
      */
-    public static TimeSeriesDecomposition.DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+    public static DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, int variableIndex, 
                                                               int period, TimeSeriesDecomposition.DecompositionModel type) {
         return TimeSeriesDecomposition.classicalDecomposition(timeSeries, variableIndex, period, type);
     }
@@ -237,7 +237,7 @@ public class Series {
      * 经典分解（按列名） / Classical Decomposition (by column name)
      * @see TimeSeriesDecomposition#classicalDecomposition(TimeSeriesData, String, int, DecompositionModel)
      */
-    public static TimeSeriesDecomposition.DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, String columnName, 
+    public static DecompositionResult classicalDecomposition(TimeSeriesData timeSeries, String columnName, 
                                                               int period, TimeSeriesDecomposition.DecompositionModel type) {
         return TimeSeriesDecomposition.classicalDecomposition(timeSeries, columnName, period, type);
     }
@@ -246,7 +246,7 @@ public class Series {
      * X-13分解 / X-13 Decomposition
      * @see TimeSeriesDecomposition#x13Decomposition(TimeSeriesData, int, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult x13Decomposition(TimeSeriesData timeSeries, int variableIndex, int period) {
+    public static DecompositionResult x13Decomposition(TimeSeriesData timeSeries, int variableIndex, int period) {
         return TimeSeriesDecomposition.x13Decomposition(timeSeries, variableIndex, period);
     }
     
@@ -254,7 +254,7 @@ public class Series {
      * X-13分解（按列名） / X-13 Decomposition (by column name)
      * @see TimeSeriesDecomposition#x13Decomposition(TimeSeriesData, String, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult x13Decomposition(TimeSeriesData timeSeries, String columnName, int period) {
+    public static DecompositionResult x13Decomposition(TimeSeriesData timeSeries, String columnName, int period) {
         return TimeSeriesDecomposition.x13Decomposition(timeSeries, columnName, period);
     }
     
@@ -262,7 +262,7 @@ public class Series {
      * STL分解 / STL Decomposition
      * @see TimeSeriesDecomposition#stlDecomposition(TimeSeriesData, int, int, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult stlDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+    public static DecompositionResult stlDecomposition(TimeSeriesData timeSeries, int variableIndex, 
                                                         int period, int seasonalWindow, int trendWindow) {
         return TimeSeriesDecomposition.stlDecomposition(timeSeries, variableIndex, period, seasonalWindow, trendWindow);
     }
@@ -271,7 +271,7 @@ public class Series {
      * STL分解（按列名） / STL Decomposition (by column name)
      * @see TimeSeriesDecomposition#stlDecomposition(TimeSeriesData, String, int, int, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult stlDecomposition(TimeSeriesData timeSeries, String columnName, 
+    public static DecompositionResult stlDecomposition(TimeSeriesData timeSeries, String columnName, 
                                                         int period, int seasonalWindow, int trendWindow) {
         return TimeSeriesDecomposition.stlDecomposition(timeSeries, columnName, period, seasonalWindow, trendWindow);
     }
@@ -280,7 +280,7 @@ public class Series {
      * 小波分解 / Wavelet Decomposition
      * @see TimeSeriesDecomposition#waveletDecomposition(TimeSeriesData, int, String, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, int variableIndex, 
+    public static DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, int variableIndex, 
                                                             String waveletType, int levels) {
         return TimeSeriesDecomposition.waveletDecomposition(timeSeries, variableIndex, waveletType, levels);
     }
@@ -289,7 +289,7 @@ public class Series {
      * 小波分解（按列名） / Wavelet Decomposition (by column name)
      * @see TimeSeriesDecomposition#waveletDecomposition(TimeSeriesData, String, String, int)
      */
-    public static TimeSeriesDecomposition.DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, String columnName, 
+    public static DecompositionResult waveletDecomposition(TimeSeriesData timeSeries, String columnName, 
                                                             String waveletType, int levels) {
         return TimeSeriesDecomposition.waveletDecomposition(timeSeries, columnName, waveletType, levels);
     }
@@ -300,7 +300,7 @@ public class Series {
      * 移动平均滤波 / Moving Average Filtering
      * @see TimeSeriesFiltering#movingAverage(TimeSeriesData, int, int)
      */
-    public static TimeSeriesFiltering.FilterResult movingAverage(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
+    public static FilterResult movingAverage(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
         return TimeSeriesFiltering.movingAverage(timeSeries, variableIndex, windowSize);
     }
     
@@ -308,7 +308,7 @@ public class Series {
      * 移动平均滤波（按列名） / Moving Average Filtering (by column name)
      * @see TimeSeriesFiltering#movingAverage(TimeSeriesData, String, int)
      */
-    public static TimeSeriesFiltering.FilterResult movingAverage(TimeSeriesData timeSeries, String columnName, int windowSize) {
+    public static FilterResult movingAverage(TimeSeriesData timeSeries, String columnName, int windowSize) {
         return TimeSeriesFiltering.movingAverage(timeSeries, columnName, windowSize);
     }
     
@@ -316,7 +316,7 @@ public class Series {
      * 指数平滑滤波 / Exponential Smoothing Filtering
      * @see TimeSeriesFiltering#exponentialSmoothing(TimeSeriesData, int, double)
      */
-    public static TimeSeriesFiltering.FilterResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, double alpha) {
+    public static FilterResult exponentialSmoothing(TimeSeriesData timeSeries, int variableIndex, double alpha) {
         return TimeSeriesFiltering.exponentialSmoothing(timeSeries, variableIndex, alpha);
     }
     
@@ -324,7 +324,7 @@ public class Series {
      * 指数平滑滤波（按列名） / Exponential Smoothing Filtering (by column name)
      * @see TimeSeriesFiltering#exponentialSmoothing(TimeSeriesData, String, double)
      */
-    public static TimeSeriesFiltering.FilterResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, double alpha) {
+    public static FilterResult exponentialSmoothing(TimeSeriesData timeSeries, String columnName, double alpha) {
         return TimeSeriesFiltering.exponentialSmoothing(timeSeries, columnName, alpha);
     }
     
@@ -332,7 +332,7 @@ public class Series {
      * 高斯滤波 / Gaussian Filtering
      * @see TimeSeriesFiltering#gaussianFilter(TimeSeriesData, int, double)
      */
-    public static TimeSeriesFiltering.FilterResult gaussianFilter(TimeSeriesData timeSeries, int variableIndex, double sigma) {
+    public static FilterResult gaussianFilter(TimeSeriesData timeSeries, int variableIndex, double sigma) {
         return TimeSeriesFiltering.gaussianFilter(timeSeries, variableIndex, sigma);
     }
     
@@ -340,7 +340,7 @@ public class Series {
      * 高斯滤波（按列名） / Gaussian Filtering (by column name)
      * @see TimeSeriesFiltering#gaussianFilter(TimeSeriesData, String, double)
      */
-    public static TimeSeriesFiltering.FilterResult gaussianFilter(TimeSeriesData timeSeries, String columnName, double sigma) {
+    public static FilterResult gaussianFilter(TimeSeriesData timeSeries, String columnName, double sigma) {
         return TimeSeriesFiltering.gaussianFilter(timeSeries, columnName, sigma);
     }
     
@@ -348,7 +348,7 @@ public class Series {
      * 中值滤波 / Median Filtering
      * @see TimeSeriesFiltering#medianFilter(TimeSeriesData, int, int)
      */
-    public static TimeSeriesFiltering.FilterResult medianFilter(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
+    public static FilterResult medianFilter(TimeSeriesData timeSeries, int variableIndex, int windowSize) {
         return TimeSeriesFiltering.medianFilter(timeSeries, variableIndex, windowSize);
     }
     
@@ -356,7 +356,7 @@ public class Series {
      * 中值滤波（按列名） / Median Filtering (by column name)
      * @see TimeSeriesFiltering#medianFilter(TimeSeriesData, String, int)
      */
-    public static TimeSeriesFiltering.FilterResult medianFilter(TimeSeriesData timeSeries, String columnName, int windowSize) {
+    public static FilterResult medianFilter(TimeSeriesData timeSeries, String columnName, int windowSize) {
         return TimeSeriesFiltering.medianFilter(timeSeries, columnName, windowSize);
     }
     
@@ -364,7 +364,7 @@ public class Series {
      * 低通滤波 / Low-pass Filtering
      * @see TimeSeriesFiltering#lowPassFilter(TimeSeriesData, int, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult lowPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+    public static FilterResult lowPassFilter(TimeSeriesData timeSeries, int variableIndex, 
                                                  double cutoffFreq, int order) {
         return TimeSeriesFiltering.lowPassFilter(timeSeries, variableIndex, cutoffFreq, order);
     }
@@ -373,7 +373,7 @@ public class Series {
      * 低通滤波（按列名） / Low-pass Filtering (by column name)
      * @see TimeSeriesFiltering#lowPassFilter(TimeSeriesData, String, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult lowPassFilter(TimeSeriesData timeSeries, String columnName, 
+    public static FilterResult lowPassFilter(TimeSeriesData timeSeries, String columnName, 
                                                  double cutoffFreq, int order) {
         return TimeSeriesFiltering.lowPassFilter(timeSeries, columnName, cutoffFreq, order);
     }
@@ -382,7 +382,7 @@ public class Series {
      * 高通滤波 / High-pass Filtering
      * @see TimeSeriesFiltering#highPassFilter(TimeSeriesData, int, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult highPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+    public static FilterResult highPassFilter(TimeSeriesData timeSeries, int variableIndex, 
                                                   double cutoffFreq, int order) {
         return TimeSeriesFiltering.highPassFilter(timeSeries, variableIndex, cutoffFreq, order);
     }
@@ -391,7 +391,7 @@ public class Series {
      * 高通滤波（按列名） / High-pass Filtering (by column name)
      * @see TimeSeriesFiltering#highPassFilter(TimeSeriesData, String, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult highPassFilter(TimeSeriesData timeSeries, String columnName, 
+    public static FilterResult highPassFilter(TimeSeriesData timeSeries, String columnName, 
                                                   double cutoffFreq, int order) {
         return TimeSeriesFiltering.highPassFilter(timeSeries, columnName, cutoffFreq, order);
     }
@@ -400,7 +400,7 @@ public class Series {
      * 带通滤波 / Band-pass Filtering
      * @see TimeSeriesFiltering#bandPassFilter(TimeSeriesData, int, double, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult bandPassFilter(TimeSeriesData timeSeries, int variableIndex, 
+    public static FilterResult bandPassFilter(TimeSeriesData timeSeries, int variableIndex, 
                                                    double lowFreq, double highFreq, int order) {
         return TimeSeriesFiltering.bandPassFilter(timeSeries, variableIndex, lowFreq, highFreq, order);
     }
@@ -409,7 +409,7 @@ public class Series {
      * 带通滤波（按列名） / Band-pass Filtering (by column name)
      * @see TimeSeriesFiltering#bandPassFilter(TimeSeriesData, String, double, double, int)
      */
-    public static TimeSeriesFiltering.FilterResult bandPassFilter(TimeSeriesData timeSeries, String columnName, 
+    public static FilterResult bandPassFilter(TimeSeriesData timeSeries, String columnName, 
                                                    double lowFreq, double highFreq, int order) {
         return TimeSeriesFiltering.bandPassFilter(timeSeries, columnName, lowFreq, highFreq, order);
     }
@@ -418,7 +418,7 @@ public class Series {
      * 自适应滤波 / Adaptive Filtering
      * @see TimeSeriesFiltering#adaptiveFilter(TimeSeriesData, int, double)
      */
-    public static TimeSeriesFiltering.FilterResult adaptiveFilter(TimeSeriesData timeSeries, int variableIndex, double learningRate) {
+    public static FilterResult adaptiveFilter(TimeSeriesData timeSeries, int variableIndex, double learningRate) {
         return TimeSeriesFiltering.adaptiveFilter(timeSeries, variableIndex, learningRate);
     }
     
@@ -426,7 +426,7 @@ public class Series {
      * 自适应滤波（按列名） / Adaptive Filtering (by column name)
      * @see TimeSeriesFiltering#adaptiveFilter(TimeSeriesData, String, double)
      */
-    public static TimeSeriesFiltering.FilterResult adaptiveFilter(TimeSeriesData timeSeries, String columnName, double learningRate) {
+    public static FilterResult adaptiveFilter(TimeSeriesData timeSeries, String columnName, double learningRate) {
         return TimeSeriesFiltering.adaptiveFilter(timeSeries, columnName, learningRate);
     }
     

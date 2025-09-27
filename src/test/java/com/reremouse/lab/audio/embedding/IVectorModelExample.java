@@ -29,9 +29,9 @@ public class IVectorModelExample {
         IVectorEmbedding model = new IVectorEmbedding(ivectorDim, numComponents, featureDim);
         
         System.out.println("创建i-vector模型:");
-        System.out.println("- i-vector维度: " + model.getIVectorDimension());
+        System.out.println("- i-vector维度: " + model.getLen());
         System.out.println("- UBM高斯分量数: " + model.getNumComponents());
-        System.out.println("- MFCC特征维度: " + model.getFeatureDimension());
+        System.out.println("- MFCC特征维度: " + model.getMfccDim());
         System.out.println();
         
         // 生成模拟的MFCC训练数据

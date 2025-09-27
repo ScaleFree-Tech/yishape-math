@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.Serializable;
 
 /**
  * 高斯混合模型(GMM)实现
@@ -21,7 +22,9 @@ import java.util.Set;
  * 支持多个高斯分量的混合模型，用于聚类和密度估计
  * Supports mixture of multiple Gaussian components for clustering and density estimation
  */
-public class GaussianMixtureModel {
+public class GaussianMixtureModel implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
     
     /** 高斯分量列表 / List of Gaussian components */
     private final List<MultivariateNormalDistribution> components;

@@ -593,7 +593,7 @@ public class PureIntegerProgrammingExample {
         //   x1, x2 ≥ 0 且为整数 / x1, x2 ≥ 0 and integers
         
         // 构造目标函数 / Construct objective function
-        IVector c = Linalg.vector(3.0, 2.0);
+        IVector c = Linalg.vector(new double[]{3.0, 2.0});
         
         // 构造约束矩阵 / Construct constraint matrix
         IMatrix A_ub = Linalg.matrix(new double[][]{
@@ -602,20 +602,20 @@ public class PureIntegerProgrammingExample {
         });
         
         // 构造约束右端向量 / Construct constraint right-hand side
-        IVector b = Linalg.vector(4.0, 6.0);
+        IVector b_ub = Linalg.vector(new double[]{4.0, 6.0});
         
         // 创建整数规划求解器 / Create integer programming solver
         RereIntegerProg solver = new RereIntegerProg(new SimplexLinProgSolver());
         
         // 设置所有变量为整数变量 / Set all variables as integer variables
-        solver.setAllVariablesInteger(2);
+        solver.setAllVariablesInteger();
         
         // 设置算法参数 / Set algorithm parameters
         solver.setMaxDepth(20);
         solver.setGapTolerance(1e-6);
         solver.setTolerance(1e-9);
         
-        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
+        // 求解 / Solve
         Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
         IVector solution = result.getSecond();
         double optimalValue = result.getFirst();
@@ -629,16 +629,18 @@ public class PureIntegerProgrammingExample {
         
         // 验证整数约束 / Verify integer constraints
         System.out.println("\n约束验证 / Constraint verification:");
-        for (int i = 0; i < solution.size(); i++) {
-            double value = solution.get(i).doubleValue();
-            System.out.println("  x" + (i+1) + " = " + value + " (整数: " + (Math.abs(value - Math.round(value)) < 1e-9) + ")");
+        for (int i = 0; i < solution.length(); i++) {
+            double value = (Double)solution.get(i);
+            boolean isInteger = Math.abs(value - Math.round(value)) < 1e-9;
+            System.out.println("  x" + (i+1) + " = " + value + " (整数: " + isInteger + ")");
         }
         
         // 验证线性约束 / Verify linear constraints
-        IVector Ax = A.multiply(solution);
+        IVector Ax = A_ub.mmul(solution);
         System.out.println("\n线性约束验证 / Linear constraint verification:");
-        for (int i = 0; i < Ax.size(); i++) {
-            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b.get(i) + " (" + (Ax.get(i).doubleValue() <= b.get(i).doubleValue() + 1e-9) + ")");
+        for (int i = 0; i < Ax.length(); i++) {
+            boolean satisfied = (Double)Ax.get(i) <= (Double)b_ub.get(i) + 1e-9;
+            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b_ub.get(i) + " (" + satisfied + ")");
         }
     }
 }
@@ -665,7 +667,7 @@ public class MixedIntegerProgrammingExample {
         //   x3 ≥ 0 (连续变量 / continuous variable)
         
         // 构造目标函数 / Construct objective function
-        IVector c = Linalg.vector(4.0, 3.0, 2.0);
+        IVector c = Linalg.vector(new double[]{4.0, 3.0, 2.0});
         
         // 构造约束矩阵 / Construct constraint matrix
         IMatrix A_ub = Linalg.matrix(new double[][]{
@@ -674,7 +676,7 @@ public class MixedIntegerProgrammingExample {
         });
         
         // 构造约束右端向量 / Construct constraint right-hand side
-        IVector b_ub = Linalg.vector(8.0, 7.0);
+        IVector b_ub = Linalg.vector(new double[]{8.0, 7.0});
         
         // 创建整数规划求解器（使用内点法作为基础求解器）
         // Create integer programming solver (using interior-point method as base solver)
@@ -689,7 +691,7 @@ public class MixedIntegerProgrammingExample {
         solver.setGapTolerance(1e-8);
         solver.setTolerance(1e-10);
         
-        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
+        // 求解 / Solve
         Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
         IVector solution = result.getSecond();
         double optimalValue = result.getFirst();
@@ -708,29 +710,34 @@ public class MixedIntegerProgrammingExample {
         // 验证整数约束 / Verify integer constraints
         System.out.println("\n整数约束验证 / Integer constraint verification:");
         for (int i = 0; i < 2; i++) {  // 只检查前两个变量 / Only check first two variables
-            double value = solution.get(i).doubleValue();
+            double value = (Double)solution.get(i);
             boolean isInteger = Math.abs(value - Math.round(value)) < 1e-9;
             System.out.println("  x" + (i+1) + " 是整数: " + isInteger);
         }
         
         // 验证线性约束 / Verify linear constraints
-        IVector Ax = A.multiply(solution);
+        IVector Ax = A_ub.mmul(solution);
         System.out.println("\n线性约束验证 / Linear constraint verification:");
-        for (int i = 0; i < Ax.size(); i++) {
-            boolean satisfied = Ax.get(i).doubleValue() <= b.get(i).doubleValue() + 1e-9;
-            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b.get(i) + " (" + satisfied + ")");
+        for (int i = 0; i < Ax.length(); i++) {
+            boolean satisfied = (Double)Ax.get(i) <= (Double)b_ub.get(i) + 1e-9;
+            System.out.println("  约束 " + (i+1) + ": " + Ax.get(i) + " ≤ " + b_ub.get(i) + " (" + satisfied + ")");
         }
     }
 }
 ```
 
-#### 复杂整数规划示例 / Complex Integer Programming Example
+#### 0-1整数规划示例 / Binary Integer Programming Example
 
 **0-1整数规划说明 / 0-1 Integer Programming Notes:**
 - 0-1整数规划要求变量只能取0或1的值
 - 需要同时设置整数约束和上界约束
 - 使用 `addIntegerVariables()` 设置整数变量
 - 使用不等式约束 `A_ub` 和 `b_ub` 设置上界约束 (x_i ≤ 1)
+
+**重要提示 / Important Note:**
+- 本库的整数规划求解器求解的是**最小化问题** / The integer programming solver in this library solves **minimization problems**
+- 如果要求解最大化问题，需要将目标函数系数取负数 / To solve maximization problems, negate the objective function coefficients
+- 求解器返回的最优值也需要取负数才是真正的最大值 / The optimal value returned by the solver also needs to be negated to get the true maximum value
 
 ```java
 import com.reremouse.lab.math.linalg.IVector;
@@ -742,66 +749,69 @@ import com.reremouse.lab.util.Tuple2;
 
 public class ComplexIntegerProgrammingExample {
     public static void main(String[] args) {
-        // 背包问题示例（0-1整数规划）/ Knapsack Problem Example (0-1 Integer Programming)
-        // 物品价值 / Item values: [10, 40, 30, 50]
-        // 物品重量 / Item weights: [5, 4, 6, 3]
-        // 背包容量 / Knapsack capacity: 10
-        // 目标：最大化价值 / Objective: Maximize value
+        System.out.println("=== 复杂整数规划示例 / Complex Integer Programming Example ===");
         
-        // 构造目标函数（最大化价值）/ Construct objective function (maximize value)
-        IVector c = Linalg.vector(10.0, 40.0, 30.0, 50.0);
+        // 修改为一个更简单的整数规划问题，确保有可行解
+        // 简化的背包问题示例
+        // 物品价值: [3, 4, 5]
+        // 物品重量: [2, 3, 4]
+        // 背包容量: 5
+        // 目标：最大化价值
         
-        // 构造约束矩阵（重量约束）/ Construct constraint matrix (weight constraint)
-        IMatrix A = Linalg.matrix(new double[][]{
-            {5.0, 4.0, 6.0, 3.0}  // 重量约束 / Weight constraint
-        });
+        // 构造目标函数（最大化价值转换为最小化问题）
+        // 由于求解器是最小化问题，需要将价值系数取负数
+        IVector c = Linalg.vector(new double[]{-3.0, -4.0, -5.0});
         
-        // 构造约束右端向量（背包容量）/ Construct constraint right-hand side (knapsack capacity)
-        IVector b = Linalg.vector(10.0);
-        
-        // 创建整数规划求解器 / Create integer programming solver
-        RereIntegerProg solver = new RereIntegerProg(new SimplexLinProgSolver());
-        
-        // 设置所有变量为整数变量 / Set all variables as integer variables
-        solver.addIntegerVariables(0, 1, 2, 3);
-        
-        // 添加0-1约束：每个变量的上界为1 / Add 0-1 constraints: upper bound of 1 for each variable
-        // 构造上界约束矩阵：x_i <= 1 for i = 0,1,2,3
+        // 构造约束矩阵（重量约束）
         IMatrix A_ub = Linalg.matrix(new double[][]{
-            {1.0, 0.0, 0.0, 0.0},  // x1 <= 1
-            {0.0, 1.0, 0.0, 0.0},  // x2 <= 1
-            {0.0, 0.0, 1.0, 0.0},  // x3 <= 1
-            {0.0, 0.0, 0.0, 1.0}   // x4 <= 1
+            {2.0, 3.0, 4.0}  // 重量约束
         });
-        IVector b_ub = Linalg.vector(1.0, 1.0, 1.0, 1.0);
         
-        // 设置算法参数（背包问题可能需要更多节点）
-        // Set algorithm parameters (knapsack problem may need more nodes)
-        solver.setMaxDepth(30);
+        // 构造约束右端向量（背包容量）
+        IVector b_ub = Linalg.vector(new double[]{5.0});
+        
+        // 创建整数规划求解器
+        RereIntegerProg solver = new RereIntegerProg();
+        
+        // 设置所有变量为整数变量（0-1变量）
+        solver.setAllVariablesBinary();
+        
+        // 设置算法参数
+        solver.setMaxDepth(20);
         solver.setGapTolerance(1e-6);
         solver.setTolerance(1e-9);
         
-        // 求解（包含0-1约束）/ Solve (with 0-1 constraints)
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, A, b);
+        System.out.println("正在求解整数规划问题...");
+        System.out.println("目标函数: maximize 3*x1 + 4*x2 + 5*x3");
+        System.out.println("约束条件: 2*x1 + 3*x2 + 4*x3 <= 5");
+        System.out.println("变量约束: x1, x2, x3 为 0-1 变量");
+        
+        // 求解
+        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        
+        if (result == null) {
+            System.out.println("未找到可行解");
+            return;
+        }
+        
         IVector solution = result.getSecond();
-        double optimalValue = result.getFirst();
+        double optimalValue = -result.getFirst(); // 转换回正值
         
-        // 输出结果 / Output results
-        System.out.println("=== 复杂整数规划示例（背包问题）/ Complex Integer Programming Example (Knapsack Problem) ===");
-        System.out.println("最优解 / Optimal solution: " + solution);
-        System.out.println("最优价值 / Optimal value: " + optimalValue);
+        // 输出结果
+        System.out.println("最优解: " + solution);
+        System.out.println("最优价值: " + optimalValue);
         
-        // 分析解的含义 / Analyze solution meaning
-        System.out.println("\n解的分析 / Solution analysis:");
-        String[] items = {"物品1", "物品2", "物品3", "物品4"};
-        double[] values = {10.0, 40.0, 30.0, 50.0};
-        double[] weights = {5.0, 4.0, 6.0, 3.0};
+        // 分析解的含义
+        System.out.println("\n解的分析:");
+        String[] items = {"物品1", "物品2", "物品3"};
+        double[] values = {3.0, 4.0, 5.0};
+        double[] weights = {2.0, 3.0, 4.0};
         
         double totalWeight = 0;
         double totalValue = 0;
         
-        for (int i = 0; i < solution.size(); i++) {
-            int selected = (int) Math.round(solution.get(i).doubleValue());
+        for (int i = 0; i < solution.length(); i++) {
+            int selected = (int) Math.round((Double)solution.get(i));
             if (selected == 1) {
                 System.out.println("  选择 " + items[i] + " (价值: " + values[i] + ", 重量: " + weights[i] + ")");
                 totalWeight += weights[i];
@@ -809,24 +819,24 @@ public class ComplexIntegerProgrammingExample {
             }
         }
         
-        System.out.println("\n总重量 / Total weight: " + totalWeight + " ≤ " + b.get(0));
-        System.out.println("总价值 / Total value: " + totalValue);
+        System.out.println("\n总重量: " + totalWeight + " <= 5");
+        System.out.println("总价值: " + totalValue);
         
-        // 验证约束 / Verify constraints
-        IVector Ax = A.multiply(solution);
-        boolean feasible = Ax.get(0).doubleValue() <= b.get(0).doubleValue() + 1e-9;
-        System.out.println("约束满足 / Constraint satisfied: " + feasible);
+        // 验证约束
+        IVector Ax = A_ub.mmul(solution);
+        boolean feasible = (Double)Ax.get(0) <= (Double)b_ub.get(0) + 1e-9;
+        System.out.println("约束满足: " + feasible);
         
-        // 验证0-1约束 / Verify 0-1 constraints
-        System.out.println("\n0-1约束验证 / 0-1 constraint verification:");
+        // 验证0-1约束
+        System.out.println("\n0-1约束验证:");
         boolean allBinary = true;
-        for (int i = 0; i < solution.size(); i++) {
-            double value = solution.get(i).doubleValue();
+        for (int i = 0; i < solution.length(); i++) {
+            double value = (Double)solution.get(i);
             boolean isBinary = Math.abs(value) < 1e-9 || Math.abs(value - 1.0) < 1e-9;
             allBinary &= isBinary;
             System.out.println("  x" + (i+1) + " = " + value + " (0-1变量: " + isBinary + ")");
         }
-        System.out.println("所有变量都是0-1变量 / All variables are 0-1: " + allBinary);
+        System.out.println("所有变量都是0-1变量: " + allBinary);
     }
 }
 ```
@@ -845,13 +855,13 @@ import com.reremouse.lab.util.Tuple2;
 public class SolverPerformanceComparisonExample {
     public static void main(String[] args) {
         // 定义测试问题 / Define test problem
-        IVector c = Linalg.vector(5.0, 3.0, 4.0, 2.0);
+        IVector c = Linalg.vector(new double[]{5.0, 3.0, 4.0, 2.0});
         IMatrix A = Linalg.matrix(new double[][]{
             {2.0, 1.0, 1.0, 3.0},
             {1.0, 3.0, 2.0, 1.0},
             {3.0, 1.0, 2.0, 2.0}
         });
-        IVector b = Linalg.vector(12.0, 11.0, 15.0);
+        IVector b = Linalg.vector(new double[]{12.0, 11.0, 15.0});
         int[] integerVars = {0, 1, 2, 3};
         
         System.out.println("=== 求解器性能比较示例 / Solver Performance Comparison Example ===");

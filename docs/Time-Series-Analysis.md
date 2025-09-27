@@ -506,17 +506,17 @@ public class CompleteTimeSeriesAnalysis {
         TimeSeriesData preprocessed = preprocessData(timeSeries);
         
         // 3. 时间序列分解 / Time series decomposition
-        TimeSeriesDecomposition.DecompositionResult decomposition = 
+        DecompositionResult decomposition = 
             Series.classicalDecomposition(
                 preprocessed, "temperature", 12, 
                 TimeSeriesDecomposition.DecompositionModel.ADDITIVE);
         
         // 4. 滤波处理 / Filtering
-        TimeSeriesFiltering.FilterResult filtering = 
+        FilterResult filtering = 
             Series.movingAverage(preprocessed, "temperature", 3);
         
         // 5. 预测分析 / Forecasting
-        TimeSeriesForecasting.ForecastResult forecast = 
+        ForecastResult forecast = 
             Series.autoForecast(filtering.filtered, "temperature", 20, 0.95);
         
         // 6. 结果可视化 / Result visualization

@@ -54,9 +54,9 @@ IVector<Double> v6 = Linalg.vector(new Integer[]{1, 2, 3, 4});    // 自动转�
 
 // 从单个值创建向量 / Create vector from single values
 IVector<Double> v7 = Linalg.vector(5.0);                          // [5.0]
-IVector<Double> v8 = Linalg.vector(1.0, 2.0);                     // [1.0, 2.0]
+IVector<Double> v8 = Linalg.vector(new double[]{1.0, 2.0});        // [1.0, 2.0]
 IVector<Float> v9 = Linalg.vector(3.0f);                          // [3.0f]
-IVector<Float> v10 = Linalg.vector(1.0f, 2.0f);                   // [1.0f, 2.0f]
+IVector<Float> v10 = Linalg.vector(new float[]{1.0f, 2.0f});      // [1.0f, 2.0f]
 
 // 创建范围向量 / Create range vector
 IVector<Double> v11 = Linalg.range(10);                           // [0.0, 1.0, 2.0, ..., 9.0]

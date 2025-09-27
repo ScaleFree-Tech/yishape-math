@@ -868,6 +868,7 @@ public class RereIntegerProg implements IIntegerProg {
     
     private ILinProgSolver baseSolver;                          // 基础线性规划求解器 / Base LP solver
     private Set<Integer> integerVariables;                      // 整数变量索引集合 / Integer variable indices
+    private Set<Integer> binaryVariables;                       // 0-1变量索引集合 / Binary variable indices
     private double tolerance = DEFAULT_TOLERANCE;               // 收敛容差 / Convergence tolerance
     private int maxIterations = DEFAULT_MAX_ITERATIONS;         // 最大迭代次数 / Maximum iterations
     private boolean verbose = false;                            // 详细输出 / Verbose output
@@ -888,7 +889,20 @@ solver.setIntegerVariable(0);
 solver.addIntegerVariables(0, 1, 2);
 
 // 设置所有变量为整数 / Set all variables as integer
-solver.setAllVariablesInteger(3);
+solver.setAllVariablesInteger();
+```
+
+##### 设置二进制变量 / Setting Binary Variables
+
+```java
+// 设置单个0-1变量（二进制变量）/ Set single binary variable
+solver.setBinaryVariable(0);
+
+// 添加多个0-1变量 / Add multiple binary variables
+solver.addBinaryVariables(0, 1, 2);
+
+// 设置所有变量为0-1变量 / Set all variables as binary
+solver.setAllVariablesBinary();
 ```
 
 ##### 配置算法参数 / Configure Algorithm Parameters
@@ -984,7 +998,7 @@ IMatrix A_eq = Linalg.matrix(new double[][]{
 IVector b_eq = Linalg.vector(new double[]{4.0, 5.0});
 
 // 设置所有变量为整数 / Set all variables as integer
-solver.setAllVariablesInteger(3);
+solver.setAllVariablesInteger();
 
 // 配置高级参数 / Configure advanced parameters
 solver.setTolerance(1e-8);
@@ -1011,6 +1025,34 @@ RereIntegerProg solver2 = new RereIntegerProg(new SimplexLinProgSolver());
 // 设置整数变量和求解 / Set integer variables and solve
 solver.addIntegerVariables(0, 1);
 Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+```
+
+##### 0-1整数规划 / Binary Integer Programming
+
+```java
+// 创建0-1整数规划求解器 / Create binary integer programming solver
+RereIntegerProg solver = new RereIntegerProg();
+
+// 定义0-1整数规划问题 / Define binary integer programming problem
+// minimize -3*x1 - 2*x2 (maximize 3*x1 + 2*x2)
+// subject to: x1 + x2 ≤ 1
+//            x1, x2 ∈ {0, 1}
+IVector c = Linalg.vector(new double[]{-3.0, -2.0});
+IMatrix A_ub = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector b_ub = Linalg.vector(new double[]{1.0});
+
+// 设置所有变量为0-1变量 / Set all variables as binary
+solver.setAllVariablesBinary();
+
+// 配置求解器参数 / Configure solver parameters
+solver.setVerbose(true);
+solver.setMaxDepth(20);
+
+// 求解 / Solve
+Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+
+System.out.println("0-1整数规划解: " + result.getSecond());
+System.out.println("最优值: " + (-result.getFirst())); // 取负数得到最大化问题的真实最优值
 ```
 
 #### 性能特性 / Performance Features

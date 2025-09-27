@@ -6,7 +6,6 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.stats.model.GaussianMixtureModel;
 import com.reremouse.lab.math.stats.model.EMAlgorithm;
 import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.util.Tuple3;
 import com.reremouse.lab.audio.core.AudioData;
 import com.reremouse.lab.audio.core.AudioUtil;
 
@@ -15,6 +14,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.Serializable;
 
 /**
  * 基于i-vector模型将MFCC特征转换为定长的向量表征
@@ -30,7 +30,9 @@ import java.util.HashMap;
  * 
  * @author lteb2
  */
-public class IVectorEmbedding implements IAudioEmbedding {
+public class IVectorEmbedding implements IAudioEmbedding, Serializable {
+    
+    private static final long serialVersionUID = 1L;
     
     /** i-vector的维度 / Dimension of i-vector */
     private final int len;
@@ -44,7 +46,7 @@ public class IVectorEmbedding implements IAudioEmbedding {
     /** 通用背景模型 (UBM) / Universal Background Model */
     private GaussianMixtureModel ubm;
     
-    /** 全变异性矩阵 T (featureDim*numComponents x len) / Total variability matrix T */
+    /** 全变异性矩阵 T (mfccDim*numComponents x len) / Total variability matrix T */
     private IMatrix<Double> tMatrix;
     
     /** UBM协方差矩阵的逆 / Inverse of UBM covariance matrices */
@@ -80,13 +82,13 @@ public class IVectorEmbedding implements IAudioEmbedding {
      * 构造函数
      * @param len i-vector维度 / i-vector dimension
      * @param numComponents UBM高斯分量数 / Number of UBM Gaussian components
-     * @param featureDim MFCC特征维度 / MFCC feature dimension
+     * @param mfccDim MFCC特征维度 / MFCC feature dimension
      */
-    public IVectorEmbedding(int len, int numComponents, int featureDim) {
+    public IVectorEmbedding(int len, int numComponents, int mfccDim) {
         this.len = len;
         this.numComponents = numComponents;
-        this.featureDim = featureDim;
-        this.supervectorDim = numComponents * featureDim;
+        this.featureDim = mfccDim;
+        this.supervectorDim = numComponents * mfccDim;
         this.random = new Random(42); // 固定种子以保证可重现性 / Fixed seed for reproducibility
         this.ubmInvCovariances = new ArrayList<>();
         this.parameters = new HashMap<>();
@@ -530,9 +532,40 @@ public class IVectorEmbedding implements IAudioEmbedding {
 
     // 辅助方法 / Helper methods
 
-    // Getter方法 / Getter methods
+    // Getter and setter methods for serialization
+    public boolean isTrained() {
+        return isTrained;
+    }
     
-    public int getIVectorDimension() {
+    public void setTrained(boolean trained) {
+        isTrained = trained;
+    }
+    
+    public GaussianMixtureModel getUbm() {
+        return ubm;
+    }
+    
+    public void setUbm(GaussianMixtureModel ubm) {
+        this.ubm = ubm;
+    }
+    
+    public IMatrix<Double> getTMatrix() {
+        return tMatrix;
+    }
+    
+    public void setTMatrix(IMatrix<Double> tMatrix) {
+        this.tMatrix = tMatrix;
+    }
+    
+    public List<IMatrix<Double>> getUbmInvCovariances() {
+        return ubmInvCovariances;
+    }
+    
+    public void setUbmInvCovariances(List<IMatrix<Double>> ubmInvCovariances) {
+        this.ubmInvCovariances = ubmInvCovariances;
+    }
+    
+    public int getLen() {
         return len;
     }
     
@@ -540,11 +573,58 @@ public class IVectorEmbedding implements IAudioEmbedding {
         return numComponents;
     }
     
-    public int getFeatureDimension() {
+    public int getMfccDim() {
         return featureDim;
     }
     
-    public boolean isTrained() {
-        return isTrained;
+    public int getSupervectorDim() {
+        return supervectorDim;
+    }
+    
+    public double getRelevanceFactor() {
+        return relevanceFactor;
+    }
+    
+    @Override
+    public IAudioEmbedding save(String path) {
+        try {
+            // Create a map to store all model parameters
+            java.util.Map<String, Object> modelData = new java.util.HashMap<>();
+            
+            // Store basic parameters
+            modelData.put("len", this.len);
+            modelData.put("numComponents", this.numComponents);
+            modelData.put("featureDim", this.featureDim);
+            modelData.put("supervectorDim", this.supervectorDim);
+            modelData.put("isTrained", this.isTrained);
+            modelData.put("relevanceFactor", this.relevanceFactor);
+            modelData.put("modelType", "IVectorEmbedding"); // Add model type identifier
+            
+            // Store UBM if trained
+            if (this.ubm != null && this.isTrained) {
+                modelData.put("ubm", this.ubm);
+            }
+            
+            // Store T-matrix if trained
+            if (this.tMatrix != null && this.isTrained) {
+                modelData.put("tMatrix", this.tMatrix);
+            }
+            
+            // Store UBM inverse covariances if available
+            if (this.ubmInvCovariances != null && !this.ubmInvCovariances.isEmpty()) {
+                modelData.put("ubmInvCovariances", this.ubmInvCovariances);
+            }
+            
+            // Serialize to file using Java serialization
+            java.io.FileOutputStream fileOut = new java.io.FileOutputStream(path);
+            java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(fileOut);
+            out.writeObject(modelData);
+            out.close();
+            fileOut.close();
+            
+            return this;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save IVectorEmbedding model to " + path, e);
+        }
     }
 }

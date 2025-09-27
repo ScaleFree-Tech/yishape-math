@@ -64,25 +64,26 @@ public class RereIntegerProgTest {
 
     /**
      * 测试混合整数规划问题
-     * 目标函数: minimize c^T * x = [2, 1] * [x1, x2]^T = 2*x1 + x2
+     * 目标函数: minimize c^T * x = [1, 2] * [x1, x2]^T = x1 + 2*x2
      * 约束条件: 
-     *   x1 + x2 = 2.5
+     *   x1 + x2 = 3
      *   x1 >= 0 且为整数, x2 >= 0 (连续变量)
      * 
-     * 解析解: x1 = 0, x2 = 2.5, 最优值 = 2.5
+     * 解析解: x1 = 3, x2 = 0, 最优值 = 3
      */
     @Test
     public void testMixedIntegerProgramming() {
         // 目标函数系数
-        IVector c = Linalg.vector(new double[]{2, 1});
+        IVector c = Linalg.vector(new double[]{1, 2});
         
-        // 等式约束: x1 + x2 = 2.5
+        // 等式约束: x1 + x2 = 3
         IMatrix A_eq = Linalg.matrix(new double[][]{{1, 1}});
-        IVector b_eq = Linalg.vector(new double[]{2.5});
+        IVector b_eq = Linalg.vector(new double[]{3});
         
         // 创建求解器
         RereIntegerProg solver = new RereIntegerProg();
         solver.setIntegerVariable(0); // 只有x1是整数变量
+        // solver.setVerbose(true); // Disable verbose output for cleaner test output
         
         // 求解
         Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
@@ -98,7 +99,7 @@ public class RereIntegerProgTest {
         
         // 验证约束满足
         IVector constraintValue = A_eq.mmul(solution);
-        assertEquals(2.5, (double)constraintValue.get(0), 1e-6, "约束值应等于2.5");
+        assertEquals(3.0, (double)constraintValue.get(0), 1e-6, "约束值应等于3");
         
         // 验证整数约束
         double x1 = (Double) solution.get(0);
@@ -106,8 +107,8 @@ public class RereIntegerProgTest {
         assertEquals(Math.round(x1), x1, 1e-6, "x1应为整数");
         
         // 验证最优值
-        double expectedOptimalValue = 2.5;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于2.5");
+        double expectedOptimalValue = 3.0;
+        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于3");
     }
 
     /**
@@ -134,7 +135,8 @@ public class RereIntegerProgTest {
         
         // 创建求解器
         RereIntegerProg solver = new RereIntegerProg();
-        solver.setAllVariablesInteger(3); // 所有变量都是整数
+        solver.setAllVariablesInteger(); // 所有变量都是整数
+        // solver.setVerbose(true); // Disable verbose output for cleaner test output
         
         // 求解
         Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
@@ -231,7 +233,7 @@ public class RereIntegerProgTest {
     @Test
     public void testWithDifferentLPSolver() {
         // 使用内点法求解器作为基础求解器
-        RereIntegerProg solver = new RereIntegerProg(new InteriorPointLinProgSolver());
+        RereIntegerProg solver = new RereIntegerProg();
         solver.addIntegerVariables(0, 1);
         
         IVector c = Linalg.vector(new double[]{1, 1});

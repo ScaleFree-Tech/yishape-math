@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.Serializable;
 
 /**
  * 基于i-vector模型的在线增量训练实现
@@ -27,7 +28,9 @@ import java.util.HashMap;
  * Supports incremental training with streaming audio data, suitable for processing large-scale audio datasets
  * Supports incremental training with small batches of MFCC samples, providing more flexible training control
  */
-public class OnlineIVectorEmbedding implements IAudioEmbedding {
+public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
+    
+    private static final long serialVersionUID = 1L;
     
     /** i-vector的维度 / Dimension of i-vector */
     private final int len;
@@ -827,9 +830,40 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding {
         return embedding.divideByScalar(norm);
     }
     
-    // Getter方法 / Getter methods
+    // Getter and setter methods for serialization
+    public boolean isTrained() {
+        return isTrained;
+    }
     
-    public int getIVectorDimension() {
+    public void setTrained(boolean trained) {
+        isTrained = trained;
+    }
+    
+    public GaussianMixtureModel getUbm() {
+        return ubm;
+    }
+    
+    public void setUbm(GaussianMixtureModel ubm) {
+        this.ubm = ubm;
+    }
+    
+    public IMatrix<Double> getTMatrix() {
+        return tMatrix;
+    }
+    
+    public void setTMatrix(IMatrix<Double> tMatrix) {
+        this.tMatrix = tMatrix;
+    }
+    
+    public List<IMatrix<Double>> getUbmInvCovariances() {
+        return ubmInvCovariances;
+    }
+    
+    public void setUbmInvCovariances(List<IMatrix<Double>> ubmInvCovariances) {
+        this.ubmInvCovariances = ubmInvCovariances;
+    }
+    
+    public int getLen() {
         return len;
     }
     
@@ -837,125 +871,126 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding {
         return numComponents;
     }
     
-    public int getFeatureDimension() {
+    public int getMfccDim() {
         return mfccDim;
     }
     
-    public boolean isTrained() {
-        return isTrained;
+    public int getSupervectorDim() {
+        return supervectorDim;
+    }
+    
+    public double getRelevanceFactor() {
+        return relevanceFactor;
+    }
+    
+    public boolean isUseAdamOptimizer() {
+        return useAdamOptimizer;
+    }
+    
+    public void setUseAdamOptimizer(boolean useAdamOptimizer) {
+        this.useAdamOptimizer = useAdamOptimizer;
+    }
+    
+    public double getLearningRate() {
+        return learningRate;
+    }
+    
+    public void setLearningRate(double learningRate) {
+        this.learningRate = learningRate;
+    }
+    
+    public int getBatchSize() {
+        return batchSize;
+    }
+    
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
     
     public int getProcessedSamples() {
         return processedSamples;
     }
     
-    /**
-     * 获取当前批次大小
-     * @return 当前批次大小 / Current batch size
-     */
-    public int getBatchSize() {
-        return batchSize;
+    public void setProcessedSamples(int processedSamples) {
+        this.processedSamples = processedSamples;
     }
     
-    /**
-     * 设置学习率
-     * @param learningRate 新的学习率 / New learning rate
-     */
-    public void setLearningRate(double learningRate) {
-        if (learningRate <= 0.0 || Double.isNaN(learningRate) || Double.isInfinite(learningRate)) {
-            throw new IllegalArgumentException("学习率必须大于0且为有效数值 / Learning rate must be greater than 0 and a valid number");
+    public List<IVector<Double>> getAccumulatedFeatures() {
+        return accumulatedFeatures;
+    }
+    
+    public void setAccumulatedFeatures(List<IVector<Double>> accumulatedFeatures) {
+        this.accumulatedFeatures = accumulatedFeatures;
+    }
+    
+    public IOnlineOptimizer getUbmOptimizer() {
+        return ubmOptimizer;
+    }
+    
+    public void setUbmOptimizer(IOnlineOptimizer ubmOptimizer) {
+        this.ubmOptimizer = ubmOptimizer;
+    }
+    
+    public IOnlineOptimizer getTMatrixOptimizer() {
+        return tMatrixOptimizer;
+    }
+    
+    public void setTMatrixOptimizer(IOnlineOptimizer tMatrixOptimizer) {
+        this.tMatrixOptimizer = tMatrixOptimizer;
+    }
+    
+    @Override
+    public IAudioEmbedding save(String path) {
+        try {
+            // Create a map to store all model parameters
+            java.util.Map<String, Object> modelData = new java.util.HashMap<>();
+            
+            // Store basic parameters
+            modelData.put("len", this.len);
+            modelData.put("numComponents", this.numComponents);
+            modelData.put("mfccDim", this.mfccDim);
+            modelData.put("supervectorDim", this.supervectorDim);
+            modelData.put("isTrained", this.isTrained);
+            modelData.put("relevanceFactor", this.relevanceFactor);
+            modelData.put("useAdamOptimizer", this.useAdamOptimizer);
+            modelData.put("learningRate", this.learningRate);
+            modelData.put("batchSize", this.batchSize);
+            modelData.put("processedSamples", this.processedSamples);
+            modelData.put("modelType", "OnlineIVectorEmbedding"); // Add model type identifier
+            
+            // Store UBM if trained
+            if (this.ubm != null && this.isTrained) {
+                modelData.put("ubm", this.ubm);
+            }
+            
+            // Store T-matrix if trained
+            if (this.tMatrix != null && this.isTrained) {
+                modelData.put("tMatrix", this.tMatrix);
+            }
+            
+            // Store UBM inverse covariances if available
+            if (this.ubmInvCovariances != null && !this.ubmInvCovariances.isEmpty()) {
+                modelData.put("ubmInvCovariances", this.ubmInvCovariances);
+            }
+            
+            // Store accumulated features if any
+            if (this.accumulatedFeatures != null && !this.accumulatedFeatures.isEmpty()) {
+                modelData.put("accumulatedFeatures", this.accumulatedFeatures);
+            }
+            
+            // Serialize to file using Java serialization
+            java.io.FileOutputStream fileOut = new java.io.FileOutputStream(path);
+            java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(fileOut);
+            out.writeObject(modelData);
+            out.close();
+            fileOut.close();
+            
+            return this;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save OnlineIVectorEmbedding model to " + path, e);
         }
-        
-        this.learningRate = learningRate;
-        
-        // 更新优化器的学习率
-        if (ubmOptimizer != null) {
-            ubmOptimizer.setLearningRate(learningRate);
-        }
-        if (tMatrixOptimizer != null) {
-            tMatrixOptimizer.setLearningRate(learningRate);
-        }
     }
     
-    /**
-     * 获取当前学习率
-     * @return 当前学习率 / Current learning rate
-     */
-    public double getLearningRate() {
-        return learningRate;
-    }
     
-    /**
-     * 设置是否使用Adam优化器
-     * @param useAdam 是否使用Adam优化器 / Whether to use Adam optimizer
-     */
-    public void setUseAdamOptimizer(boolean useAdam) {
-        if (this.useAdamOptimizer != useAdam) {
-            this.useAdamOptimizer = useAdam;
-            initializeOptimizers(); // 重新初始化优化器
-        }
-    }
     
-    /**
-     * 获取是否使用Adam优化器
-     * @return 是否使用Adam优化器 / Whether Adam optimizer is used
-     */
-    public boolean isUsingAdamOptimizer() {
-        return useAdamOptimizer;
-    }
-    
-    /**
-     * 获取累积的特征数量
-     * @return 累积的特征数量 / Number of accumulated features
-     */
-    public int getAccumulatedFeatureCount() {
-        return accumulatedFeatures.size();
-    }
-    
-    /**
-     * 清除累积的特征
-     */
-    public void clearAccumulatedFeatures() {
-        accumulatedFeatures.clear();
-    }
-    
-    /**
-     * 强制更新模型（处理累积的特征）
-     */
-    public void forceUpdate() {
-        if (!accumulatedFeatures.isEmpty()) {
-            updateModelWithBatch(accumulatedFeatures);
-            accumulatedFeatures.clear();
-        }
-    }
-    
-    /**
-     * 获取UBM优化器信息
-     * @return UBM优化器类型和当前步骤信息 / UBM optimizer type and current step information
-     */
-    public String getUBMOptimizerInfo() {
-        if (ubmOptimizer == null) {
-            return "UBM优化器未初始化 / UBM optimizer not initialized";
-        }
-        
-        String optimizerType = useAdamOptimizer ? "Adam" : "SGD";
-        int currentStep = ubmOptimizer.getCurrentStep();
-        return String.format("UBM优化器: %s, 当前步骤: %d / UBM optimizer: %s, current step: %d", 
-                           optimizerType, currentStep, optimizerType, currentStep);
-    }
-    
-    /**
-     * 获取T矩阵优化器信息
-     * @return T矩阵优化器类型和当前步骤信息 / T-matrix optimizer type and current step information
-     */
-    public String getTMatrixOptimizerInfo() {
-        if (tMatrixOptimizer == null) {
-            return "T矩阵优化器未初始化 / T-matrix optimizer not initialized";
-        }
-        
-        String optimizerType = useAdamOptimizer ? "Adam" : "SGD";
-        int currentStep = tMatrixOptimizer.getCurrentStep();
-        return String.format("T矩阵优化器: %s, 当前步骤: %d / T-matrix optimizer: %s, current step: %d", 
-                           optimizerType, currentStep, optimizerType, currentStep);
-    }
 }

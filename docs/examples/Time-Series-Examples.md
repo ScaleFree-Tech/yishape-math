@@ -151,7 +151,7 @@ public class SimpleForecastingExample {
         
         // 简单移动平均预测 / Simple moving average forecasting
         System.out.println("=== 简单移动平均预测 / Simple Moving Average Forecasting ===");
-        TimeSeriesForecasting.ForecastResult smaResult = Series.simpleMovingAverage(
+        ForecastResult smaResult = Series.simpleMovingAverage(
             timeSeries, "value", 5, 10, 0.95);
         
         System.out.println("预测值: " + smaResult.forecast);
@@ -163,7 +163,7 @@ public class SimpleForecastingExample {
         
         // 指数平滑预测 / Exponential smoothing forecasting
         System.out.println("\n=== 指数平滑预测 / Exponential Smoothing Forecasting ===");
-        TimeSeriesForecasting.ForecastResult esResult = Series.exponentialSmoothing(
+        ForecastResult esResult = Series.exponentialSmoothing(
             timeSeries, "value", 0.3, 10, 0.95);
         
         System.out.println("预测值: " + esResult.forecast);
@@ -172,7 +172,7 @@ public class SimpleForecastingExample {
         
         // 线性回归预测 / Linear regression forecasting
         System.out.println("\n=== 线性回归预测 / Linear Regression Forecasting ===");
-        TimeSeriesForecasting.ForecastResult lrResult = Series.linearRegression(
+        ForecastResult lrResult = Series.linearRegression(
             timeSeries, "value", 10, 0.95);
         
         System.out.println("预测值: " + lrResult.forecast);
@@ -204,7 +204,7 @@ public class TimeSeriesDecompositionExample {
         
         // 经典分解（加法模型）/ Classical decomposition (additive model)
         System.out.println("=== 经典分解（加法模型）/ Classical Decomposition (Additive Model) ===");
-        TimeSeriesDecomposition.DecompositionResult additiveResult = 
+        DecompositionResult additiveResult = 
             Series.classicalDecomposition(
                 timeSeries, "sales", 12, 
                 TimeSeriesDecomposition.DecompositionModel.ADDITIVE);
@@ -217,7 +217,7 @@ public class TimeSeriesDecompositionExample {
         
         // 经典分解（乘法模型）/ Classical decomposition (multiplicative model)
         System.out.println("\n=== 经典分解（乘法模型）/ Classical Decomposition (Multiplicative Model) ===");
-        TimeSeriesDecomposition.DecompositionResult multiplicativeResult = 
+        DecompositionResult multiplicativeResult = 
             Series.classicalDecomposition(
                 timeSeries, "sales", 12, 
                 TimeSeriesDecomposition.DecompositionModel.MULTIPLICATIVE);
@@ -228,7 +228,7 @@ public class TimeSeriesDecompositionExample {
         
         // STL分解 / STL decomposition
         System.out.println("\n=== STL分解 / STL Decomposition ===");
-        TimeSeriesDecomposition.DecompositionResult stlResult = 
+        DecompositionResult stlResult = 
             Series.stlDecomposition(timeSeries, "sales", 12, 7, 21);
         
         System.out.println("趋势成分强度: " + stlResult.trendStrength);
@@ -268,7 +268,7 @@ public class TimeSeriesFilteringExample {
         
         // 移动平均滤波 / Moving average filtering
         System.out.println("=== 移动平均滤波 / Moving Average Filtering ===");
-        TimeSeriesFiltering.FilterResult maResult = Series.movingAverage(
+        FilterResult maResult = Series.movingAverage(
             timeSeries, "signal", 5);
         
         System.out.println("滤波类型: " + maResult.filterType);
@@ -277,7 +277,7 @@ public class TimeSeriesFilteringExample {
         
         // 指数平滑滤波 / Exponential smoothing filtering
         System.out.println("\n=== 指数平滑滤波 / Exponential Smoothing Filtering ===");
-        TimeSeriesFiltering.FilterResult esResult = Series.exponentialSmoothing(
+        FilterResult esResult = Series.exponentialSmoothing(
             timeSeries, "signal", 0.3);
         
         System.out.println("滤波类型: " + esResult.filterType);
@@ -285,7 +285,7 @@ public class TimeSeriesFilteringExample {
         
         // 高斯滤波 / Gaussian filtering
         System.out.println("\n=== 高斯滤波 / Gaussian Filtering ===");
-        TimeSeriesFiltering.FilterResult gaussianResult = Series.gaussianFilter(
+        FilterResult gaussianResult = Series.gaussianFilter(
             timeSeries, "signal", 1.0);
         
         System.out.println("滤波类型: " + gaussianResult.filterType);
@@ -293,7 +293,7 @@ public class TimeSeriesFilteringExample {
         
         // 中值滤波 / Median filtering
         System.out.println("\n=== 中值滤波 / Median Filtering ===");
-        TimeSeriesFiltering.FilterResult medianResult = Series.medianFilter(
+        FilterResult medianResult = Series.medianFilter(
             timeSeries, "signal", 5);
         
         System.out.println("滤波类型: " + medianResult.filterType);
@@ -323,7 +323,7 @@ public class ARIMAForecastingExample {
         
         // ARIMA(1,1,1)模型预测 / ARIMA(1,1,1) model forecasting
         System.out.println("=== ARIMA(1,1,1)模型预测 / ARIMA(1,1,1) Model Forecasting ===");
-        TimeSeriesForecasting.ForecastResult arimaResult = Series.arimaForecast(
+        ForecastResult arimaResult = Series.arimaForecast(
             timeSeries, "value", 1, 1, 1, 20, 0.95);
         
         System.out.println("预测值: " + arimaResult.forecast);
@@ -337,12 +337,12 @@ public class ARIMAForecastingExample {
         System.out.println("\n=== 不同ARIMA参数比较 / Different ARIMA Parameters Comparison ===");
         
         // ARIMA(2,1,2) / ARIMA(2,1,2)
-        TimeSeriesForecasting.ForecastResult arima221 = Series.arimaForecast(
+        ForecastResult arima221 = Series.arimaForecast(
             timeSeries, "value", 2, 1, 2, 20, 0.95);
         System.out.println("ARIMA(2,1,2) MSE: " + arima221.mse);
         
         // ARIMA(0,1,1) / ARIMA(0,1,1)
-        TimeSeriesForecasting.ForecastResult arima011 = Series.arimaForecast(
+        ForecastResult arima011 = Series.arimaForecast(
             timeSeries, "value", 0, 1, 1, 20, 0.95);
         System.out.println("ARIMA(0,1,1) MSE: " + arima011.mse);
         
@@ -396,7 +396,7 @@ public class CompleteAnalysisWorkflowExample {
         
         // 3. 时间序列分解 / Time series decomposition
         System.out.println("\n--- 步骤2: 时间序列分解 / Step 2: Time Series Decomposition ---");
-        TimeSeriesDecomposition.DecompositionResult decomposition = 
+        DecompositionResult decomposition = 
             Series.classicalDecomposition(
                 preprocessed, "complex_signal", 12, 
                 TimeSeriesDecomposition.DecompositionModel.ADDITIVE);
@@ -407,7 +407,7 @@ public class CompleteAnalysisWorkflowExample {
         
         // 4. 滤波处理 / Filtering
         System.out.println("\n--- 步骤3: 滤波处理 / Step 3: Filtering ---");
-        TimeSeriesFiltering.FilterResult filtering = 
+        FilterResult filtering = 
             Series.movingAverage(preprocessed, "complex_signal", 3);
         
         System.out.println("滤波类型: " + filtering.filterType);
@@ -415,7 +415,7 @@ public class CompleteAnalysisWorkflowExample {
         
         // 5. 预测分析 / Forecasting
         System.out.println("\n--- 步骤4: 预测分析 / Step 4: Forecasting ---");
-        TimeSeriesForecasting.ForecastResult forecast = 
+        ForecastResult forecast = 
             Series.autoForecast(filtering.filtered, "complex_signal", 30, 0.95);
         
         System.out.println("预测步数: " + forecast.forecast.length());
@@ -535,7 +535,7 @@ public class MultivariateTimeSeriesExample {
             System.out.println("是否有季节性: " + seasonal.get("hasSeasonality"));
             
             // 预测 / Forecasting
-            TimeSeriesForecasting.ForecastResult forecast = 
+            ForecastResult forecast = 
                 Series.autoForecast(multiTimeSeries, columnName, 10, 0.95);
             System.out.println("预测MSE: " + forecast.mse);
         }
@@ -615,22 +615,22 @@ public class AdvancedFilteringDecompositionExample {
         System.out.println("\n--- 频域滤波 / Frequency Domain Filtering ---");
         
         // 低通滤波 / Low pass filtering
-        TimeSeriesFiltering.FilterResult lpResult = Series.lowPassFilter(
+        FilterResult lpResult = Series.lowPassFilter(
             timeSeries, "complex_signal", 0.1, 4);
         System.out.println("低通滤波信噪比: " + lpResult.snr);
         
         // 高通滤波 / High pass filtering
-        TimeSeriesFiltering.FilterResult hpResult = Series.highPassFilter(
+        FilterResult hpResult = Series.highPassFilter(
             timeSeries, "complex_signal", 0.01, 4);
         System.out.println("高通滤波信噪比: " + hpResult.snr);
         
         // 带通滤波 / Band pass filtering
-        TimeSeriesFiltering.FilterResult bpResult = Series.bandPassFilter(
+        FilterResult bpResult = Series.bandPassFilter(
             timeSeries, "complex_signal", 0.01, 0.1, 4);
         System.out.println("带通滤波信噪比: " + bpResult.snr);
         
         // 自适应滤波 / Adaptive filtering
-        TimeSeriesFiltering.FilterResult adaptiveResult = Series.adaptiveFilter(
+        FilterResult adaptiveResult = Series.adaptiveFilter(
             timeSeries, "complex_signal", 0.1);
         System.out.println("自适应滤波信噪比: " + adaptiveResult.snr);
         
@@ -638,19 +638,19 @@ public class AdvancedFilteringDecompositionExample {
         System.out.println("\n--- 高级分解技术 / Advanced Decomposition Techniques ---");
         
         // X-13ARIMA-SEATS分解 / X-13ARIMA-SEATS decomposition
-        TimeSeriesDecomposition.DecompositionResult x13Result = 
+        DecompositionResult x13Result = 
             Series.x13Decomposition(timeSeries, "complex_signal", 12);
         System.out.println("X-13ARIMA-SEATS - 趋势强度: " + x13Result.trendStrength);
         System.out.println("X-13ARIMA-SEATS - 季节性强度: " + x13Result.seasonalStrength);
         
         // STL分解 / STL decomposition
-        TimeSeriesDecomposition.DecompositionResult stlResult = 
+        DecompositionResult stlResult = 
             Series.stlDecomposition(timeSeries, "complex_signal", 12, 7, 21);
         System.out.println("STL - 趋势强度: " + stlResult.trendStrength);
         System.out.println("STL - 季节性强度: " + stlResult.seasonalStrength);
         
         // 小波分解 / Wavelet decomposition
-        TimeSeriesDecomposition.DecompositionResult waveletResult = 
+        DecompositionResult waveletResult = 
             Series.waveletDecomposition(timeSeries, "complex_signal", "db4", 4);
         System.out.println("小波分解 - 趋势强度: " + waveletResult.trendStrength);
         System.out.println("小波分解 - 季节性强度: " + waveletResult.seasonalStrength);

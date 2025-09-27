@@ -26,9 +26,9 @@ public class IVectorModelTest {
     @Test
     public void testModelCreation() {
         assertNotNull(model);
-        assertEquals(10, model.getIVectorDimension());
+        assertEquals(10, model.getLen());
         assertEquals(4, model.getNumComponents());
-        assertEquals(3, model.getFeatureDimension());
+        assertEquals(3, model.getMfccDim());
         assertFalse(model.isTrained());
     }
     

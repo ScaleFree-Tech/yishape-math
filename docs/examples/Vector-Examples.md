@@ -41,7 +41,7 @@ public class VectorBasicExample {
         IVector<Double> v6 = Linalg.vector(5.0);
         System.out.println("v6 (single value): " + v6);
         
-        IVector<Double> v7 = Linalg.vector(1.0, 2.0);
+        IVector<Double> v7 = Linalg.vector(new double[]{1.0, 2.0});
         System.out.println("v7 (two values): " + v7);
         
         // 从基本类型数组创建 / Create from primitive arrays

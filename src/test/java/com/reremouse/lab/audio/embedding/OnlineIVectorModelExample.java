@@ -30,9 +30,9 @@ public class OnlineIVectorModelExample {
         OnlineIVectorEmbedding model = new OnlineIVectorEmbedding(ivectorDim, numComponents, featureDim, useAdam, learningRate);
         
         System.out.println("创建在线i-vector模型:");
-        System.out.println("- i-vector维度: " + model.getIVectorDimension());
+        System.out.println("- i-vector维度: " + model.getLen());
         System.out.println("- UBM高斯分量数: " + model.getNumComponents());
-        System.out.println("- MFCC特征维度: " + model.getFeatureDimension());
+        System.out.println("- MFCC特征维度: " + model.getMfccDim());
         System.out.println("- 使用Adam优化器: " + useAdam);
         System.out.println("- 学习率: " + learningRate);
         System.out.println();

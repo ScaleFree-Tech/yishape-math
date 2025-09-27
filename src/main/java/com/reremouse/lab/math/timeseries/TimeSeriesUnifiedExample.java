@@ -38,7 +38,7 @@ public class TimeSeriesUnifiedExample {
         TimeSeriesAnalyzer analyzer = new TimeSeriesAnalyzer(data, "示例时间序列 / Sample Time Series");
         
         // 快速分析 / Quick analysis
-        TimeSeriesAnalyzer.AnalysisResult result = analyzer.quickAnalyze();
+        AnalysisResult result = analyzer.quickAnalyze();
         System.out.println("   分析完成 / Analysis completed");
         System.out.println("   最优模型 / Best model: " + result.bestModel.getModelName());
         System.out.println("   模型类型 / Model type: " + result.bestModel.getModelType());

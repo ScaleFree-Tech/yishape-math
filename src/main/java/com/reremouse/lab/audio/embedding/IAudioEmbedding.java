@@ -3,6 +3,11 @@ package com.reremouse.lab.audio.embedding;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.audio.core.AudioData;
+import com.reremouse.lab.math.stats.model.GaussianMixtureModel;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 音频嵌入接口 / Audio Embedding Interface
@@ -23,7 +28,7 @@ public interface IAudioEmbedding {
      * @param mfcc MFCC特征矩阵 / MFCC feature matrix
      * @return 嵌入向量 / Embedding vector
      */
-    IVector<Double> embed(IMatrix<Double> mfcc);
+    public IVector<Double> embed(IMatrix<Double> mfcc);
     
     /**
      * 基于音频数据生成嵌入向量 / Generate embedding vector based on audio data
@@ -31,7 +36,7 @@ public interface IAudioEmbedding {
      * @param audioData 音频数据 / Audio data
      * @return 嵌入向量 / Embedding vector
      */
-    IVector<Double> embed(AudioData audioData);
+    public IVector<Double> embed(AudioData audioData);
     
     /**
      * 基于原始音频样本生成嵌入向量 / Generate embedding vector based on raw audio samples
@@ -40,7 +45,7 @@ public interface IAudioEmbedding {
      * @param sampleRate 采样率 / Sample rate
      * @return 嵌入向量 / Embedding vector
      */
-    IVector<Double> embed(IVector<Double> samples, int sampleRate);
+    public IVector<Double> embed(IVector<Double> samples, int sampleRate);
     
     /**
      * 批量生成嵌入向量 / Batch generate embedding vectors
@@ -48,21 +53,28 @@ public interface IAudioEmbedding {
      * @param mfccBatch MFCC特征矩阵批次 / Batch of MFCC feature matrices
      * @return 嵌入向量批次 / Batch of embedding vectors
      */
-    IMatrix<Double> embedBatch(IMatrix<Double>[] mfccBatch);
+    public IMatrix<Double> embedBatch(IMatrix<Double>[] mfccBatch);
+    
+    /**
+     * 保存模型
+     * @param path
+     * @return 
+     */
+    public IAudioEmbedding save(String path);
     
     /**
      * 获取嵌入向量的维度 / Get dimension of embedding vector
      *
      * @return 嵌入向量维度 / Embedding vector dimension
      */
-    int getEmbeddingDimension();
+    public int getEmbeddingDimension();
     
     /**
      * 获取支持的输入特征类型 / Get supported input feature types
      *
      * @return 支持的特征类型数组 / Array of supported feature types
      */
-    FeatureType[] getSupportedFeatureTypes();
+    public FeatureType[] getSupportedFeatureTypes();
     
     /**
      * 检查是否支持指定的特征类型 / Check if specified feature type is supported
@@ -70,21 +82,21 @@ public interface IAudioEmbedding {
      * @param featureType 特征类型 / Feature type
      * @return 如果支持返回true / True if supported
      */
-    boolean supportsFeatureType(FeatureType featureType);
+    public boolean supportsFeatureType(FeatureType featureType);
     
     /**
      * 设置嵌入参数 / Set embedding parameters
      *
      * @param parameters 参数映射 / Parameter map
      */
-    void setParameters(java.util.Map<String, Object> parameters);
+    public void setParameters(java.util.Map<String, Object> parameters);
     
     /**
      * 获取嵌入参数 / Get embedding parameters
      *
      * @return 参数映射 / Parameter map
      */
-    java.util.Map<String, Object> getParameters();
+    public java.util.Map<String, Object> getParameters();
     
     /**
      * 计算两个嵌入向量之间的相似度 / Calculate similarity between two embedding vectors
@@ -93,7 +105,7 @@ public interface IAudioEmbedding {
      * @param embedding2 第二个嵌入向量 / Second embedding vector
      * @return 相似度分数 (0-1) / Similarity score (0-1)
      */
-    double calculateSimilarity(IVector<Double> embedding1, IVector<Double> embedding2);
+    public double calculateSimilarity(IVector<Double> embedding1, IVector<Double> embedding2);
     
     /**
      * 计算嵌入向量的距离 / Calculate distance between embedding vectors
@@ -103,7 +115,104 @@ public interface IAudioEmbedding {
      * @param distanceType 距离类型 / Distance type
      * @return 距离值 / Distance value
      */
-    double calculateDistance(IVector<Double> embedding1, IVector<Double> embedding2, DistanceType distanceType);
+    public double calculateDistance(IVector<Double> embedding1, IVector<Double> embedding2, DistanceType distanceType);
+    
+    /**
+     * 从本地加载模型
+     * @param path 模型文件路径
+     * @return 加载的音频嵌入模型
+     */
+    public static IAudioEmbedding load(String path) {
+        try {
+            // Deserialize from file using Java serialization
+            java.io.FileInputStream fileIn = new java.io.FileInputStream(path);
+            java.io.ObjectInputStream in = new java.io.ObjectInputStream(fileIn);
+            java.util.Map<String, Object> modelData = (java.util.Map<String, Object>) in.readObject();
+            in.close();
+            fileIn.close();
+            
+            // Check model type
+            String modelType = (String) modelData.get("modelType");
+            
+            if ("IVectorEmbedding".equals(modelType)) {
+                // This is an IVectorEmbedding model
+                int len = (Integer) modelData.get("len");
+                int numComponents = (Integer) modelData.get("numComponents");
+                int featureDim = (Integer) modelData.get("featureDim");
+                
+                // Create new IVectorEmbedding instance
+                IVectorEmbedding embedding = new IVectorEmbedding(len, numComponents, featureDim);
+                
+                // Restore model state using setter methods
+                embedding.setTrained((Boolean) modelData.get("isTrained"));
+                
+                if (modelData.containsKey("ubm")) {
+                    embedding.setUbm((GaussianMixtureModel) modelData.get("ubm"));
+                }
+                
+                if (modelData.containsKey("tMatrix")) {
+                    embedding.setTMatrix((IMatrix<Double>) modelData.get("tMatrix"));
+                }
+                
+                if (modelData.containsKey("ubmInvCovariances")) {
+                    embedding.setUbmInvCovariances((List<IMatrix<Double>>) modelData.get("ubmInvCovariances"));
+                }
+                
+                return embedding;
+            } 
+            else if ("OnlineIVectorEmbedding".equals(modelType)) {
+                // This is an OnlineIVectorEmbedding model
+                int len = (Integer) modelData.get("len");
+                int numComponents = (Integer) modelData.get("numComponents");
+                int mfccDim = (Integer) modelData.get("mfccDim");
+                
+                // Create new OnlineIVectorEmbedding instance
+                OnlineIVectorEmbedding embedding = new OnlineIVectorEmbedding(len, numComponents, mfccDim);
+                
+                // Restore model state using setter methods
+                embedding.setTrained((Boolean) modelData.get("isTrained"));
+                
+                if (modelData.containsKey("ubm")) {
+                    embedding.setUbm((GaussianMixtureModel) modelData.get("ubm"));
+                }
+                
+                if (modelData.containsKey("tMatrix")) {
+                    embedding.setTMatrix((IMatrix<Double>) modelData.get("tMatrix"));
+                }
+                
+                if (modelData.containsKey("ubmInvCovariances")) {
+                    embedding.setUbmInvCovariances((List<IMatrix<Double>>) modelData.get("ubmInvCovariances"));
+                }
+                
+                // Restore online-specific parameters
+                if (modelData.containsKey("useAdamOptimizer")) {
+                    embedding.setUseAdamOptimizer((Boolean) modelData.get("useAdamOptimizer"));
+                }
+                
+                if (modelData.containsKey("learningRate")) {
+                    embedding.setLearningRate((Double) modelData.get("learningRate"));
+                }
+                
+                if (modelData.containsKey("batchSize")) {
+                    embedding.setBatchSize((Integer) modelData.get("batchSize"));
+                }
+                
+                if (modelData.containsKey("processedSamples")) {
+                    embedding.setProcessedSamples((Integer) modelData.get("processedSamples"));
+                }
+                
+                if (modelData.containsKey("accumulatedFeatures")) {
+                    embedding.setAccumulatedFeatures((List<IVector<Double>>) modelData.get("accumulatedFeatures"));
+                }
+                
+                return embedding;
+            }
+            
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load IAudioEmbedding model from " + path, e);
+        }
+    }
     
     /**
      * 对嵌入向量进行归一化 / Normalize embedding vector
@@ -111,12 +220,12 @@ public interface IAudioEmbedding {
      * @param embedding 嵌入向量 / Embedding vector
      * @return 归一化后的嵌入向量 / Normalized embedding vector
      */
-    IVector<Double> normalize(IVector<Double> embedding);
+    public IVector<Double> normalize(IVector<Double> embedding);
     
     /**
      * 特征类型枚举 / Feature Type Enum
      */
-    enum FeatureType {
+    public enum FeatureType {
         /** MFCC特征 / MFCC features */
         MFCC("MFCC", "Mel-frequency cepstral coefficients"),
         
