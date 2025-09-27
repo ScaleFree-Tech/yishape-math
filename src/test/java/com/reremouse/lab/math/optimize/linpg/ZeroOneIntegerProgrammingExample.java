@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  * 0-1 Integer Programming Example (Binary Integer Programming)
@@ -76,15 +76,15 @@ public class ZeroOneIntegerProgrammingExample {
         System.out.println();
         
         // Solve the problem
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, null, A_ub, b_ub);
+        OptResult result = solver.solve(c, A_ub, null, A_ub, b_ub);
         
         if (result == null) {
             System.out.println("未找到可行解 (No feasible solution found)");
             return;
         }
         
-        IVector solution = result.getSecond();
-        double optimalValue = -result.getFirst(); // Convert back to maximization
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = -result.getOptimalValue(); // Convert back to maximization
         
         // Output results
         System.out.println("=== 最优解 / Optimal Solution ===");

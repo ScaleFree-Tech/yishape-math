@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.*;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,21 +32,21 @@ public class DebugMixedIntegerTest {
         System.out.println("\n=== 线性规划松弛解 ===");
         SimplexLinProgSolver lpSolver = new SimplexLinProgSolver();
         try {
-            Tuple2<Double, IVector> lpResult = lpSolver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            OptResult lpResult = lpSolver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
             if (lpResult != null) {
-                System.out.println("LP松弛解: " + lpResult.getSecond());
-                System.out.println("LP松弛最优值: " + lpResult.getFirst());
+                System.out.println("LP松弛解: " + lpResult.getOptimalPoint());
+                System.out.println("LP松弛最优值: " + lpResult.getOptimalValue());
                 
                 // 验证解
-                double x1 = (Double) lpResult.getSecond().get(0);
-                double x2 = (Double) lpResult.getSecond().get(1);
+                double x1 = (Double) lpResult.getOptimalPoint().get(0);
+                double x2 = (Double) lpResult.getOptimalPoint().get(1);
                 System.out.println("x1 = " + x1 + ", x2 = " + x2);
                 System.out.println("约束验证: x1 + x2 = " + (x1 + x2) + " (应等于2.5)");
                 System.out.println("目标函数值: 2*x1 + x2 = " + (2*x1 + x2));
                 
                 // 验证LP松弛解
                 System.out.println("约束验证结果: " + (Math.abs(x1 + x2 - 2.5) < 1e-6 ? "通过" : "失败"));
-                System.out.println("期望最优值: 1.0, 实际最优值: " + lpResult.getFirst());
+                System.out.println("期望最优值: 1.0, 实际最优值: " + lpResult.getOptimalValue());
             } else {
                 fail("LP松弛问题应该有解");
             }
@@ -65,15 +65,15 @@ public class DebugMixedIntegerTest {
         solver.setGapTolerance(1e-9);
         
         try {
-            Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
             assertNotNull(result, "整数规划应该有解");
             
-            System.out.println("\n整数规划解: " + result.getSecond());
-            System.out.println("整数规划最优值: " + result.getFirst());
+            System.out.println("\n整数规划解: " + result.getOptimalPoint());
+            System.out.println("整数规划最优值: " + result.getOptimalValue());
             
             // 验证解
-            double x1 = (Double) result.getSecond().get(0);
-            double x2 = (Double) result.getSecond().get(1);
+            double x1 = (Double) result.getOptimalPoint().get(0);
+            double x2 = (Double) result.getOptimalPoint().get(1);
             System.out.println("x1 = " + x1 + " (应为整数), x2 = " + x2);
             System.out.println("约束验证: x1 + x2 = " + (x1 + x2) + " (应等于2.5)");
             System.out.println("目标函数值: 2*x1 + x2 = " + (2*x1 + x2));
@@ -95,7 +95,7 @@ public class DebugMixedIntegerTest {
             // 验证最优值 - 这里是问题所在
             double expectedOptimalValue = 2.5;
             System.out.println("期望最优值: " + expectedOptimalValue);
-            System.out.println("实际最优值: " + result.getFirst());
+            System.out.println("实际最优值: " + result.getOptimalValue());
             
             // 暂时不断言，先看看实际结果
             // assertEquals(expectedOptimalValue, result.getFirst(), 1e-6, "最优值应等于2.5");

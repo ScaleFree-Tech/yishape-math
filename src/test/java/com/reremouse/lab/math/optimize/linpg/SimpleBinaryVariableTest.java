@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  * Simple test to verify the binary variable methods in RereIntegerProg
@@ -26,15 +26,15 @@ public class SimpleBinaryVariableTest {
         System.out.println("Testing setAllVariablesBinary method...");
         solver.setAllVariablesBinary();
         
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub);
+        OptResult result = solver.solve(c, A_ub, b_ub);
         
         if (result != null) {
             System.out.println("Solution found:");
-            System.out.println("Objective value: " + (-result.getFirst())); // Convert back to maximization
-            System.out.println("Solution vector: " + result.getSecond());
+            System.out.println("Objective value: " + (-result.getOptimalValue())); // Convert back to maximization
+            System.out.println("Solution vector: " + result.getOptimalPoint());
             
             // Verify it's a binary solution
-            IVector solution = result.getSecond();
+            IVector solution = result.getOptimalPoint();
             boolean isBinary = true;
             for (int i = 0; i < solution.size(); i++) {
                 double value = solution.get(i).doubleValue();
@@ -53,12 +53,12 @@ public class SimpleBinaryVariableTest {
         RereIntegerProg solver2 = new RereIntegerProg();
         solver2.addBinaryVariables(0, 1);
         
-        Tuple2<Double, IVector> result2 = solver2.solve(c, A_ub, b_ub);
+        OptResult result2 = solver2.solve(c, A_ub, b_ub);
         
         if (result2 != null) {
             System.out.println("Solution found:");
-            System.out.println("Objective value: " + (-result2.getFirst())); // Convert back to maximization
-            System.out.println("Solution vector: " + result2.getSecond());
+            System.out.println("Objective value: " + (-result2.getOptimalValue())); // Convert back to maximization
+            System.out.println("Solution vector: " + result2.getOptimalPoint());
         } else {
             System.out.println("No solution found");
         }
@@ -69,12 +69,12 @@ public class SimpleBinaryVariableTest {
         solver3.setBinaryVariable(0);
         solver3.setBinaryVariable(1);
         
-        Tuple2<Double, IVector> result3 = solver3.solve(c, A_ub, b_ub);
+        OptResult result3 = solver3.solve(c, A_ub, b_ub);
         
         if (result3 != null) {
             System.out.println("Solution found:");
-            System.out.println("Objective value: " + (-result3.getFirst())); // Convert back to maximization
-            System.out.println("Solution vector: " + result3.getSecond());
+            System.out.println("Objective value: " + (-result3.getOptimalValue())); // Convert back to maximization
+            System.out.println("Solution vector: " + result3.getOptimalPoint());
         } else {
             System.out.println("No solution found");
         }

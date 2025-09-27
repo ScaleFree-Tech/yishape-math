@@ -12,6 +12,7 @@
 import com.reremouse.lab.math.RereMathUtil;
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.util.Tuple2;
 
 public class TypeConversionExample {
     public static void main(String[] args) {
@@ -477,6 +478,7 @@ public class StatisticalFunctionsExample {
 import com.reremouse.lab.math.RereMathUtil;
 import com.reremouse.lab.math.IVector;
 import com.reremouse.lab.math.IMatrix;
+import com.reremouse.lab.util.Tuple2;
 
 public class ArrayOperationsExample {
     public static void main(String[] args) {

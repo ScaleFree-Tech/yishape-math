@@ -4,8 +4,12 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.RereLineSearch;
 import com.reremouse.lab.util.Tuple2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 共轭梯度法 / conjugate gradient method
@@ -35,6 +39,7 @@ public class RereConjugateGradient implements IOptimizer{
     private double tolerance = 1e-6;       // 收敛容差 / Convergence tolerance
     private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
     private double restartThreshold = 0.1; // 重启阈值 / Restart threshold
+    private boolean useAdaptiveRestart = true; // 是否使用自适应重启 / Whether to use adaptive restart
 
     /**
      * 构造函数，使用默认参数 / Constructor with default parameters
@@ -56,7 +61,7 @@ public class RereConjugateGradient implements IOptimizer{
     }
 
     @Override
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
         // 参数验证 / Parameter validation
         if (initX == null) {
             throw new IllegalArgumentException("初始点不能为空 / Initial point cannot be null");
@@ -68,27 +73,109 @@ public class RereConjugateGradient implements IOptimizer{
             throw new IllegalArgumentException("梯度函数不能为空 / Gradient function cannot be null");
         }
         
+        // 记录开始时间 / Record start time
+        long startTime = System.currentTimeMillis();
+        
         // 初始化变量 / Initialize variables
         IVector x = initX.copy();  // 当前点 / Current point
+        IVector initialPoint = initX.copy(); // 保存初始点 / Save initial point
         int n = x.length();       // 问题维度 / Problem dimension
+        
+        // 计算初始函数值 / Compute initial function value
+        double initialValue = objFun.computeObjective(x);
         
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
         double initialGradNorm = (Double) grad.norm2();
+        double finalGradientNorm = initialGradNorm;
         
         // 初始化搜索方向为负梯度方向 / Initialize search direction as negative gradient
         IVector direction = grad.multiplyScalar(-1.0);
         
         // 用于存储前一次迭代的梯度 / Store previous gradient
         IVector prevGrad = null;
+        IVector prevDirection = null;
+        double prevValue = initialValue;
+        
+        // 存储最佳解 / Store best solution
+        IVector bestX = x.copy();
+        double bestValue = initialValue;
+        
+        // 收敛历史记录 / Convergence history tracking
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // 评估计数 / Evaluation counters
+        int functionEvaluations = 1; // 初始函数值计算 / Initial function evaluation
+        int gradientEvaluations = 0; // 梯度计算将在循环中开始计数 / Gradient evaluations will start counting in loop
+        
+        // 添加初始历史记录 / Add initial history records
+        functionValueHistory.add(initialValue);
+        gradientNormHistory.add(initialGradNorm);
+        parameterHistory.add(x.copy());
+        
+        boolean converged = false;
+        String convergenceReason = "Maximum iterations reached";
+        int actualIterations = 0;
+        double finalValue = initialValue; // 初始化最终值 / Initialize final value
+        
+        // 重启计数器 / Restart counter
+        int restartCounter = 0;
+        int maxRestarts = 10;
         
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
+            actualIterations = iter + 1;
+            
             // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
             double gradNorm = (Double) grad.norm2();
-            if (gradNorm < tolerance * Math.max(1.0, initialGradNorm)) {
+            finalGradientNorm = gradNorm;
+            
+            // 更新最佳解 / Update best solution
+            if (objFun.computeObjective(x) < bestValue) {
+                bestX = x.copy();
+                bestValue = objFun.computeObjective(x);
+            }
+            
+            // 改进的收敛检查 / Improved convergence check
+            // 使用绝对和相对容差的组合 / Use combination of absolute and relative tolerance
+            double convergenceThreshold = Math.max(tolerance, tolerance * Math.max(1.0, initialGradNorm));
+            if (gradNorm < convergenceThreshold) {
+                converged = true;
+                convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);
-                return new Tuple2<>(optimalValue, x);
+                functionEvaluations++;
+                
+                // 构建丰富的OptResult / Build rich OptResult
+                OptResult.Builder builder = new OptResult.Builder(optimalValue, x)
+                    .initialPoint(initialPoint)
+                    .initialValue(initialValue)
+                    .converged(converged)
+                    .convergenceReason(convergenceReason)
+                    .iterations(actualIterations)
+                    .maxIterations(maxIterations)
+                    .finalGradientNorm(finalGradientNorm)
+                    .tolerance(tolerance)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .functionEvaluations(functionEvaluations)
+                    .gradientEvaluations(gradientEvaluations)
+                    .functionValueHistory(functionValueHistory)
+                    .gradientNormHistory(gradientNormHistory)
+                    .parameterHistory(parameterHistory);
+                
+                return builder.build();
+            }
+            
+            // 检查是否陷入局部停滞 / Check for local stagnation
+            if (iter > 0 && Math.abs(prevValue - objFun.computeObjective(x)) < 1e-12) {
+                // 如果函数值没有显著变化，尝试重启 / If function value hasn't changed significantly, try restart
+                direction = grad.multiplyScalar(-1.0);
+                restartCounter++;
+                if (restartCounter > maxRestarts) {
+                    convergenceReason = "Stagnation detected";
+                    break;
+                }
             }
             
             // 线搜索确定步长 / Line search to determine step size
@@ -99,6 +186,34 @@ public class RereConjugateGradient implements IOptimizer{
             
             // 计算新梯度 / Compute new gradient
             IVector newGrad = grdFun.computeGradient(newX);
+            gradientEvaluations++;
+            
+            // 计算新函数值并记录 / Compute new function value and record
+            double newValue = objFun.computeObjective(newX);
+            functionEvaluations++;
+            functionValueHistory.add(newValue);
+            gradientNormHistory.add((Double) newGrad.norm2());
+            parameterHistory.add(newX.copy());
+            
+            // 如果新点更差，尝试重启 / If new point is worse, try restart
+            if (newValue > prevValue && iter > 0) {
+                direction = newGrad.multiplyScalar(-1.0);
+                newX = x; // 回退到前一个点 / Revert to previous point
+                newGrad = grad;
+                newValue = prevValue;
+                restartCounter++;
+                if (restartCounter > maxRestarts) {
+                    convergenceReason = "Repeated poor steps";
+                    break;
+                }
+                // 继续下一次迭代 / Continue to next iteration
+                prevValue = newValue;
+                prevGrad = grad;
+                prevDirection = direction;
+                x = newX;
+                grad = newGrad;
+                continue;
+            }
             
             // 计算β参数用于更新搜索方向 / Compute beta parameter for updating search direction
             // 使用Polak-Ribière公式 / Using Polak-Ribière formula
@@ -113,36 +228,86 @@ public class RereConjugateGradient implements IOptimizer{
                     // 确保β非负 / Ensure beta is non-negative
                     beta = Math.max(beta, 0.0);
                 }
+                
+                // 如果β为0或负数，强制重启 / If beta is zero or negative, force restart
+                if (beta <= 0) {
+                    beta = 0.0;
+                    direction = newGrad.multiplyScalar(-1.0);
+                }
             }
             
             // 更新搜索方向 / Update search direction
             // 使用公式: d_{k+1} = -g_{k+1} + β_k * d_k
             IVector newDirection = newGrad.multiplyScalar(-1.0).add(direction.multiplyScalar(beta));
             
-            // 检查是否需要重启 / Check if restart is needed
-            // 当梯度与搜索方向的夹角过大时重启 / Restart when angle between gradient and search direction is too large
-            double gradDotDirection = Math.abs((Double) newGrad.innerProduct(newDirection));
-            double gradNormNew = (Double) newGrad.norm2();
-            double directionNorm = (Double) newDirection.norm2();
-            
-            if (gradNormNew > 1e-12 && directionNorm > 1e-12) {
-                double cosAngle = gradDotDirection / (gradNormNew * directionNorm);
-                // 如果夹角余弦值小于阈值，重启搜索方向 / If cosine of angle is less than threshold, restart search direction
-                if (cosAngle < restartThreshold) {
-                    newDirection = newGrad.multiplyScalar(-1.0);
+            // 改进的重启检查 / Improved restart check
+            if (useAdaptiveRestart) {
+                // 检查是否需要重启 / Check if restart is needed
+                // 当梯度与搜索方向的夹角过大时重启 / Restart when angle between gradient and search direction is too large
+                double gradDotDirection = (Double) newGrad.innerProduct(newDirection); // 不再取绝对值 / No longer take absolute value
+                double gradNormNew = (Double) newGrad.norm2();
+                double directionNorm = (Double) newDirection.norm2();
+                
+                if (gradNormNew > 1e-12 && directionNorm > 1e-12) {
+                    // 使用更合理的重启条件 / Use more reasonable restart condition
+                    double cosAngle = gradDotDirection / (gradNormNew * directionNorm);
+                    // 如果搜索方向不是下降方向，或者夹角余弦值小于阈值，重启搜索方向 / 
+                    // If search direction is not descent direction, or cosine of angle is less than threshold, restart search direction
+                    if (cosAngle >= 0 || cosAngle < -restartThreshold) {
+                        newDirection = newGrad.multiplyScalar(-1.0);
+                    }
+                }
+            } else {
+                // 原始重启逻辑 / Original restart logic
+                double gradDotDirection = Math.abs((Double) newGrad.innerProduct(newDirection));
+                double gradNormNew = (Double) newGrad.norm2();
+                double directionNorm = (Double) newDirection.norm2();
+                
+                if (gradNormNew > 1e-12 && directionNorm > 1e-12) {
+                    double cosAngle = gradDotDirection / (gradNormNew * directionNorm);
+                    // 如果夹角余弦值小于阈值，重启搜索方向 / If cosine of angle is less than threshold, restart search direction
+                    if (cosAngle < restartThreshold) {
+                        newDirection = newGrad.multiplyScalar(-1.0);
+                    }
                 }
             }
             
             // 更新变量 / Update variables
-            x = newX;
+            prevValue = newValue;
             prevGrad = grad;
+            prevDirection = direction;
+            x = newX;
             grad = newGrad;
             direction = newDirection;
         }
         
-        // 达到最大迭代次数，返回当前最优解 / Maximum iterations reached, return current best solution
-        double finalValue = objFun.computeObjective(x);
-        return new Tuple2<>(finalValue, x);
+        // 如果没有收敛，返回找到的最佳解 / If not converged, return best solution found
+        if (!converged) {
+            x = bestX;
+            finalValue = bestValue;
+        } else {
+            finalValue = objFun.computeObjective(x);
+        }
+        functionEvaluations++;
+        
+        // 构建丰富的OptResult / Build rich OptResult
+        OptResult.Builder builder = new OptResult.Builder(finalValue, x)
+            .initialPoint(initialPoint)
+            .initialValue(initialValue)
+            .converged(converged)
+            .convergenceReason(convergenceReason)
+            .iterations(actualIterations)
+            .maxIterations(maxIterations)
+            .finalGradientNorm(finalGradientNorm)
+            .tolerance(tolerance)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .gradientNormHistory(gradientNormHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     // Getter和Setter方法 / Getter and Setter methods
@@ -193,5 +358,21 @@ public class RereConjugateGradient implements IOptimizer{
      */
     public void setRestartThreshold(double restartThreshold) {
         this.restartThreshold = Math.max(0.0, Math.min(1.0, restartThreshold));
+    }
+    
+    /**
+     * 获取是否使用自适应重启 / Get whether to use adaptive restart
+     * @return 是否使用自适应重启 / Whether to use adaptive restart
+     */
+    public boolean isUseAdaptiveRestart() {
+        return useAdaptiveRestart;
+    }
+    
+    /**
+     * 设置是否使用自适应重启 / Set whether to use adaptive restart
+     * @param useAdaptiveRestart 是否使用自适应重启 / Whether to use adaptive restart
+     */
+    public void setUseAdaptiveRestart(boolean useAdaptiveRestart) {
+        this.useAdaptiveRestart = useAdaptiveRestart;
     }
 }

@@ -1,13 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  *
@@ -53,15 +49,15 @@ public class Test {
         System.out.println("变量约束: x1, x2, x3 为 0-1 变量");
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solve(c, A_eq, b_eq);
+        var result = solver.solve(c, A_eq, b_eq);
         
         if (result == null) {
             System.out.println("未找到可行解");
             return;
         }
         
-        IVector solution = result.getSecond();
-        double optimalValue = -result.getFirst(); // 转换回正值
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = -result.getOptimalValue(); // 转换回正值
         
         // 输出结果
         System.out.println("最优解: " + solution);

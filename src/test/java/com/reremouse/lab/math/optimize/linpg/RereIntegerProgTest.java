@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,15 +36,15 @@ public class RereIntegerProgTest {
         solver.addIntegerVariables(0, 1); // x1, x2都是整数变量
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证约束满足
@@ -59,7 +59,7 @@ public class RereIntegerProgTest {
         
         // 验证最优值
         double expectedOptimalValue = 3.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于3");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-6, "最优值应等于3");
     }
 
     /**
@@ -86,15 +86,15 @@ public class RereIntegerProgTest {
         // solver.setVerbose(true); // Disable verbose output for cleaner test output
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证约束满足
@@ -108,7 +108,7 @@ public class RereIntegerProgTest {
         
         // 验证最优值
         double expectedOptimalValue = 3.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于3");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-6, "最优值应等于3");
     }
 
     /**
@@ -139,15 +139,15 @@ public class RereIntegerProgTest {
         // solver.setVerbose(true); // Disable verbose output for cleaner test output
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(3, solution.length(), "解的维度应为3");
         
         // 验证约束满足
@@ -163,7 +163,7 @@ public class RereIntegerProgTest {
         
         // 验证最优值
         double expectedOptimalValue = 9.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于9");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-6, "最优值应等于9");
     }
 
     /**
@@ -182,15 +182,15 @@ public class RereIntegerProgTest {
         RereIntegerProg solver = new RereIntegerProg();
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证约束满足
@@ -199,7 +199,7 @@ public class RereIntegerProgTest {
         
         // 验证最优值（应该是线性规划的最优解）
         double expectedOptimalValue = 3.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-6, "最优值应等于3");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-6, "最优值应等于3");
     }
 
     /**
@@ -221,10 +221,10 @@ public class RereIntegerProgTest {
         
         solver.addIntegerVariables(0, 1);
         
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         assertNotNull(result, "结果不应为null");
-        assertEquals(2.0, (double)result.getFirst(), 1e-6, "最优值应等于2");
+        assertEquals(2.0, result.getOptimalValue(), 1e-6, "最优值应等于2");
     }
 
     /**
@@ -240,9 +240,9 @@ public class RereIntegerProgTest {
         IMatrix A_eq = Linalg.matrix(new double[][]{{1, 1}});
         IVector b_eq = Linalg.vector(new double[]{2});
         
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         assertNotNull(result, "结果不应为null");
-        assertEquals(2.0, (double)result.getFirst(), 1e-3, "最优值应等于2");
+        assertEquals(2.0, result.getOptimalValue(), 1e-3, "最优值应等于2");
     }
 }

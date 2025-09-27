@@ -21,6 +21,7 @@ This document provides complete usage examples of the YiShape-Math signal proces
 import com.reremouse.lab.math.signal.Signals;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.util.Tuple2;
 
 public class BasicSignalGenerationExample {
     public static void main(String[] args) {
@@ -165,7 +166,13 @@ public class BasicFilteringExample {
 
 ### 2.1 完整信号处理流程 / Complete Signal Processing Workflow
 
-``java
+```java
+import com.reremouse.lab.math.signal.Signals;
+import com.reremouse.lab.math.signal.SignalUtilities;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.util.Tuple2;
+
 public class CompleteSignalProcessingExample {
     public static void main(String[] args) {
         System.out.println("=== 完整信号处理流程 / Complete Signal Processing Workflow ===");
@@ -195,7 +202,7 @@ public class CompleteSignalProcessingExample {
         
         // 4. 频谱分析 / Spectral analysis
         System.out.println("\n--- 步骤3: 频谱分析 / Step 3: Spectral Analysis ---");
-        com.reremouse.lab.util.Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
+        Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
             filtered, 256, 0.5, 1000.0
         );
         System.out.println("功率谱密度计算完成");
@@ -373,7 +380,12 @@ public class AdvancedWaveletAnalysisExample {
 
 ### 3.1 实时信号处理 / Real-time Signal Processing
 
-``java
+```java
+import com.reremouse.lab.math.signal.Signals;
+import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.linalg.Linalg;
+import com.reremouse.lab.util.Tuple2;
+
 public class RealTimeSignalProcessingExample {
     public static void main(String[] args) {
         System.out.println("=== 实时信号处理 / Real-time Signal Processing ===");
@@ -441,7 +453,7 @@ public class RealTimeSignalProcessingExample {
     
     private static RealTimeSpectralResult performRealTimeSpectralAnalysis(IVector<Double> signal, double samplingRate) {
         // 计算功率谱密度 / Calculate power spectral density
-        com.reremouse.lab.util.Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
+        Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
             signal, 128, 0.5, samplingRate
         );
         

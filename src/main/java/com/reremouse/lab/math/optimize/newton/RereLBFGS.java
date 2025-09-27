@@ -7,6 +7,7 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.RereLineSearch;
 
 /**
@@ -80,7 +81,7 @@ public class RereLBFGS implements IOptimizer{
      * @throws IllegalArgumentException 如果输入参数无效 / if input parameters are invalid
      */
     @Override
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
         // 参数验证 / Parameter validation
         if (initX == null) {
             throw new IllegalArgumentException("初始点不能为空 / Initial point cannot be null");
@@ -92,31 +93,137 @@ public class RereLBFGS implements IOptimizer{
             throw new IllegalArgumentException("梯度函数不能为空 / Gradient function cannot be null");
         }
         
+        // 记录开始时间 / Record start time
+        long startTime = System.currentTimeMillis();
+        
         // 初始化变量 / Initialize variables
         IVector x = initX.copy();  // 当前点 / Current point
+        IVector initialPoint = initX.copy(); // 保存初始点 / Save initial point
         int n = x.length();       // 问题维度 / Problem dimension
+        
+        // 计算初始函数值 / Compute initial function value
+        double initialValue = objFun.computeObjective(x);
         
         // 历史信息存储 / History information storage
         List<IVector> s_history = new ArrayList<>();  // 位置差向量历史 / Position difference history
         List<IVector> y_history = new ArrayList<>();  // 梯度差向量历史 / Gradient difference history
         List<Double> rho_history = new ArrayList<>(); // ρ值历史 / Rho value history
         
+        // 收敛历史记录 / Convergence history tracking
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // 评估计数 / Evaluation counters
+        int functionEvaluations = 1; // 初始函数值计算 / Initial function evaluation
+        int gradientEvaluations = 0; // 梯度计算将在循环中开始计数 / Gradient evaluations will start counting in loop
+        
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
+        gradientEvaluations++;
         double initialGradNorm = (Double) grad.norm2();
+        double finalGradientNorm = initialGradNorm;
+        
+        // 添加初始历史记录 / Add initial history records
+        functionValueHistory.add(initialValue);
+        gradientNormHistory.add(initialGradNorm);
+        parameterHistory.add(x.copy());
+        
+        // 最佳解跟踪 / Best solution tracking
+        IVector bestX = x.copy();
+        double bestValue = initialValue;
+        double bestGradNorm = initialGradNorm;
+        
+        boolean converged = false;
+        String convergenceReason = "Maximum iterations reached";
+        int actualIterations = 0;
+        
+        // 停滞检测变量 / Stagnation detection variables
+        double previousValue = initialValue;
+        int stagnationCounter = 0;
+        int maxStagnationIterations = 10;
         
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
+            actualIterations = iter + 1;
+            
             // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
             double gradNorm = (Double) grad.norm2();
-            if (gradNorm < tolerance * Math.max(1.0, initialGradNorm)) {
-                double optimalValue = objFun.computeObjective(x);
-                return new Tuple2<>(optimalValue, x);
+            finalGradientNorm = gradNorm;
+            
+            // 更新最佳解 / Update best solution
+            double currentValue = objFun.computeObjective(x);
+            if (currentValue < bestValue) {
+                bestX = x.copy();
+                bestValue = currentValue;
+                bestGradNorm = gradNorm;
             }
+            
+            // 改进的收敛检查：使用绝对和相对容差的组合 / Improved convergence check: use combination of absolute and relative tolerance
+            double convergenceThreshold = Math.max(tolerance, tolerance * Math.max(1.0, initialGradNorm));
+            if (gradNorm < convergenceThreshold) {
+                converged = true;
+                convergenceReason = "Gradient norm below tolerance";
+                double optimalValue = objFun.computeObjective(x);
+                functionEvaluations++;
+                
+                // 构建丰富的OptResult / Build rich OptResult
+                OptResult.Builder builder = new OptResult.Builder(optimalValue, x)
+                    .initialPoint(initialPoint)
+                    .initialValue(initialValue)
+                    .converged(converged)
+                    .convergenceReason(convergenceReason)
+                    .iterations(actualIterations)
+                    .maxIterations(maxIterations)
+                    .finalGradientNorm(finalGradientNorm)
+                    .tolerance(tolerance)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .functionEvaluations(functionEvaluations)
+                    .gradientEvaluations(gradientEvaluations)
+                    .functionValueHistory(functionValueHistory)
+                    .gradientNormHistory(gradientNormHistory)
+                    .parameterHistory(parameterHistory);
+                
+                return builder.build();
+            }
+            
+            // 停滞检测 / Stagnation detection
+            if (iter > 0) {
+                double valueChange = Math.abs(currentValue - previousValue);
+                // 如果函数值变化非常小，增加停滞计数器 / If function value change is very small, increment stagnation counter
+                if (valueChange < 1e-12 * Math.max(1.0, Math.abs(currentValue))) {
+                    stagnationCounter++;
+                    if (stagnationCounter >= maxStagnationIterations) {
+                        converged = true;
+                        convergenceReason = "Stagnation detected";
+                        // 使用最佳解 / Use best solution
+                        functionEvaluations++;
+                        OptResult.Builder builder = new OptResult.Builder(bestValue, bestX)
+                            .initialPoint(initialPoint)
+                            .initialValue(initialValue)
+                            .converged(converged)
+                            .convergenceReason(convergenceReason)
+                            .iterations(actualIterations)
+                            .maxIterations(maxIterations)
+                            .finalGradientNorm(bestGradNorm)
+                            .tolerance(tolerance)
+                            .executionTimeMs(System.currentTimeMillis() - startTime)
+                            .functionEvaluations(functionEvaluations)
+                            .gradientEvaluations(gradientEvaluations)
+                            .functionValueHistory(functionValueHistory)
+                            .gradientNormHistory(gradientNormHistory)
+                            .parameterHistory(parameterHistory);
+                        return builder.build();
+                    }
+                } else {
+                    // 重置停滞计数器 / Reset stagnation counter
+                    stagnationCounter = 0;
+                }
+            }
+            previousValue = currentValue;
             
             // 计算搜索方向：使用两循环递归 / Compute search direction: two-loop recursion
             IVector direction = computeSearchDirection(grad, s_history, y_history, rho_history);
-            // direction is already the descent direction from computeSearchDirection
             
             // 线搜索确定步长 / Line search to determine step size
             double stepSize = new RereLineSearch().search(x, direction, objFun, grdFun, grad);
@@ -124,6 +231,14 @@ public class RereLBFGS implements IOptimizer{
             // 更新位置 / Update position
             IVector newX = x.add(direction.multiplyScalar(stepSize));
             IVector newGrad = grdFun.computeGradient(newX);
+            gradientEvaluations++;
+            
+            // 计算新函数值并记录 / Compute new function value and record
+            double newValue = objFun.computeObjective(newX);
+            functionEvaluations++;
+            functionValueHistory.add(newValue);
+            gradientNormHistory.add((Double) newGrad.norm2());
+            parameterHistory.add(newX.copy());
             
             // 更新历史信息 / Update history information
             updateHistory(x, newX, grad, newGrad, s_history, y_history, rho_history);
@@ -133,9 +248,27 @@ public class RereLBFGS implements IOptimizer{
             grad = newGrad;
         }
         
-        // 达到最大迭代次数，返回当前最优解 / Maximum iterations reached, return current best solution
-        double finalValue = objFun.computeObjective(x);
-        return new Tuple2<>(finalValue, x);
+        // 达到最大迭代次数，返回找到的最佳解 / Maximum iterations reached, return best solution found
+        functionEvaluations++;
+        
+        // 构建丰富的OptResult / Build rich OptResult
+        OptResult.Builder builder = new OptResult.Builder(bestValue, bestX)
+            .initialPoint(initialPoint)
+            .initialValue(initialValue)
+            .converged(converged)
+            .convergenceReason(convergenceReason)
+            .iterations(actualIterations)
+            .maxIterations(maxIterations)
+            .finalGradientNorm(bestGradNorm)
+            .tolerance(tolerance)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .gradientNormHistory(gradientNormHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     /**

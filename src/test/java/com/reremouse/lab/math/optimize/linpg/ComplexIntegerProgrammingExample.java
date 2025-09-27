@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  * 0-1 Knapsack Problem Example Using Integer Programming
@@ -82,7 +82,7 @@ public class ComplexIntegerProgrammingExample {
         System.out.println();
         
         // Solve the 0-1 integer programming problem
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub);
+        OptResult result = solver.solve(c, A_ub, b_ub);
         
         // Check if solution exists
         if (result == null) {
@@ -91,8 +91,8 @@ public class ComplexIntegerProgrammingExample {
         }
         
         // Extract solution
-        IVector solution = result.getSecond();
-        double optimalValue = -result.getFirst(); // Convert back to maximization
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = -result.getOptimalValue(); // Convert back to maximization
         
         // Output results
         System.out.println("=== Optimal Solution ===");

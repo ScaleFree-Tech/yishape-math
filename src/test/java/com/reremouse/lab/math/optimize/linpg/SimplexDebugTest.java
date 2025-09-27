@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  * Debug test for SimplexLinProgSolver
@@ -22,7 +22,7 @@ public class SimplexDebugTest {
         
         try {
             // Solve
-            Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
             System.out.println("Success! Result: " + result);
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());

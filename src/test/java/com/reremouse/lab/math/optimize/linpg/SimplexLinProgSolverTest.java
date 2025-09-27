@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,15 +34,15 @@ public class SimplexLinProgSolverTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证约束满足
@@ -51,7 +51,7 @@ public class SimplexLinProgSolverTest {
         
         // 验证最优值（理论最优值为2）
         double expectedOptimalValue = 2.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-3, "最优值应接近2");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-3, "最优值应接近2");
     }
     
     /**
@@ -79,15 +79,15 @@ public class SimplexLinProgSolverTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证约束满足
@@ -97,7 +97,7 @@ public class SimplexLinProgSolverTest {
         
         // 验证最优值（理论最优值为7）
         double expectedOptimalValue = 7.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-3, "最优值应接近7");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-3, "最优值应接近7");
         
         // 验证最优解（理论解为x1=2, x2=1）
         assertEquals(2.0, (double)solution.get(0), 1e-3, "x1应接近2");
@@ -126,15 +126,15 @@ public class SimplexLinProgSolverTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解带非负约束的问题
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "解的维度应为2");
         
         // 验证非负约束满足
@@ -147,7 +147,7 @@ public class SimplexLinProgSolverTest {
         
         // 验证最优值（理论最优值为-2）
         double expectedOptimalValue = -2.0;
-        assertEquals(expectedOptimalValue, (double)result.getFirst(), 1e-3, "最优值应接近-2");
+        assertEquals(expectedOptimalValue, result.getOptimalValue(), 1e-3, "最优值应接近-2");
     }
     
     /**
@@ -176,15 +176,15 @@ public class SimplexLinProgSolverTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result.getFirst(), "最优值不应为null");
-        assertNotNull(result.getSecond(), "最优解不应为null");
+        assertNotNull(result.getOptimalValue(), "最优值不应为null");
+        assertNotNull(result.getOptimalPoint(), "最优解不应为null");
         
         // 验证最优解
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(3, solution.length(), "解的维度应为3");
         
         // 验证约束满足

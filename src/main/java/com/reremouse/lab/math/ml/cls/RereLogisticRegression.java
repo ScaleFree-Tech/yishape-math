@@ -182,10 +182,10 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         IOptimizer optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Double, IVector> optimizationResult = optimizer.optimize(initParams, this, this);
+        var optimizationResult = optimizer.optimize(initParams, this, this);
         
         // 从优化结果中提取参数
-        IVector optimalParams = optimizationResult._2;
+        IVector optimalParams = optimizationResult.getOptimalPoint();
         extractParametersFromVector(optimalParams);
     }
     

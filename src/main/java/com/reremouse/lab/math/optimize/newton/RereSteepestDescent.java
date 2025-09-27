@@ -4,8 +4,12 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.RereLineSearch;
 import com.reremouse.lab.util.Tuple2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 最速下降法 / steepest descent method
@@ -51,7 +55,7 @@ public class RereSteepestDescent implements IOptimizer {
     }
 
     @Override
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
         // 参数验证 / Parameter validation
         if (initX == null) {
             throw new IllegalArgumentException("初始点不能为空 / Initial point cannot be null");
@@ -63,21 +67,71 @@ public class RereSteepestDescent implements IOptimizer {
             throw new IllegalArgumentException("梯度函数不能为空 / Gradient function cannot be null");
         }
         
+        // 记录开始时间 / Record start time
+        long startTime = System.currentTimeMillis();
+        
         // 初始化变量 / Initialize variables
         IVector x = initX.copy();  // 当前点 / Current point
+        IVector initialPoint = initX.copy(); // 保存初始点 / Save initial point
         double stepSize = initialStepSize;  // 当前步长 / Current step size
+        
+        // 计算初始函数值 / Compute initial function value
+        double initialValue = objFun.computeObjective(x);
         
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
         double initialGradNorm = (Double) grad.norm2();
+        double finalGradientNorm = initialGradNorm;
+        
+        // 收敛历史记录 / Convergence history tracking
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // 评估计数 / Evaluation counters
+        int functionEvaluations = 1; // 初始函数值计算 / Initial function evaluation
+        int gradientEvaluations = 0; // 梯度计算将在循环中开始计数 / Gradient evaluations will start counting in loop
+        
+        // 添加初始历史记录 / Add initial history records
+        functionValueHistory.add(initialValue);
+        gradientNormHistory.add(initialGradNorm);
+        parameterHistory.add(x.copy());
+        
+        boolean converged = false;
+        String convergenceReason = "Maximum iterations reached";
+        int actualIterations = 0;
         
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
+            actualIterations = iter + 1;
+            
             // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
             double gradNorm = (Double) grad.norm2();
+            finalGradientNorm = gradNorm;
             if (gradNorm < tolerance * Math.max(1.0, initialGradNorm)) {
+                converged = true;
+                convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);
-                return new Tuple2<>(optimalValue, x);
+                functionEvaluations++;
+                
+                // 构建丰富的OptResult / Build rich OptResult
+                OptResult.Builder builder = new OptResult.Builder(optimalValue, x)
+                    .initialPoint(initialPoint)
+                    .initialValue(initialValue)
+                    .converged(converged)
+                    .convergenceReason(convergenceReason)
+                    .iterations(actualIterations)
+                    .maxIterations(maxIterations)
+                    .finalGradientNorm(finalGradientNorm)
+                    .tolerance(tolerance)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .functionEvaluations(functionEvaluations)
+                    .gradientEvaluations(gradientEvaluations)
+                    .functionValueHistory(functionValueHistory)
+                    .gradientNormHistory(gradientNormHistory)
+                    .parameterHistory(parameterHistory);
+                
+                return builder.build();
             }
             
             // 线搜索确定步长 / Line search to determine step size
@@ -90,6 +144,14 @@ public class RereSteepestDescent implements IOptimizer {
             
             // 计算新梯度 / Compute new gradient
             IVector newGrad = grdFun.computeGradient(newX);
+            gradientEvaluations++;
+            
+            // 计算新函数值并记录 / Compute new function value and record
+            double newValue = objFun.computeObjective(newX);
+            functionEvaluations++;
+            functionValueHistory.add(newValue);
+            gradientNormHistory.add((Double) newGrad.norm2());
+            parameterHistory.add(newX.copy());
             
             // 更新变量 / Update variables
             x = newX;
@@ -98,7 +160,26 @@ public class RereSteepestDescent implements IOptimizer {
         
         // 达到最大迭代次数，返回当前最优解 / Maximum iterations reached, return current best solution
         double finalValue = objFun.computeObjective(x);
-        return new Tuple2<>(finalValue, x);
+        functionEvaluations++;
+        
+        // 构建丰富的OptResult / Build rich OptResult
+        OptResult.Builder builder = new OptResult.Builder(finalValue, x)
+            .initialPoint(initialPoint)
+            .initialValue(initialValue)
+            .converged(converged)
+            .convergenceReason(convergenceReason)
+            .iterations(actualIterations)
+            .maxIterations(maxIterations)
+            .finalGradientNorm(finalGradientNorm)
+            .tolerance(tolerance)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .gradientNormHistory(gradientNormHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     // Getter和Setter方法 / Getter and Setter methods

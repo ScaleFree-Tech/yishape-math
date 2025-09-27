@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,15 +31,15 @@ public class SimplexLinProgSolverSpecificTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // Solve
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         // Verify result
         assertNotNull(result, "Result should not be null");
-        assertNotNull(result.getFirst(), "Optimal value should not be null");
-        assertNotNull(result.getSecond(), "Optimal solution should not be null");
+        assertNotNull(result.getOptimalValue(), "Optimal value should not be null");
+        assertNotNull(result.getOptimalPoint(), "Optimal solution should not be null");
         
         // Extract solution
-        IVector solution = result.getSecond();
+        IVector solution = result.getOptimalPoint();
         assertEquals(2, solution.length(), "Solution should have 2 variables");
         
         // Check constraint satisfaction
@@ -54,6 +54,6 @@ public class SimplexLinProgSolverSpecificTest {
         // The optimal solution should be x1=0, s1=1 with objective value 0
         assertEquals(0.0, (double)solution.get(0), 1e-3, "x1 should be 0 (optimal)");
         assertEquals(1.0, (double)solution.get(1), 1e-3, "s1 should be 1 (optimal)");
-        assertEquals(0.0, (double)result.getFirst(), 1e-3, "Objective value should be 0 (optimal)");
+        assertEquals(0.0, result.getOptimalValue(), 1e-3, "Objective value should be 0 (optimal)");
     }
 }

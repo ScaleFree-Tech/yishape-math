@@ -87,21 +87,21 @@ public class RereLBFGSTest {
             
             // 执行优化
             long startTime = System.nanoTime();
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             long endTime = System.nanoTime();
             
             double executionTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
             
             System.out.println("  初始点: x = " + initX.get(0));
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = " + result._2.get(0));
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = " + result.getOptimalPoint().get(0));
             System.out.println("  理论最优解: x = 2.0, f = 0.0");
-            System.out.println("  误差: " + Math.abs((Double) result._2.get(0) - 2.0));
+            System.out.println("  误差: " + Math.abs((Double) result.getOptimalPoint().get(0) - 2.0));
             System.out.println("  执行时间: " + executionTime + " ms");
             
             // 验证结果
-            assert Math.abs((Double) result._2.get(0) - 2.0) < 1e-5 : "Quadratic function test failed";
-            assert Math.abs(result._1) < 1e-10 : "Quadratic function test failed";
+            assert Math.abs((Double) result.getOptimalPoint().get(0) - 2.0) < 1e-5 : "Quadratic function test failed";
+            assert Math.abs(result.getOptimalValue()) < 1e-10 : "Quadratic function test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -152,22 +152,22 @@ public class RereLBFGSTest {
             
             // 执行优化
             long startTime = System.nanoTime();
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             long endTime = System.nanoTime();
             
             double executionTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
             
             System.out.println("  初始点: x = [" + initX.get(0) + ", " + initX.get(1) + "]");
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = [" + result._2.get(0) + ", " + result._2.get(1) + "]");
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = [" + result.getOptimalPoint().get(0) + ", " + result.getOptimalPoint().get(1) + "]");
             System.out.println("  理论最优解: x = [1.0, 1.0], f = 0.0");
-            System.out.println("  误差: " + Math.sqrt(Math.pow((Double) result._2.get(0) - 1.0, 2) + Math.pow((Double) result._2.get(1) - 1.0, 2)));
+            System.out.println("  误差: " + Math.sqrt(Math.pow((Double) result.getOptimalPoint().get(0) - 1.0, 2) + Math.pow((Double) result.getOptimalPoint().get(1) - 1.0, 2)));
             System.out.println("  执行时间: " + executionTime + " ms");
             
             // 验证结果
-            double error = Math.sqrt(Math.pow((Double) result._2.get(0) - 1.0, 2) + Math.pow((Double) result._2.get(1) - 1.0, 2));
+            double error = Math.sqrt(Math.pow((Double) result.getOptimalPoint().get(0) - 1.0, 2) + Math.pow((Double) result.getOptimalPoint().get(1) - 1.0, 2));
             assert error < 1e-4 : "Rosenbrock function test failed";
-            assert result._1 < 1e-6 : "Rosenbrock function test failed";
+            assert result.getOptimalValue() < 1e-6 : "Rosenbrock function test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -209,25 +209,25 @@ public class RereLBFGSTest {
             
             // 执行优化
             long startTime = System.nanoTime();
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             long endTime = System.nanoTime();
             
             double executionTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
             
             System.out.println("  初始点: x = [" + initX.get(0) + ", " + initX.get(1) + ", " + initX.get(2) + "]");
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = [" + result._2.get(0) + ", " + result._2.get(1) + ", " + result._2.get(2) + "]");
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = [" + result.getOptimalPoint().get(0) + ", " + result.getOptimalPoint().get(1) + ", " + result.getOptimalPoint().get(2) + "]");
             System.out.println("  理论最优解: x = [1.0, 2.0, 3.0], f = 0.0");
             
             // 计算误差
-            IVector error = result._2.sub(target);
+            IVector error = result.getOptimalPoint().sub(target);
             double errorNorm = (Double) error.norm2();
             System.out.println("  误差范数: " + errorNorm);
             System.out.println("  执行时间: " + executionTime + " ms");
             
             // 验证结果
             assert errorNorm < 1e-5 : "Multi-dimensional quadratic function test failed";
-            assert Math.abs(result._1) < 1e-10 : "Multi-dimensional quadratic function test failed";
+            assert Math.abs(result.getOptimalValue()) < 1e-10 : "Multi-dimensional quadratic function test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -283,24 +283,24 @@ public class RereLBFGSTest {
             
             // 执行优化
             long startTime = System.nanoTime();
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             long endTime = System.nanoTime();
             
             double executionTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
             
             System.out.println("  初始点: x = [" + initX.get(0) + ", " + initX.get(1) + "]");
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = [" + result._2.get(0) + ", " + result._2.get(1) + "]");
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = [" + result.getOptimalPoint().get(0) + ", " + result.getOptimalPoint().get(1) + "]");
             
             // 理论最优解: minimum at (1, 2)
             System.out.println("  理论最优解: x = [1.0, 2.0], f = 0.0");
-            System.out.println("  误差范数: " + Math.sqrt(Math.pow((Double) result._2.get(0) - 1.0, 2) + Math.pow((Double) result._2.get(1) - 2.0, 2)));
+            System.out.println("  误差范数: " + Math.sqrt(Math.pow((Double) result.getOptimalPoint().get(0) - 1.0, 2) + Math.pow((Double) result.getOptimalPoint().get(1) - 2.0, 2)));
             System.out.println("  执行时间: " + executionTime + " ms");
             
             // 验证结果
-            double error = Math.sqrt(Math.pow((Double) result._2.get(0) - 1.0, 2) + Math.pow((Double) result._2.get(1) - 2.0, 2));
+            double error = Math.sqrt(Math.pow((Double) result.getOptimalPoint().get(0) - 1.0, 2) + Math.pow((Double) result.getOptimalPoint().get(1) - 2.0, 2));
             assert error < 1e-6 : "Custom parameters test failed";
-            assert Math.abs(result._1) < 1e-10 : "Custom parameters test failed";
+            assert Math.abs(result.getOptimalValue()) < 1e-10 : "Custom parameters test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -341,18 +341,18 @@ public class RereLBFGSTest {
             RereLBFGS optimizer = new RereLBFGS();
             
             // 执行优化
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             
             System.out.println("  初始点: x = " + initX.get(0));
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = " + result._2.get(0));
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = " + result.getOptimalPoint().get(0));
             System.out.println("  理论最优解: x = ±1.0, f = 0.0");
             
             // 验证结果
-            double xOpt = (Double) result._2.get(0);
+            double xOpt = (Double) result.getOptimalPoint().get(0);
             boolean convergedToRoot = Math.abs(xOpt - 1.0) < 1e-3 || Math.abs(xOpt + 1.0) < 1e-3;
             assert convergedToRoot : "Convergence test failed";
-            assert result._1 < 1e-6 : "Convergence test failed";
+            assert result.getOptimalValue() < 1e-6 : "Convergence test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -391,16 +391,16 @@ public class RereLBFGSTest {
             RereLBFGS optimizer = new RereLBFGS();
             
             // 执行优化
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             
             System.out.println("  初始点: x = " + initX.get(0));
-            System.out.println("  最优值: " + result._1);
-            System.out.println("  最优点: x = " + result._2.get(0));
+            System.out.println("  最优值: " + result.getOptimalValue());
+            System.out.println("  最优点: x = " + result.getOptimalPoint().get(0));
             System.out.println("  理论最优解: x = 0.0, f = 0.0");
             
             // 验证结果
-            assert Math.abs((Double) result._2.get(0)) < 1e-10 : "Boundary conditions test failed";
-            assert Math.abs(result._1) < 1e-15 : "Boundary conditions test failed";
+            assert Math.abs((Double) result.getOptimalPoint().get(0)) < 1e-10 : "Boundary conditions test failed";
+            assert Math.abs(result.getOptimalValue()) < 1e-15 : "Boundary conditions test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());
@@ -445,18 +445,18 @@ public class RereLBFGSTest {
             
             // 执行优化并测量时间
             long startTime = System.nanoTime();
-            Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+            var result = optimizer.optimize(initX, objFun, grdFun);
             long endTime = System.nanoTime();
             
             double executionTime = (endTime - startTime) / 1_000_000.0; // 转换为毫秒 / Convert to milliseconds
             
             System.out.println("  问题维度: " + dimension);
-            System.out.println("  最优值: " + result._1);
+            System.out.println("  最优值: " + result.getOptimalValue());
             System.out.println("  执行时间: " + executionTime + " ms");
             System.out.println("  迭代次数: " + optimizer.getMaxIterations() + " (max)");
             
             // 验证结果
-            assert result._1 < 1e-6 : "Performance benchmark test failed";
+            assert result.getOptimalValue() < 1e-6 : "Performance benchmark test failed";
             System.out.println("  ✓ 测试通过 / Test passed");
         } catch (Exception e) {
             System.err.println("  ✗ 测试失败 / Test failed: " + e.getMessage());

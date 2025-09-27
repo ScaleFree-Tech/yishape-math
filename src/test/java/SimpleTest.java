@@ -21,14 +21,14 @@ public class SimpleTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         try {
-            Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            var result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
             
             System.out.println("求解结果:");
-            System.out.println("目标函数值: " + result.getFirst());
-            System.out.println("最优解: " + result.getSecond());
+            System.out.println("目标函数值: " + result.getOptimalValue());
+            System.out.println("最优解: " + result.getOptimalPoint());
             
             // 验证解
-            IVector solution = result.getSecond();
+            IVector solution = result.getOptimalPoint();
             double x1 = (Double) solution.get(0);
             double x2 = (Double) solution.get(1);
             

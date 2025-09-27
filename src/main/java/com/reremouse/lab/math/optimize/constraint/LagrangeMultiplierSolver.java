@@ -5,8 +5,12 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.util.Tuple2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 拉格朗日乘子法求解器
@@ -44,31 +48,68 @@ public class LagrangeMultiplierSolver implements IOptimizer {
     }
 
     @Override
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+        // 记录开始时间 / Record start time
+        long startTime = System.currentTimeMillis();
+        
         // 初始化惩罚因子
         double currentPenalty = penaltyFactor;
         
         // 当前解
         IVector currentX = initX.copy();
+        IVector initialPoint = initX.copy(); // 保存初始点 / Save initial point
+        
+        // 计算初始函数值
+        double initialValue = objFun.computeObjective(currentX);
+        
+        double constraintError = 0;
+        
+        // 收敛历史记录 / Convergence history tracking
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // 评估计数 / Evaluation counters
+        int functionEvaluations = 1; // 初始函数值计算 / Initial function evaluation
+        int gradientEvaluations = 0; // 梯度计算将在循环中开始计数 / Gradient evaluations will start counting in loop
+        int actualIterations = 0;
+        
+        // 添加初始历史记录 / Add initial history records
+        functionValueHistory.add(initialValue);
+        
+        boolean converged = false;
+        String convergenceReason = "Maximum penalty iterations reached";
         
         // 迭代增大惩罚系数求解
         for (int iter = 0; iter < maxPenaltyIterations; iter++) {
+            actualIterations = iter + 1;
+            
             // 创建带惩罚项的目标函数和梯度函数
             IObjectiveFunction penalizedObjFun = createPenalizedObjectiveFunction(objFun, currentPenalty);
             IGradientFunction penalizedGrdFun = createPenalizedGradientFunction(grdFun, currentPenalty);
             
             // 使用基础优化器求解
-            Tuple2<Double, IVector> result = baseOptimizer.optimize(currentX, penalizedObjFun, penalizedGrdFun);
+            OptResult result = baseOptimizer.optimize(currentX, penalizedObjFun, penalizedGrdFun);
+            
+            // 更新评估计数 / Update evaluation counters
+            functionEvaluations += result.getFunctionEvaluations();
+            gradientEvaluations += result.getGradientEvaluations();
             
             // 更新当前解
-            currentX = result.getSecond();
+            currentX = result.getOptimalPoint();
+            
+            // 记录历史信息 / Record history information
+            functionValueHistory.add(result.getOptimalValue());
+            parameterHistory.add(currentX.copy());
             
             // 检查收敛性：计算约束违反程度
             IVector constraintViolation = A_eq.mmul(currentX).sub(b_eq);
-            double constraintError = (Double) constraintViolation.norm2();
+            constraintError = (Double) constraintViolation.norm2();
             
             // 如果约束满足足够好，则提前退出
             if (constraintError < 1e-6) {
+                converged = true;
+                convergenceReason = "Constraint violation below tolerance";
                 break;
             }
             
@@ -78,7 +119,24 @@ public class LagrangeMultiplierSolver implements IOptimizer {
         
         // 返回最终结果
         double finalValue = objFun.computeObjective(currentX);
-        return new Tuple2<>(finalValue, currentX);
+        functionEvaluations++;
+        
+        // 构建丰富的OptResult / Build rich OptResult
+        OptResult.Builder builder = new OptResult.Builder(finalValue, currentX)
+            .initialPoint(initialPoint)
+            .initialValue(initialValue)
+            .converged(converged)
+            .convergenceReason(convergenceReason)
+            .iterations(actualIterations)
+            .maxIterations(maxPenaltyIterations)
+            .constraintViolation(constraintError)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     /**

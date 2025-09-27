@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize;
 import com.reremouse.lab.math.optimize.newton.RereDFP;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,11 +47,11 @@ public class RereDFPTest {
         RereDFP dfp = new RereDFP(1e-6, 100);
         
         // 执行优化
-        Tuple2<Double, IVector> result = dfp.optimize(initX, objFun, gradFun);
+        OptResult result = dfp.optimize(initX, objFun, gradFun);
         
         // 验证结果
-        Double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        Double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         // 最优值应该接近0
         assertEquals(0.0, optimalValue, 1e-4);
@@ -99,11 +99,11 @@ public class RereDFPTest {
         RereDFP dfp = new RereDFP(1e-6, 1000);
         
         // 执行优化
-        Tuple2<Double, IVector> result = dfp.optimize(initX, objFun, gradFun);
+        OptResult result = dfp.optimize(initX, objFun, gradFun);
         
         // 验证结果
-        Double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        Double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         // 最优值应该接近0
         assertEquals(0.0, optimalValue, 1e-3);

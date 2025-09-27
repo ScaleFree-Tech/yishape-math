@@ -35,9 +35,9 @@ public interface IOptimizer {
      * @param initX 初始点 / Initial point
      * @param objFun 目标函数计算法 / Objective function calculator
      * @param grdFun 梯度计算法 / Gradient calculator
-     * @return 返回最优值及最优点的变量值（向量）/ Returns optimal value and optimal point variable values (vector)
+     * @return 返回优化结果对象，包含最优值、最优点及详细的优化信息 / Returns optimization result object containing optimal value, optimal point and detailed optimization information
      */
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun);
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun);
 }
 ```
 
@@ -330,11 +330,11 @@ IGradientFunction grdFun = new IGradientFunction() {
 IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
 
 // 执行优化 / Execute optimization
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+OptResult result = optimizer.optimize(initX, objFun, grdFun);
 
 // 获取结果 / Get results
-double optimalValue = result._1;
-IVector optimalPoint = result._2;
+double optimalValue = result.getOptimalValue();
+IVector optimalPoint = result.getOptimalPoint();
 
 System.out.println("最优值: " + optimalValue); // Optimal value
 System.out.println("最优点: " + optimalPoint); // Optimal point
@@ -697,10 +697,10 @@ IGradientFunction grdFun = new IGradientFunction() {
 IVector initX = Linalg.vector(new double[]{0.5, 0.5});
 
 // 执行约束优化 / Execute constrained optimization
-Tuple2<Double, IVector> result = solver.optimize(initX, objFun, grdFun);
+OptResult result = solver.optimize(initX, objFun, grdFun);
 
-double optimalValue = result._1;
-IVector optimalPoint = result._2;
+double optimalValue = result.getOptimalValue();
+IVector optimalPoint = result.getOptimalPoint();
 
 System.out.println("最优值: " + optimalValue);
 System.out.println("最优点: " + optimalPoint);
@@ -749,10 +749,10 @@ IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-double optimalValue = result._1;
-IVector optimalSolution = result._2;
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优解: " + optimalSolution);
 System.out.println("最优值: " + optimalValue);
@@ -788,10 +788,10 @@ IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-double optimalValue = result._1;
-IVector optimalSolution = result._2;
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优解: " + optimalSolution);
 System.out.println("最优值: " + optimalValue);
@@ -827,10 +827,10 @@ IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{3.0});
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-double optimalValue = result._1;
-IVector optimalSolution = result._2;
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优解: " + optimalSolution);
 System.out.println("最优值: " + optimalValue);
@@ -943,10 +943,10 @@ IVector b_eq = Linalg.vector(new double[]{3.0});
 solver.addIntegerVariables(0, 1);
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-double optimalValue = result.getFirst();
-IVector optimalSolution = result.getSecond();
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优整数解: " + optimalSolution);
 System.out.println("最优值: " + optimalValue);
@@ -973,10 +973,10 @@ solver.setVerbose(true);
 solver.setMaxIterations(1000);
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-System.out.println("混合整数解: " + result.getSecond());
-System.out.println("最优值: " + result.getFirst());
+System.out.println("混合整数解: " + result.getOptimalPoint());
+System.out.println("最优值: " + result.getOptimalValue());
 ```
 
 ##### 复杂整数规划问题 / Complex Integer Programming Problem
@@ -1007,10 +1007,10 @@ solver.setMaxDepth(40);
 solver.setVerbose(true);
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solve(c, A_eq, b_eq);
 
-System.out.println("复杂整数规划解: " + result.getSecond());
-System.out.println("最优值: " + result.getFirst());
+System.out.println("复杂整数规划解: " + result.getOptimalPoint());
+System.out.println("最优值: " + result.getOptimalValue());
 ```
 
 ##### 使用不同的基础求解器 / Using Different Base Solvers
@@ -1024,7 +1024,7 @@ RereIntegerProg solver2 = new RereIntegerProg(new SimplexLinProgSolver());
 
 // 设置整数变量和求解 / Set integer variables and solve
 solver.addIntegerVariables(0, 1);
-Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+Tuple2<Double, IVector> result = solver.solve(c, A_eq, b_eq);
 ```
 
 ##### 0-1整数规划 / Binary Integer Programming
@@ -1049,10 +1049,10 @@ solver.setVerbose(true);
 solver.setMaxDepth(20);
 
 // 求解 / Solve
-Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+OptResult result = solver.solve(c, A_ub, b_ub, null, null);
 
-System.out.println("0-1整数规划解: " + result.getSecond());
-System.out.println("最优值: " + (-result.getFirst())); // 取负数得到最大化问题的真实最优值
+System.out.println("0-1整数规划解: " + result.getOptimalPoint());
+System.out.println("最优值: " + (-result.getOptimalValue())); // 取负数得到最大化问题的真实最优值
 ```
 
 #### 性能特性 / Performance Features
@@ -1150,10 +1150,10 @@ IGradientFunction grdFun = new IGradientFunction() {
 IVector initX = Linalg.vector(new double[]{0.0, 0.0});
 
 // 执行优化 / Execute optimization
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+OptResult result = optimizer.optimize(initX, objFun, grdFun);
 
-System.out.println("最优值: " + result._1);
-System.out.println("最优点: " + result._2);
+System.out.println("最优值: " + result.getOptimalValue());
+System.out.println("最优点: " + result.getOptimalPoint());
 ```
 
 ### 9. DFP算法 / DFP Algorithm
@@ -1227,10 +1227,10 @@ IGradientFunction grdFun = new IGradientFunction() {
 IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
 
 // 执行优化 / Execute optimization
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+OptResult result = optimizer.optimize(initX, objFun, grdFun);
 
-System.out.println("最优值: " + result._1);
-System.out.println("最优点: " + result._2);
+System.out.println("最优值: " + result.getOptimalValue());
+System.out.println("最优点: " + result.getOptimalPoint());
 ```
 
 ### 10. 最速下降法 / Steepest Descent Method
@@ -1347,10 +1347,10 @@ optimizer.setMaxIterations(1000);
 optimizer.setTolerance(1e-6);
 
 // 执行优化并监控收敛 / Execute optimization and monitor convergence
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+OptResult result = optimizer.optimize(initX, objFun, grdFun);
 
 // 检查最终梯度范数 / Check final gradient norm
-IVector finalGradient = grdFun.computeGradient(result._2);
+IVector finalGradient = grdFun.computeGradient(result.getOptimalPoint());
 double gradientNorm = (Double) finalGradient.norm2();
 System.out.println("最终梯度范数: " + gradientNorm);
 System.out.println("是否收敛: " + (gradientNorm < 1e-6));

@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 public class SimpleTest {
     public static void main(String[] args) {
@@ -17,12 +17,12 @@ public class SimpleTest {
         IVector b_eq = Linalg.vector(new double[]{2});
         
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         if (result == null) {
             System.out.println("线性规划问题无解");
         } else {
-            System.out.println("线性规划解: " + result.getSecond() + ", 最优值: " + result.getFirst());
+            System.out.println("线性规划解: " + result.getOptimalPoint() + ", 最优值: " + result.getOptimalValue());
         }
         
         // 测试整数规划问题
@@ -34,7 +34,7 @@ public class SimpleTest {
         if (result == null) {
             System.out.println("整数规划问题无解");
         } else {
-            System.out.println("整数规划解: " + result.getSecond() + ", 最优值: " + result.getFirst());
+            System.out.println("整数规划解: " + result.getOptimalPoint() + ", 最优值: " + result.getOptimalValue());
         }
     }
 }

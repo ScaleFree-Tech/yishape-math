@@ -2,7 +2,7 @@ package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 
 public class SimpleBigMTest {
@@ -54,16 +54,16 @@ public class SimpleBigMTest {
         System.out.println("按最负系数规则，会选择x1，但这导致错误解！");
         
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         System.out.println();
         System.out.println("求解器结果:");
-        System.out.println("最优解: " + result.getSecond());
-        System.out.println("目标值: " + result.getFirst());
+        System.out.println("最优解: " + result.getOptimalPoint());
+        System.out.println("目标值: " + result.getOptimalValue());
         
         // 验证解的正确性
-        double x1 = (Double) result.getSecond().get(0);
-        double x2 = (Double) result.getSecond().get(1);
+        double x1 = (Double) result.getOptimalPoint().get(0);
+        double x2 = (Double) result.getOptimalPoint().get(1);
         System.out.println();
         System.out.println("解的验证:");
         System.out.println("约束检查: x1 + x2 = " + (x1 + x2) + " (应该等于2.5)");

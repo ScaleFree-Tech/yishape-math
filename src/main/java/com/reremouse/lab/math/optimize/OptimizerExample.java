@@ -80,10 +80,10 @@ public class OptimizerExample {
         
         RereLBFGS sgd = new RereLBFGS();
         
-        Tuple2<Double, IVector> result = sgd.optimize(initX, objFun, grdFun);
+        OptResult result = sgd.optimize(initX, objFun, grdFun);
         
-        System.out.println("最终损失: " + result._1);
-        System.out.println("最优解: " + result._2);
+        System.out.println("最终损失: " + result.getOptimalValue());
+        System.out.println("最优解: " + result.getOptimalPoint());
         System.out.println();
     }
     

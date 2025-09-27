@@ -6,8 +6,12 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.RereLineSearch;
 import com.reremouse.lab.util.Tuple2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * DFP拟牛顿优化算法
@@ -51,7 +55,7 @@ public class RereDFP implements IOptimizer {
     }
 
     @Override
-    public Tuple2<Double, IVector> optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
+    public OptResult optimize(IVector initX, IObjectiveFunction objFun, IGradientFunction grdFun) {
         // Parameter validation
         if (initX == null) {
             throw new IllegalArgumentException("Initial point cannot be null");
@@ -63,24 +67,75 @@ public class RereDFP implements IOptimizer {
             throw new IllegalArgumentException("Gradient function cannot be null");
         }
         
+        // Record start time
+        long startTime = System.currentTimeMillis();
+        
         // Initialize variables
         IVector x = initX.copy();  // Current point
+        IVector initialPoint = initX.copy(); // Save initial point
         int n = x.length();       // Problem dimension
+        
+        // Compute initial function value
+        double initialValue = objFun.computeObjective(x);
         
         // Initialize inverse Hessian approximation as identity matrix
         IMatrix<Double> H = Linalg.eye(n);
         
+        // Convergence history tracking
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // Evaluation counters
+        int functionEvaluations = 1; // Initial function value computation
+        int gradientEvaluations = 0; // Gradient evaluations will start counting in loop
+        
         // Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
+        gradientEvaluations++;
         double initialGradNorm = (Double) grad.norm2();
+        double finalGradientNorm = initialGradNorm;
+        
+        // Add initial history records
+        functionValueHistory.add(initialValue);
+        gradientNormHistory.add(initialGradNorm);
+        parameterHistory.add(x.copy());
+        
+        boolean converged = false;
+        String convergenceReason = "Maximum iterations reached";
+        int actualIterations = 0;
         
         // Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
+            actualIterations = iter + 1;
+            
             // Check convergence: gradient norm is small enough
             double gradNorm = (Double) grad.norm2();
+            finalGradientNorm = gradNorm;
             if (gradNorm < tolerance * Math.max(1.0, initialGradNorm)) {
+                converged = true;
+                convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);
-                return new Tuple2<>(optimalValue, x);
+                functionEvaluations++;
+                
+                // Build rich OptResult
+                OptResult.Builder builder = new OptResult.Builder(optimalValue, x)
+                    .initialPoint(initialPoint)
+                    .initialValue(initialValue)
+                    .converged(converged)
+                    .convergenceReason(convergenceReason)
+                    .iterations(actualIterations)
+                    .maxIterations(maxIterations)
+                    .finalGradientNorm(finalGradientNorm)
+                    .tolerance(tolerance)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .functionEvaluations(functionEvaluations)
+                    .gradientEvaluations(gradientEvaluations)
+                    .functionValueHistory(functionValueHistory)
+                    .gradientNormHistory(gradientNormHistory)
+                    .parameterHistory(parameterHistory);
+                
+                return builder.build();
             }
             
             // Compute search direction: d = -H * g
@@ -92,6 +147,14 @@ public class RereDFP implements IOptimizer {
             // Update position
             IVector newX = x.add(searchDirection.multiplyScalar(stepSize));
             IVector newGrad = grdFun.computeGradient(newX);
+            gradientEvaluations++;
+            
+            // Compute new function value and record
+            double newValue = objFun.computeObjective(newX);
+            functionEvaluations++;
+            functionValueHistory.add(newValue);
+            gradientNormHistory.add((Double) newGrad.norm2());
+            parameterHistory.add(newX.copy());
             
             // Compute differences
             IVector s = newX.sub(x);           // s = x_{k+1} - x_k
@@ -107,7 +170,26 @@ public class RereDFP implements IOptimizer {
         
         // Maximum iterations reached, return current best solution
         double finalValue = objFun.computeObjective(x);
-        return new Tuple2<>(finalValue, x);
+        functionEvaluations++;
+        
+        // Build rich OptResult
+        OptResult.Builder builder = new OptResult.Builder(finalValue, x)
+            .initialPoint(initialPoint)
+            .initialValue(initialValue)
+            .converged(converged)
+            .convergenceReason(convergenceReason)
+            .iterations(actualIterations)
+            .maxIterations(maxIterations)
+            .finalGradientNorm(finalGradientNorm)
+            .tolerance(tolerance)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .gradientNormHistory(gradientNormHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     /**

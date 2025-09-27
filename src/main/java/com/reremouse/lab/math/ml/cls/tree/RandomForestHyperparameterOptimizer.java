@@ -5,6 +5,7 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.newton.RereOnlineAdam;
 import com.reremouse.lab.util.Tuple2;
@@ -189,11 +190,11 @@ public class RandomForestHyperparameterOptimizer implements IObjectiveFunction {
         IGradientFunction gradFunc = this::computeNumericalGradient;
         
         // 执行优化
-        Tuple2<Double, IVector> result = lbfgs.optimize(initialParams, objFunc, gradFunc);
+        OptResult result = lbfgs.optimize(initialParams, objFunc, gradFunc);
         
         // 获取最优参数和目标值
-        double bestObjective = result._1;
-        IVector bestParams = clampParameters(result._2);
+        double bestObjective = result.getOptimalValue();
+        IVector bestParams = clampParameters(result.getOptimalPoint());
         
         // 转换回实际超参数
         return convertToOptimizationResult(bestParams, bestObjective);

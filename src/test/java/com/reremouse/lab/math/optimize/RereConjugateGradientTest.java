@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize;
 import com.reremouse.lab.math.optimize.newton.RereConjugateGradient;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 /**
  * 共轭梯度法测试类 / Conjugate Gradient Method Test Class
@@ -52,11 +52,11 @@ public class RereConjugateGradientTest {
         RereConjugateGradient cg = new RereConjugateGradient(1e-8, 100, 0.1);
         
         // 执行优化 / Perform optimization
-        Tuple2<Double, IVector> result = cg.optimize(initX, objFun, grdFun);
+        OptResult result = cg.optimize(initX, objFun, grdFun);
         
         System.out.println("Optimization result:");
-        System.out.println("Optimal value: " + result._1);
-        System.out.println("Optimal point: [" + result._2.get(0) + ", " + result._2.get(1) + "]");
+        System.out.println("Optimal value: " + result.getOptimalValue());
+        System.out.println("Optimal point: [" + result.getOptimalPoint().get(0) + ", " + result.getOptimalPoint().get(1) + "]");
         
         // 验证结果 / Verify results
         double expectedValue = -1.25;
@@ -64,9 +64,9 @@ public class RereConjugateGradientTest {
         double expectedX2 = 0.5;
         
         double tolerance = 1e-6;
-        assert Math.abs(result._1 - expectedValue) < tolerance : "Optimal value mismatch";
-        assert Math.abs((Double) result._2.get(0) - expectedX1) < tolerance : "x1 mismatch";
-        assert Math.abs((Double) result._2.get(1) - expectedX2) < tolerance : "x2 mismatch";
+        assert Math.abs(result.getOptimalValue() - expectedValue) < tolerance : "Optimal value mismatch";
+        assert Math.abs((Double) result.getOptimalPoint().get(0) - expectedX1) < tolerance : "x1 mismatch";
+        assert Math.abs((Double) result.getOptimalPoint().get(1) - expectedX2) < tolerance : "x2 mismatch";
         
         System.out.println("Test passed!");
     }
@@ -111,11 +111,11 @@ public class RereConjugateGradientTest {
         RereConjugateGradient cg = new RereConjugateGradient(1e-8, 1000, 0.1);
         
         // 执行优化 / Perform optimization
-        Tuple2<Double, IVector> result = cg.optimize(initX, objFun, grdFun);
+        OptResult result = cg.optimize(initX, objFun, grdFun);
         
         System.out.println("Optimization result:");
-        System.out.println("Optimal value: " + result._1);
-        System.out.println("Optimal point: [" + result._2.get(0) + ", " + result._2.get(1) + "]");
+        System.out.println("Optimal value: " + result.getOptimalValue());
+        System.out.println("Optimal point: [" + result.getOptimalPoint().get(0) + ", " + result.getOptimalPoint().get(1) + "]");
         
         // 验证结果 / Verify results
         double expectedValue = 0.0;
@@ -123,9 +123,9 @@ public class RereConjugateGradientTest {
         double expectedX2 = 1.0;
         
         double tolerance = 1e-3; // Rosenbrock is more challenging
-        assert Math.abs(result._1 - expectedValue) < tolerance : "Optimal value mismatch";
-        assert Math.abs((Double) result._2.get(0) - expectedX1) < tolerance : "x1 mismatch";
-        assert Math.abs((Double) result._2.get(1) - expectedX2) < tolerance : "x2 mismatch";
+        assert Math.abs(result.getOptimalValue() - expectedValue) < tolerance : "Optimal value mismatch";
+        assert Math.abs((Double) result.getOptimalPoint().get(0) - expectedX1) < tolerance : "x1 mismatch";
+        assert Math.abs((Double) result.getOptimalPoint().get(1) - expectedX2) < tolerance : "x2 mismatch";
         
         System.out.println("Rosenbrock test passed!");
     }

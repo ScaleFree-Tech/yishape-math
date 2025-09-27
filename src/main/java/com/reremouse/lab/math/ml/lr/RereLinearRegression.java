@@ -294,12 +294,12 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         IVector initialWeights = IVector.zeros(weightCount);
         
         // 使用优化器求解最优权重
-        Tuple2<Double, IVector> optimizationResult = optimizer.optimize(
+        var optimizationResult = optimizer.optimize(
             initialWeights, this, this);
         
         // 保存训练结果
-        this.trainedWeights = optimizationResult._2;
-        double finalLoss = optimizationResult._1;
+        this.trainedWeights = optimizationResult.getOptimalPoint();
+        double finalLoss = optimizationResult.getOptimalValue();
         
         // 创建并返回训练结果
         RegressionResult result = new RegressionResult();

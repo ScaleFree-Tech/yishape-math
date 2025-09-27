@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 public class MIPDebugTest {
     public static void main(String[] args) {
@@ -21,13 +21,13 @@ public class MIPDebugTest {
         
         // 求解
         try {
-            Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
-            System.out.println("最优值: " + result.getFirst());
-            System.out.println("最优解: " + result.getSecond());
+            OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            System.out.println("最优值: " + result.getOptimalValue());
+            System.out.println("最优解: " + result.getOptimalPoint());
             
             // 验证解
-            double x1 = (Double) result.getSecond().get(0);
-            double x2 = (Double) result.getSecond().get(1);
+            double x1 = (Double) result.getOptimalPoint().get(0);
+            double x2 = (Double) result.getOptimalPoint().get(1);
             System.out.println("x1 = " + x1 + ", x2 = " + x2);
             System.out.println("验证: x1 + x2 = " + (x1 + x2));
             System.out.println("目标值: 2*" + x1 + " + 1*" + x2 + " = " + (2*x1 + x2));

@@ -52,11 +52,11 @@ public class RereSteepestDescentTest {
         IGradientFunction gradientFunction = new QuadraticGradientFunction();
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initialPoint, objectiveFunction, gradientFunction);
+        var result = optimizer.optimize(initialPoint, objectiveFunction, gradientFunction);
         
         // 验证结果
-        Double optimalValue = result.getFirst();
-        IVector optimalPoint = result.getSecond();
+        Double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         // 最优值应该接近0
         assertTrue(Math.abs(optimalValue) < 1e-4, "最优值应该接近0");

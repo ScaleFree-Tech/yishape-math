@@ -1,7 +1,7 @@
 package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.*;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,14 +41,14 @@ public class DebugLPTest {
         System.out.println("最优解应该是 (0, 2.5)");
         
         try {
-            Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+            OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
             if (result != null) {
                 System.out.println("\n求解器结果:");
-                System.out.println("解: " + result.getSecond());
-                System.out.println("目标值: " + result.getFirst());
+                System.out.println("解: " + result.getOptimalPoint());
+                System.out.println("目标值: " + result.getOptimalValue());
                 
-                double x1 = (Double) result.getSecond().get(0);
-                double x2 = (Double) result.getSecond().get(1);
+                double x1 = (Double) result.getOptimalPoint().get(0);
+                double x2 = (Double) result.getOptimalPoint().get(1);
                 System.out.println("x1 = " + x1 + ", x2 = " + x2);
                 System.out.println("验证约束: x1 + x2 = " + (x1 + x2));
                 System.out.println("验证目标: 2*x1 + x2 = " + (2*x1 + x2));

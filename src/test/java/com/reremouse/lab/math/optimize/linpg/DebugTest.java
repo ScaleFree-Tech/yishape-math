@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize.linpg;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 
 public class DebugTest {
     public static void main(String[] args) {
@@ -29,12 +29,12 @@ public class DebugTest {
         solver.setVerbose(true); // Enable verbose output
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         if (result == null) {
             System.out.println("未找到解");
         } else {
-            System.out.println("解: " + result.getSecond() + ", 最优值: " + result.getFirst());
+            System.out.println("解: " + result.getOptimalPoint() + ", 最优值: " + result.getOptimalValue());
         }
     }
 }

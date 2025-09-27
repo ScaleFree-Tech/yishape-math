@@ -65,11 +65,11 @@ public class LagrangeMultiplierSolverTest {
         };
         
         // 求解优化问题
-        Tuple2<Double, IVector> result = solver.optimize(initX, objFun, grdFun);
+        var result = solver.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        Double optimalValue = result.getFirst();
-        IVector<Double> optimalX = (IVector<Double>) result.getSecond();
+        Double optimalValue = result.getOptimalValue();
+        IVector<Double> optimalX = (IVector<Double>) result.getOptimalPoint();
         
         // 最优值应该接近0.5
         System.out.println("Optimal value (should be 0.5): " + optimalValue);
@@ -149,11 +149,11 @@ public class LagrangeMultiplierSolverTest {
         };
         
         // 求解优化问题
-        Tuple2<Double, IVector> result = solver.optimize(initX, objFun, grdFun);
+        var result = solver.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        Double optimalValue = result.getFirst();
-        IVector<Double> optimalX = (IVector<Double>) result.getSecond();
+        Double optimalValue = result.getOptimalValue();
+        IVector<Double> optimalX = (IVector<Double>) result.getOptimalPoint();
         
         // 最优值应该接近3
         System.out.println("Optimal value (should be 3): " + optimalValue);

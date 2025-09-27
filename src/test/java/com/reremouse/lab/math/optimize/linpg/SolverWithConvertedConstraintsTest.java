@@ -2,8 +2,9 @@ package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.util.Tuple3;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,18 +32,18 @@ public class SolverWithConvertedConstraintsTest {
         SimplexLinProgSolver solver = new SimplexLinProgSolver();
         
         // 直接求解转换后的问题
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(converted._1, converted._2, converted._3);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(converted._1, converted._2, converted._3);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result._2, "解向量不应为null");
+        assertNotNull(result.getOptimalPoint(), "解向量不应为null");
         
         // 验证解向量的长度（应该是2个变量：x1和s1）
-        assertEquals(2, result._2.length(), "解向量应该包含2个变量");
+        assertEquals(2, result.getOptimalPoint().length(), "解向量应该包含2个变量");
         
         // 验证最优解
-        double x1 = (Double)result._2.get(0);
-        double s1 = (Double)result._2.get(1);
+        double x1 = (Double)result.getOptimalPoint().get(0);
+        double s1 = (Double)result.getOptimalPoint().get(1);
         
         // 验证约束是否满足
         double constraintValue = x1 + s1;
@@ -54,7 +55,7 @@ public class SolverWithConvertedConstraintsTest {
         
         // 验证目标函数值
         double objectiveValue = x1;
-        assertEquals(x1, result._1, 1e-9, "目标函数值应该等于x1");
+        assertEquals(x1, result.getOptimalValue(), 1e-9, "目标函数值应该等于x1");
         
         // 最重要的是验证最优性：x1应该为0，因为我们要最小化x1
         assertEquals(0.0, x1, 1e-9, "x1应该为0（因为我们要最小化x1且x1>=0）");

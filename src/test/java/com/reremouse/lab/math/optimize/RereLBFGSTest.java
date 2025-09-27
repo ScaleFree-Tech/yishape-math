@@ -3,7 +3,7 @@ package com.reremouse.lab.math.optimize;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,11 +37,11 @@ public class RereLBFGSTest {
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        assertEquals(2.0, (Double) result._2.get(0), 1e-5, "最优点应该接近2.0");
-        assertEquals(0.0, result._1, 1e-10, "最优值应该接近0.0");
+        assertEquals(2.0, (Double) result.getOptimalPoint().get(0), 1e-5, "最优点应该接近2.0");
+        assertEquals(0.0, result.getOptimalValue(), 1e-10, "最优值应该接近0.0");
     }
     
     @Test
@@ -77,12 +77,12 @@ public class RereLBFGSTest {
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        assertEquals(1.0, (Double) result._2.get(0), 1e-3, "第一个变量最优点应该接近1.0");
-        assertEquals(1.0, (Double) result._2.get(1), 1e-3, "第二个变量最优点应该接近1.0");
-        assertEquals(0.0, result._1, 1e-6, "最优值应该接近0.0");
+        assertEquals(1.0, (Double) result.getOptimalPoint().get(0), 1e-3, "第一个变量最优点应该接近1.0");
+        assertEquals(1.0, (Double) result.getOptimalPoint().get(1), 1e-3, "第二个变量最优点应该接近1.0");
+        assertEquals(0.0, result.getOptimalValue(), 1e-6, "最优值应该接近0.0");
     }
     
     @Test
@@ -107,13 +107,13 @@ public class RereLBFGSTest {
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        IVector error = result._2.sub(target);
+        IVector error = result.getOptimalPoint().sub(target);
         double errorNorm = (Double) error.norm2();
         assertTrue(errorNorm < 1e-5, "误差范数应该小于1e-5");
-        assertEquals(0.0, result._1, 1e-10, "最优值应该接近0.0");
+        assertEquals(0.0, result.getOptimalValue(), 1e-10, "最优值应该接近0.0");
     }
     
     @Test
@@ -154,12 +154,12 @@ public class RereLBFGSTest {
         assertEquals(500, optimizer.getMaxIterations(), "最大迭代次数应该为500");
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        double error = Math.sqrt(Math.pow((Double) result._2.get(0) - 1.0, 2) + Math.pow((Double) result._2.get(1) - 2.0, 2));
+        double error = Math.sqrt(Math.pow((Double) result.getOptimalPoint().get(0) - 1.0, 2) + Math.pow((Double) result.getOptimalPoint().get(1) - 2.0, 2));
         assertTrue(error < 1e-6, "解应该接近(1, 2)");
-        assertEquals(0.0, result._1, 1e-10, "最优值应该接近0.0");
+        assertEquals(0.0, result.getOptimalValue(), 1e-10, "最优值应该接近0.0");
     }
     
     @Test
@@ -184,11 +184,11 @@ public class RereLBFGSTest {
         RereLBFGS optimizer = new RereLBFGS();
         
         // 执行优化
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
         // 验证结果
-        assertEquals(0.0, (Double) result._2.get(0), 1e-10, "最优点应该为0.0");
-        assertEquals(0.0, result._1, 1e-15, "最优值应该为0.0");
+        assertEquals(0.0, (Double) result.getOptimalPoint().get(0), 1e-10, "最优点应该为0.0");
+        assertEquals(0.0, result.getOptimalValue(), 1e-15, "最优值应该为0.0");
     }
     
     @Test

@@ -2,7 +2,7 @@ package com.reremouse.lab.math.optimize.linpg;
 
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.math.optimize.OptResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,18 +27,18 @@ public class ILinProgSolverTest {
         ILinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解问题
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        OptResult result = solver.solve(c, A_ub, b_ub, null, null);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result._2, "解向量不应为null");
+        assertNotNull(result.getOptimalPoint(), "解向量不应为null");
         
         // 验证解向量的长度是否正确（应该是2，而不是3（2个原始变量+1个松弛变量））
-        assertEquals(2, result._2.length(), "解向量应该只包含原始变量，不包含松弛变量");
+        assertEquals(2, result.getOptimalPoint().length(), "解向量应该只包含原始变量，不包含松弛变量");
         
         // 验证目标函数值
         // 最优解应该是 x1=2, x2=0 或 x1=0, x2=2，目标函数值为-2
-        assertEquals(-2.0, result._1, 1e-9, "目标函数值应该为-2");
+        assertEquals(-2.0, result.getOptimalValue(), 1e-9, "目标函数值应该为-2");
     }
     
     /**
@@ -60,18 +60,18 @@ public class ILinProgSolverTest {
         ILinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解问题
-        Tuple2<Double, IVector> result = solver.solve(c, A_eq, b_eq);
+        OptResult result = solver.solve(c, A_eq, b_eq);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result._2, "解向量不应为null");
+        assertNotNull(result.getOptimalPoint(), "解向量不应为null");
         
         // 验证解向量的长度是否正确（应该是2个原始变量）
-        assertEquals(2, result._2.length(), "解向量应该只包含原始变量");
+        assertEquals(2, result.getOptimalPoint().length(), "解向量应该只包含原始变量");
         
         // 验证目标函数值
         // 最优解应该是 x1=0, x2=2 或 x1=2, x2=0，目标函数值为2
-        assertEquals(2.0, result._1, 1e-9, "目标函数值应该为2");
+        assertEquals(2.0, result.getOptimalValue(), 1e-9, "目标函数值应该为2");
     }
     
     /**
@@ -93,16 +93,16 @@ public class ILinProgSolverTest {
         ILinProgSolver solver = new SimplexLinProgSolver();
         
         // 求解问题
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        OptResult result = solver.solve(c, A_ub, b_ub, null, null);
         
         // 验证结果
         assertNotNull(result, "结果不应为null");
-        assertNotNull(result._2, "解向量不应为null");
+        assertNotNull(result.getOptimalPoint(), "解向量不应为null");
         
         // 验证解向量的长度是否正确（应该是1个原始变量）
-        assertEquals(1, result._2.length(), "解向量应该只包含原始变量");
+        assertEquals(1, result.getOptimalPoint().length(), "解向量应该只包含原始变量");
         
         // 验证最优解
-        assertEquals(0.0, (Double)result._2.get(0), 1e-9, "x1应该为0（因为我们要最小化x1且x1>=0）");
+        assertEquals(0.0, (Double)result.getOptimalPoint().get(0), 1e-9, "x1应该为0（因为我们要最小化x1且x1>=0）");
     }
 }

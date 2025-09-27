@@ -5,8 +5,11 @@ import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.constraint.LagrangeMultiplierSolver;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
-import com.reremouse.lab.math.optimize.newton.RereLBFGS;
+import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.util.Tuple2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 基于拉格朗日乘子法求解线性规划求解器
@@ -36,20 +39,41 @@ public class LangMultiplierLinProgSolver implements ILinProgSolver{
      * @return 最优值和最优解
      */
     @Override
-    public Tuple2<Double, IVector> solveWithNonNegativeEqualConstraints(IVector c, IMatrix A_eq, IVector b_eq) {
+    public OptResult solveWithNonNegativeEqualConstraints(IVector c, IMatrix A_eq, IVector b_eq, IVector initX) {
+        // 记录开始时间
+        long startTime = System.currentTimeMillis();
+        
         // 初始化障碍参数
         double mu = MU_INITIAL;
         
         // 创建初始解向量（小的正数，确保满足非负约束）
-        IVector x = IVector.ones(c.length()).multiplyScalar(1.0);
+        IVector x = initX.copy();
         
         // 投影初始点到满足等式约束的空间
         if (A_eq != null && b_eq != null) {
             x = projectToFeasibleSet(x, A_eq, b_eq);
         }
         
+        // 初始化迭代计数和评估计数
+        int iterations = 0;
+        int functionEvaluations = 0;
+        int gradientEvaluations = 0;
+        
+        // 收敛历史记录
+        List<Double> functionValueHistory = new ArrayList<>();
+        List<Double> gradientNormHistory = new ArrayList<>();
+        List<IVector> parameterHistory = new ArrayList<>();
+        
+        // 记录初始点和目标函数值
+        double initialObjectiveValue = (Double) c.innerProduct(x);
+        functionValueHistory.add(initialObjectiveValue);
+        parameterHistory.add(x.copy());
+        functionEvaluations++;
+        
         // 主循环：逐步减小障碍参数直到达到最小值
         while (mu > MU_MIN) {
+            iterations++;
+            
             // 创建带障碍项的目标函数
             IObjectiveFunction objectiveFunction = createBarrierObjectiveFunction(c, A_eq, b_eq, mu);
             
@@ -60,10 +84,20 @@ public class LangMultiplierLinProgSolver implements ILinProgSolver{
             this.baseSolver = new LagrangeMultiplierSolver(A_eq, b_eq);
             
             // 使用拉格朗日乘子法求解
-            Tuple2<Double, IVector> result = baseSolver.optimize(x, objectiveFunction, gradientFunction);
+            var result = baseSolver.optimize(x, objectiveFunction, gradientFunction);
+            
+            // 更新评估计数
+            functionEvaluations += result.getFunctionEvaluations();
+            gradientEvaluations += result.getGradientEvaluations();
             
             // 更新解
-            x = result.getSecond();
+            x = result.getOptimalPoint();
+            
+            // 记录历史信息
+            functionValueHistory.add(result.getOptimalValue());
+            if (result.getParameterHistory() != null && !result.getParameterHistory().isEmpty()) {
+                parameterHistory.addAll(result.getParameterHistory());
+            }
             
             // 确保解满足等式约束
             if (A_eq != null && b_eq != null) {
@@ -76,8 +110,23 @@ public class LangMultiplierLinProgSolver implements ILinProgSolver{
         
         // 计算最终的目标函数值
         double objectiveValue = (Double) c.innerProduct(x);
+        functionEvaluations++;
+        functionValueHistory.add(objectiveValue);
+        parameterHistory.add(x.copy());
         
-        return new Tuple2<>(objectiveValue, x);
+        // 构建丰富的OptResult
+        OptResult.Builder builder = new OptResult.Builder(objectiveValue, x)
+            .converged(true)
+            .convergenceReason("Lagrange multiplier method completed")
+            .iterations(iterations)
+            .maxIterations(100) // Using default max iterations
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .functionEvaluations(functionEvaluations)
+            .gradientEvaluations(gradientEvaluations)
+            .functionValueHistory(functionValueHistory)
+            .parameterHistory(parameterHistory);
+        
+        return builder.build();
     }
     
     /**

@@ -14,7 +14,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class BasicLBFGSExample {
     public static void main(String[] args) {
@@ -66,10 +66,10 @@ public class BasicLBFGSExample {
         // 6. 执行优化 / Execute optimization
         System.out.println("\n开始优化... / Starting optimization...");
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         // 7. 输出结果 / Output results
         System.out.println("优化完成! / Optimization completed!");
@@ -295,7 +295,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class MultiModalOptimizationExample {
     public static void main(String[] args) {
@@ -361,10 +361,10 @@ public class MultiModalOptimizationExample {
             IVector initPoint = Linalg.vector(initialPoints[i]);
             System.out.println("初始点 " + (i + 1) + ": " + initPoint);
             
-            Tuple2<Double, IVector> result = optimizer.optimize(initPoint, himmelblauFun, himmelblauGrad);
+            OptResult result = optimizer.optimize(initPoint, himmelblauFun, himmelblauGrad);
             
-            double optimalValue = result._1;
-            IVector optimalPoint = result._2;
+            double optimalValue = result.getOptimalValue();
+            IVector optimalPoint = result.getOptimalPoint();
             
             System.out.println("  最优点: " + optimalPoint);
             System.out.println("  最优值: " + optimalValue);
@@ -400,7 +400,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.constraint.LagrangeMultiplierSolver;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class LagrangeMultiplierExample {
     public static void main(String[] args) {
@@ -449,10 +449,10 @@ public class LagrangeMultiplierExample {
         // 执行约束优化 / Execute constrained optimization
         System.out.println("\n开始约束优化... / Starting constrained optimization...");
         
-        Tuple2<Double, IVector> result = solver.optimize(initX, objFun, grdFun);
+        OptResult result = solver.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n约束优化完成! / Constrained optimization completed!");
         System.out.println("最优值: " + optimalValue);
@@ -508,10 +508,10 @@ public class SimplexLinProgExample {
         // 求解 / Solve
         System.out.println("\n开始单纯形法求解... / Starting simplex method solving...");
         
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
-        double optimalValue = result._1;
-        IVector solution = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector solution = result.getOptimalPoint();
         
         System.out.println("\n单纯形法求解完成! / Simplex method solving completed!");
         System.out.println("最优解: " + solution);
@@ -557,10 +557,10 @@ public class InteriorPointLinProgExample {
         // 求解 / Solve
         System.out.println("\n开始内点法求解... / Starting interior point method solving...");
         
-        Tuple2<Double, IVector> result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
-        double optimalValue = result._1;
-        IVector solution = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector solution = result.getOptimalPoint();
         
         System.out.println("\n内点法求解完成! / Interior point method solving completed!");
         System.out.println("最优解: " + solution);
@@ -587,7 +587,7 @@ import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
 import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class PureIntegerProgrammingExample {
     public static void main(String[] args) {
@@ -622,9 +622,9 @@ public class PureIntegerProgrammingExample {
         solver.setTolerance(1e-9);
         
         // 求解 / Solve
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
-        IVector solution = result.getSecond();
-        double optimalValue = result.getFirst();
+        OptResult result = solver.solve(c, A_ub, b_ub, null, null);
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = result.getOptimalValue();
         
         // 输出结果 / Output results
         System.out.println("=== 纯整数规划示例 / Pure Integer Programming Example ===");
@@ -660,7 +660,7 @@ import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
 import com.reremouse.lab.math.optimize.linpg.InteriorPointLinProgSolver;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class MixedIntegerProgrammingExample {
     public static void main(String[] args) {
@@ -698,9 +698,9 @@ public class MixedIntegerProgrammingExample {
         solver.setTolerance(1e-10);
         
         // 求解 / Solve
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
-        IVector solution = result.getSecond();
-        double optimalValue = result.getFirst();
+        OptResult result = solver.solve(c, A_ub, b_ub, null, null);
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = result.getOptimalValue();
         
         // 输出结果 / Output results
         System.out.println("=== 混合整数规划示例 / Mixed Integer Programming Example ===");
@@ -740,7 +740,7 @@ import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
 import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class ComplexIntegerProgrammingExample {
     public static void main(String[] args) {
@@ -781,15 +781,15 @@ public class ComplexIntegerProgrammingExample {
         System.out.println("变量约束: x1, x2, x3 为 0-1 变量");
         
         // 求解
-        Tuple2<Double, IVector> result = solver.solve(c, A_ub, b_ub, null, null);
+        OptResult result = solver.solve(c, A_ub, b_ub, null, null);
         
         if (result == null) {
             System.out.println("未找到可行解");
             return;
         }
         
-        IVector solution = result.getSecond();
-        double optimalValue = -result.getFirst(); // 转换回正值
+        IVector solution = result.getOptimalPoint();
+        double optimalValue = -result.getOptimalValue(); // 转换回正值
         
         // 输出结果
         System.out.println("最优解: " + solution);
@@ -844,7 +844,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.linpg.RereIntegerProg;
 import com.reremouse.lab.math.optimize.linpg.SimplexLinProgSolver;
 import com.reremouse.lab.math.optimize.linpg.InteriorPointLinProgSolver;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class SolverPerformanceComparisonExample {
     public static void main(String[] args) {
@@ -890,9 +890,9 @@ public class SolverPerformanceComparisonExample {
         
         try {
             // 求解 / Solve
-            Tuple2<Double, IVector> result = solver.solve(c, A, b);
-            IVector solution = result.getSecond();
-            double optimalValue = result.getFirst();
+            OptResult result = solver.solve(c, A, b);
+            IVector solution = result.getOptimalPoint();
+            double optimalValue = result.getOptimalValue();
             
             // 记录结束时间 / Record end time
             long endTime = System.nanoTime();
@@ -933,7 +933,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereConjugateGradient;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class ConjugateGradientExample {
     public static void main(String[] args) {
@@ -986,10 +986,10 @@ public class ConjugateGradientExample {
         // 执行优化 / Execute optimization
         System.out.println("\n开始共轭梯度法优化... / Starting conjugate gradient optimization...");
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n共轭梯度法优化完成! / Conjugate gradient optimization completed!");
         System.out.println("最优值: " + optimalValue);
@@ -1017,7 +1017,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereDFP;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class DFPExample {
     public static void main(String[] args) {
@@ -1065,10 +1065,10 @@ public class DFPExample {
         // 执行优化 / Execute optimization
         System.out.println("\n开始DFP算法优化... / Starting DFP algorithm optimization...");
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\nDFP算法优化完成! / DFP algorithm optimization completed!");
         System.out.println("最优值: " + optimalValue);
@@ -1091,7 +1091,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereSteepestDescent;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class SteepestDescentExample {
     public static void main(String[] args) {
@@ -1140,10 +1140,10 @@ public class SteepestDescentExample {
         // 执行优化 / Execute optimization
         System.out.println("\n开始最速下降法优化... / Starting steepest descent optimization...");
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n最速下降法优化完成! / Steepest descent optimization completed!");
         System.out.println("最优值: " + optimalValue);
@@ -1168,7 +1168,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class MultiObjectiveOptimizationExample {
     public static void main(String[] args) {
@@ -1221,10 +1221,10 @@ public class MultiObjectiveOptimizationExample {
         System.out.println("初始点: " + initX);
         
         // 执行优化 / Execute optimization
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n多目标优化完成! / Multi-objective optimization completed!");
         System.out.println("最优点: " + optimalPoint);
@@ -1242,7 +1242,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 import java.util.Random;
 
 public class RobustOptimizationExample {
@@ -1325,10 +1325,10 @@ public class RobustOptimizationExample {
         // 执行优化 / Execute optimization
         System.out.println("\n开始鲁棒优化... / Starting robust optimization...");
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+        OptResult result = optimizer.optimize(initX, objFun, grdFun);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n鲁棒优化完成! / Robust optimization completed!");
         System.out.println("最优点: " + optimalPoint);
@@ -1346,7 +1346,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class ConstrainedOptimizationExample {
     public static void main(String[] args) {
@@ -1426,10 +1426,10 @@ public class ConstrainedOptimizationExample {
         System.out.println("初始点: " + initPoint);
         System.out.println("初始函数值: " + constrainedFun.computeObjective(initPoint));
         
-        Tuple2<Double, IVector> result = optimizer.optimize(initPoint, constrainedFun, constrainedGrad);
+        OptResult result = optimizer.optimize(initPoint, constrainedFun, constrainedGrad);
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("\n优化结果 / Optimization Results:");
         System.out.println("最优点: " + optimalPoint);
@@ -1458,7 +1458,7 @@ import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.util.Tuple2;
+import com.reremouse.lab.optimize.OptResult;
 
 public class LargeScaleOptimizationExample {
     public static void main(String[] args) {
@@ -1530,11 +1530,11 @@ public class LargeScaleOptimizationExample {
         System.out.println("开始大规模优化... / Starting large-scale optimization...");
         
         long startTime = System.currentTimeMillis();
-        Tuple2<Double, IVector> result = optimizer.optimize(initPoint, largeScaleFun, largeScaleGrad);
+        OptResult result = optimizer.optimize(initPoint, largeScaleFun, largeScaleGrad);
         long endTime = System.currentTimeMillis();
         
-        double optimalValue = result._1;
-        IVector optimalPoint = result._2;
+        double optimalValue = result.getOptimalValue();
+        IVector optimalPoint = result.getOptimalPoint();
         
         System.out.println("优化完成! / Optimization completed!");
         System.out.println("最优值: " + optimalValue);
