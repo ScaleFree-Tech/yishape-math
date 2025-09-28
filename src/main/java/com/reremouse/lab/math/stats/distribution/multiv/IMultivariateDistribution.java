@@ -372,6 +372,36 @@ public interface IMultivariateDistribution<T extends Number> extends Serializabl
      */
     ConfidenceEllipse getConfidenceEllipse(double confidence);
     
+    // ==================== 贝叶斯分析方法 / Bayesian Analysis Methods ====================
+    
+    /**
+     * 计算共轭先验更新
+     * Calculate conjugate prior update
+     * 
+     * @param observations 观测数据 / Observed data
+     * @return 更新后的分布 / Updated distribution
+     */
+    IMultivariateDistribution<T> conjugateUpdate(IVector<T> observations);
+    
+    /**
+     * 计算边际似然（证据）
+     * Calculate marginal likelihood (evidence)
+     * 
+     * @param observations 观测数据 / Observed data
+     * @return 边际似然值 / Marginal likelihood value
+     */
+    double marginalLikelihood(IVector<T> observations);
+    
+    /**
+     * 从后验分布采样
+     * Sample from posterior distribution
+     * 
+     * @param observations 观测数据 / Observed data
+     * @param n 采样数量 / Number of samples
+     * @return 后验样本 / Posterior samples
+     */
+    List<IVector<T>> posteriorSample(IVector<T> observations, int n);
+    
     /**
      * 置信椭圆参数类
      * Confidence ellipse parameters class

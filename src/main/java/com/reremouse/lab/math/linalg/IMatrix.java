@@ -2648,4 +2648,89 @@ public interface IMatrix<T extends Number> {
      */
     public boolean[][] greaterThan(IVector<T> other);
     
+    
+    /**
+     * 创建下三角阵
+     * @param m 矩阵大小
+     * @return 下三角矩阵
+     */
+    public static IMatrix<Double> lowerTriMatrix(int m){
+        // 创建一个m×m的零矩阵
+        double[][] data = new double[m][m];
+        
+        // 填充下三角部分（包括对角线）
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j <= i; j++) {
+                data[i][j] = 1.0;
+            }
+        }
+        
+        return IMatrix.of(data);
+    }
+    
+    
+    /**
+     * 创建上三角阵
+     * @param m 矩阵大小
+     * @return 上三角矩阵
+     */
+    public static IMatrix<Double> upperTriMatrix(int m){
+        // 创建一个m×m的零矩阵
+        double[][] data = new double[m][m];
+        
+        // 填充上三角部分（包括对角线）
+        for (int i = 0; i < m; i++) {
+            for (int j = i; j < m; j++) {
+                data[i][j] = 1.0;
+            }
+        }
+        
+        return IMatrix.of(data);
+    }
+    
+    /**
+     * 将矩阵无条件转换为Float类型
+     * @return 
+     */
+    public default IMatrix<Float> toFloatMatrix(){
+        int rows = this.getRowNum();
+        int cols = this.getColNum();
+        
+        // Create a new float array with the same dimensions
+        float[][] floatData = new float[rows][cols];
+        
+        // Copy data from the current matrix, converting each element to float
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                floatData[i][j] = this.get(i, j).floatValue();
+            }
+        }
+        
+        // Create and return a new Float matrix
+        return IMatrix.of(floatData);
+    }
+    
+    /**
+     * 将矩阵无条件转换为Double类型
+     * @return 
+     */
+    public default IMatrix<Double> toDoubleMatrix(){
+        int rows = this.getRowNum();
+        int cols = this.getColNum();
+        
+        // Create a new double array with the same dimensions
+        double[][] doubleData = new double[rows][cols];
+        
+        // Copy data from the current matrix, converting each element to double
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                doubleData[i][j] = this.get(i, j).doubleValue();
+            }
+        }
+        
+        // Create and return a new Double matrix
+        return IMatrix.of(doubleData);
+    }
+    
+    
 }

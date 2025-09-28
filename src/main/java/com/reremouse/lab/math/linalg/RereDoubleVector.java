@@ -3093,4 +3093,21 @@ public class RereDoubleVector implements IDoubleVector {
         return IDoubleMatrix.of(result);
     }
 
+    @Override
+    public IMatrix<Double> hessianMatrix() {
+        int m = size();
+        IMatrix<Double> W = Linalg.zeros(m, m);
+
+        for (int i = 0; i < m; i++) {
+            double fi = get(i);
+            double pi = RereMathUtil.sigmoid(fi);
+            double wi = pi * (1 - pi);
+            W.set(i, i, wi);
+        }
+        return W;
+    }
+
+    
+    
+
 }

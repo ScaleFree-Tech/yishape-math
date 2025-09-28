@@ -823,6 +823,22 @@ public class RereMathUtil {
         return mean + stdDev * z0;
     }
     
+    
+    /**
+     * Sigmoid函数
+     * @param x
+     * @return 
+     */
+    public static double sigmoid(double x) {
+        if (x > 500) {
+            return 1.0;
+        }
+        if (x < -500) {
+            return 0.0;
+        }
+        return 1.0 / (1.0 + Math.exp(-x));
+    }
+    
     public static void main(String args[]) {
         var r1 = RereMathUtil.generateRandomInts(0, 0, 10, 5);
         for (var i : r1) {

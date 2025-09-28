@@ -1,5 +1,7 @@
 package com.reremouse.lab.math.linalg;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -799,11 +801,12 @@ public interface IVector<T extends Number> {
     public IVector<T> sub(IVector<T> vec);
 
     /**
-     * 向量逐元素乘法运算（Hadamard乘积） / Vector element-wise multiplication (Hadamard product)
+     * 向量逐元素乘法运算（Hadamard乘积） / Vector element-wise multiplication (Hadamard
+     * product)
      * <p>
-     * 对应元素相乘，要求两个向量长度相同。这是逐元素乘法，不是内积运算。
-     * Element-wise multiplication, requires both vectors to have the same length. 
-     * This is element-wise multiplication, not inner product.
+     * 对应元素相乘，要求两个向量长度相同。这是逐元素乘法，不是内积运算。 Element-wise multiplication, requires
+     * both vectors to have the same length. This is element-wise
+     * multiplication, not inner product.
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -814,24 +817,30 @@ public interface IVector<T extends Number> {
      * }</pre>
      * </p>
      * <p>
-     * <strong>注意：</strong>此方法执行逐元素乘法，如需计算内积请使用 {@link #dot(IVector)} 或 {@link #innerProduct(IVector)}。
-     * <br><strong>Note:</strong> This method performs element-wise multiplication. For inner product, use {@link #dot(IVector)} or {@link #innerProduct(IVector)}.
+     * <strong>注意：</strong>此方法执行逐元素乘法，如需计算内积请使用 {@link #dot(IVector)} 或
+     * {@link #innerProduct(IVector)}。
+     * <br><strong>Note:</strong> This method performs element-wise
+     * multiplication. For inner product, use {@link #dot(IVector)} or
+     * {@link #innerProduct(IVector)}.
      * </p>
      *
      * @param vec 另一个向量 / The other vector
-     * @return 新的向量对象，包含逐元素乘法结果 / New vector object containing element-wise multiplication result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     * @return 新的向量对象，包含逐元素乘法结果 / New vector object containing element-wise
+     * multiplication result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
      * @throws NullPointerException 如果vec为null / if vec is null
      * @see #dot(IVector) 内积运算 / Inner product operation
      * @see #innerProduct(IVector) 内积运算（别名）/ Inner product operation (alias)
      */
     public IVector<T> multiply(IVector<T> vec);
-    
+
     /**
      * 向量与矩阵乘法 / Vector-matrix multiplication
      * <p>
-     * 计算行向量与矩阵的乘积，结果仍为行向量。要求向量的长度等于矩阵的行数。
-     * Computes the product of a row vector with a matrix, result is still a row vector. Requires vector length to equal matrix row count.
+     * 计算行向量与矩阵的乘积，结果仍为行向量。要求向量的长度等于矩阵的行数。 Computes the product of a row vector
+     * with a matrix, result is still a row vector. Requires vector length to
+     * equal matrix row count.
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -844,7 +853,8 @@ public interface IVector<T extends Number> {
      *
      * @param other 要相乘的矩阵 / Matrix to multiply with
      * @return 向量与矩阵的乘积结果 / Vector-matrix multiplication result
-     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length doesn't match matrix row count
+     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length
+     * doesn't match matrix row count
      * @throws NullPointerException 如果other为null / if other is null
      */
     public IVector<T> mmul(IMatrix<T> other);
@@ -931,9 +941,10 @@ public interface IVector<T extends Number> {
     /**
      * 向量逐元素除法运算 / Vector element-wise division
      * <p>
-     * 对应元素相除，要求两个向量长度相同。此方法通过计算除数向量的倒数然后进行逐元素乘法来实现。
-     * Element-wise division, requires both vectors to have the same length. 
-     * This method is implemented by computing the reciprocal of the divisor vector and then performing element-wise multiplication.
+     * 对应元素相除，要求两个向量长度相同。此方法通过计算除数向量的倒数然后进行逐元素乘法来实现。 Element-wise division,
+     * requires both vectors to have the same length. This method is implemented
+     * by computing the reciprocal of the divisor vector and then performing
+     * element-wise multiplication.
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -945,12 +956,16 @@ public interface IVector<T extends Number> {
      * </p>
      * <p>
      * <strong>注意：</strong>此方法执行逐元素除法，如果除数向量中包含零值，将产生无穷大或NaN结果。
-     * <br><strong>Note:</strong> This method performs element-wise division. If the divisor vector contains zero values, it will produce infinity or NaN results.
+     * <br><strong>Note:</strong> This method performs element-wise division. If
+     * the divisor vector contains zero values, it will produce infinity or NaN
+     * results.
      * </p>
      *
      * @param other 除数向量 / Divisor vector
-     * @return 新的向量对象，包含逐元素除法结果 / New vector object containing element-wise division result
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     * @return 新的向量对象，包含逐元素除法结果 / New vector object containing element-wise
+     * division result
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
      * @throws NullPointerException 如果other为null / if other is null
      * @see #multiply(IVector) 逐元素乘法 / Element-wise multiplication
      * @see #reciprocal() 倒数运算 / Reciprocal operation
@@ -1302,47 +1317,51 @@ public interface IVector<T extends Number> {
     /**
      * 向量反正弦函数 / Vector arcsine function
      * <p>
-     * 对向量中每个元素进行反正弦函数运算（arcsin(x)） Performs arcsine function operation (arcsin(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行反正弦函数运算（arcsin(x)） Performs arcsine function operation
+     * (arcsin(x)) on each element in the vector
      * </p>
      * <p>
-     * 输入值必须在[-1, 1]范围内，输出值在[-π/2, π/2]范围内 Input values must be in [-1, 1] range, output values are in [-π/2, π/2] range
+     * 输入值必须在[-1, 1]范围内，输出值在[-π/2, π/2]范围内 Input values must be in [-1, 1]
+     * range, output values are in [-π/2, π/2] range
      * </p>
      *
-     * @return 新的向量对象，包含反正弦函数运算结果 / New vector object containing arcsine function
-     * operation results
-     * @throws ArithmeticException 如果任何元素超出[-1, 1]范围 / if any element is outside [-1, 1] range
+     * @return 新的向量对象，包含反正弦函数运算结果 / New vector object containing arcsine
+     * function operation results
+     * @throws ArithmeticException 如果任何元素超出[-1, 1]范围 / if any element is outside
+     * [-1, 1] range
      */
     public IVector<T> arcsin();
 
     /**
      * 向量反余弦函数 / Vector arccosine function
      * <p>
-     * 对向量中每个元素进行反余弦函数运算（arccos(x)） Performs arccosine function operation (arccos(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行反余弦函数运算（arccos(x)） Performs arccosine function operation
+     * (arccos(x)) on each element in the vector
      * </p>
      * <p>
-     * 输入值必须在[-1, 1]范围内，输出值在[0, π]范围内 Input values must be in [-1, 1] range, output values are in [0, π] range
+     * 输入值必须在[-1, 1]范围内，输出值在[0, π]范围内 Input values must be in [-1, 1] range,
+     * output values are in [0, π] range
      * </p>
      *
-     * @return 新的向量对象，包含反余弦函数运算结果 / New vector object containing arccosine function
-     * operation results
-     * @throws ArithmeticException 如果任何元素超出[-1, 1]范围 / if any element is outside [-1, 1] range
+     * @return 新的向量对象，包含反余弦函数运算结果 / New vector object containing arccosine
+     * function operation results
+     * @throws ArithmeticException 如果任何元素超出[-1, 1]范围 / if any element is outside
+     * [-1, 1] range
      */
     public IVector<T> arccos();
 
     /**
      * 向量反正切函数 / Vector arctangent function
      * <p>
-     * 对向量中每个元素进行反正切函数运算（arctan(x)） Performs arctangent function operation (arctan(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行反正切函数运算（arctan(x)） Performs arctangent function operation
+     * (arctan(x)) on each element in the vector
      * </p>
      * <p>
      * 输出值在[-π/2, π/2]范围内 Output values are in [-π/2, π/2] range
      * </p>
      *
-     * @return 新的向量对象，包含反正切函数运算结果 / New vector object containing arctangent function
-     * operation results
+     * @return 新的向量对象，包含反正切函数运算结果 / New vector object containing arctangent
+     * function operation results
      */
     public IVector<T> arctan();
 
@@ -1350,38 +1369,38 @@ public interface IVector<T extends Number> {
     /**
      * 向量双曲正弦函数 / Vector hyperbolic sine function
      * <p>
-     * 对向量中每个元素进行双曲正弦函数运算（sinh(x)） Performs hyperbolic sine function operation (sinh(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行双曲正弦函数运算（sinh(x)） Performs hyperbolic sine function operation
+     * (sinh(x)) on each element in the vector
      * </p>
      * <p>
      * 公式：sinh(x) = (e^x - e^(-x)) / 2 Formula: sinh(x) = (e^x - e^(-x)) / 2
      * </p>
      *
-     * @return 新的向量对象，包含双曲正弦函数运算结果 / New vector object containing hyperbolic sine function
-     * operation results
+     * @return 新的向量对象，包含双曲正弦函数运算结果 / New vector object containing hyperbolic
+     * sine function operation results
      */
     public IVector<T> sinh();
 
     /**
      * 向量双曲余弦函数 / Vector hyperbolic cosine function
      * <p>
-     * 对向量中每个元素进行双曲余弦函数运算（cosh(x)） Performs hyperbolic cosine function operation (cosh(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行双曲余弦函数运算（cosh(x)） Performs hyperbolic cosine function operation
+     * (cosh(x)) on each element in the vector
      * </p>
      * <p>
      * 公式：cosh(x) = (e^x + e^(-x)) / 2 Formula: cosh(x) = (e^x + e^(-x)) / 2
      * </p>
      *
-     * @return 新的向量对象，包含双曲余弦函数运算结果 / New vector object containing hyperbolic cosine function
-     * operation results
+     * @return 新的向量对象，包含双曲余弦函数运算结果 / New vector object containing hyperbolic
+     * cosine function operation results
      */
     public IVector<T> cosh();
 
     /**
      * 向量双曲正切函数 / Vector hyperbolic tangent function
      * <p>
-     * 对向量中每个元素进行双曲正切函数运算（tanh(x)） Performs hyperbolic tangent function operation (tanh(x)) on
-     * each element in the vector
+     * 对向量中每个元素进行双曲正切函数运算（tanh(x)） Performs hyperbolic tangent function
+     * operation (tanh(x)) on each element in the vector
      * </p>
      * <p>
      * 公式：tanh(x) = sinh(x) / cosh(x) Formula: tanh(x) = sinh(x) / cosh(x)
@@ -1390,8 +1409,8 @@ public interface IVector<T extends Number> {
      * 输出值在(-1, 1)范围内 Output values are in (-1, 1) range
      * </p>
      *
-     * @return 新的向量对象，包含双曲正切函数运算结果 / New vector object containing hyperbolic tangent function
-     * operation results
+     * @return 新的向量对象，包含双曲正切函数运算结果 / New vector object containing hyperbolic
+     * tangent function operation results
      */
     public IVector<T> tanh();
 
@@ -1399,7 +1418,8 @@ public interface IVector<T extends Number> {
     /**
      * 向量四舍五入 / Vector round function
      * <p>
-     * 对向量中每个元素进行四舍五入运算 Performs rounding operation on each element in the vector
+     * 对向量中每个元素进行四舍五入运算 Performs rounding operation on each element in the
+     * vector
      * </p>
      * <p>
      * 使用标准的四舍五入规则：0.5向上舍入 Uses standard rounding rules: 0.5 rounds up
@@ -1412,42 +1432,47 @@ public interface IVector<T extends Number> {
     /**
      * 向量向下取整 / Vector floor function
      * <p>
-     * 对向量中每个元素进行向下取整运算（向负无穷方向取整） Performs floor operation on each element in the vector
-     * (rounds towards negative infinity)
+     * 对向量中每个元素进行向下取整运算（向负无穷方向取整） Performs floor operation on each element in
+     * the vector (rounds towards negative infinity)
      * </p>
      * <p>
-     * 例如：floor(3.7) = 3, floor(-2.3) = -3 Example: floor(3.7) = 3, floor(-2.3) = -3
+     * 例如：floor(3.7) = 3, floor(-2.3) = -3 Example: floor(3.7) = 3, floor(-2.3)
+     * = -3
      * </p>
      *
-     * @return 新的向量对象，包含向下取整运算结果 / New vector object containing floor operation results
+     * @return 新的向量对象，包含向下取整运算结果 / New vector object containing floor operation
+     * results
      */
     public IVector<T> floor();
 
     /**
      * 向量向上取整 / Vector ceiling function
      * <p>
-     * 对向量中每个元素进行向上取整运算（向正无穷方向取整） Performs ceiling operation on each element in the vector
-     * (rounds towards positive infinity)
+     * 对向量中每个元素进行向上取整运算（向正无穷方向取整） Performs ceiling operation on each element in
+     * the vector (rounds towards positive infinity)
      * </p>
      * <p>
      * 例如：ceil(3.2) = 4, ceil(-2.7) = -2 Example: ceil(3.2) = 4, ceil(-2.7) = -2
      * </p>
      *
-     * @return 新的向量对象，包含向上取整运算结果 / New vector object containing ceiling operation results
+     * @return 新的向量对象，包含向上取整运算结果 / New vector object containing ceiling
+     * operation results
      */
     public IVector<T> ceil();
 
     /**
      * 向量截断取整 / Vector truncate function
      * <p>
-     * 对向量中每个元素进行截断取整运算（向零方向取整） Performs truncate operation on each element in the vector
-     * (rounds towards zero)
+     * 对向量中每个元素进行截断取整运算（向零方向取整） Performs truncate operation on each element in
+     * the vector (rounds towards zero)
      * </p>
      * <p>
-     * 例如：trunc(3.7) = 3, trunc(-2.7) = -2 Example: trunc(3.7) = 3, trunc(-2.7) = -2
+     * 例如：trunc(3.7) = 3, trunc(-2.7) = -2 Example: trunc(3.7) = 3, trunc(-2.7)
+     * = -2
      * </p>
      *
-     * @return 新的向量对象，包含截断取整运算结果 / New vector object containing truncate operation results
+     * @return 新的向量对象，包含截断取整运算结果 / New vector object containing truncate
+     * operation results
      */
     public IVector<T> trunc();
 
@@ -1455,8 +1480,8 @@ public interface IVector<T extends Number> {
     /**
      * 向量切片（指定开始、结束位置和步长） / Vector slice with step
      * <p>
-     * 返回从指定开始位置到结束位置、按指定步长取样的向量切片 Returns a vector slice from specified start position
-     * to end position with specified step size
+     * 返回从指定开始位置到结束位置、按指定步长取样的向量切片 Returns a vector slice from specified start
+     * position to end position with specified step size
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -1470,7 +1495,8 @@ public interface IVector<T extends Number> {
      * @param end 结束位置（不包含） / End position (exclusive)
      * @param step 步长 / Step size
      * @return 切片向量 / Sliced vector
-     * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are out of bounds
+     * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
+     * out of bounds
      * @throws IllegalArgumentException 如果step为0 / if step is 0
      */
     public IVector<T> slice(int start, int end, int step);
@@ -1478,8 +1504,8 @@ public interface IVector<T extends Number> {
     /**
      * 向量切片（字符串表达式） / Vector slice with string expression
      * <p>
-     * 根据字符串表达式对向量进行切片操作，支持Python风格的切片语法 Performs vector slicing based on string expression,
-     * supports Python-style slice syntax
+     * 根据字符串表达式对向量进行切片操作，支持Python风格的切片语法 Performs vector slicing based on string
+     * expression, supports Python-style slice syntax
      * </p>
      * <p>
      * <strong>支持的表达式 / Supported expressions:</strong>
@@ -1492,16 +1518,19 @@ public interface IVector<T extends Number> {
      * </ul>
      * </p>
      *
-     * @param sliceExpression 切片表达式，如 "1:5", "::2" / Slice expression, e.g. "1:5", "::2"
+     * @param sliceExpression 切片表达式，如 "1:5", "::2" / Slice expression, e.g.
+     * "1:5", "::2"
      * @return 切片向量 / Sliced vector
-     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is invalid
+     * @throws IllegalArgumentException 如果切片表达式无效 / if slice expression is
+     * invalid
      */
     public IVector<T> slice(String sliceExpression);
 
     /**
      * 花式索引 / Fancy indexing
      * <p>
-     * 根据位置索引数组获取对应位置的元素组成新向量 Gets elements at specified positions to form a new vector
+     * 根据位置索引数组获取对应位置的元素组成新向量 Gets elements at specified positions to form a new
+     * vector
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -1513,9 +1542,12 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param positions 位置索引数组 / Array of position indices
-     * @return 新的向量对象，包含指定位置的元素 / New vector object containing elements at specified positions
-     * @throws IndexOutOfBoundsException 如果任何索引超出范围 / if any index is out of bounds
-     * @throws IllegalArgumentException 如果positions为null或空 / if positions is null or empty
+     * @return 新的向量对象，包含指定位置的元素 / New vector object containing elements at
+     * specified positions
+     * @throws IndexOutOfBoundsException 如果任何索引超出范围 / if any index is out of
+     * bounds
+     * @throws IllegalArgumentException 如果positions为null或空 / if positions is
+     * null or empty
      */
     public IVector<T> fancyGet(int[] positions);
 
@@ -1563,7 +1595,8 @@ public interface IVector<T extends Number> {
      *
      * @param m 矩阵 / Matrix
      * @return 点积结果矩阵 / Dot product result matrix
-     * @throws IllegalArgumentException 如果矩阵为null或维度不匹配 / if matrix is null or dimensions don't match
+     * @throws IllegalArgumentException 如果矩阵为null或维度不匹配 / if matrix is null or
+     * dimensions don't match
      */
     public IMatrix<T> dot(IMatrix<T> m);
 
@@ -1582,15 +1615,18 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
-     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result
+     * for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or
+     * lengths don't match
      */
     public boolean[] equals(IVector<T> other);
 
     /**
      * 向量小于比较 / Vector less-than comparison
      * <p>
-     * 逐元素比较当前向量是否小于另一个向量 Compares current vector element-wise to check if less than another vector
+     * 逐元素比较当前向量是否小于另一个向量 Compares current vector element-wise to check if less
+     * than another vector
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -1602,15 +1638,18 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
-     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result
+     * for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or
+     * lengths don't match
      */
     public boolean[] lessThan(IVector<T> other);
 
     /**
      * 向量大于比较 / Vector greater-than comparison
      * <p>
-     * 逐元素比较当前向量是否大于另一个向量 Compares current vector element-wise to check if greater than another vector
+     * 逐元素比较当前向量是否大于另一个向量 Compares current vector element-wise to check if
+     * greater than another vector
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -1622,8 +1661,10 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param other 另一个向量 / The other vector
-     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result for each element
-     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or lengths don't match
+     * @return 布尔数组，表示每个元素的比较结果 / Boolean array representing comparison result
+     * for each element
+     * @throws IllegalArgumentException 如果向量为null或长度不匹配 / if vector is null or
+     * lengths don't match
      */
     public boolean[] greaterThan(IVector<T> other);
 
@@ -2142,12 +2183,14 @@ public interface IVector<T extends Number> {
     /**
      * 动态时间规整距离 / Dynamic Time Warping Distance
      * <p>
-     * 计算两个向量之间的动态时间规整距离，用于时间序列数据的相似性度量 Computes the Dynamic Time Warping (DTW) distance
-     * between two vectors, used for similarity measurement of time series data
+     * 计算两个向量之间的动态时间规整距离，用于时间序列数据的相似性度量 Computes the Dynamic Time Warping (DTW)
+     * distance between two vectors, used for similarity measurement of time
+     * series data
      * </p>
      * <p>
-     * DTW是一种用于比较两个时间序列相似性的算法，允许时间轴的非线性对齐 DTW is an algorithm for comparing the similarity
-     * of two time series, allowing for non-linear alignment of the time axis
+     * DTW是一种用于比较两个时间序列相似性的算法，允许时间轴的非线性对齐 DTW is an algorithm for comparing the
+     * similarity of two time series, allowing for non-linear alignment of the
+     * time axis
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2167,8 +2210,8 @@ public interface IVector<T extends Number> {
     /**
      * 皮尔逊相关系数 / Pearson Correlation Coefficient
      * <p>
-     * 计算两个向量之间的皮尔逊相关系数，衡量线性相关性 Computes the Pearson correlation coefficient between two vectors,
-     * measuring linear correlation
+     * 计算两个向量之间的皮尔逊相关系数，衡量线性相关性 Computes the Pearson correlation coefficient
+     * between two vectors, measuring linear correlation
      * </p>
      * <p>
      * 相关系数范围在[-1, 1]之间： Correlation coefficient ranges from [-1, 1]:
@@ -2189,18 +2232,22 @@ public interface IVector<T extends Number> {
      *
      * @param other 另一个向量 / The other vector
      * @return 皮尔逊相关系数 / Pearson correlation coefficient
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
-     * @throws ArithmeticException 如果任一向量的标准差为0 / if standard deviation of any vector is 0
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
+     * @throws ArithmeticException 如果任一向量的标准差为0 / if standard deviation of any
+     * vector is 0
      */
     public T corr(IVector<T> other);
 
     /**
      * 协方差 / Covariance
      * <p>
-     * 计算两个向量之间的协方差，衡量联合变异性 Computes the covariance between two vectors, measuring joint variability
+     * 计算两个向量之间的协方差，衡量联合变异性 Computes the covariance between two vectors,
+     * measuring joint variability
      * </p>
      * <p>
-     * 协方差公式：cov(X,Y) = E[(X-μₓ)(Y-μᵧ)] Covariance formula: cov(X,Y) = E[(X-μₓ)(Y-μᵧ)]
+     * 协方差公式：cov(X,Y) = E[(X-μₓ)(Y-μᵧ)] Covariance formula: cov(X,Y) =
+     * E[(X-μₓ)(Y-μᵧ)]
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2213,15 +2260,16 @@ public interface IVector<T extends Number> {
      *
      * @param other 另一个向量 / The other vector
      * @return 协方差 / Covariance
-     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't match
+     * @throws IllegalArgumentException 如果向量长度不匹配 / if vector lengths don't
+     * match
      */
     public T cov(IVector<T> other);
 
     /**
      * 向量元素映射操作 / Vector element mapping operation
      * <p>
-     * 对向量中的每个元素应用指定的函数，返回同形状的新向量 Applies the specified function to each element in the vector,
-     * returns a new vector of the same shape
+     * 对向量中的每个元素应用指定的函数，返回同形状的新向量 Applies the specified function to each element
+     * in the vector, returns a new vector of the same shape
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2232,8 +2280,10 @@ public interface IVector<T extends Number> {
      * }</pre>
      * </p>
      *
-     * @param fun 要应用的函数，接受一个元素并返回转换后的元素 / Function to apply, takes an element and returns transformed element
-     * @return 新的向量对象，包含应用函数后的结果 / New vector object containing results after applying the function
+     * @param fun 要应用的函数，接受一个元素并返回转换后的元素 / Function to apply, takes an element
+     * and returns transformed element
+     * @return 新的向量对象，包含应用函数后的结果 / New vector object containing results after
+     * applying the function
      * @throws IllegalArgumentException 如果fun为null / if fun is null
      */
     public IVector<T> apply(Function<T, T> fun);
@@ -2241,8 +2291,7 @@ public interface IVector<T extends Number> {
     /**
      * 第一四分位数（25%分位数）/ First quartile (25th percentile)
      * <p>
-     * 计算向量的第一四分位数，即25%分位数。第一四分位数是将数据按升序排列后，
-     * 位于25%位置的值，表示有25%的数据小于等于该值。
+     * 计算向量的第一四分位数，即25%分位数。第一四分位数是将数据按升序排列后， 位于25%位置的值，表示有25%的数据小于等于该值。
      * </p>
      * <p>
      * 计算方法：
@@ -2253,7 +2302,7 @@ public interface IVector<T extends Number> {
      * <li>如果索引不是整数，使用线性插值计算</li>
      * </ul>
      * </p>
-     * 
+     *
      * @return 第一四分位数 / First quartile
      * @throws ArithmeticException 如果向量为空 / if vector is empty
      */
@@ -2269,8 +2318,7 @@ public interface IVector<T extends Number> {
     /**
      * 第三四分位数（75%分位数）/ Third quartile (75th percentile)
      * <p>
-     * 计算向量的第三四分位数，即75%分位数。第三四分位数是将数据按升序排列后，
-     * 位于75%位置的值，表示有75%的数据小于等于该值。
+     * 计算向量的第三四分位数，即75%分位数。第三四分位数是将数据按升序排列后， 位于75%位置的值，表示有75%的数据小于等于该值。
      * </p>
      * <p>
      * 计算方法：
@@ -2281,7 +2329,7 @@ public interface IVector<T extends Number> {
      * <li>如果索引不是整数，使用线性插值计算</li>
      * </ul>
      * </p>
-     * 
+     *
      * @return 第三四分位数 / Third quartile
      * @throws ArithmeticException 如果向量为空 / if vector is empty
      */
@@ -2293,14 +2341,14 @@ public interface IVector<T extends Number> {
         // 使用已有的percentile方法计算75%分位数
         return this.percentile(75.0);
     }
-    
+
     /**
      * 向量拼接
-     * @param other
-/**
-     * 向量连接 / Vector concatenation
+     *
+     * @param other /** 向量连接 / Vector concatenation
      * <p>
-     * 将当前向量与另一个向量连接，形成一个新的向量 Concatenates current vector with another vector to form a new vector
+     * 将当前向量与另一个向量连接，形成一个新的向量 Concatenates current vector with another vector to
+     * form a new vector
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2316,13 +2364,13 @@ public interface IVector<T extends Number> {
      * @throws IllegalArgumentException 如果向量为null / if vector is null
      */
     public IVector<T> concat(IVector<T> other);
-    
+
     /**
      * 向量符号函数 / Vector sign function
      * <p>
-     * 对向量中每个元素计算符号函数：如果元素为零则返回0，如果元素大于零则返回1，如果元素小于零则返回-1
-     * Computes the sign function for each element in the vector: returns 0 if element is zero, 
-     * 1 if element is greater than zero, -1 if element is less than zero
+     * 对向量中每个元素计算符号函数：如果元素为零则返回0，如果元素大于零则返回1，如果元素小于零则返回-1 Computes the sign
+     * function for each element in the vector: returns 0 if element is zero, 1
+     * if element is greater than zero, -1 if element is less than zero
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2335,11 +2383,12 @@ public interface IVector<T extends Number> {
      * @return 符号函数结果向量 / Sign function result vector
      */
     public IVector<T> sign();
-    
+
     /**
      * 向量重塑为矩阵 / Reshape vector to matrix
      * <p>
-     * 将向量重新构型为指定行数和列数的矩阵 Reshapes the vector into a matrix with specified rows and columns
+     * 将向量重新构型为指定行数和列数的矩阵 Reshapes the vector into a matrix with specified rows
+     * and columns
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -2349,18 +2398,37 @@ public interface IVector<T extends Number> {
      * }</pre>
      * </p>
      * <p>
-     * <strong>注意 / Note:</strong> 向量长度必须等于 rows × cols
-     * Vector length must equal rows × cols
+     * <strong>注意 / Note:</strong> 向量长度必须等于 rows × cols Vector length must equal
+     * rows × cols
      * </p>
      *
      * @param rows 矩阵行数 / Number of rows in the matrix
      * @param cols 矩阵列数 / Number of columns in the matrix
      * @return 重塑后的矩阵 / Reshaped matrix
-     * @throws IllegalArgumentException 如果rows或cols小于等于0，或者rows×cols不等于向量长度 / 
-     *         if rows or cols is less than or equal to 0, or rows×cols doesn't equal vector length
+     * @throws IllegalArgumentException 如果rows或cols小于等于0，或者rows×cols不等于向量长度 / if
+     * rows or cols is less than or equal to 0, or rows×cols doesn't equal
+     * vector length
      */
     public IMatrix<T> reshape(int rows, int cols);
-    
-   
+
+    /**
+     * 返回海塞阵
+     *
+     * @return
+     */
+    public IMatrix<T> hessianMatrix();
+
+    /**
+     * 转换为List
+     * @return 
+     */
+    public default List<T> toList() {
+        List ls = new ArrayList();
+        int size = this.size();
+        for (int i = 0; i < size; i++) {
+            ls.add(get(i));
+        }
+        return ls;
+    }
 
 }

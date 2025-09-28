@@ -438,6 +438,30 @@ public class MultivariateNormalDistribution implements IMultivariateDistribution
     }
     
     @Override
+    public IMultivariateDistribution<Double> conjugateUpdate(IVector<Double> observations) {
+        // For multivariate normal distribution, conjugate update with normal observations
+        // This would typically involve updating the mean and covariance based on observations
+        // This is a simplified placeholder implementation
+        IVector<Double> newMean = mean.add(observations.multiplyScalar(0.1));
+        return new MultivariateNormalDistribution(newMean, covariance);
+    }
+    
+    @Override
+    public double marginalLikelihood(IVector<Double> observations) {
+        // For multivariate normal distribution, compute marginal likelihood of observations
+        // This is a simplified placeholder implementation
+        double logLikelihood = -0.5 * observations.dot(observations);
+        return Math.exp(logLikelihood);
+    }
+    
+    @Override
+    public List<IVector<Double>> posteriorSample(IVector<Double> observations, int n) {
+        // Sample from posterior distribution after conjugate update
+        IMultivariateDistribution<Double> posterior = conjugateUpdate(observations);
+        return posterior.sample(n);
+    }
+    
+    @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
         if (dimension != 2) {
             throw new UnsupportedOperationException("置信椭圆只支持二维分布");

@@ -291,6 +291,17 @@ public class Stats {
     public static StudentDistribution t(double degreesOfFreedom) {
         return new StudentDistribution(degreesOfFreedom);
     }
+    
+    /**
+     * 
+     * @param dof 自由度
+     * @param location 均值
+     * @param scale 标准差
+     * @return 
+     */
+    public static StudentDistribution t(double dof, double location, double scale) {
+        return new StudentDistribution(dof,location,scale);
+    }
 
     /**
      * 创建均匀分布对象

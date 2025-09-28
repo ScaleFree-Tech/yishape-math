@@ -551,6 +551,47 @@ public class MultivariateBetaDistribution implements IMultivariateDistribution<D
     }
     
     @Override
+    public IMultivariateDistribution<Double> conjugateUpdate(IVector<Double> observations) {
+        // For Dirichlet distribution, conjugate update with Multinomial observations
+        // Posterior alpha = prior alpha + observations
+        IVector<Double> posteriorAlpha = alpha.add(observations);
+        return new MultivariateBetaDistribution(posteriorAlpha);
+    }
+    
+    @Override
+    public double marginalLikelihood(IVector<Double> observations) {
+        // For Dirichlet-Multinomial conjugate pair, compute marginal likelihood
+        double observationSum = 0.0;
+        for (int i = 0; i < observations.size(); i++) {
+            observationSum += observations.get(i);
+        }
+        
+        double logMarginal = logMultivariateBeta(alpha.add(observations)) - logMultivariateBeta(alpha);
+        return Math.exp(logMarginal);
+    }
+    
+    @Override
+    public List<IVector<Double>> posteriorSample(IVector<Double> observations, int n) {
+        // Sample from posterior distribution
+        IMultivariateDistribution<Double> posterior = conjugateUpdate(observations);
+        return posterior.sample(n);
+    }
+    
+    /**
+     * 计算多元Beta函数的对数值
+     * Calculate log multivariate Beta function
+     */
+    private double logMultivariateBeta(IVector<Double> alpha) {
+        double logBeta = logGamma(alphaSum);
+        
+        for (int i = 0; i < alpha.size(); i++) {
+            logBeta -= logGamma(alpha.get(i));
+        }
+        
+        return logBeta;
+    }
+    
+    @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
         if (dimension != 2) {
             throw new UnsupportedOperationException("置信椭圆只支持二维分布");

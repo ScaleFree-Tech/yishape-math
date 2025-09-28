@@ -482,6 +482,45 @@ public class MultivariateUniformDistribution implements IMultivariateDistributio
     }
     
     @Override
+    public IMultivariateDistribution<Double> conjugateUpdate(IVector<Double> observations) {
+        // For multivariate uniform distribution, conjugate update with observations
+        // This is a simplified placeholder implementation
+        double[] newLowerArray = new double[dimension];
+        double[] newUpperArray = new double[dimension];
+        for (int i = 0; i < dimension; i++) {
+            newLowerArray[i] = lowerBounds.get(i) - observations.get(i) * 0.01;
+            newUpperArray[i] = upperBounds.get(i) + observations.get(i) * 0.01;
+        }
+        IVector<Double> newLower = Linalg.vector(newLowerArray);
+        IVector<Double> newUpper = Linalg.vector(newUpperArray);
+        return new MultivariateUniformDistribution(newLower, newUpper);
+    }
+    
+    @Override
+    public double marginalLikelihood(IVector<Double> observations) {
+        // For multivariate uniform distribution, compute marginal likelihood of observations
+        // This is a simplified placeholder implementation
+        double logLikelihood = 0.0;
+        for (int i = 0; i < dimension; i++) {
+            double obs = observations.get(i);
+            double lower = lowerBounds.get(i);
+            double upper = upperBounds.get(i);
+            if (obs < lower || obs > upper) {
+                return 0.0; // Outside support
+            }
+            logLikelihood -= Math.log(upper - lower);
+        }
+        return Math.exp(logLikelihood);
+    }
+    
+    @Override
+    public List<IVector<Double>> posteriorSample(IVector<Double> observations, int n) {
+        // Sample from posterior distribution after conjugate update
+        IMultivariateDistribution<Double> posterior = conjugateUpdate(observations);
+        return posterior.sample(n);
+    }
+    
+    @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
         if (dimension != 2) {
             throw new UnsupportedOperationException("置信椭圆只支持二维分布");

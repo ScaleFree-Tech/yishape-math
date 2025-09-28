@@ -20,7 +20,7 @@ import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
  * <li>每份报纸的采购成本为 c</li>
  * <li>每份报纸的销售价格为 p</li>
  * <li>每份缺货的损失为 s</li>
- * <li>需求服从正态分布 N(μ, σ²)</li>
+ * <li>需求服从某种分布，分布形态可以以参数设计</li>
  * </ul>
  * 
  * <h3>数学模型：</h3>

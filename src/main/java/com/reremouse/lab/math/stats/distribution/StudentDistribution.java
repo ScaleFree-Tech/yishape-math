@@ -25,6 +25,12 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     /** 自由度 / Degrees of freedom */
     private final double degreesOfFreedom;
     
+    /** 位置参数 / Location parameter */
+    private final double location;
+    
+    /** 尺度参数 / Scale parameter */
+    private final double scale;
+    
     /** 预计算的常数 / Precomputed constants */
     private final double normalizationConstant;
     private final double halfDof;
@@ -38,17 +44,37 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * @throws IllegalArgumentException 如果自由度小于等于0 / If degrees of freedom is less than or equal to 0
      */
     public StudentDistribution(double degreesOfFreedom) {
-        if (degreesOfFreedom <= 0) {
+        this(degreesOfFreedom, 0.0, 1.0);
+    }
+    
+    
+    /**
+     * 构造函数，创建位置-尺度t分布
+     * Constructor for location-scale t-distribution
+     * 
+     * @param dof 自由度，必须大于0 / Degrees of freedom, must be greater than 0
+     * @param location 位置参数 / Location parameter
+     * @param scale 尺度参数，必须大于0 / Scale parameter, must be greater than 0
+     * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
+     */
+    public StudentDistribution(double dof, double location, double scale) {
+        if (dof <= 0) {
             throw new IllegalArgumentException("自由度必须大于0 / Degrees of freedom must be greater than 0");
         }
-        this.degreesOfFreedom = degreesOfFreedom;
-        this.halfDof = degreesOfFreedom / 2.0f;
-        this.halfDofPlusHalf = (degreesOfFreedom + 1.0f) / 2.0f;
+        if (scale <= 0) {
+            throw new IllegalArgumentException("尺度参数必须大于0 / Scale parameter must be greater than 0");
+        }
+        
+        this.degreesOfFreedom = dof;
+        this.location = location;
+        this.scale = scale;
+        this.halfDof = dof / 2.0;
+        this.halfDofPlusHalf = (dof + 1.0) / 2.0;
         
         // 计算归一化常数
         // Calculate normalization constant
         double x1 = RereMathUtil.gamma(halfDofPlusHalf);
-        double x2 = Math.sqrt(degreesOfFreedom * Math.PI) * RereMathUtil.gamma(halfDof);
+        double x2 = Math.sqrt(dof * Math.PI) * RereMathUtil.gamma(halfDof);
         
         this.normalizationConstant = x1 / x2;
     }
@@ -62,9 +88,11 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double pdf(double x) {
+        // 对于位置-尺度变换: 如果Z~t(ν), 则X = μ + σ*Z 的PDF为 (1/σ) * f_Z((x-μ)/σ)
+        double standardized = (x - location) / scale;
         double power = -(halfDofPlusHalf);
-        double base = 1.0f + (x * x) / degreesOfFreedom;
-        return normalizationConstant * (float) Math.pow(base, power);
+        double base = 1.0 + (standardized * standardized) / degreesOfFreedom;
+        return (normalizationConstant / scale) * Math.pow(base, power);
     }
     
     /**
@@ -76,16 +104,19 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double cdf(double x) {
+        // 对于位置-尺度变换: 如果Z~t(ν), 则X = μ + σ*Z 的CDF为 F_Z((x-μ)/σ)
+        double standardized = (x - location) / scale;
+        
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return 0.5 * (1.0 + RereMathUtil.erf(x /  Math.sqrt(2.0)));
+            return 0.5 * (1.0 + RereMathUtil.erf(standardized / Math.sqrt(2.0)));
         }
         
         // 使用不完全贝塔函数
         // Using incomplete beta function
-        double t = x / (float) Math.sqrt(degreesOfFreedom + x * x);
-        return 0.5 + 0.5 * sign(x) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
+        double t = standardized / Math.sqrt(degreesOfFreedom + standardized * standardized);
+        return 0.5 + 0.5 * sign(standardized) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
     }
     
     /**
@@ -97,22 +128,26 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double ppf(double p) {
-        if (p < 0.0f || p > 1.0f) {
+        if (p < 0.0 || p > 1.0) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
         
-        if (p == 0.0f) return Double.NEGATIVE_INFINITY;
-        if (p == 1.0f) return Double.POSITIVE_INFINITY;
+        if (p == 0.0) return Double.NEGATIVE_INFINITY;
+        if (p == 1.0) return Double.POSITIVE_INFINITY;
         
+        // 对于位置-尺度变换: 如果Z~t(ν), 则X = μ + σ*Z 的PPF为 μ + σ*F_Z^(-1)(p)
+        double standardPpf;
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return RereMathUtil.inverseNormalCDF(p);
+            standardPpf = RereMathUtil.inverseNormalCDF(p);
+        } else {
+            // 使用数值方法求解标准t分布的分位数
+            // Using numerical method to solve for standard t-distribution quantile
+            standardPpf = inverseTCDF(p);
         }
         
-        // 使用数值方法求解
-        // Using numerical method to solve
-        return inverseTCDF(p);
+        return location + scale * standardPpf;
     }
     
     /**
@@ -168,23 +203,23 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     private double inverseTCDF(double p) {
         // 使用改进的二分法求解
         // Using improved bisection method to solve
-        double left = -10.0f;
-        double right = 10.0f;
-        double tolerance = 1e-8f;
+        double left = -10.0;
+        double right = 10.0;
+        double tolerance = 1e-8;
         int maxIter = 200;
         
         // 调整边界以确保包含解
         // Adjust boundaries to ensure solution is included
-        while (cdf(left) > p && left > -1000.0f) {
-            left *= 2.0f;
+        while (standardCDF(left) > p && left > -1000.0) {
+            left *= 2.0;
         }
-        while (cdf(right) < p && right < 1000.0f) {
-            right *= 2.0f;
+        while (standardCDF(right) < p && right < 1000.0) {
+            right *= 2.0;
         }
         
         for (int i = 0; i < maxIter; i++) {
-            double mid = (left + right) / 2.0f;
-            double cdfMid = cdf(mid);
+            double mid = (left + right) / 2.0;
+            double cdfMid = standardCDF(mid);
             
             if (Math.abs(cdfMid - p) < tolerance) {
                 return mid;
@@ -202,7 +237,27 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
             }
         }
         
-        return (left + right) / 2.0f;
+        return (left + right) / 2.0;
+    }
+    
+    /**
+     * 标准t分布的累积分布函数
+     * CDF of standard t-distribution
+     * 
+     * @param x 输入值 / Input value
+     * @return 累积分布函数值 / CDF value
+     */
+    private double standardCDF(double x) {
+        if (degreesOfFreedom >= 30) {
+            // 对于大自由度，使用正态分布近似
+            // For large degrees of freedom, use normal distribution approximation
+            return 0.5 * (1.0 + RereMathUtil.erf(x / Math.sqrt(2.0)));
+        }
+        
+        // 使用不完全贝塔函数
+        // Using incomplete beta function
+        double t = x / Math.sqrt(degreesOfFreedom + x * x);
+        return 0.5 + 0.5 * sign(x) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
     }
     
     /**
@@ -222,7 +277,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     @Override
     public double mean() {
         if (degreesOfFreedom > 1) {
-            return 0.0f; // t分布的均值为0
+            return location; // 位置-尺度t分布的均值为location参数
         }
         return Double.NaN; // 当自由度 <= 1 时均值不存在
     }
@@ -236,7 +291,9 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     @Override
     public double var() {
         if (degreesOfFreedom > 2) {
-            return degreesOfFreedom / (degreesOfFreedom - 2.0f);
+            // 对于位置-尺度变换: 如果Z~t(ν), 则Var(X) = σ² * Var(Z)
+            double standardVar = degreesOfFreedom / (degreesOfFreedom - 2.0);
+            return scale * scale * standardVar;
         }
         return Double.NaN; // 当自由度 <= 2 时方差不存在
     }
@@ -253,7 +310,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         if (Double.isNaN(variance)) {
             return Double.NaN;
         }
-        return (float) Math.sqrt(variance);
+        return Math.sqrt(variance);
     }
     
     /**
@@ -264,7 +321,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double median() {
-        return 0.0f; // t分布的中位数为0
+        return location; // 位置-尺度t分布的中位数为location参数
     }
     
     /**
@@ -275,7 +332,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double mode() {
-        return 0.0f; // t分布的众数为0
+        return location; // 位置-尺度t分布的众数为location参数
     }
     
     /**
@@ -308,7 +365,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      */
     @Override
     public double skewness() {
-        return 0.0f; // t分布是对称的，偏度为0
+        return 0.0; // 位置-尺度t分布仍是对称的，偏度为0
     }
     
     /**
@@ -320,7 +377,8 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     @Override
     public double kurtosis() {
         if (degreesOfFreedom > 4) {
-            return 6.0f / (degreesOfFreedom - 4.0f);
+            // 位置-尺度t分布的峰度与标准t分布相同（尺度变换不影响峰度）
+            return 6.0 / (degreesOfFreedom - 4.0);
         }
         return Double.NaN; // 当自由度 <= 4 时峰度不存在
     }
@@ -341,7 +399,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         // 使用正态分布和卡方分布生成t分布随机数
         // Using normal and chi-squared distributions to generate t-distribution random numbers
         if (normal == null) {
-            normal = new NormalDistribution(0.0f, 1.0f);
+            normal = new NormalDistribution(0.0, 1.0);
         }
         if (chi2 == null) {
             chi2 = new Chi2Distribution(degreesOfFreedom);
@@ -350,7 +408,9 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         double z = normal.sample();
         double chi2Sample = chi2.sample();
         
-        return z / (float) Math.sqrt(chi2Sample / degreesOfFreedom);
+        // 对于位置-尺度变换: 如果Z~t(ν), 则X = μ + σ*Z
+        double standardT = z / Math.sqrt(chi2Sample / degreesOfFreedom);
+        return location + scale * standardT;
     }
     
     /**
@@ -377,6 +437,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
     
     @Override
     public String toString() {
-        return String.format("StudentDistribution(df=%.3f)", degreesOfFreedom);
+        return String.format("StudentDistribution(degreesOfFreedom=%.3f, location=%.3f, scale=%.3f)", 
+                degreesOfFreedom, location, scale);
     }
 }

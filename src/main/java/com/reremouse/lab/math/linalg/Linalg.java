@@ -552,6 +552,10 @@ public class Linalg {
         return IVector.of(data);
     }
     
+    public static <T extends Number> IVector<T> vector(int value) {
+        return IVector.of(new Integer[]{value});
+    }
+    
     public static IVector<Double> vector(Double value) {
         return IVector.of(value);
     }
@@ -755,5 +759,23 @@ public class Linalg {
     
     public static IVector<Double> logspace(Double start, Double stop, int num) {
         return IVector.logspace(start, stop, num);
+    }
+    
+    /**
+     * 创建下三角阵
+     * @param m 矩阵大小
+     * @return 下三角矩阵
+     */
+    public static IMatrix<Double> lowerTriMatrix(int m){
+        return IMatrix.lowerTriMatrix(m);
+    }
+    
+    /**
+     * 创建上三角阵
+     * @param m 矩阵大小
+     * @return 上三角矩阵
+     */
+    public static IMatrix<Double> upperTriMatrix(int m){
+        return IMatrix.upperTriMatrix(m);
     }
 }

@@ -6952,6 +6952,6 @@ public class RereDoubleMatrix implements IDoubleMatrix {
         return result;
     }
     
-    
+
 
 }

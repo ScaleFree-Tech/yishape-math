@@ -6843,6 +6843,11 @@ public class RereFloatMatrix implements IFloatMatrix {
         return IFloatMatrix.of(result);
     }
 
+    /**
+     * 
+     * @param other
+     * @return 
+     */
     @Override
     public IMatrix<Float> multiply(IMatrix<Float> other) {
         if (other == null) {
@@ -6873,6 +6878,11 @@ public class RereFloatMatrix implements IFloatMatrix {
         return CPUComputeFloatUtils.matrixElementWiseMultiply(this, other);
     }
 
+    /**
+     * 
+     * @param other
+     * @return 
+     */
     @Override
     public boolean[][] equals(IVector<Float> other) {
         if (other == null) {
@@ -6897,6 +6907,11 @@ public class RereFloatMatrix implements IFloatMatrix {
         return result;
     }
 
+    /**
+     * 
+     * @param other
+     * @return 
+     */
     @Override
     public boolean[][] lessThan(IVector<Float> other) {
         if (other == null) {
@@ -6945,6 +6960,6 @@ public class RereFloatMatrix implements IFloatMatrix {
         return result;
     }
     
-    
+ 
 
 }

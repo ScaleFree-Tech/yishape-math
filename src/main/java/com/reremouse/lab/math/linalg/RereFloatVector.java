@@ -3087,6 +3087,22 @@ public class RereFloatVector implements IFloatVector {
         return IFloatMatrix.of(result);
     }
 
+    @Override
+    public IMatrix<Float> hessianMatrix() {
+        int m = size();
+        IMatrix W = Linalg.zeros(m, m);
+
+        for (int i = 0; i < m; i++) {
+            float fi = get(i);
+            float pi = (float)RereMathUtil.sigmoid(fi);
+            float wi = pi * (1 - pi);
+            W.set(i, i, wi);
+        }
+        return W;
+    }
+
+
+
     
 
 }
