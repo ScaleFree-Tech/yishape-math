@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.test.news_vendor;
 
+import model_zoo.naive_news_wendor.NewsvendorModel;
 import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 import com.reremouse.lab.math.stats.distribution.NormalDistribution;

@@ -1,8 +1,7 @@
-package com.reremouse.lab.math.test.news_vendor;
+package model_zoo.naive_news_wendor;
 
 import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.stats.Stats;
-import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 
 /**
  * 报童模型使用示例

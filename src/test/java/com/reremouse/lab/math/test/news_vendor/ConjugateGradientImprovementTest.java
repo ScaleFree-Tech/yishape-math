@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.test.news_vendor;
 
+import model_zoo.naive_news_wendor.NewsvendorModel;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;

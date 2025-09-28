@@ -1,4 +1,4 @@
-package com.reremouse.lab.math.test.news_vendor;
+package model_zoo.naive_news_wendor;
 
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
