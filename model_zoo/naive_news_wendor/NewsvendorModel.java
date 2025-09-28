@@ -50,7 +50,7 @@ public class NewsvendorModel {
      * @param purchaseCost 采购成本
      * @param sellingPrice 销售价格
      * @param shortageCost 缺货损失
-     * @param demandDistribution 需求函数
+     * @param demandDistribution 需求分布
      */
     public NewsvendorModel(double purchaseCost, double sellingPrice, double shortageCost, 
                           IContinuousDistribution demandDistribution) {
