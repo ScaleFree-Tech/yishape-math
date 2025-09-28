@@ -2,6 +2,7 @@ package com.reremouse.lab.math.ml.clustering;
 
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.ml.ISerializableModel;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
  * 
  * @author reremouse
  */
-public interface IClustering {
+public interface IClustering extends ISerializableModel{
     
     /**
      * 训练聚类模型

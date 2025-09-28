@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.ml.cls.tree;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -9,6 +10,7 @@ import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.io.*;
 
 /**
  * 随机森林分类器
@@ -21,7 +23,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * @version 1.0
  * @since 1.0
  */
-public class RereRandomForest implements IClassification, IGradientFunction, IObjectiveFunction {
+public class RereRandomForest implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     /** 决策树数量 */
     private int nEstimators;
@@ -571,6 +575,19 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         BootstrapResult(int[] inBagIndices, int[] outOfBagIndices) {
             this.inBagIndices = inBagIndices;
             this.outOfBagIndices = outOfBagIndices;
+        }
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

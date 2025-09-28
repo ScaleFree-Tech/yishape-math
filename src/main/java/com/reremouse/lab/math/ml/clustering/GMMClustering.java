@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.ml.clustering;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -7,6 +8,7 @@ import com.reremouse.lab.math.stats.model.GaussianMixtureModel;
 import com.reremouse.lab.math.stats.model.EMAlgorithm;
 import com.reremouse.lab.math.stats.distribution.multiv.MultivariateNormalDistribution;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -18,7 +20,9 @@ import java.util.*;
  * 
  * @author reremouse
  */
-public class GMMClustering implements IClustering {
+public class GMMClustering implements IClustering, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     // 默认参数
     private static final int DEFAULT_MAX_ITERATIONS = 100;
@@ -724,6 +728,19 @@ public class GMMClustering implements IClustering {
         }
         
         return true;
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
 }

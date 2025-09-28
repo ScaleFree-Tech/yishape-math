@@ -97,6 +97,10 @@
                     <skipTests>true</skipTests>
                     <release>21</release>
                     <encoding>utf8</encoding>
+                    <excludes>
+                        <!-- 排除整个包 -->
+                        <exclude>model_zoo/**</exclude>
+                    </excludes>
                 </configuration>  
             </plugin>
             <plugin>
@@ -137,11 +141,8 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
-            </plugin>
+            
+            
         </plugins>
     </build>
     

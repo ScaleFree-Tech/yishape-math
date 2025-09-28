@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.ml.lr;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
@@ -7,6 +8,8 @@ import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+
+import java.io.*;
 
 /**
  * 线性回归实现类
@@ -48,7 +51,9 @@ import com.reremouse.lab.math.linalg.IVector;
  * @version 2.0
  * @since 1.0
  */
-public class RereLinearRegression implements IRegression, IGradientFunction, IObjectiveFunction {
+public class RereLinearRegression implements IRegression, IGradientFunction, IObjectiveFunction, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     /**
      * 正则化类型枚举
@@ -809,5 +814,18 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      */
     public IVector getFullWeights() {
         return this.trainedWeights;
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

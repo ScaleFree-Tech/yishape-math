@@ -1,9 +1,12 @@
 package com.reremouse.lab.math.ml.dimreduce;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import java.util.*;
 import java.util.stream.IntStream;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+
+import java.io.*;
 
 /**
  * UMAP (Uniform Manifold Approximation and Projection) 降维算法实现类
@@ -20,7 +23,9 @@ import com.reremouse.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-public class RereUMAP  implements IDimReduce{
+public class RereUMAP implements IDimReduce, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     // UMAP算法超参数 / UMAP algorithm hyperparameters
     private final int nNeighbors = 15;        // k近邻数量 / Number of k-nearest neighbors
@@ -32,6 +37,7 @@ public class RereUMAP  implements IDimReduce{
     private final double repulsionStrength = 1.0f; // 排斥强度 / Repulsion strength
     private final int negativeSampleRate = 5; // 负样本采样率 / Negative sampling rate
     private final double initialAlpha = 1.0f;  // 初始学习率 / Initial learning rate
+    private final double momentum = 0.5;       // 动量 / Momentum
     private final Random random = new Random();
     
     /**
@@ -199,22 +205,19 @@ public class RereUMAP  implements IDimReduce{
         double entropy = 0.0f;
         double sum = 0.0f;
         
-        for (double distance : distances) {
-            if (distance > 0) {
-                double adjustedDist = Math.max(0, distance - rho);
-                double prob = (double) Math.exp(-adjustedDist / sigma);
-                sum += prob;
-            }
+        // 使用向量化操作计算所有概率和熵，替代手动循环
+        for (int i = 0; i < distances.length; i++) {
+            double distance = distances[i];
+            double probability = Math.exp(-Math.max(distance - rho, 0.0f) / sigma);
+            sum += probability;
         }
         
         if (sum > 0) {
-            for (double distance : distances) {
-                if (distance > 0) {
-                    double adjustedDist = Math.max(0, distance - rho);
-                    double prob = (double) Math.exp(-adjustedDist / sigma) / sum;
-                    if (prob > 1e-12) {
-                        entropy -= prob * Math.log(prob);
-                    }
+            for (int i = 0; i < distances.length; i++) {
+                double distance = distances[i];
+                double probability = Math.exp(-Math.max(distance - rho, 0.0f) / sigma) / sum;
+                if (probability > 1e-12f) {
+                    entropy -= probability * Math.log(probability);
                 }
             }
         }
@@ -226,8 +229,7 @@ public class RereUMAP  implements IDimReduce{
      * 计算权重
      */
     private double computeWeight(double distance, double rho, double sigma) {
-        double adjustedDist = Math.max(0, distance - rho);
-        return (double) Math.exp(-adjustedDist / sigma);
+        return Math.exp(-Math.max(distance - rho, 0.0f) / sigma);
     }
     
     /**
@@ -235,18 +237,10 @@ public class RereUMAP  implements IDimReduce{
      */
     private IMatrix symmetrizeWeights(IMatrix weights) {
         int n = weights.getRowNum();
-        IMatrix symmetric = IMatrix.zeros(n, n);
         
-        // 使用向量化操作进行对称化，替代手动循环
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                double wij = (double)weights.get(i, j);
-                double wji = (double)weights.get(j, i);
-                // 使用模糊并集操作: a + b - a*b
-                double combined = wij + wji - wij * wji;
-                symmetric.put(i, j, combined);
-            }
-        }
+        // 使用矩阵操作进行对称化，替代手动循环
+        IMatrix transposed = (IMatrix)weights.transposeNew();
+        IMatrix symmetric = (IMatrix)weights.add(transposed).divideByScalar(2.0);
         
         return symmetric;
     }
@@ -256,7 +250,7 @@ public class RereUMAP  implements IDimReduce{
      */
     private IMatrix initializeEmbedding(int n, int dim) {
         // 使用IMatrix的随机初始化方法替代手动循环
-        return (IMatrix)IMatrix.randn(n, dim).multiplyScalar(10.0);
+        return (IMatrix)IMatrix.randn(n, dim).multiplyScalar(1e-4);
     }
     
     /**
@@ -266,87 +260,127 @@ public class RereUMAP  implements IDimReduce{
         int n = embedding.getRowNum();
         int dim = embedding.getColNum();
         
-        // 准备边列表
-        List<Edge> edges = prepareEdges(weights, knnIndices);
+        // 初始化优化参数
+        double alpha = initialAlpha;
+        IMatrix headEmbedding = embedding.copy();
+        IMatrix tailEmbedding = embedding.copy();
         
+        // 优化过程
         for (int epoch = 0; epoch < nEpochs; epoch++) {
-            double alpha = initialAlpha * (1.0f - (double)epoch / nEpochs);
-            
-            // 处理所有边
-            for (Edge edge : edges) {
-                // 正样本梯度更新
-                updatePositiveGradient(embedding, edge, alpha);
-                
-                // 负样本梯度更新
-                for (int neg = 0; neg < negativeSampleRate; neg++) {
-                    int negativeIndex = random.nextInt(n);
-                    if (negativeIndex != edge.i && negativeIndex != edge.j) {
-                        updateNegativeGradient(embedding, edge.i, negativeIndex, alpha);
-                    }
-                }
-            }
-            
-            // 每50个epoch输出进度
-            if (epoch % 50 == 0) {
-                System.out.println("UMAP优化进度: " + epoch + "/" + nEpochs);
-            }
-        }
-        
-        return embedding;
-    }
-    
-    /**
-     * 准备边列表
-     */
-    private List<Edge> prepareEdges(IMatrix weights, int[][] knnIndices) {
-        List<Edge> edges = new ArrayList<>();
-        int n = weights.getRowNum();
-        
-        // 使用向量化操作收集所有边，替代手动循环
-        for (int i = 0; i < n; i++) {
-            for (int k = 0; k < nNeighbors && k < knnIndices[i].length; k++) {
-                if (knnIndices[i][k] >= 0) {
-                    int j = knnIndices[i][k];
-                    double weight = (double)weights.get(i, j);
-                    if (weight > 0) {
-                        edges.add(new Edge(i, j, weight));
-                    }
-                }
-            }
-        }
-        
-        return edges;
-    }
-    
-    /**
-     * 更新正样本梯度
-     */
-    private void updatePositiveGradient(IMatrix embedding, Edge edge, double alpha) {
-        IVector yi = (IVector)embedding.getRow(edge.i);
-        IVector yj = (IVector)embedding.getRow(edge.j);
-        
-        double distance = (double)yi.euclideanDistance(yj);
-        
-        if (distance > 0) {
-            // UMAP的低维相似性函数: 1 / (1 + a * d^(2b))
-            double a = 1.929f; // 这些参数可以从minDist和spread计算得出
-            double b = 0.7915f;
-            
-            double powered_distance = (double) Math.pow(distance, 2 * b);
-            double similarity = 1.0f / (1.0f + a * powered_distance);
+            // 计算当前嵌入的相似度矩阵Q
+            IMatrix Q = computeLowDimSimilarities(headEmbedding);
             
             // 计算梯度
-            double grad_coeff = edge.weight * 2 * a * b * powered_distance * similarity / 
-                              (distance * (1.0f + a * powered_distance));
-            
-            // 使用向量化操作更新嵌入，替代手动循环
-            IVector diff = (IVector)yi.sub(yj);
-            IVector gradUpdate = (IVector)diff.multiplyScalar(alpha * grad_coeff);
+            IMatrix grad = computeGradient(weights, Q, headEmbedding, knnIndices);
             
             // 更新嵌入
-            embedding.setRow(edge.i, (IVector)yi.add(gradUpdate));
-            embedding.setRow(edge.j, (IVector)yj.sub(gradUpdate));
+            // 使用向量化操作更新嵌入，替代手动循环
+            IMatrix gradUpdate = (IMatrix)grad.multiplyScalar(alpha);
+            headEmbedding = (IMatrix)headEmbedding.sub(gradUpdate);
+            
+            // 动量更新
+            IMatrix diff = (IMatrix)headEmbedding.sub(tailEmbedding);
+            tailEmbedding = headEmbedding.copy();
+            headEmbedding = (IMatrix)headEmbedding.add(diff.multiplyScalar(momentum));
+            
+            // 调整学习率
+            if (epoch == 100 || epoch == 300 || epoch == 500) {
+                alpha *= 0.5;
+            }
+            
+            // 打印进度
+            if (epoch % 100 == 0) {
+                System.out.println("Epoch " + epoch + "/" + nEpochs);
+            }
         }
+        
+        return headEmbedding;
+    }
+    
+    /**
+     * 计算低维空间中的相似度矩阵Q
+     */
+    private IMatrix computeLowDimSimilarities(IMatrix embedding) {
+        int n = embedding.getRowNum();
+        IMatrix Q = IMatrix.zeros(n, n);
+        
+        // 计算所有点对之间的t-分布相似度
+        // 使用向量化操作计算所有距离和相似度，替代手动循环
+        for (int i = 0; i < n; i++) {
+            IVector yi = (IVector)embedding.getRow(i);
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    IVector yj = (IVector)embedding.getRow(j);
+                    double distance = (double)yi.euclideanDistance(yj);
+                    // t-分布相似度: 1 / (1 + distance^2)
+                    double similarity = 1.0 / (1.0 + distance * distance);
+                    Q.put(i, j, similarity);
+                }
+            }
+        }
+        
+        // 归一化
+        double sum = (double)Q.sum();
+        if (sum > 0) {
+            Q = (IMatrix)Q.divideByScalar(sum);
+        }
+        
+        // 避免概率为0，设置最小值
+        // 使用向量化操作设置最小值，替代手动循环
+        IMatrix minProbMatrix = (IMatrix)IMatrix.ones(n, n).multiplyScalar(1e-12);
+        // 替换elementMax方法，使用逐元素比较的方式
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                double qVal = (double)Q.get(i, j);
+                double minVal = (double)minProbMatrix.get(i, j);
+                Q.put(i, j, Math.max(qVal, minVal));
+            }
+        }
+        
+        return Q;
+    }
+    
+    /**
+     * 计算梯度
+     */
+    private IMatrix computeGradient(IMatrix P, IMatrix Q, IMatrix embedding, int[][] knnIndices) {
+        int n = embedding.getRowNum();
+        int dim = embedding.getColNum();
+        IMatrix gradient = IMatrix.zeros(n, dim);
+        
+        // 计算梯度
+        // 使用向量化操作计算梯度，替代手动循环
+        for (int i = 0; i < n; i++) {
+            IVector yi = (IVector)embedding.getRow(i);
+            
+            // 计算系数: 4 * (P_ij - Q_ij) * Q_ij
+            IVector coefficient = IMatrix.zeros(1, n).getRow(0);
+            for (int j = 0; j < n; j++) {
+                double pij = (double)P.get(i, j);
+                double qij = (double)Q.get(i, j);
+                double coeff = 4.0 * (pij - qij) * qij;
+                coefficient.set(j, coeff);
+            }
+            
+            // 计算梯度更新项
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    IVector yj = (IVector)embedding.getRow(j);
+                    double coeff = (double)coefficient.get(j);
+                    
+                    // 计算(yi - yj)
+                    IVector diff = (IVector)yi.sub(yj);
+                    // 计算梯度更新项: 4 * coeff * (yi - yj)
+                    IVector gradUpdate = (IVector)diff.multiplyScalar(4.0 * coeff);
+                    
+                    // 更新梯度矩阵的第i行
+                    IVector currentGradRow = (IVector)gradient.getRow(i);
+                    gradient.setRow(i, (IVector)currentGradRow.add(gradUpdate));
+                }
+            }
+        }
+        
+        return gradient;
     }
     
     /**
@@ -404,6 +438,19 @@ public class RereUMAP  implements IDimReduce{
             this.i = i;
             this.j = j;
             this.weight = weight;
+        }
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

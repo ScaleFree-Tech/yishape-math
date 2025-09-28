@@ -1,8 +1,11 @@
 package com.reremouse.lab.math.ml.dimreduce;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.util.Tuple3;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+
+import java.io.*;
 
 /**
  * SVD降维算法实现类 / SVD Dimensionality Reduction Algorithm Implementation
@@ -18,8 +21,9 @@ import com.reremouse.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-public class RereSVD  implements IDimReduce{
+public class RereSVD implements IDimReduce, ISerializableModel {
     
+    private static final long serialVersionUID = 1L;
     
     /**
      * 用SVD方法降维 / Dimensionality reduction using SVD method
@@ -91,4 +95,16 @@ public class RereSVD  implements IDimReduce{
         return result;
     }
     
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

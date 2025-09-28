@@ -1,12 +1,14 @@
 package com.reremouse.lab.math.ml.cls;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.ml.cls.tree.RereRandomForest;
-import com.reremouse.lab.math.ml.cls.tree.RFTree;
 import com.reremouse.lab.math.ml.cls.tree.RereXGboost;
+import com.reremouse.lab.math.ml.cls.tree.RFTree;
 import java.util.*;
+import java.io.*;
 
 /**
  * 集成分类器
@@ -26,7 +28,9 @@ import java.util.*;
  * @version 1.0
  * @since 1.0
  */
-public class EnsembleClassifier implements IClassification {
+public class EnsembleClassifier implements IClassification, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     /** 随机森林分类器 */
     private RereRandomForest randomForest;
@@ -534,4 +538,17 @@ public class EnsembleClassifier implements IClassification {
     public String[] getClassLabels() { return classLabels; }
     public IVector getClassifierWeights() { return classifierWeights; }
     public EnsembleStrategy getStrategy() { return strategy; }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

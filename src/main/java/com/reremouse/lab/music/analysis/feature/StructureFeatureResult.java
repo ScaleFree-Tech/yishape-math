@@ -17,6 +17,17 @@ import java.util.ArrayList;
  */
 public class StructureFeatureResult {
 
+    
+    private final List<MusicSegment> segments;     // 音乐段落
+    private final double[] noveltyFunction;        // 新颖性函数
+    private final double[] selfSimilarityMatrix;   // 自相似矩阵(压缩表示)
+    private final double structuralComplexity;     // 结构复杂度
+    private final double repetitiveness;           // 重复性
+    private final int estimatedSections;           // 估计段落数
+    private final double averageSegmentLength;     // 平均段落长度
+    private final double confidence;               // 置信度
+    
+    
     /**
      * 音乐段落类型 / Music segment type
      */
@@ -52,14 +63,6 @@ public class StructureFeatureResult {
         }
     }
 
-    private final List<MusicSegment> segments;     // 音乐段落
-    private final double[] noveltyFunction;        // 新颖性函数
-    private final double[] selfSimilarityMatrix;   // 自相似矩阵(压缩表示)
-    private final double structuralComplexity;     // 结构复杂度
-    private final double repetitiveness;           // 重复性
-    private final int estimatedSections;           // 估计段落数
-    private final double averageSegmentLength;     // 平均段落长度
-    private final double confidence;               // 置信度
 
     /**
      * 构造函数 / Constructor

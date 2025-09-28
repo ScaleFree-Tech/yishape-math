@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.ml.cls;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.linalg.RereDoubleMatrix;
 import com.reremouse.lab.math.linalg.RereDoubleVector;
 import com.reremouse.lab.math.optimize.IGradientFunction;
@@ -8,6 +9,7 @@ import com.reremouse.lab.math.optimize.IOptimizer;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
 import com.reremouse.lab.util.Tuple2;
 
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -27,7 +29,9 @@ import com.reremouse.lab.math.linalg.Linalg;
  * @version 2.0
  * @since 1.0
  */
-public class RereLogisticRegression implements IClassification, IGradientFunction, IObjectiveFunction {
+public class RereLogisticRegression implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     // ==================== 模型参数 ====================
     
@@ -1005,6 +1009,19 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
             return "二分类逻辑回归";
         } else {
             return String.format("多分类逻辑回归 (%d类)", numClasses);
+        }
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

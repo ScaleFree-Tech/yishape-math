@@ -1,8 +1,11 @@
 package com.reremouse.lab.math.ml.dimreduce;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+
+import java.io.*;
 
 /**
  * PCA (主成分分析) 降维算法实现类 / PCA (Principal Component Analysis) Dimensionality Reduction Algorithm Implementation
@@ -27,7 +30,9 @@ import com.reremouse.lab.math.linalg.IVector;
  * 
  * @author lteb2
  */
-public class RerePCA implements IDimReduce{
+public class RerePCA implements IDimReduce, ISerializableModel{
+    
+    private static final long serialVersionUID = 1L;
     
     
     /**
@@ -104,6 +109,19 @@ public class RerePCA implements IDimReduce{
         IMatrix reducedData = (IMatrix)centeredData.mmul(principalComponents);
         
         return reducedData;
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
 }

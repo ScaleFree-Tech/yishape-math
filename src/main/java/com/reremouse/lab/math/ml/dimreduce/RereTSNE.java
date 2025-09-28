@@ -1,8 +1,11 @@
 package com.reremouse.lab.math.ml.dimreduce;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import java.util.Random;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
+
+import java.io.*;
 
 /**
  * t-SNE降维算法实现类 / t-SNE Dimensionality Reduction Algorithm Implementation
@@ -13,7 +16,9 @@ import com.reremouse.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-public class RereTSNE {
+public class RereTSNE implements IDimReduce, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     // 算法超参数 / Algorithm hyperparameters
     private final double perplexity = 30.0;    // 困惑度 / Perplexity
@@ -96,9 +101,14 @@ public class RereTSNE {
         // 避免概率为0，设置最小值
         // 使用向量化操作设置最小值，替代手动循环
         IMatrix minProbMatrix = (IMatrix)IMatrix.ones(n, n).multiplyScalar(1e-12);
-        // 使用新的multiply方法进行元素级乘法
-        IMatrix maxMatrix = (IMatrix)P_symmetric.multiply(minProbMatrix);
-        P_symmetric = maxMatrix;
+        // 替换multiply方法，使用逐元素比较的方式
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                double pVal = (double)P_symmetric.get(i, j);
+                double minVal = (double)minProbMatrix.get(i, j);
+                P_symmetric.put(i, j, Math.max(pVal, minVal));
+            }
+        }
         
         // 确保对角线为0
         for (int i = 0; i < n; i++) {
@@ -214,28 +224,16 @@ public class RereTSNE {
             // 计算梯度
             IMatrix gradient = computeGradient(P, Q, Y);
             
-            // 更新速度（应用动量）
+            // 更新动量项
             velocity = (IMatrix)velocity.multiplyScalar(momentum).sub(gradient.multiplyScalar(learningRate));
             
-            // 更新Y
+            // 更新嵌入
             Y = (IMatrix)Y.add(velocity);
             
-            // 每50次迭代输出一次进度
-            if (iter % 50 == 0) {
-                double cost = computeKLDivergence(P, Q);
-                System.out.println("迭代 " + iter + "，KL散度: " + cost);
-            }
-            
             // 检查收敛性
-            if (iter > 100) {
-                IMatrix Q_prev = computeLowDimSimilarities((IMatrix)Y.sub(velocity));
-                double cost_current = computeKLDivergence(P, Q);
-                double cost_prev = computeKLDivergence(P, Q_prev);
-                
-                if (Math.abs(cost_current - cost_prev) < tolerance) {
-                    System.out.println("收敛于迭代 " + iter);
-                    break;
-                }
+            if (iter % 100 == 0) {
+                double klDivergence = computeKLDivergence(P, Q);
+                System.out.println("Iteration " + iter + ", KL divergence: " + klDivergence);
             }
         }
         
@@ -243,94 +241,84 @@ public class RereTSNE {
     }
     
     /**
-     * 计算低维空间中的相似度矩阵Q（使用t分布）
+     * 计算低维空间中的相似度矩阵Q
      */
     private IMatrix computeLowDimSimilarities(IMatrix Y) {
         int n = Y.getRowNum();
         IMatrix Q = IMatrix.zeros(n, n);
-        double sum = 0.0;
         
-        // 计算分子: 1 / (1 + ||yi - yj||^2)
-        // 使用向量化操作替代嵌套循环
+        // 计算所有点对之间的t-分布相似度
         for (int i = 0; i < n; i++) {
             IVector yi = (IVector)Y.getRow(i);
-            // 计算yi到所有点的距离
-            IMatrix distances = computePairwiseDistances(Y, yi);
-            // 计算相似度: 1 / (1 + distance^2)
-            IMatrix squaredDistances = (IMatrix)distances.pow(2.0);
-            IMatrix onesMatrix = (IMatrix)IMatrix.ones(1, n);
-            IMatrix denominator = (IMatrix)squaredDistances.add(onesMatrix);
-            // 计算倒数: 1 / denominator
-            IMatrix onesNumerator = (IMatrix)IMatrix.ones(1, n);
-            IMatrix similarities = (IMatrix)onesNumerator.divide(denominator);
-            // 将对角线元素设为0（自己到自己的相似度为0）
-            similarities.put(i, 0, 0.0);
-            // 设置第i行
-            Q.setRow(i, (IVector)similarities.getRow(0));
-            // 累加总和
-            sum += (double)similarities.sum();
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    IVector yj = (IVector)Y.getRow(j);
+                    double distance = (double)yi.euclideanDistance(yj);
+                    // t-分布相似度: 1 / (1 + distance^2)
+                    double similarity = 1.0 / (1.0 + distance * distance);
+                    Q.put(i, j, similarity);
+                }
+            }
         }
         
         // 归一化
+        double sum = (double)Q.sum();
         if (sum > 0) {
-            // 使用向量化操作进行归一化，替代手动循环
             Q = (IMatrix)Q.divideByScalar(sum);
-            
-            // 确保最小值，替代手动循环
-            IMatrix minMatrix = (IMatrix)IMatrix.ones(n, n).multiplyScalar(1e-12);
-            // 使用新的multiply方法进行元素级乘法
-            IMatrix maxMatrix = (IMatrix)Q.multiply(minMatrix);
-            Q = maxMatrix;
+        }
+        
+        // 避免概率为0，设置最小值
+        int nRows = Q.getRowNum();
+        int nCols = Q.getColNum();
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                double val = (double)Q.get(i, j);
+                Q.put(i, j, Math.max(val, 1e-12));
+            }
+        }
+        
+        // 确保对角线为0
+        for (int i = 0; i < n; i++) {
+            Q.put(i, i, 0.0);
         }
         
         return Q;
     }
     
     /**
-     * 计算t-SNE的梯度
+     * 计算梯度
      */
     private IMatrix computeGradient(IMatrix P, IMatrix Q, IMatrix Y) {
         int n = Y.getRowNum();
         int dim = Y.getColNum();
         IMatrix gradient = IMatrix.zeros(n, dim);
         
-        // 使用向量化操作计算梯度，减少嵌套循环
+        // 计算梯度
         for (int i = 0; i < n; i++) {
             IVector yi = (IVector)Y.getRow(i);
+            IVector gradRow = (IVector)gradient.getRow(i);
             
-            // 计算yi到所有点的距离
-            IMatrix distances = computePairwiseDistances(Y, yi);
-            // 计算距离的平方
-            IMatrix squaredDistances = (IMatrix)distances.pow(2.0);
-            // 计算分母: 1 + distance^2
-            IMatrix onesMatrix = (IMatrix)IMatrix.ones(1, n);
-            IMatrix denominator = (IMatrix)squaredDistances.add(onesMatrix);
-            // 计算系数: (pij - qij) / (1 + distance^2)
-            IVector piRow = (IVector)P.getRow(i);
-            IVector qiRow = (IVector)Q.getRow(i);
-            IVector diffPQ = (IVector)piRow.sub(qiRow);
-            // 将分母矩阵转换为向量
-            IVector denominatorVector = (IVector)denominator.getRow(0);
-            // 计算系数
-            IVector coefficient = (IVector)diffPQ.divide(denominatorVector);
-            
-            // 计算梯度更新项
-            // 对于每个j，梯度更新为: 4 * (pij - qij) / (1 + ||yi - yj||^2) * (yi - yj)
             for (int j = 0; j < n; j++) {
                 if (i != j) {
                     IVector yj = (IVector)Y.getRow(j);
-                    double coeff = (double)coefficient.get(j);
+                    double pij = (double)P.get(i, j);
+                    double qij = (double)Q.get(i, j);
+                    
+                    // 计算系数: 4 * (P_ij - Q_ij) * Q_ij
+                    double coeff = 4.0 * (pij - qij) * qij;
                     
                     // 计算(yi - yj)
                     IVector diff = (IVector)yi.sub(yj);
-                    // 计算梯度更新项: 4 * coeff * (yi - yj)
-                    IVector gradUpdate = (IVector)diff.multiplyScalar(4.0 * coeff);
+                    
+                    // 计算梯度更新项: coeff * (yi - yj)
+                    IVector gradUpdate = (IVector)diff.multiplyScalar(coeff);
                     
                     // 更新梯度矩阵的第i行
-                    IVector currentGradRow = (IVector)gradient.getRow(i);
-                    gradient.setRow(i, (IVector)currentGradRow.add(gradUpdate));
+                    gradRow = (IVector)gradRow.add(gradUpdate);
                 }
             }
+            
+            gradient.setRow(i, gradRow);
         }
         
         return gradient;
@@ -384,5 +372,18 @@ public class RereTSNE {
         }
         
         return distances;
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

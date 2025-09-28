@@ -1,5 +1,6 @@
 package com.reremouse.lab.math.ml.cls.tree;
 
+import com.reremouse.lab.math.ml.ISerializableModel;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -12,6 +13,7 @@ import com.reremouse.lab.math.optimize.newton.RereOnlineSGD;
 import com.reremouse.lab.math.optimize.newton.RereOnlineAdam;
 
 import java.util.*;
+import java.io.*;
 
 /**
  * RereXGboost分类器
@@ -24,7 +26,9 @@ import java.util.*;
  * @version 1.0
  * @since 1.0
  */
-public class RereXGboost implements IClassification, IGradientFunction, IObjectiveFunction {
+public class RereXGboost implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+    
+    private static final long serialVersionUID = 1L;
     
     // ==================== 模型参数 ====================
     
@@ -840,6 +844,19 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
             this.trainLabels = trainLabels;
             this.validFeatures = validFeatures;
             this.validLabels = validLabels;
+        }
+    }
+    
+    /**
+     * 将模型保存在本地
+     * @param path 保存路径
+     */
+    @Override
+    public void save(String path) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+            oos.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
