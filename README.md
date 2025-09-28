@@ -373,7 +373,7 @@ IGradientFunction grdFun = new IGradientFunction() {
 
 // 执行优化 / Execute optimization
 IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+var result = optimizer.optimize(initX, objFun, grdFun);
 ```
 
 ```java
@@ -422,10 +422,10 @@ IMatrix reducedData = pca.dimensionReduction(originalData, 2);
 #### 逻辑回归分类 / Logistic Regression Classification
 ```java
 // 创建逻辑回归分类器 / Create logistic regression classifier
-RereLogisticRegression lr = new RereLogisticRegression();
+var lr = new RereLogisticRegression();
 
 // 训练模型 / Train model
-ClassificationResult result = lr.fit(featureMatrix, labelVector);
+var result = lr.fit(featureMatrix, labelVector);
 
 // 预测分类 / Predict classification
 int prediction = lr.predict(newFeatureVector);
