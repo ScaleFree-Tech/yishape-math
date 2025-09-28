@@ -16,7 +16,7 @@ public class LPTest {
         IMatrix A_eq = Linalg.matrix(new double[][]{{1, 1}});
         IVector b_eq = Linalg.vector(new double[]{2.5});
         
-        SimplexLinProgSolver solver = new SimplexLinProgSolver();
+        ILinProgSolver solver = new SimplexLinProgSolver();
         OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
         
         if (result == null) {

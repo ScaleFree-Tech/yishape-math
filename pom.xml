@@ -57,7 +57,13 @@
             <artifactId>jorbis</artifactId>
             <version>0.0.17</version>
         </dependency>
-
+        
+        <!--主要用于初期测试自研求解器求解的正确性，性能稳定后将删除依赖-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
         
         <!-- JUnit 5 for testing -->
         <dependency>

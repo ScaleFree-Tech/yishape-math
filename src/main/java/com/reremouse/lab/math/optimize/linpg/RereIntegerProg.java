@@ -7,6 +7,7 @@ import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.util.Tuple2;
 import com.reremouse.lab.util.Tuple3;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 整数规划求解器，基于分支定界法
@@ -20,6 +21,12 @@ public class RereIntegerProg implements IIntegerProg {
     private static final double DEFAULT_TOLERANCE = 1e-6;
     private static final int DEFAULT_MAX_ITERATIONS = 1000;
     private static final double INFINITY = Double.POSITIVE_INFINITY;
+    
+    // 数值精度常量
+    private static final double INTEGER_TOLERANCE = 1e-8;  // 整数判断容差
+    private static final double BINARY_TOLERANCE = 1e-8;   // 二进制判断容差
+    private static final double BOUND_TOLERANCE = 1e-10;   // 边界检查容差
+    private static final double MIN_GAP_TOLERANCE = 1e-12; // 最小间隙容差
     
     // 内部类用于携带分支定界结果和是否达到最大迭代次数的信息
     private static class BranchAndBoundResult {
@@ -60,7 +67,7 @@ public class RereIntegerProg implements IIntegerProg {
      * 构造函数，使用默认的单纯形法求解器
      */
     public RereIntegerProg() {
-        this(new SimplexLinProgSolver());
+        this(new ComMathLinProgSolver());
     }
 
     /**
@@ -78,6 +85,9 @@ public class RereIntegerProg implements IIntegerProg {
      * @param variableIndex 变量索引
      */
     public void setIntegerVariable(int variableIndex) {
+        if (variableIndex < 0) {
+            throw new IllegalArgumentException("Variable index must be non-negative: " + variableIndex);
+        }
         integerVariables.add(variableIndex);
     }
 
@@ -86,6 +96,9 @@ public class RereIntegerProg implements IIntegerProg {
      * @param variableIndex 变量索引
      */
     public void setBinaryVariable(int variableIndex) {
+        if (variableIndex < 0) {
+            throw new IllegalArgumentException("Variable index must be non-negative: " + variableIndex);
+        }
         binaryVariables.add(variableIndex);
         // 0-1变量也是整数变量
         integerVariables.add(variableIndex);
@@ -97,6 +110,9 @@ public class RereIntegerProg implements IIntegerProg {
      */
     public void addIntegerVariables(int... variableIndices) {
         for (int index : variableIndices) {
+            if (index < 0) {
+                throw new IllegalArgumentException("Variable index must be non-negative: " + index);
+            }
             integerVariables.add(index);
         }
     }
@@ -107,9 +123,7 @@ public class RereIntegerProg implements IIntegerProg {
      */
     public void addBinaryVariables(int... variableIndices) {
         for (int index : variableIndices) {
-            binaryVariables.add(index);
-            // 0-1变量也是整数变量
-            integerVariables.add(index);
+            setBinaryVariable(index); // setBinaryVariable已经包含了验证
         }
     }
 
@@ -221,7 +235,7 @@ public class RereIntegerProg implements IIntegerProg {
      * 设置最优性间隙容忍度
      */
     public void setGapTolerance(double gapTolerance) {
-        this.gapTolerance = Math.max(gapTolerance, 1e-12);
+        this.gapTolerance = Math.max(gapTolerance, MIN_GAP_TOLERANCE);
     }
     
     /**
@@ -352,16 +366,24 @@ public class RereIntegerProg implements IIntegerProg {
         // 自适应深度限制
         int adaptiveMaxDepth = maxDepth;
         
+        // 添加迭代日志记录
+        boolean logIterations = verbose && maxIterations > 100;
+        
+        if (verbose) {
+            System.out.println("开始分支定界算法，变量数: " + c.length() + ", 约束数: " + A_eq.rows());
+            System.out.println("整数变量: " + integerVariables);
+            System.out.println("0-1变量: " + binaryVariables);
+        }
+        
         while (!nodeQueue.isEmpty() && iterations < maxIterations) {
             iterations++;
             
             BranchNode currentNode = nodeQueue.poll();
             
-            if (verbose) {
-                System.out.println("迭代 " + iterations + ": 处理节点，下界 = " + currentNode.lowerBound + ", 深度 = " + currentNode.depth + ", ID = " + currentNode.id);
-                if (!currentNode.variableBounds.isEmpty()) {
-                    System.out.println("  节点变量界限: " + currentNode.variableBounds);
-                }
+            if (logIterations && iterations % 100 == 0) {
+                System.out.println("迭代 " + iterations + ": 队列大小 = " + nodeQueue.size() + 
+                                 ", 当前下界 = " + currentNode.lowerBound + 
+                                 ", 最佳目标值 = " + (bestSolution != null ? bestObjectiveValue : "未找到"));
             }
             
             // 动态调整深度限制
@@ -464,25 +486,13 @@ public class RereIntegerProg implements IIntegerProg {
                 continue; // 整数解不需要再分支
             }
             
-            // 界限剪枝：如果下界大于等于已知最优解（考虑容差）
-            // 只有在已经找到整数解的情况下才进行界限剪枝
-            if (bestSolution != null && objectiveValue >= bestObjectiveValue + gapTolerance) {
+            // 改进的界限剪枝：使用更宽松的条件
+            // 在最小化问题中，如果当前节点的下界大于等于已知最优解，则可以剪枝
+            // 但我们是在最小化负的目标函数值，所以实际上是要找最小的负值（即最大的正值）
+            if (bestSolution != null && objectiveValue >= bestObjectiveValue + gapTolerance/100) {
                 prunedNodes++;
                 if (verbose) {
-                    System.out.println("  界限剪枝: 下界(" + objectiveValue + ") >= 最优值(" + bestObjectiveValue + ") + 容差(" + gapTolerance + ")");
-                }
-                // 将节点返回对象池
-                if (nodePool.size() < 100) { // 限制对象池大小
-                    nodePool.offer(currentNode);
-                }
-                continue;
-            }
-            
-            // 成本剪枝：如果当前解的目标值已经比已知最优解差很多，提前剪除
-            if (bestSolution != null && objectiveValue >= bestObjectiveValue + gapTolerance * 10) {
-                prunedNodes++;
-                if (verbose) {
-                    System.out.println("  成本剪枝: 下界(" + objectiveValue + ") 远大于最优值(" + bestObjectiveValue + ")");
+                    System.out.println("  界限剪枝: 下界(" + objectiveValue + ") >= 最优值(" + bestObjectiveValue + ") + 容差(" + gapTolerance/100 + ")");
                 }
                 // 将节点返回对象池
                 if (nodePool.size() < 100) { // 限制对象池大小
@@ -578,20 +588,30 @@ public class RereIntegerProg implements IIntegerProg {
      * 生成节点约束的唯一键用于缓存
      */
     private String generateNodeKey(BranchNode node) {
-        // 简单的键生成策略，可以根据需要优化
         StringBuilder key = new StringBuilder();
+        
+        // 添加深度信息
+        key.append("depth:").append(node.depth).append("|");
+        
+        // 添加变量边界信息，按变量索引排序以确保一致性
         key.append("bounds:");
-        // 按变量索引排序以确保一致性
         node.variableBounds.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .forEach(entry -> {
                 key.append(entry.getKey())
                    .append(":")
-                   .append(entry.getValue().getFirst())
+                   .append(String.format("%.6f", entry.getValue().getFirst()))
                    .append(":")
-                   .append(entry.getValue().getSecond())
+                   .append(String.format("%.6f", entry.getValue().getSecond()))
                    .append(";");
             });
+        
+        // 添加整数变量集合的哈希值
+        key.append("|intVars:").append(integerVariables.hashCode());
+        
+        // 添加二进制变量集合的哈希值
+        key.append("|binVars:").append(binaryVariables.hashCode());
+        
         return key.toString();
     }
     
@@ -604,94 +624,102 @@ public class RereIntegerProg implements IIntegerProg {
         OptResult cachedResult = lpResultCache.get(nodeKey);
         if (cachedResult != null) {
             cacheHits++;
-            if (verbose) {
-                System.out.println("  缓存命中: 使用之前计算的LP结果");
-            }
             return cachedResult;
         }
         
         cacheMisses++;
         
         try {
-            // 如果节点有变量界限，需要添加到约束中
-            if (!node.variableBounds.isEmpty()) {
-                Tuple3<IVector, IMatrix, IVector> modifiedConstraints = addVariableBounds(c, A_eq, b_eq, node.variableBounds);
+            // 合并节点特定的变量界限和全局的0-1变量约束
+            Map<Integer, Tuple2<Double, Double>> allBounds = new HashMap<>();
+            
+            // 首先添加全局的0-1变量约束
+            for (int varIndex : binaryVariables) {
+                if (!cachedBinaryBounds.containsKey(varIndex)) {
+                    cachedBinaryBounds.put(varIndex, new Tuple2<>(0.0, 1.0));
+                }
+                allBounds.put(varIndex, cachedBinaryBounds.get(varIndex));
+            }
+            
+            // 然后添加节点特定的变量界限（可能会覆盖0-1约束）
+            allBounds.putAll(node.variableBounds);
+            
+            // 如果有任何边界约束，添加到约束中
+            if (!allBounds.isEmpty()) {
+                Tuple3<IVector, IMatrix, IVector> modifiedConstraints = addVariableBounds(c, A_eq, b_eq, allBounds);
                 IVector newC = modifiedConstraints.getFirst();
                 IMatrix newA = modifiedConstraints.getSecond();
                 IVector newB = modifiedConstraints.getThird();
                 
-                var result = baseSolver.solveWithNonNegativeEqualConstraints(newC, newA, newB, initX);
+                // 扩展initX以匹配新的约束矩阵维度
+                IVector extendedInitX = null;
+                if (initX != null) {
+                    int newDimension = newA.cols();
+                    double[] extendedValues = new double[newDimension];
+                    // 复制原始变量的初始值
+                    for (int i = 0; i < Math.min(initX.length(), newDimension); i++) {
+                        extendedValues[i] = (Double) initX.get(i);
+                    }
+                    // 松弛变量初始化为小正值
+                    for (int i = initX.length(); i < newDimension; i++) {
+                        extendedValues[i] = 0.1;
+                    }
+                    extendedInitX = Linalg.vector(extendedValues);
+                }
+                
+                var result = baseSolver.solveWithNonNegativeEqualConstraints(newC, newA, newB, extendedInitX);
                 if (result != null) {
                     // 验证解是否满足所有约束，包括变量界限
                     IVector solution = result.getOptimalPoint();
-                    boolean feasible = true;
-                    
-                    // 检查变量界限
-                    for (Map.Entry<Integer, Tuple2<Double, Double>> entry : node.variableBounds.entrySet()) {
-                        int varIndex = entry.getKey();
-                        double lowerBound = entry.getValue().getFirst();
-                        double upperBound = entry.getValue().getSecond();
+                    if (solution != null) {
+                        boolean feasible = true;
                         
-                        if (varIndex < solution.length()) {
-                            double value = (Double) solution.get(varIndex);
-                            if (value < lowerBound - tolerance || value > upperBound + tolerance) {
-                                feasible = false;
-                                break;
+                        // 检查所有变量界限
+                        for (Map.Entry<Integer, Tuple2<Double, Double>> entry : allBounds.entrySet()) {
+                            int varIndex = entry.getKey();
+                            double lowerBound = entry.getValue().getFirst();
+                            double upperBound = entry.getValue().getSecond();
+                            
+                            if (varIndex < solution.length()) {
+                                double value = (Double) solution.get(varIndex);
+                                if (value < lowerBound - BOUND_TOLERANCE || value > upperBound + BOUND_TOLERANCE) {
+                                    feasible = false;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    
-                    if (feasible) {
-                        // 只返回原始变量的解
-                        IVector originalSolution = solution.slice(0, originalVariableCount);
-                        OptResult finalResult = new OptResult(result.getOptimalValue(), originalSolution);
-                        // 缓存结果
-                        lpResultCache.put(nodeKey, finalResult);
-                        return finalResult;
+                        
+                        if (feasible) {
+                            // 只返回原始变量的解
+                            IVector originalSolution = solution.slice(0, originalVariableCount);
+                            OptResult finalResult = new OptResult(result.getOptimalValue(), originalSolution);
+                            // 缓存结果
+                            lpResultCache.put(nodeKey, finalResult);
+                            return finalResult;
+                        }
                     }
                 }
                 return null;
             } else {
-                // 添加0-1变量的显式边界约束
-                Map<Integer, Tuple2<Double, Double>> bounds = new HashMap<>();
-                for (int varIndex : binaryVariables) {
-                    // 使用缓存的边界约束
-                    if (!cachedBinaryBounds.containsKey(varIndex)) {
-                        cachedBinaryBounds.put(varIndex, new Tuple2<>(0.0, 1.0));
-                    }
-                    bounds.put(varIndex, cachedBinaryBounds.get(varIndex));
-                }
-                
-                if (!bounds.isEmpty()) {
-                    Tuple3<IVector, IMatrix, IVector> modifiedConstraints = addVariableBounds(c, A_eq, b_eq, bounds);
-                    IVector newC = modifiedConstraints.getFirst();
-                    IMatrix newA = modifiedConstraints.getSecond();
-                    IVector newB = modifiedConstraints.getThird();
-                    
-                    var result = baseSolver.solveWithNonNegativeEqualConstraints(newC, newA, newB, initX);
-                    if (result != null) {
-                        // 只返回原始变量的解
+                // 如果没有任何边界约束，直接求解
+                OptResult result = baseSolver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq, initX);
+                // 缓存结果
+                if (result != null && result.getOptimalPoint() != null) {
+                    // 确保只返回原始变量的解
+                    if (result.getOptimalPoint().length() > originalVariableCount && originalVariableCount > 0) {
                         IVector originalSolution = result.getOptimalPoint().slice(0, originalVariableCount);
                         OptResult finalResult = new OptResult(result.getOptimalValue(), originalSolution);
-                        // 缓存结果
                         lpResultCache.put(nodeKey, finalResult);
                         return finalResult;
                     }
-                    return null;
-                } else {
-                    OptResult result = baseSolver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq, initX);
-                    // 缓存结果
-                    if (result != null) {
-                        lpResultCache.put(nodeKey, result);
-                    }
-                    return result;
+                    lpResultCache.put(nodeKey, result);
                 }
+                return result;
             }
         } catch (Exception e) {
-            // 无可行解
-            if (verbose) {
-                System.out.println("LP松弛问题无可行解: " + e.getMessage());
-            }
+            // 打印异常信息用于调试
+            System.err.println("solveLPRelaxation异常: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
@@ -705,7 +733,11 @@ public class RereIntegerProg implements IIntegerProg {
             return new Tuple3<>(c, A_eq, b_eq);
         }
         
-        int numVars = A_eq.cols();
+        // 获取原始变量数量（不包含松弛变量）
+        int numOriginalVars = originalVariableCount > 0 ? originalVariableCount : c.length();
+        // 对于变量界限约束，我们只关心原始变量，让LinProgUtil来处理松弛变量扩展
+        int numActualVars = numOriginalVars;
+        
         // 使用ArrayList以便使用ensureCapacity方法
         ArrayList<double[]> ubConstraints = new ArrayList<>();
         ArrayList<Double> ubValues = new ArrayList<>();
@@ -720,11 +752,12 @@ public class RereIntegerProg implements IIntegerProg {
             double lowerBound = entry.getValue().getFirst();
             double upperBound = entry.getValue().getSecond();
             
-            if (varIndex >= numVars) continue; // 跳过无效的变量索引
+            // 确保变量索引在有效范围内
+            if (varIndex >= numOriginalVars) continue; // 跳过无效的变量索引
             
             // 添加下界约束：-x_i <= -lowerBound (即 x_i >= lowerBound)
             if (!Double.isInfinite(lowerBound)) {
-                double[] constraint = new double[numVars];
+                double[] constraint = new double[numActualVars];
                 constraint[varIndex] = -1.0;
                 ubConstraints.add(constraint);
                 ubValues.add(-lowerBound);
@@ -732,7 +765,7 @@ public class RereIntegerProg implements IIntegerProg {
             
             // 添加上界约束：x_i <= upperBound
             if (!Double.isInfinite(upperBound)) {
-                double[] constraint = new double[numVars];
+                double[] constraint = new double[numActualVars];
                 constraint[varIndex] = 1.0;
                 ubConstraints.add(constraint);
                 ubValues.add(upperBound);
@@ -763,12 +796,14 @@ public class RereIntegerProg implements IIntegerProg {
         for (int index : integerVariables) {
             if (index < solution.length()) {
                 double value = (Double) solution.get(index);
-                if (Math.abs(value - Math.round(value)) > tolerance) {
+                // 使用更严格的整数检查
+                if (Math.abs(value - Math.round(value)) > INTEGER_TOLERANCE) {
                     return false;
                 }
             }
         }
-        return true;
+        // 特别检查0-1变量
+        return isBinarySolution(solution);
     }
 
     /**
@@ -779,11 +814,12 @@ public class RereIntegerProg implements IIntegerProg {
         for (int index : binaryVariables) {
             if (index < solution.length()) {
                 double value = (Double) solution.get(index);
-                if (value < -tolerance || value > 1 + tolerance) {
+                // 更严格的边界检查
+                if (value < -BINARY_TOLERANCE || value > 1 + BINARY_TOLERANCE) {
                     return false;
                 }
                 // 检查是否接近0或1
-                if (Math.abs(value) > tolerance && Math.abs(value - 1) > tolerance) {
+                if (Math.abs(value) > BINARY_TOLERANCE && Math.abs(value - 1) > BINARY_TOLERANCE) {
                     return false;
                 }
             }
@@ -806,7 +842,9 @@ public class RereIntegerProg implements IIntegerProg {
                 if (binaryVariables.contains(index)) {
                     // 计算与最近整数的距离，越接近0.5越不适定
                     double fractionalPart = Math.abs(value - Math.round(value));
-                    double score = 0.5 - Math.abs(fractionalPart - 0.5);
+                    // 改进的评分函数：更重视接近0.5的值
+                    // 使用更敏感的评分函数
+                    double score = 0.25 - Math.pow(fractionalPart - 0.5, 2);
                     
                     // 优先选择分数部分接近0.5的变量
                     if (score > bestScore) {
@@ -822,6 +860,18 @@ public class RereIntegerProg implements IIntegerProg {
                     if (score > bestScore) {
                         bestScore = score;
                         bestVar = index;
+                    }
+                }
+            }
+        }
+        
+        // 如果没有找到合适的分支变量，选择第一个非整数变量
+        if (bestVar == -1) {
+            for (int index : integerVariables) {
+                if (index < solution.length()) {
+                    double value = (Double) solution.get(index);
+                    if (Math.abs(value - Math.round(value)) > INTEGER_TOLERANCE) {
+                        return index;
                     }
                 }
             }
@@ -845,12 +895,12 @@ public class RereIntegerProg implements IIntegerProg {
             child.depth = parent.depth + 1;
             child.lowerBound = Double.NEGATIVE_INFINITY;
             child.solution = null;
-            child.id = BranchNode.nextId++;
+            child.id = BranchNode.nextId.getAndIncrement();
         } else {
             child = new BranchNode();
             child.depth = parent.depth + 1;
             child.lowerBound = Double.NEGATIVE_INFINITY;
-            child.id = BranchNode.nextId++;
+            child.id = BranchNode.nextId.getAndIncrement();
         }
         
         // Copy-on-Write: 只在需要时复制父节点的变量界限
@@ -899,8 +949,8 @@ public class RereIntegerProg implements IIntegerProg {
         Map<Integer, Tuple2<Double, Double>> variableBounds = new HashMap<>();
         
         // 节点创建顺序，用于优先队列排序
-        static int nextId = 0;
-        int id = nextId++;
+        private static final AtomicInteger nextId = new AtomicInteger(0);
+        int id = nextId.getAndIncrement();
         
         // 添加复制构造函数以支持Copy-on-Write机制
         BranchNode(BranchNode other) {
@@ -909,7 +959,7 @@ public class RereIntegerProg implements IIntegerProg {
             this.solution = null; // 需要重新计算
             // 浅拷贝变量界限，只在修改时才深拷贝
             this.variableBounds = new HashMap<>(other.variableBounds);
-            this.id = nextId++;
+            this.id = nextId.getAndIncrement();
         }
         
         // 默认构造函数
@@ -930,3 +980,4 @@ public class RereIntegerProg implements IIntegerProg {
         nodePool.clear();
     }
 }
+

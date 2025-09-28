@@ -72,15 +72,13 @@ public class KnapsackProblem {
         
         // 🔄 转换为求解器可处理的形式（求解器执行最小化）
         // 最小化: -sum(values[i] * x[i]) 等价于最大化 sum(values[i] * x[i])
-        IVector<Double> c = Linalg.vector(new double[]{-60.0, -100.0, -120.0, -80.0, -150.0, -200.0, -50.0});
+        var c = Linalg.vector(values).multiplyScalar(-1.0);
         
         // 📊 约束矩阵（重量约束）
-        IMatrix<Double> A_ub = IMatrix.of(new double[][]{
-            {10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 10.0}  // 重量约束系数
-        });
+        var A_ub = Linalg.vector(weights).asColumnVector().t();
         
         // 📏 约束向量（背包容量限制）
-        IVector<Double> b_ub = Linalg.vector(new double[]{capacity});
+        var b_ub = Linalg.vector(new double[]{capacity});
         
         // 🤖 创建整数规划求解器
         RereIntegerProg solver = new RereIntegerProg();
