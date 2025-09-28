@@ -134,41 +134,6 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         return ppf(1.0f - p);
     }
     
-    /**
-     * 获取均值
-     * Get mean
-     * 
-     * @return 均值 / Mean
-     */
-    public double getMean() {
-        return mean;
-    }
-    
-    /**
-     * 获取标准差
-     * Get standard deviation
-     * 
-     * @return 标准差 / Standard deviation
-     */
-    public double getStdDev() {
-        return stdDev;
-    }
-    
-    /**
-     * 获取方差
-     * Get variance
-     * 
-     * @return 方差 / Variance
-     */
-    public double getVariance() {
-        return variance;
-    }
-    
-    // 使用RereMathUtil中的erf函数
-    // Using erf function from RereMathUtil
-    
-    // 使用RereMathUtil中的inverseNormalCDF函数
-    // Using inverseNormalCDF function from RereMathUtil
     
     /**
      * 获取均值

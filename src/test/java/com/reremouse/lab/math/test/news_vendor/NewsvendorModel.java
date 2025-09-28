@@ -7,7 +7,7 @@ import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.IOptimizer;
 import com.reremouse.lab.math.optimize.OptResult;
 import com.reremouse.lab.math.optimize.newton.RereLBFGS;
-import com.reremouse.lab.math.stats.distribution.NormalDistribution;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 
 /**
  * 经典报童模型实现
@@ -42,7 +42,7 @@ public class NewsvendorModel {
     private final double purchaseCost;    // 采购成本 c
     private final double sellingPrice;    // 销售价格 p
     private final double shortageCost;    // 缺货损失 s
-    private final NormalDistribution demandDistribution; // 需求分布
+    private final IContinuousDistribution demandDistribution; // 需求分布
     
     /**
      * 构造函数
@@ -50,15 +50,14 @@ public class NewsvendorModel {
      * @param purchaseCost 采购成本
      * @param sellingPrice 销售价格
      * @param shortageCost 缺货损失
-     * @param demandMean 需求均值
-     * @param demandStd 需求标准差
+     * @param demandDistribution 需求函数
      */
     public NewsvendorModel(double purchaseCost, double sellingPrice, double shortageCost, 
-                          double demandMean, double demandStd) {
+                          IContinuousDistribution demandDistribution) {
         this.purchaseCost = purchaseCost;
         this.sellingPrice = sellingPrice;
         this.shortageCost = shortageCost;
-        this.demandDistribution = new NormalDistribution(demandMean, demandStd);
+        this.demandDistribution = demandDistribution;
     }
     
     /**
@@ -75,7 +74,7 @@ public class NewsvendorModel {
         // 计算临界比率 - 使用正确的公式
         double criticalRatio = (sellingPrice + shortageCost - purchaseCost) / (sellingPrice + shortageCost);
         
-        // 使用分位数函数计算最优订货量
+        // 使用分位数函数计算最优订货量（PPF是CDF的反函数）
         return demandDistribution.ppf(criticalRatio);
     }
     
@@ -88,8 +87,8 @@ public class NewsvendorModel {
     public double computeExpectedProfit(double quantity) {
         // E[Profit(Q)] = p * E[min(Q, D)] - c * Q - s * E[max(0, D - Q)]
         
-        double mean = demandDistribution.getMean();
-        double std = demandDistribution.getStdDev();
+        double mean = demandDistribution.mean();
+        double std = demandDistribution.std();
         double z = (quantity - mean) / std;
         
         // 标准正态分布的概率密度函数和累积分布函数
@@ -135,7 +134,7 @@ public class NewsvendorModel {
     public double getPurchaseCost() { return purchaseCost; }
     public double getSellingPrice() { return sellingPrice; }
     public double getShortageCost() { return shortageCost; }
-    public NormalDistribution getDemandDistribution() { return demandDistribution; }
+    public IContinuousDistribution getDemandDistribution() { return demandDistribution; }
     
     /**
      * 报童模型目标函数（负期望利润）

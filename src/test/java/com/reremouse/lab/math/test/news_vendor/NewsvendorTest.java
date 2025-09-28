@@ -1,6 +1,8 @@
 package com.reremouse.lab.math.test.news_vendor;
 
 import com.reremouse.lab.math.optimize.OptResult;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
+import com.reremouse.lab.math.stats.distribution.NormalDistribution;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,8 +21,9 @@ public class NewsvendorTest {
         double demandStd = 20.0;      // Demand standard deviation
         
         // Create newsvendor model instance
+        IContinuousDistribution demandDist = new NormalDistribution(demandMean,demandStd);
         NewsvendorModel model = new NewsvendorModel(
-            purchaseCost, sellingPrice, shortageCost, demandMean, demandStd);
+            purchaseCost, sellingPrice, shortageCost, demandDist);
         
         // Compute theoretical optimal solution
         double criticalRatio = (sellingPrice - purchaseCost) / (sellingPrice - purchaseCost + shortageCost);

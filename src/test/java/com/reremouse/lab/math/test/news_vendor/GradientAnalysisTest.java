@@ -2,6 +2,7 @@ package com.reremouse.lab.math.test.news_vendor;
 
 import com.reremouse.lab.math.linalg.Linalg;
 import com.reremouse.lab.math.linalg.IVector;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 import com.reremouse.lab.math.stats.distribution.NormalDistribution;
 import org.junit.jupiter.api.Test;
 
@@ -18,10 +19,10 @@ public class GradientAnalysisTest {
         double shortageCost = 3.0;    // Shortage cost per unit
         double demandMean = 100.0;    // Demand mean
         double demandStd = 20.0;      // Demand standard deviation
-        
+        IContinuousDistribution demandDist = new NormalDistribution(demandMean,demandStd);
         // Create newsvendor model instance
         NewsvendorModel model = new NewsvendorModel(
-            purchaseCost, sellingPrice, shortageCost, demandMean, demandStd);
+            purchaseCost, sellingPrice, shortageCost, demandDist);
         
         // Compute theoretical optimal solution
         double criticalRatio = (sellingPrice + shortageCost - purchaseCost) / (sellingPrice + shortageCost);
@@ -42,12 +43,12 @@ public class GradientAnalysisTest {
         System.out.println();
         
         // Verify the critical ratio calculation
-        NormalDistribution demandDist = new NormalDistribution(demandMean, demandStd);
-        double verifyQuantity = demandDist.ppf(criticalRatio);
+        NormalDistribution demandDist2 = new NormalDistribution(demandMean, demandStd);
+        double verifyQuantity = demandDist2.ppf(criticalRatio);
         System.out.println("Verification:");
         System.out.println("  F(Q*) = " + demandDist.cdf(theoreticalOptimal));
         System.out.println("  (p+s-c)/(p+s) = " + criticalRatio);
-        System.out.println("  Match: " + (Math.abs(demandDist.cdf(theoreticalOptimal) - criticalRatio) < 1e-10));
+        System.out.println("  Match: " + (Math.abs(demandDist2.cdf(theoreticalOptimal) - criticalRatio) < 1e-10));
         System.out.println();
         
         // Analyze gradient around the optimal point
@@ -59,7 +60,7 @@ public class GradientAnalysisTest {
         for (int i = -10; i <= 10; i++) {
             double quantity = theoreticalOptimal + i * 0.5;
             double profit = model.computeExpectedProfit(quantity);
-            double cdf = demandDist.cdf(quantity);
+            double cdf = demandDist2.cdf(quantity);
             // Corrected gradient formula: d(-E[Profit])/dQ = c - (p + s) * (1 - F(Q))
             double gradient = purchaseCost - (sellingPrice + shortageCost) * (1 - cdf);
             
@@ -76,7 +77,7 @@ public class GradientAnalysisTest {
         // Binary search for zero gradient
         while (high - low > epsilon) {
             double mid = (low + high) / 2;
-            double cdf = demandDist.cdf(mid);
+            double cdf = demandDist2.cdf(mid);
             // Corrected gradient formula: d(-E[Profit])/dQ = c - (p + s) * (1 - F(Q))
             double gradient = purchaseCost - (sellingPrice + shortageCost) * (1 - cdf);
             
@@ -89,7 +90,7 @@ public class GradientAnalysisTest {
         
         double zeroGradientPoint = (low + high) / 2;
         double zeroGradientProfit = model.computeExpectedProfit(zeroGradientPoint);
-        double zeroGradientCDF = demandDist.cdf(zeroGradientPoint);
+        double zeroGradientCDF = demandDist2.cdf(zeroGradientPoint);
         
         System.out.println("Zero gradient point: " + zeroGradientPoint);
         System.out.println("Profit at zero gradient: " + zeroGradientProfit);

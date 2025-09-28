@@ -6,6 +6,7 @@ import com.reremouse.lab.math.optimize.IObjectiveFunction;
 import com.reremouse.lab.math.optimize.IGradientFunction;
 import com.reremouse.lab.math.optimize.newton.RereConjugateGradient;
 import com.reremouse.lab.math.optimize.OptResult;
+import com.reremouse.lab.math.stats.Stats;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,8 +68,9 @@ public class DebugConjugateGradientTest {
         double demandStd = 20.0;      // Demand standard deviation
         
         // Create newsvendor model instance
+        var demandDist = Stats.norm(demandMean,demandStd);
         NewsvendorModel model = new NewsvendorModel(
-            purchaseCost, sellingPrice, shortageCost, demandMean, demandStd);
+            purchaseCost, sellingPrice, shortageCost, demandDist);
         
         // Compute theoretical optimal solution
         double theoreticalOptimal = model.computeTheoreticalOptimalQuantity();

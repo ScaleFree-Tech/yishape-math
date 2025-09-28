@@ -1,6 +1,8 @@
 package com.reremouse.lab.math.test.news_vendor;
 
 import com.reremouse.lab.math.optimize.OptResult;
+import com.reremouse.lab.math.stats.Stats;
+import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
 
 /**
  * 报童模型使用示例
@@ -39,8 +41,9 @@ public class NewsvendorExample {
         System.out.printf("   需求分布: N(%.1f, %.1f²)%n", demandMean, demandStd);
         
         // 2. 创建报童模型实例
+        var demandDist = Stats.norm(demandMean,demandStd);
         NewsvendorModel model = new NewsvendorModel(
-            purchaseCost, sellingPrice, shortageCost, demandMean, demandStd);
+            purchaseCost, sellingPrice, shortageCost, demandDist);
         
         // 3. 理论解分析
         System.out.println("\n2. 理论解分析:");
@@ -92,7 +95,7 @@ public class NewsvendorExample {
         double[] costVariations = {4.0, 5.0, 6.0, 7.0};
         for (double cost : costVariations) {
             NewsvendorModel variantModel = new NewsvendorModel(
-                cost, sellingPrice, shortageCost, demandMean, demandStd);
+                cost, sellingPrice, shortageCost, demandDist);
             double optimalQty = variantModel.computeTheoreticalOptimalQuantity();
             double expectedProfit = variantModel.computeExpectedProfit(optimalQty);
             System.out.printf("   %-15.1f %-15.2f %-15.2f%n", cost, optimalQty, expectedProfit);

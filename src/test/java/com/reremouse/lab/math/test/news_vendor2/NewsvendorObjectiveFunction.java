@@ -98,8 +98,8 @@ public class NewsvendorObjectiveFunction implements IObjectiveFunction {
      * @return 期望利润
      */
     public double computeExpectedProfit(double Q) {
-        double mu = demandDistribution.getMean();
-        double sigma = demandDistribution.getStdDev();
+        double mu = demandDistribution.mean();
+        double sigma = demandDistribution.std();
         
         // 标准化变量 z = (Q - μ) / σ
         double z = (Q - mu) / sigma;
@@ -131,8 +131,8 @@ public class NewsvendorObjectiveFunction implements IObjectiveFunction {
         double criticalRatio = (sellingPrice - purchaseCost + shortageCost) / (sellingPrice + shortageCost);
         
         // 最优订货量 Q* = μ + σ * Φ^(-1)(临界比率)
-        double optimalQuantity = demandDistribution.getMean() + 
-                                demandDistribution.getStdDev() * demandDistribution.ppf(criticalRatio);
+        double optimalQuantity = demandDistribution.mean() + 
+                                demandDistribution.std() * demandDistribution.ppf(criticalRatio);
         
         return optimalQuantity;
     }
