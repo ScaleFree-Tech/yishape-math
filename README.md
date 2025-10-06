@@ -78,7 +78,7 @@
 - **音频嵌入向量** / **Audio Embedding Vectors**: i-vector模型训练、在线增量训练等 / i-vector model training, online incremental training
 
 
-### 🚀 SIMD支持与GPU加速计算 / SIMD Support and GPU-Accelerated Computing
+### 🚀 SIMD支持与GPU加速 / SIMD Support and GPU-Accelerated
 - **SIMD (Single Instruction, Multiple Data)支持** / **SIMD Support**: 基于Java Vector API提供向量&矩阵乘法、通用函数、规约函数等方面的SIMD并行计算支持 / SIMD (Single Instruction, Multiple Data) parallel computing support based on Java Vector API
 - **GPU并行计算** / **GPU Parallel Computing**: GPU矩阵运算、向量运算、高级运算，支持自动回退机制 / GPU matrix/vector operations, advanced computing with automatic fallback
 
