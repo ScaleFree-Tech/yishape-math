@@ -1,0 +1,63 @@
+package com.yishape.lab.math.test;
+
+import com.yishape.lab.util.Tuple3;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+
+public class DebugPinv {
+    public static void main(String[] args) {
+        // 测试简单的2x2奇异矩阵
+        float[][] singularData = {{1, 2}, {2, 4}};
+        IMatrix<Float> singular = Linalg.matrix(singularData);
+        
+        System.out.println("测试矩阵 (2x2):");
+        printMatrix(singular);
+        
+        try {
+            // 先测试SVD
+            System.out.println("\n进行SVD分解...");
+            Tuple3<IMatrix<Float>, IVector<Float>, IMatrix<Float>> svdResult = singular.svd();
+            IMatrix<Float> U = svdResult._1;
+            IVector<Float> S = svdResult._2;
+            IMatrix<Float> VT = svdResult._3;
+            
+            System.out.println("U矩阵 (" + U.getRowNum() + "x" + U.getColNum() + "):");
+            printMatrix(U);
+            
+            System.out.println("奇异值向量 (长度=" + S.length() + "):");
+            printVector(S);
+            
+            System.out.println("VT矩阵 (" + VT.getRowNum() + "x" + VT.getColNum() + "):");
+            printMatrix(VT);
+            
+            // 现在测试伪逆
+            System.out.println("\n计算伪逆...");
+            IMatrix<Float> pinv = singular.pinv();
+            System.out.println("伪逆矩阵:");
+            printMatrix(pinv);
+            
+        } catch (Exception e) {
+            System.out.println("错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    public static void printMatrix(IMatrix<Float> matrix) {
+        float[][] data = matrix.toFloatArray();
+        for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[0].length; j++) {
+                System.out.printf("%8.4f ", data[i][j]);
+            }
+            System.out.println();
+        }
+    }
+    
+    public static void printVector(IVector<Float> vector) {
+        float[] data = vector.toFloatArray();
+        for (int i = 0; i < data.length; i++) {
+            System.out.printf("%8.4f ", data[i]);
+        }
+        System.out.println();
+    }
+} 
