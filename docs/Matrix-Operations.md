@@ -33,7 +33,8 @@ The `IMatrix` interface provides comprehensive generic matrix mathematical opera
 
 ```java
 // 推荐使用 Linalg 工厂方法 / Recommended to use Linalg factory methods
-import com.reremouse.lab.math.linalg.Linalg;
+
+import linalg.math.com.yishape.lab.Linalg;
 
 // 从二维数组创建 / Create from 2D array
 double[][] data = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
@@ -51,16 +52,16 @@ IMatrix<Float> matrix2f = Linalg.matrix(floatData2);
 
 // 从List创建 / Create from List
 List<double[]> rows = Arrays.asList(
-    new double[]{1, 2, 3},
-    new double[]{4, 5, 6},
-    new double[]{7, 8, 9}
+        new double[]{1, 2, 3},
+        new double[]{4, 5, 6},
+        new double[]{7, 8, 9}
 );
 IMatrix<Double> matrix3 = Linalg.matrixFromDoubleList(rows);
 
 List<float[]> floatRows = Arrays.asList(
-    new float[]{1f, 2f, 3f},
-    new float[]{4f, 5f, 6f},
-    new float[]{7f, 8f, 9f}
+        new float[]{1f, 2f, 3f},
+        new float[]{4f, 5f, 6f},
+        new float[]{7f, 8f, 9f}
 );
 IMatrix<Float> matrix3f = Linalg.matrixFromFloatList(floatRows);
 

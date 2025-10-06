@@ -11,11 +11,10 @@ This document provides detailed usage examples for the `IMatrix<T>` generic inte
 ### 矩阵创建和基本操作 / Matrix Creation and Basic Operations
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.util.Tuple3;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,22 +23,22 @@ public class MatrixBasicExample {
         // 推荐使用 Linalg 工厂类创建矩阵 / Recommended to use Linalg factory class
         double[][] data = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
         IMatrix<Double> matrix = Linalg.matrix(data);
-        
+
         // 从List创建 / Create from List
         List<double[]> rows = Arrays.asList(
-            new double[]{1.0, 2.0, 3.0},
-            new double[]{4.0, 5.0, 6.0},
-            new double[]{7.0, 8.0, 9.0}
+                new double[]{1.0, 2.0, 3.0},
+                new double[]{4.0, 5.0, 6.0},
+                new double[]{7.0, 8.0, 9.0}
         );
         IMatrix<Double> matrix2 = Linalg.matrix(rows);
-        
+
         // 从Vector数组创建 / Create from Vector array
         IVector<Double>[] vectors = new IVector[]{
-            Linalg.vector(new double[]{1.0, 2.0}), 
-            Linalg.vector(new double[]{3.0, 4.0})
+                Linalg.vector(new double[]{1.0, 2.0}),
+                Linalg.vector(new double[]{3.0, 4.0})
         };
         IMatrix<Double> matrix3 = Linalg.matrix(vectors);
-        
+
         // 创建特殊矩阵 / Create special matrices
         IMatrix<Double> ones = Linalg.ones(3, 3);
         IMatrix<Float> zeros = Linalg.zeros(3, 3, Float.class);
@@ -48,32 +47,32 @@ public class MatrixBasicExample {
         IMatrix<Double> randomSeeded = Linalg.rand(3, 3, 12345L);
         IMatrix<Double> randomNormal = Linalg.randn(3, 3);
         IMatrix<Double> randomNormalSeeded = Linalg.randn(3, 3, 0.0, 1.0, 12345L);
-        
+
         // 从包装类数组创建 / Create from wrapper arrays
         Double[][] doubleData = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
         IMatrix<Double> matrix4 = Linalg.matrix(doubleData);
-        
+
         Float[][] floatData = {{1.0f, 2.0f, 3.0f}, {4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f}};
         IMatrix<Float> matrix5 = Linalg.matrix(floatData);
-        
+
         // 创建对角矩阵 / Create diagonal matrix
         IMatrix<Double> diagonal = Linalg.diag(new Double[]{1.0, 2.0, 3.0});
-        
+
         // 从一维数组创建 / Create from 1D array
         IMatrix<Double> reshaped = Linalg.fromArray(new double[]{1.0, 2.0, 3.0, 4.0}, 2, 2);
-        
+
         // 从文件加载 / Load from file
         IMatrix<Double> loaded = Linalg.load("matrix.txt");
-        
+
         // 矩阵平均 / Matrix averaging
         IMatrix<Double>[] matrices = {matrix, matrix2, matrix3};
         IMatrix<Double> averaged = Linalg.average(matrices);
-        
+
         // 基本运算 / Basic operations
         IMatrix<Double> sum = matrix.add(ones);
         IMatrix<Double> diff = matrix.sub(ones);
         IMatrix<Double> transposed = matrix.transpose();
-        
+
         System.out.println("矩阵: " + matrix);
         System.out.println("转置: " + transposed);
     }

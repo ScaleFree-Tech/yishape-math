@@ -6,7 +6,8 @@ temp/
 .vscode/
 backups/
 ddml/
-private_docs/
-performance/
 src/main/java/org/
 src/test/
+private_docs/
+performance/
+commons-math-4.0-beta1-src/

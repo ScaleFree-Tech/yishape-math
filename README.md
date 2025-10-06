@@ -1,8 +1,8 @@
 # YiShape-Math 易形数学
 
-[![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-25+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.2.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.3.0-blue.svg)]()
 
 ## 项目简介 / Project Introduction
 
@@ -78,14 +78,15 @@
 - **音频嵌入向量** / **Audio Embedding Vectors**: i-vector模型训练、在线增量训练等 / i-vector model training, online incremental training
 
 
-### 🚀 GPU加速计算 / GPU-Accelerated Computing
+### 🚀 SIMD支持与GPU加速计算 / SIMD Support and GPU-Accelerated Computing
+ **SIMD (Single Instruction, Multiple Data)支持** / **SIMD Support**: 基于Java Vector API提供向量&矩阵乘法、通用函数、规约函数等方面的SIMD并行计算支持 / SIMD (Single Instruction, Multiple Data) parallel computing support based on Java Vector API
 - **GPU并行计算** / **GPU Parallel Computing**: GPU矩阵运算、向量运算、高级运算，支持自动回退机制 / GPU matrix/vector operations, advanced computing with automatic fallback
 
 
 ## 快速开始 / Quick Start
 
 ### 环境要求 / Requirements
-- Java 21 或更高版本 / Java 21 or higher
+- Java 25 或更高版本 / Java 25 or higher
 - Maven 3.6+ / Maven 3.6+
 
 ### 安装依赖 / Installation
@@ -99,12 +100,20 @@
 
 ```xml
 <dependency>
-    <groupId>com.reremouse.lab</groupId>
+    <groupId>com.yishape.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.2.x</version>
+    <version>0.3.x</version>
 </dependency>
 ```
 
+**启用Java Vector API(可选) / Enable Java Vector API (Optional)**
+
+```
+# vm args:
+
+--add-modules=jdk.incubator.vector
+
+```
 
 
 ### 基本使用示例 / Basic Usage Examples
@@ -970,6 +979,10 @@ If you encounter any issues while using the library, you can get help through th
 - **社区**: 参与讨论和分享经验 / Participate in discussions and share experiences
 
 ## 更新日志 / Changelog
+
+### v0.3.0 (2025-10)
+- **SIMD (Single Instruction, Multiple Data)支持** / **SIMD Support**: 基于Java Vector API提供向量&矩阵乘法、通用函数、规约函数等方面的SIMD并行计算支持 / SIMD (Single Instruction, Multiple Data) parallel computing support based on Java Vector API
+- **Bug Fixes** / **Bug Fixes**: 修复已知问题和错误 / Bug fixes and error corrections
 
 ### v0.2.2 (2025-09)
 - **新增音频处理功能** / **New Audio Processing Features**: 音频特征提取、音高检测、音频增强、i-vector模型训练等 / Audio feature extraction, pitch detection, audio enhancement, i-vector model training

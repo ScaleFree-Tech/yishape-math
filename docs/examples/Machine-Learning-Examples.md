@@ -2,9 +2,9 @@
 
 ## 概述 / Overview
 
-本文档提供了 `com.reremouse.lab.math` 包中机器学习算法的详细使用示例。包括线性回归和逻辑回归的完整示例代码，涵盖从基础使用到高级特性的各个方面。
+本文档提供了 `com.yishape.lab.math` 包中机器学习算法的详细使用示例。包括线性回归和逻辑回归的完整示例代码，涵盖从基础使用到高级特性的各个方面。
 
-This document provides detailed usage examples for machine learning algorithms in the `com.reremouse.lab.math` package. It includes complete example code for linear regression and logistic regression, covering everything from basic usage to advanced features.
+This document provides detailed usage examples for machine learning algorithms in the `com.yishape.lab.math` package. It includes complete example code for linear regression and logistic regression, covering everything from basic usage to advanced features.
 
 ## 目录 / Table of Contents
 
@@ -22,37 +22,37 @@ This document provides detailed usage examples for machine learning algorithms i
 ### 基本线性回归 / Basic Linear Regression
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.lr.RereLinearRegression;
-import com.reremouse.lab.math.ml.lr.RegressionResult;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import lr.ml.math.com.yishape.lab.RereLinearRegression;
+import lr.ml.math.com.yishape.lab.RegressionResult;
 
 public class BasicLinearRegressionExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2, 3},
-            {4, 5, 6},
-            {7, 8, 9}
+                {1, 2, 3},
+                {4, 5, 6},
+                {7, 8, 9}
         };
         float[] labelData = {14, 32, 50};
-        
+
         IMatrix features = IMatrix.of(featureData);
         IVector labels = IVector.of(labelData);
-        
+
         // 创建和训练模型 / Create and train model
         RereLinearRegression lr = new RereLinearRegression();
         RegressionResult result = lr.fit(features, labels);
-        
+
         // 获取结果 / Get results
         IVector weights = result.getWeights();
         float loss = result.getLoss();
         float r2Score = result.getR2Score();
-        
+
         System.out.println("权重: " + weights);
         System.out.println("损失: " + loss);
         System.out.println("R²分数: " + r2Score);
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{2, 3, 4});
         float prediction = lr.predict(newFeatures);
@@ -85,41 +85,41 @@ public class RegularizedLinearRegressionExample {
 ### 基本二分类逻辑回归 / Basic Binary Classification
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.cls.RereLogisticRegression;
-import com.reremouse.lab.math.ml.cls.LogisticRegressionResult;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import cls.ml.math.com.yishape.lab.RereLogisticRegression;
+import cls.ml.math.com.yishape.lab.LogisticRegressionResult;
 
 public class BasicBinaryClassificationExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2}, {2, 3}, {3, 4}, {4, 5},
-            {5, 6}, {6, 7}, {7, 8}, {8, 9}
+                {1, 2}, {2, 3}, {3, 4}, {4, 5},
+                {5, 6}, {6, 7}, {7, 8}, {8, 9}
         };
-        String[] labelData = {"正类", "正类", "正类", "正类", 
-                             "负类", "负类", "负类", "负类"};
-        
+        String[] labelData = {"正类", "正类", "正类", "正类",
+                "负类", "负类", "负类", "负类"};
+
         IMatrix features = IMatrix.of(featureData);
-        
+
         // 创建和训练模型 / Create and train model
         RereLogisticRegression lr = new RereLogisticRegression();
         LogisticRegressionResult result = lr.fit(features, labelData);
-        
+
         // 获取结果 / Get results
         IVector weights = result.getWeights();
         IVector bias = result.getBias();
         float loss = result.getLoss();
-        
+
         System.out.println("权重: " + weights); // Weights
         System.out.println("偏置: " + bias); // Bias
         System.out.println("损失: " + loss); // Loss
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{2.5f, 3.5f});
         String prediction = lr.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
-        
+
         // 预测概率 / Predict probability
         float probability = lr.predictProbability(newFeatures);
         System.out.println("正类概率: " + probability); // Positive class probability
@@ -334,40 +334,39 @@ public class AdvancedConfigurationExample {
 ### 基本随机森林分类 / Basic Random Forest Classification
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.cls.tree.RereRandomForest;
-import com.reremouse.lab.math.ml.cls.tree.RandomForestResult;
-import com.reremouse.lab.math.ml.cls.tree.RFTree;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import tree.cls.ml.math.com.yishape.lab.RereRandomForest;
+import tree.cls.ml.math.com.yishape.lab.RandomForestResult;
 
 public class BasicRandomForestExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
-            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
-            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+                {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+                {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+                {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
-        
+
         IMatrix features = IMatrix.of(featureData);
-        
+
         // 创建和训练随机森林模型 / Create and train Random Forest model
         RereRandomForest rf = new RereRandomForest();
         RandomForestResult result = rf.fit(features, labelData);
-        
+
         // 获取结果 / Get results
         double oobScore = result.getOobScore();
         IVector featureImportance = result.getFeatureImportance();
-        
+
         System.out.println("袋外分数: " + oobScore); // Out-of-bag score
         System.out.println("特征重要性: " + featureImportance); // Feature importance
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{3, 4, 5});
         String prediction = rf.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
-        
+
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
         IMatrix testFeatures = IMatrix.of(testData);
@@ -478,40 +477,41 @@ public class RandomForestFeatureImportanceExample {
 ### 基本XGBoost分类 / Basic XGBoost Classification
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.cls.tree.RereXGboost;
-import com.reremouse.lab.math.ml.cls.tree.XGBoostResult;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import tree.cls.ml.math.com.yishape.lab.RereXGboost;
+import tree.cls.ml.math.com.yishape.lab.XGBoostResult;
+
 import java.util.List;
 
 public class BasicXGBoostExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
-            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
-            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+                {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+                {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+                {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
-        
+
         IMatrix features = IMatrix.of(featureData);
-        
+
         // 创建和训练XGBoost模型 / Create and train XGBoost model
         RereXGboost xgb = new RereXGboost();
         XGBoostResult result = xgb.fit(features, labelData);
-        
+
         // 获取结果 / Get results
         IVector featureImportance = result.getFeatureImportance();
         List<Double> trainLoss = result.getTrainLossHistory();
-        
+
         System.out.println("特征重要性: " + featureImportance); // Feature importance
         System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1)); // Final training loss
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{3, 4, 5});
         String prediction = xgb.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
-        
+
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
         IMatrix testFeatures = IMatrix.of(testData);
@@ -635,43 +635,44 @@ public class XGBoostEarlyStoppingExample {
 ### 基本集成分类 / Basic Ensemble Classification
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.cls.EnsembleClassifier;
-import com.reremouse.lab.math.ml.cls.EnsembleResult;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import cls.ml.math.com.yishape.lab.EnsembleClassifier;
+import cls.ml.math.com.yishape.lab.EnsembleResult;
+
 import java.util.Map;
 
 public class BasicEnsembleExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
-            {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
-            {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
+                {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12},
+                {2, 3, 4}, {5, 6, 7}, {8, 9, 10}, {11, 12, 13},
+                {3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
-        
+
         IMatrix features = IMatrix.of(featureData);
-        
+
         // 创建集成分类器 / Create ensemble classifier
         EnsembleClassifier ensemble = new EnsembleClassifier(
-            EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING, 42L);
-        
+                EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING, 42L);
+
         // 训练模型 / Train model
         EnsembleResult result = ensemble.fit(features, labelData);
-        
+
         // 获取结果 / Get results
         Map<String, Double> accuracies = result.getClassifierAccuracies();
         IVector weights = result.getClassifierWeights();
-        
+
         System.out.println("分类器准确率: " + accuracies); // Classifier accuracies
         System.out.println("分类器权重: " + weights); // Classifier weights
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{3, 4, 5});
         String prediction = ensemble.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
-        
+
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
         IMatrix testFeatures = IMatrix.of(testData);
@@ -785,40 +786,40 @@ public class EnsembleWeightOptimizationExample {
 ### K-Means++聚类示例 / K-Means++ Clustering Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.clustering.KMeansPlusPlus;
-import com.reremouse.lab.math.ml.clustering.ClusteringMetrics;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+import clustering.ml.math.com.yishape.lab.KMeansPlusPlus;
+import clustering.ml.math.com.yishape.lab.ClusteringMetrics;
 
 public class KMeansExample {
     public static void main(String[] args) {
         // 准备数据 / Prepare data
         double[][] data = {
-            {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0}, 
-            {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
+                {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0},
+                {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
         };
-        
+
         IMatrix dataMatrix = Linalg.matrix(data);
-        
+
         // 创建K-Means++聚类器 / Create K-Means++ clusterer
         KMeansPlusPlus kmeans = new KMeansPlusPlus();
-        
+
         // 设置聚类数量 / Set number of clusters
         kmeans.setParameters(Map.of("numClusters", 3));
-        
+
         // 训练模型 / Train model
         kmeans.fit(dataMatrix);
-        
+
         // 获取聚类结果 / Get clustering results
         int[] labels = kmeans.getLabels();
         List<IVector<Double>> centers = kmeans.getClusterCenters();
-        
+
         System.out.println("聚类标签: " + Arrays.toString(labels));
         System.out.println("聚类中心数量: " + centers.size());
         System.out.println("是否收敛: " + kmeans.isConverged());
         System.out.println("迭代次数: " + kmeans.getIterations());
-        
+
         // 评估聚类质量 / Evaluate clustering quality
         ClusteringMetrics metrics = kmeans.evaluateQuality(dataMatrix);
         System.out.println("轮廓系数: " + metrics.getSilhouetteScore());
@@ -830,50 +831,50 @@ public class KMeansExample {
 ### 高斯混合模型聚类示例 / Gaussian Mixture Model Clustering Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.clustering.GMMClustering;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+import clustering.ml.math.com.yishape.lab.GMMClustering;
 
 public class GMMExample {
     public static void main(String[] args) {
         // 准备数据 / Prepare data
         double[][] data = {
-            {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0}, 
-            {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
+                {1.0, 2.0}, {1.5, 1.8}, {5.0, 8.0}, {8.0, 8.0},
+                {1.0, 0.6}, {9.0, 11.0}, {8.0, 2.0}, {10.0, 2.0}
         };
-        
+
         IMatrix dataMatrix = Linalg.matrix(data);
-        
+
         // 创建GMM聚类器 / Create GMM clusterer
         GMMClustering gmm = new GMMClustering();
-        
+
         // 设置参数 / Set parameters
         gmm.setParameters(Map.of(
-            "numClusters", 3,
-            "maxIterations", 100,
-            "tolerance", 1e-6,
-            "verbose", true
+                "numClusters", 3,
+                "maxIterations", 100,
+                "tolerance", 1e-6,
+                "verbose", true
         ));
-        
+
         // 训练模型 / Train model
         gmm.fit(dataMatrix);
-        
+
         // 获取聚类结果 / Get clustering results
         int[] labels = gmm.getLabels();
         List<IVector<Double>> centers = gmm.getClusterCenters();
-        
+
         System.out.println("聚类标签: " + Arrays.toString(labels));
         System.out.println("聚类中心数量: " + centers.size());
-        
+
         // 计算后验概率 / Compute posterior probabilities
         List<IVector<Double>> posteriors = gmm.computePosteriorProbabilities(dataMatrix);
         System.out.println("后验概率矩阵大小: " + posteriors.size() + " x " + posteriors.get(0).size());
-        
+
         // 计算对数似然 / Compute log-likelihood
         double logLikelihood = gmm.computeLogLikelihood(dataMatrix);
         System.out.println("对数似然: " + logLikelihood);
-        
+
         // 从模型采样 / Sample from model
         List<IVector<Double>> samples = gmm.sample(10);
         System.out.println("采样数据点数量: " + samples.size());
@@ -886,36 +887,36 @@ public class GMMExample {
 ### PCA降维示例 / PCA Dimensionality Reduction Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.dimreduce.RerePCA;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.Linalg;
+import dimreduce.ml.math.com.yishape.lab.RerePCA;
 
 public class PCAExample {
     public static void main(String[] args) {
         // 准备高维数据 / Prepare high-dimensional data
         double[][] data = {
-            {1.0, 2.0, 3.0, 4.0, 5.0},
-            {2.0, 3.0, 4.0, 5.0, 6.0},
-            {3.0, 4.0, 5.0, 6.0, 7.0},
-            {4.0, 5.0, 6.0, 7.0, 8.0},
-            {5.0, 6.0, 7.0, 8.0, 9.0}
+                {1.0, 2.0, 3.0, 4.0, 5.0},
+                {2.0, 3.0, 4.0, 5.0, 6.0},
+                {3.0, 4.0, 5.0, 6.0, 7.0},
+                {4.0, 5.0, 6.0, 7.0, 8.0},
+                {5.0, 6.0, 7.0, 8.0, 9.0}
         };
-        
+
         IMatrix originalData = Linalg.matrix(data);
         System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
-        
+
         // 创建PCA降维器 / Create PCA reducer
         RerePCA pca = new RerePCA();
-        
+
         // 降维到2维 / Reduce to 2 dimensions
         IMatrix reducedData = pca.dimensionReduction(originalData, 2);
         System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
-        
+
         // 显示降维结果 / Display reduction results
         System.out.println("降维后的数据:");
         for (int i = 0; i < reducedData.getRowNum(); i++) {
-            System.out.println("样本 " + i + ": [" + 
-                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+            System.out.println("样本 " + i + ": [" +
+                    reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
         }
     }
 }
@@ -924,34 +925,34 @@ public class PCAExample {
 ### SVD降维示例 / SVD Dimensionality Reduction Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.dimreduce.RereSVD;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.Linalg;
+import dimreduce.ml.math.com.yishape.lab.RereSVD;
 
 public class SVDExample {
     public static void main(String[] args) {
         // 准备数据矩阵 / Prepare data matrix
         double[][] data = {
-            {1.0, 2.0, 3.0, 4.0},
-            {5.0, 6.0, 7.0, 8.0},
-            {9.0, 10.0, 11.0, 12.0}
+                {1.0, 2.0, 3.0, 4.0},
+                {5.0, 6.0, 7.0, 8.0},
+                {9.0, 10.0, 11.0, 12.0}
         };
-        
+
         IMatrix originalData = Linalg.matrix(data);
         System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
-        
+
         // 创建SVD降维器 / Create SVD reducer
         RereSVD svd = new RereSVD();
-        
+
         // 降维到2维 / Reduce to 2 dimensions
         IMatrix reducedData = svd.dimensionReduction(originalData, 2);
         System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
-        
+
         // 显示降维结果 / Display reduction results
         System.out.println("SVD降维后的数据:");
         for (int i = 0; i < reducedData.getRowNum(); i++) {
-            System.out.println("样本 " + i + ": [" + 
-                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+            System.out.println("样本 " + i + ": [" +
+                    reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
         }
     }
 }
@@ -960,43 +961,43 @@ public class SVDExample {
 ### t-SNE降维示例 / t-SNE Dimensionality Reduction Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.dimreduce.RereTSNE;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.Linalg;
+import dimreduce.ml.math.com.yishape.lab.RereTSNE;
 
 public class TSNEExample {
     public static void main(String[] args) {
         // 准备高维数据 / Prepare high-dimensional data
         double[][] data = {
-            {1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
-            {2.0, 3.0, 4.0, 5.0, 6.0, 7.0},
-            {3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
-            {4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
-            {5.0, 6.0, 7.0, 8.0, 9.0, 10.0}
+                {1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
+                {2.0, 3.0, 4.0, 5.0, 6.0, 7.0},
+                {3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
+                {4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
+                {5.0, 6.0, 7.0, 8.0, 9.0, 10.0}
         };
-        
+
         IMatrix originalData = Linalg.matrix(data);
         System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
-        
+
         // 创建t-SNE降维器 / Create t-SNE reducer
         RereTSNE tsne = new RereTSNE();
-        
+
         // 设置t-SNE参数 / Set t-SNE parameters
         tsne.setParameters(Map.of(
-            "perplexity", 30.0,
-            "learningRate", 200.0,
-            "maxIterations", 1000
+                "perplexity", 30.0,
+                "learningRate", 200.0,
+                "maxIterations", 1000
         ));
-        
+
         // 降维到2维 / Reduce to 2 dimensions
         IMatrix reducedData = tsne.dimensionReduction(originalData, 2);
         System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
-        
+
         // 显示降维结果 / Display reduction results
         System.out.println("t-SNE降维后的数据:");
         for (int i = 0; i < reducedData.getRowNum(); i++) {
-            System.out.println("样本 " + i + ": [" + 
-                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+            System.out.println("样本 " + i + ": [" +
+                    reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
         }
     }
 }
@@ -1005,44 +1006,44 @@ public class TSNEExample {
 ### UMAP降维示例 / UMAP Dimensionality Reduction Example
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.ml.dimreduce.RereUMAP;
+import linalg.math.com.yishape.lab.IMatrix;
+import linalg.math.com.yishape.lab.Linalg;
+import dimreduce.ml.math.com.yishape.lab.RereUMAP;
 
 public class UMAPExample {
     public static void main(String[] args) {
         // 准备高维数据 / Prepare high-dimensional data
         double[][] data = {
-            {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
-            {2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
-            {3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
-            {4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0},
-            {5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}
+                {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0},
+                {2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0},
+                {3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
+                {4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0},
+                {5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}
         };
-        
+
         IMatrix originalData = Linalg.matrix(data);
         System.out.println("原始数据维度: " + originalData.getRowNum() + " x " + originalData.getColNum());
-        
+
         // 创建UMAP降维器 / Create UMAP reducer
         RereUMAP umap = new RereUMAP();
-        
+
         // 设置UMAP参数 / Set UMAP parameters
         umap.setParameters(Map.of(
-            "nNeighbors", 15,
-            "minDist", 0.1,
-            "nComponents", 2,
-            "metric", "euclidean"
+                "nNeighbors", 15,
+                "minDist", 0.1,
+                "nComponents", 2,
+                "metric", "euclidean"
         ));
-        
+
         // 降维到2维 / Reduce to 2 dimensions
         IMatrix reducedData = umap.dimensionReduction(originalData, 2);
         System.out.println("降维后数据维度: " + reducedData.getRowNum() + " x " + reducedData.getColNum());
-        
+
         // 显示降维结果 / Display reduction results
         System.out.println("UMAP降维后的数据:");
         for (int i = 0; i < reducedData.getRowNum(); i++) {
-            System.out.println("样本 " + i + ": [" + 
-                reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
+            System.out.println("样本 " + i + ": [" +
+                    reducedData.get(i, 0) + ", " + reducedData.get(i, 1) + "]");
         }
     }
 }

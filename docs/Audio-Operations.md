@@ -2,9 +2,9 @@
 
 ## 概述 / Overview
 
-`com.reremouse.lab.audio` 包提供了完整的音频处理功能，包括音频文件读写、音频分析、特征提取、音频处理、音频效果、音频可视化等。该包采用模块化设计，支持多种音频格式，提供丰富的音频处理和分析功能。
+`com.yishape.lab.audio` 包提供了完整的音频处理功能，包括音频文件读写、音频分析、特征提取、音频处理、音频效果、音频可视化等。该包采用模块化设计，支持多种音频格式，提供丰富的音频处理和分析功能。
 
-The `com.reremouse.lab.audio` package provides comprehensive audio processing capabilities, including audio file I/O, audio analysis, feature extraction, audio processing, audio effects, and audio visualization. The package uses modular design, supports multiple audio formats, and offers rich audio processing and analysis functionalities.
+The `com.yishape.lab.audio` package provides comprehensive audio processing capabilities, including audio file I/O, audio analysis, feature extraction, audio processing, audio effects, and audio visualization. The package uses modular design, supports multiple audio formats, and offers rich audio processing and analysis functionalities.
 
 ## 核心接口 / Core Interface
 
@@ -39,9 +39,10 @@ The `com.reremouse.lab.audio` package provides comprehensive audio processing ca
 
 ```java
 // 推荐使用 AudioIO 类进行音频文件操作 / Recommended to use AudioIO class for audio file operations
-import com.reremouse.lab.audio.core.AudioIO;
-import com.reremouse.lab.audio.core.AudioData;
-import com.reremouse.lab.audio.core.AudioFormat;
+
+import core.audio.com.yishape.lab.AudioIO;
+import core.audio.com.yishape.lab.AudioData;
+import core.audio.com.yishape.lab.AudioFormat;
 
 // 自动识别格式读取 / Auto-detect format and read
 AudioData audio = AudioIO.readAudio("path/to/audio.wav");
@@ -65,8 +66,8 @@ AudioIO.writeAudio(audioData, "output/path/audio.mp3", AudioFormat.MP3);
 #### 音频处理器创建 / Audio Processor Creation
 
 ```java
-import com.reremouse.lab.audio.Audios;
-import com.reremouse.lab.audio.processing.IAdvancedAudioProcessor;
+import audio.com.yishape.lab.Audios;
+import processing.audio.com.yishape.lab.IAdvancedAudioProcessor;
 
 // 创建音量处理器 / Create volume processor
 IAdvancedAudioProcessor volumeProcessor = Audios.createVolumeProcessor();
@@ -102,7 +103,7 @@ AudioData convertedAudio = Audios.convertChannels(audioData, 2);
 #### 音频分析器创建 / Audio Analyzer Creation
 
 ```java
-import com.reremouse.lab.audio.analysis.IAudioAnalyzer;
+import analysis.audio.com.yishape.lab.IAudioAnalyzer;
 
 // 创建频谱分析器 / Create spectrum analyzer
 IAudioAnalyzer spectrumAnalyzer = Audios.createSpectrumAnalyzer();
@@ -117,8 +118,8 @@ IAudioAnalyzer stftAnalyzer = Audios.createSTFTAnalyzer();
 #### 基本音频分析 / Basic Audio Analysis
 
 ```java
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.util.Tuple2;
+import linalg.math.com.yishape.lab.IVector;
+import util.com.yishape.lab.Tuple2;
 
 // 频谱分析 / Spectrum analysis
 Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.spectrum(audioData);
@@ -146,7 +147,7 @@ double energy = Audios.calculateEnergy(audioData);
 #### 特征提取器创建 / Feature Extractor Creation
 
 ```java
-import com.reremouse.lab.audio.feature.IAudioFeatureExtractor;
+import feature.audio.com.yishape.lab.IAudioFeatureExtractor;
 
 // 创建标准特征提取器 / Create standard feature extractor
 IAudioFeatureExtractor featureExtractor = Audios.createStandardFeatureExtractor();
@@ -155,7 +156,7 @@ IAudioFeatureExtractor featureExtractor = Audios.createStandardFeatureExtractor(
 #### 基本特征提取 / Basic Feature Extraction
 
 ```java
-import com.reremouse.lab.math.linalg.IMatrix;
+import linalg.math.com.yishape.lab.IMatrix;
 
 // 提取基本特征向量 / Extract basic feature vector
 IVector<Double> features = Audios.extractFeatures(audioData);
@@ -181,7 +182,7 @@ double spectralFlatness = Audios.calculateSpectralFlatness(audioData);
 #### 音频滤波器创建 / Audio Filter Creation
 
 ```java
-import com.reremouse.lab.audio.filter.IBaseAudioFilter;
+import filter.audio.com.yishape.lab.IBaseAudioFilter;
 
 // 创建低通滤波器 / Create low-pass filter
 IBaseAudioFilter lowPassFilter = Audios.createLowPassFilter();
@@ -202,7 +203,7 @@ AudioData filteredAudio = Audios.lowPassFilter(audioData, 1000.0); // 截止频�
 #### 音频效果器创建 / Audio Effect Creation
 
 ```java
-import com.reremouse.lab.audio.effect.IAudioEffect;
+import effect.audio.com.yishape.lab.IAudioEffect;
 
 // 创建混响效果器 / Create reverb effect
 IAudioEffect reverbEffect = Audios.createReverbEffect();
@@ -220,7 +221,7 @@ AudioData reverbAudio = Audios.reverb(audioData, 0.5, 0.3); // 衰减0.5，湿�
 #### 音频增强器创建 / Audio Enhancer Creation
 
 ```java
-import com.reremouse.lab.audio.enhancement.IAudioEnhancer;
+import enhancement.audio.com.yishape.lab.IAudioEnhancer;
 
 // 创建降噪增强器 / Create noise reduction enhancer
 IAudioEnhancer noiseReductionEnhancer = Audios.createNoiseReductionEnhancer();
@@ -268,8 +269,9 @@ i-vector模型是一种常用的音频嵌入方法，它使用通用背景模型
 The i-vector model is a commonly used audio embedding method that uses a Universal Background Model (UBM) and a Total Variability matrix (T) to generate compact vector representations of audio.
 
 ```java
-import com.reremouse.lab.audio.embedding.IVectorEmbedding;
-import com.reremouse.lab.math.linalg.IMatrix;
+import embedding.audio.com.yishape.lab.IVectorEmbedding;
+import linalg.math.com.yishape.lab.IMatrix;
+
 import java.util.List;
 
 // 创建i-vector嵌入器 / Create i-vector embedder
@@ -279,7 +281,9 @@ IVectorEmbedding ivectorEmbedder = new IVectorEmbedding(64); // 64维i-vector
 List<IMatrix<Double>> trainingData = mfccList; // MFCC特征矩阵列表 / List of MFCC feature matrices
 
 // 训练i-vector模型 / Train i-vector model
-ivectorEmbedder.train(trainingData);
+ivectorEmbedder.
+
+train(trainingData);
 
 // 使用训练好的模型提取嵌入向量 / Extract embedding vectors using the trained model
 IVector<Double> embedding = ivectorEmbedder.embed(mfccMatrix);
@@ -292,17 +296,20 @@ IVector<Double> embedding = ivectorEmbedder.embed(mfccMatrix);
 For large-scale audio datasets, online incremental training methods can be used to gradually update model parameters, avoiding loading all data into memory at once.
 
 ```java
-import com.reremouse.lab.audio.embedding.OnlineIVectorEmbedding;
-import com.reremouse.lab.math.linalg.IMatrix;
+import embedding.audio.com.yishape.lab.OnlineIVectorEmbedding;
+import linalg.math.com.yishape.lab.IMatrix;
 
 // 创建在线i-vector嵌入器 / Create online i-vector embedder
 OnlineIVectorEmbedding onlineEmbedder = new OnlineIVectorEmbedding(64);
 
 // 逐批次进行增量训练 / Perform incremental training batch by batch
-for ( var filePath: paths) {
-    IMatrix<Double> mfcc = Audios.readFile(filePath);
-    // 使用小批量MFCC样本进行增量训练 / Incremental training with small batch of MFCC samples
-    onlineEmbedder.trainIncremental(mfcc);
+for(
+var filePath:paths){
+IMatrix<Double> mfcc = Audios.readFile(filePath);
+// 使用小批量MFCC样本进行增量训练 / Incremental training with small batch of MFCC samples
+    onlineEmbedder.
+
+trainIncremental(mfcc);
 }
 
 // 提取音频嵌入向量 / Extract audio embedding vectors
@@ -443,26 +450,37 @@ IAudioFeatureExtractor extractor = factory.createFeatureExtractor("standard");
 ### 音频处理异常 / Audio Processing Exceptions
 
 ```java
-import com.reremouse.lab.audio.exception.AudioProcessingException;
-import com.reremouse.lab.audio.core.UnsupportedAudioFormatException;
+import exception.audio.com.yishape.lab.AudioProcessingException;
+import core.audio.com.yishape.lab.UnsupportedAudioFormatException;
 
-try {
-    // 音频文件读取 / Audio file reading
-    AudioData audio = AudioIO.readAudio("path/to/audio.wav");
+try{
+// 音频文件读取 / Audio file reading
+AudioData audio = AudioIO.readAudio("path/to/audio.wav");
+
+// 音频处理 / Audio processing
+AudioData processed = Audios.adjustVolume(audio, 1.5);
+
+// 音频文件写入 / Audio file writing
+    AudioIO.
+
+writeAudio(processed, "output/processed.wav");
     
-    // 音频处理 / Audio processing
-    AudioData processed = Audios.adjustVolume(audio, 1.5);
-    
-    // 音频文件写入 / Audio file writing
-    AudioIO.writeAudio(processed, "output/processed.wav");
-    
-} catch (UnsupportedAudioFormatException e) {
-    System.err.println("不支持的音频格式: " + e.getMessage());
-} catch (AudioProcessingException e) {
-    System.err.println("音频处理错误: " + e.getMessage());
-} catch (IOException e) {
-    System.err.println("文件操作错误: " + e.getMessage());
-}
+}catch(
+UnsupportedAudioFormatException e){
+        System.err.
+
+println("不支持的音频格式: "+e.getMessage());
+        }catch(
+AudioProcessingException e){
+        System.err.
+
+println("音频处理错误: "+e.getMessage());
+        }catch(
+IOException e){
+        System.err.
+
+println("文件操作错误: "+e.getMessage());
+        }
 ```
 
 ## 性能优化建议 / Performance Optimization Tips

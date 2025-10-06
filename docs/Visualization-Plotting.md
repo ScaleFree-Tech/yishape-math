@@ -135,9 +135,11 @@ Plots.violinplot(data).saveAsHtml("violin_chart.html"); // 小提琴图 / Violin
 `IPlot` is the core interface for plotting functionality, defining abstract specifications for all chart drawing methods.
 
 ```java
+import com.yishape.lab.math.viz.AxisTicks;
+
 public interface IPlot {
     // ========== 基础图表方法 / Basic Chart Methods ==========
-    
+
     /**
      * 绘制线图 / Draw line chart
      * @param x X轴数据 / X-axis data
@@ -145,14 +147,14 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector<Double> x, IVector<Double> y);
-    
+
     /**
      * 绘制单向量线图 / Draw single vector line chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector<Double> x);
-    
+
     /**
      * 绘制多线图 / Draw multi-line chart
      * @param x X轴数据 / X-axis data
@@ -161,7 +163,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot line(IVector<Double> x, IVector<Double> y, List<String> hue);
-    
+
     /**
      * 绘制散点图 / Draw scatter plot
      * @param x X轴数据 / X-axis data
@@ -169,7 +171,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot scatter(IVector<Double> x, IVector<Double> y);
-    
+
     /**
      * 绘制多组散点图 / Draw multi-group scatter plot
      * @param x X轴数据 / X-axis data
@@ -178,21 +180,21 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue);
-    
+
     /**
      * 绘制饼图 / Draw pie chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot pie(IVector<Double> x);
-    
+
     /**
      * 绘制柱状图 / Draw bar chart
      * @param x 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot bar(IVector<Double> x);
-    
+
     /**
      * 绘制分组柱状图 / Draw grouped bar chart
      * @param x 数据向量 / Data vector
@@ -200,7 +202,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot bar(IVector<Double> x, List<String> hue);
-    
+
     /**
      * 绘制直方图 / Draw histogram
      * @param x 数据向量 / Data vector
@@ -208,9 +210,9 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot hist(IVector<Double> x, boolean fittingLine);
-    
+
     // ========== 极坐标图表方法 / Polar Chart Methods ==========
-    
+
     /**
      * 绘制极坐标柱状图 / Draw polar bar chart
      * @param data 数据向量 / Data vector
@@ -218,7 +220,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarBar(IVector<Double> data, List<String> categories);
-    
+
     /**
      * 绘制极坐标线图 / Draw polar line chart
      * @param data 数据向量 / Data vector
@@ -226,7 +228,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarLine(IVector<Double> data, List<String> categories);
-    
+
     /**
      * 绘制极坐标散点图 / Draw polar scatter chart
      * @param data 数据向量 / Data vector
@@ -234,16 +236,16 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot polarScatter(IVector<Double> data, List<String> categories);
-    
+
     // ========== 统计图表方法 / Statistical Chart Methods ==========
-    
+
     /**
      * 绘制箱线图 / Draw box plot
      * @param data 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot boxplot(IVector<Double> data);
-    
+
     /**
      * 绘制箱线图 / Draw box plot
      * @param data 数据向量 / Data vector
@@ -251,14 +253,14 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot boxplot(IVector<Double> data, List<String> labels);
-    
+
     /**
      * 绘制小提琴图 / Draw violin plot
      * @param data 数据向量 / Data vector
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot violinplot(IVector<Double> data);
-    
+
     /**
      * 绘制小提琴图 / Draw violin plot
      * @param data 数据向量 / Data vector
@@ -266,7 +268,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot violinplot(IVector<Double> data, List<String> labels);
-    
+
     /**
      * 绘制K线图 / Draw candlestick chart
      * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价] / Data matrix, each row contains [open, close, low, high]
@@ -274,9 +276,9 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot candlestick(IMatrix<Double> data, List<String> dates);
-    
+
     // ========== 特殊图表方法 / Special Chart Methods ==========
-    
+
     /**
      * 绘制漏斗图 / Draw funnel chart
      * @param data 数据向量 / Data vector
@@ -284,7 +286,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot funnel(IVector<Double> data, List<String> labels);
-    
+
     /**
      * 绘制桑基图 / Draw sankey diagram
      * @param nodes 节点数据 / Node data
@@ -292,14 +294,14 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-    
+
     /**
      * 绘制旭日图 / Draw sunburst chart
      * @param data 层次数据 / Hierarchical data
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot sunburst(List<Map<String, Object>> data);
-    
+
     /**
      * 绘制主题河流图 / Draw theme river chart
      * @param data 时间序列数据 / Time series data
@@ -307,21 +309,21 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot themeRiver(List<Map<String, Object>> data, List<String> categories);
-    
+
     /**
      * 绘制树图 / Draw tree chart
      * @param data 树形数据 / Tree data
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot tree(List<Map<String, Object>> data);
-    
+
     /**
      * 绘制矩形树图 / Draw treemap chart
      * @param data 层次数据 / Hierarchical data
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot treemap(List<Map<String, Object>> data);
-    
+
     /**
      * 绘制关系图 / Draw graph chart
      * @param nodes 节点数据 / Node data
@@ -329,7 +331,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-    
+
     /**
      * 绘制平行坐标图 / Draw parallel coordinates chart
      * @param data 数据矩阵 / Data matrix
@@ -337,9 +339,9 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot parallel(IMatrix<Double> data, List<String> dimensions);
-    
+
     // ========== 完善图表方法 / Chart Completion Methods ==========
-    
+
     /**
      * 绘制热力图 / Draw heatmap
      * @param data 二维数据矩阵 / 2D data matrix
@@ -348,7 +350,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels);
-    
+
     /**
      * 绘制雷达图 / Draw radar chart
      * @param data 数据向量 / Data vector
@@ -356,7 +358,7 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot radar(IVector<Double> data, List<String> indicators);
-    
+
     /**
      * 绘制仪表盘 / Draw gauge chart
      * @param value 数值 / Value
@@ -365,16 +367,16 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot gauge(double value, double max, double min);
-    
+
     // ========== 流式API方法 / Fluent API Methods ==========
-    
+
     /**
      * 设置图表标题（流式API） / Set chart title (Fluent API)
      * @param titleText 标题文本 / Title text
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot title(String titleText);
-    
+
     /**
      * 设置图表标题和副标题（流式API） / Set chart title and subtitle (Fluent API)
      * @param titleText 标题文本 / Title text
@@ -382,21 +384,21 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot title(String titleText, String subtitleText);
-    
+
     /**
      * 设置X轴标签（流式API） / Set X-axis label (Fluent API)
      * @param name X轴标签名称 / X-axis label name
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot xlabel(String name);
-    
+
     /**
      * 设置Y轴标签（流式API） / Set Y-axis label (Fluent API)
      * @param name Y轴标签名称 / Y-axis label name
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot ylabel(String name);
-    
+
     /**
      * 设置图表尺寸（流式API） / Set chart size (Fluent API)
      * @param width 图表宽度 / Chart width
@@ -404,92 +406,92 @@ public interface IPlot {
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot size(int width, int height);
-    
+
     /**
      * 设置图表主题（流式API） / Set chart theme (Fluent API)
      * @param theme 主题名称 / Theme name
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot theme(String theme);
-    
+
     /**
      * 显示图表（流式API） / Show chart (Fluent API)
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot show();
-    
+
     /**
      * 保存图表为HTML文件（流式API） / Save chart as HTML file (Fluent API)
      * @param filename 文件名 / Filename
      * @return 当前实例，支持链式调用 / Current instance for method chaining
      */
     IPlot saveAsHtml(String filename);
-    
+
     // ========== 工具方法 / Utility Methods ==========
-    
+
     /**
      * 获取图表的HTML内容 / Get chart HTML content
      * @return HTML字符串 / HTML string
      */
     String toHtml();
-    
+
     /**
      * 获取图表的JSON配置 / Get chart JSON configuration
      * @return JSON字符串 / JSON string
      */
     String toJson();
-    
+
     // ========== 配置方法 / Configuration Methods ==========
-    
+
     /**
      * 设置图表标题 / Set chart title
      * @param titleText 标题文本 / Title text
      */
     void setTitle(String titleText);
-    
+
     /**
      * 设置图表标题和副标题 / Set chart title and subtitle
      * @param titleText 标题文本 / Title text
      * @param subtitleText 副标题文本 / Subtitle text
      */
     void setTitle(String titleText, String subtitleText);
-    
+
     /**
      * 设置X轴标签 / Set X-axis label
      * @param name X轴标签名称 / X-axis label name
      */
     void setXlabel(String name);
-    
+
     /**
      * 设置Y轴标签 / Set Y-axis label
      * @param name Y轴标签名称 / Y-axis label name
      */
     void setYlabel(String name);
-    
+
     /**
      * 设置X轴刻度 / Set X-axis ticks
      * @param xticks X轴刻度配置 / X-axis tick configuration
      */
-    void setXticks(com.reremouse.lab.math.viz.AxisTicks xticks);
-    
+    void setXticks(viz.math.com.yishape.lab.AxisTicks xticks);
+
     /**
      * 设置Y轴刻度 / Set Y-axis ticks
      * @param yticks Y轴刻度配置 / Y-axis tick configuration
      */
-    void setYticks(com.reremouse.lab.math.viz.AxisTicks yticks);
-    
+    void setYticks(viz.math.com.yishape.lab.AxisTicks yticks);
+
     /**
      * 获取图表宽度 / Get chart width
      * @return 图表宽度 / Chart width
      */
     int getWidth();
-    
+
     /**
      * 获取图表高度 / Get chart height
      * @return 图表高度 / Chart height
      */
     int getHeight();
-    
+
     /**
      * 获取图表主题 / Get chart theme
      * @return 主题名称 / Theme name
@@ -2059,8 +2061,10 @@ plot.line(x, y, hue, lineStyle);   // 同时按颜色和线型分组 / Group by 
 #### 调色板使用示例 / Palette Usage Examples
 
 ```java
-import com.reremouse.lab.math.viz.*;
-import com.reremouse.lab.math.linalg.Linalg;
+
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.viz.ColorPalette;
+import com.yishape.lab.math.viz.PlotStyle;
 
 // 1. 基础调色板使用
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
@@ -2068,12 +2072,24 @@ IVector<Double> y1 = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 IVector<Double> y2 = Linalg.vector(new double[]{5, 15, 10, 25, 20});
 
 // 设置全局调色板
-Plots.of(800, 600)
-    .setPalette("matplotlib")
-    .line(x, y1, "C0-")  // 使用matplotlib第0个颜色
-    .line(x, y2, "C1--") // 使用matplotlib第1个颜色
-    .title("matplotlib调色板示例")
-    .show();
+Plots.
+
+of(800,600)
+    .
+
+setPalette("matplotlib")
+    .
+
+line(x, y1, "C0-")  // 使用matplotlib第0个颜色
+    .
+
+line(x, y2, "C1--") // 使用matplotlib第1个颜色
+    .
+
+title("matplotlib调色板示例")
+    .
+
+show();
 
 // 2. 获取调色板颜色
 String[] seabornColors = ColorPalette.getPalette("seaborn");
@@ -2081,61 +2097,93 @@ String specificColor = ColorPalette.getColor("echarts", 2); // 获取第3个颜�
 
 // 3. 创建多系列图表，使用不同调色板
 String[] palettes = {"matplotlib", "seaborn", "echarts", "colorblind"};
-for (int i = 0; i < 4; i++) {
-    String color = ColorPalette.getColor(palettes[i], i);
-    PlotStyle style = new PlotStyle()
+for(
+int i = 0;
+i< 4;i++){
+String color = ColorPalette.getColor(palettes[i], i);
+PlotStyle style = new PlotStyle()
         .color(color)
         .lineWidth(2.0 + i * 0.5)
-        .marker(Character.toString((char)('o' + i)));
+        .marker(Character.toString((char) ('o' + i)));
     
-    Plots.of(400, 300)
-        .line(x, y1, style)
-        .title("调色板: " + palettes[i])
-        .show();
+    Plots.
+
+of(400,300)
+        .
+
+line(x, y1, style)
+        .
+
+title("调色板: "+palettes[i])
+        .
+
+show();
 }
 
 // 4. 生成渐变色系列
 String[] gradientColors = ColorPalette.generateAdvancedGradient(
-    "#FF6B6B",    // 起始颜色
-    "#4ECDC4",    // 结束颜色
-    5,            // 步数
-    "ease-in-out" // 算法
+        "#FF6B6B",    // 起始颜色
+        "#4ECDC4",    // 结束颜色
+        5,            // 步数
+        "ease-in-out" // 算法
 );
 
 // 应用渐变色到多系列图表
-for (int i = 0; i < 5; i++) {
-    PlotStyle gradientStyle = new PlotStyle()
+for(
+int i = 0;
+i< 5;i++){
+PlotStyle gradientStyle = new PlotStyle()
         .color(gradientColors[i])
         .lineWidth(2.0)
         .marker("o")
         .markerSize(6.0);
     
-    Plots.of(400, 300)
-        .line(x, y1, gradientStyle)
-        .title("渐变色系列 " + (i + 1))
-        .show();
+    Plots.
+
+of(400,300)
+        .
+
+line(x, y1, gradientStyle)
+        .
+
+title("渐变色系列 "+(i +1))
+        .
+
+show();
 }
 
 // 5. 无障碍访问优化
 String[] originalColors = {"#FF0000", "#00FF00", "#0000FF"};
-if (!ColorPalette.isColorBlindFriendly(originalColors)) {
-    String[] adjustedColors = ColorPalette.adjustForColorBlindness(
+if(!ColorPalette.
+
+isColorBlindFriendly(originalColors)){
+String[] adjustedColors = ColorPalette.adjustForColorBlindness(
         originalColors, "deuteranopia"  // 绿色盲
-    );
-    
-    // 使用调整后的颜色创建图表
-    for (int i = 0; i < adjustedColors.length; i++) {
-        PlotStyle accessibleStyle = new PlotStyle()
-            .color(adjustedColors[i])
-            .lineWidth(3.0)
-            .marker("s");
+);
+
+// 使用调整后的颜色创建图表
+    for(
+int i = 0;
+i<adjustedColors.length;i++){
+PlotStyle accessibleStyle = new PlotStyle()
+        .color(adjustedColors[i])
+        .lineWidth(3.0)
+        .marker("s");
         
-        Plots.of(400, 300)
-            .line(x, y1, accessibleStyle)
-            .title("无障碍优化颜色 " + (i + 1))
-            .show();
+        Plots.
+
+of(400,300)
+            .
+
+line(x, y1, accessibleStyle)
+            .
+
+title("无障碍优化颜色 "+(i +1))
+        .
+
+show();
     }
-}
+            }
 
 // 6. 语义化颜色使用
 String successColor = ColorPalette.getSemanticColor("success", 3);
@@ -2146,11 +2194,21 @@ PlotStyle successStyle = new PlotStyle().color(successColor).lineWidth(3.0);
 PlotStyle warningStyle = new PlotStyle().color(warningColor).lineWidth(3.0);
 PlotStyle errorStyle = new PlotStyle().color(errorColor).lineWidth(3.0);
 
-Plots.of(800, 400)
-    .line(x, y1, successStyle)
-    .line(x, y2, warningStyle)
-    .title("语义化颜色示例")
-    .show();
+Plots.
+
+of(800,400)
+    .
+
+line(x, y1, successStyle)
+    .
+
+line(x, y2, warningStyle)
+    .
+
+title("语义化颜色示例")
+    .
+
+show();
 ```
 
 ### 主题系统 / Theme System
@@ -2179,8 +2237,10 @@ Plots.of(800, 400)
 #### 主题使用示例 / Theme Usage Examples
 
 ```java
-import com.reremouse.lab.math.viz.*;
-import com.reremouse.lab.math.linalg.Linalg;
+
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.viz.PlotStyle;
+import com.yishape.lab.math.viz.ThemeManager;
 
 // 1. 基础主题应用
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -2188,104 +2248,205 @@ IVector<Double> sales = Linalg.vector(new double[]{100, 120, 110, 140, 130, 160,
 IVector<Double> profit = Linalg.vector(new double[]{20, 25, 22, 30, 28, 35, 32, 40, 38, 45});
 
 // 深色主题
-Plots.of(800, 600, "dark")
-    .line(x, sales)
-    .title("深色主题销售数据")
-    .xlabel("月份")
-    .ylabel("销售额")
-    .show();
+Plots.
+
+of(800,600,"dark")
+    .
+
+line(x, sales)
+    .
+
+title("深色主题销售数据")
+    .
+
+xlabel("月份")
+    .
+
+ylabel("销售额")
+    .
+
+show();
 
 // 学术主题
-Plots.of(800, 600, "academic")
-    .scatter(x, profit)
-    .title("学术风格利润分析")
-    .xlabel("月份")
-    .ylabel("利润")
-    .show();
+Plots.
+
+of(800,600,"academic")
+    .
+
+scatter(x, profit)
+    .
+
+title("学术风格利润分析")
+    .
+
+xlabel("月份")
+    .
+
+ylabel("利润")
+    .
+
+show();
 
 // 2. 智能主题推荐
 String recommendedTheme = ThemeManager.recommendTheme(
-    "business",      // 数据类型：business, scientific, creative, academic
-    "line",          // 图表类型
-    "professional"   // 用户偏好：professional, colorful, minimal
+        "business",      // 数据类型：business, scientific, creative, academic
+        "line",          // 图表类型
+        "professional"   // 用户偏好：professional, colorful, minimal
 );
 // 推荐结果: "business"
 
-Plots.of(800, 600, recommendedTheme)
-    .line(x, sales)
-    .line(x, profit)
-    .title("智能推荐主题: " + recommendedTheme)
-    .legend(true)
-    .show();
+Plots.
+
+of(800,600,recommendedTheme)
+    .
+
+line(x, sales)
+    .
+
+line(x, profit)
+    .
+
+title("智能推荐主题: "+recommendedTheme)
+    .
+
+legend(true)
+    .
+
+show();
 
 // 3. 主题样式融合
 PlotStyle customStyle = new PlotStyle()
-    .color("#FF6B6B")
-    .lineWidth(2.5)
-    .marker("o")
-    .markerSize(6.0);
+        .color("#FF6B6B")
+        .lineWidth(2.5)
+        .marker("o")
+        .markerSize(6.0);
 
 // 将自定义样式与主题融合
 PlotStyle themedStyle = ThemeManager.applyThemeToStyle(customStyle, "vintage");
 
-Plots.of(800, 600, "vintage")
-    .line(x, sales, themedStyle)
-    .title("主题融合示例")
-    .show();
+Plots.
+
+of(800,600,"vintage")
+    .
+
+line(x, sales, themedStyle)
+    .
+
+title("主题融合示例")
+    .
+
+show();
 
 // 4. 创建季节性主题
 ThemeManager.CustomTheme springTheme = ThemeManager.createSeasonalTheme("spring");
-ThemeManager.registerCustomTheme("mySpring", springTheme);
+ThemeManager.
 
-Plots.of(800, 600, "mySpring")
-    .scatter(x, sales)
-    .title("春季主题")
-    .show();
+registerCustomTheme("mySpring",springTheme);
+
+Plots.
+
+of(800,600,"mySpring")
+    .
+
+scatter(x, sales)
+    .
+
+title("春季主题")
+    .
+
+show();
 
 // 5. 创建行业主题
 ThemeManager.CustomTheme financeTheme = ThemeManager.createIndustryTheme("finance");
-ThemeManager.registerCustomTheme("myFinance", financeTheme);
+ThemeManager.
 
-Plots.of(800, 600, "myFinance")
-    .line(x, sales)
-    .line(x, profit)
-    .title("金融行业主题")
-    .legend(true)
-    .show();
+registerCustomTheme("myFinance",financeTheme);
+
+Plots.
+
+of(800,600,"myFinance")
+    .
+
+line(x, sales)
+    .
+
+line(x, profit)
+    .
+
+title("金融行业主题")
+    .
+
+legend(true)
+    .
+
+show();
 
 // 6. 主题对比展示
 String[] themes = {"light", "dark", "academic", "business", "vintage", "futuristic"};
-for (String theme : themes) {
-    Plots.of(400, 300, theme)
-        .line(x, sales)
-        .title("主题: " + theme)
-        .show();
+for(
+String theme :themes){
+        Plots.
+
+of(400,300,theme)
+        .
+
+line(x, sales)
+        .
+
+title("主题: "+theme)
+        .
+
+show();
 }
 
 // 7. 渐变主题创建
 ThemeManager.CustomTheme gradientTheme = ThemeManager.createGradientTheme(
-    "sunset",           // 主题名称
-    "#FF6B6B",          // 起始颜色
-    "#4ECDC4",          // 结束颜色
-    "#F8F9FA"           // 背景颜色
+        "sunset",           // 主题名称
+        "#FF6B6B",          // 起始颜色
+        "#4ECDC4",          // 结束颜色
+        "#F8F9FA"           // 背景颜色
 );
-ThemeManager.registerCustomTheme("sunset", gradientTheme);
+ThemeManager.
 
-Plots.of(800, 600, "sunset")
-    .line(x, sales)
-    .title("自定义渐变主题")
-    .show();
+registerCustomTheme("sunset",gradientTheme);
+
+Plots.
+
+of(800,600,"sunset")
+    .
+
+line(x, sales)
+    .
+
+title("自定义渐变主题")
+    .
+
+show();
 
 // 8. 无障碍访问主题
 ThemeManager.CustomTheme accessibilityTheme = ThemeManager.createAccessibilityTheme();
-ThemeManager.registerCustomTheme("accessible", accessibilityTheme);
+ThemeManager.
 
-Plots.of(800, 600, "accessible")
-    .line(x, sales)
-    .line(x, profit)
-    .title("无障碍访问主题")
-    .legend(true)
-    .show();
+registerCustomTheme("accessible",accessibilityTheme);
+
+Plots.
+
+of(800,600,"accessible")
+    .
+
+line(x, sales)
+    .
+
+line(x, profit)
+    .
+
+title("无障碍访问主题")
+    .
+
+legend(true)
+    .
+
+show();
 ```
 
 

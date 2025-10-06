@@ -2,9 +2,9 @@
 
 ## 概述 / Overview
 
-本文档介绍了 `com.reremouse.lab.math.ml` 包中实现的机器学习算法。该包提供了完整的机器学习解决方案，包括监督学习、无监督学习和降维算法，支持多种正则化选项和灵活的模型配置。
+本文档介绍了 `com.yishape.lab.math.ml` 包中实现的机器学习算法。该包提供了完整的机器学习解决方案，包括监督学习、无监督学习和降维算法，支持多种正则化选项和灵活的模型配置。
 
-This document introduces the machine learning algorithms implemented in the `com.reremouse.lab.math.ml` package. The package provides a complete machine learning solution, including supervised learning, unsupervised learning, and dimensionality reduction algorithms, with support for multiple regularization options and flexible model configuration.
+This document introduces the machine learning algorithms implemented in the `com.yishape.lab.math.ml` package. The package provides a complete machine learning solution, including supervised learning, unsupervised learning, and dimensionality reduction algorithms, with support for multiple regularization options and flexible model configuration.
 
 ## 算法列表 / Algorithm List
 
@@ -12,31 +12,31 @@ This document introduces the machine learning algorithms implemented in the `com
 
 #### 1. 线性回归 (Linear Regression)
 - **类名 / Class**: `RereLinearRegression`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.lr`
+- **包路径 / Package**: `com.yishape.lab.math.ml.lr`
 - **功能 / Function**: 回归预测，支持多种正则化
 - **应用 / Application**: 连续值预测，特征重要性分析
 
 #### 2. 逻辑回归 (Logistic Regression)  
 - **类名 / Class**: `RereLogisticRegression`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.cls`
+- **包路径 / Package**: `com.yishape.lab.math.ml.cls`
 - **功能 / Function**: 分类预测，支持二分类和多分类
 - **应用 / Application**: 分类问题，概率预测
 
 #### 3. 随机森林 (Random Forest)
 - **类名 / Class**: `RereRandomForest`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.cls.tree`
+- **包路径 / Package**: `com.yishape.lab.math.ml.cls.tree`
 - **功能 / Function**: 基于Bootstrap聚合和特征随机选择的集成分类算法
 - **应用 / Application**: 分类问题，特征重要性分析，袋外评估
 
 #### 4. XGBoost分类器 (XGBoost Classifier)
 - **类名 / Class**: `RereXGboost`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.cls.tree`
+- **包路径 / Package**: `com.yishape.lab.math.ml.cls.tree`
 - **功能 / Function**: 梯度提升决策树分类算法，支持二分类和多分类
 - **应用 / Application**: 高精度分类，特征重要性分析，模型解释
 
 #### 5. 集成分类器 (Ensemble Classifier)
 - **类名 / Class**: `EnsembleClassifier`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.cls`
+- **包路径 / Package**: `com.yishape.lab.math.ml.cls`
 - **功能 / Function**: 结合多种分类算法的集成学习方法
 - **应用 / Application**: 提高分类精度，模型融合，降低过拟合风险
 
@@ -44,13 +44,13 @@ This document introduces the machine learning algorithms implemented in the `com
 
 #### 3. K-Means++聚类 (K-Means++ Clustering)
 - **类名 / Class**: `KMeansPlusPlus`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.clustering`
+- **包路径 / Package**: `com.yishape.lab.math.ml.clustering`
 - **功能 / Function**: 基于距离的聚类算法，改进的初始化策略
 - **应用 / Application**: 数据聚类，模式识别
 
 #### 4. 高斯混合模型聚类 (Gaussian Mixture Model Clustering)
 - **类名 / Class**: `GMMClustering`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.clustering`
+- **包路径 / Package**: `com.yishape.lab.math.ml.clustering`
 - **功能 / Function**: 基于概率的聚类算法，支持软聚类
 - **应用 / Application**: 复杂数据分布建模，概率聚类
 
@@ -58,25 +58,25 @@ This document introduces the machine learning algorithms implemented in the `com
 
 #### 5. 主成分分析 (Principal Component Analysis)
 - **类名 / Class**: `RerePCA`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **包路径 / Package**: `com.yishape.lab.math.ml.dimreduce`
 - **功能 / Function**: 线性降维，保留主要变化方向
 - **应用 / Application**: 特征降维，数据可视化
 
 #### 6. 奇异值分解 (Singular Value Decomposition)
 - **类名 / Class**: `RereSVD`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **包路径 / Package**: `com.yishape.lab.math.ml.dimreduce`
 - **功能 / Function**: 矩阵分解降维
 - **应用 / Application**: 推荐系统，数据压缩
 
 #### 7. t-SNE降维 (t-Distributed Stochastic Neighbor Embedding)
 - **类名 / Class**: `RereTSNE`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **包路径 / Package**: `com.yishape.lab.math.ml.dimreduce`
 - **功能 / Function**: 非线性降维，保持局部结构
 - **应用 / Application**: 高维数据可视化，流形学习
 
 #### 8. UMAP降维 (Uniform Manifold Approximation and Projection)
 - **类名 / Class**: `RereUMAP`
-- **包路径 / Package**: `com.reremouse.lab.math.ml.dimreduce`
+- **包路径 / Package**: `com.yishape.lab.math.ml.dimreduce`
 - **功能 / Function**: 非线性降维，保持全局和局部结构
 - **应用 / Application**: 高维数据可视化，特征学习
 
@@ -735,41 +735,41 @@ lr.setRegularization(0.01f, 0.1f);
 ### 示例1：二分类逻辑回归 / Example 1: Binary Classification
 
 ```java
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
-import com.reremouse.lab.math.ml.cls.RereLogisticRegression;
-import com.reremouse.lab.math.ml.cls.LogisticRegressionResult;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import cls.ml.math.com.yishape.lab.RereLogisticRegression;
+import cls.ml.math.com.yishape.lab.LogisticRegressionResult;
 
 public class BinaryClassificationExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
         float[][] featureData = {
-            {1, 2}, {2, 3}, {3, 4}, {4, 5},
-            {5, 6}, {6, 7}, {7, 8}, {8, 9}
+                {1, 2}, {2, 3}, {3, 4}, {4, 5},
+                {5, 6}, {6, 7}, {7, 8}, {8, 9}
         };
-        String[] labelData = {"正类", "正类", "正类", "正类", 
-                             "负类", "负类", "负类", "负类"};
-        
+        String[] labelData = {"正类", "正类", "正类", "正类",
+                "负类", "负类", "负类", "负类"};
+
         IMatrix features = IMatrix.of(featureData);
-        
+
         // 创建和训练模型 / Create and train model
         RereLogisticRegression lr = new RereLogisticRegression();
         LogisticRegressionResult result = lr.fit(features, labelData);
-        
+
         // 获取结果 / Get results
         IVector weights = result.getWeights();
         IVector bias = result.getBias();
         float loss = result.getLoss();
-        
+
         System.out.println("权重: " + weights); // Weights
         System.out.println("偏置: " + bias); // Bias
         System.out.println("损失: " + loss); // Loss
-        
+
         // 预测新样本 / Predict new sample
         IVector newFeatures = IVector.of(new float[]{2.5f, 3.5f});
         String prediction = lr.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
-        
+
         // 预测概率 / Predict probability
         float probability = lr.predictProbability(newFeatures);
         System.out.println("正类概率: " + probability); // Positive class probability
@@ -1436,9 +1436,9 @@ System.out.println("预测类别: " + prediction);
 
 ## 概述 / Overview
 
-聚类算法是无监督学习的重要组成部分，用于发现数据中的隐藏模式和结构。`com.reremouse.lab.math.ml.clustering` 包提供了两种主要的聚类算法实现。
+聚类算法是无监督学习的重要组成部分，用于发现数据中的隐藏模式和结构。`com.yishape.lab.math.ml.clustering` 包提供了两种主要的聚类算法实现。
 
-Clustering algorithms are an important part of unsupervised learning, used to discover hidden patterns and structures in data. The `com.reremouse.lab.math.ml.clustering` package provides implementations of two main clustering algorithms.
+Clustering algorithms are an important part of unsupervised learning, used to discover hidden patterns and structures in data. The `com.yishape.lab.math.ml.clustering` package provides implementations of two main clustering algorithms.
 
 ## K-Means++聚类 / K-Means++ Clustering
 
@@ -1537,9 +1537,9 @@ public class ClusteringMetrics {
 
 ## 概述 / Overview
 
-降维算法用于减少数据的维度，同时保留重要的信息。`com.reremouse.lab.math.ml.dimreduce` 包提供了多种降维算法的实现。
+降维算法用于减少数据的维度，同时保留重要的信息。`com.yishape.lab.math.ml.dimreduce` 包提供了多种降维算法的实现。
 
-Dimensionality reduction algorithms are used to reduce the dimensionality of data while preserving important information. The `com.reremouse.lab.math.ml.dimreduce` package provides implementations of various dimensionality reduction algorithms.
+Dimensionality reduction algorithms are used to reduce the dimensionality of data while preserving important information. The `com.yishape.lab.math.ml.dimreduce` package provides implementations of various dimensionality reduction algorithms.
 
 ## 主成分分析 (PCA) / Principal Component Analysis
 

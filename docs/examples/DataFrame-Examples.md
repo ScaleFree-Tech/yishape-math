@@ -11,11 +11,11 @@ This document provides detailed usage examples for the `DataFrame` class, coveri
 ### DataFrame 创建和基本操作 / DataFrame Creation and Basic Operations
 
 ```java
-import com.reremouse.lab.data.DataFrame;
-import com.reremouse.lab.data.Column;
-import com.reremouse.lab.data.ColumnType;
-import com.reremouse.lab.math.IMatrix;
-import com.reremouse.lab.math.IVector;
+import com.yishape.lab.data.DataFrame;
+import com.yishape.lab.data.Column;
+import com.yishape.lab.data.ColumnType;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,7 +60,7 @@ public class DataFrameBasicExample {
 ### 从CSV文件读取数据 / Reading Data from CSV Files
 
 ```java
-import com.reremouse.lab.data.DataFrame;
+import com.yishape.lab.data.DataFrame;
 import java.io.IOException;
 
 public class CSVReadingExample {

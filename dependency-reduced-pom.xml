@@ -23,7 +23,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.reremouse.lab.data.CSVDataFrameTest</mainClass>
+                  <mainClass>data.com.yishape.lab.CSVDataFrameTest</mainClass>
                 </transformer>
               </transformers>
             </configuration>

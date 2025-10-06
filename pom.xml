@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.reremouse.lab</groupId>
+    <groupId>com.yishape.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>21</maven.compiler.release>
-        <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</maven.surefire.argLine>
+        <maven.compiler.release>25</maven.compiler.release>
+        <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-modules jdk.incubator.vector</maven.surefire.argLine>
     </properties>
     
     <repositories>
@@ -28,6 +28,7 @@
             <groupId>com.aparapi</groupId>
             <artifactId>aparapi</artifactId>
             <version>3.0.2</version>
+            <optional>true</optional>
         </dependency>
         <!-- Support for CSV files reading -->
         <dependency>
@@ -49,6 +50,7 @@
             <groupId>javazoom</groupId>
             <artifactId>jlayer</artifactId>
             <version>1.0.1</version>
+            <optional>true</optional>
         </dependency>
         
         <!-- Support for OGG Vorbis decoding -->
@@ -56,13 +58,14 @@
             <groupId>org.jcraft</groupId>
             <artifactId>jorbis</artifactId>
             <version>0.0.17</version>
+            <optional>true</optional>
         </dependency>
         
         <!--主要用于初期测试自研求解器求解的正确性，性能稳定后将删除依赖-->
         <dependency>
             <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <version>3.6.1</version>
+            <artifactId>commons-math4-legacy</artifactId>
+            <version>4.0-beta1</version>
         </dependency>
         
         <!-- JUnit 5 for testing -->
@@ -95,19 +98,27 @@
     
     <build>  
         <plugins>  
-            <plugin>  
-                <groupId>org.apache.maven.plugins</groupId>  
-                <artifactId>maven-compiler-plugin</artifactId>  
-                <version>3.14.0</version>  
-                <configuration>  
-                    <skipTests>true</skipTests>
-                    <release>21</release>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>25</release>
                     <encoding>utf8</encoding>
-                    <excludes>
-                        <!-- 排除整个包 -->
-                        <exclude>model_zoo/**</exclude>
-                    </excludes>
-                </configuration>  
+                     <!-- 如果你的项目使用了类似Vector API这样的孵化模块，需要额外配置编译器参数 -->
+                    <compilerArgs>
+                        <arg>--add-modules</arg>
+                        <arg>jdk.incubator.vector</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <classpathScope>test</classpathScope>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -116,6 +127,18 @@
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                    <argLine>${maven.surefire.argLine}</argLine>
                 </configuration>
             </plugin>
             <plugin>

@@ -1,6 +1,5 @@
 package model_zoo.knapsack;
 
-import com.reremouse.lab.math.optimize.linpg.*;
 import com.reremouse.lab.math.linalg.IMatrix;
 import com.reremouse.lab.math.linalg.IVector;
 import com.reremouse.lab.math.linalg.Linalg;
@@ -92,6 +91,15 @@ public class KnapsackProblem {
         
         // 🚀 求解0-1整数规划问题
         OptResult result = solver.solve(c, A_ub, b_ub);
+        
+        // 🔍 调试信息
+        System.out.println("🔍 调试信息:");
+        if (result != null) {
+            System.out.println("   求解器返回的原始目标函数值: " + result.getOptimalValue());
+            System.out.println("   转换后的最大化目标函数值: " + (-result.getOptimalValue()));
+        } else {
+            System.out.println("   求解器返回null结果");
+        }
         
         // ✅ 检查是否找到可行解
         if (result == null) {

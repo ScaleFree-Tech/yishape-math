@@ -18,10 +18,10 @@ This document provides complete usage examples of the YiShape-Math signal proces
 ### 1.1 基本信号生成 / Basic Signal Generation
 
 ``java
-import com.reremouse.lab.math.signal.Signals;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import signal.math.com.yishape.lab.Signals;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+import util.com.yishape.lab.Tuple2;
 
 public class BasicSignalGenerationExample {
     public static void main(String[] args) {
@@ -91,14 +91,14 @@ public class CompositeSignalGenerationExample {
         System.out.println("狄拉克δ函数生成完成，长度: " + diracDelta.length());
         
         // 使用复合信号生成方法 / Using composite signal generation method
-        com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType[] signalTypes = {
-            com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType.SINE,
-            com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType.COSINE
+        generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType[] signalTypes = {
+            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.SINE,
+            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.COSINE
         };
         
-        com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters[] parameters = {
-            new com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters().frequency(10.0).amplitude(1.0).samplingRate(1000.0),
-            new com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters().frequency(20.0).amplitude(0.5).samplingRate(1000.0)
+        generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters[] parameters = {
+            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().frequency(10.0).amplitude(1.0).samplingRate(1000.0),
+            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().frequency(20.0).amplitude(0.5).samplingRate(1000.0)
         };
         
         IVector<Double> compositeSignal = Signals.compositeSignal(signalTypes, 1000, parameters);
@@ -107,8 +107,8 @@ public class CompositeSignalGenerationExample {
         // 添加噪声 / Add noise
         IVector<Double> noisySignal = Signals.addNoise(
             compositeSignal, 
-            com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType.WHITE_NOISE, 
-            new com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters().noiseVariance(0.1).samplingRate(1000.0)
+            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.WHITE_NOISE, 
+            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().noiseVariance(0.1).samplingRate(1000.0)
         );
         System.out.println("带噪声信号生成完成，长度: " + noisySignal.length());
         
@@ -167,11 +167,11 @@ public class BasicFilteringExample {
 ### 2.1 完整信号处理流程 / Complete Signal Processing Workflow
 
 ```java
-import com.reremouse.lab.math.signal.Signals;
-import com.reremouse.lab.math.signal.SignalUtilities;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import signal.math.com.yishape.lab.Signals;
+import com.yishape.lab.math.signal.SignalUtilities;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+import util.com.yishape.lab.Tuple2;
 
 public class CompleteSignalProcessingExample {
     public static void main(String[] args) {
@@ -209,20 +209,20 @@ public class CompleteSignalProcessingExample {
         
         // 5. 小波分析 / Wavelet analysis
         System.out.println("\n--- 步骤4: 小波分析 / Step 4: Wavelet Analysis ---");
-        com.reremouse.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = com.reremouse.lab.math.signal.WaveletAnalysis.discreteWaveletTransform(
-            filtered, com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES, 4, 4.0
+        com.yishape.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = com.yishape.lab.math.signal.WaveletAnalysis.discreteWaveletTransform(
+            filtered, com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES, 4, 4.0
         );
         System.out.println("小波分解完成，层数: " + coeffs.levels);
         
         // 6. 特征提取 / Feature extraction
         System.out.println("\n--- 步骤5: 特征提取 / Step 5: Feature Extraction ---");
-        IVector<Double> features = com.reremouse.lab.math.signal.WaveletAnalysis.waveletFeatureExtraction(coeffs);
+        IVector<Double> features = com.yishape.lab.math.signal.WaveletAnalysis.waveletFeatureExtraction(coeffs);
         System.out.println("特征提取完成，特征数量: " + features.length());
         
         // 7. 信号重建 / Signal reconstruction
         System.out.println("\n--- 步骤6: 信号重建 / Step 6: Signal Reconstruction ---");
-        IVector<Double> reconstructed = com.reremouse.lab.math.signal.WaveletAnalysis.inverseDiscreteWaveletTransform(
-            coeffs, com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES, 4.0
+        IVector<Double> reconstructed = com.yishape.lab.math.signal.WaveletAnalysis.inverseDiscreteWaveletTransform(
+            coeffs, com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES, 4.0
         );
         System.out.println("信号重建完成");
         
@@ -253,32 +253,32 @@ public class AdvancedWaveletAnalysisExample {
         System.out.println("测试信号生成完成，长度: " + signal.length());
         
         // 比较不同小波类型 / Compare different wavelet types
-        com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType[] waveletTypes = {
-            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.HAAR,
-            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES,
-            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.MORLET
+        com.yishape.lab.math.signal.WaveletAnalysis.WaveletType[] waveletTypes = {
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.HAAR,
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.DAUBECHIES,
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.MORLET
         };
         
-        for (com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType waveletType : waveletTypes) {
+        for (com.yishape.lab.math.signal.WaveletAnalysis.WaveletType waveletType : waveletTypes) {
             System.out.println("\n--- 使用 " + waveletType + " 小波 / Using " + waveletType + " Wavelet ---");
             
             // 小波分解 / Wavelet decomposition
-            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = com.reremouse.lab.math.signal.Signals.discreteWaveletTransform(
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = signal.math.com.yishape.lab.Signals.discreteWaveletTransform(
                 noisySignal, waveletType, 5, getWaveletParameter(waveletType)
             );
             
             // 小波去噪 / Wavelet denoising
-            IVector<Double> denoised = com.reremouse.lab.math.signal.WaveletAnalysis.waveletDenoising(
+            IVector<Double> denoised = com.yishape.lab.math.signal.WaveletAnalysis.waveletDenoising(
                 noisySignal, waveletType, 5, 0.1, getWaveletParameter(waveletType)
             );
             
             // 小波压缩 / Wavelet compression
-            IVector<Double> compressed = com.reremouse.lab.math.signal.WaveletAnalysis.waveletCompression(
+            IVector<Double> compressed = com.yishape.lab.math.signal.WaveletAnalysis.waveletCompression(
                 noisySignal, waveletType, 5, 0.3, getWaveletParameter(waveletType)
             );
             
             // 小波包变换 / Wavelet packet transform
-            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletPacketTree packetTree = com.reremouse.lab.math.signal.WaveletAnalysis.waveletPacketTransform(
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletPacketTree packetTree = com.yishape.lab.math.signal.WaveletAnalysis.waveletPacketTransform(
                 noisySignal, waveletType, 4, getWaveletParameter(waveletType)
             );
             
@@ -310,7 +310,7 @@ public class AdvancedWaveletAnalysisExample {
         return baseSignal.add(fmSignal).add(transient1).add(transient2).add(transient3);
     }
     
-    private static double getWaveletParameter(com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType waveletType) {
+    private static double getWaveletParameter(com.yishape.lab.math.signal.WaveletAnalysis.WaveletType waveletType) {
         switch (waveletType) {
             case DAUBECHIES:
                 return 4.0;  // db4
@@ -325,8 +325,8 @@ public class AdvancedWaveletAnalysisExample {
     
     private static void analyzeWaveletResults(IVector<Double> original, IVector<Double> noisy,
                                             IVector<Double> denoised, IVector<Double> compressed,
-                                            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs,
-                                            com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType waveletType) {
+                                            com.yishape.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs,
+                                            com.yishape.lab.math.signal.WaveletAnalysis.WaveletType waveletType) {
         // 计算信噪比 / Calculate signal-to-noise ratio
         double originalSNR = Signals.signalToNoiseRatio(original, original.sub(noisy));
         double denoisedSNR = Signals.signalToNoiseRatio(original, original.sub(denoised));
@@ -338,10 +338,10 @@ public class AdvancedWaveletAnalysisExample {
         double compressedPSNR = Signals.peakSignalToNoiseRatio(original, compressed);
         
         // 小波能量分析 / Wavelet energy analysis
-        IVector<Double> energy = com.reremouse.lab.math.signal.WaveletAnalysis.waveletEnergyAnalysis(coeffs);
+        IVector<Double> energy = com.yishape.lab.math.signal.WaveletAnalysis.waveletEnergyAnalysis(coeffs);
         
         // 小波特征提取 / Wavelet feature extraction
-        IVector<Double> features = com.reremouse.lab.math.signal.WaveletAnalysis.waveletFeatureExtraction(coeffs);
+        IVector<Double> features = com.yishape.lab.math.signal.WaveletAnalysis.waveletFeatureExtraction(coeffs);
         
         System.out.println("小波类型: " + waveletType);
         System.out.println("原始信噪比: " + String.format("%.2f", originalSNR) + " dB");
@@ -359,8 +359,8 @@ public class AdvancedWaveletAnalysisExample {
         IVector<Double> scales = Linalg.linspace(1.0, 100.0, 50);
         
         // 执行连续小波变换 / Perform continuous wavelet transform
-        com.reremouse.lab.math.linalg.IMatrix<Double> cwt = com.reremouse.lab.math.signal.WaveletAnalysis.continuousWaveletTransform(
-            signal, com.reremouse.lab.math.signal.WaveletAnalysis.WaveletType.MORLET, scales, 5.0
+        linalg.math.com.yishape.lab.IMatrix<Double> cwt = com.yishape.lab.math.signal.WaveletAnalysis.continuousWaveletTransform(
+            signal, com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.MORLET, scales, 5.0
         );
         
         System.out.println("连续小波变换完成");
@@ -381,10 +381,10 @@ public class AdvancedWaveletAnalysisExample {
 ### 3.1 实时信号处理 / Real-time Signal Processing
 
 ```java
-import com.reremouse.lab.math.signal.Signals;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
+import signal.math.com.yishape.lab.Signals;
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
+import util.com.yishape.lab.Tuple2;
 
 public class RealTimeSignalProcessingExample {
     public static void main(String[] args) {
@@ -561,7 +561,7 @@ public class KalmanFilteringExample {
         
         // 通过工厂模式使用卡尔曼滤波器 / Using Kalman filter through factory pattern
         try {
-            com.reremouse.lab.math.signal.filter.ISignalFilter<Double> kalmanFilter = Signals.createFilter("kalman");
+            filter.signal.math.com.yishape.lab.ISignalFilter<Double> kalmanFilter = Signals.createFilter("kalman");
             IVector<Double> factoryFiltered = kalmanFilter.process(noisySignal);
             System.out.println("工厂模式卡尔曼滤波完成");
         } catch (Exception e) {
@@ -596,7 +596,7 @@ public class WienerFilteringExample {
         
         // 通过工厂模式使用维纳滤波器 / Using Wiener filter through factory pattern
         try {
-            com.reremouse.lab.math.signal.filter.ISignalFilter<Double> wienerFilter = Signals.createFilter("wiener");
+            filter.signal.math.com.yishape.lab.ISignalFilter<Double> wienerFilter = Signals.createFilter("wiener");
             IVector<Double> factoryFiltered = wienerFilter.process(noisySignal);
             System.out.println("工厂模式维纳滤波完成");
         } catch (Exception e) {
@@ -638,7 +638,7 @@ public class BandStopFilteringExample {
         
         // 通过工厂模式使用带阻滤波器 / Using band-stop filter through factory pattern
         try {
-            com.reremouse.lab.math.signal.filter.ISignalFilter<Double> bandStopFilter = Signals.createFilter("bandstop");
+            filter.signal.math.com.yishape.lab.ISignalFilter<Double> bandStopFilter = Signals.createFilter("bandstop");
             IVector<Double> factoryFiltered = bandStopFilter.process(noisySignal);
             System.out.println("工厂模式带阻滤波完成");
         } catch (Exception e) {

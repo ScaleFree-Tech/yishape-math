@@ -12,19 +12,6 @@ This document systematically organizes detailed usage examples for the data visu
 
 ### 1.1 环境准备和基本概念 / Environment Setup and Basic Concepts
 
-#### 导入必要的类 / Import Required Classes
-
-```java
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.viz.Plots;
-import com.reremouse.lab.math.viz.IPlot;
-import com.reremouse.lab.math.viz.PlotStyle;
-import java.util.Arrays;
-import java.util.List;
-```
-
 #### 创建第一个图表 / Create Your First Chart
 
 ```java

@@ -177,115 +177,132 @@ Signal visualization class providing signal data visualization functionality.
 #### 1.1 基本波形生成 / Basic Waveform Generation
 
 ```java
-import com.reremouse.lab.math.signal.Signals;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
+
+import linalg.math.com.yishape.lab.IVector;
+import linalg.math.com.yishape.lab.Linalg;
 
 // 生成正弦波信号 / Generate sine wave signal
-IVector<Double> sineWave = Signals.sineWave(
-    1000,      // 信号长度 / Signal length
-    50.0,      // 频率 (Hz) / Frequency (Hz)
-    1000.0,    // 采样率 (Hz) / Sampling rate (Hz)
-    1.0,       // 幅度 / Amplitude
-    0.0        // 相位 (弧度) / Phase (radians)
-);
+IVector<Double>sineWave=Signals.sineWave(
+        1000,      // 信号长度 / Signal length
+        50.0,      // 频率 (Hz) / Frequency (Hz)
+        1000.0,    // 采样率 (Hz) / Sampling rate (Hz)
+        1.0,       // 幅度 / Amplitude
+        0.0        // 相位 (弧度) / Phase (radians)
+        );
 
 // 生成余弦波信号 / Generate cosine wave signal
-IVector<Double> cosineWave = Signals.cosineWave(
-    1000, 50.0, 1000.0, 1.0, 0.0
-);
+        IVector<Double>cosineWave=Signals.cosineWave(
+        1000,50.0,1000.0,1.0,0.0
+        );
 
 // 生成方波信号 / Generate square wave signal
-IVector<Double> squareWave = Signals.squareWave(
-    1000,      // 信号长度 / Signal length
-    50.0,      // 频率 (Hz) / Frequency (Hz)
-    1000.0,    // 采样率 (Hz) / Sampling rate (Hz)
-    1.0,       // 幅度 / Amplitude
-    0.5        // 占空比 (0-1) / Duty cycle (0-1)
-);
+        IVector<Double>squareWave=Signals.squareWave(
+        1000,      // 信号长度 / Signal length
+        50.0,      // 频率 (Hz) / Frequency (Hz)
+        1000.0,    // 采样率 (Hz) / Sampling rate (Hz)
+        1.0,       // 幅度 / Amplitude
+        0.5        // 占空比 (0-1) / Duty cycle (0-1)
+        );
 
 // 生成三角波信号 / Generate triangular wave signal
-IVector<Double> triangularWave = Signals.triangularWave(
-    1000, 50.0, 1000.0, 1.0, 0.5  // 0.5为对称三角波 / 0.5 for symmetric triangular wave
-);
+        IVector<Double>triangularWave=Signals.triangularWave(
+        1000,50.0,1000.0,1.0,0.5  // 0.5为对称三角波 / 0.5 for symmetric triangular wave
+        );
 
 // 生成锯齿波信号 / Generate sawtooth wave signal
-IVector<Double> sawtoothWave = Signals.sawtoothWave(
-    1000, 50.0, 1000.0, 1.0
-);
+        IVector<Double>sawtoothWave=Signals.sawtoothWave(
+        1000,50.0,1000.0,1.0
+        );
 
 // 使用工厂模式创建信号生成器 / Using factory pattern to create signal generators
-import com.reremouse.lab.math.signal.factory.SignalProcessorFactory;
-import com.reremouse.lab.math.signal.generation.ISignalGenerator;
-import com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalType;
-import com.reremouse.lab.math.signal.generation.ISignalGenerator.SignalParameters;
+import factory.signal.math.com.yishape.lab.SignalProcessorFactory;
+import generation.signal.math.com.yishape.lab.ISignalGenerator;
+import generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType;
+import generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters;
 
 // 方法1: 使用工厂创建不同类型的生成器 / Method 1: Using factory to create different types of generators
-try {
-    SignalProcessorFactory factory = SignalProcessorFactory.getInstance();
+try{
+SignalProcessorFactory factory = SignalProcessorFactory.getInstance();
+
+// 注册不同类型的信号生成器 / Register different types of signal generators
+    factory.
+
+registerProcessor("sine_generator",SineWaveGenerator .class,
+                  SignalProcessorFactory.ProcessorCategory.GENERATOR, 
+        "Sine Wave Generator","1.0.0");
     
-    // 注册不同类型的信号生成器 / Register different types of signal generators
-    factory.registerProcessor("sine_generator", SineWaveGenerator.class, 
-        SignalProcessorFactory.ProcessorCategory.GENERATOR, 
-        "Sine Wave Generator", "1.0.0");
+    factory.
+
+registerProcessor("square_generator",SquareWaveGenerator .class,
+                  SignalProcessorFactory.ProcessorCategory.GENERATOR, 
+        "Square Wave Generator","1.0.0");
     
-    factory.registerProcessor("square_generator", SquareWaveGenerator.class, 
-        SignalProcessorFactory.ProcessorCategory.GENERATOR, 
-        "Square Wave Generator", "1.0.0");
-    
-    factory.registerProcessor("noise_generator", NoiseGenerator.class, 
-        SignalProcessorFactory.ProcessorCategory.GENERATOR, 
-        "Noise Generator", "1.0.0");
-    
-    // 创建正弦波生成器 / Create sine wave generator
-    ISignalGenerator<Double> sineGenerator = factory.createGenerator("sine_generator");
-    
-    // 创建方波生成器 / Create square wave generator
-    ISignalGenerator<Double> squareGenerator = factory.createGenerator("square_generator");
-    
-    // 创建噪声生成器 / Create noise generator
-    ISignalGenerator<Double> noiseGenerator = factory.createGenerator("noise_generator");
-    
-    // 使用参数化生成 / Using parameterized generation
-    SignalParameters params = new SignalParameters()
+    factory.
+
+registerProcessor("noise_generator",NoiseGenerator .class,
+                  SignalProcessorFactory.ProcessorCategory.GENERATOR, 
+        "Noise Generator","1.0.0");
+
+// 创建正弦波生成器 / Create sine wave generator
+ISignalGenerator<Double> sineGenerator = factory.createGenerator("sine_generator");
+
+// 创建方波生成器 / Create square wave generator
+ISignalGenerator<Double> squareGenerator = factory.createGenerator("square_generator");
+
+// 创建噪声生成器 / Create noise generator
+ISignalGenerator<Double> noiseGenerator = factory.createGenerator("noise_generator");
+
+// 使用参数化生成 / Using parameterized generation
+SignalParameters params = new SignalParameters()
         .amplitude(1.0)
         .frequency(50.0)
         .phase(0.0)
         .samplingRate(1000.0)
         .dutyCycle(0.5);
+
+// 生成不同类型的信号 / Generate different types of signals
+IVector<Double> sineSignal = sineGenerator.generate(SignalType.SINE, 1000, params);
+IVector<Double> squareSignal = squareGenerator.generate(SignalType.SQUARE, 1000, params);
+IVector<Double> noiseSignal = noiseGenerator.generate(SignalType.WHITE_NOISE, 1000, params);
     
-    // 生成不同类型的信号 / Generate different types of signals
-    IVector<Double> sineSignal = sineGenerator.generate(SignalType.SINE, 1000, params);
-    IVector<Double> squareSignal = squareGenerator.generate(SignalType.SQUARE, 1000, params);
-    IVector<Double> noiseSignal = noiseGenerator.generate(SignalType.WHITE_NOISE, 1000, params);
-    
-    System.out.println("工厂创建生成器成功");
-    System.out.println("正弦波信号长度: " + sineSignal.length());
-    System.out.println("方波信号长度: " + squareSignal.length());
-    System.out.println("噪声信号长度: " + noiseSignal.length());
-    
-} catch (Exception e) {
-    System.err.println("工厂创建生成器失败: " + e.getMessage());
-}
+    System.out.
+
+println("工厂创建生成器成功");
+    System.out.
+
+println("正弦波信号长度: "+sineSignal.length());
+        System.out.
+
+println("方波信号长度: "+squareSignal.length());
+        System.out.
+
+println("噪声信号长度: "+noiseSignal.length());
+
+        }catch(
+Exception e){
+        System.err.
+
+println("工厂创建生成器失败: "+e.getMessage());
+        }
 
 // 方法2: 使用生成器链模式 / Method 2: Using generator chain pattern
 class SignalGeneratorChain {
     private final List<ISignalGenerator<Double>> generators;
-    
+
     public SignalGeneratorChain() {
         this.generators = new ArrayList<>();
     }
-    
+
     public SignalGeneratorChain addGenerator(ISignalGenerator<Double> generator) {
         generators.add(generator);
         return this;
     }
-    
+
     public IVector<Double> generateComposite(SignalType[] types, int length, SignalParameters[] params) {
         if (types.length != generators.size() || types.length != params.length) {
             throw new IllegalArgumentException("类型、生成器和参数数量必须匹配");
         }
-        
+
         IVector<Double> result = Linalg.zeros(length);
         for (int i = 0; i < types.length; i++) {
             IVector<Double> component = generators.get(i).generate(types[i], length, params[i]);
@@ -296,25 +313,30 @@ class SignalGeneratorChain {
 }
 
 // 使用生成器链 / Using generator chain
-try {
-    SignalGeneratorChain chain = new SignalGeneratorChain()
+try{
+SignalGeneratorChain chain = new SignalGeneratorChain()
         .addGenerator(factory.createGenerator("sine_generator"))
         .addGenerator(factory.createGenerator("square_generator"))
         .addGenerator(factory.createGenerator("noise_generator"));
-    
-    SignalType[] types = {SignalType.SINE, SignalType.SQUARE, SignalType.WHITE_NOISE};
-    SignalParameters[] paramArray = {
+
+SignalType[] types = {SignalType.SINE, SignalType.SQUARE, SignalType.WHITE_NOISE};
+SignalParameters[] paramArray = {
         new SignalParameters().frequency(10.0).amplitude(1.0).samplingRate(1000.0),
         new SignalParameters().frequency(50.0).amplitude(0.5).samplingRate(1000.0),
         new SignalParameters().noiseVariance(0.1).samplingRate(1000.0)
-    };
-    
-    IVector<Double> compositeSignal = chain.generateComposite(types, 1000, paramArray);
-    System.out.println("生成器链创建复合信号成功，长度: " + compositeSignal.length());
-    
-} catch (Exception e) {
-    System.err.println("生成器链创建失败: " + e.getMessage());
-}
+};
+
+IVector<Double> compositeSignal = chain.generateComposite(types, 1000, paramArray);
+    System.out.
+
+println("生成器链创建复合信号成功，长度: "+compositeSignal.length());
+
+        }catch(
+Exception e){
+        System.err.
+
+println("生成器链创建失败: "+e.getMessage());
+        }
 ```
 
 #### 1.2 噪声信号生成 / Noise Signal Generation
@@ -386,7 +408,7 @@ IVector<Double> diracDelta = Signals.diracDelta(1000, 100, 1.0);
 #### 2.1 基础滤波方法 / Basic Filtering Methods
 
 ```java
-import com.reremouse.lab.math.signal.Signals;
+import signal.math.com.yishape.lab.Signals;
 
 // 移动平均滤波 / Moving average filtering
 IVector<Double> filtered = Signals.movingAverage(signal, 5);
@@ -436,10 +458,10 @@ IVector<Double> wienerFiltered = Signals.wienerFilter(
 );
 
 // 使用高级滤波器接口 / Using advanced filter interface
-import com.reremouse.lab.math.signal.filter.ISignalFilter;
-import com.reremouse.lab.math.signal.filter.ChebyshevFilter;
-import com.reremouse.lab.math.signal.filter.ISignalFilter.FilterType;
-import com.reremouse.lab.math.signal.filter.ISignalFilter.FilterImplementation;
+import filter.signal.math.com.yishape.lab.ISignalFilter;
+import filter.signal.math.com.yishape.lab.ChebyshevFilter;
+import filter.signal.math.com.yishape.lab.ISignalFilter.FilterType;
+import filter.signal.math.com.yishape.lab.ISignalFilter.FilterImplementation;
 
 // 创建切比雪夫滤波器 / Create Chebyshev filter
 try {
@@ -475,7 +497,7 @@ try {
 }
 
 // 使用滤波器工厂创建滤波器 / Using filter factory to create filters
-import com.reremouse.lab.math.signal.factory.SignalProcessorFactory;
+import factory.signal.math.com.yishape.lab.SignalProcessorFactory;
 
 try {
     SignalProcessorFactory factory = SignalProcessorFactory.getInstance();
@@ -501,9 +523,9 @@ try {
 #### 3.1 频谱分析 / Spectral Analysis
 
 ```java
-import com.reremouse.lab.math.signal.Signals;
-import com.reremouse.lab.util.Tuple2;
-import com.reremouse.lab.util.Tuple3;
+import signal.math.com.yishape.lab.Signals;
+import util.com.yishape.lab.Tuple2;
+import util.com.yishape.lab.Tuple3;
 
 // 计算功率谱密度 (PSD) / Calculate Power Spectral Density (PSD)
 Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
@@ -543,16 +565,17 @@ IVector<Double> crossCorrLimited = Signals.crossCorrelation(signal1, signal2, 10
 
 ```java
 // 计算信噪比 (SNR) / Calculate Signal-to-Noise Ratio (SNR)
-double snr = Signals.signalToNoiseRatio(originalSignal, noiseSignal);
+
+double snr=Signals.signalToNoiseRatio(originalSignal,noiseSignal);
 
 // 计算峰值信噪比 (PSNR) / Calculate Peak Signal-to-Noise Ratio (PSNR)
-double psnr = Signals.peakSignalToNoiseRatio(originalSignal, reconstructedSignal);
+        double psnr=Signals.peakSignalToNoiseRatio(originalSignal,reconstructedSignal);
 
 // 使用信号分析器接口的高级分析 / Advanced analysis using signal analyzer interface
-import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer;
-import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer.AnalysisType;
-import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer.AnalysisParameters;
-import com.reremouse.lab.math.signal.analysis.ISignalAnalyzer.AnalysisResult;
+import analysis.signal.math.com.yishape.lab.ISignalAnalyzer;
+import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisType;
+import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisParameters;
+import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisResult;
 
 // 创建自定义信号分析器 / Create custom signal analyzer
 ISignalAnalyzer<Double> analyzer = new ISignalAnalyzer<Double>() {
@@ -560,37 +583,37 @@ ISignalAnalyzer<Double> analyzer = new ISignalAnalyzer<Double>() {
     public <R> AnalysisResult<R> analyze(IVector<Double> signal, AnalysisType analysisType, AnalysisParameters parameters) {
         switch (analysisType) {
             case SPECTRUM:
-                Tuple3<IVector<Double>, IVector<Double>, IVector<Double>> spectrumResult = 
-                    Signals.spectrum(signal, parameters.getSamplingRate());
-                return new AnalysisResult<>(analysisType, (R) spectrumResult, 
-                    new String[]{"frequencies", "magnitude", "phase"}, 
-                    "Signal spectrum analysis", parameters.getConfidenceLevel());
-                    
+                Tuple3<IVector<Double>, IVector<Double>, IVector<Double>> spectrumResult =
+                        Signals.spectrum(signal, parameters.getSamplingRate());
+                return new AnalysisResult<>(analysisType, (R) spectrumResult,
+                        new String[]{"frequencies", "magnitude", "phase"},
+                        "Signal spectrum analysis", parameters.getConfidenceLevel());
+
             case POWER_SPECTRUM:
-                Tuple2<IVector<Double>, IVector<Double>> psdResult = 
-                    Signals.powerSpectralDensity(signal, parameters.getWindowSize(), 
-                        parameters.getOverlap(), parameters.getSamplingRate());
-                return new AnalysisResult<>(analysisType, (R) psdResult, 
-                    new String[]{"frequencies", "psd"}, 
-                    "Power spectral density analysis", parameters.getConfidenceLevel());
-                    
+                Tuple2<IVector<Double>, IVector<Double>> psdResult =
+                        Signals.powerSpectralDensity(signal, parameters.getWindowSize(),
+                                parameters.getOverlap(), parameters.getSamplingRate());
+                return new AnalysisResult<>(analysisType, (R) psdResult,
+                        new String[]{"frequencies", "psd"},
+                        "Power spectral density analysis", parameters.getConfidenceLevel());
+
             case AUTOCORRELATION:
                 IVector<Double> autocorr = Signals.autocorrelation(signal);
-                return new AnalysisResult<>(analysisType, (R) autocorr, 
-                    new String[]{"autocorrelation"}, 
-                    "Autocorrelation analysis", parameters.getConfidenceLevel());
-                    
+                return new AnalysisResult<>(analysisType, (R) autocorr,
+                        new String[]{"autocorrelation"},
+                        "Autocorrelation analysis", parameters.getConfidenceLevel());
+
             case SNR:
                 double snr = Signals.signalToNoiseRatio(signal, signal); // 简化示例
-                return new AnalysisResult<>(analysisType, (R) Double.valueOf(snr), 
-                    new String[]{"snr"}, 
-                    "Signal-to-noise ratio analysis", parameters.getConfidenceLevel());
-                    
+                return new AnalysisResult<>(analysisType, (R) Double.valueOf(snr),
+                        new String[]{"snr"},
+                        "Signal-to-noise ratio analysis", parameters.getConfidenceLevel());
+
             default:
                 throw new UnsupportedOperationException("Unsupported analysis type: " + analysisType);
         }
     }
-    
+
     @Override
     public AnalysisResult<?>[] batchAnalyze(IVector<Double> signal, AnalysisType[] analysisTypes, AnalysisParameters parameters) {
         AnalysisResult<?>[] results = new AnalysisResult[analysisTypes.length];
@@ -599,51 +622,51 @@ ISignalAnalyzer<Double> analyzer = new ISignalAnalyzer<Double>() {
         }
         return results;
     }
-    
+
     @Override
     public <R> AnalysisResult<R> compareAnalyze(IVector<Double> signal1, IVector<Double> signal2, AnalysisType analysisType, AnalysisParameters parameters) {
         // 比较分析实现 / Comparison analysis implementation
         double snr1 = Signals.signalToNoiseRatio(signal1, signal1);
         double snr2 = Signals.signalToNoiseRatio(signal2, signal2);
         double snrDiff = snr1 - snr2;
-        
-        return new AnalysisResult<>(analysisType, (R) Double.valueOf(snrDiff), 
-            new String[]{"snr_difference"}, 
-            "SNR comparison analysis", parameters.getConfidenceLevel());
+
+        return new AnalysisResult<>(analysisType, (R) Double.valueOf(snrDiff),
+                new String[]{"snr_difference"},
+                "SNR comparison analysis", parameters.getConfidenceLevel());
     }
-    
+
     @Override
     public AnalysisType[] getSupportedAnalysisTypes() {
-        return new AnalysisType[]{AnalysisType.SPECTRUM, AnalysisType.POWER_SPECTRUM, 
-            AnalysisType.AUTOCORRELATION, AnalysisType.SNR};
+        return new AnalysisType[]{AnalysisType.SPECTRUM, AnalysisType.POWER_SPECTRUM,
+                AnalysisType.AUTOCORRELATION, AnalysisType.SNR};
     }
-    
+
     @Override
     public boolean validateParameters(AnalysisType analysisType, AnalysisParameters parameters) {
         return parameters.getSamplingRate() > 0 && parameters.getWindowSize() > 0;
     }
-    
+
     @Override
     public AnalysisParameters getRecommendedParameters(IVector<Double> signal, AnalysisType analysisType) {
         AnalysisParameters params = new AnalysisParameters();
         params.samplingRate(1000.0)
-              .windowSize(Math.min(256, signal.length() / 4))
-              .overlap(0.5)
-              .confidenceLevel(0.95);
+                .windowSize(Math.min(256, signal.length() / 4))
+                .overlap(0.5)
+                .confidenceLevel(0.95);
         return params;
     }
 };
 
 // 使用分析器进行信号分析 / Using analyzer for signal analysis
 AnalysisParameters analysisParams = new AnalysisParameters()
-    .samplingRate(1000.0)
-    .windowSize(256)
-    .overlap(0.5)
-    .confidenceLevel(0.95);
+        .samplingRate(1000.0)
+        .windowSize(256)
+        .overlap(0.5)
+        .confidenceLevel(0.95);
 
 // 单个分析 / Single analysis
-AnalysisResult<Tuple3<IVector<Double>, IVector<Double>, IVector<Double>>> spectrumResult = 
-    analyzer.analyze(signal, AnalysisType.SPECTRUM, analysisParams);
+AnalysisResult<Tuple3<IVector<Double>, IVector<Double>, IVector<Double>>> spectrumResult =
+        analyzer.analyze(signal, AnalysisType.SPECTRUM, analysisParams);
 
 // 批量分析 / Batch analysis
 AnalysisType[] analysisTypes = {AnalysisType.SPECTRUM, AnalysisType.POWER_SPECTRUM, AnalysisType.SNR};
@@ -658,7 +681,7 @@ AnalysisResult<Double> comparisonResult = analyzer.compareAnalyze(signal1, signa
 #### 4.1 窗函数 / Window Functions
 
 ```java
-import com.reremouse.lab.math.signal.SignalUtilities;
+import com.yishape.lab.math.signal.SignalUtilities;
 
 // 生成各种窗函数 / Generate various window functions
 IVector<Double> hanningWindow = SignalUtilities.window(256, SignalUtilities.WindowType.HANNING);
@@ -713,7 +736,7 @@ IVector<Double> smoothed = SignalUtilities.smooth(signal, 5);
 #### 5.1 离散小波变换 (DWT) / Discrete Wavelet Transform (DWT)
 
 ```java
-import com.reremouse.lab.math.signal.WaveletAnalysis;
+import com.yishape.lab.math.signal.WaveletAnalysis;
 
 // 执行离散小波变换 / Perform discrete wavelet transform
 WaveletAnalysis.WaveletCoefficients coeffs = WaveletAnalysis.discreteWaveletTransform(
@@ -769,82 +792,101 @@ IVector<Double> compressed = WaveletAnalysis.waveletCompression(
 
 ```java
 // 小波能量分析 / Wavelet energy analysis
-IVector<Double> energy = WaveletAnalysis.waveletEnergyAnalysis(coeffs);
+
+IVector<Double>energy=WaveletAnalysis.waveletEnergyAnalysis(coeffs);
 
 // 小波特征提取 / Wavelet feature extraction
-IVector<Double> features = WaveletAnalysis.waveletFeatureExtraction(coeffs);
+        IVector<Double>features=WaveletAnalysis.waveletFeatureExtraction(coeffs);
 
 // 使用信号变换接口进行小波分析 / Using signal transform interface for wavelet analysis
-import com.reremouse.lab.math.signal.transform.ISignalTransform;
-import com.reremouse.lab.math.signal.transform.ChirpZTransform;
-import com.reremouse.lab.math.signal.core.ISignalProcessor;
-import com.reremouse.lab.math.signal.core.AbstractSignalProcessor;
-import com.reremouse.lab.math.signal.core.SignalProcessingException;
+import transform.signal.math.com.yishape.lab.ISignalTransform;
+import transform.signal.math.com.yishape.lab.ChirpZTransform;
+import core.signal.math.com.yishape.lab.ISignalProcessor;
+import core.signal.math.com.yishape.lab.AbstractSignalProcessor;
+import core.signal.math.com.yishape.lab.SignalProcessingException;
 
 // 创建自定义小波变换器 / Create custom wavelet transformer
-ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients> waveletTransformer = 
-    new ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients>() {
-    
-    @Override
-    public WaveletAnalysis.WaveletCoefficients forward(IVector<Double> signal) throws SignalProcessingException {
-        return WaveletAnalysis.discreteWaveletTransform(
-            signal, WaveletAnalysis.WaveletType.DAUBECHIES, 4, 4.0);
-    }
-    
-    @Override
-    public IVector<Double> inverse(WaveletAnalysis.WaveletCoefficients transformed) throws SignalProcessingException {
-        return WaveletAnalysis.inverseDiscreteWaveletTransform(
-            transformed, WaveletAnalysis.WaveletType.DAUBECHIES, 4.0);
-    }
-    
-    @Override
-    public boolean validateInput(IVector<Double> input) {
-        return input != null && input.length() > 0;
-    }
-    
-    @Override
-    public String getName() {
-        return "Custom Wavelet Transformer";
-    }
-    
-    @Override
-    public ISignalProcessor<Double> clone() {
-        return this; // 简化实现
-    }
-};
+ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients> waveletTransformer =
+        new ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients>() {
+
+            @Override
+            public WaveletAnalysis.WaveletCoefficients forward(IVector<Double> signal) throws SignalProcessingException {
+                return WaveletAnalysis.discreteWaveletTransform(
+                        signal, WaveletAnalysis.WaveletType.DAUBECHIES, 4, 4.0);
+            }
+
+            @Override
+            public IVector<Double> inverse(WaveletAnalysis.WaveletCoefficients transformed) throws SignalProcessingException {
+                return WaveletAnalysis.inverseDiscreteWaveletTransform(
+                        transformed, WaveletAnalysis.WaveletType.DAUBECHIES, 4.0);
+            }
+
+            @Override
+            public boolean validateInput(IVector<Double> input) {
+                return input != null && input.length() > 0;
+            }
+
+            @Override
+            public String getName() {
+                return "Custom Wavelet Transformer";
+            }
+
+            @Override
+            public ISignalProcessor<Double> clone() {
+                return this; // 简化实现
+            }
+        };
 
 // 使用变换器 / Using transformer
-try {
-    WaveletAnalysis.WaveletCoefficients coeffs = waveletTransformer.forward(signal);
-    IVector<Double> reconstructed = waveletTransformer.inverse(coeffs);
+try{
+WaveletAnalysis.WaveletCoefficients coeffs = waveletTransformer.forward(signal);
+IVector<Double> reconstructed = waveletTransformer.inverse(coeffs);
     
-    System.out.println("小波变换完成，分解层数: " + coeffs.levels);
-    System.out.println("近似系数长度: " + coeffs.approximation.length());
-    System.out.println("细节系数数量: " + coeffs.details.length);
+    System.out.
+
+println("小波变换完成，分解层数: "+coeffs.levels);
+    System.out.
+
+println("近似系数长度: "+coeffs.approximation.length());
+        System.out.
+
+println("细节系数数量: "+coeffs.details.length);
     
-} catch (SignalProcessingException e) {
-    System.err.println("小波变换失败: " + e.getMessage());
-}
+}catch(
+SignalProcessingException e){
+        System.err.
+
+println("小波变换失败: "+e.getMessage());
+        }
 
 // 使用Chirp-Z变换进行高分辨率频谱分析 / Using Chirp-Z transform for high-resolution spectral analysis
-try {
-    // 创建Chirp-Z变换器 / Create Chirp-Z transformer
-    ChirpZTransform czt = ChirpZTransform.forFrequencyRange(0.01, 0.5, 1000);
+        try{
+// 创建Chirp-Z变换器 / Create Chirp-Z transformer
+ChirpZTransform czt = ChirpZTransform.forFrequencyRange(0.01, 0.5, 1000);
+
+// 执行变换 / Perform transform
+Complex[] cztResult = czt.forward(signal);
+
+// 计算幅度谱 / Calculate magnitude spectrum
+IVector<Double> magnitude = Linalg.zeros(cztResult.length);
+    for(
+int i = 0;
+i<cztResult.length;i++){
+        magnitude.
+
+set(i, cztResult[i].magnitude());
+        }
+
+        System.out.
+
+println("Chirp-Z变换完成，输出点数: "+cztResult.length);
     
-    // 执行变换 / Perform transform
-    Complex[] cztResult = czt.forward(signal);
-    
-    // 计算幅度谱 / Calculate magnitude spectrum
-    IVector<Double> magnitude = Linalg.zeros(cztResult.length);
-    for (int i = 0; i < cztResult.length; i++) {
-        magnitude.set(i, cztResult[i].magnitude());
-    }
-    
-    System.out.println("Chirp-Z变换完成，输出点数: " + cztResult.length);
-    
-} catch (SignalProcessingException e) {
-    System.err.println("Chirp-Z变换失败: " + e.getMessage());
-}
+}catch(
+SignalProcessingException e){
+        System.err.
+
+println("Chirp-Z变换失败: "+e.getMessage());
+        }
 
 // 使用核心框架进行信号处理 / Using core framework for signal processing
 AbstractSignalProcessor<Double> customProcessor = new AbstractSignalProcessor<Double>("Custom Processor", "1.0.0") {
@@ -852,20 +894,20 @@ AbstractSignalProcessor<Double> customProcessor = new AbstractSignalProcessor<Do
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         // 预处理：归一化 / Preprocessing: normalization
         IVector<Double> normalized = SignalUtilities.normalize(input, -1.0, 1.0);
-        
+
         // 核心处理：小波去噪 / Core processing: wavelet denoising
         IVector<Double> denoised = WaveletAnalysis.waveletDenoising(
-            normalized, WaveletAnalysis.WaveletType.DAUBECHIES, 4, 0.1, 4.0);
-        
+                normalized, WaveletAnalysis.WaveletType.DAUBECHIES, 4, 0.1, 4.0);
+
         // 后处理：平滑 / Postprocessing: smoothing
         return SignalUtilities.smooth(denoised, 3);
     }
-    
+
     @Override
     protected boolean validateSpecificInput(IVector<Double> input) {
         return input.length() >= 16; // 最小长度要求
     }
-    
+
     @Override
     public AbstractSignalProcessor<Double> clone() {
         return new AbstractSignalProcessor<Double>("Custom Processor", "1.0.0") {
@@ -873,7 +915,7 @@ AbstractSignalProcessor<Double> customProcessor = new AbstractSignalProcessor<Do
             protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
                 return customProcessor.doProcess(input);
             }
-            
+
             @Override
             protected boolean validateSpecificInput(IVector<Double> input) {
                 return customProcessor.validateSpecificInput(input);
@@ -883,12 +925,17 @@ AbstractSignalProcessor<Double> customProcessor = new AbstractSignalProcessor<Do
 };
 
 // 使用自定义处理器 / Using custom processor
-try {
-    IVector<Double> processed = customProcessor.process(signal);
-    System.out.println("自定义处理器处理完成，输出长度: " + processed.length());
-} catch (SignalProcessingException e) {
-    System.err.println("自定义处理器处理失败: " + e.getMessage());
-}
+try{
+IVector<Double> processed = customProcessor.process(signal);
+    System.out.
+
+println("自定义处理器处理完成，输出长度: "+processed.length());
+        }catch(
+SignalProcessingException e){
+        System.err.
+
+println("自定义处理器处理失败: "+e.getMessage());
+        }
 ```
 
 ### 6. 快速傅里叶变换 (FFT) / Fast Fourier Transform (FFT)
@@ -896,8 +943,8 @@ try {
 #### 6.1 基本FFT操作 / Basic FFT Operations
 
 ```java
-import com.reremouse.lab.math.signal.RereFFT;
-import com.reremouse.lab.math.signal.Complex;
+import com.yishape.lab.math.signal.RereFFT;
+import com.yishape.lab.math.signal.Complex;
 
 // 将实数信号转换为复数数组 / Convert real signal to complex array
 Complex[] complexSignal = new Complex[signal.length()];
@@ -930,7 +977,7 @@ double[] power = RereFFT.powerSpectrum(fftResult);
 #### 7.1 基本复数操作 / Basic Complex Operations
 
 ```java
-import com.reremouse.lab.math.signal.Complex;
+import com.yishape.lab.math.signal.Complex;
 
 // 创建复数 / Create complex numbers
 Complex c1 = new Complex(3.0, 4.0);  // 3 + 4i

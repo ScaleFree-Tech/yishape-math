@@ -9,17 +9,17 @@ The optimization algorithms package provides implementations of various mathemat
 ## 包结构 / Package Structure
 
 优化算法包按照功能划分为多个子包：
-- **`com.reremouse.lab.math.optimize`**: 核心接口和通用类
+- **`com.yishape.lab.math.optimize`**: 核心接口和通用类
   - 核心接口：`IOptimizer`, `IOnlineOptimizer`, `IObjectiveFunction`, `IGradientFunction`, `ILinProgSolver`
   - 线搜索：`RereLineSearch`
-- **`com.reremouse.lab.math.optimize.newton`**: 拟牛顿法和相关优化算法
+- **`com.yishape.lab.math.optimize.newton`**: 拟牛顿法和相关优化算法
   - L-BFGS优化器：`RereLBFGS`
   - 在线优化器：`RereOnlineSGD`, `RereOnlineAdam`
   - 其他牛顿类方法：`RereConjugateGradient`, `RereDFP`, `RereSteepestDescent`
-- **`com.reremouse.lab.math.optimize.linpg`**: 线性规划求解器
+- **`com.yishape.lab.math.optimize.linpg`**: 线性规划求解器
   - 内点法线性规划求解器：`InteriorPointLinProgSolver`
   - 拉格朗日乘数法线性规划求解器：`LangMultiplierLinProgSolver`
-- **`com.reremouse.lab.math.optimize.constraint`**: 约束优化算法
+- **`com.yishape.lab.math.optimize.constraint`**: 约束优化算法
   - 拉格朗日乘数求解器：`LagrangeMultiplierSolver`
 
 ## 核心接口 / Core Interfaces
@@ -245,9 +245,9 @@ public interface ILinProgSolver {
 
 ### 1. L-BFGS优化器 / L-BFGS Optimizer
 
-L-BFGS优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+L-BFGS优化器位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The L-BFGS optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
+The L-BFGS optimizer is located in the `com.yishape.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -342,9 +342,9 @@ System.out.println("最优点: " + optimalPoint); // Optimal point
 
 ### 2. 在线随机梯度下降优化器 / Online Stochastic Gradient Descent Optimizer
 
-在线随机梯度下降优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+在线随机梯度下降优化器位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The Online Stochastic Gradient Descent optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
+The Online Stochastic Gradient Descent optimizer is located in the `com.yishape.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -431,9 +431,9 @@ IVector finalParams = optimizer.getCurrentParams();
 
 ### 3. 在线Adam优化器 / Online Adam Optimizer
 
-在线Adam优化器位于 `com.reremouse.lab.math.optimize.newton` 包中。
+在线Adam优化器位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The Online Adam optimizer is located in the `com.reremouse.lab.math.optimize.newton` package.
+The Online Adam optimizer is located in the `com.yishape.lab.math.optimize.newton` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -535,9 +535,9 @@ IVector finalParams = optimizer.getCurrentParams();
 
 ### 4. 线搜索 / Line Search
 
-线搜索类位于 `com.reremouse.lab.math.optimize` 包中。
+线搜索类位于 `com.yishape.lab.math.optimize` 包中。
 
-The Line Search class is located in the `com.reremouse.lab.math.optimize` package.
+The Line Search class is located in the `com.yishape.lab.math.optimize` package.
 
 #### 算法原理 / Algorithm Principles
 
@@ -623,9 +623,9 @@ System.out.println("函数值变化: " + (objFun.computeObjective(newPoint) - ob
 
 ### 5. 约束优化 / Constrained Optimization
 
-约束优化类位于 `com.reremouse.lab.math.optimize.constraint` 包中。
+约束优化类位于 `com.yishape.lab.math.optimize.constraint` 包中。
 
-The constrained optimization classes are located in the `com.reremouse.lab.math.optimize.constraint` package.
+The constrained optimization classes are located in the `com.yishape.lab.math.optimize.constraint` package.
 
 #### 拉格朗日乘数法 / Lagrange Multiplier Method
 
@@ -708,9 +708,9 @@ System.out.println("最优点: " + optimalPoint);
 
 ### 6. 线性规划 / Linear Programming
 
-线性规划求解器位于 `com.reremouse.lab.math.optimize.linpg` 包中。
+线性规划求解器位于 `com.yishape.lab.math.optimize.linpg` 包中。
 
-The linear programming solvers are located in the `com.reremouse.lab.math.optimize.linpg` package.
+The linear programming solvers are located in the `com.yishape.lab.math.optimize.linpg` package.
 
 #### 单纯形法 / Simplex Method
 
@@ -838,9 +838,9 @@ System.out.println("最优值: " + optimalValue);
 
 ### 7. 整数规划 / Integer Programming
 
-整数规划求解器位于 `com.reremouse.lab.math.optimize.linpg` 包中。
+整数规划求解器位于 `com.yishape.lab.math.optimize.linpg` 包中。
 
-The Integer Programming solver is located in the `com.reremouse.lab.math.optimize.linpg` package.
+The Integer Programming solver is located in the `com.yishape.lab.math.optimize.linpg` package.
 
 整数规划是线性规划的扩展，要求部分或全部变量必须取整数值。本实现使用分支定界法（Branch and Bound）求解整数规划问题。
 
@@ -1093,9 +1093,9 @@ System.out.println("最优值: " + (-result.getOptimalValue())); // 取负数得
 
 ### 8. 共轭梯度法 / Conjugate Gradient Method
 
-共轭梯度法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+共轭梯度法位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The Conjugate Gradient Method is located in the `com.reremouse.lab.math.optimize.newton` package.
+The Conjugate Gradient Method is located in the `com.yishape.lab.math.optimize.newton` package.
 
 共轭梯度法是一种高效的求解大规模线性系统和二次优化问题的算法。
 
@@ -1158,9 +1158,9 @@ System.out.println("最优点: " + result.getOptimalPoint());
 
 ### 9. DFP算法 / DFP Algorithm
 
-DFP算法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+DFP算法位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The DFP Algorithm is located in the `com.reremouse.lab.math.optimize.newton` package.
+The DFP Algorithm is located in the `com.yishape.lab.math.optimize.newton` package.
 
 DFP（Davidon-Fletcher-Powell）算法是一种拟牛顿法，通过近似Hessian矩阵来加速收敛。
 
@@ -1235,9 +1235,9 @@ System.out.println("最优点: " + result.getOptimalPoint());
 
 ### 10. 最速下降法 / Steepest Descent Method
 
-最速下降法位于 `com.reremouse.lab.math.optimize.newton` 包中。
+最速下降法位于 `com.yishape.lab.math.optimize.newton` 包中。
 
-The Steepest Descent Method is located in the `com.reremouse.lab.math.optimize.newton` package.
+The Steepest Descent Method is located in the `com.yishape.lab.math.optimize.newton` package.
 
 最速下降法是最基本的梯度下降算法。
 

@@ -11,77 +11,77 @@ This document provides detailed usage examples for the `IVector<T>` generic inte
 ### 示例1：向量创建和基本操作 / Example 1: Vector Creation and Basic Operations
 
 ```java
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
 
 public class VectorBasicExample {
     public static void main(String[] args) {
         // 1. 创建向量 / Create vectors
         System.out.println("=== 向量创建 / Vector Creation ===");
-        
+
         // 从数组创建 / Create from array
         IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0});
         System.out.println("v1: " + v1);
-        
+
         // 创建范围向量 / Create range vector
         IVector<Double> v2 = Linalg.range(10);
         System.out.println("v2 (range 10): " + v2);
-        
+
         // 创建特殊向量 / Create special vectors
         IVector<Double> v3 = Linalg.ones(5);
         System.out.println("v3 (ones 5): " + v3);
-        
+
         IVector<Float> v4 = Linalg.zeros(5, Float.class);
         System.out.println("v4 (zeros 5): " + v4);
-        
+
         IVector<Double> v5 = Linalg.rand(5);
         System.out.println("v5 (random 5): " + v5);
-        
+
         // 从单个值创建向量 / Create vector from single values
         IVector<Double> v6 = Linalg.vector(5.0);
         System.out.println("v6 (single value): " + v6);
-        
+
         IVector<Double> v7 = Linalg.vector(new double[]{1.0, 2.0});
         System.out.println("v7 (two values): " + v7);
-        
+
         // 从基本类型数组创建 / Create from primitive arrays
         IVector<Double> v8 = Linalg.vector(new int[]{1, 2, 3, 4});
         System.out.println("v8 (from int array): " + v8);
-        
+
         // 2. 基本数学运算 / Basic mathematical operations
         System.out.println("\n=== 基本数学运算 / Basic Mathematical Operations ===");
-        
+
         // 向量加法 / Vector addition
         IVector<Double> sum = v1.add(v3);
         System.out.println("v1 + v3 = " + sum);
-        
+
         // 向量减法 / Vector subtraction
         IVector<Double> diff = v1.sub(v3);
         System.out.println("v1 - v3 = " + diff);
-        
+
         // 向量乘法 / Vector multiplication
         IVector<Double> product = v1.multiply(v3);
         System.out.println("v1 * v3 = " + product);
-        
+
         // 内积 / Inner product
         Double dotProduct = v1.innerProduct(v3);
         System.out.println("v1 · v3 = " + dotProduct);
-        
+
         // 外积 / Outer product
         IMatrix<Double> outerProduct = v1.outer(v3);
         System.out.println("v1 ⊗ v3 = " + outerProduct);
-        
+
         // 3. 标量运算 / Scalar operations
         System.out.println("\n=== 标量运算 / Scalar Operations ===");
-        
+
         // 标量加法 / Scalar addition
         IVector<Double> scalarAdd = v1.addScalar(10.0);
         System.out.println("v1 + 10 = " + scalarAdd);
-        
+
         // 标量乘法 / Scalar multiplication
         IVector<Double> scalarMul = v1.multiplyScalar(2.0);
         System.out.println("v1 * 2 = " + scalarMul);
-        
+
         // 标量除法 / Scalar division
         IVector<Double> scalarDiv = v1.divideByScalar(2.0);
         System.out.println("v1 / 2 = " + scalarDiv);

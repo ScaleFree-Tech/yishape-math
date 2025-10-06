@@ -178,10 +178,10 @@ df.setColumns(newColumns);
 #### 创建和操作DataFrame / Creating and Manipulating DataFrame
 
 ```java
-import com.reremouse.lab.data.DataFrame;
-import com.reremouse.lab.data.Column;
-import com.reremouse.lab.data.ColumnType;
-import com.reremouse.lab.math.IMatrix;
+import com.yishape.lab.data.DataFrame;
+import com.yishape.lab.data.Column;
+import com.yishape.lab.data.ColumnType;
+import com.yishape.lab.math.IMatrix;
 import java.util.Arrays;
 import java.util.List;
 
@@ -221,7 +221,7 @@ public class DataFrameBasicExample {
 #### 从CSV文件读取 / Reading from CSV File
 
 ```java
-import com.reremouse.lab.data.DataFrame;
+import com.yishape.lab.data.DataFrame;
 import java.io.IOException;
 
 public class CSVReadingExample {

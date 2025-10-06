@@ -10,24 +10,7 @@ This document systematically organizes detailed usage examples for the statistic
 
 ## 第一部分：入门基础 (Level 1 - 基础入门) / Part 1: Beginner Level (Level 1 - Basic Introduction)
 
-### 1.1 环境准备和基本概念 / Environment Setup and Basic Concepts
-
-#### 导入必要的类 / Import Required Classes
-
-```java
-import com.reremouse.lab.math.stats.Stats;
-import com.reremouse.lab.math.stats.distribution.*;
-import com.reremouse.lab.math.stats.distribution.multiv.*;
-import com.reremouse.lab.math.stats.model.*;
-import com.reremouse.lab.math.stats.testing.*;
-import com.reremouse.lab.math.stats.anova.*;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.IDoubleVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.util.Tuple2;
-import java.util.Arrays;
-import java.util.List;
-```
+### 1.1 基本概念 / Environment Setup and Basic Concepts
 
 #### 基本统计量计算 / Basic Statsistics Calculation
 
