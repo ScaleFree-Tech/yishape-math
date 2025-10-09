@@ -231,10 +231,28 @@ public class AudioUtil {
 
     /**
      * 创建汉宁窗 / Create Hanning window
+     * 
+     * <p>汉宁窗（Hanning Window）是一种常用的窗函数，用于减少FFT分析中的频谱泄漏。
+     * 汉宁窗是余弦窗的一种，具有良好的频率选择性和较低的旁瓣水平。</p>
+     * 
+     * <h4>数学公式：</h4>
+     * <p>w(n) = 0.5 * (1 - cos(2π * n / (N-1)))</p>
+     * <p>其中 n ∈ [0, N-1]，N 是窗口长度</p>
+     * 
+     * <h4>特点：</h4>
+     * <ul>
+     * <li><b>平滑过渡</b>：窗口两端平滑衰减到0，中间为1</li>
+     * <li><b>减少泄漏</b>：有效降低FFT频谱泄漏</li>
+     * <li><b>频率分辨率</b>：相比矩形窗，频率分辨率略低但旁瓣更小</li>
+     * </ul>
+     * 
+     * @param size 窗口大小
+     * @return 汉宁窗向量
      */
     public static IVector<Double> createHanningWindow(int size) {
         IVector<Double> window = Linalg.zeros(size);
         for (int i = 0; i < size; i++) {
+            // 汉宁窗公式：w(n) = 0.5 * (1 - cos(2π * n / (N-1)))
             double value = 0.5 * (1 - Math.cos(2 * Math.PI * i / (size - 1)));
             window.set(i, value);
         }
@@ -243,15 +261,27 @@ public class AudioUtil {
 
     /**
      * 提取窗口信号 / Extract windowed signal
+     * 
+     * <p>从音频样本中提取指定范围的数据，并应用窗函数。
+     * 如果提取的样本数少于窗口长度，剩余部分将填充为0。</p>
+     * 
+     * @param samples 原始音频样本向量
+     * @param start 起始索引
+     * @param end 结束索引（不包含）
+     * @param window 窗函数向量
+     * @return 加窗后的信号向量，长度等于window.length()
      */
     public static IVector<Double> extractWindow(IVector<Double> samples, int start, int end, IVector<Double> window) {
         int length = end - start;
         IVector<Double> windowedSignal = Linalg.zeros(window.length());
 
+        // 提取样本并应用窗函数
         for (int i = 0; i < Math.min(length, window.length()); i++) {
             if (start + i < samples.length()) {
+                // 样本值乘以对应的窗函数值
                 windowedSignal.set(i, samples.get(start + i) * window.get(i));
             }
+            // 如果超出样本范围，保持为0（零填充）
         }
 
         return windowedSignal;
@@ -259,12 +289,27 @@ public class AudioUtil {
 
     /**
      * 计算幅度谱 / Calculate magnitude spectrum
+     * 
+     * <p>从FFT结果中提取幅度谱。由于FFT结果具有共轭对称性（对于实数输入），
+     * 只需要取前半部分（0到Nyquist频率）。</p>
+     * 
+     * <h4>说明：</h4>
+     * <ul>
+     * <li><b>FFT对称性</b>：实数信号的FFT结果关于Nyquist频率对称</li>
+     * <li><b>有效范围</b>：只取前N/2个频率分量（0到fs/2）</li>
+     * <li><b>幅度计算</b>：|X(k)| = sqrt(real² + imag²)</li>
+     * </ul>
+     * 
+     * @param fftResult FFT结果复数数组
+     * @return 幅度谱向量，长度为FFT长度的一半
      */
     public static IVector<Double> calculateMagnitudeSpectrum(Complex[] fftResult) {
+        // 只取前半部分（由于共轭对称性）
         int numBins = fftResult.length / 2;
         IVector<Double> magnitude = Linalg.zeros(numBins);
 
         for (int i = 0; i < numBins; i++) {
+            // 计算复数的模：sqrt(real^2 + imag^2)
             magnitude.set(i, fftResult[i].magnitude());
         }
 
@@ -273,6 +318,21 @@ public class AudioUtil {
 
     /**
      * 计算频谱对比度 / Calculate spectral contrast
+     * 
+     * <p>将频谱分为多个频段，计算每个频段内峰值和谷值的对比度。
+     * 频谱对比度特征能够捕捉音频的谐波和非谐波成分的相对强度。</p>
+     * 
+     * <h4>算法步骤：</h4>
+     * <ol>
+     * <li>将频谱等分为numBands个频段</li>
+     * <li>对每个频段内的幅度值排序</li>
+     * <li>取前10%作为峰值，后10%作为谷值</li>
+     * <li>计算对比度：log(峰值均值 / 谷值均值)</li>
+     * </ol>
+     * 
+     * @param magnitudeSpectrum 幅度谱向量
+     * @param numBands 频段数量
+     * @return 每个频段的对比度向量
      */
     public static IVector<Double> calculateSpectralContrast(IVector<Double> magnitudeSpectrum, int numBands) {
         IVector<Double> contrast = Linalg.zeros(numBands);
@@ -428,7 +488,14 @@ public class AudioUtil {
      */
     public static double[][] calculateMFCCFrames(AudioData audioData, int mfccCount, int windowSize, int hopSize) throws AudioProcessingException {
 
-        IVector<Double> samples = audioData.getSamples();
+        // 确保使用单声道音频进行MFCC计算
+        AudioData monoAudioData = audioData;
+        if (!audioData.isMono()) {
+            // 将立体声转换为单声道
+            monoAudioData = AudioProcessor.stereoToMono(audioData);
+        }
+
+        IVector<Double> samples = monoAudioData.getSamples();
         int numFrames = (samples.length() - windowSize) / hopSize + 1;
 
         if (numFrames <= 0) {
@@ -442,14 +509,15 @@ public class AudioUtil {
             int endSample = Math.min(startSample + windowSize, samples.length());
 
             // 提取当前帧
-            IVector<Double> frame = Linalg.vector(new Double[windowSize]);
+            double[] frameArray = new double[windowSize];
             for (int i = 0; i < windowSize; i++) {
                 if (startSample + i < endSample) {
-                    frame.set(i, samples.get(startSample + i));
+                    frameArray[i] = samples.get(startSample + i);
                 } else {
-                    frame.set(i, 0.0); // 零填充
+                    frameArray[i] = 0.0; // 零填充
                 }
             }
+            IVector<Double> frame = Linalg.vector(frameArray);
 
             // 应用窗函数
             IVector<Double> windowed = applyWindow(frame, windowSize);
@@ -463,17 +531,38 @@ public class AudioUtil {
             Complex[] paddedInput = RereFFT.zeroPadToPowerOfTwo(input);
             Complex[] spectrum = RereFFT.fft(paddedInput);
 
-            // 计算梅尔滤波器组
-            double[] melFilters = calculateMelFilters(spectrum, audioData.getSampleRate(), mfccCount);
+            // 关键修复：梅尔滤波器数量应该大于MFCC系数数量
+            // 标准配置：使用26-40个梅尔滤波器，然后通过DCT提取前13个MFCC系数
+            // 这样可以提供足够的频率分辨率
+            int numMelFilters = Math.max(26, mfccCount * 2); // 至少26个，或MFCC数量的2倍
+            double[] melEnergies = calculateMelFilters(spectrum, monoAudioData.getSampleRate(), numMelFilters);
 
-            // 应用DCT变换
+            // 应用DCT变换 (离散余弦变换) 到对数梅尔能量
+            // MFCC计算流程：功率谱 -> 梅尔滤波 -> 取对数 -> DCT变换 -> 取前N个系数
+            double[] mfcc = new double[mfccCount];
             for (int i = 0; i < mfccCount; i++) {
                 double sum = 0.0;
-                for (int j = 0; j < melFilters.length; j++) {
-                    sum += melFilters[j] * Math.cos(Math.PI * i * (j + 0.5) / melFilters.length);
+                for (int j = 0; j < melEnergies.length; j++) {
+                    // melEnergies是线性能量值，这里取对数转换为对数能量
+                    double logEnergy = Math.log(melEnergies[j]); // melEnergies已确保>=1e-10，安全
+                    
+                    // DCT-II公式: cos(π * i * (2*j + 1) / (2 * N))
+                    // 其中 i 是MFCC系数索引，j 是梅尔滤波器索引，N 是滤波器数量
+                    double dctCoeff = Math.cos(Math.PI * i * (2 * j + 1) / (2.0 * melEnergies.length));
+                    sum += logEnergy * dctCoeff;
                 }
-                mfccMatrix[frameIndex][i] = sum;
+                
+                // DCT-II正交归一化系数
+                // 第0个系数使用 sqrt(1/N)，其他系数使用 sqrt(2/N)
+                if (i == 0) {
+                    mfcc[i] = sum * Math.sqrt(1.0 / melEnergies.length);
+                } else {
+                    mfcc[i] = sum * Math.sqrt(2.0 / melEnergies.length);
+                }
             }
+            
+            // 复制到输出矩阵
+            System.arraycopy(mfcc, 0, mfccMatrix[frameIndex], 0, mfccCount);
         }
         return mfccMatrix;
     }
@@ -514,7 +603,7 @@ public class AudioUtil {
      */
     public static IMatrix<Double> calculateMFCCMatrix(AudioData audioData) throws AudioProcessingException {
         int mfccCount = 13;
-        return Linalg.matrix(calculateMFCCFrames(audioData, Map.of(), mfccCount));
+        return Linalg.matrix(calculateMFCCFrames(audioData, mfccCount, DEFAULT_WINDOW_SIZE, DEFAULT_HOP_SIZE));
     }
 
     /**
@@ -823,9 +912,13 @@ public class AudioUtil {
         double weightedSum = 0.0;
         double magnitudeSum = 0.0;
 
+        // 修复：使用spectrum.length而非windowSize计算频率
+        // 原因：FFT后可能进行了零填充，spectrum.length才是实际的FFT长度
+        // 频率公式：f = bin_index * sampleRate / fft_length
         for (int i = 0; i < spectrum.length / 2; i++) {
             double magnitude = spectrum[i].magnitude();
-            double frequency = (i * sampleRate) / windowSize;
+            // 修复前：double frequency = (i * sampleRate) / windowSize; // 错误！
+            double frequency = (i * sampleRate) / spectrum.length; // 正确的频率计算
             weightedSum += frequency * magnitude;
             magnitudeSum += magnitude;
         }
@@ -874,18 +967,25 @@ public class AudioUtil {
      * @return 频谱滚降频率(Hz)
      */
     public static double calculateSpectralRolloff(Complex[] spectrum, double sampleRate, int windowSize) {
+        // 修复1：使用能量（幅度平方）而非幅度
+        // 修复2：使用spectrum.length而非windowSize计算频率
         double totalEnergy = 0.0;
         for (int i = 0; i < spectrum.length / 2; i++) {
-            totalEnergy += spectrum[i].magnitude();
+            // 修复前：totalEnergy += spectrum[i].magnitude(); // 错误：应使用能量而非幅度
+            double magnitude = spectrum[i].magnitude();
+            totalEnergy += magnitude * magnitude; // 正确：能量 = 幅度的平方
         }
 
         double threshold = 0.85 * totalEnergy;
         double cumulativeEnergy = 0.0;
 
         for (int i = 0; i < spectrum.length / 2; i++) {
-            cumulativeEnergy += spectrum[i].magnitude();
+            // 修复前：cumulativeEnergy += spectrum[i].magnitude(); // 错误
+            double magnitude = spectrum[i].magnitude();
+            cumulativeEnergy += magnitude * magnitude; // 正确：累积能量
             if (cumulativeEnergy >= threshold) {
-                return (i * sampleRate) / windowSize;
+                // 修复前：return (i * sampleRate) / windowSize; // 错误的频率计算
+                return (i * sampleRate) / spectrum.length; // 正确的频率计算
             }
         }
 
@@ -933,9 +1033,11 @@ public class AudioUtil {
         double weightedSum = 0.0;
         double magnitudeSum = 0.0;
 
+        // 修复：使用spectrum.length而非windowSize计算频率
         for (int i = 0; i < spectrum.length / 2; i++) {
             double magnitude = spectrum[i].magnitude();
-            double frequency = (i * sampleRate) / windowSize;
+            // 修复前：double frequency = (i * sampleRate) / windowSize; // 错误！
+            double frequency = (i * sampleRate) / spectrum.length; // 正确的频率计算
             double diff = frequency - centroid;
             weightedSum += diff * diff * magnitude;
             magnitudeSum += magnitude;
@@ -999,7 +1101,7 @@ public class AudioUtil {
                 minMagnitude = Math.min(minMagnitude, magnitude);
             }
 
-            if (minMagnitude > 0) {
+            if (minMagnitude > 0 && maxMagnitude > 0) {
                 contrast += Math.log(maxMagnitude / minMagnitude);
             }
         }
@@ -1044,21 +1146,31 @@ public class AudioUtil {
      * @return 频谱平坦度值，范围[0, 1]
      */
     public static double calculateSpectralFlatness(Complex[] spectrum) {
-        double geometricMean = 1.0;
+        // 修复：使用对数方法计算几何平均数，避免数值溢出和错误的累乘方式
+        // 原错误：geometricMean *= Math.pow(magnitude, 1.0 / (spectrum.length / 2 - 1));
+        // 这种方式在每次迭代都进行开方，最终结果完全错误
+        
+        // 正确方法：使用对数求和，最后取指数
+        // 几何平均数 = exp((1/N) * Σ(log(x_i)))
+        double logSum = 0.0;
         double arithmeticMean = 0.0;
         int count = 0;
 
         for (int i = 1; i < spectrum.length / 2; i++) {
             double magnitude = spectrum[i].magnitude();
             if (magnitude > 0) {
-                geometricMean *= Math.pow(magnitude, 1.0 / (spectrum.length / 2 - 1));
+                logSum += Math.log(magnitude); // 累加对数值
                 arithmeticMean += magnitude;
                 count++;
             }
         }
 
         if (count > 0) {
+            // 几何平均数 = exp(平均对数值)
+            double geometricMean = Math.exp(logSum / count);
             arithmeticMean /= count;
+            
+            // 频谱平坦度 = 几何平均数 / 算术平均数
             return arithmeticMean > 0 ? geometricMean / arithmeticMean : 0.0;
         }
 
@@ -1148,40 +1260,70 @@ public class AudioUtil {
     }
 
     /**
-     * 计算梅尔滤波器 / Calculate mel filters
+     * 计算梅尔滤波器能量 / Calculate mel filter bank energies
+     * 
+     * <p>标准MFCC计算流程中的梅尔滤波步骤：
+     * 1. 计算功率谱（幅度平方）
+     * 2. 应用梅尔滤波器组
+     * 3. 对每个滤波器的输出求和得到能量
+     * 4. 返回线性能量值（由调用方决定是否取对数）</p>
+     * 
+     * @param spectrum 频谱复数数组（FFT结果）
+     * @param sampleRate 采样率
+     * @param filterCount 梅尔滤波器数量
+     * @return 梅尔滤波器能量数组（线性能量值，未取对数）
      */
     public static double[] calculateMelFilters(Complex[] spectrum, double sampleRate, int filterCount) {
         int spectrumLength = spectrum.length / 2;
 
-        // 计算频率轴上的点 / Calculate points on frequency axis
-        double[] frequencies = new double[spectrumLength];
-        for (int i = 0; i < spectrumLength; i++) {
-            frequencies[i] = (double) i * sampleRate / spectrum.length;
-        }
-
         // 创建梅尔滤波器组 / Create Mel filter bank
-        double[][] melFilters = createMelFilterBank(filterCount, spectrumLength, sampleRate);
+        double[][] melFilterBank = createMelFilterBank(filterCount, spectrumLength, sampleRate);
 
-        // 应用滤波器组 / Apply filter bank
-        double[] filters = new double[filterCount];
+        // 应用滤波器组到功率谱 / Apply filter bank to power spectrum
+        double[] melEnergies = new double[filterCount];
         for (int i = 0; i < filterCount; i++) {
-            double sum = 0.0;
+            double energy = 0.0;
             for (int j = 0; j < spectrumLength; j++) {
-                sum += spectrum[j].magnitude() * melFilters[i][j];
+                // 计算功率谱：幅度的平方
+                double magnitude = spectrum[j].magnitude();
+                double power = magnitude * magnitude;
+                
+                // 应用梅尔滤波器权重并累加
+                energy += power * melFilterBank[i][j];
             }
-            filters[i] = Math.log(sum + 1e-10);
+            // 确保能量值不为0（避免后续log(0)问题）
+            // 使用一个很小的正数作为下限
+            melEnergies[i] = Math.max(energy, 1e-10);
         }
 
-        return filters;
+        return melEnergies;
     }
 
     /**
      * 创建梅尔滤波器组 / Create Mel filter bank
+     * 
+     * <p>梅尔滤波器组是一组三角形带通滤波器，在梅尔刻度上均匀分布。
+     * 梅尔刻度是一种非线性频率刻度，更接近人耳对频率的感知特性。</p>
+     * 
+     * <h4>算法步骤：</h4>
+     * <ol>
+     * <li>确定梅尔频率范围：从0Hz到Nyquist频率（sampleRate/2）</li>
+     * <li>在梅尔刻度上均匀分布filterCount+2个点</li>
+     * <li>将梅尔点转换回Hz频率</li>
+     * <li>将Hz频率转换为频谱bin索引</li>
+     * <li>为每个滤波器创建三角形窗口（左侧上升，右侧下降）</li>
+     * </ol>
+     * 
+     * <h4>梅尔刻度转换公式：</h4>
+     * <ul>
+     * <li><b>Hz到Mel</b>：mel = 2595 * log10(1 + hz/700)</li>
+     * <li><b>Mel到Hz</b>：hz = 700 * (10^(mel/2595) - 1)</li>
+     * </ul>
      *
      * @param filterCount 滤波器数量 / Number of filters
-     * @param spectrumLength 频谱长度 / Spectrum length
+     * @param spectrumLength 频谱长度（FFT长度的一半）/ Spectrum length
      * @param sampleRate 采样率 / Sample rate
-     * @return 梅尔滤波器组矩阵 / Mel filter bank matrix
+     * @return 梅尔滤波器组矩阵 [filterCount x spectrumLength]
      */
     private static double[][] createMelFilterBank(int filterCount, int spectrumLength, double sampleRate) {
         // 计算梅尔频率范围 / Calculate Mel frequency range
@@ -1203,7 +1345,7 @@ public class AudioUtil {
         // 将Hz点转换为频谱bin索引 / Convert Hz points to spectrum bin indices
         double[] binPoints = new double[filterCount + 2];
         for (int i = 0; i < filterCount + 2; i++) {
-            binPoints[i] = (spectrumLength - 1) * hzPoints[i] / (sampleRate / 2.0);
+            binPoints[i] = spectrumLength * hzPoints[i] / (sampleRate / 2.0);
         }
 
         // 创建滤波器组 / Create filter bank
@@ -1247,26 +1389,70 @@ public class AudioUtil {
 
     /**
      * 将Hz转换为Mel刻度 / Convert Hz to Mel scale
+     * 
+     * <p>Mel刻度是一种基于人耳音高感知的非线性频率刻度。
+     * 在低频率范围，Mel刻度与Hz近乎线性；在高频率范围，增长越来越慢。</p>
+     * 
+     * <h4>公式由来：</h4>
+     * <p>基于 Stevens 和 Volkmann (1940) 的实验研究，
+     * 表达了人耳对不同频率的感知特性。</p>
+     * 
+     * <h4>数学公式：</h4>
+     * <p>mel = 2595 * log10(1 + hz / 700)</p>
      *
-     * @param hz Hz频率 / Hz frequency
-     * @return Mel频率 / Mel frequency
+     * @param hz Hz频率值
+     * @return 对应的Mel频率值
      */
     private static double hzToMel(double hz) {
+        // Stevens & Volkmann (1940) 的Mel刻度公式
         return 2595.0 * Math.log10(1 + hz / 700.0);
     }
 
     /**
      * 将Mel转换为Hz刻度 / Convert Mel to Hz scale
+     * 
+     * <p>这是hzToMel的逆运算，将Mel频率转换回Hz频率。
+     * 在创建梅尔滤波器组时，需要在Mel刻度上均匀分布后，
+     * 再转换回Hz频率以确定滤波器的位置。</p>
+     * 
+     * <h4>数学公式：</h4>
+     * <p>hz = 700 * (10^(mel / 2595) - 1)</p>
+     * 
+     * <h4>推导：</h4>
+     * <p>从 mel = 2595 * log10(1 + hz / 700) 可得：<br>
+     * mel / 2595 = log10(1 + hz / 700)<br>
+     * 10^(mel / 2595) = 1 + hz / 700<br>
+     * hz = 700 * (10^(mel / 2595) - 1)</p>
      *
-     * @param mel Mel频率 / Mel frequency
-     * @return Hz频率 / Hz frequency
+     * @param mel Mel频率值
+     * @return 对应的Hz频率值
      */
     private static double melToHz(double mel) {
+        // Mel到Hz的逆转换公式
         return 700.0 * (Math.pow(10, mel / 2595.0) - 1);
     }
 
     /**
-     * 计算粗糙度
+     * 计算粗糙度 / Calculate roughness
+     * 
+     * <p>粗糙度（Roughness）是衡量音频信号频谱不规则性的指标。
+     * 它反映了频谱在相邻频率之间的变化程度。</p>
+     * 
+     * <h4>算法原理：</h4>
+     * <p>对于每个频率bin，计算其与相邻两个bin平均值的差异。
+     * 差异越大，说明频谱越不平滑，粗糙度越高。</p>
+     * 
+     * <h4>公式：</h4>
+     * <p>Roughness = (1/N) * Σ|X(i) - (X(i-1) + X(i+1))/2|</p>
+     * 
+     * <h4>物理意义：</h4>
+     * <ul>
+     * <li><b>高粗糙度</b>：频谱不平滑，可能是噪声或失真信号</li>
+     * <li><b>低粗糙度</b>：频谱平滑，音色纯净、谐波结构良好</li>
+     * </ul>
+     * 
+     * @param audioData 音频数据
+     * @return 粗糙度值，值越大表示频谱越不平滑
      */
     public static double calculateRoughness(AudioData audioData) {
         try {
@@ -1274,15 +1460,18 @@ public class AudioUtil {
             Complex[] spectrum = AudioUtil.processFFT(audioData);
 
             double roughness = 0.0;
+            // 遍历所有中间频率bin（排除第一个和最后一个）
             for (int i = 1; i < spectrum.length - 1; i++) {
                 double current = spectrum[i].magnitude();
                 double prev = spectrum[i - 1].magnitude();
                 double next = spectrum[i + 1].magnitude();
 
+                // 计算当前频率bin与相邻两个bin平均值的差异
                 double localVariation = Math.abs(current - (prev + next) / 2.0);
                 roughness += localVariation;
             }
 
+            // 归一化：除以总的bin数量
             return roughness / spectrum.length;
 
         } catch (Exception e) {
@@ -1292,6 +1481,12 @@ public class AudioUtil {
 
     /**
      * 计算语音频率范围能量
+     * 
+     * <p>分析音频信号中语音特征频率范围（300Hz-3400Hz）的能量占比。
+     * 这个范围是电话语音的标准带宽，也是人类语音的主要频率区域。</p>
+     * 
+     * @param audioData 音频数据
+     * @return 语音频率范围能量占总能量的比例，范围[0, 1]
      */
     public static double calculateSpeechFrequencyEnergy(AudioData audioData) {
         try {
@@ -1300,12 +1495,22 @@ public class AudioUtil {
             double totalEnergy = 0.0;
             double speechEnergy = 0.0;
 
-            // 语音主要频率范围：300Hz - 3400Hz
-            int speechMinBin = (int) (300.0 * spectrum.length / audioData.getSampleRate());
-            int speechMaxBin = (int) (3400.0 * spectrum.length / audioData.getSampleRate());
+            // 语音主要频率范围：300Hz - 3400Hz（电话语音带宽）
+            // FFT频率分辨率 = sampleRate / spectrum.length
+            // 频率bin计算公式：bin = frequency / (sampleRate / spectrum.length)
+            //                    = frequency * spectrum.length / sampleRate
+            double freqResolution = audioData.getSampleRate() / (double) spectrum.length;
+            int speechMinBin = (int) Math.round(300.0 / freqResolution);
+            int speechMaxBin = (int) Math.round(3400.0 / freqResolution);
+            
+            // 确保bin索引在有效范围内
+            speechMinBin = Math.max(0, Math.min(speechMinBin, spectrum.length / 2 - 1));
+            speechMaxBin = Math.max(0, Math.min(speechMaxBin, spectrum.length / 2 - 1));
 
+            // 计算总能量和语音频段能量
             for (int i = 0; i < spectrum.length / 2; i++) {
-                double energy = spectrum[i].magnitude() * spectrum[i].magnitude();
+                double magnitude = spectrum[i].magnitude();
+                double energy = magnitude * magnitude; // 能量 = 幅度平方
                 totalEnergy += energy;
 
                 if (i >= speechMinBin && i <= speechMaxBin) {
@@ -1322,6 +1527,12 @@ public class AudioUtil {
 
     /**
      * 计算人声频率范围能量
+     * 
+     * <p>分析音频信号中人声基频范围（80Hz-1100Hz）的能量占比。
+     * 男声基频约85-180Hz，女声基频约165-255Hz，共振峰频率可达1100Hz。</p>
+     * 
+     * @param audioData 音频数据
+     * @return 人声频率范围能量占总能量的比例，范围[0, 1]
      */
     public static double calculateVocalFrequencyEnergy(AudioData audioData) {
         try {
@@ -1331,11 +1542,21 @@ public class AudioUtil {
             double vocalEnergy = 0.0;
 
             // 人声主要频率范围：80Hz - 1100Hz
-            int vocalMinBin = (int) (80.0 * spectrum.length / audioData.getSampleRate());
-            int vocalMaxBin = (int) (1100.0 * spectrum.length / audioData.getSampleRate());
+            // 包括基频范围（80-300Hz）和主要共振峰频率（300-1100Hz）
+            // FFT频率分辨率 = sampleRate / spectrum.length
+            // 频率bin计算公式：bin = frequency / freqResolution
+            double freqResolution = audioData.getSampleRate() / (double) spectrum.length;
+            int vocalMinBin = (int) Math.round(80.0 / freqResolution);
+            int vocalMaxBin = (int) Math.round(1100.0 / freqResolution);
+            
+            // 确保bin索引在有效范围内
+            vocalMinBin = Math.max(0, Math.min(vocalMinBin, spectrum.length / 2 - 1));
+            vocalMaxBin = Math.max(0, Math.min(vocalMaxBin, spectrum.length / 2 - 1));
 
+            // 计算总能量和人声频段能量
             for (int i = 0; i < spectrum.length / 2; i++) {
-                double energy = spectrum[i].magnitude() * spectrum[i].magnitude();
+                double magnitude = spectrum[i].magnitude();
+                double energy = magnitude * magnitude; // 能量 = 幅度平方
                 totalEnergy += energy;
 
                 if (i >= vocalMinBin && i <= vocalMaxBin) {
@@ -1351,7 +1572,28 @@ public class AudioUtil {
     }
 
     /**
-     * 计算背景噪声水平
+     * 计算背景噪声水平 / Calculate background noise level
+     * 
+     * <p>通过分析音频信号中能量最低的段落来估计背景噪声水平。
+     * 这种方法假设噪声是相对稳定的，而有用信号会有较大的能量波动。</p>
+     * 
+     * <h4>算法步骤：</h4>
+     * <ol>
+     * <li>将音频分为多个短段（默认0.1秒/段）</li>
+     * <li>计算每段的平均能量</li>
+     * <li>找出能量最小的段落</li>
+     * <li>该段落的RMS值作为噪声水平估计</li>
+     * </ol>
+     * 
+     * <h4>假设：</h4>
+     * <ul>
+     * <li>背景噪声相对稳定且能量较住</li>
+     * <li>有用信号（语音、音乐）会引起能量增大</li>
+     * <li>至少存在一段只含噪声的时间区间</li>
+     * </ul>
+     * 
+     * @param audioData 音频数据
+     * @return 背景噪声的RMS值，范围通常在[0, 1]
      */
     public static double calculateBackgroundNoise(AudioData audioData) {
         try {
@@ -1361,18 +1603,22 @@ public class AudioUtil {
             int segmentSize = (int) (audioData.getSampleRate() / 10.0); // 0.1秒段落
             double minEnergy = Double.MAX_VALUE;
 
+            // 滑动窗口遍历所有段落
             for (int i = 0; i < samples.length - segmentSize; i += segmentSize) {
                 double energy = 0.0;
+                // 计算当前段落的能量
                 for (int j = i; j < i + segmentSize && j < samples.length; j++) {
                     energy += samples[j] * samples[j];
                 }
-                energy /= segmentSize;
+                energy /= segmentSize; // 平均能量
 
+                // 记录最小能量
                 if (energy < minEnergy) {
                     minEnergy = energy;
                 }
             }
 
+            // 返回RMS值（平均能量的平方根）
             return Math.sqrt(minEnergy);
 
         } catch (Exception e) {
@@ -1406,14 +1652,15 @@ public class AudioUtil {
             int endSample = Math.min(startSample + windowSize, samples.length());
 
             // 提取当前帧 / Extract current frame
-            IVector<Double> frame = Linalg.vector(new Double[windowSize]);
+            double[] frameArray = new double[windowSize];
             for (int i = 0; i < windowSize; i++) {
                 if (startSample + i < endSample) {
-                    frame.set(i, samples.get(startSample + i));
+                    frameArray[i] = samples.get(startSample + i);
                 } else {
-                    frame.set(i, 0.0); // 零填充 / Zero padding
+                    frameArray[i] = 0.0; // 零填充 / Zero padding
                 }
             }
+            IVector<Double> frame = Linalg.vector(frameArray);
 
             // 应用窗函数 / Apply window function
             IVector<Double> windowed = applyWindow(frame, windowSize);

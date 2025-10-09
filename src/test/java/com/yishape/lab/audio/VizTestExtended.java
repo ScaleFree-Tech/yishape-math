@@ -2,12 +2,12 @@ package com.yishape.lab.audio;
 
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioIO;
-import com.yishape.lab.math.viz.IPlot;
 
 /**
- * Test to verify that audio statistics and quality plots show correct x-axis labels (fixed version)
+ * Extended version of VizTest to address the issue of only displaying 1 second of information
+ * for long audio files
  */
-public class AudioStatisticsQualityTestFixed {
+public class VizTestExtended {
 
     public static void main(String args[]) {
         // 音频可视化 / Audio visualization
@@ -20,23 +20,22 @@ public class AudioStatisticsQualityTestFixed {
             AudioData data = AudioIO.readAudio(f1);
             long endTime = System.currentTimeMillis();
             System.out.println("Audio loaded in " + (endTime - startTime) + " ms");
+            System.out.println("Audio duration: " + data.getDuration() + " seconds");
             System.out.println("Audio data length: " + data.getSamples().length() + " samples");
             
-            System.out.println("Generating audio statistics plot with proper x-axis labels...");
+            System.out.println("Generating spectrogram plot with extended time range...");
             startTime = System.currentTimeMillis();
-            IPlot statsPlot = AudioPlots.plotAudioStatistics(data, "音频统计信息 / Audio Statistics");
+            // 使用更大的时间帧数来显示更长的音频时段
+            AudioPlots.plotSpectrogram(data, "音频频谱图 (扩展) / Audio Spectrogram (Extended)", 1024, 256).show();
             endTime = System.currentTimeMillis();
-            System.out.println("Statistics plot generated in " + (endTime - startTime) + " ms");
-            statsPlot.show();
+            System.out.println("Extended spectrogram plot generated in " + (endTime - startTime) + " ms");
             
-            System.out.println("Generating audio quality plot with proper x-axis labels...");
+            System.out.println("Generating MFCC plot with extended time range...");
             startTime = System.currentTimeMillis();
-            IPlot qualityPlot = AudioPlots.plotAudioQuality(data, "音频质量评估 / Audio Quality Assessment");
+            // 使用更大的时间帧数来显示更长的音频时段
+            AudioPlots.plotMFCC(data, "MFCC特征 (扩展) / MFCC Features (Extended)", 13, 1024, 256).show();
             endTime = System.currentTimeMillis();
-            System.out.println("Quality plot generated in " + (endTime - startTime) + " ms");
-            qualityPlot.show();
-            
-            System.out.println("Test completed successfully!");
+            System.out.println("Extended MFCC plot generated in " + (endTime - startTime) + " ms");
             
         } catch (Exception e) {
             e.printStackTrace();

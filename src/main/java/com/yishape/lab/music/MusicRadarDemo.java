@@ -14,7 +14,7 @@ public class MusicRadarDemo {
 
         try {
             String path = "F:\\music\\test\\";
-            String f1 = path + "shadow of love.mp3";
+            String f1 = path + "20.杨友友-野花做了场玫瑰花的梦.mp3";
 
             AudioData audioData = Audios.readAudio(f1);
 

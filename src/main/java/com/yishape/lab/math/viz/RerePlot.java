@@ -68,14 +68,14 @@ public class RerePlot implements Serializable, IPlot {
     private String theme;
 
     // ========== 样式系统 ==========
-    private PlotStyle defaultStyle;        // 默认样式
-    private String currentPalette;         // 当前调色板
-    private boolean useStyleSystem;        // 是否启用新样式系统
+    private PlotStyle defaultStyle; // 默认样式
+    private String currentPalette; // 当前调色板
+    private boolean useStyleSystem; // 是否启用新样式系统
     private SeabornStyleMapper styleMapper; // seaborn风格样式映射器
 
     // ========== 主题系统 ==========
-    private String currentTheme;           // 当前主题
-    private boolean useThemeSystem;        // 是否启用主题系统
+    private String currentTheme; // 当前主题
+    private boolean useThemeSystem; // 是否启用主题系统
 
     /**
      * 默认构造函数
@@ -113,7 +113,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 带尺寸的构造函数
      *
-     * @param width 图表宽度
+     * @param width  图表宽度
      * @param height 图表高度
      */
     public RerePlot(int width, int height) {
@@ -125,9 +125,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 带主题的构造函数
      *
-     * @param width 图表宽度
+     * @param width  图表宽度
      * @param height 图表高度
-     * @param theme 主题名称
+     * @param theme  主题名称
      */
     public RerePlot(int width, int height, String theme) {
         this(width, height);
@@ -149,8 +149,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建线图（支持样式字符串）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
+     * @param x           X轴数据
+     * @param y           Y轴数据
      * @param styleString 样式字符串（如 "r-", "b--o", "g:^"）
      * @return 当前实例
      */
@@ -164,8 +164,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建线图（支持PlotStyle样式）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
+     * @param x     X轴数据
+     * @param y     Y轴数据
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -186,7 +186,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建单向量线图（支持样式）
      *
-     * @param y Y轴数据
+     * @param y           Y轴数据
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -200,7 +200,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建单向量线图（支持PlotStyle）
      *
-     * @param y Y轴数据
+     * @param y     Y轴数据
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -211,8 +211,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建分组线图（seaborn风格）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
+     * @param x   X轴数据
+     * @param y   Y轴数据
      * @param hue 颜色分组
      * @return 当前实例
      */
@@ -223,9 +223,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建分组线图（seaborn风格，支持样式和标记分组）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
-     * @param hue 颜色分组
+     * @param x     X轴数据
+     * @param y     Y轴数据
+     * @param hue   颜色分组
      * @param style 线条样式分组
      * @return 当前实例
      */
@@ -236,10 +236,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的线图内部实现
      *
-     * @param x X轴数据（如果为null，使用索引）
-     * @param y Y轴数据
-     * @param style 个体样式（优先级最高）
-     * @param hue 颜色分组
+     * @param x          X轴数据（如果为null，使用索引）
+     * @param y          Y轴数据
+     * @param style      个体样式（优先级最高）
+     * @param hue        颜色分组
      * @param styleGroup 样式分组
      * @return 当前实例
      */
@@ -312,8 +312,7 @@ public class RerePlot implements Serializable, IPlot {
                 hue, styleGroup, null, null);
 
         // 分组数据
-        Map<String, SeabornStyleMapper.GroupedData> groups
-                = styleMapper.groupData(x, y, hue, mapping);
+        Map<String, SeabornStyleMapper.GroupedData> groups = styleMapper.groupData(x, y, hue, mapping);
 
         // 为每个组创建系列
         for (SeabornStyleMapper.GroupedData group : groups.values()) {
@@ -358,7 +357,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 合并两个样式对象
      *
-     * @param base 基础样式
+     * @param base    基础样式
      * @param overlay 覆盖样式
      * @return 合并后的样式
      */
@@ -385,8 +384,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建散点图（支持样式字符串）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
+     * @param x           X轴数据
+     * @param y           Y轴数据
      * @param styleString 样式字符串
      * @return 当前实例，支持链式调用
      */
@@ -400,8 +399,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建散点图（支持PlotStyle样式）
      *
-     * @param x X轴数据
-     * @param y Y轴数据
+     * @param x     X轴数据
+     * @param y     Y轴数据
      * @param style 绘图样式
      * @return 当前实例，支持链式调用
      */
@@ -494,7 +493,7 @@ public class RerePlot implements Serializable, IPlot {
                 if (!groupedData.containsKey(groupName)) {
                     groupedData.put(groupName, new ArrayList<>());
                 }
-                groupedData.get(groupName).add(new Number[]{x.get(i), y.get(i)});
+                groupedData.get(groupName).add(new Number[] { x.get(i), y.get(i) });
             }
 
             // 为每个组创建散点系列
@@ -529,7 +528,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建饼图（支持样式字符串）
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -543,7 +542,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建饼图（支持PlotStyle样式）
      *
-     * @param x 数据向量
+     * @param x     数据向量
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -554,9 +553,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建饼图（支持标签）
      *
-     * @param x 数据向量
+     * @param x      数据向量
      * @param labels 标签列表
-     * @param style 绘图样式
+     * @param style  绘图样式
      * @return 当前实例
      */
     public RerePlot pie(IVector x, List<String> labels, PlotStyle style) {
@@ -566,8 +565,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建饼图（支持标签和样式字符串）
      *
-     * @param x 数据向量
-     * @param labels 标签列表
+     * @param x           数据向量
+     * @param labels      标签列表
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -581,8 +580,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的饼图内部实现
      *
-     * @param x 数据向量
-     * @param style 绘图样式
+     * @param x      数据向量
+     * @param style  绘图样式
      * @param labels 标签列表
      * @return 当前实例
      */
@@ -592,7 +591,8 @@ public class RerePlot implements Serializable, IPlot {
             Pie pieChart = new Pie();
 
             // 转换数据格式 - 饼图需要对象数组格式 {name, value}
-            org.icepear.echarts.charts.pie.PieDataItem[] pieData = new org.icepear.echarts.charts.pie.PieDataItem[x.length()];
+            org.icepear.echarts.charts.pie.PieDataItem[] pieData = new org.icepear.echarts.charts.pie.PieDataItem[x
+                    .length()];
             for (int i = 0; i < x.length(); i++) {
                 String name = (labels != null && i < labels.size()) ? labels.get(i) : "数据" + (i + 1);
                 pieData[i] = new org.icepear.echarts.charts.pie.PieDataItem()
@@ -617,7 +617,7 @@ public class RerePlot implements Serializable, IPlot {
 
             this.option = pieChart.getOption();
             setCommonOptions(this.option);
-            this.option.setSeries(new org.icepear.echarts.charts.pie.PieSeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.pie.PieSeries[] { series });
 
         } catch (Exception e) {
             throw new PlotException("创建饼图失败: " + e.getMessage(), e);
@@ -640,11 +640,10 @@ public class RerePlot implements Serializable, IPlot {
         return barInternalWithLabels(y, null, xticks, hue);
     }
 
-    
     /**
      * 创建柱状图（支持样式字符串）
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -658,7 +657,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建柱状图（支持PlotStyle样式）
      *
-     * @param x 数据向量
+     * @param x     数据向量
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -669,8 +668,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建分组柱状图（支持样式）
      *
-     * @param x 数据向量
-     * @param hue 分组标签
+     * @param x     数据向量
+     * @param hue   分组标签
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -681,8 +680,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建分组柱状图（支持样式字符串）
      *
-     * @param x 数据向量
-     * @param hue 分组标签
+     * @param x           数据向量
+     * @param hue         分组标签
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -696,10 +695,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的带标签柱状图内部实现
      *
-     * @param y 数据向量
-     * @param style 个体样式
+     * @param y      数据向量
+     * @param style  个体样式
      * @param xticks X轴标签
-     * @param hue 颜色分组
+     * @param hue    颜色分组
      * @return 当前实例
      */
     private RerePlot barInternalWithLabels(IVector y, PlotStyle style, List<String> xticks, List<String> hue) {
@@ -722,9 +721,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的柱状图内部实现
      *
-     * @param x 数据向量
-     * @param style 个体样式
-     * @param hue 颜色分组
+     * @param x          数据向量
+     * @param style      个体样式
+     * @param hue        颜色分组
      * @param styleGroup 样式分组
      * @return 当前实例
      */
@@ -774,8 +773,9 @@ public class RerePlot implements Serializable, IPlot {
         CategoryAxis xAxis = new CategoryAxis();
         String[] categories = new String[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size()) ? 
-                xticks.getTickLabels().get(i) : "类别" + (i + 1);
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size())
+                    ? xticks.getTickLabels().get(i)
+                    : "类别" + (i + 1);
         }
         xAxis.setData(categories);
 
@@ -804,8 +804,7 @@ public class RerePlot implements Serializable, IPlot {
                 hue, styleGroup, null, null);
 
         // 分组数据
-        Map<String, SeabornStyleMapper.GroupedData> groups
-                = styleMapper.groupData(x, null, hue, mapping);
+        Map<String, SeabornStyleMapper.GroupedData> groups = styleMapper.groupData(x, null, hue, mapping);
 
         // 为每个组创建系列
         for (SeabornStyleMapper.GroupedData group : groups.values()) {
@@ -838,8 +837,9 @@ public class RerePlot implements Serializable, IPlot {
         CategoryAxis xAxis = new CategoryAxis();
         String[] categories = new String[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size()) ? 
-                xticks.getTickLabels().get(i) : "类别" + (i + 1);
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size())
+                    ? xticks.getTickLabels().get(i)
+                    : "类别" + (i + 1);
         }
         xAxis.setData(categories);
 
@@ -910,15 +910,15 @@ public class RerePlot implements Serializable, IPlot {
         // 获取所有唯一的hue值（组名）- 保持插入顺序
         // 创建可变副本以避免修改不可变集合的问题
         List<String> uniqueHues = new ArrayList<>(new LinkedHashSet<>(hue));
-        
+
         // X轴标签就是xticks参数
         // 创建可变副本以避免修改不可变集合的问题
         List<String> xAxisLabels = xticks != null ? new ArrayList<>(xticks) : new ArrayList<>();
-        
+
         // 计算每个x轴标签应该有多少个数据点
         int pointsPerXLabel = uniqueHues.size();
         int expectedXLabels = y.length() / pointsPerXLabel;
-        
+
         // 如果xticks为空或长度不匹配，创建默认标签
         if (xAxisLabels.isEmpty() || xAxisLabels.size() != expectedXLabels) {
             xAxisLabels.clear();
@@ -926,31 +926,32 @@ public class RerePlot implements Serializable, IPlot {
                 xAxisLabels.add("Group " + (i + 1));
             }
         }
-        
+
         // 为每个唯一的hue值创建一个系列
         Map<String, List<Object>> seriesDataMap = new LinkedHashMap<>();
         for (String hueValue : uniqueHues) {
             seriesDataMap.put(hueValue, new ArrayList<>());
         }
-        
+
         // 按照正确的顺序填充数据
-        // 数据是按 [xticks1_hue1, xticks1_hue2, xticks1_hue3, xticks2_hue1, xticks2_hue2, xticks2_hue3, ...] 排列的
+        // 数据是按 [xticks1_hue1, xticks1_hue2, xticks1_hue3, xticks2_hue1, xticks2_hue2,
+        // xticks2_hue3, ...] 排列的
         for (int i = 0; i < y.length(); i++) {
-            int xIndex = i / pointsPerXLabel;  // 当前属于第几个x轴标签
+            int xIndex = i / pointsPerXLabel; // 当前属于第几个x轴标签
             int hueIndex = i % pointsPerXLabel; // 当前属于该x轴标签下的第几个hue
-            
+
             if (xIndex < xAxisLabels.size() && hueIndex < uniqueHues.size()) {
                 String hueValue = uniqueHues.get(hueIndex);
                 Double value = (Double) y.get(i);
                 seriesDataMap.get(hueValue).add(value);
             }
         }
-        
+
         // 创建系列
         for (Map.Entry<String, List<Object>> entry : seriesDataMap.entrySet()) {
             String seriesName = entry.getKey();
             List<Object> data = entry.getValue();
-            
+
             BarSeries barSeries = new BarSeries();
             barSeries.setName(seriesName);
             barSeries.setData(data.toArray(new Object[0]));
@@ -989,7 +990,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建直方图（支持样式字符串）
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param fittingLine 是否显示拟合线
      * @param styleString 样式字符串
      * @return 当前实例
@@ -1004,9 +1005,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建直方图（支持PlotStyle样式）
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param fittingLine 是否显示拟合线
-     * @param style 绘图样式
+     * @param style       绘图样式
      * @return 当前实例
      */
     public RerePlot hist(IVector x, boolean fittingLine, PlotStyle style) {
@@ -1016,10 +1017,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建直方图（支持样式和bins参数）
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param fittingLine 是否显示拟合线
-     * @param style 绘图样式
-     * @param bins bin数量
+     * @param style       绘图样式
+     * @param bins        bin数量
      * @return 当前实例
      */
     public RerePlot hist(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
@@ -1029,10 +1030,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的直方图内部实现
      *
-     * @param x 数据向量
+     * @param x           数据向量
      * @param fittingLine 是否显示拟合线
-     * @param style 绘图样式
-     * @param bins bin数量
+     * @param style       绘图样式
+     * @param bins        bin数量
      * @return 当前实例
      */
     private RerePlot histInternal(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
@@ -1072,7 +1073,7 @@ public class RerePlot implements Serializable, IPlot {
             // 设置数据
             Object[] data = new Object[binCount];
             for (int i = 0; i < binCount; i++) {
-                data[i] = new Object[]{String.format("%.2f", binCenters[i]), counts[i]};
+                data[i] = new Object[] { String.format("%.2f", binCenters[i]), counts[i] };
             }
 
             BarSeries barSeries = new BarSeries();
@@ -1087,7 +1088,7 @@ public class RerePlot implements Serializable, IPlot {
             } else {
                 barSeries.setName("直方图");
                 // 设置默认颜色
-                barSeries.setColor("#91cc75");  // 清新的绿色
+                barSeries.setColor("#91cc75"); // 清新的绿色
             }
 
             barChart.addSeries(barSeries);
@@ -1120,12 +1121,12 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 添加核密度估计拟合线
      *
-     * @param x 原始数据
-     * @param min 最小值
-     * @param max 最大值
-     * @param bins bin数量
+     * @param x          原始数据
+     * @param min        最小值
+     * @param max        最大值
+     * @param bins       bin数量
      * @param binCenters bin中心点
-     * @param counts bin计数
+     * @param counts     bin计数
      */
     private void addKernelDensityFit(IVector x, double min, double max, int bins, double[] binCenters, int[] counts) {
         try {
@@ -1152,8 +1153,8 @@ public class RerePlot implements Serializable, IPlot {
             for (int i = 0; i < kdeData.size(); i++) {
                 double[] point = kdeData.get(i);
                 double xVal = point[0];
-                double density = point[1] * scaleFactor;  // 缩放到频次范围
-                fitData[i] = new Number[]{xVal, density};
+                double density = point[1] * scaleFactor; // 缩放到频次范围
+                fitData[i] = new Number[] { xVal, density };
             }
 
             LineSeries fitSeries = new LineSeries();
@@ -1162,22 +1163,23 @@ public class RerePlot implements Serializable, IPlot {
             fitSeries.setType("line");
             fitSeries.setYAxisIndex(0);
             fitSeries.setXAxisIndex(0);
-            fitSeries.setShowSymbol(false);  // 不显示圆圈点
+            fitSeries.setShowSymbol(false); // 不显示圆圈点
 
             // 添加透明填充效果，与条形图形成协调的同色系配色
             fitSeries.setLineStyle(new org.icepear.echarts.components.series.LineStyle()
                     .setColor("#3ba272") // 深绿色线条，与条形图形成同色系渐变
                     .setWidth(3) // 稍粗的线条更突出
-                    .setType("solid"));  // 实线
+                    .setType("solid")); // 实线
             fitSeries.setAreaStyle(new org.icepear.echarts.charts.line.LineAreaStyle()
                     .setColor("#73c0de") // 浅蓝色填充，形成清新的对比
-                    .setOpacity(0.3));  // 适中的透明度
+                    .setOpacity(0.3)); // 适中的透明度
 
             // 获取现有的系列数组并添加拟合线
             Object existingSeriesObj = this.option.getSeries();
             if (existingSeriesObj instanceof org.icepear.echarts.origin.util.SeriesOption[]) {
                 org.icepear.echarts.origin.util.SeriesOption[] existingSeries = (org.icepear.echarts.origin.util.SeriesOption[]) existingSeriesObj;
-                org.icepear.echarts.origin.util.SeriesOption[] newSeries = new org.icepear.echarts.origin.util.SeriesOption[existingSeries.length + 1];
+                org.icepear.echarts.origin.util.SeriesOption[] newSeries = new org.icepear.echarts.origin.util.SeriesOption[existingSeries.length
+                        + 1];
 
                 // 复制现有系列
                 System.arraycopy(existingSeries, 0, newSeries, 0, existingSeries.length);
@@ -1188,7 +1190,7 @@ public class RerePlot implements Serializable, IPlot {
                 this.option.setSeries(newSeries);
             } else {
                 // 如果没有现有系列，直接设置拟合线系列
-                this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[]{fitSeries});
+                this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { fitSeries });
             }
 
         } catch (Exception e) {
@@ -1309,7 +1311,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 设置图表标题和副标题
      *
-     * @param titleText 标题文本
+     * @param titleText    标题文本
      * @param subtitleText 副标题文本
      */
     public void setTitle(String titleText, String subtitleText) {
@@ -1394,7 +1396,7 @@ public class RerePlot implements Serializable, IPlot {
         }
         Object[] data = new Object[x.length()];
         for (int i = 0; i < x.length(); i++) {
-            data[i] = new Number[]{x.get(i), y.get(i)};
+            data[i] = new Number[] { x.get(i), y.get(i) };
         }
         return data;
     }
@@ -1431,7 +1433,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 设置图表标题和副标题（流式API）
      *
-     * @param titleText 标题文本
+     * @param titleText    标题文本
      * @param subtitleText 副标题文本
      * @return 当前实例，支持链式调用
      */
@@ -1449,6 +1451,8 @@ public class RerePlot implements Serializable, IPlot {
      */
     public RerePlot xlabel(String name) {
         this.xlabel = name;
+        // 更新已经设置的X轴名称
+        updateXAxisName();
         return this;
     }
 
@@ -1460,13 +1464,15 @@ public class RerePlot implements Serializable, IPlot {
      */
     public RerePlot ylabel(String name) {
         this.ylabel = name;
+        // 更新已经设置的Y轴名称
+        updateYAxisName();
         return this;
     }
 
     /**
      * 设置图表尺寸（流式API）
      *
-     * @param width 图表宽度
+     * @param width  图表宽度
      * @param height 图表高度
      * @return 当前实例，支持链式调用
      */
@@ -1520,17 +1526,21 @@ public class RerePlot implements Serializable, IPlot {
      */
     public RerePlot show() {
         try {
+            // 在显示前确保坐标轴标签是最新的
+            updateXAxisName();
+            updateYAxisName();
+
             if (engine == null) {
                 throw new PlotException("无法显示图表：ECharts Engine 未初始化");
             }
             String html = engine.renderHtml(option, height + "px", width + "px");
-//            String html = engine.renderHtml(option);
+            // String html = engine.renderHtml(option);
             // 保存为临时文件并在浏览器中打开
             String tempFile = "temp_chart_" + System.currentTimeMillis() + ".html";
             var path = java.nio.file.Paths.get(tempFile);
             java.nio.file.Files.write(path, html.getBytes());
             this.openBrowseWith(path.toUri());
-//            engine.render(tempFile, option, width + "px", height + "px", true);
+            // engine.render(tempFile, option, width + "px", height + "px", true);
             System.out.println("图表已生成并在浏览器中打开: " + tempFile);
         } catch (Exception e) {
             throw new PlotException("显示图表失败: " + e.getMessage(), e);
@@ -1550,7 +1560,7 @@ public class RerePlot implements Serializable, IPlot {
                 throw new PlotException("无法保存图表：ECharts Engine 未初始化");
             }
             String html = engine.renderHtml(option, height + "px", width + "px");
-//            String html = engine.renderHtml(option);
+            // String html = engine.renderHtml(option);
             java.nio.file.Files.write(java.nio.file.Paths.get(filename), html.getBytes());
             System.out.println("图表已保存到: " + filename);
         } catch (Exception e) {
@@ -1594,12 +1604,70 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 设置图表尺寸
      *
-     * @param width 宽度
+     * @param width  宽度
      * @param height 高度
      */
     public void setSize(int width, int height) {
         this.width = width;
         this.height = height;
+    }
+
+    /**
+     * 更新已设置的X轴名称
+     */
+    private void updateXAxisName() {
+        if (this.option != null) {
+            Object xAxisObj = this.option.getXAxis();
+            if (xAxisObj != null) {
+                if (xAxisObj instanceof ValueAxis) {
+                    ValueAxis xAxis = (ValueAxis) xAxisObj;
+                    xAxis.setName(this.xlabel.isEmpty() ? "X轴" : this.xlabel);
+                } else if (xAxisObj instanceof CategoryAxis) {
+                    CategoryAxis xAxis = (CategoryAxis) xAxisObj;
+                    xAxis.setName(this.xlabel.isEmpty() ? "类别" : this.xlabel);
+                } else if (xAxisObj instanceof Object[]) {
+                    Object[] xAxisArray = (Object[]) xAxisObj;
+                    if (xAxisArray.length > 0 && xAxisArray[0] != null) {
+                        if (xAxisArray[0] instanceof ValueAxis) {
+                            ValueAxis xAxis = (ValueAxis) xAxisArray[0];
+                            xAxis.setName(this.xlabel.isEmpty() ? "X轴" : this.xlabel);
+                        } else if (xAxisArray[0] instanceof CategoryAxis) {
+                            CategoryAxis xAxis = (CategoryAxis) xAxisArray[0];
+                            xAxis.setName(this.xlabel.isEmpty() ? "类别" : this.xlabel);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新已设置的Y轴名称
+     */
+    private void updateYAxisName() {
+        if (this.option != null) {
+            Object yAxisObj = this.option.getYAxis();
+            if (yAxisObj != null) {
+                if (yAxisObj instanceof ValueAxis) {
+                    ValueAxis yAxis = (ValueAxis) yAxisObj;
+                    yAxis.setName(this.ylabel.isEmpty() ? "Y轴" : this.ylabel);
+                } else if (yAxisObj instanceof CategoryAxis) {
+                    CategoryAxis yAxis = (CategoryAxis) yAxisObj;
+                    yAxis.setName(this.ylabel.isEmpty() ? "类别" : this.ylabel);
+                } else if (yAxisObj instanceof Object[]) {
+                    Object[] yAxisArray = (Object[]) yAxisObj;
+                    if (yAxisArray.length > 0 && yAxisArray[0] != null) {
+                        if (yAxisArray[0] instanceof ValueAxis) {
+                            ValueAxis yAxis = (ValueAxis) yAxisArray[0];
+                            yAxis.setName(this.ylabel.isEmpty() ? "Y轴" : this.ylabel);
+                        } else if (yAxisArray[0] instanceof CategoryAxis) {
+                            CategoryAxis yAxis = (CategoryAxis) yAxisArray[0];
+                            yAxis.setName(this.ylabel.isEmpty() ? "类别" : this.ylabel);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1610,11 +1678,11 @@ public class RerePlot implements Serializable, IPlot {
     public RerePlot heatmap(IMatrix data) {
         return heatmapInternal(data, List.of(), List.of(), null);
     }
-    
+
     /**
      * 热力图
      *
-     * @param data 二维数据矩阵
+     * @param data    二维数据矩阵
      * @param xLabels X轴标签
      * @param yLabels Y轴标签
      */
@@ -1625,9 +1693,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建热力图（支持样式字符串）
      *
-     * @param data 数据矩阵
-     * @param xLabels X轴标签
-     * @param yLabels Y轴标签
+     * @param data        数据矩阵
+     * @param xLabels     X轴标签
+     * @param yLabels     Y轴标签
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -1641,10 +1709,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建热力图（支持PlotStyle样式）
      *
-     * @param data 数据矩阵
+     * @param data    数据矩阵
      * @param xLabels X轴标签
      * @param yLabels Y轴标签
-     * @param style 绘图样式
+     * @param style   绘图样式
      * @return 当前实例
      */
     public RerePlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
@@ -1654,10 +1722,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的热力图内部实现
      *
-     * @param data 数据矩阵
+     * @param data    数据矩阵
      * @param xLabels X轴标签
      * @param yLabels Y轴标签
-     * @param style 绘图样式
+     * @param style   绘图样式
      * @return 当前实例
      */
     private RerePlot heatmapInternal(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
@@ -1669,7 +1737,7 @@ public class RerePlot implements Serializable, IPlot {
             int index = 0;
             for (int i = 0; i < data.getRowNum(); i++) {
                 for (int j = 0; j < data.getColNum(); j++) {
-                    heatmapData[index++] = new Object[]{j, i, data.get(i, j)};
+                    heatmapData[index++] = new Object[] { j, i, data.get(i, j) };
                 }
             }
 
@@ -1706,12 +1774,37 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setXAxis(xAxis);
             this.option.setYAxis(yAxis);
 
-            // 添加视觉映射配置
-            org.icepear.echarts.components.visualMap.ContinousVisualMap visualMap
-                    = new org.icepear.echarts.components.visualMap.ContinousVisualMap();
+            // 添加视觉映射配置，增强颜色区分度
+            org.icepear.echarts.components.visualMap.ContinousVisualMap visualMap = new org.icepear.echarts.components.visualMap.ContinousVisualMap();
             visualMap.setMin(data.min());
             visualMap.setMax(data.max());
             visualMap.setCalculable(true);
+
+            // 确保颜色映射方向正确：白色小值，红色大值
+            visualMap.setInverse(false);
+
+            // 设置颜色映射范围，从白色到红色的渐变
+            // 反转颜色数组顺序以确保正确的颜色映射方向
+            // String[] colorRange = {"#ff0000", "#ff3333", "#ff6666", "#ff9999", "#ffcccc",
+            // "#ffffff"};
+            String[] colorRange = {
+                    "#440154", // 深紫色
+                    "#482475", // 暗紫色
+                    "#414487", // 靛蓝色
+                    "#355f8d", // 深蓝色
+                    "#2a788e", // 蓝灰色
+                    "#21918c", // 深青绿色
+                    "#22a884", // 青绿色
+                    "#44bf70", // 碧绿色
+                    "#7ad151", // 浅绿色
+                    "#bddf26", // 柠檬绿
+                    "#fde725" // 亮黄色
+            };
+            visualMap.setColor(colorRange);
+
+            // 设置映射类型为'continuous'以增强颜色区分度
+            visualMap.setType("continuous");
+
             this.option.setVisualMap(visualMap);
 
         } catch (Exception e) {
@@ -1723,7 +1816,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 雷达图
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param indicators 指标名称
      */
     public RerePlot radar(IVector data, List<String> indicators) {
@@ -1733,8 +1826,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建雷达图（支持样式字符串）
      *
-     * @param data 数据向量
-     * @param indicators 指标名称
+     * @param data        数据向量
+     * @param indicators  指标名称
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -1748,9 +1841,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建雷达图（支持PlotStyle样式）
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param indicators 指标名称
-     * @param style 绘图样式
+     * @param style      绘图样式
      * @return 当前实例
      */
     public RerePlot radar(IVector data, List<String> indicators, PlotStyle style) {
@@ -1760,9 +1853,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的雷达图内部实现
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param indicators 指标名称
-     * @param style 绘图样式
+     * @param style      绘图样式
      * @return 当前实例
      */
     private RerePlot radarInternal(IVector data, List<String> indicators, PlotStyle style) {
@@ -1795,8 +1888,8 @@ public class RerePlot implements Serializable, IPlot {
             radarChart.addSeries(series);
 
             // 设置雷达图指标配置
-            org.icepear.echarts.components.coord.radar.RadarIndicator[] indicatorsArray
-                    = new org.icepear.echarts.components.coord.radar.RadarIndicator[indicators.size()];
+            org.icepear.echarts.components.coord.radar.RadarIndicator[] indicatorsArray = new org.icepear.echarts.components.coord.radar.RadarIndicator[indicators
+                    .size()];
             for (int i = 0; i < indicators.size(); i++) {
                 indicatorsArray[i] = new org.icepear.echarts.components.coord.radar.RadarIndicator()
                         .setName(indicators.get(i))
@@ -1819,8 +1912,8 @@ public class RerePlot implements Serializable, IPlot {
      * 仪表盘
      *
      * @param value 数值
-     * @param max 最大值
-     * @param min 最小值
+     * @param max   最大值
+     * @param min   最小值
      */
     public RerePlot gauge(double value, double max, double min) {
         return gaugeInternal(value, max, min, null);
@@ -1829,9 +1922,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建仪表盘（支持样式字符串）
      *
-     * @param value 数值
-     * @param max 最大值
-     * @param min 最小值
+     * @param value       数值
+     * @param max         最大值
+     * @param min         最小值
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -1846,8 +1939,8 @@ public class RerePlot implements Serializable, IPlot {
      * 创建仪表盘（支持PlotStyle样式）
      *
      * @param value 数值
-     * @param max 最大值
-     * @param min 最小值
+     * @param max   最大值
+     * @param min   最小值
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -1859,8 +1952,8 @@ public class RerePlot implements Serializable, IPlot {
      * 统一的仪表盘内部实现
      *
      * @param value 数值
-     * @param max 最大值
-     * @param min 最小值
+     * @param max   最大值
+     * @param min   最小值
      * @param style 绘图样式
      * @return 当前实例
      */
@@ -1871,7 +1964,7 @@ public class RerePlot implements Serializable, IPlot {
             // 创建仪表盘系列
             org.icepear.echarts.charts.gauge.GaugeSeries series = new org.icepear.echarts.charts.gauge.GaugeSeries()
                     .setType("gauge")
-                    .setData(new Object[]{value});
+                    .setData(new Object[] { value });
 
             // 应用样式
             PlotStyle effectiveStyle = style != null ? style
@@ -1900,7 +1993,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 极坐标柱状图
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param categories 类别标签
      */
     public RerePlot polarBar(IVector data, List<String> categories) {
@@ -1921,7 +2014,7 @@ public class RerePlot implements Serializable, IPlot {
             PolarBar polarBarChart = new PolarBar();
 
             // 设置极坐标配置
-            polarBarChart.setPolarAxis(new String[]{"30%", "80%"});
+            polarBarChart.setPolarAxis(new String[] { "30%", "80%" });
             polarBarChart.setAngleAxis(categories.toArray(new String[0]));
             polarBarChart.setRadiusAxis();
 
@@ -1948,7 +2041,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTitle(title);
             this.option.setLegend(legend);
             this.option.setTooltip(tooltip);
-            this.option.setSeries(new org.icepear.echarts.charts.bar.BarSeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.bar.BarSeries[] { series });
 
         } catch (Exception e) {
             System.err.println("创建极坐标柱状图时出错: " + e.getMessage());
@@ -1959,7 +2052,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 极坐标线图
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param categories 类别标签
      */
     public RerePlot polarLine(IVector data, List<String> categories) {
@@ -1980,7 +2073,7 @@ public class RerePlot implements Serializable, IPlot {
             PolarLine polarLineChart = new PolarLine();
 
             // 设置极坐标配置
-            polarLineChart.setPolarAxis(new String[]{"30%", "80%"});
+            polarLineChart.setPolarAxis(new String[] { "30%", "80%" });
             polarLineChart.setAngleAxis(categories.toArray(new String[0]));
             polarLineChart.setRadiusAxis();
 
@@ -2019,7 +2112,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 极坐标散点图
      *
-     * @param data 数据向量
+     * @param data       数据向量
      * @param categories 类别标签
      */
     public RerePlot polarScatter(IVector data, List<String> categories) {
@@ -2040,7 +2133,7 @@ public class RerePlot implements Serializable, IPlot {
             PolarScatter polarScatterChart = new PolarScatter();
 
             // 设置极坐标配置
-            polarScatterChart.setPolarAxis(new String[]{"30%", "80%"});
+            polarScatterChart.setPolarAxis(new String[] { "30%", "80%" });
             polarScatterChart.setAngleAxis(categories.toArray(new String[0]));
             polarScatterChart.setRadiusAxis();
 
@@ -2076,18 +2169,18 @@ public class RerePlot implements Serializable, IPlot {
         return this;
     }
 
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
-    // ========== 统计图表 ==========    
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
     // ========== 统计图表 ==========
     /**
      * 箱线图（使用ECharts原生Boxplot）
      *
-     * @param data 数据向量
+     * @param data   数据向量
      * @param labels 标签
      */
     public RerePlot boxplot(IVector data, List<String> labels) {
@@ -2097,8 +2190,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建箱线图（支持样式字符串）
      *
-     * @param data 数据向量
-     * @param labels 标签列表
+     * @param data        数据向量
+     * @param labels      标签列表
      * @param styleString 样式字符串
      * @return 当前实例
      */
@@ -2112,9 +2205,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建箱线图（支持PlotStyle样式）
      *
-     * @param data 数据向量
+     * @param data   数据向量
      * @param labels 标签列表
-     * @param style 绘图样式
+     * @param style  绘图样式
      * @return 当前实例
      */
     public RerePlot boxplot(IVector data, List<String> labels, PlotStyle style) {
@@ -2124,9 +2217,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 统一的箱线图内部实现
      *
-     * @param data 数据向量
+     * @param data   数据向量
      * @param labels 标签列表
-     * @param style 绘图样式
+     * @param style  绘图样式
      * @return 当前实例
      */
     private RerePlot boxplotInternal(IVector data, List<String> labels, PlotStyle style) {
@@ -2172,7 +2265,7 @@ public class RerePlot implements Serializable, IPlot {
                 int n = groupArray.length;
                 if (n == 0) {
                     // 空数据组，使用默认值
-                    boxData[i] = new Object[]{0, 0, 0, 0, 0};
+                    boxData[i] = new Object[] { 0, 0, 0, 0, 0 };
                     continue;
                 }
 
@@ -2195,7 +2288,7 @@ public class RerePlot implements Serializable, IPlot {
                 double q3 = groupArray[q3Index];
 
                 // 创建箱线图数据 [min, Q1, median, Q3, max]
-                boxData[i] = new Object[]{min, q1, q2, q3, max};
+                boxData[i] = new Object[] { min, q1, q2, q3, max };
             }
 
             // 创建箱线图系列
@@ -2273,14 +2366,14 @@ public class RerePlot implements Serializable, IPlot {
 
             // 创建箱线图数据 [min, Q1, median, Q3, max]
             Object[] boxData = new Object[1];
-            boxData[0] = new Object[]{min, q1, q2, q3, max};
+            boxData[0] = new Object[] { min, q1, q2, q3, max };
 
             boxplotChart.addSeries("箱线图", boxData);
 
             // 配置坐标轴
             CategoryAxis xAxis = new CategoryAxis();
             xAxis.setName(xlabel.isEmpty() ? "数据" : xlabel);
-            xAxis.setData(new String[]{"数据集"});
+            xAxis.setData(new String[] { "数据集" });
 
             ValueAxis yAxis = new ValueAxis();
             yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
@@ -2336,7 +2429,7 @@ public class RerePlot implements Serializable, IPlot {
                     labels.add("数据集");
                 }
             }
-            
+
             if (data.length() != labels.size()) {
                 throw new PlotException("数据向量和标签列表长度必须相等");
             }
@@ -2355,7 +2448,8 @@ public class RerePlot implements Serializable, IPlot {
             }
 
             // Create density curves for each group
-            String[] colors = {"#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"};
+            String[] colors = { "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4",
+                    "#ea7ccc" };
             int colorIndex = 0;
 
             for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
@@ -2420,7 +2514,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * K线图（蜡烛图）
      *
-     * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价]
+     * @param data  数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价]
      * @param dates 日期标签
      */
     public RerePlot candlestick(IMatrix data, List<String> dates) {
@@ -2444,11 +2538,11 @@ public class RerePlot implements Serializable, IPlot {
             Object[] candlestickData = new Object[data.getRowNum()];
             for (int i = 0; i < data.getRowNum(); i++) {
                 if (data.getColNum() >= 4) {
-                    candlestickData[i] = new Object[]{
-                        data.get(i, 0), // 开盘价
-                        data.get(i, 1), // 收盘价
-                        data.get(i, 2), // 最低价
-                        data.get(i, 3) // 最高价
+                    candlestickData[i] = new Object[] {
+                            data.get(i, 0), // 开盘价
+                            data.get(i, 1), // 收盘价
+                            data.get(i, 2), // 最低价
+                            data.get(i, 3) // 最高价
                     };
                 }
             }
@@ -2492,7 +2586,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 漏斗图
      *
-     * @param data 数据向量
+     * @param data   数据向量
      * @param labels 标签
      */
     public RerePlot funnel(IVector data, List<String> labels) {
@@ -2570,7 +2664,8 @@ public class RerePlot implements Serializable, IPlot {
             Sankey sankeyChart = new Sankey();
 
             // 创建SankeyEdgeItem数组
-            org.icepear.echarts.charts.sankey.SankeyEdgeItem[] sankeyLinks = new org.icepear.echarts.charts.sankey.SankeyEdgeItem[links.size()];
+            org.icepear.echarts.charts.sankey.SankeyEdgeItem[] sankeyLinks = new org.icepear.echarts.charts.sankey.SankeyEdgeItem[links
+                    .size()];
             for (int i = 0; i < links.size(); i++) {
                 Map<String, Object> link = links.get(i);
                 org.icepear.echarts.charts.sankey.SankeyEdgeItem edgeItem = new org.icepear.echarts.charts.sankey.SankeyEdgeItem();
@@ -2618,7 +2713,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTitle(title);
             this.option.setLegend(legend);
             this.option.setTooltip(tooltip);
-            this.option.setSeries(new org.icepear.echarts.charts.sankey.SankeySeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.sankey.SankeySeries[] { series });
 
         } catch (Exception e) {
             System.err.println("创建桑基图时出错: " + e.getMessage());
@@ -2706,7 +2801,7 @@ public class RerePlot implements Serializable, IPlot {
                 rootNode.put("name", "根节点");
                 rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
                 rootNode.put("children", data);
-                return new Object[]{rootNode};
+                return new Object[] { rootNode };
             }
         }
     }
@@ -2761,7 +2856,7 @@ public class RerePlot implements Serializable, IPlot {
         }
 
         if (rootNode != null) {
-            return new Object[]{rootNode};
+            return new Object[] { rootNode };
         } else {
             // 如果没有找到根节点，创建一个默认的根节点
             Map<String, Object> defaultRoot = new HashMap<>();
@@ -2771,14 +2866,14 @@ public class RerePlot implements Serializable, IPlot {
                 children.add(node);
             }
             defaultRoot.put("children", children);
-            return new Object[]{defaultRoot};
+            return new Object[] { defaultRoot };
         }
     }
 
     /**
      * 主题河流图
      *
-     * @param data 时间序列数据，格式为 [时间, 数值, 类别] 的数组
+     * @param data       时间序列数据，格式为 [时间, 数值, 类别] 的数组
      * @param categories 类别
      */
     public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories) {
@@ -2807,10 +2902,10 @@ public class RerePlot implements Serializable, IPlot {
                 if (time == null) {
                     time = "2023-01-0" + (i % 9 + 1); // 生成默认时间
                 }
-                themeRiverData[i] = new Object[]{
-                    time,
-                    item.get("value"),
-                    item.get("category")
+                themeRiverData[i] = new Object[] {
+                        time,
+                        item.get("value"),
+                        item.get("category")
                 };
             }
 
@@ -2830,7 +2925,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTitle(title);
             this.option.setLegend(legend);
             this.option.setTooltip(tooltip);
-            this.option.setSeries(new org.icepear.echarts.charts.themeRiver.ThemeRiverSeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.themeRiver.ThemeRiverSeries[] { series });
 
             // 添加TimeSingleAxis配置 - 主题河流图必需
             org.icepear.echarts.components.coord.single.TimeSingleAxis singleAxis = new org.icepear.echarts.components.coord.single.TimeSingleAxis()
@@ -2912,7 +3007,8 @@ public class RerePlot implements Serializable, IPlot {
                                 // 这是子节点，添加到父节点的children中
                                 Map<String, Object> parentNode = nodeMap.get(parent);
                                 @SuppressWarnings("unchecked")
-                                List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode.get("children");
+                                List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode
+                                        .get("children");
                                 if (children == null) {
                                     children = new ArrayList<>();
                                     parentNode.put("children", children);
@@ -2923,7 +3019,7 @@ public class RerePlot implements Serializable, IPlot {
                     }
 
                     if (rootNode != null) {
-                        treeData = new Object[]{convertToTreeStructure(rootNode)};
+                        treeData = new Object[] { convertToTreeStructure(rootNode) };
                     } else {
                         // 如果没有找到根节点，创建一个默认的根节点
                         Map<String, Object> defaultRoot = new HashMap<>();
@@ -2933,7 +3029,7 @@ public class RerePlot implements Serializable, IPlot {
                             children.add(node);
                         }
                         defaultRoot.put("children", children);
-                        treeData = new Object[]{convertToTreeStructure(defaultRoot)};
+                        treeData = new Object[] { convertToTreeStructure(defaultRoot) };
                     }
                 } else {
                     // 如果输入是平级数据且没有parent字段，创建根节点包含所有子节点
@@ -2961,7 +3057,7 @@ public class RerePlot implements Serializable, IPlot {
                     }
 
                     rootNode.put("children", children);
-                    treeData = new Object[]{convertToTreeStructure(rootNode)};
+                    treeData = new Object[] { convertToTreeStructure(rootNode) };
                 }
             }
 
@@ -2981,7 +3077,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTitle(title);
             this.option.setLegend(legend);
             this.option.setTooltip(tooltip);
-            this.option.setSeries(new org.icepear.echarts.charts.tree.TreeSeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.tree.TreeSeries[] { series });
 
         } catch (Exception e) {
             System.err.println("创建树图时出错: " + e.getMessage());
@@ -3092,7 +3188,7 @@ public class RerePlot implements Serializable, IPlot {
                 rootNode.put("name", "根节点");
                 rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
                 rootNode.put("children", data);
-                return new Object[]{rootNode};
+                return new Object[] { rootNode };
             }
         }
     }
@@ -3121,7 +3217,8 @@ public class RerePlot implements Serializable, IPlot {
             Graph graphChart = new Graph();
 
             // 创建GraphNodeItem数组，添加坐标信息
-            org.icepear.echarts.charts.graph.GraphNodeItem[] graphNodes = new org.icepear.echarts.charts.graph.GraphNodeItem[nodes.size()];
+            org.icepear.echarts.charts.graph.GraphNodeItem[] graphNodes = new org.icepear.echarts.charts.graph.GraphNodeItem[nodes
+                    .size()];
             for (int i = 0; i < nodes.size(); i++) {
                 Map<String, Object> node = nodes.get(i);
                 org.icepear.echarts.charts.graph.GraphNodeItem nodeItem = new org.icepear.echarts.charts.graph.GraphNodeItem();
@@ -3147,7 +3244,8 @@ public class RerePlot implements Serializable, IPlot {
             }
 
             // 创建GraphEdgeItem数组
-            org.icepear.echarts.charts.graph.GraphEdgeItem[] graphLinks = new org.icepear.echarts.charts.graph.GraphEdgeItem[links.size()];
+            org.icepear.echarts.charts.graph.GraphEdgeItem[] graphLinks = new org.icepear.echarts.charts.graph.GraphEdgeItem[links
+                    .size()];
             for (int i = 0; i < links.size(); i++) {
                 Map<String, Object> link = links.get(i);
                 org.icepear.echarts.charts.graph.GraphEdgeItem edgeItem = new org.icepear.echarts.charts.graph.GraphEdgeItem();
@@ -3196,7 +3294,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTitle(title);
             this.option.setLegend(legend);
             this.option.setTooltip(tooltip);
-            this.option.setSeries(new org.icepear.echarts.charts.graph.GraphSeries[]{series});
+            this.option.setSeries(new org.icepear.echarts.charts.graph.GraphSeries[] { series });
 
         } catch (Exception e) {
             System.err.println("创建关系图时出错: " + e.getMessage());
@@ -3207,7 +3305,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 平行坐标图
      *
-     * @param data 数据矩阵
+     * @param data       数据矩阵
      * @param dimensions 维度名称
      */
     public RerePlot parallel(IMatrix data, List<String> dimensions) {
@@ -3271,7 +3369,7 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 核密度估计
      *
-     * @param data 数据向量
+     * @param data      数据向量
      * @param bandwidth 带宽参数
      * @return 密度估计点列表
      */
@@ -3280,13 +3378,13 @@ public class RerePlot implements Serializable, IPlot {
         double min = (double) data.min();
         double max = (double) data.max();
         double range = max - min;
-        
+
         // Handle edge case where all values are the same
         if (range == 0) {
-            points.add(new double[]{min, 1.0});
+            points.add(new double[] { min, 1.0 });
             return points;
         }
-        
+
         double step = range / 100.0;
 
         for (double x = min - range * 0.2; x <= max + range * 0.2; x += step) {
@@ -3296,7 +3394,7 @@ public class RerePlot implements Serializable, IPlot {
                 density += Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
             }
             density /= (data.length() * bandwidth);
-            points.add(new double[]{x, density});
+            points.add(new double[] { x, density });
         }
 
         return points;
@@ -3305,10 +3403,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 添加小提琴密度曲线系列（左右对称）
      *
-     * @param chart 图表对象
+     * @param chart   图表对象
      * @param kdeData 核密度估计数据
-     * @param name 系列名称
-     * @param color 颜色
+     * @param name    系列名称
+     * @param color   颜色
      */
     private void addViolinDensitySeries(Line chart, List<double[]> kdeData, String name, String color) {
         // 创建小提琴形状的数据：先左半边（从右到左），再右半边（从左到右）
@@ -3319,14 +3417,14 @@ public class RerePlot implements Serializable, IPlot {
             double[] point = kdeData.get(i);
             double x = point[0];
             double density = point[1] * 100; // 放大密度值以便更好显示
-            violinData.add(new Number[]{x, -density});
+            violinData.add(new Number[] { x, -density });
         }
 
         // 添加右半边数据（从左到右，正密度值）
         for (double[] point : kdeData) {
             double x = point[0];
             double density = point[1] * 100; // 放大密度值以便更好显示
-            violinData.add(new Number[]{x, density});
+            violinData.add(new Number[] { x, density });
         }
 
         // 创建小提琴系列，使用面积填充
@@ -3348,8 +3446,8 @@ public class RerePlot implements Serializable, IPlot {
      * 添加箱线图到小提琴图中
      *
      * @param chart 图表对象
-     * @param data 数据向量
-     * @param name 系列名称
+     * @param data  数据向量
+     * @param name  系列名称
      * @param color 箱线图颜色
      */
     private void addBoxplotToViolin(Line chart, IVector data, String name, String color) {
@@ -3359,10 +3457,10 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 添加箱线图到小提琴图中（支持多组模式）
      *
-     * @param chart 图表对象
-     * @param data 数据向量
-     * @param name 系列名称
-     * @param color 箱线图颜色
+     * @param chart        图表对象
+     * @param data         数据向量
+     * @param name         系列名称
+     * @param color        箱线图颜色
      * @param isMultiGroup 是否为多组模式
      */
     private void addBoxplotToViolin(Line chart, IVector data, String name, String color, boolean isMultiGroup) {
@@ -3429,39 +3527,39 @@ public class RerePlot implements Serializable, IPlot {
 
         // 1. 左须线
         List<Number[]> leftWhisker = new ArrayList<>();
-        leftWhisker.add(new Number[]{min, 0});
-        leftWhisker.add(new Number[]{q1, 0});
+        leftWhisker.add(new Number[] { min, 0 });
+        leftWhisker.add(new Number[] { q1, 0 });
 
         // 2. 右须线
         List<Number[]> rightWhisker = new ArrayList<>();
-        rightWhisker.add(new Number[]{q3, 0});
-        rightWhisker.add(new Number[]{max, 0});
+        rightWhisker.add(new Number[] { q3, 0 });
+        rightWhisker.add(new Number[] { max, 0 });
 
         // 3. 箱体（矩形）- 分别绘制四条边，确保每条线都清晰可见
         // 底部线
         List<Number[]> bottomLine = new ArrayList<>();
-        bottomLine.add(new Number[]{q1, -boxHeight});
-        bottomLine.add(new Number[]{q3, -boxHeight});
+        bottomLine.add(new Number[] { q1, -boxHeight });
+        bottomLine.add(new Number[] { q3, -boxHeight });
 
         // 顶部线
         List<Number[]> topLine = new ArrayList<>();
-        topLine.add(new Number[]{q1, boxHeight});
-        topLine.add(new Number[]{q3, boxHeight});
+        topLine.add(new Number[] { q1, boxHeight });
+        topLine.add(new Number[] { q3, boxHeight });
 
         // 左侧竖线
         List<Number[]> leftLine = new ArrayList<>();
-        leftLine.add(new Number[]{q1, -boxHeight});
-        leftLine.add(new Number[]{q1, boxHeight});
+        leftLine.add(new Number[] { q1, -boxHeight });
+        leftLine.add(new Number[] { q1, boxHeight });
 
         // 右侧竖线
         List<Number[]> rightLine = new ArrayList<>();
-        rightLine.add(new Number[]{q3, -boxHeight});
-        rightLine.add(new Number[]{q3, boxHeight});
+        rightLine.add(new Number[] { q3, -boxHeight });
+        rightLine.add(new Number[] { q3, boxHeight });
 
         // 4. 中位数线
         List<Number[]> median = new ArrayList<>();
-        median.add(new Number[]{q2, -boxHeight});
-        median.add(new Number[]{q2, boxHeight});
+        median.add(new Number[] { q2, -boxHeight });
+        median.add(new Number[] { q2, boxHeight });
 
         // 添加各个部分到图表，隐藏详细部分避免legend过多
         // 左须线
@@ -3540,7 +3638,7 @@ public class RerePlot implements Serializable, IPlot {
      * 应用样式到LineSeries
      *
      * @param lineSeries 线条系列
-     * @param style 样式对象
+     * @param style      样式对象
      */
     private void applyStyleToLineSeries(LineSeries lineSeries, PlotStyle style) {
         if (style == null) {
@@ -3575,7 +3673,7 @@ public class RerePlot implements Serializable, IPlot {
      * 应用样式到ScatterSeries
      *
      * @param scatterSeries 散点系列
-     * @param style 样式对象
+     * @param style         样式对象
      */
     private void applyStyleToScatterSeries(ScatterSeries scatterSeries, PlotStyle style) {
         if (style == null) {
@@ -3677,9 +3775,9 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建自定义样式
      *
-     * @param color 颜色
+     * @param color     颜色
      * @param lineStyle 线条样式
-     * @param marker 标记
+     * @param marker    标记
      * @return 样式对象
      */
     public static PlotStyle createStyle(String color, String lineStyle, String marker) {
@@ -3751,7 +3849,7 @@ public class RerePlot implements Serializable, IPlot {
      * 注册自定义主题
      *
      * @param themeName 主题名称
-     * @param theme 自定义主题对象
+     * @param theme     自定义主题对象
      * @return 当前实例，支持链式调用
      */
     public RerePlot registerTheme(String themeName, ThemeManager.CustomTheme theme) {
@@ -3762,14 +3860,15 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建渐变主题
      *
-     * @param themeName 主题名称
-     * @param startColor 起始颜色
-     * @param endColor 结束颜色
+     * @param themeName       主题名称
+     * @param startColor      起始颜色
+     * @param endColor        结束颜色
      * @param backgroundColor 背景颜色
      * @return 当前实例，支持链式调用
      */
     public RerePlot createGradientTheme(String themeName, String startColor, String endColor, String backgroundColor) {
-        ThemeManager.CustomTheme theme = ThemeManager.createGradientTheme(themeName, startColor, endColor, backgroundColor);
+        ThemeManager.CustomTheme theme = ThemeManager.createGradientTheme(themeName, startColor, endColor,
+                backgroundColor);
         ThemeManager.registerCustomTheme(themeName, theme);
         return this;
     }
@@ -3777,8 +3876,8 @@ public class RerePlot implements Serializable, IPlot {
     /**
      * 创建单色主题
      *
-     * @param themeName 主题名称
-     * @param baseColor 基础颜色
+     * @param themeName       主题名称
+     * @param baseColor       基础颜色
      * @param backgroundColor 背景颜色
      * @return 当前实例，支持链式调用
      */

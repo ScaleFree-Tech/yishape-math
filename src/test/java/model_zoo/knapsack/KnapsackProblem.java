@@ -20,9 +20,9 @@ import com.yishape.lab.math.optimize.linpg.simplex.RereSimplexLinProgSolver;
  */
 public class KnapsackProblem {
     public static void main(String[] args) {
-        IO.println("🎒=== 探险家的背包问题 ===🎒");
-        IO.println("一场智慧与选择的博弈即将开始...");
-        IO.println();
+        System.out.println("🎒=== 探险家的背包问题 ===🎒");
+        System.out.println("一场智慧与选择的博弈即将开始...");
+        System.out.println();
         
         // 🎯 探险家的珍贵物品清单
         // 每件物品都有其独特的价值和重量
@@ -46,30 +46,30 @@ public class KnapsackProblem {
         double capacity = 100.0;
         
         // 📋 展示探险家面临的选择
-        IO.println("🎯 探险家的物品清单：");
-        IO.println("物品名称\t\t\t价值\t重量");
-        IO.println("========================================");
+        System.out.println("🎯 探险家的物品清单：");
+        System.out.println("物品名称\t\t\t价值\t重量");
+        System.out.println("========================================");
         for (int i = 0; i < itemNames.length; i++) {
             System.out.printf("%-20s\t%.1f\t%.1f\n", itemNames[i], values[i], weights[i]);
         }
-        IO.println("========================================");
-        IO.println("🎒 背包最大承重: " + capacity + " 公斤");
-        IO.println();
+        System.out.println("========================================");
+        System.out.println("🎒 背包最大承重: " + capacity + " 公斤");
+        System.out.println();
         
         // 🧮 将探险家的选择转化为数学问题
-        IO.println("📐 数学建模（将现实问题转化为数学语言）：");
-        IO.println();
-        IO.println("🎯 目标函数（最大化总价值）：");
-        IO.println("  最大化: 60*x1 + 100*x2 + 120*x3 + 80*x4 + 150*x5 + 200*x6 + 50*x7");
-        IO.println("  其中 xi = 1 表示选择第i个物品，xi = 0 表示不选择");
-        IO.println();
-        IO.println("⚖️ 约束条件：");
-        IO.println("  重量约束（不能超过背包容量）：");
-        IO.println("    10*x1 + 20*x2 + 30*x3 + 40*x4 + 50*x5 + 60*x6 + 10*x7 ≤ 100");
-        IO.println();
-        IO.println("  0-1变量约束（每个物品要么选要么不选）：");
-        IO.println("    x1, x2, x3, x4, x5, x6, x7 ∈ {0, 1}");
-        IO.println();
+        System.out.println("📐 数学建模（将现实问题转化为数学语言）：");
+        System.out.println();
+        System.out.println("🎯 目标函数（最大化总价值）：");
+        System.out.println("  最大化: 60*x1 + 100*x2 + 120*x3 + 80*x4 + 150*x5 + 200*x6 + 50*x7");
+        System.out.println("  其中 xi = 1 表示选择第i个物品，xi = 0 表示不选择");
+        System.out.println();
+        System.out.println("⚖️ 约束条件：");
+        System.out.println("  重量约束（不能超过背包容量）：");
+        System.out.println("    10*x1 + 20*x2 + 30*x3 + 40*x4 + 50*x5 + 60*x6 + 10*x7 ≤ 100");
+        System.out.println();
+        System.out.println("  0-1变量约束（每个物品要么选要么不选）：");
+        System.out.println("    x1, x2, x3, x4, x5, x6, x7 ∈ {0, 1}");
+        System.out.println();
         
         // 🔄 转换为求解器可处理的形式（求解器执行最小化）
         // 最小化: -sum(values[i] * x[i]) 等价于最大化 sum(values[i] * x[i])
@@ -98,16 +98,16 @@ public class KnapsackProblem {
         solver.setVerbose(false);          // 关闭详细输出以减少干扰
         
         
-        IO.println("🔍 正在求解0-1整数规划问题...");
-        IO.println("💭 探险家正在思考最优的选择策略...");
-        IO.println();
+        System.out.println("🔍 正在求解0-1整数规划问题...");
+        System.out.println("💭 探险家正在思考最优的选择策略...");
+        System.out.println();
         
         // 🚀 求解0-1整数规划问题
         OptResult result = solver.solve(c, A_ub, b_ub);
         
         // ✅ 检查是否找到可行解
         if (result == null) {
-            IO.println("❌ 没有找到可行解！探险家陷入了困境...");
+            System.out.println("❌ 没有找到可行解！探险家陷入了困境...");
             return;
         }
         
@@ -117,24 +117,24 @@ public class KnapsackProblem {
         double optimalValue = -rawOptimalValue; // 转换回最大化问题的结果
         
         // 🔍 调试信息
-        IO.println("🔍 调试信息:");
-        IO.println("   求解器返回的原始目标函数值: " + rawOptimalValue);
-        IO.println("   转换后的最大化目标函数值: " + optimalValue);
+        System.out.println("🔍 调试信息:");
+        System.out.println("   求解器返回的原始目标函数值: " + rawOptimalValue);
+        System.out.println("   转换后的最大化目标函数值: " + optimalValue);
         
         // 🎉 输出最优解
-        IO.println("🏆=== 探险家的最优选择 ===🏆");
-        IO.println("📋 决策向量: " + solution);
-        IO.println("💰 最大总价值: " + optimalValue);
-        IO.println();
+        System.out.println("🏆=== 探险家的最优选择 ===🏆");
+        System.out.println("📋 决策向量: " + solution);
+        System.out.println("💰 最大总价值: " + optimalValue);
+        System.out.println();
         
         // 🔍 详细的解决方案分析
-        IO.println("📈=== 选择分析 ===📈");
+        System.out.println("📈=== 选择分析 ===📈");
         double totalWeight = 0;
         double totalValue = 0;
         
-        IO.println("🎒 探险家最终选择的物品：");
-        IO.println("物品名称\t\t\t选择\t价值\t重量");
-        IO.println("================================================");
+        System.out.println("🎒 探险家最终选择的物品：");
+        System.out.println("物品名称\t\t\t选择\t价值\t重量");
+        System.out.println("================================================");
         for (int i = 0; i < solution.size(); i++) {
             // 四舍五入处理数值精度问题
             int selected = (int) Math.round(solution.get(i).doubleValue());
@@ -146,13 +146,13 @@ public class KnapsackProblem {
                 System.out.printf("%-20s\t%s\t%.1f\t%.1f\n", itemNames[i], "❌", values[i], weights[i]);
             }
         }
-        IO.println("================================================");
-        IO.println("📦 总重量: " + totalWeight + " ≤ " + capacity + " 公斤");
-        IO.println("💎 总价值: " + totalValue);
-        IO.println();
+        System.out.println("================================================");
+        System.out.println("📦 总重量: " + totalWeight + " ≤ " + capacity + " 公斤");
+        System.out.println("💎 总价值: " + totalValue);
+        System.out.println();
         
         // 🔍 验证0-1约束
-        IO.println("🔍=== 0-1约束验证 ===🔍");
+        System.out.println("🔍=== 0-1约束验证 ===🔍");
         boolean allBinary = true;
         for (int i = 0; i < solution.size(); i++) {
             double value = solution.get(i).doubleValue();
@@ -161,22 +161,22 @@ public class KnapsackProblem {
             allBinary &= isBinary;
             System.out.printf("x%d = %.6f (是否为0-1: %s)\n", i+1, value, isBinary ? "✅是" : "❌否");
         }
-        IO.println("所有变量都是0-1: " + (allBinary ? "✅是" : "❌否"));
-        IO.println();
+        System.out.println("所有变量都是0-1: " + (allBinary ? "✅是" : "❌否"));
+        System.out.println();
         
         // 📝 智慧总结
-        IO.println("🎓=== 探险家的智慧总结 ===🎓");
-        IO.println("这是一个经典的0-1整数规划问题（0-1背包问题）。");
-        IO.println();
-        IO.println("🔑 关键特征：");
-        IO.println("1. 🔢 每个变量只能是0或1（要么选择，要么不选择）");
-        IO.println("2. 🎯 目标是最大化总价值");
-        IO.println("3. ⚖️ 受到重量约束的限制");
-        IO.println("4. 🌳 使用分支定界法求解");
-        IO.println();
-        IO.println("💡 探险家学到的道理：");
-        IO.println("   在有限的资源下，智慧的选择比盲目的贪婪更有价值！");
-        IO.println();
-        IO.println("📖 想了解更多？请查看 knapsack_introduction.md 文档！");
+        System.out.println("🎓=== 探险家的智慧总结 ===🎓");
+        System.out.println("这是一个经典的0-1整数规划问题（0-1背包问题）。");
+        System.out.println();
+        System.out.println("🔑 关键特征：");
+        System.out.println("1. 🔢 每个变量只能是0或1（要么选择，要么不选择）");
+        System.out.println("2. 🎯 目标是最大化总价值");
+        System.out.println("3. ⚖️ 受到重量约束的限制");
+        System.out.println("4. 🌳 使用分支定界法求解");
+        System.out.println();
+        System.out.println("💡 探险家学到的道理：");
+        System.out.println("   在有限的资源下，智慧的选择比盲目的贪婪更有价值！");
+        System.out.println();
+        System.out.println("📖 想了解更多？请查看 knapsack_introduction.md 文档！");
     }
 }

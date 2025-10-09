@@ -1,7 +1,7 @@
-package model_zoo.naive_news_wendor;
+package model_zoo.naive_news_vendor;
 
-import com.reremouse.lab.math.optimize.OptResult;
-import com.reremouse.lab.math.stats.Stats;
+import com.yishape.lab.math.optimize.OptResult;
+import com.yishape.lab.math.stats.Stats;
 
 /**
  * 报童模型使用示例

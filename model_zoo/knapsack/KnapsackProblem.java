@@ -1,9 +1,9 @@
 package model_zoo.knapsack;
 
-import com.reremouse.lab.math.linalg.IMatrix;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.optimize.OptResult;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.OptResult;
 
 /**
  * 🎒 探险家的背包问题：一场智慧与选择的博弈

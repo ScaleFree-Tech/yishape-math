@@ -11,7 +11,7 @@ public class VizTestFixed {
     public static void main(String args[]) {
         // 音频可视化 / Audio visualization
         String path = "F:\\music\\test\\";
-        String f1 = path + "shadow of love.mp3";
+        String f1 = path + "20.杨友友-野花做了场玫瑰花的梦.mp3";
 
         try {
             System.out.println("Loading audio file...");
@@ -23,7 +23,7 @@ public class VizTestFixed {
             
             System.out.println("Generating waveform plot...");
             startTime = System.currentTimeMillis();
-            AudioPlots.plotWaveform(data, "音频波形 / Audio Waveform").show();
+            AudioPlots.plotWaveform(data, "音频波形 / Audio Waveform", 1024, 256).show();
             endTime = System.currentTimeMillis();
             System.out.println("Waveform plot generated in " + (endTime - startTime) + " ms");
             
@@ -50,6 +50,12 @@ public class VizTestFixed {
             AudioPlots.plotSpectrogram(data, "音频频谱图 / Audio Spectrogram", 1024, 256).show();
             endTime = System.currentTimeMillis();
             System.out.println("Spectrogram plot generated in " + (endTime - startTime) + " ms");
+            
+            System.out.println("Generating MFCC plot...");
+            startTime = System.currentTimeMillis();
+            AudioPlots.plotMFCC(data, "MFCC特征 / MFCC Features", 13, 1024, 256).show();
+            endTime = System.currentTimeMillis();
+            System.out.println("MFCC plot generated in " + (endTime - startTime) + " ms");
             
         } catch (Exception e) {
             e.printStackTrace();

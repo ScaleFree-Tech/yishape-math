@@ -267,6 +267,14 @@ public class MusicPlots {
                     featureNames.add("情感强度");
                     featureValues.add(((Double) expressivenessFeatures.get("情感强度")) * 100);
                 }
+                if (expressivenessFeatures.containsKey("效价")) {
+                    featureNames.add("效价");
+                    featureValues.add(((Double) expressivenessFeatures.get("效价")) * 100);
+                }
+                if (expressivenessFeatures.containsKey("唤醒度")) {
+                    featureNames.add("唤醒度");
+                    featureValues.add(((Double) expressivenessFeatures.get("唤醒度")) * 100);
+                }
             }
 
             // 创建雷达图 / Create radar chart

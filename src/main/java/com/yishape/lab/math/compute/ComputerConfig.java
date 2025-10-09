@@ -5,8 +5,8 @@ package com.yishape.lab.math.compute;
  * @author lteb2
  */
 public class ComputerConfig {
-    public static final boolean USE_SIMD = true;
-    public static final boolean USE_GPU = true;
+    public static final boolean USE_SIMD = false;
+    public static final boolean USE_GPU = false;
     //矩阵或者向量元素多于此数就使用GPU
     public static final int GPU_THRESHOLD = 10000000; // 10M elements - scalar operations need much higher threshold due to overhead
     
@@ -25,8 +25,10 @@ public class ComputerConfig {
      */
     public static boolean checkIfSIMDSupported(){
         try {
-            //由于SIMDDoubleComputer类本身可能由于孵化库支持的问题而抛出异常，因此要再包装一层
-            return SIMDDoubleComputer.checkIfSupport();
+            // 使用Class.forName延迟加载SIMDDoubleComputer类，避免在类初始化时抛出NoClassDefFoundError
+            Class<?> simdClass = Class.forName("com.yishape.lab.math.compute.SIMDDoubleComputer");
+            // 通过反射调用checkIfSupport方法
+            return (Boolean) simdClass.getMethod("checkIfSupport").invoke(null);
         } catch (Exception e) {
             return false;
         }
@@ -39,8 +41,10 @@ public class ComputerConfig {
      */
     public static boolean checkIfGPUSupported(){
         try {
-            //由于GPUDoubleComputer类本身可能由于Aparapi的引入问题而抛出异常，因此要再包装一层
-            return GPUDoubleComputer.isGPUAvailable();
+            // 使用Class.forName延迟加载GPUDoubleComputer类，避免在类初始化时抛出NoClassDefFoundError
+            Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUDoubleComputer");
+            // 通过反射调用isGPUAvailable方法
+            return (Boolean) gpuClass.getMethod("isGPUAvailable").invoke(null);
         } catch (Exception e) {
             return false;
         }

@@ -7,7 +7,7 @@
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>25</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-modules jdk.incubator.vector</maven.surefire.argLine>
     </properties>
     
@@ -52,7 +52,11 @@
             <version>1.0.1</version>
             <optional>true</optional>
         </dependency>
-        
+        <dependency>
+            <groupId>com.googlecode.soundlibs</groupId>
+            <artifactId>mp3spi</artifactId>
+            <version>1.9.5.4</version>
+        </dependency>
         <!-- Support for OGG Vorbis decoding -->
         <dependency>
             <groupId>org.jcraft</groupId>
@@ -62,11 +66,13 @@
         </dependency>
         
         <!--主要用于初期测试自研求解器求解的正确性，性能稳定后将删除依赖-->
+        <!--
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math4-legacy</artifactId>
             <version>4.0-beta1</version>
         </dependency>
+        -->
         
         <!-- JUnit 5 for testing -->
         <dependency>
@@ -103,9 +109,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
                 <configuration>
-                    <release>25</release>
+                    <release>21</release>
                     <encoding>utf8</encoding>
-                     <!-- 如果你的项目使用了类似Vector API这样的孵化模块，需要额外配置编译器参数 -->
+                    <!-- 如果你的项目使用了类似Vector API这样的孵化模块，需要额外配置编译器参数 -->
                     <compilerArgs>
                         <arg>--add-modules</arg>
                         <arg>jdk.incubator.vector</arg>

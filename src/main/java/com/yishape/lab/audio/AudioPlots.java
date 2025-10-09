@@ -3,6 +3,7 @@ package com.yishape.lab.audio;
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioStatistics;
 import com.yishape.lab.audio.core.AudioQuality;
+import com.yishape.lab.audio.core.AudioProcessor;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -38,6 +39,30 @@ public class AudioPlots {
     // Maximum number of points to display in waveform for visualization
     private static final int MAX_WAVEFORM_POINTS = 10000;
     
+    // Apply pre-emphasis filter to reduce high frequency artifacts
+    private static final double PRE_EMPHASIS_FACTOR = 0.95;
+    
+    /**
+     * 根据音频时长计算最大时间帧数 / Calculate maximum time frames based on audio duration
+     * 
+     * @param duration 音频时长（秒） / Audio duration (seconds)
+     * @return 最大时间帧数 / Maximum time frames
+     */
+    private static int calculateMaxTimeFramesForAudio(double duration) {
+        // 对于短音频（<30秒），使用较高的分辨率
+        if (duration < 30) {
+            return 800;
+        }
+        // 对于中等音频（30-120秒），使用中等分辨率
+        else if (duration < 120) {
+            return 1200;
+        }
+        // 对于长音频（>=120秒），使用较低的分辨率但仍保持足够的细节
+        else {
+            return Math.max(800, Math.min(2000, (int)(duration * 10))); // 每秒约10帧，但限制在800-2000之间
+        }
+    }
+    
     /**
      * 绘制波形图 / Plot waveform
      * <p>
@@ -50,24 +75,54 @@ public class AudioPlots {
      * @return 波形图对象 / Waveform plot object
      */
     public static IPlot plotWaveform(AudioData audioData, String title) {
+        return plotWaveform(audioData, title, 1024, 256);
+    }
+    
+    /**
+     * 绘制波形图（指定参数） / Plot waveform (with specified parameters)
+     * <p>
+     * 显示音频信号的时域波形。
+     * Display time-domain waveform of audio signal.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param title 图表标题 / Plot title
+     * @param windowSize 窗函数大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @return 波形图对象 / Waveform plot object
+     */
+    public static IPlot plotWaveform(AudioData audioData, String title, int windowSize, int hopSize) {
+        // 确保使用单声道音频进行波形图绘制，与MFCC处理逻辑保持一致
+        AudioData monoAudioData = audioData;
+        if (!audioData.isMono()) {
+            // 将立体声转换为单声道
+            monoAudioData = AudioProcessor.stereoToMono(audioData);
+        }
+        
         // 获取音频样本 / Get audio samples
-        IVector<Double> samples = audioData.getSamples();
+        IVector<Double> samples = monoAudioData.getSamples();
+        
+        // Apply pre-emphasis filter to reduce high frequency artifacts
+        IVector<Double> filteredSamples = applyPreEmphasis(samples);
         
         // Downsample for visualization if needed
-        IVector<Double> displaySamples = samples;
+        IVector<Double> displaySamples = filteredSamples;
         IVector<Double> displayTimeAxis = null;
         
-        if (samples.length() > MAX_WAVEFORM_POINTS) {
+        // Generate time axis that covers the full duration of the audio
+        double totalDuration = monoAudioData.getDuration();
+        
+        if (filteredSamples.length() > MAX_WAVEFORM_POINTS) {
             // Downsample to reduce the number of points for visualization
-            displaySamples = downsampleForVisualization(samples, MAX_WAVEFORM_POINTS);
+            displaySamples = downsampleForVisualization(filteredSamples, MAX_WAVEFORM_POINTS);
             
-            // Generate time axis for downsampled data
+            // Generate time axis for downsampled data that covers the full duration
             displayTimeAxis = Linalg.range(displaySamples.length())
-                    .multiplyScalar((double) samples.length() / displaySamples.length() / audioData.getSampleRate());
+                    .multiplyScalar(totalDuration / displaySamples.length());
         } else {
-            // Generate time axis for original data
-            displayTimeAxis = Linalg.range(samples.length())
-                    .multiplyScalar(1.0 / audioData.getSampleRate());
+            // Generate time axis for original data that covers the full duration
+            displayTimeAxis = Linalg.range(filteredSamples.length())
+                    .multiplyScalar(totalDuration / filteredSamples.length());
         }
         
         // 创建波形图 / Create waveform plot
@@ -78,6 +133,26 @@ public class AudioPlots {
                 .ylabel("幅度 / Amplitude");
         
         return plot;
+    }
+    
+    /**
+     * Apply pre-emphasis filter to reduce high frequency artifacts
+     * 
+     * @param samples Input audio samples
+     * @return Pre-emphasized samples
+     */
+    private static IVector<Double> applyPreEmphasis(IVector<Double> samples) {
+        int length = samples.length();
+        IVector<Double> filtered = Linalg.zeros(length);
+        
+        // Apply pre-emphasis: y[n] = x[n] - a * x[n-1]
+        filtered.set(0, samples.get(0)); // First sample remains unchanged
+        for (int i = 1; i < length; i++) {
+            double filteredValue = samples.get(i) - PRE_EMPHASIS_FACTOR * samples.get(i - 1);
+            filtered.set(i, filteredValue);
+        }
+        
+        return filtered;
     }
     
     /**
@@ -96,7 +171,7 @@ public class AudioPlots {
         double[] downsampled = new double[targetPoints];
         int pointsPerBucket = originalLength / targetPoints;
         
-        // Use min-max decimation to preserve peaks
+        // Use average instead of min-max decimation to reduce noise
         for (int i = 0; i < targetPoints; i++) {
             int startIdx = i * pointsPerBucket;
             int endIdx = Math.min(startIdx + pointsPerBucket, originalLength);
@@ -106,17 +181,15 @@ public class AudioPlots {
                 continue;
             }
             
-            // Find min and max in this bucket
-            double min = Double.MAX_VALUE;
-            double max = -Double.MAX_VALUE;
+            // Calculate average in this bucket
+            double sum = 0.0;
+            int count = 0;
             for (int j = startIdx; j < endIdx; j++) {
-                double value = samples.get(j);
-                if (value < min) min = value;
-                if (value > max) max = value;
+                sum += samples.get(j);
+                count++;
             }
             
-            // Use the value that's furthest from zero to preserve peaks
-            downsampled[i] = Math.abs(min) > Math.abs(max) ? min : max;
+            downsampled[i] = sum / count;
         }
         
         return Linalg.vector(downsampled);
@@ -170,7 +243,13 @@ public class AudioPlots {
                 frequencies = downsampled.getFirst();
                 magnitudes = downsampled.getSecond();
             }
-            plot.bar(magnitudes);
+            // 创建频率标签列表
+            List<String> frequencyLabels = new ArrayList<>();
+            for (int i = 0; i < frequencies.length(); i++) {
+                frequencyLabels.add(String.format("%.0f", frequencies.get(i)));
+            }
+            // 使用带标签的柱状图
+            plot.bar(frequencyLabels, magnitudes);
         } else {
             // 默认使用线图 / Default to line chart
             plot.line(frequencies, magnitudes);
@@ -265,7 +344,13 @@ public class AudioPlots {
                 frequencies = downsampled.getFirst();
                 logMagnitudes = downsampled.getSecond();
             }
-            plot.bar(logMagnitudes);
+            // 创建频率标签列表
+            List<String> frequencyLabels = new ArrayList<>();
+            for (int i = 0; i < frequencies.length(); i++) {
+                frequencyLabels.add(String.format("%.0f", frequencies.get(i)));
+            }
+            // 使用带标签的柱状图
+            plot.bar(frequencyLabels, logMagnitudes);
         } else {
             // 默认使用线图 / Default to line chart
             plot.line(frequencies, logMagnitudes);
@@ -310,9 +395,10 @@ public class AudioPlots {
             IMatrix<Double> stftMatrix = stftAnalyzer.calculateSTFT(audioData, windowSize, hopSize);
             
             // 限制STFT矩阵的大小以减少文件大小 / Limit STFT matrix size to reduce file size
-            // 更加激进的降采样以减少文件大小到合理范围 / More aggressive downsampling to reduce file size to reasonable range
-            int maxTimeFrames = 200;   // 限制时间帧数 / Limit time frames (reduced from 1000)
-            int maxFreqBins = 128;     // 限制频率仓数 / Limit frequency bins (reduced from 512)
+            // 调整参数以更好地支持长音频文件 / Adjust parameters to better support long audio files
+            // 对于长音频文件，动态调整时间帧数限制以显示更多内容
+            int maxTimeFrames = calculateMaxTimeFramesForAudio(audioData.getDuration());
+            int maxFreqBins = 256;     // 增加频率仓数限制 / Increase frequency bin limit
             
             if (stftMatrix.cols() > maxTimeFrames || stftMatrix.rows() > maxFreqBins) {
                 stftMatrix = downsampleSpectrogramMatrix(stftMatrix, maxFreqBins, maxTimeFrames);
@@ -322,8 +408,14 @@ public class AudioPlots {
             int numFrames = stftMatrix.cols();
             List<String> timeLabels = new ArrayList<>();
             double hopTime = (double) hopSize / audioData.getSampleRate();
+            // 修正时间轴，使其与音频的实际时间对齐，确保覆盖整个音频时长
+            double startTime = (double) windowSize / (2 * audioData.getSampleRate()); // 窗口中心时间
             for (int i = 0; i < numFrames; i++) {
-                timeLabels.add(String.format("%.2f", i * hopTime));
+                // 使用等比例映射确保时间标签覆盖整个音频时长
+                double progress = numFrames > 1 ? (double) i / (numFrames - 1) : 0;
+                double totalTime = audioData.getDuration();
+                double time = progress * totalTime;
+                timeLabels.add(String.format("%.2f", time));
             }
             
             // 创建频率标签 / Create frequency labels
@@ -426,6 +518,128 @@ public class AudioPlots {
     }
     
     /**
+     * 绘制MFCC特征图（带异常值处理） / Plot MFCC features (with outlier handling)
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param title 图表标题 / Plot title
+     * @param mfccCount MFCC系数数量 / Number of MFCC coefficients
+     * @param windowSize 窗函数大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @param useNoiseReduction 是否使用噪声去除 / Whether to use noise reduction
+     * @param outlierThreshold 异常值阈值（标准差倍数） / Outlier threshold (number of standard deviations)
+     * @return MFCC特征图对象 / MFCC features plot object
+     */
+    public static IPlot plotMFCC(AudioData audioData, String title, int mfccCount, int windowSize, int hopSize, 
+                                boolean useNoiseReduction, double outlierThreshold) {
+        // 可选：在MFCC计算前应用噪声去除
+        AudioData processedAudio = audioData;
+        if (useNoiseReduction) {
+            // 应用噪声去除
+            processedAudio = Audios.reduceNoise(audioData, 0.05);
+        }
+        
+        // 提取MFCC特征 / Extract MFCC features
+        IMatrix<Double> mfccMatrix = Audios.calculateMFCC(processedAudio, mfccCount, windowSize, hopSize);
+        
+        // 处理异常值
+        if (outlierThreshold > 0) {
+            mfccMatrix = removeOutliers(mfccMatrix, outlierThreshold);
+        }
+        
+        // 限制MFCC矩阵的大小以减少文件大小 / Limit MFCC matrix size to reduce file size
+        // 调整参数以更好地支持长音频文件 / Adjust parameters to better support long audio files
+        // 对于长音频文件，动态调整时间帧数限制以显示更多内容
+        int maxTimeFrames = calculateMaxTimeFramesForAudio(processedAudio.getDuration());
+        
+        // 修复：正确检查时间帧数（行数）而不是MFCC系数数（列数）
+        if (mfccMatrix.rows() > maxTimeFrames) {
+            // 对MFCC矩阵进行降采样，保持系数维度不变 / Downsample MFCC matrix, keep coefficient dimension unchanged
+            int newRows = maxTimeFrames;
+            int oldRows = mfccMatrix.rows();
+            // 使用等间距采样而不是简单的步长采样，以更好地覆盖整个音频
+            IMatrix<Double> downsampled = Linalg.zeros(newRows, mfccMatrix.cols());
+            for (int i = 0; i < newRows; i++) {
+                // 计算在原始矩阵中的对应位置，确保覆盖整个时间范围
+                int origRow = (int) Math.round((double) i * (oldRows - 1) / (newRows - 1));
+                origRow = Math.min(origRow, oldRows - 1); // 确保不越界
+                for (int j = 0; j < mfccMatrix.cols(); j++) {
+                    downsampled.set(i, j, mfccMatrix.get(origRow, j));
+                }
+            }
+            mfccMatrix = downsampled;
+        }
+        
+        // 创建时间标签 / Create time labels
+        // 修复：正确使用行数作为时间帧数
+        int numFrames = mfccMatrix.rows();
+        List<String> timeLabels = new ArrayList<>();
+        double hopTime = (double) hopSize / processedAudio.getSampleRate();
+        // 修正时间轴，使其与音频的实际时间对齐
+        double startTime = (double) windowSize / (2 * processedAudio.getSampleRate()); // 窗口中心时间
+        for (int i = 0; i < numFrames; i++) {
+            // 使用等比例映射确保时间标签覆盖整个音频时长
+            double progress = numFrames > 1 ? (double) i / (numFrames - 1) : 0;
+            double totalTime = processedAudio.getDuration();
+            double time = progress * totalTime;
+            timeLabels.add(String.format("%.2f", time));
+        }
+        
+        // 创建MFCC系数标签 / Create MFCC coefficient labels
+        List<String> mfccLabels = new ArrayList<>();
+        for (int i = 0; i < mfccCount; i++) {
+            mfccLabels.add("MFCC " + i);
+        }
+        
+        // 创建MFCC特征图 / Create MFCC features plot
+        IPlot plot = Plots.of()
+                .title(title)
+                .xlabel("时间 (秒) / Time (s)")
+                .ylabel("MFCC系数 / MFCC Coefficient");
+        
+        // 使用热力图显示MFCC特征矩阵 / Use heatmap to display MFCC feature matrix
+        plot.heatmap(mfccMatrix.t().toFloatMatrix(), timeLabels, mfccLabels);
+        
+        return plot;
+    }
+    
+    /**
+     * 移除矩阵中的异常值 / Remove outliers from matrix
+     * 
+     * @param matrix 输入矩阵 / Input matrix
+     * @param threshold 标准差倍数阈值 / Standard deviation multiplier threshold
+     * @return 处理后的矩阵 / Processed matrix
+     */
+    private static IMatrix<Double> removeOutliers(IMatrix<Double> matrix, double threshold) {
+        // 计算矩阵的均值和标准差
+        double mean = matrix.mean().doubleValue();
+        double std = matrix.std().doubleValue();
+        
+        // 定义异常值范围
+        double lowerBound = mean - threshold * std;
+        double upperBound = mean + threshold * std;
+        
+        // 创建新的矩阵存储处理后的数据
+        IMatrix<Double> processedMatrix = Linalg.zeros(matrix.rows(), matrix.cols());
+        
+        // 处理每个元素
+        for (int i = 0; i < matrix.rows(); i++) {
+            for (int j = 0; j < matrix.cols(); j++) {
+                double value = matrix.get(i, j).doubleValue();
+                // 将异常值替换为边界值
+                if (value < lowerBound) {
+                    processedMatrix.set(i, j, lowerBound);
+                } else if (value > upperBound) {
+                    processedMatrix.set(i, j, upperBound);
+                } else {
+                    processedMatrix.set(i, j, value);
+                }
+            }
+        }
+        
+        return processedMatrix;
+    }
+
+    /**
      * 绘制MFCC特征图 / Plot MFCC features
      *
      * @param audioData 音频数据 / Audio data
@@ -433,22 +647,25 @@ public class AudioPlots {
      * @return MFCC特征图对象 / MFCC features plot object
      */
     public static IPlot plotMFCC(AudioData audioData, String title) {
-        // 提取MFCC特征 / Extract MFCC features
-        IVector<Double> features = Audios.calculateMFCC(audioData).colMeans();
-        // In a real implementation, we would extract actual MFCC features
-        
-        // 创建MFCC特征图 / Create MFCC features plot
-        IPlot plot = Plots.of().line(features)
-                .title(title)
-                .xlabel("MFCC系数 / MFCC Coefficient")
-                .ylabel("特征值 / Feature Value");
-        
-        // 使用柱状图显示MFCC特征
-        plot.bar(features);
-        
-        return plot;
+        // 默认启用异常值处理，阈值设为2.0个标准差
+        return plotMFCC(audioData, title, 13, 1024, 256, true, 2.0);
     }
     
+    /**
+     * 绘制MFCC特征图（指定参数） / Plot MFCC features (with specified parameters)
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param title 图表标题 / Plot title
+     * @param mfccCount MFCC系数数量 / Number of MFCC coefficients
+     * @param windowSize 窗函数大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @return MFCC特征图对象 / MFCC features plot object
+     */
+    public static IPlot plotMFCC(AudioData audioData, String title, int mfccCount, int windowSize, int hopSize) {
+        // 默认启用异常值处理，阈值设为2.0个标准差
+        return plotMFCC(audioData, title, mfccCount, windowSize, hopSize, true, 2.0);
+    }
+
     /**
      * 绘制音频统计信息图 / Plot audio statistics
      *
@@ -557,33 +774,61 @@ public class AudioPlots {
                 .xlabel("时间 (秒) / Time (s)")
                 .ylabel("幅度 / Amplitude");
         
+        // 确保使用单声道音频进行波形图绘制，与MFCC处理逻辑保持一致
+        AudioData monoAudioData1 = audioData1;
+        if (!audioData1.isMono()) {
+            // 将立体声转换为单声道
+            monoAudioData1 = AudioProcessor.stereoToMono(audioData1);
+        }
+        
         // 添加第一个音频的波形 / Add waveform of first audio
-        IVector<Double> samples1 = audioData1.getSamples();
+        IVector<Double> samples1 = monoAudioData1.getSamples();
         IVector<Double> timeAxis1 = null;
+        
+        // Using default parameters for comparison
+        int windowSize = 1024;
+        int hopSize = 256;
+        
+        // Generate time axis that covers the full duration of the audio
+        double totalDuration1 = monoAudioData1.getDuration();
         
         if (samples1.length() > MAX_WAVEFORM_POINTS) {
             IVector<Double> displaySamples1 = downsampleForVisualization(samples1, MAX_WAVEFORM_POINTS);
+            // Generate time axis that covers the full duration
             timeAxis1 = Linalg.range(displaySamples1.length())
-                    .multiplyScalar((double) samples1.length() / displaySamples1.length() / audioData1.getSampleRate());
+                    .multiplyScalar(totalDuration1 / displaySamples1.length());
             plot.line(timeAxis1, displaySamples1);
         } else {
+            // Generate time axis that covers the full duration
             timeAxis1 = Linalg.range(samples1.length())
-                    .multiplyScalar(1.0 / audioData1.getSampleRate());
+                    .multiplyScalar(totalDuration1 / samples1.length());
             plot.line(timeAxis1, samples1);
         }
         
+        // 确保使用单声道音频进行波形图绘制，与MFCC处理逻辑保持一致
+        AudioData monoAudioData2 = audioData2;
+        if (!audioData2.isMono()) {
+            // 将立体声转换为单声道
+            monoAudioData2 = AudioProcessor.stereoToMono(audioData2);
+        }
+        
         // 添加第二个音频的波形 / Add waveform of second audio
-        IVector<Double> samples2 = audioData2.getSamples();
+        IVector<Double> samples2 = monoAudioData2.getSamples();
         IVector<Double> timeAxis2 = null;
+        
+        // Generate time axis that covers the full duration of the audio
+        double totalDuration2 = monoAudioData2.getDuration();
         
         if (samples2.length() > MAX_WAVEFORM_POINTS) {
             IVector<Double> displaySamples2 = downsampleForVisualization(samples2, MAX_WAVEFORM_POINTS);
+            // Generate time axis that covers the full duration
             timeAxis2 = Linalg.range(displaySamples2.length())
-                    .multiplyScalar((double) samples2.length() / displaySamples2.length() / audioData2.getSampleRate());
+                    .multiplyScalar(totalDuration2 / displaySamples2.length());
             plot.line(timeAxis2, displaySamples2);
         } else {
+            // Generate time axis that covers the full duration
             timeAxis2 = Linalg.range(samples2.length())
-                    .multiplyScalar(1.0 / audioData2.getSampleRate());
+                    .multiplyScalar(totalDuration2 / samples2.length());
             plot.line(timeAxis2, samples2);
         }
         

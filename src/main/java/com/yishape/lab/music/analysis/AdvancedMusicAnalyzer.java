@@ -11,6 +11,7 @@ import com.yishape.lab.audio.preprocessing.AudioPreprocessor;
 import com.yishape.lab.audio.preprocessing.AudioPreprocessingOptions;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.music.analysis.advanced.StructureAnalyzer;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -24,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 高级音乐分析器实现 / Advanced Music Analyzer Implementation
  * <p>
- * 提供高级的音乐分析功能，代理给advanced包中的具体实现类。
- * Provides advanced music analysis features by delegating to specific implementation classes in the advanced package.
+ * 提供高级的音乐分析功能，代理给advanced包中的具体实现类。 Provides advanced music analysis features by
+ * delegating to specific implementation classes in the advanced package.
  * </p>
  *
  * @author lteb2
@@ -37,20 +38,27 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     private final IAdvancedAnalyzer emotionAnalyzer;
     private final IAdvancedAnalyzer genreAnalyzer;
     private final IAdvancedAnalyzer complexityAnalyzer;
+    private final IAdvancedAnalyzer structureAnalyzer;
     private final ExecutorService executorService;
     private Map<String, Object> currentParameters;
-    
+
     // 结果缓存 / Result cache
     private final ConcurrentHashMap<String, UnifiedMusicAnalysisResult> resultCache;
     private static final int MAX_CACHE_SIZE = 50; // 最大缓存大小 / Maximum cache size
-    
-    /** 音频预处理器 / Audio preprocessor */
+
+    /**
+     * 音频预处理器 / Audio preprocessor
+     */
     private final AudioPreprocessor audioPreprocessor;
-    
-    /** 预处理选项 / Preprocessing options */
+
+    /**
+     * 预处理选项 / Preprocessing options
+     */
     private AudioPreprocessingOptions preprocessingOptions;
-    
-    /** 性能监控器 / Performance monitor */
+
+    /**
+     * 性能监控器 / Performance monitor
+     */
     private final PerformanceMonitor performanceMonitor;
 
     // 默认参数 / Default parameters
@@ -62,7 +70,8 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         this.emotionAnalyzer = new EmotionAnalyzer();
         this.genreAnalyzer = new GenreAnalyzer();
         this.complexityAnalyzer = new ComplexityAnalyzer();
-        this.executorService = Executors.newFixedThreadPool(3); // Reduced thread pool size for advanced-only analysis
+        this.structureAnalyzer = new StructureAnalyzer();
+        this.executorService = Executors.newFixedThreadPool(4); // Reduced thread pool size for advanced-only analysis
         this.currentParameters = getDefaultAdvancedParameters();
         this.resultCache = new ConcurrentHashMap<>();
         this.audioPreprocessor = new AudioPreprocessor();
@@ -71,7 +80,9 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     }
 
     /**
-     * 执行高级音乐分析（使用默认参数） / Execute advanced music analysis (with default parameters)
+     * 执行高级音乐分析（使用默认参数） / Execute advanced music analysis (with default
+     * parameters)
+     *
      * @param audioData 音频数据 / Audio data
      * @return 分析结果 / Analysis result
      * @throws AudioProcessingException 音频处理异常 / Audio processing exception
@@ -83,6 +94,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 执行高级音乐分析 / Execute advanced music analysis
+     *
      * @param audioData 音频数据 / Audio data
      * @param parameters 分析参数 / Analysis parameters
      * @return 分析结果 / Analysis result
@@ -107,10 +119,10 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         try {
             // 计算音频时长（秒）/ Calculate audio duration (seconds)
             double audioDuration = audioData.getDuration();
-            
+
             // 根据音频时长动态调整超时时间 / Dynamically adjust timeout based on audio duration
             long timeoutSeconds = calculateTimeoutForAudioDuration(audioDuration);
-            
+
             // 记录分析开始信息 / Log analysis start information
             if (audioDuration > 60) {
                 System.out.println("Starting advanced music analysis for " + String.format("%.1f", audioDuration) + " second audio file...");
@@ -162,10 +174,25 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
                     throw new RuntimeException("Complexity analysis failed", e);
                 }
             }, executorService);
-            
+
+            CompletableFuture<Map<String, Object>> structureFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    if (audioDuration > 60) {
+                        System.out.println("Starting structure analysis...");
+                    }
+                    Map<String, Object> result = structureAnalyzer.analyze(audioData, effectiveParameters);
+                    if (audioDuration > 60) {
+                        System.out.println("Structure analysis completed");
+                    }
+                    return result;
+                } catch (Exception e) {
+                    throw new RuntimeException("Structure analysis failed", e);
+                }
+            }, executorService);
+
             // 等待所有分析完成（带超时）/ Wait for all analyses to complete (with timeout)
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(emotionFuture, genreFuture, complexityFuture);
-            
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(emotionFuture, genreFuture, complexityFuture, structureFuture);
+
             try {
                 allFutures.get(timeoutSeconds, TimeUnit.SECONDS); // 动态超时 / Dynamic timeout
             } catch (TimeoutException e) {
@@ -178,14 +205,16 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
             Map<String, Object> emotionResult = emotionFuture.getNow(null);
             Map<String, Object> genreResult = genreFuture.getNow(null);
             Map<String, Object> complexityResult = complexityFuture.getNow(null);
+            Map<String, Object> structureResult = structureFuture.getNow(null);
 
             // 创建统一结果 / Create unified result (advanced-only)
             UnifiedMusicAnalysisResult result = new UnifiedMusicAnalysisResult();
-            
+
             // 仅设置高级分析结果 / Set only advanced analysis results
             result.setEmotionAnalysis(emotionResult);
             result.setGenreAnalysis(genreResult);
             result.setComplexityAnalysis(complexityResult);
+            result.setStructuralAnalysis(structureResult);
 
             // 设置全局置信度 / Set overall confidence (advanced-only)
             double overallConfidence = calculateOverallConfidence(result);
@@ -201,7 +230,6 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
             throw new AudioProcessingException("Error in advanced music analysis: " + e.getMessage(), e);
         }
     }
-
 
     /**
      * 设置预处理选项 / Set preprocessing options
@@ -219,25 +247,26 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 根据音频时长计算超时时间 / Calculate timeout based on audio duration
+     *
      * @param audioDuration 音频时长（秒）/ Audio duration (seconds)
      * @return 超时时间（秒）/ Timeout (seconds)
      */
     private long calculateTimeoutForAudioDuration(double audioDuration) {
         // 基础超时时间：15秒 / Base timeout: 15 seconds (reduced from 30 seconds)
         long baseTimeout = 15;
-        
+
         // 对于短音频（< 30秒），使用基础超时 / For short audio (< 30 seconds), use base timeout
         if (audioDuration <= 30) {
             return baseTimeout;
         }
-        
+
         // 对于中等长度音频（30-150秒），线性增加超时 / For medium length audio (30-150 seconds), increase timeout linearly
         if (audioDuration <= 150) {
-            return baseTimeout + (long)((audioDuration - 30) * 0.3); // 每增加30秒，增加9秒超时
+            return baseTimeout + (long) ((audioDuration - 30) * 0.3); // 每增加30秒，增加9秒超时
         }
-        
+
         // 对于长音频（> 150秒），使用更保守的增长 / For long audio (> 150 seconds), use more conservative growth
-        return Math.min(120, baseTimeout + (long)((audioDuration - 30) * 0.2)); // 最多2分钟超时 (reduced from 5 minutes)
+        return Math.min(120, baseTimeout + (long) ((audioDuration - 30) * 0.2)); // 最多2分钟超时 (reduced from 5 minutes)
     }
 
     /**
@@ -270,11 +299,12 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取支持的参数 / Get supported parameters
+     *
      * @return 支持的参数数组 / Array of supported parameters
      */
     public String[] getSupportedAdvancedParameters() {
         return new String[]{"emotionThreshold", "genreThreshold", "complexityThreshold",
-                           "windowSize", "hopSize", "confidenceThreshold"};
+            "windowSize", "hopSize", "confidenceThreshold"};
     }
 
     @Override
@@ -284,6 +314,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取默认参数 / Get default parameters
+     *
      * @return 默认参数映射 / Default parameters map
      */
     public Map<String, Object> getDefaultAdvancedParameters() {
@@ -309,11 +340,12 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         double totalConfidence = 0.0;
         double totalWeight = 0.0;
 
-        // 仅为高级分析类型分配权重（移除基础分析权重）
-        // Assign weights only to advanced analysis types (remove basic analysis weights)
-        double emotionWeight = 0.35;
-        double genreWeight = 0.40;
-        double complexityWeight = 0.25;
+// 仅为高级分析类型分配权重（移除基础分析权重）
+// Assign weights only to advanced analysis types (remove basic analysis weights)
+        double emotionWeight = 0.30;
+        double genreWeight = 0.35;
+        double complexityWeight = 0.20;
+        double structureWeight = 0.15;
 
         // Add confidence from advanced analysis results only
         if (result.getEmotionAnalysis() != null && !result.getEmotionAnalysis().isEmpty()) {
@@ -339,15 +371,22 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
                 totalWeight += complexityWeight;
             }
         }
+        if (result.getStructuralAnalysis() != null && !result.getStructuralAnalysis().isEmpty()) {
+            Object confidence = result.getStructuralAnalysis().get("confidence");
+            if (confidence instanceof Number) {
+                totalConfidence += ((Number) confidence).doubleValue() * structureWeight;
+                totalWeight += structureWeight;
+            }
+        }
 
         return totalWeight > 0 ? totalConfidence / totalWeight : 0.5;
     }
 
     // AdvancedMusicAnalyzer 不再实现基础分析功能 / AdvancedMusicAnalyzer no longer implements basic analysis functionality
     // 基础分析功能应由 BasicMusicAnalyzer 提供 / Basic analysis functionality should be provided by BasicMusicAnalyzer
-
     /**
      * 验证高级分析参数 / Validate advanced analysis parameters
+     *
      * @param parameters 参数映射 / Parameters map
      * @return 是否有效 / Whether valid
      */
@@ -355,14 +394,14 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         if (parameters == null) {
             return true; // null parameters are valid, will use defaults
         }
-        
+
         // Validate parameters
         for (String key : parameters.keySet()) {
             if (!java.util.Arrays.asList(getSupportedAdvancedParameters()).contains(key)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -373,6 +412,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 设置高级分析参数 / Set advanced analysis parameters
+     *
      * @param parameters 参数映射 / Parameters map
      * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
@@ -380,12 +420,12 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         if (parameters == null) {
             return;
         }
-        
+
         // Validate parameters
         if (!validateAdvancedParameters(parameters)) {
             throw new AudioProcessingException("Invalid parameters provided");
         }
-        
+
         this.currentParameters = parameters;
     }
 
@@ -396,6 +436,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取当前高级分析参数 / Get current advanced analysis parameters
+     *
      * @return 当前参数映射 / Current parameters map
      */
     public Map<String, Object> getCurrentAdvancedParameters() {
@@ -421,6 +462,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取分析器版本 / Get analyzer version
+     *
      * @return 版本字符串 / Version string
      */
     public String getVersion() {
@@ -429,6 +471,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取分析器名称 / Get analyzer name
+     *
      * @return 名称字符串 / Name string
      */
     public String getName() {
@@ -443,7 +486,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         keyBuilder.append(audioData.getSampleRate()).append("_");
         keyBuilder.append(audioData.getSamples().length()).append("_");
         keyBuilder.append(audioData.getChannels()).append("_");
-        
+
         // 添加音频数据的简单哈希（前1000个样本）/ Add simple hash of audio data (first 1000 samples)
         IVector<Double> samples = audioData.getSamples();
         int sampleCount = Math.min(1000, samples.length());
@@ -451,13 +494,13 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         for (int i = 0; i < sampleCount; i++) {
             hashSum += Math.abs(samples.get(i));
         }
-        keyBuilder.append((int)(hashSum * 1000)).append("_");
-        
+        keyBuilder.append((int) (hashSum * 1000)).append("_");
+
         // 添加参数哈希 / Add parameter hash
         if (parameters != null && !parameters.isEmpty()) {
             keyBuilder.append(parameters.hashCode());
         }
-        
+
         return keyBuilder.toString();
     }
 
@@ -489,6 +532,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 获取分析器描述 / Get analyzer description
+     *
      * @return 描述字符串 / Description string
      */
     public String getDescription() {
@@ -557,8 +601,8 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     @Override
     public double getComplexityEstimate(double audioLength) {
-        // 高级分析复杂度估计：情感+风格+复杂度分析 / Advanced analysis complexity estimate: emotion + genre + complexity analysis
-        double baseComplexity = 3.0; // 三个分析器的开销 / Three analyzers overhead
+        // 高级分析复杂度估计：情感+风格+复杂度+结构分析 / Advanced analysis complexity estimate: emotion + genre + complexity + structure analysis
+        double baseComplexity = 4.0; // 四个分析器的开销 / Four analyzers overhead
         double lengthFactor = Math.log10(audioLength + 1) * 0.5;
         return baseComplexity + lengthFactor;
     }
@@ -566,13 +610,12 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     @Override
     public boolean supportsAudioFormat(double sampleRate, int channels, int bitDepth) {
         // 支持常见的音频格式 / Support common audio formats
-        return sampleRate >= 8000 && sampleRate <= 192000 && 
-               channels >= 1 && channels <= 8 && 
-               bitDepth >= 8 && bitDepth <= 32;
+        return sampleRate >= 8000 && sampleRate <= 192000
+                && channels >= 1 && channels <= 8
+                && bitDepth >= 8 && bitDepth <= 32;
     }
 
     // IAdvancedAnalyzer interface methods
-
     @Override
     public Map<String, Object> analyze(AudioData audioData) throws AudioProcessingException {
         return analyze(audioData, getDefaultParameters());
@@ -582,7 +625,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     public Map<String, Object> analyze(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         // 音频预处理 / Audio preprocessing
         AudioData processedAudio = audioPreprocessor.preprocess(audioData);
-        
+
         // Delegate to specific analyzers based on the analysis type
         // For now, we'll return a combined result
         MusicDetectionResult result = analyzeAdvancedMusic(processedAudio, parameters);
@@ -593,6 +636,7 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
     /**
      * 分析音频数据（从double[]数组） / Analyze audio data (from double[] array)
+     *
      * @param audioData 音频样本数据 / Audio sample data
      * @param sampleRate 采样率 / Sample rate
      * @return 统一音乐分析结果 / Unified music analysis result
@@ -603,7 +647,9 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     }
 
     /**
-     * 分析音频数据（从double[]数组，带参数） / Analyze audio data (from double[] array, with parameters)
+     * 分析音频数据（从double[]数组，带参数） / Analyze audio data (from double[] array, with
+     * parameters)
+     *
      * @param audioData 音频样本数据 / Audio sample data
      * @param sampleRate 采样率 / Sample rate
      * @param parameters 分析参数 / Analysis parameters
@@ -617,14 +663,14 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
         if (sampleRate <= 0) {
             throw new AudioProcessingException("Sample rate must be positive");
         }
-        
+
         // 将double[]转换为AudioData / Convert double[] to AudioData
         IVector<Double> samples = Linalg.vector(audioData);
         AudioData audioDataObj = new AudioData(samples, sampleRate, 1, 16, AudioFormat.WAV);
-        
+
         // 执行高级音乐分析 / Perform advanced music analysis
         MusicDetectionResult result = analyzeAdvancedMusic(audioDataObj, parameters);
-        
+
         // 确保返回UnifiedMusicAnalysisResult / Ensure return UnifiedMusicAnalysisResult
         if (result instanceof UnifiedMusicAnalysisResult) {
             return (UnifiedMusicAnalysisResult) result;

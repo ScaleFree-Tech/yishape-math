@@ -17,7 +17,7 @@ public class AudioTest {
     public static void main(String args[]) {
 
         String path = "F:\\music\\test\\";
-        String f1 = path + "shadow of love.mp3";
+        String f1 = path + "20.杨友友-野花做了场玫瑰花的梦.mp3";
         try {
             AudioData data = AudioIO.readAudio(f1);
             System.out.println("Successfully read MP3 file!");

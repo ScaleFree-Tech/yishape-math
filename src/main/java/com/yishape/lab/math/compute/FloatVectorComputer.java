@@ -11,14 +11,39 @@ public class FloatVectorComputer implements IFloatVectorComputer {
     private static IFloatVectorComputer simd = null;
     private static IFloatVectorComputer sisd = null;
 
-    private static boolean ifSIMDSupported = false;
-    private static boolean ifGPUSupported = false;
-    
+    private static Boolean ifSIMDSupported = null; // 使用Boolean对象，null表示未检测
+    private static Boolean ifGPUSupported = null; // 使用Boolean对象，null表示未检测
+
     static {
-        ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
-        ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+        // 延迟检测支持，只在需要时才检测
+        // ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+        // ifGPUSupported = ComputerConfig.checkIfGPUSupported();
     }
-    
+
+    /**
+     * 检查是否支持SIMD，延迟检测
+     * @return
+     */
+    private static boolean checkIfSIMDSupported() {
+        if (ifSIMDSupported == null) {
+            // 只在第一次调用时检测SIMD支持
+            ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+        }
+        return ifSIMDSupported;
+    }
+
+    /**
+     * 检查是否支持GPU，延迟检测
+     * @return
+     */
+    private static boolean checkIfGPUSupported() {
+        if (ifGPUSupported == null) {
+            // 只在第一次调用时检测GPU支持
+            ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+        }
+        return ifGPUSupported;
+    }
+
     /**
      * 基于数据的规模和配置选择合适的计算器
      *
@@ -27,24 +52,23 @@ public class FloatVectorComputer implements IFloatVectorComputer {
      */
     private IFloatVectorComputer fetchComputer(long size) {
         IFloatVectorComputer computer = null;
-        if (computer == null) {
-            if (size > ComputerConfig.GPU_VECTOR_THRESHOLD && ifGPUSupported) {
-                if (gpu == null) {
-                    gpu = new GPUFloatComputer();
-                }
-                computer = gpu;
-            } else if (ComputerConfig.USE_SIMD &&ifSIMDSupported) {
-                if (simd == null) {
-                    simd = new SIMDFloatComputer();
-                }
-                computer = simd;
-            } else {
-                if (sisd == null) {
-                    sisd = new SISDFloatComputer();
-                }
-                computer = sisd;
+        if (ComputerConfig.USE_GPU&& checkIfGPUSupported()&&size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
+            if (gpu == null) {
+                gpu = new GPUFloatComputer();
             }
+            computer = gpu;
+        } else if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {
+            if (simd == null) {
+                simd = new SIMDFloatComputer();
+            }
+            computer = simd;
+        } else {
+            if (sisd == null) {
+                sisd = new SISDFloatComputer();
+            }
+            computer = sisd;
         }
+
         return computer;
     }
 

@@ -1,13 +1,13 @@
 package model_zoo.naive_news_wendor;
 
-import com.reremouse.lab.math.linalg.Linalg;
-import com.reremouse.lab.math.linalg.IVector;
-import com.reremouse.lab.math.optimize.IObjectiveFunction;
-import com.reremouse.lab.math.optimize.IGradientFunction;
-import com.reremouse.lab.math.optimize.IOptimizer;
-import com.reremouse.lab.math.optimize.OptResult;
-import com.reremouse.lab.math.optimize.newton.RereLBFGS;
-import com.reremouse.lab.math.stats.distribution.IContinuousDistribution;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
+import com.yishape.lab.math.optimize.IOptimizer;
+import com.yishape.lab.math.optimize.OptResult;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.stats.distribution.IContinuousDistribution;
 
 /**
  * 经典报童模型实现

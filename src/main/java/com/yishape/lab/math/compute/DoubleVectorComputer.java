@@ -11,12 +11,37 @@ public class DoubleVectorComputer implements IDoubleVectorComputer {
     private static IDoubleVectorComputer simd = null;
     private static IDoubleVectorComputer sisd = null;
 
-    private static boolean ifSIMDSupported = false;
-    private static boolean ifGPUSupported = false;
+    private static Boolean ifSIMDSupported = null; // 使用Boolean对象，null表示未检测
+    private static Boolean ifGPUSupported = null; // 使用Boolean对象，null表示未检测
 
     static {
-        ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
-        ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+        // 延迟检测支持，只在需要时才检测
+        // ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+        // ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+    }
+
+    /**
+     * 检查是否支持SIMD，延迟检测
+     * @return
+     */
+    private static boolean checkIfSIMDSupported() {
+        if (ifSIMDSupported == null) {
+            // 只在第一次调用时检测SIMD支持
+            ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+        }
+        return ifSIMDSupported;
+    }
+
+    /**
+     * 检查是否支持GPU，延迟检测
+     * @return
+     */
+    private static boolean checkIfGPUSupported() {
+        if (ifGPUSupported == null) {
+            // 只在第一次调用时检测GPU支持
+            ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+        }
+        return ifGPUSupported;
     }
 
     /**
@@ -27,12 +52,12 @@ public class DoubleVectorComputer implements IDoubleVectorComputer {
      */
     private IDoubleVectorComputer fetchComputer(long size) {
         IDoubleVectorComputer computer = null;
-        if (size > ComputerConfig.GPU_VECTOR_THRESHOLD && ifGPUSupported) {
+        if (ComputerConfig.USE_GPU&& checkIfGPUSupported()&&size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
             if (gpu == null) {
                 gpu = new GPUDoubleComputer();
             }
             computer = gpu;
-        } else if (ComputerConfig.USE_SIMD && ifSIMDSupported) {
+        } else if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {
             if (simd == null) {
                 simd = new SIMDDoubleComputer();
             }

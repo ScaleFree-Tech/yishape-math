@@ -476,39 +476,66 @@ public class MusicUtil {
      * @param beatTimes 节拍时间数组(秒)
      * @return 节拍稳定性值(0-1)，值越大表示节拍越稳定
      */
-    public static double calculateBeatStability(double[] beatTimes) {
-        if (beatTimes == null || beatTimes.length < 2) {
-            return 0.0;
-        }
-        
-        // 计算节拍间隔
-        double[] intervals = new double[beatTimes.length - 1];
-        for (int i = 0; i < intervals.length; i++) {
-            intervals[i] = beatTimes[i + 1] - beatTimes[i];
-        }
-        
-        // 计算平均节拍间隔
-        double meanInterval = 0;
-        for (double interval : intervals) {
-            meanInterval += interval;
-        }
-        meanInterval /= intervals.length;
-        
-        // 计算节拍间隔的标准差
-        double variance = 0;
-        for (double interval : intervals) {
-            double diff = interval - meanInterval;
-            variance += diff * diff;
-        }
-        variance /= intervals.length;
-        double stdDev = Math.sqrt(variance);
-        
-        // 节拍稳定性：标准差越小，稳定性越高
-        // 使用指数衰减函数将标准差映射到0-1范围
-        double stability = Math.exp(-stdDev / meanInterval);
-        
-        return Math.max(0.0, Math.min(1.0, stability));
+public static double calculateBeatStability(double[] beatTimes) {
+    if (beatTimes == null || beatTimes.length < 2) {
+        return 0.0;
     }
+    
+    // 计算节拍间隔
+    double[] intervals = new double[beatTimes.length - 1];
+    for (int i = 0; i < intervals.length; i++) {
+        intervals[i] = beatTimes[i + 1] - beatTimes[i];
+    }
+    
+    // 过滤异常值（使用四分位数方法）
+    double[] sortedIntervals = intervals.clone();
+    java.util.Arrays.sort(sortedIntervals);
+    
+    if (sortedIntervals.length >= 4) {
+        int q1Index = sortedIntervals.length / 4;
+        int q3Index = 3 * sortedIntervals.length / 4;
+        double q1 = sortedIntervals[q1Index];
+        double q3 = sortedIntervals[q3Index];
+        double iqr = q3 - q1;
+        double lowerBound = q1 - 1.5 * iqr;
+        double upperBound = q3 + 1.5 * iqr;
+        
+        // 只使用正常范围内的间隔
+        java.util.List<Double> normalIntervals = new java.util.ArrayList<>();
+        for (double interval : intervals) {
+            if (interval >= lowerBound && interval <= upperBound && interval > 0) {
+                normalIntervals.add(interval);
+            }
+        }
+        
+        if (!normalIntervals.isEmpty()) {
+            intervals = normalIntervals.stream().mapToDouble(Double::doubleValue).toArray();
+        }
+    }
+    
+    // 计算平均节拍间隔
+    double meanInterval = 0;
+    for (double interval : intervals) {
+        meanInterval += interval;
+    }
+    meanInterval /= intervals.length;
+    
+    // 计算节拍间隔的标准差
+    double variance = 0;
+    for (double interval : intervals) {
+        double diff = interval - meanInterval;
+        variance += diff * diff;
+    }
+    variance /= intervals.length;
+    double stdDev = Math.sqrt(variance);
+    
+    // 节拍稳定性：使用更宽容的公式
+    double coefficientOfVariation = stdDev / meanInterval;
+    // 使用平方根降低敏感度
+    double stability = 1.0 / (1.0 + Math.sqrt(coefficientOfVariation));
+    
+    return Math.max(0.0, Math.min(1.0, stability));
+}
 
     /**
      * 计算节奏复杂度 - 基于节奏模式的复杂度分析
@@ -560,25 +587,24 @@ public class MusicUtil {
      * @throws AudioProcessingException 当音频处理过程中发生错误时抛出
      */
     public static double calculateTonalStability(AudioData audioData) throws AudioProcessingException {
-        try {
-            // 简化实现，基于节拍分析器估计的节拍速度稳定性
-            var beatAnalyzer = new BeatAnalyzerImpl();
-            double tempo = beatAnalyzer.estimateTempo(audioData);
-            
-            // 分析节拍的一致性
-            double stability = 1.0;
-            
-            // 极端节拍速度通常不太稳定
-            if (tempo < 60 || tempo > 180) {
-                stability *= 0.8;
-            }
-            
-            return Math.max(0.0, Math.min(1.0, stability));
-            
-        } catch (Exception e) {
-            return 0.5; // 默认中等稳定性
-        }
+    try {
+        // 基于色度特征的时间变化计算调性稳定性
+        var keyAnalyzer = new KeyAnalyzerImpl();
+        double[] chromaVector = keyAnalyzer.analyzeChromaFeatures(audioData);
+        
+        // 计算色度向量的集中度（调性强度）
+        double tonalStrength = calculateTonalStrength(chromaVector);
+        
+        // 调性强度越高，通常表示调性越稳定
+        // 使用线性映射，避免极值：映射到0.15-0.85范围
+        double stability = tonalStrength * 0.7 + 0.15;
+        
+        return Math.max(0.0, Math.min(1.0, stability));
+        
+    } catch (Exception e) {
+        return 0.5; // 默认中等稳定性
     }
+}
 
     /**
      * 计算调性强度 - 基于色度向量的调性强度分析

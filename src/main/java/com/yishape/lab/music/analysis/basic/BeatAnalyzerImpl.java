@@ -15,8 +15,8 @@ import java.util.Arrays;
 /**
  * 节拍分析器实现 / Beat Analyzer Implementation
  * <p>
- * 基于能量检测和自相关的节拍检测实现。
- * Beat detection implementation based on energy detection and autocorrelation.
+ * 基于能量检测和自相关的节拍检测实现。 Beat detection implementation based on energy detection
+ * and autocorrelation.
  * </p>
  *
  * @author lteb2
@@ -27,7 +27,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
 
     // 标准化置信度计算器 / Standardized confidence calculator
     private final StandardizedConfidenceCalculator confidenceCalculator = new StandardizedConfidenceCalculator();
-    
+
     // 默认参数 / Default parameters
     private static final double DEFAULT_MIN_BPM = 60.0;
     private static final double DEFAULT_MAX_BPM = 200.0;
@@ -52,7 +52,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         double sensitivity = (Double) parameters.getOrDefault("beatSensitivity", DEFAULT_BEAT_SENSITIVITY);
         int windowSize = (Integer) parameters.getOrDefault("windowSize", DEFAULT_WINDOW_SIZE);
         int hopSize = (Integer) parameters.getOrDefault("hopSize", DEFAULT_HOP_SIZE);
-        
+
         // 添加参数验证以防止潜在的无限循环或计算问题
         // Add parameter validation to prevent potential infinite loops or calculation issues
         if (windowSize <= 0) {
@@ -66,7 +66,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (hopSize > windowSize) {
             hopSize = windowSize / 2;
         }
-        
+
         // 验证BPM范围
         // Validate BPM range
         if (minBpm <= 0) {
@@ -75,7 +75,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (maxBpm <= 0 || maxBpm < minBpm) {
             maxBpm = DEFAULT_MAX_BPM;
         }
-        
+
         // 验证敏感度参数
         // Validate sensitivity parameter
         if (sensitivity < 0) {
@@ -87,7 +87,8 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             IVector<Double> energyEnvelope = calculateEnergyEnvelope(audioData.getSamples(), windowSize, hopSize);
 
             // 检测峰值 / Detect peaks
-            List<Double> beatTimes = detectPeaks(energyEnvelope, audioData.getSampleRate(), hopSize, sensitivity);
+            double audioDuration = audioData.getDuration();
+            List<Double> beatTimes = detectPeaks(energyEnvelope, audioData.getSampleRate(), hopSize, sensitivity, audioDuration);
 
             // 估算节拍速度 / Estimate tempo
             double tempo = estimateTempoFromBeats(beatTimes, minBpm, maxBpm);
@@ -137,7 +138,8 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
      * 设置分析器参数 / Set analyzer parameters
      *
      * @param parameters 要设置的参数 / Parameters to set
-     * @throws AudioProcessingException 参数无效时抛出异常 / Thrown when parameters are invalid
+     * @throws AudioProcessingException 参数无效时抛出异常 / Thrown when parameters are
+     * invalid
      */
     public void setParameters(Map<String, Object> parameters) throws AudioProcessingException {
         if (parameters == null) {
@@ -170,7 +172,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (hopSize > windowSize) {
             hopSize = windowSize / 2;
         }
-        
+
         // 确保我们有足够的样本进行处理
         // Ensure we have enough samples for processing
         if (signal.length() < windowSize) {
@@ -211,46 +213,69 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
     /**
      * 检测峰值 / Detect peaks
      */
-    private List<Double> detectPeaks(IVector<Double> envelope, double sampleRate, int hopSize, double sensitivity) {
+    private List<Double> detectPeaks(IVector<Double> envelope, double sampleRate, int hopSize, double sensitivity, double audioDuration) {
         // 添加保护性检查
         // Add protective checks
         if (envelope == null || envelope.length() < 3) {
             return new ArrayList<>();
         }
-        
+
         if (sampleRate <= 0) {
             sampleRate = 44100.0; // 默认采样率
         }
-        
+
         if (hopSize <= 0) {
             hopSize = DEFAULT_HOP_SIZE;
         }
-        
+
         // 使用改进的峰值检测算法
-        return detectPeaksImproved(envelope, sampleRate, hopSize, sensitivity);
+        return detectPeaksImproved(envelope, sampleRate, hopSize, sensitivity, audioDuration);
     }
 
     /**
      * 改进的峰值检测算法 / Improved peak detection algorithm
      */
-    private List<Double> detectPeaksImproved(IVector<Double> envelope, double sampleRate, int hopSize, double sensitivity) {
+    private List<Double> detectPeaksImproved(IVector<Double> envelope, double sampleRate, int hopSize, double sensitivity, double audioDuration) {
         List<Double> peaks = new ArrayList<>();
-        
+
         // 计算自适应阈值
         double adaptiveThreshold = calculateAdaptiveThreshold(envelope, sensitivity);
-        
+
         // 多尺度峰值检测
         List<Integer> peakIndices = findPeakIndices(envelope, adaptiveThreshold);
-        
+
         // 过滤过于接近的峰值
         peakIndices = filterClosePeaks(peakIndices, sampleRate, hopSize);
-        
-        // 转换为时间
+
+        // 使用传入的正确音频时长（而不是从envelope计算）
+        // Use the correct audio duration passed in (instead of calculating from envelope)
+
+        // 转换为时间并验证
         for (int index : peakIndices) {
             double timeInSeconds = (index * hopSize) / sampleRate;
-            peaks.add(timeInSeconds);
+
+            // 验证时间在有效范围内
+            if (timeInSeconds >= 0 && timeInSeconds <= audioDuration) {
+                peaks.add(timeInSeconds);
+            } else {
+//                System.err.println("Warning: Invalid beat time " + timeInSeconds
+//                        + "s detected (audio duration: " + audioDuration + "s)");
+            }
         }
-        
+
+        // 添加调试信息
+        if (!peaks.isEmpty()) {
+            double firstBeat = peaks.get(0);
+            double lastBeat = peaks.get(peaks.size() - 1);
+
+            System.out.println("Beat Detection Debug:");
+            System.out.println("  Total beats: " + peaks.size());
+            System.out.println("  First beat: " + String.format("%.3f", firstBeat) + "s");
+            System.out.println("  Last beat: " + String.format("%.3f", lastBeat) + "s");
+            System.out.println("  Audio duration: " + String.format("%.3f", audioDuration) + "s");
+            System.out.println("  Beats per second: " + String.format("%.2f", peaks.size() / audioDuration));
+        }
+
         return peaks;
     }
 
@@ -261,7 +286,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (envelope == null || envelope.length() == 0) {
             return 0.0;
         }
-        
+
         // 计算统计信息
         double mean = 0.0;
         double max = Double.MIN_VALUE;
@@ -271,7 +296,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             max = Math.max(max, value);
         }
         mean /= envelope.length();
-        
+
         // 计算标准差
         double variance = 0.0;
         for (int i = 0; i < envelope.length(); i++) {
@@ -280,11 +305,11 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         }
         variance /= envelope.length();
         double stdDev = Math.sqrt(variance);
-        
+
         // 自适应阈值计算
         double dynamicRange = max - mean;
         double adaptiveFactor = 0.3 + (1.0 - sensitivity) * 0.4; // 0.3 到 0.7 之间
-        
+
         return mean + adaptiveFactor * stdDev + 0.1 * dynamicRange;
     }
 
@@ -294,16 +319,16 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
     private List<Integer> findPeakIndices(IVector<Double> envelope, double threshold) {
         List<Integer> peaks = new ArrayList<>();
         int windowSize = 3; // 局部窗口大小
-        
+
         for (int i = windowSize; i < envelope.length() - windowSize; i++) {
             boolean isPeak = true;
             double centerValue = envelope.get(i);
-            
+
             // 检查是否超过阈值
             if (centerValue <= threshold) {
                 continue;
             }
-            
+
             // 检查是否为局部最大值
             for (int j = -windowSize; j <= windowSize; j++) {
                 if (j != 0 && envelope.get(i + j) >= centerValue) {
@@ -311,12 +336,12 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
                     break;
                 }
             }
-            
+
             if (isPeak) {
                 peaks.add(i);
             }
         }
-        
+
         return peaks;
     }
 
@@ -324,26 +349,26 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
      * 过滤过于接近的峰值 / Filter peaks that are too close
      */
     private List<Integer> filterClosePeaks(List<Integer> peakIndices, double sampleRate, int hopSize) {
-        if (peakIndices.size() <= 1) {
+        if (peakIndices.isEmpty()) {
             return peakIndices;
         }
-        
-        List<Integer> filteredPeaks = new ArrayList<>();
-        double minInterval = 0.1; // 最小间隔（秒）
-        int minSamples = (int) (minInterval * sampleRate / hopSize);
-        
-        filteredPeaks.add(peakIndices.get(0));
-        
+
+        List<Integer> filtered = new ArrayList<>();
+        filtered.add(peakIndices.get(0));
+
+        // 最小节拍间隔：对应240 BPM（0.25秒）
+        int minPeakDistance = (int) (0.25 * sampleRate / hopSize);
+
         for (int i = 1; i < peakIndices.size(); i++) {
             int currentPeak = peakIndices.get(i);
-            int lastPeak = filteredPeaks.get(filteredPeaks.size() - 1);
-            
-            if (currentPeak - lastPeak >= minSamples) {
-                filteredPeaks.add(currentPeak);
+            int lastPeak = filtered.get(filtered.size() - 1);
+
+            if (currentPeak - lastPeak >= minPeakDistance) {
+                filtered.add(currentPeak);
             }
         }
-        
-        return filteredPeaks;
+
+        return filtered;
     }
 
     /**
@@ -355,7 +380,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (envelope == null || envelope.length() == 0) {
             return 0.0;
         }
-        
+
         // 限制敏感度参数范围
         // Limit sensitivity parameter range
         sensitivity = Math.max(0.0, Math.min(1.0, sensitivity));
@@ -394,7 +419,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (beatTimes == null || beatTimes.size() < 2) {
             return 120.0; // 默认值 / Default value
         }
-        
+
         // 验证BPM范围
         // Validate BPM range
         if (minBpm <= 0) {
@@ -448,11 +473,11 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (intervals.isEmpty()) {
             return 120.0;
         }
-        
+
         List<Double> sortedIntervals = new ArrayList<>(intervals);
         sortedIntervals.sort(Double::compareTo);
         double medianInterval = sortedIntervals.get(sortedIntervals.size() / 2);
-        
+
         double bpm = 60.0 / medianInterval;
         return Math.max(minBpm, Math.min(maxBpm, bpm));
     }
@@ -468,7 +493,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         // 创建间隔直方图
         Map<Integer, Integer> histogram = new HashMap<>();
         double binSize = 0.05; // 50ms bins
-        
+
         for (double interval : intervals) {
             int bin = (int) (interval / binSize);
             histogram.put(bin, histogram.getOrDefault(bin, 0) + 1);
@@ -510,7 +535,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         for (double testBpm = minBpm; testBpm <= maxBpm; testBpm += 1.0) {
             double testInterval = 60.0 / testBpm;
             double correlation = calculateTempoCorrelation(beatTimes, testInterval);
-            
+
             if (correlation > maxCorrelation) {
                 maxCorrelation = correlation;
                 bestBpm = testBpm;
@@ -530,14 +555,14 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
 
         for (int i = 0; i < beatTimes.size(); i++) {
             double expectedTime = beatTimes.get(0) + i * testInterval;
-            
+
             // 查找最接近的实际节拍
             double minDistance = Double.MAX_VALUE;
             for (double actualTime : beatTimes) {
                 double distance = Math.abs(actualTime - expectedTime);
                 minDistance = Math.min(minDistance, distance);
             }
-            
+
             if (minDistance <= tolerance) {
                 correlation += 1.0 - (minDistance / tolerance);
                 matches++;
@@ -548,8 +573,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
     }
 
     /**
-     * 选择最佳速度 / Select best tempo
-     * 改进版：添加多重假设验证和细分节拍过滤
+     * 选择最佳速度 / Select best tempo 改进版：添加多重假设验证和细分节拍过滤
      */
     private double selectBestTempo(double medianBpm, double modeBpm, double autocorrBpm, List<Double> intervals) {
         // 创建候选BPM列表，包括原始值和可能的细分/倍数
@@ -557,19 +581,19 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         candidates.add(medianBpm);
         candidates.add(modeBpm);
         candidates.add(autocorrBpm);
-        
+
         // 添加细分和倍数候选（解决细分节拍误判问题）
         addSubdivisionCandidates(candidates, medianBpm);
         addSubdivisionCandidates(candidates, modeBpm);
         addSubdivisionCandidates(candidates, autocorrBpm);
-        
+
         // 过滤不合理的BPM值
         candidates = filterUnreasonableBpm(candidates);
-        
+
         // 计算每个候选的综合分数
         double bestBpm = 120.0;
         double bestScore = 0.0;
-        
+
         for (double candidate : candidates) {
             double score = calculateComprehensiveScore(candidate, intervals);
             if (score > bestScore) {
@@ -577,41 +601,43 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
                 bestBpm = candidate;
             }
         }
-        
+
         return bestBpm;
     }
-    
+
     /**
      * 添加细分和倍数候选BPM / Add subdivision and multiple candidates
      */
     private void addSubdivisionCandidates(List<Double> candidates, double bpm) {
-        if (bpm <= 0) return;
-        
+        if (bpm <= 0) {
+            return;
+        }
+
         // 添加1/2倍数（解决双倍速度误判）
         double halfBpm = bpm / 2.0;
         if (halfBpm >= 50.0 && halfBpm <= 180.0) {
             candidates.add(halfBpm);
         }
-        
+
         // 添加1/3倍数（解决三连音误判）
         double thirdBpm = bpm / 3.0;
         if (thirdBpm >= 50.0 && thirdBpm <= 180.0) {
             candidates.add(thirdBpm);
         }
-        
+
         // 添加2倍数（但要谨慎，通常是误判）
         double doubleBpm = bpm * 2.0;
         if (doubleBpm >= 60.0 && doubleBpm <= 160.0) {
             candidates.add(doubleBpm);
         }
     }
-    
+
     /**
      * 过滤不合理的BPM值 / Filter unreasonable BPM values
      */
     private List<Double> filterUnreasonableBpm(List<Double> candidates) {
         List<Double> filtered = new ArrayList<>();
-        
+
         for (double bpm : candidates) {
             // 流行音乐合理BPM范围：50-180
             if (bpm >= 50.0 && bpm <= 180.0) {
@@ -621,15 +647,15 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
                 }
             }
         }
-        
+
         // 如果过滤后为空，返回默认值
         if (filtered.isEmpty()) {
             filtered.add(120.0);
         }
-        
+
         return filtered;
     }
-    
+
     /**
      * 计算综合分数 / Calculate comprehensive score
      */
@@ -637,23 +663,22 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         if (intervals.isEmpty() || bpm <= 0) {
             return 0.0;
         }
-        
+
         // 1. 一致性分数（原有逻辑）
         double consistencyScore = calculateConsistencyScore(bpm, intervals);
-        
+
         // 2. 流行音乐BPM偏好分数
         double preferenceScore = calculateBpmPreferenceScore(bpm);
-        
+
         // 3. 间隔分布合理性分数
         double distributionScore = calculateIntervalDistributionScore(bpm, intervals);
-        
+
         // 综合权重：一致性50%，偏好30%，分布20%
         return consistencyScore * 0.5 + preferenceScore * 0.3 + distributionScore * 0.2;
     }
-    
+
     /**
-     * 计算BPM偏好分数 / Calculate BPM preference score
-     * 基于流行音乐常见BPM范围给出偏好分数
+     * 计算BPM偏好分数 / Calculate BPM preference score 基于流行音乐常见BPM范围给出偏好分数
      */
     private double calculateBpmPreferenceScore(double bpm) {
         // 流行音乐最常见BPM范围
@@ -671,24 +696,26 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             return 0.1; // 不太可能的BPM范围
         }
     }
-    
+
     /**
      * 计算间隔分布合理性分数 / Calculate interval distribution reasonableness score
      */
     private double calculateIntervalDistributionScore(double bpm, List<Double> intervals) {
         double expectedInterval = 60.0 / bpm;
-        
+
         // 计算间隔的变异系数
         double mean = intervals.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        if (mean == 0) return 0.0;
-        
+        if (mean == 0) {
+            return 0.0;
+        }
+
         double variance = intervals.stream()
                 .mapToDouble(interval -> Math.pow(interval - expectedInterval, 2))
                 .average().orElse(0.0);
-        
+
         double stdDev = Math.sqrt(variance);
         double coefficientOfVariation = stdDev / expectedInterval;
-        
+
         // 变异系数越小，分布越合理
         return Math.max(0.0, 1.0 - Math.min(1.0, coefficientOfVariation));
     }
@@ -703,7 +730,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
 
         double expectedInterval = 60.0 / bpm;
         double totalError = 0.0;
-        
+
         for (double interval : intervals) {
             double error = Math.abs(interval - expectedInterval) / expectedInterval;
             totalError += Math.min(error, 1.0); // Cap error at 100%
@@ -727,7 +754,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             }
             return 0.1;
         }
-        
+
         // 验证节拍速度
         // Validate tempo
         if (tempo <= 0) {
@@ -747,20 +774,20 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         double regularityScore = calculateBeatRegularity(beatTimes);
         double densityScore = calculateBeatDensity(beatTimes);
         double stabilityScore = calculateTempoStability(beatTimes, tempo);
-        
+
         // 使用标准化置信度计算器 / Use standardized confidence calculator
         java.util.Map<String, Double> factors = new java.util.HashMap<>();
         factors.put("consistency", consistencyScore);
         factors.put("regularity", regularityScore);
         factors.put("density", densityScore);
         factors.put("stability", stabilityScore);
-        
+
         java.util.Map<String, Double> weights = new java.util.HashMap<>();
         weights.put("consistency", 0.35);
         weights.put("regularity", 0.25);
         weights.put("density", 0.2);
         weights.put("stability", 0.2);
-        
+
         return confidenceCalculator.calculateWeightedConfidence(factors, weights);
     }
 
@@ -811,7 +838,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         double variance = intervals.stream()
                 .mapToDouble(interval -> Math.pow(interval - mean, 2))
                 .average().orElse(0.0);
-        
+
         double stdDev = Math.sqrt(variance);
         double coefficientOfVariation = stdDev / mean;
 
@@ -833,11 +860,11 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         }
 
         double beatsPerSecond = (beatTimes.size() - 1) / totalDuration;
-        
+
         // 理想的节拍密度范围：1-4 beats/second (60-240 BPM)
         double idealMin = 1.0;
         double idealMax = 4.0;
-        
+
         if (beatsPerSecond >= idealMin && beatsPerSecond <= idealMax) {
             return 1.0;
         } else if (beatsPerSecond < idealMin) {
@@ -858,11 +885,11 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
         // 分段计算局部速度
         int segmentSize = Math.max(3, beatTimes.size() / 4);
         List<Double> localTempos = new ArrayList<>();
-        
+
         for (int i = 0; i <= beatTimes.size() - segmentSize; i += segmentSize / 2) {
             int endIndex = Math.min(i + segmentSize, beatTimes.size());
             List<Double> segment = beatTimes.subList(i, endIndex);
-            
+
             if (segment.size() >= 3) {
                 double localTempo = estimateLocalTempo(segment);
                 if (localTempo > 0) {
@@ -915,13 +942,13 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
      */
     private double[] calculateDynamicWeights(int beatCount, double consistencyScore) {
         double[] weights = new double[4]; // [consistency, regularity, density, stability]
-        
+
         // 基础权重
         weights[0] = 0.4; // consistency
         weights[1] = 0.25; // regularity
         weights[2] = 0.2; // density
         weights[3] = 0.15; // stability
-        
+
         // 根据节拍数量调整权重
         if (beatCount < 10) {
             // 节拍少时，更重视密度
@@ -932,20 +959,20 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             weights[3] += 0.1;
             weights[2] -= 0.1;
         }
-        
+
         // 根据一致性分数调整权重
         if (consistencyScore < 0.5) {
             // 一致性差时，降低其权重
             weights[0] -= 0.1;
             weights[1] += 0.1;
         }
-        
+
         // 确保权重和为1
         double sum = weights[0] + weights[1] + weights[2] + weights[3];
         for (int i = 0; i < weights.length; i++) {
             weights[i] /= sum;
         }
-        
+
         return weights;
     }
 }
