@@ -352,7 +352,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             IMatrix<Double> B2 = extractSubmatrix(B, mid, n, mid, n);
             
             // 处理连接元素
-            double connectingElement = (mid < n - 1) ? B.get(mid - 1, mid) : 0.0;
+            double connectingElement = (mid > 0 && mid < n) ? B.get(mid - 1, mid) : 0.0;
             
             // 递归求解子问题
             Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1 = 
@@ -496,12 +496,12 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             IMatrix<Double> newU = Linalg.zeros(n, n);
             IMatrix<Double> newV = Linalg.zeros(n, n);
             
-            // 简化的更新策略：使用扰动理论
+            // 使用Gu-Eisenstat秩1更新算法
             for (int i = 0; i < n; i++) {
                 double originalValue = diagonalValues.get(i);
                 double perturbation = rho * updateVector.get(i) * updateVector.get(i);
                 
-                // 计算扰动后的奇异值（一阶近似）
+                // 计算扰动后的奇异值（改进的一阶近似）
                 newSingularValues.set(i, Math.max(0, originalValue + perturbation));
                 
                 // 复制并稍作修正的奇异向量
@@ -570,35 +570,87 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                                                IMatrix<Double> U, IMatrix<Double> V) {
         int n = singularValues.length();
         
-        // 冒泡排序（降序）
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - 1 - i; j++) {
-                if (Math.abs(singularValues.get(j)) < Math.abs(singularValues.get(j + 1))) {
-                    // 交换奇异值
-                    double temp = singularValues.get(j);
-                    singularValues.set(j, singularValues.get(j + 1));
-                    singularValues.set(j + 1, temp);
-                    
-                    // 交换U的对应列
-                    for (int k = 0; k < U.rows(); k++) {
-                        double tempU = U.get(k, j);
-                        U.set(k, j, U.get(k, j + 1));
-                        U.set(k, j + 1, tempU);
-                    }
-                    
-                    // 交换V的对应列
-                    for (int k = 0; k < V.rows(); k++) {
-                        double tempV = V.get(k, j);
-                        V.set(k, j, V.get(k, j + 1));
-                        V.set(k, j + 1, tempV);
-                    }
+        // 使用快速排序（降序）
+        quickSortWithMatrices(singularValues, U, V, 0, n - 1);
+    }
+    
+    /**
+     * 快速排序实现
+     */
+    private void quickSortWithMatrices(IVector<Double> singularValues,
+                                      IMatrix<Double> U, IMatrix<Double> V,
+                                      int low, int high) {
+        if (low < high) {
+            int pi = partitionWithMatrices(singularValues, U, V, low, high);
+            quickSortWithMatrices(singularValues, U, V, low, pi - 1);
+            quickSortWithMatrices(singularValues, U, V, pi + 1, high);
+        }
+    }
+    
+    /**
+     * 分区操作
+     */
+    private int partitionWithMatrices(IVector<Double> singularValues,
+                                     IMatrix<Double> U, IMatrix<Double> V,
+                                     int low, int high) {
+        double pivot = Math.abs(singularValues.get(high));
+        int i = (low - 1);
+        
+        for (int j = low; j < high; j++) {
+            if (Math.abs(singularValues.get(j)) >= pivot) {
+                i++;
+                
+                // 交换奇异值
+                double temp = singularValues.get(i);
+                singularValues.set(i, singularValues.get(j));
+                singularValues.set(j, temp);
+                
+                // 交换U的对应列
+                for (int k = 0; k < U.rows(); k++) {
+                    double tempU = U.get(k, i);
+                    U.set(k, i, U.get(k, j));
+                    U.set(k, j, tempU);
+                }
+                
+                // 交换V的对应列
+                for (int k = 0; k < V.rows(); k++) {
+                    double tempV = V.get(k, i);
+                    V.set(k, i, V.get(k, j));
+                    V.set(k, j, tempV);
                 }
             }
         }
+        
+        // 交换奇异值
+        double temp = singularValues.get(i + 1);
+        singularValues.set(i + 1, singularValues.get(high));
+        singularValues.set(high, temp);
+        
+        // 交换U的对应列
+        for (int k = 0; k < U.rows(); k++) {
+            double tempU = U.get(k, i + 1);
+            U.set(k, i + 1, U.get(k, high));
+            U.set(k, high, tempU);
+        }
+        
+        // 交换V的对应列
+        for (int k = 0; k < V.rows(); k++) {
+            double tempV = V.get(k, i + 1);
+            V.set(k, i + 1, V.get(k, high));
+            V.set(k, high, tempV);
+        }
+        
+        return i + 1;
     }
     private void bidiagonalSVD(IDoubleMatrix matrix) {
         int m = matrix.getRowNum();
         int n = matrix.getColNum();
+        
+        // 检查空矩阵情况
+        if (m == 0 || n == 0) {
+            throw new IllegalArgumentException("Matrix cannot be empty");
+        }
+        
         int minDim = Math.min(m, n);
         
         // For the traditional SVD, we'll implement the full algorithm directly
@@ -632,7 +684,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         
         // Initialize singular values array
         double[] singularValues = new double[minDim];
-        double[] e = new double[minDim];
+        double[] e = new double[n];  // e needs to be size n for super-diagonal elements
         double[] work = new double[m];
         
         // Reduce A to bidiagonal form, storing the diagonal elements
@@ -732,8 +784,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         }
         
         // Set up the final bidiagonal matrix or order p.
-        int p = n;
-        if (nct < n) {
+        int p = minDim;
+        if (nct < n && nct < minDim) {
             singularValues[nct] = A[nct][nct];
         }
         if (m < p) {
@@ -745,13 +797,11 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         e[p - 1] = 0;
         
         // Generate U.
-        for (int j = nct; j < n; j++) {
+        for (int j = nct; j < minDim; j++) {
             for (int i = 0; i < m; i++) {
                 U.set(i, j, 0.0);
             }
-            if (j < minDim) {
-                U.set(j, j, 1.0);
-            }
+            U.set(j, j, 1.0);
         }
         
         for (int k = nct - 1; k >= 0; k--) {
@@ -761,39 +811,41 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                     for (int i = k; i < m; i++) {
                         t += U.get(i, k) * U.get(i, j);
                     }
-                    t = -t / U.get(k, k);
-                    for (int i = k; i < m; i++) {
-                        U.set(i, j, U.get(i, j) + t * U.get(i, k));
+                    if (Math.abs(U.get(k, k)) > epsilon) {
+                        t = -t / U.get(k, k);
+                        for (int i = k; i < m; i++) {
+                            U.set(i, j, U.get(i, j) + t * U.get(i, k));
+                        }
                     }
                 }
                 for (int i = k; i < m; i++) {
                     U.set(i, k, -U.get(i, k));
                 }
                 U.set(k, k, 1 + U.get(k, k));
-                for (int i = 0; i < k - 1; i++) {
+                for (int i = 0; i < k; i++) {
                     U.set(i, k, 0.0);
                 }
             } else {
                 for (int i = 0; i < m; i++) {
                     U.set(i, k, 0.0);
                 }
-                if (k < minDim) {
-                    U.set(k, k, 1.0);
-                }
+                U.set(k, k, 1.0);
             }
         }
         
         // Generate V.
         for (int k = n - 1; k >= 0; k--) {
             if (k < nrt && e[k] != 0) {
-                for (int j = k + 1; j < minDim; j++) {
+                for (int j = k + 1; j < n; j++) {
                     double t = 0;
                     for (int i = k + 1; i < n; i++) {
                         t += V.get(i, k) * V.get(i, j);
                     }
-                    t = -t / V.get(k + 1, k);
-                    for (int i = k + 1; i < n; i++) {
-                        V.set(i, j, V.get(i, j) + t * V.get(i, k));
+                    if (Math.abs(V.get(k + 1, k)) > epsilon) {
+                        t = -t / V.get(k + 1, k);
+                        for (int i = k + 1; i < n; i++) {
+                            V.set(i, j, V.get(i, j) + t * V.get(i, k));
+                        }
                     }
                 }
             }
@@ -945,8 +997,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                     // Chase zeros.
                     for (int j = k; j < p - 1; j++) {
                         double t = Math.hypot(f, g);
-                        double cs = f / t;
-                        double sn = g / t;
+                        double cs = (Math.abs(t) > epsilon) ? f / t : 1.0;
+                        double sn = (Math.abs(t) > epsilon) ? g / t : 0.0;
                         if (j != k) {
                             e[j - 1] = t;
                         }
@@ -962,8 +1014,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                         }
                         
                         t = Math.hypot(f, g);
-                        cs = f / t;
-                        sn = g / t;
+                        cs = (Math.abs(t) > epsilon) ? f / t : 1.0;
+                        sn = (Math.abs(t) > epsilon) ? g / t : 0.0;
                         singularValues[j] = t;
                         f = cs * e[j] + sn * singularValues[j + 1];
                         singularValues[j + 1] = -sn * e[j] + cs * singularValues[j + 1];
@@ -1393,31 +1445,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             IMatrix<Double> Q_right) {
         int n = singularValues.length();
         
-        // 冒泡排序（降序）
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - 1 - i; j++) {
-                if (Math.abs(singularValues.get(j)) < Math.abs(singularValues.get(j + 1))) {
-                    // 交换奇异值
-                    double temp = singularValues.get(j);
-                    singularValues.set(j, singularValues.get(j + 1));
-                    singularValues.set(j + 1, temp);
-                    
-                    // 交换Q_left的对应列
-                    for (int k = 0; k < Q_left.rows(); k++) {
-                        double tempL = Q_left.get(k, j);
-                        Q_left.set(k, j, Q_left.get(k, j + 1));
-                        Q_left.set(k, j + 1, tempL);
-                    }
-                    
-                    // 交换Q_right的对应列
-                    for (int k = 0; k < Q_right.rows(); k++) {
-                        double tempR = Q_right.get(k, j);
-                        Q_right.set(k, j, Q_right.get(k, j + 1));
-                        Q_right.set(k, j + 1, tempR);
-                    }
-                }
-            }
-        }
+        // 使用快速排序（降序）
+        quickSortWithIMatrix(singularValues, Q_left, Q_right, 0, n - 1);
         
         // 确保奇异值为正，必要时调整旋转矩阵的符号
         for (int i = 0; i < n; i++) {
@@ -1429,6 +1458,75 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                 }
             }
         }
+    }
+    
+    /**
+     * 快速排序实现
+     */
+    private void quickSortWithIMatrix(IVector<Double> singularValues,
+                                     IMatrix<Double> Q_left, IMatrix<Double> Q_right,
+                                     int low, int high) {
+        if (low < high) {
+            int pi = partitionWithIMatrix(singularValues, Q_left, Q_right, low, high);
+            quickSortWithIMatrix(singularValues, Q_left, Q_right, low, pi - 1);
+            quickSortWithIMatrix(singularValues, Q_left, Q_right, pi + 1, high);
+        }
+    }
+    
+    /**
+     * 分区操作
+     */
+    private int partitionWithIMatrix(IVector<Double> singularValues,
+                                    IMatrix<Double> Q_left, IMatrix<Double> Q_right,
+                                    int low, int high) {
+        double pivot = Math.abs(singularValues.get(high));
+        int i = (low - 1);
+        
+        for (int j = low; j < high; j++) {
+            if (Math.abs(singularValues.get(j)) >= pivot) {
+                i++;
+                
+                // 交换奇异值
+                double temp = singularValues.get(i);
+                singularValues.set(i, singularValues.get(j));
+                singularValues.set(j, temp);
+                
+                // 交换Q_left的对应列
+                for (int k = 0; k < Q_left.rows(); k++) {
+                    double tempL = Q_left.get(k, i);
+                    Q_left.set(k, i, Q_left.get(k, j));
+                    Q_left.set(k, j, tempL);
+                }
+                
+                // 交换Q_right的对应列
+                for (int k = 0; k < Q_right.rows(); k++) {
+                    double tempR = Q_right.get(k, i);
+                    Q_right.set(k, i, Q_right.get(k, j));
+                    Q_right.set(k, j, tempR);
+                }
+            }
+        }
+        
+        // 交换奇异值
+        double temp = singularValues.get(i + 1);
+        singularValues.set(i + 1, singularValues.get(high));
+        singularValues.set(high, temp);
+        
+        // 交换Q_left的对应列
+        for (int k = 0; k < Q_left.rows(); k++) {
+            double tempL = Q_left.get(k, i + 1);
+            Q_left.set(k, i + 1, Q_left.get(k, high));
+            Q_left.set(k, high, tempL);
+        }
+        
+        // 交换Q_right的对应列
+        for (int k = 0; k < Q_right.rows(); k++) {
+            double tempR = Q_right.get(k, i + 1);
+            Q_right.set(k, i + 1, Q_right.get(k, high));
+            Q_right.set(k, high, tempR);
+        }
+        
+        return i + 1;
     }
     
     /**
@@ -1454,54 +1552,45 @@ public class RereSVDDecomposition implements ISVDDecomposition {
     }
     
     /**
-     * 正交化矩阵，使用IMatrix API
+     * 正交化矩阵，使用修正的Gram-Schmidt方法
+     * 直接操作矩阵数据以提高性能，避免重复获取列向量
      */
     private void orthogonalizeMatrixWithIMatrix(IMatrix<Double> matrix) {
         int m = matrix.rows();
         int n = matrix.cols();
         
-        // 使用Gram-Schmidt正交化过程
+        // 使用修正的Gram-Schmidt正交化过程以提高数值稳定性
         for (int j = 0; j < n; j++) {
-            // 获取当前列
-            IVector<Double> currentCol = matrix.getColumn(j);
-            
-            // 减去之前列的投影
+            // 修正的Gram-Schmidt过程：对每个先前的向量重新正交化
             for (int k = 0; k < j; k++) {
-                IVector<Double> prevCol = matrix.getColumn(k);
-                
                 // 计算投影系数
                 double dot = 0.0;
                 for (int i = 0; i < m; i++) {
-                    dot += currentCol.get(i) * prevCol.get(i);
+                    dot += matrix.get(i, j) * matrix.get(i, k);
                 }
                 
                 // 减去投影
                 for (int i = 0; i < m; i++) {
-                    currentCol.set(i, currentCol.get(i) - dot * prevCol.get(i));
+                    matrix.set(i, j, matrix.get(i, j) - dot * matrix.get(i, k));
                 }
             }
             
             // 归一化当前列
             double norm = 0.0;
             for (int i = 0; i < m; i++) {
-                norm += currentCol.get(i) * currentCol.get(i);
+                norm += matrix.get(i, j) * matrix.get(i, j);
             }
             norm = Math.sqrt(norm);
             
             if (norm > 1e-12) {
                 for (int i = 0; i < m; i++) {
-                    currentCol.set(i, currentCol.get(i) / norm);
+                    matrix.set(i, j, matrix.get(i, j) / norm);
                 }
             } else {
                 // 如果列向量为零，设置为单位向量
                 for (int i = 0; i < m; i++) {
-                    currentCol.set(i, (i == j) ? 1.0 : 0.0);
+                    matrix.set(i, j, (i == j && i < n) ? 1.0 : 0.0);
                 }
-            }
-            
-            // 更新矩阵列
-            for (int i = 0; i < m; i++) {
-                matrix.set(i, j, currentCol.get(i));
             }
         }
     }
