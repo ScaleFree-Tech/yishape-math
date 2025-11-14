@@ -179,10 +179,21 @@ public class MusicPlots {
      * @return 音乐特征雷达图对象 / Music features radar plot object
      */
     public static IPlot plotMusicFeaturesRadar(AudioData audioData, String title) {
-        try {
+        
             // 提取音乐特征 / Extract music features
             Map<String, Object> features = Musics.extractMusicFeatureMap(audioData);
-            System.out.println(features);
+            return plotMusicFeaturesRadar(features,title);
+    }
+
+
+    /**
+     * 
+     * @param features 已提取的音乐特征 / Extracted music features
+     * @param title
+     * @return 
+     */
+    public static IPlot plotMusicFeaturesRadar(Map<String, Object> features, String title) {
+        try {
             // 准备雷达图数据 / Prepare radar chart data
             List<String> featureNames = new ArrayList<>();
             List<Double> featureValues = new ArrayList<>();
@@ -300,8 +311,6 @@ public class MusicPlots {
                     .ylabel("特征값 / Feature Value");
         }
     }
-
-
 
     /**
      * 绘制音乐仪表板 / Create music dashboard

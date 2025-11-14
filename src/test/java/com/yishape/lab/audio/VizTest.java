@@ -13,7 +13,7 @@ public class VizTest {
 
         // 音频可视化 / Audio visualization
         String path = "F:\\music\\test\\";
-        String f1 = path + "18.张学友.mp3";
+        String f1 = path + "shadow of love.mp3";
 
         try {
             AudioData data = AudioIO.readAudio(f1);

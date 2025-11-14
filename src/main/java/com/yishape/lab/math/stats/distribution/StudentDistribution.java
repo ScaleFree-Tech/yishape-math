@@ -244,20 +244,25 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
      * 标准t分布的累积分布函数
      * CDF of standard t-distribution
      * 
-     * @param x 输入值 / Input value
+     * @param t 输入值 / Input value
      * @return 累积分布函数值 / CDF value
      */
-    private double standardCDF(double x) {
+    private double standardCDF(double t) {
         if (degreesOfFreedom >= 30) {
             // 对于大自由度，使用正态分布近似
             // For large degrees of freedom, use normal distribution approximation
-            return 0.5 * (1.0 + RereMathUtil.erf(x / Math.sqrt(2.0)));
+            return 0.5 * (1.0 + RereMathUtil.erf(t / Math.sqrt(2.0)));
         }
         
         // 使用不完全贝塔函数
         // Using incomplete beta function
-        double t = x / Math.sqrt(degreesOfFreedom + x * x);
-        return 0.5 + 0.5 * sign(x) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
+        double x = degreesOfFreedom / (degreesOfFreedom + t * t);
+        double betaValue = RereMathUtil.incompleteBeta(halfDof, 0.5, x);
+        if (t >= 0) {
+            return 1.0 - 0.5 * betaValue;
+        } else {
+            return 0.5 * betaValue;
+        }
     }
     
     /**

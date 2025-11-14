@@ -14,12 +14,14 @@ public class MusicRadarDemo {
 
         try {
             String path = "F:\\music\\test\\";
-            String f1 = path + "20.杨友友-野花做了场玫瑰花的梦.mp3";
+//            String f1 = path + "20.杨友友-野花做了场玫瑰花的梦.mp3";
+            String f1 = path + "shadow of love.mp3";
 
             AudioData audioData = Audios.readAudio(f1);
 
             // Create the radar chart
             IPlot radarPlot = MusicPlots.plotMusicFeaturesRadar(audioData, "Music Features Radar Chart");
+            System.out.println(radarPlot.toJson());
             radarPlot.show();
         } catch (Exception e) {
             e.printStackTrace();
