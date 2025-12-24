@@ -430,15 +430,30 @@ IMatrix reducedData = pca.dimensionReduction(originalData, 2);
 
 #### 逻辑回归分类 / Logistic Regression Classification
 ```java
-// 创建逻辑回归分类器 / Create logistic regression classifier
-var lr = new RereLogisticRegression();
+    String path = "path of iris dataset/iris.csv";
+    try {
+        // 读取数据集 / Read dataset
+        var df = DataFrame.readCsv(path);
+        // 提取特征和标签 / Extract features and labels
+        var feature = df.sliceColumn(0, -1).toMatrix();
+        var labels = df.get(df.getColumnCount()-1).toStringArray();
+        // 创建逻辑回归分类器 / Create logistic regression classifier
+        var lr = new RereLogisticRegression(0.0,0.0);
+        // 训练模型 / Train model
+        var res = lr.fit(feature, labels);
+        System.out.println(res);
+        // 预测分类 / Predict classification
+        var predicted = lr.predictBatchWithProbabilities(feature);
+        // 计算分类指标 / Compute classification metrics
+        ClassificationMetrics metrics = ClassificationMetrics.compute(labels, predicted);
+        System.out.println(metrics);
+        // 交叉验证 / Cross validation
+        var result = CrossValidation.kFoldCrossValidation(lr, feature, labels, 3);
+        System.out.println(result);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
 
-// 训练模型 / Train model
-var result = lr.fit(featureMatrix, labelVector);
-
-// 预测分类 / Predict classification
-int prediction = lr.predict(newFeatureVector);
-double[] probabilities = lr.predictProbabilities(newFeatureVector);
 ```
 
 #### 信号处理 / Signal Processing
