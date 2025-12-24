@@ -24,8 +24,8 @@ This document provides detailed usage examples for machine learning algorithms i
 ```java
 import com.yishape.lab.math.IMatrix;
 import com.yishape.lab.math.IVector;
-import lr.ml.math.com.yishape.lab.RereLinearRegression;
-import lr.ml.math.com.yishape.lab.RegressionResult;
+import com.yishape.lab.math.ml.lr.RereLinearRegression;
+import com.yishape.lab.math.ml.lr.RegressionResult;
 
 public class BasicLinearRegressionExample {
     public static void main(String[] args) {
@@ -87,8 +87,8 @@ public class RegularizedLinearRegressionExample {
 ```java
 import com.yishape.lab.math.IMatrix;
 import com.yishape.lab.math.IVector;
-import cls.ml.math.com.yishape.lab.RereLogisticRegression;
-import cls.ml.math.com.yishape.lab.LogisticRegressionResult;
+import com.yishape.lab.math.ml.cls.RereLogisticRegression;
+import com.yishape.lab.math.ml.cls.LogisticRegressionResult;
 
 public class BasicBinaryClassificationExample {
     public static void main(String[] args) {
@@ -295,7 +295,7 @@ public class AdvancedConfigurationExample {
             {1, 2}, {2, 3}, {3, 4}, {4, 5},
             {5, 6}, {6, 7}, {7, 8}, {8, 9}
         };
-        String[] labelData = {"正类", "正类", "正类", "正类", 
+        String[] labelData = {"正类", "正类", "正类", "正类",
                              "负类", "负类", "负类", "负类"};
         
         IMatrix features = IMatrix.of(featureData);
@@ -329,6 +329,49 @@ public class AdvancedConfigurationExample {
 }
 ```
 
+### 交叉验证示例 / Cross Validation Example
+
+```java
+import com.yishape.lab.math.ml.metric.CrossValidation;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
+
+public class CrossValidationExample {
+    public static void main(String[] args) {
+        // 准备数据 / Prepare data
+        float[][] featureData = {
+            {1, 2}, {2, 3}, {3, 4}, {4, 5},
+            {5, 6}, {6, 7}, {7, 8}, {8, 9}
+        };
+        String[] labelData = {"正类", "正类", "正类", "正类",
+                             "负类", "负类", "负类", "负类"};
+        
+        IMatrix features = IMatrix.of(featureData);
+        
+        // 创建逻辑回归模型 / Create logistic regression model
+        RereLogisticRegression lr = new RereLogisticRegression();
+        
+        // 5折交叉验证 / 5-fold cross validation
+        var cvResult = CrossValidation.kFoldCrossValidation(lr, features, labelData, 5);
+        
+        System.out.println("交叉验证结果: " + cvResult);
+        System.out.println("平均准确率: " + cvResult.getMeanAccuracy());
+        System.out.println("准确率标准差: " + cvResult.getStdAccuracy());
+        
+        // 获取每折的详细结果 / Get detailed results for each fold
+        for (int i = 0; i < cvResult.getFoldResults().size(); i++) {
+            System.out.println("第" + (i + 1) + "折准确率: " + cvResult.getFoldResults().get(i).getAccuracy());
+        }
+        
+        // 使用ClassificationMetrics计算详细指标 / Use ClassificationMetrics for detailed metrics
+        String[] testPredictions = lr.predictBatch(features);
+        ClassificationMetrics metrics = ClassificationMetrics.compute(labelData, testPredictions);
+        System.out.println("精确率: " + metrics.getPrecision());
+        System.out.println("召回率: " + metrics.getRecall());
+        System.out.println("F1分数: " + metrics.getF1Score());
+    }
+}
+```
+
 ## 随机森林示例 / Random Forest Examples
 
 ### 基本随机森林分类 / Basic Random Forest Classification
@@ -336,8 +379,8 @@ public class AdvancedConfigurationExample {
 ```java
 import com.yishape.lab.math.IMatrix;
 import com.yishape.lab.math.IVector;
-import tree.cls.ml.math.com.yishape.lab.RereRandomForest;
-import tree.cls.ml.math.com.yishape.lab.RandomForestResult;
+import com.yishape.lab.math.ml.cls.tree.RereRandomForest;
+import com.yishape.lab.math.ml.cls.tree.RandomForestResult;
 
 public class BasicRandomForestExample {
     public static void main(String[] args) {
@@ -479,8 +522,8 @@ public class RandomForestFeatureImportanceExample {
 ```java
 import com.yishape.lab.math.IMatrix;
 import com.yishape.lab.math.IVector;
-import tree.cls.ml.math.com.yishape.lab.RereXGboost;
-import tree.cls.ml.math.com.yishape.lab.XGBoostResult;
+import com.yishape.lab.math.ml.cls.tree.RereXGboost;
+import com.yishape.lab.math.ml.cls.tree.XGBoostResult;
 
 import java.util.List;
 
@@ -637,8 +680,8 @@ public class XGBoostEarlyStoppingExample {
 ```java
 import com.yishape.lab.math.IMatrix;
 import com.yishape.lab.math.IVector;
-import cls.ml.math.com.yishape.lab.EnsembleClassifier;
-import cls.ml.math.com.yishape.lab.EnsembleResult;
+import com.yishape.lab.math.ml.cls.EnsembleClassifier;
+import com.yishape.lab.math.ml.cls.EnsembleResult;
 
 import java.util.Map;
 
@@ -786,11 +829,11 @@ public class EnsembleWeightOptimizationExample {
 ### K-Means++聚类示例 / K-Means++ Clustering Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import clustering.ml.math.com.yishape.lab.KMeansPlusPlus;
-import clustering.ml.math.com.yishape.lab.ClusteringMetrics;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.clustering.KMeansPlusPlus;
+import com.yishape.lab.math.ml.clustering.ClusteringMetrics;
 
 public class KMeansExample {
     public static void main(String[] args) {
@@ -831,10 +874,10 @@ public class KMeansExample {
 ### 高斯混合模型聚类示例 / Gaussian Mixture Model Clustering Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import clustering.ml.math.com.yishape.lab.GMMClustering;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.clustering.GMMClustering;
 
 public class GMMExample {
     public static void main(String[] args) {
@@ -887,9 +930,9 @@ public class GMMExample {
 ### PCA降维示例 / PCA Dimensionality Reduction Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import dimreduce.ml.math.com.yishape.lab.RerePCA;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.dimreduce.RerePCA;
 
 public class PCAExample {
     public static void main(String[] args) {
@@ -925,9 +968,9 @@ public class PCAExample {
 ### SVD降维示例 / SVD Dimensionality Reduction Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import dimreduce.ml.math.com.yishape.lab.RereSVD;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.dimreduce.RereSVD;
 
 public class SVDExample {
     public static void main(String[] args) {
@@ -961,9 +1004,9 @@ public class SVDExample {
 ### t-SNE降维示例 / t-SNE Dimensionality Reduction Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import dimreduce.ml.math.com.yishape.lab.RereTSNE;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.dimreduce.RereTSNE;
 
 public class TSNEExample {
     public static void main(String[] args) {
@@ -1006,9 +1049,9 @@ public class TSNEExample {
 ### UMAP降维示例 / UMAP Dimensionality Reduction Example
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import dimreduce.ml.math.com.yishape.lab.RereUMAP;
+import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.Linalg;
+import com.yishape.lab.math.ml.dimreduce.RereUMAP;
 
 public class UMAPExample {
     public static void main(String[] args) {

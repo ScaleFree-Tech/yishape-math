@@ -407,66 +407,48 @@ System.out.println("最重要特征索引: " + maxIndex + ", 权重: " + maxWeig
 ### 示例6：交叉验证 / Example 6: Cross Validation
 
 ```java
-// 简单的交叉验证 / Simple cross validation
-int foldCount = 5;
-int sampleCount = features.getRowNum();
-int foldSize = sampleCount / foldCount;
+import com.yishape.lab.math.ml.metric.CrossValidation;
 
-float totalMSE = 0.0f;
-float totalR2 = 0.0f;
+// 使用CrossValidation工具进行交叉验证 / Use CrossValidation utility for cross validation
+RereLinearRegression lr = new RereLinearRegression();
 
-for (int fold = 0; fold < foldCount; fold++) {
-    // 划分训练集和验证集 / Split training and validation sets
-    int startIdx = fold * foldSize;
-    int endIdx = (fold == foldCount - 1) ? sampleCount : (fold + 1) * foldSize;
-    
-    // 创建训练集 / Create training set
-    List<float[]> trainFeatures = new ArrayList<>();
-    List<Float> trainLabels = new ArrayList<>();
-    
-    for (int i = 0; i < sampleCount; i++) {
-        if (i < startIdx || i >= endIdx) {
-            trainFeatures.add(features.getRow(i).getData());
-            trainLabels.add(labels.get(i));
-        }
-    }
-    
-    // 创建验证集 / Create validation set
-    List<float[]> valFeatures = new ArrayList<>();
-    List<Float> valLabels = new ArrayList<>();
-    
-    for (int i = startIdx; i < endIdx; i++) {
-        valFeatures.add(features.getRow(i).getData());
-        valLabels.add(labels.get(i));
-    }
-    
-    // 训练模型 / Train model
-    IMatrix trainFeatureMatrix = IMatrix.of(trainFeatures);
-    IVector trainLabelVector = IVector.of(RereMathUtil.toPrimitive(trainLabels.toArray(new Float[0])));
-    
-    RereLinearRegression lr = new RereLinearRegression();
-    RegressionResult result = lr.fit(trainFeatureMatrix, trainLabelVector);
-    
-    // 验证模型 / Validate model
-    IMatrix valFeatureMatrix = IMatrix.of(valFeatures);
-    IVector valLabelVector = IVector.of(RereMathUtil.toPrimitive(valLabels.toArray(new Float[0])));
-    
-    float foldMSE = 0.0f;
-    for (int i = 0; i < valFeatureMatrix.getRowNum(); i++) {
-        float prediction = lr.predict(valFeatureMatrix.getRow(i));
-        float actual = valLabelVector.get(i);
-        foldMSE += (prediction - actual) * (prediction - actual);
-    }
-    foldMSE /= valFeatureMatrix.getRowNum();
-    
-    totalMSE += foldMSE;
-    totalR2 += result.getR2Score();
-    
-    System.out.println("Fold " + (fold + 1) + " - MSE: " + foldMSE + ", R²: " + result.getR2Score());
+// 5折交叉验证 / 5-fold cross validation
+var cvResult = CrossValidation.kFoldCrossValidation(lr, features, labels, 5);
+
+System.out.println("交叉验证结果: " + cvResult);
+System.out.println("平均准确率: " + cvResult.getMeanAccuracy());
+System.out.println("准确率标准差: " + cvResult.getStdAccuracy());
+```
+
+### 示例7：模型评估 / Example 7: Model Evaluation
+
+```java
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
+
+// 训练模型 / Train model
+RereLinearRegression lr = new RereLinearRegression();
+RegressionResult result = lr.fit(features, labels);
+
+// 获取预测结果 / Get predictions
+float[] predictions = new float[features.getRowNum()];
+for (int i = 0; i < features.getRowNum(); i++) {
+    predictions[i] = lr.predict(features.getRow(i));
 }
 
-System.out.println("平均MSE: " + (totalMSE / foldCount));
-System.out.println("平均R²: " + (totalR2 / foldCount));
+// 计算评估指标 / Calculate evaluation metrics
+float mse = 0.0f;
+float mae = 0.0f;
+for (int i = 0; i < labels.length(); i++) {
+    float error = predictions[i] - labels.get(i);
+    mse += error * error;
+    mae += Math.abs(error);
+}
+mse /= labels.length();
+mae /= labels.length();
+
+System.out.println("均方误差 (MSE): " + mse);
+System.out.println("平均绝对误差 (MAE): " + mae);
+System.out.println("R²分数: " + result.getR2Score());
 ```
 
 ## 性能特性 / Performance Features
@@ -859,6 +841,8 @@ public class BatchPredictionExample {
 ### 示例5：模型评估 / Example 5: Model Evaluation
 
 ```java
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
+
 public class ModelEvaluationExample {
     public static void main(String[] args) {
         // 训练模型 / Train model
@@ -882,6 +866,37 @@ public class ModelEvaluationExample {
         }
         float accuracy = (float) correct / testLabels.length;
         System.out.println("测试准确率: " + accuracy); // Test accuracy
+        
+        // 使用ClassificationMetrics计算详细指标 / Use ClassificationMetrics for detailed metrics
+        ClassificationMetrics metrics = ClassificationMetrics.compute(testLabels, testPredictions);
+        System.out.println("精确率: " + metrics.getPrecision());
+        System.out.println("召回率: " + metrics.getRecall());
+        System.out.println("F1分数: " + metrics.getF1Score());
+    }
+}
+```
+
+### 示例6：交叉验证 / Example 6: Cross Validation
+
+```java
+import com.yishape.lab.math.ml.metric.CrossValidation;
+
+public class CrossValidationExample {
+    public static void main(String[] args) {
+        // 创建逻辑回归模型 / Create logistic regression model
+        RereLogisticRegression lr = new RereLogisticRegression();
+        
+        // 5折交叉验证 / 5-fold cross validation
+        var cvResult = CrossValidation.kFoldCrossValidation(lr, features, labels, 5);
+        
+        System.out.println("交叉验证结果: " + cvResult);
+        System.out.println("平均准确率: " + cvResult.getMeanAccuracy());
+        System.out.println("准确率标准差: " + cvResult.getStdAccuracy());
+        
+        // 获取每折的详细结果 / Get detailed results for each fold
+        for (int i = 0; i < cvResult.getFoldResults().size(); i++) {
+            System.out.println("第" + (i + 1) + "折准确率: " + cvResult.getFoldResults().get(i).getAccuracy());
+        }
     }
 }
 ```
@@ -1105,6 +1120,22 @@ String prediction = rf.predict(newFeatures);
 System.out.println("预测类别: " + prediction);
 ```
 
+### 示例2：交叉验证 / Example 2: Cross Validation
+
+```java
+import com.yishape.lab.math.ml.metric.CrossValidation;
+
+// 使用交叉验证评估随机森林 / Use cross validation to evaluate Random Forest
+RereRandomForest rf = new RereRandomForest();
+
+// 5折交叉验证 / 5-fold cross validation
+var cvResult = CrossValidation.kFoldCrossValidation(rf, features, labelData, 5);
+
+System.out.println("随机森林交叉验证结果: " + cvResult);
+System.out.println("平均准确率: " + cvResult.getMeanAccuracy());
+System.out.println("准确率标准差: " + cvResult.getStdAccuracy());
+```
+
 ---
 
 # XGBoost分类器 (XGBoost Classifier)
@@ -1282,6 +1313,22 @@ System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1))
 IVector newFeatures = IVector.of(new float[]{3, 4, 5});
 String prediction = xgb.predict(newFeatures);
 System.out.println("预测类别: " + prediction);
+```
+
+### 示例2：交叉验证 / Example 2: Cross Validation
+
+```java
+import com.yishape.lab.math.ml.metric.CrossValidation;
+
+// 使用交叉验证评估XGBoost / Use cross validation to evaluate XGBoost
+RereXGboost xgb = new RereXGboost();
+
+// 5折交叉验证 / 5-fold cross validation
+var cvResult = CrossValidation.kFoldCrossValidation(xgb, features, labelData, 5);
+
+System.out.println("XGBoost交叉验证结果: " + cvResult);
+System.out.println("平均准确率: " + cvResult.getMeanAccuracy());
+System.out.println("准确率标准差: " + cvResult.getStdAccuracy());
 ```
 
 ---

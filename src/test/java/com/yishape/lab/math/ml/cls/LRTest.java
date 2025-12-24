@@ -3,7 +3,6 @@ package com.yishape.lab.math.ml.cls;
 import com.yishape.lab.math.data.DataFrame;
 import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.ml.metric.CrossValidation;
-import java.nio.file.Paths;
 
 /**
  *
@@ -13,7 +12,7 @@ public class LRTest {
 
     public static void main(String args[]) {
 
-        String path = Paths.get(System.getProperty("user.dir"), "datasets", "iris.csv").toString();
+        String path = "F:\\电子科技大学工作\\商务统计_2025\\data\\iris.csv";
         try {
             var df = DataFrame.readCsv(path);
             var feature = df.sliceColumn(0, -1).toMatrix();
