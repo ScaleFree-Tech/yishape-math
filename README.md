@@ -437,7 +437,7 @@ IMatrix reducedData = pca.dimensionReduction(originalData, 2);
         // 提取特征和标签 / Extract features and labels
         var feature = df.sliceColumn(0, -1).toMatrix();
         var labels = df.get(df.getColumnCount()-1).toStringArray();
-        // 创建逻辑回归分类器 / Create logistic regression classifier
+        // 创建逻辑回归分类器（两个参数分别是L1和L2正则化系数） / Create logistic regression classifier (the two parameters are L1 and L2 regularization coefficients)
         var lr = new RereLogisticRegression(0.0,0.0);
         // 训练模型 / Train model
         var res = lr.fit(feature, labels);
