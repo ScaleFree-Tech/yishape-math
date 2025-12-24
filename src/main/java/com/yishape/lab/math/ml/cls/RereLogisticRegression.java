@@ -195,7 +195,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     /**
      * 优化器收敛重试次数
      */
-    private int maxRetries = 0;
+    private int maxRetries = 1;
 
     /**
      * 是否启用特征归一化
@@ -428,7 +428,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
                 }
 
             } catch (Exception e) {
-                System.err.println("训练尝试 " + (retry + 1) + " 失败: " + e.getMessage());
+                System.out.println("训练尝试 " + (retry + 1) + " 失败: " + e.getMessage());
                 if (retry == maxRetries) {
                     throw new RuntimeException("所有训练尝试都失败", e);
                 }
@@ -437,7 +437,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
 
         // 检查最终结果
         if (!converged) {
-            System.err.println(String.format("警告：经过 %d 次尝试，优化器仍未完全收敛，最终损失值：%.6f",
+            System.out.println(String.format("警告：经过 %d 次尝试，优化器仍未完全收敛，最终损失值：%.6f",
                     maxRetries + 1, bestLoss));
         }
 

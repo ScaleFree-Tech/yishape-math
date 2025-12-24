@@ -40,7 +40,7 @@ public class RereLBFGS implements IOptimizer{
     // LBFGS算法参数 / LBFGS algorithm parameters
     private int m = 10;                    // 存储的历史信息对数 / Number of stored history pairs
     private double tolerance = 1e-6;       // 收敛容差 / Convergence tolerance
-    private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
+    private int maxIterations = 100;      // 最大迭代次数 / Maximum iterations
 
     // 缓存变量 / Cached variables
     private double cachedGradNorm = 0;     // 缓存的梯度范数 / Cached gradient norm

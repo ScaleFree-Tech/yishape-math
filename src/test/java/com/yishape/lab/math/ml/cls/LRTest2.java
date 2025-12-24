@@ -12,8 +12,8 @@ public class LRTest2 {
 
     public static void main(String args[]) {
 
-//        String path = "C:\\Users\\lteb2\\Downloads\\3b068fb8-ee10-4c6e-8848-2156ad9c6585.csv";
-        String path = "F:\\电子科技大学工作\\商务统计_2025\\data\\credit_card.csv";
+        String path = "C:\\Users\\lteb2\\Downloads\\d9c2cb80-3944-4f82-b884-93cad3e586fc.csv";
+//        String path = "F:\\电子科技大学工作\\商务统计_2025\\data\\credit_card.csv";
 //        String path = "F:\\电子科技大学工作\\商务统计_2025\\data\\wine.csv";
         try {
             var df = DataFrame.readCsv(path);
@@ -21,7 +21,7 @@ public class LRTest2 {
             var labels = df.get(df.getColumnCount()-1).toStringArray();
             System.out.println(feature);
             System.out.println(labels);
-            var lr = new RereLogisticRegression(0.0,0.01);
+            var lr = new RereLogisticRegression(0.0,0.1);
             var res = lr.fit(feature, labels);
             System.out.println(res);
             var predicted = lr.predictBatchWithProbabilities(feature);
