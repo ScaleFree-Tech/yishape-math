@@ -25,4 +25,11 @@ public interface IClassification extends ISerializableModel{
      */
     public String predict(IVector x);
     
+    /**
+     * 
+     * @param features
+     * @return 
+     */
+    public String[] predictBatch(IMatrix features);
+    
 }

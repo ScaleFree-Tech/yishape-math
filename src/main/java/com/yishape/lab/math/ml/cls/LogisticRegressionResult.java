@@ -136,4 +136,12 @@ public class LogisticRegressionResult extends ClassificationResult {
         return weights != null && bias != null && 
                weights.size() > 0 && bias.size() > 0;
     }
+
+    @Override
+    public String toString() {
+        return "LogisticRegressionResult{" + "weights=" + weights + ", bias=" + bias + '}';
+    }
+    
+    
+    
 }

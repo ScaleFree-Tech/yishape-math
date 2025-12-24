@@ -38,7 +38,7 @@ public class RereConjugateGradient implements IOptimizer{
     // 共轭梯度法参数 / Conjugate gradient algorithm parameters
     private double tolerance = 1e-6;       // 收敛容差 / Convergence tolerance
     private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
-    private double restartThreshold = 0.1; // 重启阈值 / Restart threshold
+    private double restartThreshold = 0.5; // 重启阈值 / Restart threshold
     private boolean useAdaptiveRestart = true; // 是否使用自适应重启 / Whether to use adaptive restart
 
     /**

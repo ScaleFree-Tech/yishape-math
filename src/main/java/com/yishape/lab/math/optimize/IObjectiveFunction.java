@@ -1,12 +1,13 @@
 package com.yishape.lab.math.optimize;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 /**
  *
  * @author lteb2
  */
-public interface IObjectiveFunction {
+public interface IObjectiveFunction extends Serializable{
     
     /**
      * 计算梯度

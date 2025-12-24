@@ -4,6 +4,7 @@ import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.FloatVectorComputer;
 import com.yishape.lab.util.StringUtils;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
+import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -69,7 +70,7 @@ import java.util.function.Function;
  * @version 1.0
  * @since 1.0
  */
-public class RereFloatVector implements IFloatVector {
+public class RereFloatVector implements IFloatVector,Serializable {
 
     private final IFloatVectorComputer computer = new FloatVectorComputer();
 

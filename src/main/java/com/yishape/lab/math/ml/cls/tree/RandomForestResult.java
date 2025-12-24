@@ -15,7 +15,7 @@ import java.util.Map;
  * @version 1.0
  * @since 1.0
  */
-public class RandomForestResult extends ClassificationResult {
+public class RandomForestResult extends ClassificationResult{
     
     /** 决策树集合 */
     private List<RFTree> trees;

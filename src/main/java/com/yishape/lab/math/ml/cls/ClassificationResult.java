@@ -1,6 +1,7 @@
 package com.yishape.lab.math.ml.cls;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 import java.util.Map;
 
@@ -14,7 +15,7 @@ import java.util.Map;
  * @version 1.0
  * @since 1.0
  */
-public abstract class ClassificationResult {
+public abstract class ClassificationResult implements Serializable{
     
     // ==================== 共同基础属性 ====================
     

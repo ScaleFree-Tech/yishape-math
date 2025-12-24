@@ -11,6 +11,7 @@ import com.yishape.lab.math.linalg.solver.MatrixInversionSolver;
 import com.yishape.lab.math.linalg.solver.RankSolver;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
 import com.yishape.lab.math.util.Precision;
+import java.io.Serializable;
 
 import java.util.concurrent.*;
 import java.util.Queue;
@@ -62,7 +63,7 @@ import java.util.function.Function;
  * @version 1.0
  * @since 1.0
  */
-public class RereFloatMatrix implements IFloatMatrix {
+public class RereFloatMatrix implements IFloatMatrix,Serializable {
 
     /**
      * 矩阵数据存储数组 / Matrix data storage array
@@ -2296,8 +2297,13 @@ public class RereFloatMatrix implements IFloatMatrix {
     @Override
     public IVector<Float> mmul(IVector<Float> other) {
         var m2 = other.asColumnMatrix();
-        var res = this.computer.mmul(data, m2.toFloatArray())[0];
-        return IFloatVector.of(res);
+        var res = this.computer.mmul(data, m2.toFloatArray());
+        // Extract the column vector from the result matrix
+        float[] resultVector = new float[res.length];
+        for (int i = 0; i < res.length; i++) {
+            resultVector[i] = res[i][0];
+        }
+        return IFloatVector.of(resultVector);
     }
 
     @Override

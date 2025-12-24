@@ -4,6 +4,7 @@ import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.util.StringUtils;
 import com.yishape.lab.math.compute.IDoubleVectorComputer;
+import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -69,7 +70,7 @@ import java.util.function.Function;
  * @version 1.0
  * @since 1.0
  */
-public class RereDoubleVector implements IDoubleVector {
+public class RereDoubleVector implements IDoubleVector,Serializable {
 
     private final IDoubleVectorComputer computer = new DoubleVectorComputer();
 

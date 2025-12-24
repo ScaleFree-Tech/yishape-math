@@ -1,5 +1,7 @@
 package com.yishape.lab.math.ml.cls.tree;
 
+import java.io.Serializable;
+
 /**
  * 决策树节点类
  * <p>
@@ -10,7 +12,7 @@ package com.yishape.lab.math.ml.cls.tree;
  * @version 1.0
  * @since 1.0
  */
-public class XGTreeNode {
+public class XGTreeNode  implements Serializable{
     
     /** 分裂特征索引 */
     private int featureIndex;

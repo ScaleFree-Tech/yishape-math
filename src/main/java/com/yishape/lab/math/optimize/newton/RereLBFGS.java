@@ -1,6 +1,7 @@
 package com.yishape.lab.math.optimize.newton;
 
-import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.IGradientFunction;
@@ -9,9 +10,10 @@ import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.RereLineSearch;
 import com.yishape.lab.math.util.Precision;
+import java.util.ArrayList;
 
 /**
- * LBFGS优化器
+ * LBFGS优化器（性能优化版）
  * <p>
  * LBFGS（Limited-memory Broyden-Fletcher-Goldfarb-Shanno）是一种拟牛顿法优化算法，
  * 用于解决无约束非线性优化问题。该算法通过使用有限的历史信息来近似Hessian矩阵的逆，
@@ -23,12 +25,12 @@ import com.yishape.lab.math.util.Precision;
  * of the Hessian matrix using limited historical information, featuring low memory usage and fast convergence.
  * </p>
  * 
- * <h3>算法特点 / Algorithm Features:</h3>
+ * <h3>性能优化 / Performance Optimizations:</h3>
  * <ul>
- *   <li>内存友好：只存储有限的历史信息 / Memory-friendly: stores only limited historical information</li>
- *   <li>超线性收敛：在接近最优解时收敛速度很快 / Superlinear convergence: fast convergence near optimal solution</li>
- *   <li>无需计算Hessian矩阵：只需要目标函数和梯度 / No Hessian computation: only requires objective function and gradient</li>
- *   <li>适用于大规模问题：内存使用量与问题维度线性相关 / Suitable for large-scale problems: memory usage linear in problem dimension</li>
+ *   <li>使用循环缓冲区存储历史信息，O(1)插入和删除</li>
+ *   <li>缓存梯度范数和方向导数，避免重复计算</li>
+ *   <li>预计算并缓存gamma值</li>
+ *   <li>减少不必要的向量复制</li>
  * </ul>
  * 
  * @author lteb2
@@ -40,6 +42,10 @@ public class RereLBFGS implements IOptimizer{
     private double tolerance = 1e-6;       // 收敛容差 / Convergence tolerance
     private int maxIterations = 1000;      // 最大迭代次数 / Maximum iterations
 
+    // 缓存变量 / Cached variables
+    private double cachedGradNorm = 0;     // 缓存的梯度范数 / Cached gradient norm
+    private double cachedDirectionalDerivative = 0; // 缓存的方向导数 / Cached directional derivative
+    private double cachedGamma = 1.0;      // 缓存的gamma值 / Cached gamma value
     
     /**
      * 构造函数，使用默认参数 / Constructor with default parameters
@@ -66,11 +72,10 @@ public class RereLBFGS implements IOptimizer{
      * 使用LBFGS算法进行无约束优化：
      * 1. 初始化：设置初始点和参数
      * 2. 迭代过程：
-     *    a) 计算梯度
-     *    b) 检查收敛条件
-     *    c) 使用两循环递归计算搜索方向
-     *    d) 线搜索确定步长
-     *    e) 更新参数和历史信息
+     *    a) 使用缓存的梯度范数检查收敛条件
+     *    b) 使用两循环递归计算搜索方向（使用缓存的gamma）
+     *    c) 线搜索确定步长（传递方向导数以避免重复计算）
+     *    d) 更新参数和历史信息
      * 3. 返回最优解
      * </p>
      * 
@@ -98,21 +103,21 @@ public class RereLBFGS implements IOptimizer{
         
         // 初始化变量 / Initialize variables
         IVector x = initX.copy();  // 当前点 / Current point
-        IVector initialPoint = initX.copy(); // 保存初始点 / Save initial point
         int n = x.length();       // 问题维度 / Problem dimension
         
         // 计算初始函数值 / Compute initial function value
         double initialValue = objFun.computeObjective(x);
         
-        // 历史信息存储 / History information storage
-        List<IVector> s_history = new ArrayList<>();  // 位置差向量历史 / Position difference history
-        List<IVector> y_history = new ArrayList<>();  // 梯度差向量历史 / Gradient difference history
-        List<Double> rho_history = new ArrayList<>(); // ρ值历史 / Rho value history
+        // 使用循环缓冲区存储历史信息（O(1)插入删除）/ Use circular buffer for history (O(1) insert/delete)
+        LinkedList<IVector> s_history = new LinkedList<>();  // 位置差向量历史 / Position difference history
+        LinkedList<IVector> y_history = new LinkedList<>();  // 梯度差向量历史 / Gradient difference history
+        LinkedList<Double> rho_history = new LinkedList<>(); // ρ值历史 / Rho value history
+        LinkedList<Double> gamma_history = new LinkedList<>(); // gamma值历史 / Gamma value history
         
         // 收敛历史记录 / Convergence history tracking
-        List<Double> functionValueHistory = new ArrayList<>();
-        List<Double> gradientNormHistory = new ArrayList<>();
-        List<IVector> parameterHistory = new ArrayList<>();
+        List<Double> functionValueHistory = new ArrayList<>(Math.min(maxIterations, 100));
+        List<Double> gradientNormHistory = new ArrayList<>(Math.min(maxIterations, 100));
+        List<IVector> parameterHistory = new ArrayList<>(Math.min(maxIterations, 100));
         
         // 评估计数 / Evaluation counters
         int functionEvaluations = 1; // 初始函数值计算 / Initial function evaluation
@@ -121,8 +126,10 @@ public class RereLBFGS implements IOptimizer{
         // 计算初始梯度 / Compute initial gradient
         IVector grad = grdFun.computeGradient(x);
         gradientEvaluations++;
-        double initialGradNorm = (Double) grad.norm2();
-        double finalGradientNorm = initialGradNorm;
+        
+        // 缓存初始梯度范数 / Cache initial gradient norm
+        cachedGradNorm = (Double) grad.norm2();
+        double initialGradNorm = cachedGradNorm;
         
         // 添加初始历史记录 / Add initial history records
         functionValueHistory.add(initialValue);
@@ -143,16 +150,20 @@ public class RereLBFGS implements IOptimizer{
         int stagnationCounter = 0;
         int maxStagnationIterations = 10;
         
+        // 当前函数值（避免重复计算）/ Current function value (avoid recomputation)
+        double currentValue = initialValue;
+        
+        // 缓存方向导数 / Cache directional derivative
+        cachedDirectionalDerivative = 0;
+        
         // 主迭代循环 / Main iteration loop
         for (int iter = 0; iter < maxIterations; iter++) {
             actualIterations = iter + 1;
             
-            // 检查收敛条件：梯度范数足够小 / Check convergence: gradient norm is small enough
-            double gradNorm = (Double) grad.norm2();
-            finalGradientNorm = gradNorm;
+            // 使用缓存的梯度范数 / Use cached gradient norm
+            double gradNorm = cachedGradNorm;
             
-            // 更新最佳解 / Update best solution
-            double currentValue = objFun.computeObjective(x);
+            // 更新最佳解（只在改善时更新）/ Update best solution (only when improved)
             if (currentValue < bestValue) {
                 bestX = x.copy();
                 bestValue = currentValue;
@@ -164,18 +175,18 @@ public class RereLBFGS implements IOptimizer{
             if (Precision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
                 converged = true;
                 convergenceReason = "Gradient norm below tolerance";
-                double optimalValue = objFun.computeObjective(x);
-                functionEvaluations++;
+                
+                // 复用当前函数值，不重新计算 / Reuse current function value, don't recompute
                 
                 // 构建丰富的OptResult / Build rich OptResult
-                OptResult.Builder builder = new OptResult.Builder(optimalValue, x)
-                    .initialPoint(initialPoint)
+                OptResult.Builder builder = new OptResult.Builder(currentValue, x)
+                    .initialPoint(initX)
                     .initialValue(initialValue)
                     .converged(converged)
                     .convergenceReason(convergenceReason)
                     .iterations(actualIterations)
                     .maxIterations(maxIterations)
-                    .finalGradientNorm(finalGradientNorm)
+                    .finalGradientNorm(gradNorm)
                     .tolerance(tolerance)
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .functionEvaluations(functionEvaluations)
@@ -197,9 +208,8 @@ public class RereLBFGS implements IOptimizer{
                         converged = true;
                         convergenceReason = "Stagnation detected";
                         // 使用最佳解 / Use best solution
-                        functionEvaluations++;
                         OptResult.Builder builder = new OptResult.Builder(bestValue, bestX)
-                            .initialPoint(initialPoint)
+                            .initialPoint(initX)
                             .initialValue(initialValue)
                             .converged(converged)
                             .convergenceReason(convergenceReason)
@@ -222,11 +232,15 @@ public class RereLBFGS implements IOptimizer{
             }
             previousValue = currentValue;
             
-            // 计算搜索方向：使用两循环递归 / Compute search direction: two-loop recursion
-            IVector direction = computeSearchDirection(grad, s_history, y_history, rho_history);
+            // 计算搜索方向：使用两循环递归（传递缓存的gamma）/ Compute search direction: two-loop recursion (pass cached gamma)
+            IVector direction = computeSearchDirection(grad, s_history, y_history, rho_history, gamma_history);
             
-            // 线搜索确定步长 / Line search to determine step size
-            double stepSize = new RereLineSearch().search(x, direction, objFun, grdFun, grad);
+            // 计算并缓存方向导数 / Compute and cache directional derivative
+            cachedDirectionalDerivative = (Double) grad.innerProduct(direction);
+            
+            // 线搜索确定步长（传递方向导数）/ Line search to determine step size (pass directional derivative)
+            double stepSize = new RereLineSearch().searchWithCachedDerivative(
+                x, direction, objFun, grdFun, grad, cachedDirectionalDerivative);
             
             // 更新位置 / Update position
             IVector newX = x.add(direction.multiplyScalar(stepSize));
@@ -234,26 +248,31 @@ public class RereLBFGS implements IOptimizer{
             gradientEvaluations++;
             
             // 计算新函数值并记录 / Compute new function value and record
-            double newValue = objFun.computeObjective(newX);
+            newValue = objFun.computeObjective(newX);
             functionEvaluations++;
+            
+            // 缓存新梯度范数 / Cache new gradient norm
+            double newGradNorm = (Double) newGrad.norm2();
+            cachedGradNorm = newGradNorm;
+            
             functionValueHistory.add(newValue);
-            gradientNormHistory.add((Double) newGrad.norm2());
+            gradientNormHistory.add(newGradNorm);
             parameterHistory.add(newX.copy());
             
-            // 更新历史信息 / Update history information
-            updateHistory(x, newX, grad, newGrad, s_history, y_history, rho_history);
+            // 更新历史信息（包含gamma计算）/ Update history information (including gamma computation)
+            updateHistory(x, newX, grad, newGrad, s_history, y_history, rho_history, gamma_history);
             
             // 更新当前点和梯度 / Update current point and gradient
             x = newX;
             grad = newGrad;
+            currentValue = newValue;
         }
         
         // 达到最大迭代次数，返回找到的最佳解 / Maximum iterations reached, return best solution found
-        functionEvaluations++;
         
         // 构建丰富的OptResult / Build rich OptResult
         OptResult.Builder builder = new OptResult.Builder(bestValue, bestX)
-            .initialPoint(initialPoint)
+            .initialPoint(initX)
             .initialValue(initialValue)
             .converged(converged)
             .convergenceReason(convergenceReason)
@@ -271,23 +290,28 @@ public class RereLBFGS implements IOptimizer{
         return builder.build();
     }
     
+    // 新函数值变量（避免重复计算）/ New function value variable (avoid recomputation)
+    private double newValue;
+    
     /**
-     * 计算LBFGS搜索方向
+     * 计算LBFGS搜索方向（优化版）
      * <p>
      * 使用两循环递归算法计算搜索方向：
      * 1. 第一个循环：从最新到最旧的历史信息，向后递归
      * 2. 第二个循环：从最旧到最新的历史信息，向前递归
-     * 3. 使用初始Hessian近似（单位矩阵的标量倍数）
+     * 3. 使用缓存的gamma值进行Hessian近似
      * </p>
      * 
      * @param grad 当前梯度 / Current gradient
      * @param s_history 位置差历史 / Position difference history
      * @param y_history 梯度差历史 / Gradient difference history  
      * @param rho_history ρ值历史 / Rho value history
+     * @param gamma_history gamma值历史 / Gamma value history
      * @return 搜索方向 / Search direction
      */
-    private IVector computeSearchDirection(IVector grad, List<IVector> s_history, 
-                                        List<IVector> y_history, List<Double> rho_history) {
+    private IVector computeSearchDirection(IVector grad, LinkedList<IVector> s_history,
+                                         LinkedList<IVector> y_history, LinkedList<Double> rho_history,
+                                         LinkedList<Double> gamma_history) {
         
         IVector q = grad.copy();
         int historySize = s_history.size();
@@ -299,8 +323,8 @@ public class RereLBFGS implements IOptimizer{
             q = q.sub(y_history.get(i).multiplyScalar(alpha[i]));
         }
         
-        // 应用初始Hessian近似 / Apply initial Hessian approximation
-        IVector r = applyInitialHessianApproximation(q, s_history, y_history);
+        // 应用初始Hessian近似（使用缓存的gamma或计算新的gamma）/ Apply initial Hessian approximation (use cached gamma or compute new)
+        IVector r = applyInitialHessianApproximationOptimized(q, s_history, y_history, gamma_history);
         
         // 第二个循环：向前递归 / Second loop: forward recursion
         for (int i = 0; i < historySize; i++) {
@@ -310,6 +334,37 @@ public class RereLBFGS implements IOptimizer{
         
         // Return the negative direction (descent direction)
         return r.multiplyScalar(-1.0);
+    }
+    
+    /**
+     * 应用初始Hessian矩阵近似（优化版）
+     * <p>
+     * 使用缓存的gamma值，只在必要时重新计算。
+     * </p>
+     * 
+     * @param q 输入向量 / Input vector
+     * @param s_history 位置差历史 / Position difference history
+     * @param y_history 梯度差历史 / Gradient difference history
+     * @param gamma_history gamma值历史 / Gamma value history
+     * @return 应用初始Hessian近似后的向量 / IVector after applying initial Hessian approximation
+     */
+    private IVector applyInitialHessianApproximationOptimized(IVector q, LinkedList<IVector> s_history,
+                                                               LinkedList<IVector> y_history, LinkedList<Double> gamma_history) {
+        if (s_history.isEmpty()) {
+            // 如果没有历史信息，使用单位矩阵 / If no history, use identity matrix
+            return q;
+        }
+        
+        // 检查是否有缓存的gamma / Check for cached gamma
+        int historySize = s_history.size();
+        if (!gamma_history.isEmpty()) {
+            // 使用缓存的gamma / Use cached gamma
+            double gamma = gamma_history.getLast();
+            return q.multiplyScalar(gamma);
+        }
+        
+        // 计算新的gamma / Compute new gamma
+        return applyInitialHessianApproximation(q, s_history, y_history);
     }
     
     /**
@@ -325,7 +380,7 @@ public class RereLBFGS implements IOptimizer{
      * @param y_history 梯度差历史 / Gradient difference history
      * @return 应用初始Hessian近似后的向量 / IVector after applying initial Hessian approximation
      */
-    private IVector applyInitialHessianApproximation(IVector q, List<IVector> s_history, List<IVector> y_history) {
+    private IVector applyInitialHessianApproximation(IVector q, LinkedList<IVector> s_history, LinkedList<IVector> y_history) {
         if (s_history.isEmpty()) {
             // 如果没有历史信息，使用单位矩阵 / If no history, use identity matrix
             return q;
@@ -346,17 +401,21 @@ public class RereLBFGS implements IOptimizer{
         // 确保gamma为正值以保持正定性 / Ensure gamma is positive to maintain positive definiteness
         gamma = Math.max(gamma, 1e-12);
         
+        // 缓存gamma值 / Cache gamma value
+        cachedGamma = gamma;
+        
         return q.multiplyScalar(gamma);
     }
     
     
     /**
-     * 更新LBFGS历史信息
+     * 更新LBFGS历史信息（优化版）
      * <p>
      * 更新存储的历史信息，包括：
      * 1. 位置差向量：s_k = x_{k+1} - x_k
      * 2. 梯度差向量：y_k = ∇f(x_{k+1}) - ∇f(x_k)
      * 3. ρ值：ρ_k = 1 / (y_k^T * s_k)
+     * 4. gamma值：γ_k = (s_k^T * y_k) / (y_k^T * y_k)
      * 
      * 如果存储的历史信息超过限制m，则删除最旧的信息。
      * </p>
@@ -368,9 +427,11 @@ public class RereLBFGS implements IOptimizer{
      * @param s_history 位置差历史 / Position difference history
      * @param y_history 梯度差历史 / Gradient difference history
      * @param rho_history ρ值历史 / Rho value history
+     * @param gamma_history gamma值历史 / Gamma value history
      */
     private void updateHistory(IVector oldX, IVector newX, IVector oldGrad, IVector newGrad,
-                             List<IVector> s_history, List<IVector> y_history, List<Double> rho_history) {
+                              LinkedList<IVector> s_history, LinkedList<IVector> y_history,
+                              LinkedList<Double> rho_history, LinkedList<Double> gamma_history) {
         
         // 计算位置差和梯度差 / Compute position and gradient differences
         IVector s_k = newX.sub(oldX);
@@ -383,16 +444,23 @@ public class RereLBFGS implements IOptimizer{
         if (Precision.compareTo(sTy, 1e-10, tolerance) > 0) {
             double rho_k = 1.0 / sTy;
             
-            // 添加新的历史信息 / Add new history information
-            s_history.add(s_k);
-            y_history.add(y_k);
-            rho_history.add(rho_k);
+            // 计算并存储gamma值 / Compute and store gamma value
+            double yTy = (Double) y_k.innerProduct(y_k);
+            double gamma_k = (yTy > 1e-12) ? (sTy / yTy) : 1.0;
+            gamma_k = Math.max(gamma_k, 1e-12);
             
-            // 如果超过存储限制，删除最旧的信息 / If exceeds storage limit, remove oldest information
+            // 添加新的历史信息 / Add new history information
+            s_history.addLast(s_k);
+            y_history.addLast(y_k);
+            rho_history.addLast(rho_k);
+            gamma_history.addLast(gamma_k);
+
+            // 如果超过存储限制，删除最旧的信息（O(1)操作）/ If exceeds storage limit, remove oldest information (O(1) operation)
             if (s_history.size() > m) {
-                s_history.remove(0);
-                y_history.remove(0);
-                rho_history.remove(0);
+                s_history.removeFirst();
+                y_history.removeFirst();
+                rho_history.removeFirst();
+                gamma_history.removeFirst();
             }
         }
         // If curvature condition is not satisfied, we simply don't update the history

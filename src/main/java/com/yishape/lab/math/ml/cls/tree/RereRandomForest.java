@@ -231,6 +231,14 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         
         return predictions;
     }
+
+    @Override
+    public String[] predictBatch(IMatrix features) {
+        return predict(features);
+    }
+    
+    
+    
     
     /**
      * 预测概率分布

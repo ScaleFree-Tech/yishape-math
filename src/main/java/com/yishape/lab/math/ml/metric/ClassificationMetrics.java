@@ -1,6 +1,7 @@
 package com.yishape.lab.math.ml.metric;
 
 import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.ml.cls.RereLogisticRegression;
 
 import java.util.*;
 
@@ -137,6 +138,66 @@ public class ClassificationMetrics {
         
         return new Builder(yTrue, yPred, yProb).build();
     }
+    
+    /**
+     * 基于批量预测结果计算各种指标
+     * 自动根据BatchPredictionResult中的值判断是二分类还是多分类，并决定是否包含概率信息
+     *
+     * @param yTrue 真实标签数组
+     * @param prdResults 批量预测结果对象
+     * @return 评估指标对象
+     */
+    public static ClassificationMetrics compute(String[] yTrue, RereLogisticRegression.BatchPredictionResult prdResults) {
+        if (yTrue == null || prdResults == null) {
+            throw new IllegalArgumentException("真实标签和批量预测结果不能为空");
+        }
+        
+        String[] predictions = prdResults.getPredictions();
+        
+        if (yTrue.length != predictions.length) {
+            throw new IllegalArgumentException("真实标签和预测结果的长度必须一致");
+        }
+        
+        // 检查是否为二分类
+        if (prdResults.isBinaryClassification()) {
+            // 二分类情况
+            double[] probabilities = prdResults.getProbabilities();
+            
+            // 检查是否有概率信息
+            if (probabilities != null && probabilities.length == predictions.length) {
+                // 有概率信息，使用带概率的compute方法
+                return compute(yTrue, predictions, probabilities);
+            } else {
+                // 没有概率信息，使用不带概率的compute方法
+                return compute(yTrue, predictions);
+            }
+        } else {
+            // 多分类情况
+            double[][] classProbabilities = prdResults.getClassProbabilities();
+            
+            // 多分类情况下，如果有概率信息，需要提取正类概率（通常为最大概率）
+            if (classProbabilities != null && classProbabilities.length == predictions.length) {
+                // 对于多分类，通常使用最大概率作为"正类"概率
+                double[] maxProbabilities = new double[classProbabilities.length];
+                for (int i = 0; i < classProbabilities.length; i++) {
+                    double maxProb = 0.0;
+                    for (double prob : classProbabilities[i]) {
+                        if (prob > maxProb) {
+                            maxProb = prob;
+                        }
+                    }
+                    maxProbabilities[i] = maxProb;
+                }
+                
+                // 使用带概率的compute方法
+                return compute(yTrue, predictions, maxProbabilities);
+            } else {
+                // 没有概率信息，使用不带概率的compute方法
+                return compute(yTrue, predictions);
+            }
+        }
+    }
+    
     
     // ==================== Getter方法 ====================
     
@@ -352,9 +413,18 @@ public class ClassificationMetrics {
     
     @Override
     public String toString() {
-        return String.format("ClassificationMetrics{accuracy=%.4f, macroF1=%.4f, weightedF1=%.4f%s}",
-                accuracy, macroF1, weightedF1, isBinaryClassification() && auc >= 0 ? 
-                String.format(", auc=%.4f", auc) : "");
+        if (isBinaryClassification()) {
+            if (auc >= 0) {
+                return String.format("ClassificationMetrics{accuracy=%.4f, macroF1=%.4f, weightedF1=%.4f, auc=%.4f}",
+                        accuracy, macroF1, weightedF1, auc);
+            } else {
+                return String.format("ClassificationMetrics{accuracy=%.4f, macroF1=%.4f, weightedF1=%.4f, auc=N/A}",
+                        accuracy, macroF1, weightedF1);
+            }
+        } else {
+            return String.format("ClassificationMetrics{accuracy=%.4f, macroF1=%.4f, weightedF1=%.4f}",
+                    accuracy, macroF1, weightedF1);
+        }
     }
     
     // ==================== Builder模式 ====================
@@ -581,14 +651,21 @@ public class ClassificationMetrics {
                 labels.add(yTrue[i].equals(positiveLabel) ? 1 : 0);
             }
             
-            // 按概率降序排序
+            // 按概率降序排序，相同概率时保持稳定性
             List<Integer> sortedIndices = new ArrayList<>();
             for (int i = 0; i < probabilities.size(); i++) {
                 sortedIndices.add(i);
             }
-            sortedIndices.sort((i, j) -> Double.compare(probabilities.get(j), probabilities.get(i)));
+            sortedIndices.sort((i, j) -> {
+                int cmp = Double.compare(probabilities.get(j), probabilities.get(i));
+                if (cmp == 0) {
+                    // 相同概率时保持原始顺序
+                    return Integer.compare(i, j);
+                }
+                return cmp;
+            });
             
-            // 计算AUC
+            // 计算AUC (使用梯形法则)
             int tp = 0, fp = 0;
             int posCount = 0, negCount = 0;
             
@@ -597,18 +674,27 @@ public class ClassificationMetrics {
                 else negCount++;
             }
             
-            auc = 0.0;
+            double auc = 0.0;
+            int previousTP = 0;
+            
             for (int idx : sortedIndices) {
                 if (labels.get(idx) == 1) {
                     tp++;
                 } else {
                     fp++;
-                    auc += tp; // 每个负样本之前的正样本数量
+                    // 使用梯形法则计算面积
+                    double currentTPR = (double) tp / posCount;
+                    double previousTPR = (double) previousTP / posCount;
+                    double deltaFPR = 1.0 / negCount;
+                    auc += (previousTPR + currentTPR) * deltaFPR / 2;
+                    previousTP = tp;
                 }
             }
             
             if (posCount * negCount > 0) {
-                auc = auc / (posCount * negCount);
+                this.auc = auc;
+            } else {
+                this.auc = -1.0;
             }
             
             // 保存AUC计算所需的数据

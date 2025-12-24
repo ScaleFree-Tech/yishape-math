@@ -1,6 +1,6 @@
 # YiShape-Math 易形数学
 
-[![Java](https://img.shields.io/badge/Java-25+-blue.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-0.3.0-blue.svg)]()
 
@@ -86,7 +86,7 @@
 ## 快速开始 / Quick Start
 
 ### 环境要求 / Requirements
-- Java 25 或更高版本 / Java 25 or higher
+- Java 21 或更高版本 / Java 21 or higher
 - Maven 3.6+ / Maven 3.6+
 
 ### 安装依赖 / Installation

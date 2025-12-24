@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.yishape.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.7</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,25 +24,25 @@
     
     <dependencies>
         <!-- Support for OpenCL GPUs -->
+        <!--
         <dependency>
             <groupId>com.aparapi</groupId>
             <artifactId>aparapi</artifactId>
             <version>3.0.2</version>
             <optional>true</optional>
         </dependency>
+        -->
         <!-- Support for CSV files reading -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.10.0</version>
-            <optional>true</optional>
         </dependency>
         <!-- Support for ECharts.js plotting -->
         <dependency>
             <groupId>org.icepear.echarts</groupId>
             <artifactId>echarts-java</artifactId>
             <version>1.1.0</version>
-            <optional>true</optional>
         </dependency>
         
         <!-- Support for MP3 decoding -->
@@ -50,7 +50,6 @@
             <groupId>javazoom</groupId>
             <artifactId>jlayer</artifactId>
             <version>1.0.1</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.googlecode.soundlibs</groupId>
@@ -62,7 +61,6 @@
             <groupId>org.jcraft</groupId>
             <artifactId>jorbis</artifactId>
             <version>0.0.17</version>
-            <optional>true</optional>
         </dependency>
         
         <!--主要用于初期测试自研求解器求解的正确性，性能稳定后将删除依赖-->

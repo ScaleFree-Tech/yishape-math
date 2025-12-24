@@ -1,12 +1,13 @@
 package com.yishape.lab.math.optimize;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 /**
  * 各种最优化求解器的通用接口
  * @author lteb2
  */
-public interface IOptimizer {
+public interface IOptimizer extends Serializable{
     
     /**
      * 根据提供的初始点、目标函数计算方法、梯度计算方法，求解数学最优化问题

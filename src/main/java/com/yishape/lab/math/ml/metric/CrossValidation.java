@@ -426,20 +426,16 @@ public class CrossValidation {
             
             // 进行预测
             String[] predictions = new String[testX.getRowNum()];
-            double[] probabilities = new double[testX.getRowNum()];
-            
+
             for (int i = 0; i < testX.getRowNum(); i++) {
                 IVector<Double> row = testX.getRow(i);
                 predictions[i] = classifier.predict(row);
-                // 如果分类器有概率预测能力，这里需要根据具体分类器实现
-                // 简化示例：假设正类概率为0.5
-                probabilities[i] = 0.5;
             }
-            
+
             long predEndTime = System.currentTimeMillis();
-            
-            // 计算评估指标
-            ClassificationMetrics metrics = ClassificationMetrics.compute(testY, predictions, probabilities);
+
+            // 计算评估指标 (不使用概率，避免硬编码)
+            ClassificationMetrics metrics = ClassificationMetrics.compute(testY, predictions);
             
             accuracyScores.add(metrics.getAccuracy());
             f1Scores.add(metrics.getWeightedF1());
@@ -473,30 +469,37 @@ public class CrossValidation {
      * 创建K折分割
      */
     private static List<IndexPair>[] createKFoldSplits(int nSamples, int k) {
+        return createKFoldSplits(nSamples, k, new Random(42)); // 使用固定种子确保可重现
+    }
+
+    /**
+     * 创建K折分割 (带随机种子)
+     */
+    private static List<IndexPair>[] createKFoldSplits(int nSamples, int k, Random random) {
         List<IndexPair>[] splits = new ArrayList[k];
-        
+
         // 创建索引数组
         int[] indices = new int[nSamples];
         for (int i = 0; i < nSamples; i++) {
             indices[i] = i;
         }
-        
-        // 简单随机打乱 (这里可以改进为更复杂的随机算法)
-        shuffleArray(indices);
-        
+
+        // 随机打乱
+        shuffleArray(indices, random);
+
         int foldSize = nSamples / k;
         int remainder = nSamples % k;
-        
+
         for (int i = 0; i < k; i++) {
             List<IndexPair> splitList = new ArrayList<>();
-            
+
             int startIdx = i * foldSize + Math.min(i, remainder);
             int endIdx = (i + 1) * foldSize + Math.min(i + 1, remainder);
-            
+
             // 当前折的测试集
             int[] testIndices = new int[endIdx - startIdx];
             System.arraycopy(indices, startIdx, testIndices, 0, testIndices.length);
-            
+
             // 其余作为训练集
             int[] trainIndices = new int[nSamples - testIndices.length];
             int trainIdx = 0;
@@ -505,11 +508,11 @@ public class CrossValidation {
                     trainIndices[trainIdx++] = indices[j];
                 }
             }
-            
+
             splitList.add(new IndexPair(trainIndices, testIndices));
             splits[i] = splitList;
         }
-        
+
         return splits;
     }
     
@@ -517,48 +520,59 @@ public class CrossValidation {
      * 创建分层K折分割
      */
     private static List<IndexPair>[] createStratifiedKFoldSplits(String[] y, int k) {
+        return createStratifiedKFoldSplits(y, k, new Random(42)); // 使用固定种子确保可重现
+    }
+
+    /**
+     * 创建分层K折分割 (带随机种子)
+     */
+    private static List<IndexPair>[] createStratifiedKFoldSplits(String[] y, int k, Random random) {
         // 按类别分组
         Map<String, List<Integer>> classIndices = new HashMap<>();
         for (int i = 0; i < y.length; i++) {
             classIndices.computeIfAbsent(y[i], key -> new ArrayList<>()).add(i);
         }
-        
+
         List<IndexPair>[] splits = new ArrayList[k];
-        
+
         for (int fold = 0; fold < k; fold++) {
             List<IndexPair> splitList = new ArrayList<>();
             List<Integer> trainIndices = new ArrayList<>();
             List<Integer> testIndices = new ArrayList<>();
-            
+
             // 对每个类别进行分层分割
             for (List<Integer> indices : classIndices.values()) {
-                int classSize = indices.size();
+                // 随机打乱该类别的索引
+                List<Integer> shuffledIndices = new ArrayList<>(indices);
+                Collections.shuffle(shuffledIndices, random);
+
+                int classSize = shuffledIndices.size();
                 int foldSize = classSize / k;
                 int remainder = classSize % k;
-                
+
                 int startIdx = fold * foldSize + Math.min(fold, remainder);
                 int endIdx = (fold + 1) * foldSize + Math.min(fold + 1, remainder);
-                
+
                 // 当前折的测试集
                 for (int i = startIdx; i < endIdx && i < classSize; i++) {
-                    testIndices.add(indices.get(i));
+                    testIndices.add(shuffledIndices.get(i));
                 }
-                
+
                 // 其余作为训练集
                 for (int i = 0; i < classSize; i++) {
                     if (i < startIdx || i >= endIdx) {
-                        trainIndices.add(indices.get(i));
+                        trainIndices.add(shuffledIndices.get(i));
                     }
                 }
             }
-            
+
             splitList.add(new IndexPair(
                 trainIndices.stream().mapToInt(Integer::intValue).toArray(),
                 testIndices.stream().mapToInt(Integer::intValue).toArray()
             ));
             splits[fold] = splitList;
         }
-        
+
         return splits;
     }
     
@@ -626,17 +640,18 @@ public class CrossValidation {
     /**
      * 创建重复K折分割
      */
-    private static List<IndexPair>[] createRepeatedKFoldSplits(int nSamples, int k, 
-                                                             int nRepeats, int randomSeed) {
+    private static List<IndexPair>[] createRepeatedKFoldSplits(int nSamples, int k,
+                                                              int nRepeats, int randomSeed) {
+        Random random = new Random(randomSeed);
         List<IndexPair> allSplits = new ArrayList<>();
-        
+
         for (int repeat = 0; repeat < nRepeats; repeat++) {
-            List<IndexPair>[] kFoldSplits = createKFoldSplits(nSamples, k);
+            List<IndexPair>[] kFoldSplits = createKFoldSplits(nSamples, k, random);
             for (List<IndexPair> split : kFoldSplits) {
                 allSplits.addAll(split);
             }
         }
-        
+
         @SuppressWarnings("unchecked")
         List<IndexPair>[] result = new ArrayList[allSplits.size()];
         return allSplits.toArray(result);

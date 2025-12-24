@@ -1,6 +1,7 @@
 package com.yishape.lab.math.optimize;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 import java.util.function.BiFunction;
 
 /**
@@ -17,7 +18,7 @@ import java.util.function.BiFunction;
  * 
  * @author lteb2
  */
-public interface IOnlineOptimizer {
+public interface IOnlineOptimizer  extends Serializable{
     
     /**
      * 初始化优化器

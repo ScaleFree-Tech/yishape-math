@@ -1,12 +1,13 @@
 package com.yishape.lab.math.optimize;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 /**
  *
  * @author lteb2
  */
-public interface IGradientFunction {
+public interface IGradientFunction extends Serializable{
     
     /**
      * 计算梯度

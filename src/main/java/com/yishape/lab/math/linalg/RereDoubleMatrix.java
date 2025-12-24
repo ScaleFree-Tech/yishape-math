@@ -11,6 +11,7 @@ import com.yishape.lab.math.linalg.solver.MatrixInversionSolver;
 import com.yishape.lab.math.linalg.solver.RankSolver;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
 import com.yishape.lab.math.util.Precision;
+import java.io.Serializable;
 
 import java.util.concurrent.*;
 import java.util.Queue;
@@ -62,7 +63,7 @@ import java.util.function.Function;
  * @version 1.0
  * @since 1.0
  */
-public class RereDoubleMatrix implements IDoubleMatrix {
+public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
     /**
      * 矩阵数据存储数组 / Matrix data storage array
@@ -2291,8 +2292,13 @@ public class RereDoubleMatrix implements IDoubleMatrix {
     @Override
     public IVector<Double> mmul(IVector<Double> other) {
         var m2 = other.asColumnMatrix();
-        var res = this.computer.mmul(data, m2.toDoubleArray())[0];
-        return IDoubleVector.of(res);
+        var res = this.computer.mmul(data, m2.toDoubleArray());
+        // Extract the column vector from the result matrix
+        double[] resultVector = new double[res.length];
+        for (int i = 0; i < res.length; i++) {
+            resultVector[i] = res[i][0];
+        }
+        return IDoubleVector.of(resultVector);
     }
 
     @Override

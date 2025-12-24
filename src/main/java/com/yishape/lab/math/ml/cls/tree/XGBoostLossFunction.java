@@ -3,6 +3,7 @@ package com.yishape.lab.math.ml.cls.tree;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import java.io.Serializable;
 
 /**
  * XGBoost损失函数类
@@ -15,7 +16,7 @@ import com.yishape.lab.math.linalg.Linalg;
  * @version 1.0
  * @since 1.0
  */
-public class XGBoostLossFunction {
+public class XGBoostLossFunction  implements Serializable{
     
     /** 损失函数类型枚举 */
     public enum LossType {

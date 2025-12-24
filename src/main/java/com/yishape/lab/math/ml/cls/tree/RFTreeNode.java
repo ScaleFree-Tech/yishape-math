@@ -1,6 +1,7 @@
 package com.yishape.lab.math.ml.cls.tree;
 
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 import java.util.Map;
 
@@ -14,7 +15,7 @@ import java.util.Map;
  * @version 1.0
  * @since 1.0
  */
-public class RFTreeNode {
+public class RFTreeNode  implements Serializable{
     
     /** 特征索引（内部节点） */
     private int featureIndex;

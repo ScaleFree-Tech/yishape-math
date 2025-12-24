@@ -3,6 +3,7 @@ package com.yishape.lab.math.ml.cls.tree;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import java.io.Serializable;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -18,7 +19,7 @@ import java.util.stream.IntStream;
  * @version 1.0
  * @since 1.0
  */
-public class RFTree {
+public class RFTree  implements Serializable{
     
     /** 根节点 */
     private RFTreeNode root;

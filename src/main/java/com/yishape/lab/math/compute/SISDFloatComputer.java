@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -12,7 +13,7 @@ import java.util.concurrent.Future;
  *
  * @author lteb2
  */
-public class SISDFloatComputer implements IFloatVectorComputer {
+public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
 
     @Override
     public float[] binaryOperate(float[] x1, float[] x2, BinaryOperation operation) {

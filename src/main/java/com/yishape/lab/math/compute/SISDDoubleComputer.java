@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -12,7 +13,7 @@ import java.util.concurrent.Future;
  *
  * @author lteb2
  */
-public class SISDDoubleComputer implements IDoubleVectorComputer {
+public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
 
     @Override
     public double[] binaryOperate(double[] x1, double[] x2, BinaryOperation operation) {
@@ -22,7 +23,7 @@ public class SISDDoubleComputer implements IDoubleVectorComputer {
         }
 
         if (x1.length != x2.length) {
-            throw new IllegalArgumentException("向量长度必须相同");
+            throw new IllegalArgumentException("The length of the vector must be the same. First length: "+x1.length+", second length: "+x2.length);
         }
 
         // 创建结果数组

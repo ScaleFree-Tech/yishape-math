@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import java.io.Serializable;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
@@ -11,7 +12,7 @@ import jdk.incubator.vector.VectorSpecies;
  *
  * @author lteb2
  */
-public class SIMDFloatComputer implements IFloatVectorComputer {
+public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     
     // 性能优化常量
     private static final VectorSpecies<Float> PREFERRED_SPECIES;

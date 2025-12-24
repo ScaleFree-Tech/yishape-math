@@ -1,11 +1,13 @@
 package com.yishape.lab.math.compute;
 
+import java.io.Serializable;
+
 /**
  * 统一向量操作计算器，根据情况选择合适的计算器
  *
  * @author lteb2
  */
-public class FloatVectorComputer implements IFloatVectorComputer {
+public class FloatVectorComputer implements IFloatVectorComputer,Serializable {
 
     private static IFloatVectorComputer gpu = null;
     private static IFloatVectorComputer simd = null;
@@ -22,6 +24,7 @@ public class FloatVectorComputer implements IFloatVectorComputer {
 
     /**
      * 检查是否支持SIMD，延迟检测
+     *
      * @return
      */
     private static boolean checkIfSIMDSupported() {
@@ -34,6 +37,7 @@ public class FloatVectorComputer implements IFloatVectorComputer {
 
     /**
      * 检查是否支持GPU，延迟检测
+     *
      * @return
      */
     private static boolean checkIfGPUSupported() {
@@ -52,9 +56,14 @@ public class FloatVectorComputer implements IFloatVectorComputer {
      */
     private IFloatVectorComputer fetchComputer(long size) {
         IFloatVectorComputer computer = null;
-        if (ComputerConfig.USE_GPU&& checkIfGPUSupported()&&size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
+        if (ComputerConfig.USE_GPU && checkIfGPUSupported() && size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
             if (gpu == null) {
-                gpu = new GPUFloatComputer();
+                try {
+                    Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUFloatComputer");
+                    gpu = (IFloatVectorComputer) gpuClass.getDeclaredConstructor().newInstance();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             computer = gpu;
         } else if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {

@@ -2,6 +2,7 @@ package com.yishape.lab.math.ml.cls.tree;
 
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public class XGTree {
+public class XGTree  implements Serializable{
     
     /** 根节点 */
     private XGTreeNode root;

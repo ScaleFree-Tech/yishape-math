@@ -57,4 +57,8 @@ public class Column  implements Serializable{
     public List<String> toStringList() {
         return data.stream().map(e->e.toString()).toList();
     }
+    
+    public String[] toStringArray() {
+        return data.stream().map(e->e.toString()).toArray(String[]::new);
+    }
 }

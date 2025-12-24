@@ -301,6 +301,13 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         
         return predictions;
     }
+
+    @Override
+    public String[] predictBatch(IMatrix features) {
+        return predict(features);
+    }
+    
+    
     
     /**
      * 批量预测概率
