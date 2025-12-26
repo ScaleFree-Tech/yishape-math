@@ -751,6 +751,7 @@ If you encounter any issues while using the library, you can get help through th
 ### v0.3.7 (2025-12)
 - **Bug Fixes** / **Bug Fixes**: 修复了LU分解、T检验、逻辑斯蒂回归等方面的错误 / Bug fixes and error corrections
 - **优化运算效率提升 / Optimization Performance Improvement**:  改进了L-BFGS等算法中的缓存机制，优化效率得以提升 / The cache mechanism in optimization algorithms such as L-BFGS has been improved, leading to an enhanced optimization efficiency.
+- **暂时移除GPU支持 / Remove GPU support temporarily**:  由于GPU计算依赖的包过重，在复杂的优化算法中性能提升有限，暂时移除 / Due to the heavy dependency of GPU computing packages, the performance improvement in complex optimization algorithms is limited, and GPU support is temporarily removed.
 
 ### v0.3.0 (2025-10)
 - **SIMD (Single Instruction, Multiple Data)支持** / **SIMD Support**: 基于Java Vector API提供向量&矩阵乘法、通用函数、规约函数等方面的SIMD并行计算支持 / SIMD (Single Instruction, Multiple Data) parallel computing support based on Java Vector API
