@@ -25,7 +25,6 @@ public interface ILinProgSolver {
      */
     public OptResult solve(IVector c, IMatrix A_ub, IVector b_ub, IMatrix A_eq, IVector b_eq, IVector initX);
 
-    
     /**
      * 求解线性规划问题（处理不等式和等式约束）
      *
@@ -53,6 +52,18 @@ public interface ILinProgSolver {
         IVector initX = Linalg.ones(c.length());
         // 直接调用完整的solve方法，传入null表示没有等式约束
         return this.solve(c, A_ub, b_ub, null, null, initX);
+    }
+
+    /**
+     * 基于等式约束求解（solveWithNonNegativeEqualConstraints的快捷别名方法）
+     *
+     * @param c 目标函数系数（最小化问题）
+     * @param A_eq 等式约束矩阵系数
+     * @param b_eq 等式约束值（等式右方）
+     * @return 优化结果
+     */
+    public default OptResult solveEq(IVector c, IMatrix A_eq, IVector b_eq) {
+        return this.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
     }
 
     /**

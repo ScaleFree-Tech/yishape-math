@@ -418,8 +418,8 @@ IVector c = Linalg.vector(new double[]{2.0, 3.0});
 IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{5.0});
 
-// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solve(c, A_eq, b_eq);
+// 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
 IVector optimalSolution = result.getOptimalPoint();
@@ -448,8 +448,8 @@ solver.addIntegerVariables(0, 1);
 // 设置所有变量为二进制变量（0-1变量） / set all variables as binary variables (0-1 variables)
 //solver.setAllVariablesBinary();
 
-// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solve(c, A_eq, b_eq);
+// 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
 IVector optimalSolution = result.getOptimalPoint();

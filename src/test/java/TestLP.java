@@ -29,7 +29,7 @@ public class TestLP {
         IVector b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve
-        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveEq(c, A_eq, b_eq);
 
         double optimalValue = result.getOptimalValue();
         IVector optimalSolution = result.getOptimalPoint();

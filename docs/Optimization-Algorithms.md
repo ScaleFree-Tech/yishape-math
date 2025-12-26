@@ -749,7 +749,7 @@ IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解 / Solve
-OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
 IVector optimalSolution = result.getOptimalPoint();
@@ -788,7 +788,7 @@ IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
 IVector b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解 / Solve
-OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
 IVector optimalSolution = result.getOptimalPoint();
@@ -942,8 +942,8 @@ IVector b_eq = Linalg.vector(new double[]{3.0});
 // 设置所有变量为整数 / Set all variables as integer
 solver.addIntegerVariables(0, 1);
 
-// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+// 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
 IVector optimalSolution = result.getOptimalPoint();
@@ -972,8 +972,8 @@ solver.setIntegerVariable(0);
 solver.setVerbose(true);
 solver.setMaxIterations(1000);
 
-// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+// 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 System.out.println("混合整数解: " + result.getOptimalPoint());
 System.out.println("最优值: " + result.getOptimalValue());
@@ -1007,7 +1007,7 @@ solver.setMaxDepth(40);
 solver.setVerbose(true);
 
 // 求解 / Solve
-OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+OptResult result = solver.solveEq(c, A_eq, b_eq);
 
 System.out.println("复杂整数规划解: " + result.getOptimalPoint());
 System.out.println("最优值: " + result.getOptimalValue());
@@ -1024,7 +1024,7 @@ RereIntegerProg solver2 = new RereIntegerProg(new SimplexLinProgSolver());
 
 // 设置整数变量和求解 / Set integer variables and solve
 solver.addIntegerVariables(0, 1);
-Tuple2<Double, IVector> result = solver.solve(c, A_eq, b_eq);
+Tuple2<Double, IVector> result = solver.solveEq(c, A_eq, b_eq);
 ```
 
 ##### 0-1整数规划 / Binary Integer Programming

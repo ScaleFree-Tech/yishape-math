@@ -36,7 +36,7 @@ public class TestMIP {
 solver.setAllVariablesBinary();
 
 // 求解 / Solve
-        OptResult result = solver.solveWithNonNegativeEqualConstraints(c, A_eq, b_eq);
+        OptResult result = solver.solveEq(c, A_eq, b_eq);
 
         double optimalValue = result.getOptimalValue();
         IVector optimalSolution = result.getOptimalPoint();
