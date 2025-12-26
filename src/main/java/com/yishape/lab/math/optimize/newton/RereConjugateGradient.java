@@ -6,7 +6,7 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.RereLineSearch;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -141,7 +141,7 @@ public class RereConjugateGradient implements IOptimizer{
             // 改进的收敛检查 / Improved convergence check
             // 使用绝对和相对容差的组合 / Use combination of absolute and relative tolerance
             double convergenceThreshold = Math.max(tolerance, tolerance * Math.max(1.0, initialGradNorm));
-            if (Precision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
+            if (RerePrecision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
                 converged = true;
                 convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);
@@ -168,7 +168,7 @@ public class RereConjugateGradient implements IOptimizer{
             }
             
             // 检查是否陷入局部停滞 / Check for local stagnation
-            if (iter > 0 && Precision.compareTo(Math.abs(prevValue - objFun.computeObjective(x)), 1e-12, tolerance) < 0) {
+            if (iter > 0 && RerePrecision.compareTo(Math.abs(prevValue - objFun.computeObjective(x)), 1e-12, tolerance) < 0) {
                 // 如果函数值没有显著变化，尝试重启 / If function value hasn't changed significantly, try restart
                 direction = grad.multiplyScalar(-1.0);
                 restartCounter++;
@@ -196,7 +196,7 @@ public class RereConjugateGradient implements IOptimizer{
             parameterHistory.add(newX.copy());
             
             // 如果新点更差，尝试重启 / If new point is worse, try restart
-            if (Precision.compareTo(newValue, prevValue, tolerance) > 0 && iter > 0) {
+            if (RerePrecision.compareTo(newValue, prevValue, tolerance) > 0 && iter > 0) {
                 direction = newGrad.multiplyScalar(-1.0);
                 newX = x; // 回退到前一个点 / Revert to previous point
                 newGrad = grad;
@@ -223,14 +223,14 @@ public class RereConjugateGradient implements IOptimizer{
                 double numerator = (Double) newGrad.innerProduct(gradDiff);
                 double denominator = (Double) prevGrad.innerProduct(prevGrad);
                 
-                if (!Precision.equalsZero(denominator, 1e-12)) {
+                if (!RerePrecision.equalsZero(denominator, 1e-12)) {
                     beta = numerator / denominator;
                     // 确保β非负 / Ensure beta is non-negative
                     beta = Math.max(beta, 0.0);
                 }
                 
                 // 如果β为0或负数，强制重启 / If beta is zero or negative, force restart
-                if (Precision.compareTo(beta, 0.0, tolerance) <= 0) {
+                if (RerePrecision.compareTo(beta, 0.0, tolerance) <= 0) {
                     beta = 0.0;
                     direction = newGrad.multiplyScalar(-1.0);
                 }
@@ -248,12 +248,12 @@ public class RereConjugateGradient implements IOptimizer{
                 double gradNormNew = (Double) newGrad.norm2();
                 double directionNorm = (Double) newDirection.norm2();
                 
-                if (Precision.compareTo(gradNormNew, 1e-12, tolerance) > 0 && Precision.compareTo(directionNorm, 1e-12, tolerance) > 0) {
+                if (RerePrecision.compareTo(gradNormNew, 1e-12, tolerance) > 0 && RerePrecision.compareTo(directionNorm, 1e-12, tolerance) > 0) {
                     // 使用更合理的重启条件 / Use more reasonable restart condition
                     double cosAngle = gradDotDirection / (gradNormNew * directionNorm);
                     // 如果搜索方向不是下降方向，或者夹角余弦值小于阈值，重启搜索方向 / 
                     // If search direction is not descent direction, or cosine of angle is less than threshold, restart search direction
-                    if (cosAngle >= 0 || Precision.compareTo(cosAngle, -restartThreshold, tolerance) < 0) {
+                    if (cosAngle >= 0 || RerePrecision.compareTo(cosAngle, -restartThreshold, tolerance) < 0) {
                         newDirection = newGrad.multiplyScalar(-1.0);
                     }
                 }
@@ -263,10 +263,10 @@ public class RereConjugateGradient implements IOptimizer{
                 double gradNormNew = (Double) newGrad.norm2();
                 double directionNorm = (Double) newDirection.norm2();
                 
-                if (Precision.compareTo(gradNormNew, 1e-12, tolerance) > 0 && Precision.compareTo(directionNorm, 1e-12, tolerance) > 0) {
+                if (RerePrecision.compareTo(gradNormNew, 1e-12, tolerance) > 0 && RerePrecision.compareTo(directionNorm, 1e-12, tolerance) > 0) {
                     double cosAngle = gradDotDirection / (gradNormNew * directionNorm);
                     // 如果夹角余弦值小于阈值，重启搜索方向 / If cosine of angle is less than threshold, restart search direction
-                    if (Precision.compareTo(cosAngle, restartThreshold, tolerance) < 0) {
+                    if (RerePrecision.compareTo(cosAngle, restartThreshold, tolerance) < 0) {
                         newDirection = newGrad.multiplyScalar(-1.0);
                     }
                 }

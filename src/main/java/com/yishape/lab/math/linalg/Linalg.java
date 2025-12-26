@@ -506,7 +506,7 @@ public class Linalg {
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> vector(double[] data) {
+    public static <T extends Double> IVector<T> vector(double[] data) {
         return IVector.of(data);
     }
 
@@ -524,7 +524,7 @@ public class Linalg {
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(Double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> vector(Double[] data) {
+    public static <T extends Double> IVector<T> vector(Double[] data) {
         return IVector.of(data);
     }
 
@@ -542,7 +542,7 @@ public class Linalg {
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> vector(float[] data) {
+    public static <T extends Float> IVector<T> vector(float[] data) {
         return IVector.of(data);
     }
 
@@ -560,7 +560,7 @@ public class Linalg {
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(Float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> vector(Float[] data) {
+    public static <T extends Float> IVector<T> vector(Float[] data) {
         return IVector.of(data);
     }
 

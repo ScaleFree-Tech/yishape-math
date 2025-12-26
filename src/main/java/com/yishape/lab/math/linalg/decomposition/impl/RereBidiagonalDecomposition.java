@@ -6,7 +6,7 @@ import com.yishape.lab.math.linalg.decomposition.IBidiagonalDecomposition;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.BidiagonalDecompositionSolver;
 import com.yishape.lab.util.Tuple3;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Bidiagonal decomposition implementation with enhanced numerical stability.
@@ -289,7 +289,7 @@ public class RereBidiagonalDecomposition implements IBidiagonalDecomposition {
         // Ensure bidiagonal form: clean numerical errors
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                if (j != i && j != i + 1 && Precision.equalsZero(A[i][j], epsilon)) {
+                if (j != i && j != i + 1 && RerePrecision.equalsZero(A[i][j], epsilon)) {
                     A[i][j] = 0.0;
                 }
             }

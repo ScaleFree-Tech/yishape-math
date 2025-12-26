@@ -8,13 +8,22 @@ import com.yishape.lab.math.linalg.Linalg;
  * Solver for LU decomposition algorithms with partial pivoting.
  */
 public class LUDecompositionSolver implements IDecompositionSolver {
-    /** Entries of LU decomposition. */
+
+    /**
+     * Entries of LU decomposition.
+     */
     private final double[][] lu;
-    /** Pivot permutation associated with LU decomposition. */
+    /**
+     * Pivot permutation associated with LU decomposition.
+     */
     private final int[] pivot;
-    /** Singularity indicator. */
+    /**
+     * Singularity indicator.
+     */
     private final boolean singular;
-    /** Parity of the permutation. */
+    /**
+     * Parity of the permutation.
+     */
     private final boolean even;
 
     /**
@@ -32,13 +41,17 @@ public class LUDecompositionSolver implements IDecompositionSolver {
         this.even = even;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isNonSingular() {
         return !singular;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public IVector<Double> solve(IVector<Double> b) {
         final int m = pivot.length;
@@ -49,119 +62,92 @@ public class LUDecompositionSolver implements IDecompositionSolver {
             throw new RuntimeException("Matrix is singular");
         }
 
-        // Convert IVector to double array using toDoubleArray method
-        double[] bp = b.toDoubleArray();
+        // Convert IVector to column matrix and delegate to matrix solve method
+        IMatrix<Double> bMatrix = Linalg.matrix(new double[][]{b.toDoubleArray()}).t();
+        IMatrix<Double> solution = solve(bMatrix);
 
-        // Apply permutations to b using permutation vector
-        double[] x = new double[m];
-        for (int row = 0; row < m; row++) {
-            x[row] = bp[pivot[row]];
-        }
-
-        // Convert to matrix form for solving
-        IMatrix<Double> bMatrix = Linalg.matrix(new double[][]{x}).t(); // Convert to column vector
-
-        // Solve using forward and backward substitution
-        IMatrix<Double> solution = solveVectorAsMatrix(bMatrix);
-        
         // Convert back to vector
         return solution.getColumn(0);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public IMatrix<Double> solve(IMatrix<Double> b) {
         final int m = pivot.length;
+        final int nColB = b.cols();
         if (b.rows() != m) {
-            throw new IllegalArgumentException("Matrix row dimension mismatch: expected " + m + ", got " + b.rows());
+            throw new IllegalArgumentException("Dimension mismatch");
         }
         if (singular) {
             throw new RuntimeException("Matrix is singular");
         }
 
-        // Apply permutations to b using the new permuteRows method
-        IMatrix<Double> permutedB = Linalg.permuteRows(b, pivot);
-
-        // Extract L and U matrices from the LU decomposition
-        // L is unit lower triangular (diagonal elements are 1, stored implicitly)
-        // U is upper triangular
-        double[][] lValues = new double[m][];
-        double[][] uValues = new double[m][];
-        
+        // Convert b to array for easier manipulation
+        double[][] bData = new double[m][nColB];
         for (int i = 0; i < m; i++) {
-            lValues[i] = new double[i + 1];
-            uValues[i] = new double[m];
-            
-            for (int j = 0; j <= i; j++) {
-                if (i == j) {
-                    lValues[i][j] = 1.0; // Unit diagonal
-                } else {
-                    lValues[i][j] = lu[i][j];
-                }
-            }
-            
-            for (int j = i; j < m; j++) {
-                uValues[i][j] = lu[i][j];
+            for (int j = 0; j < nColB; j++) {
+                bData[i][j] = b.get(i, j);
             }
         }
-        
-        // Create L and U matrices
-        IMatrix<Double> L = Linalg.unitLowerTriMatrix(m, lValues);
-        IMatrix<Double> U = Linalg.upperTriMatrix(m, uValues);
 
-        // Solve LY = Pb (forward substitution)
-        IMatrix<Double> y = Linalg.forwardSolve(L, permutedB);
-
-        // Solve UX = Y (backward substitution)
-        IMatrix<Double> x = Linalg.backwardSolve(U, y);
-
-        return x;
-    }
-    
-    /**
-     * Solve method for vector that doesn't apply permutation (since it's already applied)
-     */
-    private IMatrix<Double> solveVectorAsMatrix(IMatrix<Double> b) {
-        final int m = pivot.length;
+        // For LU decomposition with pivoting: P*A = L*U
+        // To solve A*x = b, we have P*A*x = P*b => L*U*x = P*b
+        // So we solve: 1. L*y = P*b, 2. U*x = y
         
-        // Extract L and U matrices from the LU decomposition
-        // L is unit lower triangular (diagonal elements are 1, stored implicitly)
-        // U is upper triangular
-        double[][] lValues = new double[m][];
-        double[][] uValues = new double[m][];
-        
-        for (int i = 0; i < m; i++) {
-            lValues[i] = new double[i + 1];
-            uValues[i] = new double[m];
-            
-            for (int j = 0; j <= i; j++) {
-                if (i == j) {
-                    lValues[i][j] = 1.0; // Unit diagonal
-                } else {
-                    lValues[i][j] = lu[i][j];
-                }
-            }
-            
-            for (int j = i; j < m; j++) {
-                uValues[i][j] = lu[i][j];
+        // 1. Apply permutation P to b (Pb)
+        // pivot[i] = j means original row j is now at position i
+        // We need perm[orig_row] = current_row to apply P*b correctly
+        // where (P*b)[current_row] = b[orig_row]
+        // Apply permutations to b
+        double[][] bp = new double[m][nColB];
+        for (int row = 0; row < m; row++) {
+            final double[] bpRow = bp[row];
+            final int pRow = pivot[row];
+            for (int col = 0; col < nColB; col++) {
+                bpRow[col] = bData[pRow][col];
             }
         }
-        
-        // Create L and U matrices
-        IMatrix<Double> L = Linalg.unitLowerTriMatrix(m, lValues);
-        IMatrix<Double> U = Linalg.upperTriMatrix(m, uValues);
 
-        // Solve LY = b (forward substitution)
-        IMatrix<Double> y = Linalg.forwardSolve(L, b);
+        // 2. Forward substitution: Solve L*Y = P*b
+        // L is unit lower triangular (diagonal is 1's)
+        // Use the algorithm from Apache Commons Math: for each column, solve and update rows below
+        for (int col = 0; col < m; col++) {
+            final double[] bpCol = bp[col];
+            for (int i = col + 1; i < m; i++) {
+                final double[] bpI = bp[i];
+                final double luICol = lu[i][col];
+                for (int j = 0; j < nColB; j++) {
+                    bpI[j] -= bpCol[j] * luICol;
+                }
+            }
+        }
 
-        // Solve UX = Y (backward substitution)
-        IMatrix<Double> x = Linalg.backwardSolve(U, y);
+        // 3. Backward substitution: Solve U*X = Y
+        // Use the algorithm from Apache Commons Math matrix version
+        // For each row from bottom to top, compute solution and eliminate its effect on previous rows
+        for (int col = m - 1; col >= 0; col--) {
+            final double[] bpCol = bp[col];
+            final double luDiag = lu[col][col];
+            for (int j = 0; j < nColB; j++) {
+                bpCol[j] /= luDiag;
+            }
+            for (int i = 0; i < col; i++) {
+                final double[] bpI = bp[i];
+                final double luICol = lu[i][col];
+                for (int j = 0; j < nColB; j++) {
+                    bpI[j] -= bpCol[j] * luICol;
+                }
+            }
+        }
 
-        return x;
+        return Linalg.matrix(bp);
     }
 
     /**
      * {@inheritDoc}
+     *
      * @throws RuntimeException if the decomposed matrix is singular.
      */
     @Override

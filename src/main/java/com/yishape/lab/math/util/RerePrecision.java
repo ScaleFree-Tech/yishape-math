@@ -1,5 +1,8 @@
 package com.yishape.lab.math.util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * 数值精度工具类，提供精确的浮点数比较功能
  * 参考Apache Commons Math的Precision类的源码实现
@@ -9,7 +12,7 @@ package com.yishape.lab.math.util;
  * 
  * @author lteb2
  */
-public class Precision {
+public class RerePrecision {
     
     /**
      * 默认的绝对误差
@@ -59,7 +62,7 @@ public class Precision {
     /**
      * 私有的构造函数，防止实例化
      */
-    private Precision() {
+    private RerePrecision() {
         // 工具类，不需要实例化
     }
     
@@ -407,4 +410,16 @@ public class Precision {
     public static double getSafeMin() {
         return SAFE_MIN;
     }
+    
+    /**
+     * 四舍五入到某某位小数
+     * @param value
+     * @param places
+     * @return 
+     */
+    public static double roundToDecimalPlaces(double value, int places) {
+    return new BigDecimal(value)
+            .setScale(places, RoundingMode.HALF_UP)
+            .doubleValue();
+}
 }

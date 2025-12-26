@@ -6,7 +6,7 @@ import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.newton.RereLBFGS;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +139,7 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
             // 确保非负性
             for (int i = 0; i < x.length(); i++) {
                 double value = (Double) x.get(i);
-                if (Precision.compareTo(value, 0.0, TOLERANCE) <= 0) {
+                if (RerePrecision.compareTo(value, 0.0, TOLERANCE) <= 0) {
                     x.set(i, MIN_VARIABLE_VALUE);
                 }
             }
@@ -174,7 +174,7 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
         // 检查非负约束
         for (int i = 0; i < x.length(); i++) {
             double value = ((Number) x.get(i)).doubleValue();
-            if (Precision.compareTo(value, -TOLERANCE, TOLERANCE) < 0) {
+            if (RerePrecision.compareTo(value, -TOLERANCE, TOLERANCE) < 0) {
                 feasible = false;
                 errorMsg.append("变量 ").append(i).append(" 违反非负约束: ").append(value).append("\n");
             }
@@ -185,7 +185,7 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
             IVector constraintViolation = A_eq.mmul(x).sub(b_eq);
             for (int i = 0; i < constraintViolation.length(); i++) {
                 double violation = Math.abs(((Number) constraintViolation.get(i)).doubleValue());
-                if (Precision.compareTo(violation, TOLERANCE, TOLERANCE) > 0) {
+                if (RerePrecision.compareTo(violation, TOLERANCE, TOLERANCE) > 0) {
                     feasible = false;
                     errorMsg.append("等式约束 ").append(i).append(" 违反: 误差 = ").append(violation).append("\n");
                 }
@@ -248,7 +248,7 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
                 for (int i = 0; i < x.length(); i++) {
                     double xi = (Double) x.get(i);
                     // 如果变量接近0或为负，添加大的惩罚
-                    if (Precision.compareTo(xi, 1e-12, TOLERANCE) <= 0) {
+                    if (RerePrecision.compareTo(xi, 1e-12, TOLERANCE) <= 0) {
                         barrierTerm += 1e6; // 大的惩罚值
                     } else {
                         // 对数障碍函数: -mu * ln(xi)
@@ -282,7 +282,7 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
                 for (int i = 0; i < x.length(); i++) {
                     double xi = (Double) x.get(i);
                     // 如果变量接近0或为负，添加大的梯度
-                    if (Precision.compareTo(xi, 1e-12, TOLERANCE) <= 0) {
+                    if (RerePrecision.compareTo(xi, 1e-12, TOLERANCE) <= 0) {
                         // 添加大的负梯度使变量变为正
                         gradient.set(i, (Double) gradient.get(i) - 1e6);
                     } else {

@@ -9,7 +9,7 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.RereLineSearch;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import java.util.ArrayList;
 
 /**
@@ -172,7 +172,7 @@ public class RereLBFGS implements IOptimizer{
             
             // 改进的收敛检查：使用绝对和相对容差的组合 / Improved convergence check: use combination of absolute and relative tolerance
             double convergenceThreshold = Math.max(tolerance, tolerance * Math.max(1.0, initialGradNorm));
-            if (Precision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
+            if (RerePrecision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
                 converged = true;
                 convergenceReason = "Gradient norm below tolerance";
                 
@@ -202,7 +202,7 @@ public class RereLBFGS implements IOptimizer{
             if (iter > 0) {
                 double valueChange = Math.abs(currentValue - previousValue);
                 // 如果函数值变化非常小，增加停滞计数器 / If function value change is very small, increment stagnation counter
-                if (Precision.compareTo(valueChange, 1e-12 * Math.max(1.0, Math.abs(currentValue)), 1e-12) < 0) {
+                if (RerePrecision.compareTo(valueChange, 1e-12 * Math.max(1.0, Math.abs(currentValue)), 1e-12) < 0) {
                     stagnationCounter++;
                     if (stagnationCounter >= maxStagnationIterations) {
                         converged = true;
@@ -391,7 +391,7 @@ public class RereLBFGS implements IOptimizer{
         IVector y_k = y_history.get(y_history.size() - 1);
         
         double yTy = (Double) y_k.innerProduct(y_k);
-        if (Precision.equalsZero(yTy, 1e-12)) {
+        if (RerePrecision.equalsZero(yTy, 1e-12)) {
             // 避免除零 / Avoid division by zero
             return q;
         }
@@ -441,7 +441,7 @@ public class RereLBFGS implements IOptimizer{
         double sTy = (Double) s_k.innerProduct(y_k);
         
         // 检查曲率条件：s^T * y > 0，确保正定性 / Check curvature condition: s^T * y > 0 for positive definiteness
-        if (Precision.compareTo(sTy, 1e-10, tolerance) > 0) {
+        if (RerePrecision.compareTo(sTy, 1e-10, tolerance) > 0) {
             double rho_k = 1.0 / sTy;
             
             // 计算并存储gamma值 / Compute and store gamma value

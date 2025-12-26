@@ -1,6 +1,6 @@
 package com.yishape.lab.math.linalg.decomposition.impl;
 
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -133,7 +133,7 @@ public class SVDStorageConventionTest {
         // For rank-1 matrix, only first singular value should be non-zero
         int nonZeroCount = 0;
         for (int i = 0; i < S.length(); i++) {
-            if (!Precision.equalsZero(S.get(i), 1e-10)) {
+            if (!RerePrecision.equalsZero(S.get(i), 1e-10)) {
                 nonZeroCount++;
             }
         }
@@ -184,7 +184,7 @@ public class SVDStorageConventionTest {
                     norm += U.get(i, j) * U.get(i, j);
                 }
                 norm = Math.sqrt(norm);
-                if (!Precision.equals(norm, 1.0, 1e-10)) {
+                if (!RerePrecision.equals(norm, 1.0, 1e-10)) {
                     uColumnsNormalized = false;
                     System.out.printf("U column %d norm: %.6f (expected: 1.0)\n", j, norm);
                 }
@@ -198,7 +198,7 @@ public class SVDStorageConventionTest {
                     norm += V.get(i, j) * V.get(i, j);
                 }
                 norm = Math.sqrt(norm);
-                if (!Precision.equals(norm, 1.0, 1e-10)) {
+                if (!RerePrecision.equals(norm, 1.0, 1e-10)) {
                     vColumnsNormalized = false;
                     System.out.printf("V column %d norm: %.6f (expected: 1.0)\n", j, norm);
                 }
@@ -217,7 +217,7 @@ public class SVDStorageConventionTest {
         int nonZeroCount = 0;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                if (!Precision.equalsZero(matrix.get(i, j), 1e-12)) {
+                if (!RerePrecision.equalsZero(matrix.get(i, j), 1e-12)) {
                     nonZeroCount++;
                 }
             }

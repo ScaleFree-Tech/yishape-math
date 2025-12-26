@@ -9,7 +9,7 @@ import com.yishape.lab.math.linalg.decomposition.IBidiagonalDecomposition;
 import com.yishape.lab.math.linalg.decomposition.ISVDDecomposition;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.SVDDecompositionSolver;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import com.yishape.lab.util.Tuple3;
 
 /**
@@ -63,11 +63,11 @@ public class RereSVDDecomposition implements ISVDDecomposition {
     
     
     /** Default epsilon for numerical comparisons. */
-    private static final double DEFAULT_EPSILON = Precision.getDefaultEpsilon();
+    private static final double DEFAULT_EPSILON = RerePrecision.getDefaultEpsilon();
     /** Default maximum number of iterations. */
     private static final int DEFAULT_MAX_ITERATIONS = 1000;
     /** Absolute threshold for small singular values. */
-    private static final double TINY = Precision.getSafeMin();
+    private static final double TINY = RerePrecision.getSafeMin();
     
     /**
      * Default constructor with default parameters.
@@ -451,7 +451,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             }
             
             // 如果连接元素不为零，需要处理秩1更新
-            if (!Precision.equalsZero(connectingElement, epsilon)) {
+            if (!RerePrecision.equalsZero(connectingElement, epsilon)) {
                 // 构造更新向量
                 IVector<Double> updateVector = Linalg.zeros(totalSize);
                 if (n1 > 0) updateVector.set(n1 - 1, 1.0);
@@ -872,8 +872,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                 final double threshold = TINY + epsilon * (Math.abs(singularValues[k]) +
                         Math.abs(singularValues[k + 1]));
                 
-                // Use Precision utility for better numerical comparison
-                if (Precision.equalsZero(e[k], threshold) || Double.isNaN(e[k])) {
+                // Use RerePrecision utility for better numerical comparison
+                if (RerePrecision.equalsZero(e[k], threshold) || Double.isNaN(e[k])) {
                     e[k] = 0;
                     break;
                 }
@@ -1304,9 +1304,9 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                 // 计算相邻对角线元素的最大值作为参考
                 double alpha_norm = Math.max(Math.abs(alpha.get(i)), Math.abs(alpha.get(i + 1)));
                 // 使用Precision工具进行更好的数值比较
-                double threshold = Math.max(epsilon * alpha_norm, Precision.getSafeMin());
+                double threshold = Math.max(epsilon * alpha_norm, RerePrecision.getSafeMin());
                 
-                if (!Precision.equalsZero(beta.get(i), threshold)) {
+                if (!RerePrecision.equalsZero(beta.get(i), threshold)) {
                     converged = false;
                     break;
                 }

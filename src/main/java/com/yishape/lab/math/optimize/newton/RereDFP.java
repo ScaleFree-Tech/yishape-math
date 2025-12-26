@@ -8,7 +8,7 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.RereLineSearch;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,7 +113,7 @@ public class RereDFP implements IOptimizer {
             double gradNorm = (Double) grad.norm2();
             finalGradientNorm = gradNorm;
             double convergenceThreshold = tolerance * Math.max(1.0, initialGradNorm);
-            if (Precision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
+            if (RerePrecision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
                 converged = true;
                 convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);
@@ -215,7 +215,7 @@ public class RereDFP implements IOptimizer {
         double sTy = (Double) s.innerProduct(y);
         
         // Check curvature condition: s^T * y > 0, required for positive definiteness
-        if (Precision.compareTo(sTy, 1e-10, tolerance) <= 0) {
+        if (RerePrecision.compareTo(sTy, 1e-10, tolerance) <= 0) {
             // If curvature condition is not satisfied, return current Hessian approximation
             return H;
         }

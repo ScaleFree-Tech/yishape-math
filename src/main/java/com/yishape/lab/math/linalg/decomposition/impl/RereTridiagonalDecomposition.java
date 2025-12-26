@@ -8,7 +8,7 @@ import com.yishape.lab.math.linalg.decomposition.solver.TridiagonalDecomposition
 import com.yishape.lab.math.linalg.decomposition.NonSquareMatrixException;
 import com.yishape.lab.math.linalg.decomposition.NonSymmetricMatrixException;
 import com.yishape.lab.util.Tuple2;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Tridiagonal decomposition implementation with enhanced numerical stability.
@@ -155,7 +155,7 @@ public class RereTridiagonalDecomposition implements ITridiagonalDecomposition {
             }
             norm = Math.sqrt(norm);
 
-            if (Precision.equalsZero(norm, epsilon)) {
+            if (RerePrecision.equalsZero(norm, epsilon)) {
                 continue; // Improve numerical stability
             }
             
@@ -173,7 +173,7 @@ public class RereTridiagonalDecomposition implements ITridiagonalDecomposition {
             }
             vNorm = Math.sqrt(vNorm);
 
-            if (Precision.equalsZero(vNorm, epsilon)) {
+            if (RerePrecision.equalsZero(vNorm, epsilon)) {
                 continue;
             }
 
@@ -219,7 +219,7 @@ public class RereTridiagonalDecomposition implements ITridiagonalDecomposition {
         // Ensure tridiagonal form: clean numerical errors
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (Math.abs(i - j) > 1 && Precision.equalsZero(T[i][j], epsilon)) {
+                if (Math.abs(i - j) > 1 && RerePrecision.equalsZero(T[i][j], epsilon)) {
                     T[i][j] = 0.0;
                 }
             }

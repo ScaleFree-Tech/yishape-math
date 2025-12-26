@@ -6,6 +6,7 @@ import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
 import com.yishape.lab.math.linalg.decomposition.DecompositionFailedException;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
+import com.yishape.lab.math.util.RerePrecision;
 import com.yishape.lab.util.Tuple2;
 
 /**
@@ -320,7 +321,7 @@ public class LeastSquaresSolver {
         
         // Compute the residual: ||A × x - b||₂
         IVector<Double> residualVector = A.mmul(x).sub(b);
-        double residualNorm = residualVector.norm2().doubleValue();
+        double residualNorm = RerePrecision.roundToDecimalPlaces(residualVector.norm2(),6);
         
         return new Tuple2<>(x, residualNorm);
     }

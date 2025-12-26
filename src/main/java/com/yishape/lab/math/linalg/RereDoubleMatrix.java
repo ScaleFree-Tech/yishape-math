@@ -10,7 +10,7 @@ import com.yishape.lab.math.linalg.solver.LinearSystemSolver;
 import com.yishape.lab.math.linalg.solver.MatrixInversionSolver;
 import com.yishape.lab.math.linalg.solver.RankSolver;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import java.io.Serializable;
 
 import java.util.concurrent.*;
@@ -666,7 +666,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (!Precision.equals(data[i][j], data[j][i], tolerance)) {
+                if (!RerePrecision.equals(data[i][j], data[j][i], tolerance)) {
                     return false;
                 }
             }
@@ -2184,7 +2184,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
                         double diagonal = data[j][j] - sum;
 
                         // 如果对角元素非正，则矩阵不是正定的
-                        if (Precision.equalsZero(diagonal, 1e-12) || diagonal < 0.0) {
+                        if (RerePrecision.equalsZero(diagonal, 1e-12) || diagonal < 0.0) {
                             return false;
                         }
 
@@ -2197,7 +2197,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
                         }
 
                         // 检查除零情况
-                        if (Precision.equalsZero(L[j][j], 1e-12)) {
+                        if (RerePrecision.equalsZero(L[j][j], 1e-12)) {
                             return false;
                         }
 
@@ -2365,7 +2365,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
     @Override
     public IMatrix<Double> divideByScalar(Double scalar) {
-        if (Precision.equalsZero(scalar, 1e-12)) {
+        if (RerePrecision.equalsZero(scalar, 1e-12)) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
         var res = this.computer.binaryOperate(data, scalar, IDoubleVectorComputer.BinaryOperation.DIVIDE);
@@ -2390,7 +2390,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             // 计算L2范数
             double norm = Math.sqrt(sumOfSquares);
 
-            if (Precision.equalsZero(norm, 1e-12)) {
+            if (RerePrecision.equalsZero(norm, 1e-12)) {
                 throw new ArithmeticException("第" + i + "行的L2范数为零，无法归一化 / Row " + i + " L2 norm is zero, cannot normalize");
             }
 
@@ -2685,6 +2685,60 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         }
 
         return IDoubleMatrix.of(X);
+    }
+
+    @Override
+    public String toString() {
+        int rows = data.length;
+        if (rows == 0) {
+            return "[]";
+        }
+        int cols = data[0].length;
+
+        // Format all elements to 2 decimal places
+        String[][] formatted = new String[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                double value = data[i][j];
+                // 如果四舍五入到2位小数后为0.00，不显示负号
+                double rounded = Math.round(value * 100.0) / 100.0;
+                if (rounded == 0.0) {
+                    formatted[i][j] = String.format("%.2f", 0.0);
+                } else {
+                    formatted[i][j] = String.format("%.2f", value);
+                }
+            }
+        }
+
+        // Calculate max width for each column
+        int[] colWidths = new int[cols];
+        for (int j = 0; j < cols; j++) {
+            int maxWidth = 0;
+            for (int i = 0; i < rows; i++) {
+                maxWidth = Math.max(maxWidth, formatted[i][j].length());
+            }
+            colWidths[j] = maxWidth;
+        }
+
+        // Build the formatted string
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (j > 0) {
+                    sb.append(" ");
+                }
+                String s = formatted[i][j];
+                int padding = colWidths[j] - s.length();
+                for (int p = 0; p < padding; p++) {
+                    sb.append(" ");
+                }
+                sb.append(s);
+            }
+            if (i < rows - 1) {
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
     }
 
 

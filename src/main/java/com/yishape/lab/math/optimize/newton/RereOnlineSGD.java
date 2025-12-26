@@ -2,7 +2,7 @@ package com.yishape.lab.math.optimize.newton;
 
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.IOnlineOptimizer;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import java.util.function.BiFunction;
 
 /**
@@ -305,10 +305,10 @@ public class RereOnlineSGD implements IOnlineOptimizer {
      * 更新学习率（指数衰减）
      */
     private void updateLearningRate() {
-        if (Precision.compareTo(lrDecayRate, 0.0, 1e-12) > 0 && lrDecayStep > 0 && currentStep % lrDecayStep == 0) {
+        if (RerePrecision.compareTo(lrDecayRate, 0.0, 1e-12) > 0 && lrDecayStep > 0 && currentStep % lrDecayStep == 0) {
             learningRate *= (1.0 - lrDecayRate);
             // 确保学习率不会过小
-            if (Precision.compareTo(learningRate, 1e-10, 1e-12) < 0) {
+            if (RerePrecision.compareTo(learningRate, 1e-10, 1e-12) < 0) {
                 learningRate = 1e-10;
             }
         }

@@ -13,8 +13,8 @@ public class LRTestKnn {
 
     public static void main(String args[]) {
 
-        String path = "C:\\Users\\lteb2\\Downloads\\d9c2cb80-3944-4f82-b884-93cad3e586fc.csv";
-//        String path = "G:\\电子科技大学-工作\\商务统计_2025\\data\\iris.csv";
+//        String path = "C:\\Users\\lteb2\\Downloads\\d9c2cb80-3944-4f82-b884-93cad3e586fc.csv";
+        String path = "G:\\电子科技大学-工作\\商务统计_2025\\data\\iris.csv";
         try {
             var df = DataFrame.readCsv(path);
             var feature = df.sliceColumn(1, -1).toMatrix();

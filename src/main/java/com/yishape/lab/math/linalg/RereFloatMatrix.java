@@ -10,7 +10,7 @@ import com.yishape.lab.math.linalg.solver.LinearSystemSolver;
 import com.yishape.lab.math.linalg.solver.MatrixInversionSolver;
 import com.yishape.lab.math.linalg.solver.RankSolver;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import java.io.Serializable;
 
 import java.util.concurrent.*;
@@ -668,7 +668,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
 
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (!Precision.equals(data[i][j], data[j][i], tolerance)) {
+                if (!RerePrecision.equals(data[i][j], data[j][i], tolerance)) {
                     return false;
                 }
             }
@@ -2208,7 +2208,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
                         float diagonal = data[j][j] - sum;
 
                         // 如果对角元素非正，则矩阵不是正定的
-                        if (Precision.equalsZero(diagonal, 1e-12) || diagonal < 0.0) {
+                        if (RerePrecision.equalsZero(diagonal, 1e-12) || diagonal < 0.0) {
                             return false;
                         }
 
@@ -2221,7 +2221,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
                         }
 
                         // 检查除零情况
-                        if (Precision.equalsZero(L[j][j], 1e-12)) {
+                        if (RerePrecision.equalsZero(L[j][j], 1e-12)) {
                             return false;
                         }
 
@@ -2389,7 +2389,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
 
     @Override
     public IMatrix<Float> divideByScalar(Float scalar) {
-        if (Precision.equalsZero(scalar, 1e-12)) {
+        if (RerePrecision.equalsZero(scalar, 1e-12)) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
         var res = this.computer.binaryOperate(data, scalar, IFloatVectorComputer.BinaryOperation.DIVIDE);
@@ -2414,7 +2414,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             // 计算L2范数
             float norm = (float)Math.sqrt(sumOfSquares);
 
-            if (Precision.equalsZero(norm, 1e-12)) {
+            if (RerePrecision.equalsZero(norm, 1e-12)) {
                 throw new ArithmeticException("第" + i + "行的L2范数为零，无法归一化 / Row " + i + " L2 norm is zero, cannot normalize");
             }
 

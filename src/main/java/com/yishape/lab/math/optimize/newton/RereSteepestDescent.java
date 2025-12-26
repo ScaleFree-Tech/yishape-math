@@ -6,7 +6,7 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.RereLineSearch;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +109,7 @@ public class RereSteepestDescent implements IOptimizer {
             double gradNorm = (Double) grad.norm2();
             finalGradientNorm = gradNorm;
             double convergenceThreshold = tolerance * Math.max(1.0, initialGradNorm);
-            if (Precision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
+            if (RerePrecision.compareTo(gradNorm, convergenceThreshold, tolerance) < 0) {
                 converged = true;
                 convergenceReason = "Gradient norm below tolerance";
                 double optimalValue = objFun.computeObjective(x);

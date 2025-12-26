@@ -146,10 +146,18 @@ public class LinearSystemSolver {
         if (A == null || B == null) {
             throw new IllegalArgumentException("Input matrices cannot be null");
         }
+
+        // solve is strictly for square matrices (determined systems)
+        if (A.rows() != A.cols()) {
+            throw new IllegalArgumentException(
+                "solve 方法仅支持方阵（恰定方程组）。对于非方阵（超定或欠定方程组），请使用 lstsq 方法。 / " +
+                "solve method is strictly for square matrices (determined systems). " +
+                "For non-square matrices (overdetermined or underdetermined systems), please use lstsq method.");
+        }
         
         if (A.rows() != B.rows()) {
             throw new IllegalArgumentException(
-                "Matrix row dimension mismatch: A has " + A.rows() + 
+                "Matrix row dimension mismatch: A has " + A.rows() +
                 " rows but B has " + B.rows() + " rows");
         }
         
@@ -257,14 +265,28 @@ public class LinearSystemSolver {
         try {
             ISVDDecomposition svd = Decomps.createSVD();
             svd.decompose(A);
+            
+            // Check if the square matrix is singular
+            // In solve method, we only accept non-singular matrices to ensure a unique solution
+            int rank = A.rank();
+            if (rank < A.rows()) {
+                throw new ArithmeticException(
+                    "矩阵是奇异的（不满秩），无法保证唯一解。请使用 lstsq 方法获取最小二乘解。 / " +
+                    "The matrix is singular (not full rank), unique solution cannot be guaranteed. " +
+                    "Please use lstsq method to get the least squares solution.");
+            }
+            
             return svd.getSolver().solve(B);
         } catch (Exception e) {
+            if (e instanceof ArithmeticException) {
+                throw (ArithmeticException) e;
+            }
             throw new DecompositionFailedException(
-                "Failed to solve linear system using any decomposition method", 
-                "LinearSystemSolver", 
-                "All decomposition methods failed", 
-                -1, 
-                Double.NaN, 
+                "无法使用任何分解方法求解线性方程组 / Failed to solve linear system using any decomposition method",
+                "LinearSystemSolver",
+                "所有分解方法均失败 / All decomposition methods failed",
+                -1,
+                Double.NaN,
                 e);
         }
     }

@@ -2,7 +2,7 @@ package com.yishape.lab.math.optimize.newton;
 
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.IOnlineOptimizer;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -146,8 +146,8 @@ public class RereOnlineAdam implements IOnlineOptimizer {
         double beta2Correction = 1.0 - Math.pow(beta2, currentStep);
         
         // 防止除零错误
-        if (Precision.equalsZero(beta1Correction, 1e-12)) beta1Correction = 1e-12;
-        if (Precision.equalsZero(beta2Correction, 1e-12)) beta2Correction = 1e-12;
+        if (RerePrecision.equalsZero(beta1Correction, 1e-12)) beta1Correction = 1e-12;
+        if (RerePrecision.equalsZero(beta2Correction, 1e-12)) beta2Correction = 1e-12;
         
         IVector mHat = m.multiplyScalar(1.0 / beta1Correction);  // 偏差修正的一阶矩
         IVector vHat = v.multiplyScalar(1.0 / beta2Correction);  // 偏差修正的二阶矩
@@ -413,10 +413,10 @@ public class RereOnlineAdam implements IOnlineOptimizer {
      * 更新学习率（指数衰减）
      */
     private void updateLearningRate() {
-        if (Precision.compareTo(lrDecayRate, 0.0, 1e-12) > 0 && lrDecayStep > 0 && currentStep % lrDecayStep == 0) {
+        if (RerePrecision.compareTo(lrDecayRate, 0.0, 1e-12) > 0 && lrDecayStep > 0 && currentStep % lrDecayStep == 0) {
             learningRate *= (1.0 - lrDecayRate);
             // 确保学习率不会过小
-            if (Precision.compareTo(learningRate, 1e-10, 1e-12) < 0) {
+            if (RerePrecision.compareTo(learningRate, 1e-10, 1e-12) < 0) {
                 learningRate = 1e-10;
             }
         }

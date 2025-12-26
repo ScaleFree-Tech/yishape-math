@@ -62,13 +62,19 @@ public class RereLUDecomposition implements ILUDecomposition {
 
         final int m = matrix.cols();
         // Use toDoubleArray method to convert matrix to double[][] array
-        this.lu = matrix.toDoubleArray();
+        // Must copy the data to avoid modifying the original matrix
+        double[][] data = matrix.toDoubleArray();
+        this.lu = new double[m][m];
+        for (int i = 0; i < m; i++) {
+            System.arraycopy(data[i], 0, this.lu[i], 0, m);
+        }
         this.pivot = new int[m];
         this.cachedL = null;
         this.cachedU = null;
         this.cachedP = null;
 
-        // Initialize permutation array and parity
+        // Initialize permutation array to identity and parity
+        // pivot[i] = j means original row j is now in position i after all swaps
         for (int row = 0; row < m; row++) {
             pivot[row] = row;
         }
@@ -77,6 +83,7 @@ public class RereLUDecomposition implements ILUDecomposition {
 
         // Loop over columns
         for (int col = 0; col < m; col++) {
+
             // upper
             for (int row = 0; row < col; row++) {
                 final double[] luRow = lu[row];
@@ -146,16 +153,17 @@ public class RereLUDecomposition implements ILUDecomposition {
     public IMatrix<Double> getL() {
         if (cachedL == null && !singular && lu != null) {
             final int m = pivot.length;
-            // Create L matrix using the new Linalg API
+            // Create L matrix - after row swaps, L is stored in lu
             double[][] lData = new double[m][m];
             for (int i = 0; i < m; ++i) {
-                final double[] luI = lu[i];
+                final double[] luRow = lu[i];
                 for (int j = 0; j < i; ++j) {
-                    lData[i][j] = luI[j];
+                    lData[i][j] = luRow[j];
                 }
                 // Diagonal elements are 1.0 for L matrix
+                lData[i][i] = 1.0;
             }
-            cachedL = Linalg.unitLowerTriMatrix(m, lData);
+            cachedL = Linalg.matrix(lData);
         }
         return cachedL;
     }
@@ -169,15 +177,15 @@ public class RereLUDecomposition implements ILUDecomposition {
     public IMatrix<Double> getU() {
         if (cachedU == null && !singular && lu != null) {
             final int m = pivot.length;
-            // Create U matrix using the new Linalg API
+            // Create U matrix - after row swaps, U is stored in lu
             double[][] uData = new double[m][m];
             for (int i = 0; i < m; ++i) {
-                final double[] luI = lu[i];
+                final double[] luRow = lu[i];
                 for (int j = i; j < m; ++j) {
-                    uData[i][j] = luI[j];
+                    uData[i][j] = luRow[j];
                 }
             }
-            cachedU = Linalg.upperTriMatrix(m, uData);
+            cachedU = Linalg.matrix(uData);
         }
         return cachedU;
     }
@@ -220,7 +228,19 @@ public class RereLUDecomposition implements ILUDecomposition {
             final int m = pivot.length;
             double determinant = even ? 1 : -1;
             for (int i = 0; i < m; i++) {
-                determinant *= lu[i][i];
+                // Diagonal elements of U are stored in lu[i][i]
+                double diag = lu[i][i];
+                // Avoid underflow/overflow by checking magnitude
+                if (Math.abs(diag) < singularityThreshold) {
+                    return 0;
+                }
+                determinant *= diag;
+                // Prevent overflow by checking magnitude periodically
+                if (Math.abs(determinant) > 1e100) {
+                    determinant /= 1e50;
+                } else if (Math.abs(determinant) < 1e-100 && determinant != 0) {
+                    determinant *= 1e50;
+                }
             }
             return determinant;
         }
@@ -314,6 +334,10 @@ public class RereLUDecomposition implements ILUDecomposition {
             throw new IllegalStateException("Decomposition not performed yet");
         }
         
+        if (singular) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
         // For LU decomposition, we can estimate the condition number
         // Using the fact that ||A|| ≈ ||L|| * ||U||
         IMatrix<Double> l = getL();
@@ -349,14 +373,18 @@ public class RereLUDecomposition implements ILUDecomposition {
         
         // For the inverse, we would need to compute it, but we can estimate
         // For now, we'll use a simplified approach
-        double normInvEstimate = 1.0 / Math.abs(getDeterminant());
+        double det = getDeterminant();
+        if (Math.abs(det) < singularityThreshold) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double normInvEstimate = 1.0 / Math.abs(det);
         
         return normA * normInvEstimate;
     }
 
     /**
      * Get the rank of the matrix.
-     * 
+     *
      * @return rank of the matrix
      * @throws IllegalStateException if decomposition has not been performed
      */

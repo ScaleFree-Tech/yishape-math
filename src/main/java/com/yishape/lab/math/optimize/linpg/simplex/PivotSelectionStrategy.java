@@ -1,6 +1,6 @@
 package com.yishape.lab.math.optimize.linpg.simplex;
 
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.*;
 
@@ -91,7 +91,7 @@ public class PivotSelectionStrategy {
 
             // Only consider pivot elements larger than the cutOff threshold
             // selecting others may lead to degeneracy or numerical instabilities
-            if (Precision.compareTo(entry, 0d, cutOff) > 0) {
+            if (RerePrecision.compareTo(entry, 0d, cutOff) > 0) {
                 final double ratio = Math.abs(rhs / entry);
                 // Check if the entry is strictly equal to the current min ratio
                 // do not use a ulp/epsilon check
@@ -118,7 +118,7 @@ public class PivotSelectionStrategy {
                         int column = i + tableau.getArtificialVariableOffset();
                         final double entry = tableau.getEntry(row, column);
                         Integer basicRowForCol = tableau.getBasicRow(column);
-                        if (Precision.equals(entry, 1d, 10)
+                        if (RerePrecision.equals(entry, 1d, 10)
                                 && basicRowForCol != null && basicRowForCol.equals(row - tableau.getNumObjectiveFunctions())) {
                             return row - tableau.getNumObjectiveFunctions(); // Convert back to relative row index
                         }
@@ -138,7 +138,7 @@ public class PivotSelectionStrategy {
     }
 
     /**
-     * Perform pivot operation using Precision methods for numerical stability
+     * Perform pivot operation using RerePrecision methods for numerical stability
      */
     public void performPivotOperation(RereSimplexTableau tableau, int leavingRow, int enteringVar) {
         // Determine the actual pivot row based on tableau structure
@@ -158,7 +158,7 @@ public class PivotSelectionStrategy {
 
         double pivotElement = tableau.getEntry(pivotRow, enteringVar);
 
-        if (Precision.equalsZero(pivotElement, epsilon)) {
+        if (RerePrecision.equalsZero(pivotElement, epsilon)) {
             throw new IllegalStateException("Pivot element too small: " + pivotElement);
         }
 
@@ -172,14 +172,14 @@ public class PivotSelectionStrategy {
         for (int i = 0; i < tableau.getHeight(); i++) {
             if (i != pivotRow) {
                 double multiplier = tableau.getEntry(i, enteringVar);
-                if (!Precision.equalsZero(multiplier, epsilon)) {
+                if (!RerePrecision.equalsZero(multiplier, epsilon)) {
                     for (int j = 0; j < tableau.getWidth(); j++) {
                         double currentValue = tableau.getEntry(i, j);
                         double pivotRowValue = tableau.getEntry(pivotRow, j);
                         double newValue = currentValue - multiplier * pivotRowValue;
 
-                        // Clean up near-zero values using Precision
-                        if (Precision.equalsZero(newValue, epsilon)) {
+                        // Clean up near-zero values using RerePrecision
+                        if (RerePrecision.equalsZero(newValue, epsilon)) {
                             newValue = 0.0;
                         }
 

@@ -2837,14 +2837,16 @@ public interface IMatrix<T extends Number> {
      * 创建置换矩阵
      *
      * @param size 矩阵大小
-     * @param pivot 置换向量
-     * @return 置换矩阵
+     * @param pivot 置换向量 - pivot[i] 表示原矩阵的第 pivot[i] 行移动到新矩阵的第 i 行
+     * @return 置换矩阵 P，使得 P*A 的第 i 行等于 A 的第 pivot[i] 行
      */
     public static IMatrix<Double> permutationMatrix(int size, int[] pivot) {
         // 创建一个size×size的零矩阵
         IMatrix<Double> matrix = IMatrix.zeros(size, size);
 
         // 填充置换矩阵
+        // P*A 的第 i 行 = A 的第 pivot[i] 行
+        // 因此 P[i][pivot[i]] = 1
         for (int i = 0; i < size; ++i) {
             matrix.put(i, pivot[i], 1.0);
         }

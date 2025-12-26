@@ -7,7 +7,7 @@ import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.HessenbergDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.NonSquareMatrixException;
 import com.yishape.lab.util.Tuple2;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Hessenberg decomposition implementation with enhanced numerical stability.
@@ -137,7 +137,7 @@ public class RereHessenbergDecomposition implements IHessenbergDecomposition {
             }
             norm = Math.sqrt(norm);
 
-            if (Precision.equalsZero(norm, epsilon)) {
+            if (RerePrecision.equalsZero(norm, epsilon)) {
                 continue; // Improve numerical stability
             }
             
@@ -155,7 +155,7 @@ public class RereHessenbergDecomposition implements IHessenbergDecomposition {
             }
             vNorm = Math.sqrt(vNorm);
 
-            if (Precision.equalsZero(vNorm, epsilon)) {
+            if (RerePrecision.equalsZero(vNorm, epsilon)) {
                 continue;
             }
 
@@ -201,7 +201,7 @@ public class RereHessenbergDecomposition implements IHessenbergDecomposition {
         // Ensure Hessenberg form: clean numerical errors
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (Math.abs(i - j) > 1 && Precision.equalsZero(H[i][j], epsilon)) {
+                if (Math.abs(i - j) > 1 && RerePrecision.equalsZero(H[i][j], epsilon)) {
                     H[i][j] = 0.0;
                 }
             }

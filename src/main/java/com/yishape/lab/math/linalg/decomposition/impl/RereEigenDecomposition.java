@@ -13,7 +13,7 @@ import com.yishape.lab.math.linalg.decomposition.solver.EigenDecompositionSolver
 import com.yishape.lab.math.linalg.decomposition.NonSquareMatrixException;
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Implementation of eigen decomposition with enhanced numerical stability.
@@ -235,7 +235,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
         
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
-                if (!Precision.equals(matrix.get(i, j), matrix.get(j, i), epsilon)) {
+                if (!RerePrecision.equals(matrix.get(i, j), matrix.get(j, i), epsilon)) {
                     return false;
                 }
             }
@@ -515,10 +515,10 @@ public class RereEigenDecomposition implements IEigenDecomposition {
         // Make null any main and secondary value too small to be significant
         if (maxAbsoluteValue != 0) {
             for (int i = 0; i < n; i++) {
-                if (Math.abs(main[i]) <= Precision.getMachineEpsilon() * maxAbsoluteValue) {
+                if (Math.abs(main[i]) <= RerePrecision.getMachineEpsilon() * maxAbsoluteValue) {
                     main[i] = 0;
                 }
-                if (Math.abs(e[i]) <= Precision.getMachineEpsilon() * maxAbsoluteValue) {
+                if (Math.abs(e[i]) <= RerePrecision.getMachineEpsilon() * maxAbsoluteValue) {
                     e[i] = 0;
                 }
             }
@@ -638,7 +638,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
         // Make null any eigenvalue too small to be significant
         if (maxAbsoluteValue != 0.0) {
             for (int i = 0; i < n; i++) {
-                if (Math.abs(main[i]) < Precision.getMachineEpsilon() * maxAbsoluteValue) {
+                if (Math.abs(main[i]) < RerePrecision.getMachineEpsilon() * maxAbsoluteValue) {
                     main[i] = 0;
                 }
             }
@@ -766,11 +766,11 @@ public class RereEigenDecomposition implements IEigenDecomposition {
         int l = n - 1;
         while (l > 0) {
             double s = Math.abs(matrix[l - 1][l - 1]) + Math.abs(matrix[l][l]);
-            if (Precision.equalsZero(s, 1e-12)) {
+            if (RerePrecision.equalsZero(s, 1e-12)) {
                 s = 1.0;
             }
             // 使用我们自定义的Precision类进行数值比较
-            if (Precision.equalsZero(matrix[l][l - 1], epsilon * s)) {
+            if (RerePrecision.equalsZero(matrix[l][l - 1], epsilon * s)) {
                 break;
             }
             l--;
@@ -824,7 +824,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
             double diff1 = Math.abs(lambda1 - d);
             double diff2 = Math.abs(lambda2 - d);
 
-            if (Precision.equals(diff1, diff2, 1e-6)) {
+            if (RerePrecision.equals(diff1, diff2, 1e-6)) {
                 return Math.min(lambda1, lambda2);
             } else {
                 return (diff1 < diff2) ? lambda1 : lambda2;
@@ -849,7 +849,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
 
         for (int k = l; k < n - 1; k++) {
             double r = Math.sqrt(p * p + q * q);
-            if (Precision.equalsZero(r, 1e-12)) {
+            if (RerePrecision.equalsZero(r, 1e-12)) {
                 continue;
             }
             
@@ -899,10 +899,10 @@ public class RereEigenDecomposition implements IEigenDecomposition {
      */
     private void cleanRoundingErrors(double[][] matrix, int n) {
         for (int i = 2; i < n; i++) {
-            if (Precision.equalsZero(matrix[i][i - 2], 1e-12)) {
+            if (RerePrecision.equalsZero(matrix[i][i - 2], 1e-12)) {
                 matrix[i][i - 2] = 0.0;
             }
-            if (i > 2 && Precision.equalsZero(matrix[i][i - 3], 1e-12)) {
+            if (i > 2 && RerePrecision.equalsZero(matrix[i][i - 3], 1e-12)) {
                 matrix[i][i - 3] = 0.0;
             }
         }
@@ -922,7 +922,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
             }
             norm = Math.sqrt(norm);
 
-            if (!Precision.equalsZero(norm, 1e-10)) {
+            if (!RerePrecision.equalsZero(norm, 1e-10)) {
                 for (int i = 0; i < n; i++) {
                     eigenvectors[i][j] /= norm;
                 }
@@ -1017,7 +1017,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
             double diff2 = Math.abs(lambda2 - d);
 
             // 数值稳定性考虑：如果两个特征值都很接近，选择较小的那个
-            if (Precision.equals(diff1, diff2, 1e-6)) {
+            if (RerePrecision.equals(diff1, diff2, 1e-6)) {
                 return Math.min(lambda1, lambda2);
             } else {
                 return (diff1 < diff2) ? lambda1 : lambda2;
@@ -1046,13 +1046,13 @@ public class RereEigenDecomposition implements IEigenDecomposition {
             double b = matrix[k + 1][k];        // 次对角线元素
             
             // 使用我们自定义的Precision类进行数值比较
-            if (Precision.equalsZero(b, 1e-12)) {
+            if (RerePrecision.equalsZero(b, 1e-12)) {
                 continue;
             }
             
             double r = Math.sqrt(a * a + b * b);  // 旋转半径
 
-            if (!Precision.equalsZero(r, 1e-12)) {  // 避免除零错误，确保数值稳定性
+            if (!RerePrecision.equalsZero(r, 1e-12)) {  // 避免除零错误，确保数值稳定性
                 double c = a / r;      // 余弦值（cosine）
                 double s = -b / r;     // 正弦值（sine），注意符号
 
@@ -1301,7 +1301,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
         // Givens旋转
         for (int j = 0; j < n - 1; j++) {
             for (int i = j + 1; i < Math.min(j + 3, n); i++) {
-                if (!Precision.equalsZero(R[i][j], 1e-12)) {
+                if (!RerePrecision.equalsZero(R[i][j], 1e-12)) {
                     // 计算Givens旋转参数
                     double r = Math.sqrt(R[j][j] * R[j][j] + R[i][j] * R[i][j]);
                     double c = R[j][j] / r;

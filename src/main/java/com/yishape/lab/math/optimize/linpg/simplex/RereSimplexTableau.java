@@ -3,7 +3,7 @@ package com.yishape.lab.math.optimize.linpg.simplex;
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -686,12 +686,12 @@ class RereSimplexTableau {
             if (verbose) {
                 System.out.println("  Entry at (" + i + ", " + col + ") = " + entry);
             }
-            if (Precision.equals(entry, 1d, maxUlps) && row == null) {
+            if (RerePrecision.equals(entry, 1d, maxUlps) && row == null) {
                 row = i;
                 if (verbose) {
                     System.out.println("  Found 1 at row " + i);
                 }
-            } else if (!Precision.equals(entry, 0d, maxUlps)) {
+            } else if (!RerePrecision.equals(entry, 0d, maxUlps)) {
                 if (verbose) {
                     System.out.println("  Found non-zero at row " + i + ", returning null");
                 }
@@ -793,12 +793,12 @@ class RereSimplexTableau {
             if (currentPhase == 1) {
                 // Phase I: 最小化人工变量之和，寻找负系数（可以改进的方向）
                 // 负系数表示增加该变量可以减少人工变量
-                if (i < getArtificialVariableOffset() && Precision.compareTo(entry, 0d, epsilon) < 0) {
+                if (i < getArtificialVariableOffset() && RerePrecision.compareTo(entry, 0d, epsilon) < 0) {
                     return false;
                 }
             } else {
                 // Phase II: 最大化目标函数，找最小的负系数
-                if (Precision.compareTo(entry, 0d, epsilon) < 0) {
+                if (RerePrecision.compareTo(entry, 0d, epsilon) < 0) {
                     return false;
                 }
             }
@@ -848,7 +848,7 @@ class RereSimplexTableau {
         // 查找可以与人工变量交换的非人工变量
         for (int col = getNumObjectiveFunctions(); col < getArtificialVariableOffset(); col++) {
             double entry = getEntry(basicRow, col);
-            if (!Precision.equals(entry, 0.0, maxUlps)) {
+            if (!RerePrecision.equals(entry, 0.0, maxUlps)) {
                 // 找到了非零元素，可以进行pivot操作
                 System.out.println("Removing artificial variable col=" + artificialCol + 
                                  " by pivoting with col=" + col + " in row=" + basicRow);
@@ -870,7 +870,7 @@ class RereSimplexTableau {
     private void performPivot(int pivotRow, int pivotCol) {
         double pivotElement = getEntry(pivotRow, pivotCol);
         
-        if (Precision.equals(pivotElement, 0.0, maxUlps)) {
+        if (RerePrecision.equals(pivotElement, 0.0, maxUlps)) {
             throw new RuntimeException("Cannot pivot on zero element at (" + pivotRow + ", " + pivotCol + ")");
         }
         
@@ -883,7 +883,7 @@ class RereSimplexTableau {
         for (int i = 0; i < getHeight(); i++) {
             if (i != pivotRow) {
                 double multiplier = getEntry(i, pivotCol);
-                if (!Precision.equals(multiplier, 0.0, maxUlps)) {
+                if (!RerePrecision.equals(multiplier, 0.0, maxUlps)) {
                     for (int j = 0; j < getWidth(); j++) {
                         double newValue = getEntry(i, j) - multiplier * getEntry(pivotRow, j);
                         setEntry(i, j, newValue);
@@ -969,7 +969,7 @@ class RereSimplexTableau {
             // 从约束行开始检查（跳过目标函数行）
             for (int row = 1; row < newHeight; row++) {
                 double entry = newTableau.get(row, col).doubleValue();
-                if (Precision.equals(entry, 1.0, maxUlps)) {
+                if (RerePrecision.equals(entry, 1.0, maxUlps)) {
                     onesCount++;
                     if (onesCount == 1) {
                         basicRow = row;
@@ -979,7 +979,7 @@ class RereSimplexTableau {
                         basicRow = null;
                         break;
                     }
-                } else if (!Precision.equals(entry, 0.0, maxUlps)) {
+                } else if (!RerePrecision.equals(entry, 0.0, maxUlps)) {
                     // 非0非1，不是单位向量
                     isUnitVector = false;
                     basicRow = null;

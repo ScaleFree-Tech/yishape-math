@@ -6,7 +6,7 @@ import com.yishape.lab.math.optimize.constraint.LagrangeMultiplierSolver;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.OptResult;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -167,7 +167,7 @@ public class LangMultiplierLinProgSolver implements ILinProgSolver{
                 for (int i = 0; i < x.length(); i++) {
                     double xi = (Double) x.get(i);
                     // 如果变量接近0或为负，添加大的惩罚
-                    if (Precision.compareTo(xi, 1e-12, 1e-15) <= 0) {
+                    if (RerePrecision.compareTo(xi, 1e-12, 1e-15) <= 0) {
                         barrierTerm += 1e6; // 大的惩罚值
                     } else {
                         // 对数障碍函数: -mu * ln(xi)
@@ -194,7 +194,7 @@ public class LangMultiplierLinProgSolver implements ILinProgSolver{
                 for (int i = 0; i < x.length(); i++) {
                     double xi = (Double) x.get(i);
                     // 如果变量接近0或为负，添加大的梯度
-                    if (Precision.compareTo(xi, 1e-12, 1e-15) <= 0) {
+                    if (RerePrecision.compareTo(xi, 1e-12, 1e-15) <= 0) {
                         // 添加大的负梯度使变量变为正
                         gradient.set(i, (Double) gradient.get(i) - 1e6);
                     } else {

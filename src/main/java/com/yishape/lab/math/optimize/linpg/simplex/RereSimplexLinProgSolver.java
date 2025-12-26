@@ -5,7 +5,7 @@ import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.OptResult;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Industrial-strength linear programming solver using the Simplex method
@@ -218,11 +218,11 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // Use Linalg API to solve A_eq * x = b_eq directly
             IVector solution = A_eq.solve(b_eq);
             
-            // Check non-negativity constraints using Precision
+            // Check non-negativity constraints using RerePrecision
             boolean feasible = true;
             for (int i = 0; i < solution.length(); i++) {
                 double value = RereMathUtil.safeDoubleValue(solution.get(i));
-                if (Precision.isLessThan(value, 0.0, epsilon)) {
+                if (RerePrecision.isLessThan(value, 0.0, epsilon)) {
                     feasible = false;
                     break;
                 }
@@ -379,7 +379,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         // 如果最优值为0（或足够接近0），则原问题可行
         double phaseIObjective = tableau.getEntry(0, tableau.getRhsOffset());
         // 对于Phase I，如果最终目标值足够接�?，则可行
-        boolean feasible = Precision.equalsZero(phaseIObjective, epsilon);
+        boolean feasible = RerePrecision.equalsZero(phaseIObjective, epsilon);
         
         if (verbose) {
             System.out.println("Phase I completed in " + iteration + " iterations");
@@ -577,7 +577,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             final double entry = tableau.getEntry(i, col);
             
             // Do the same check as in getPivotRow
-            if (Precision.compareTo(entry, 0d, cutOff) > 0) {
+            if (RerePrecision.compareTo(entry, 0d, cutOff) > 0) {
                 return true;
             }
         }
@@ -596,11 +596,11 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             double coeff = tableau.getEntry(objectiveRow, j);
             
             if (tableau.getCurrentPhase() == 1) {
-                if (Precision.isGreaterThan(coeff, 0.0, epsilon)) {
+                if (RerePrecision.isGreaterThan(coeff, 0.0, epsilon)) {
                     return j;
                 }
             } else {
-                if (Precision.isLessThan(coeff, 0.0, epsilon)) {
+                if (RerePrecision.isLessThan(coeff, 0.0, epsilon)) {
                     return j;
                 }
             }
@@ -707,7 +707,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
     private boolean isLargeScaleProblem(RereSimplexTableau tableau) {
         // Check for large coefficients that might cause numerical issues
         double maxCoeff = getTableauMaxCoeff(tableau);
-        return Precision.isGreaterThan(maxCoeff, 1e3); // Consider coefficients > 1000 as large scale
+        return RerePrecision.isGreaterThan(maxCoeff, 1e3); // Consider coefficients > 1000 as large scale
     }
     
     /**
@@ -749,8 +749,8 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
     }
     
     /**
-     * Find the basic variable in a given row using Precision methods with adjusted epsilon
-     * For Phase II tableau, this should respect optimality conditions
+     * Find the basic variable in a given row using RerePrecision methods with adjusted epsilon
+For Phase II tableau, this should respect optimality conditions
      */
     private int findBasicVariableInRow(RereSimplexTableau tableau, int row, int originalVarCount, double adjustedEpsilon) {
         // For Phase II tableau, find the variable that should be basic based on optimality
@@ -762,14 +762,14 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         for (int col = 0; col < Math.min(originalVarCount, tableau.getWidth() - 1); col++) {
             double entry = tableau.getEntry(row, col);
             
-            // Check if this entry is 1 using Precision
-            if (Precision.equals(entry, 1.0, adjustedEpsilon)) {
+            // Check if this entry is 1 using RerePrecision
+            if (RerePrecision.equals(entry, 1.0, adjustedEpsilon)) {
                 // Verify this is truly a basic variable (only 1 in this column)
                 boolean isBasic = true;
                 for (int otherRow = 0; otherRow < tableau.getHeight(); otherRow++) {
                     if (otherRow != row) {
                         double otherEntry = tableau.getEntry(otherRow, col);
-                        if (!Precision.equalsZero(otherEntry, adjustedEpsilon)) {
+                        if (!RerePrecision.equalsZero(otherEntry, adjustedEpsilon)) {
                             isBasic = false;
                             break;
                         }
@@ -797,12 +797,12 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             double constraintCoeff = tableau.getEntry(constraintRow, col);
             
             // Check if this is a unit vector column (basic variable)
-            if (Precision.equals(constraintCoeff, 1.0, adjustedEpsilon)) {
+            if (RerePrecision.equals(constraintCoeff, 1.0, adjustedEpsilon)) {
                 boolean isBasic = true;
                 for (int otherRow = 0; otherRow < tableau.getHeight(); otherRow++) {
                     if (otherRow != constraintRow) {
                         double otherEntry = tableau.getEntry(otherRow, col);
-                        if (!Precision.equalsZero(otherEntry, adjustedEpsilon)) {
+                        if (!RerePrecision.equalsZero(otherEntry, adjustedEpsilon)) {
                             isBasic = false;
                             break;
                         }
@@ -856,7 +856,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             double reducedCost = tableau.getEntry(objectiveRow, col);
             
             // For maximization, choose variable with most negative reduced cost and positive constraint coefficient
-            if (Precision.isGreaterThan(constraintCoeff, 0.0, adjustedEpsilon) && Precision.isLessThan(reducedCost, bestReducedCost, adjustedEpsilon)) {
+            if (RerePrecision.isGreaterThan(constraintCoeff, 0.0, adjustedEpsilon) && RerePrecision.isLessThan(reducedCost, bestReducedCost, adjustedEpsilon)) {
                 bestVariable = col;
                 bestReducedCost = reducedCost;
             }
@@ -873,7 +873,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         // Fallback: use the first variable with non-zero coefficient
         for (int col = 0; col < Math.min(originalVarCount, tableau.getWidth() - 1); col++) {
             double constraintCoeff = tableau.getEntry(constraintRow, col);
-            if (!Precision.equalsZero(constraintCoeff, adjustedEpsilon)) {
+            if (!RerePrecision.equalsZero(constraintCoeff, adjustedEpsilon)) {
                 return col;
             }
         }
@@ -906,7 +906,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
      */
     private boolean isAllZeros(IVector vector, double adjustedEpsilon) {
         for (int i = 0; i < vector.length(); i++) {
-            if (!Precision.equalsZero(RereMathUtil.safeDoubleValue(vector.get(i)), adjustedEpsilon)) {
+            if (!RerePrecision.equalsZero(RereMathUtil.safeDoubleValue(vector.get(i)), adjustedEpsilon)) {
                 return false;
             }
         }
@@ -944,7 +944,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 
                 for (int j = 0; j < originalVarCount; j++) {
                     double coeff = Math.abs(tableau.getEntry(0, j));
-                    if (Precision.isGreaterThan(coeff, bestCoeff) && Precision.isGreaterThan(coeff, 0.0, epsilon)) {
+                    if (RerePrecision.isGreaterThan(coeff, bestCoeff) && RerePrecision.isGreaterThan(coeff, 0.0, epsilon)) {
                         bestCoeff = coeff;
                         bestVar = j;
                     }
@@ -955,7 +955,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                     double coeffValue = tableau.getEntry(0, bestVar);
                     double solutionValue = rhsValue / coeffValue;
                     
-                    if (Precision.isGreaterThanOrEqual(solutionValue, 0.0, epsilon)) { // Non-negative
+                    if (RerePrecision.isGreaterThanOrEqual(solutionValue, 0.0, epsilon)) { // Non-negative
                         // Set this variable to the calculated value
                         solution.set(bestVar, Math.max(0.0, solutionValue));
                         
@@ -980,7 +980,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 
                 for (int j = 0; j < originalVarCount; j++) {
                     double coeff = Math.abs(tableau.getEntry(i, j));
-                    if (Precision.isGreaterThan(coeff, bestCoeff) && Precision.isGreaterThan(coeff, 0.0, epsilon)) {
+                    if (RerePrecision.isGreaterThan(coeff, bestCoeff) && RerePrecision.isGreaterThan(coeff, 0.0, epsilon)) {
                         bestCoeff = coeff;
                         bestVar = j;
                     }
@@ -991,7 +991,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                     double coeffValue = tableau.getEntry(i, bestVar);
                     double solutionValue = rhsValue / coeffValue;
                     
-                    if (Precision.isGreaterThanOrEqual(solutionValue, 0.0, epsilon)) { // Non-negative
+                    if (RerePrecision.isGreaterThanOrEqual(solutionValue, 0.0, epsilon)) { // Non-negative
                         solution.set(bestVar, Math.max(0.0, solutionValue));
                         
                         if (verbose) {
@@ -1041,7 +1041,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         try {
             // 检查系统是否一�?
             double det = computeDeterminant(A_eq);
-            if (Precision.equalsZero(det, epsilon)) {
+            if (RerePrecision.equalsZero(det, epsilon)) {
                 // 矩阵奇异，可能不可行或有无穷�?
                 if (verbose) {
                     System.out.println("矩阵奇异，检查一致�?..");
@@ -1055,7 +1055,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // 检查非负性约�?
             boolean feasible = true;
             for (int i = 0; i < solution.length(); i++) {
-                if (Precision.isLessThan(RereMathUtil.safeDoubleValue(solution.get(i)), 0.0, epsilon)) {
+                if (RerePrecision.isLessThan(RereMathUtil.safeDoubleValue(solution.get(i)), 0.0, epsilon)) {
                     feasible = false;
                     break;
                 }
@@ -1146,12 +1146,12 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                     double ai = RereMathUtil.safeDoubleValue(A_eq.get(i, k));
                     double aj = RereMathUtil.safeDoubleValue(A_eq.get(j, k));
                     
-                    if (!Precision.equalsZero(ai, epsilon) || !Precision.equalsZero(aj, epsilon)) {
-                        if (Precision.equalsZero(aj, epsilon) && !Precision.equalsZero(ai, epsilon)) {
+                    if (!RerePrecision.equalsZero(ai, epsilon) || !RerePrecision.equalsZero(aj, epsilon)) {
+                        if (RerePrecision.equalsZero(aj, epsilon) && !RerePrecision.equalsZero(ai, epsilon)) {
                             proportional = false;
                             break;
                         }
-                        if (Precision.equalsZero(ai, epsilon) && !Precision.equalsZero(aj, epsilon)) {
+                        if (RerePrecision.equalsZero(ai, epsilon) && !RerePrecision.equalsZero(aj, epsilon)) {
                             proportional = false;
                             break;
                         }
@@ -1160,7 +1160,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                         if (!ratioSet) {
                             ratio = currentRatio;
                             ratioSet = true;
-                        } else if (!Precision.equals(currentRatio, ratio, epsilon)) {
+                        } else if (!RerePrecision.equals(currentRatio, ratio, epsilon)) {
                             proportional = false;
                             break;
                         }
@@ -1172,9 +1172,9 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                     double bi = RereMathUtil.safeDoubleValue(b_eq.get(i));
                     double bj = RereMathUtil.safeDoubleValue(b_eq.get(j));
                     
-                    if (!Precision.equalsZero(bj, epsilon)) {
+                    if (!RerePrecision.equalsZero(bj, epsilon)) {
                         double bRatio = bi / bj;
-                        if (!Precision.equals(bRatio, ratio, epsilon)) {
+                        if (!RerePrecision.equals(bRatio, ratio, epsilon)) {
                             // 不一致系�?
                             if (verbose) {
                                 System.out.println("检测到不一致的约束：行" + i + "和行" + j);
@@ -1186,7 +1186,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                                 .iterations(1)
                                 .build();
                         }
-                    } else if (!Precision.equalsZero(bi, epsilon)) {
+                    } else if (!RerePrecision.equalsZero(bi, epsilon)) {
                         if (verbose) {
                             System.out.println("检测到不一致的约束：行" + i + "和行" + j);
                         }
@@ -1355,9 +1355,9 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             double coeff = RereMathUtil.safeDoubleValue(tableau.get(i, enteringVar));
             double rhs = RereMathUtil.safeDoubleValue(tableau.get(i, tableau.cols() - 1));
             
-            if (Precision.isGreaterThan(coeff, 0.0, epsilon)) {  // 只考虑正系�?
+            if (RerePrecision.isGreaterThan(coeff, 0.0, epsilon)) {  // 只考虑正系�?
                 double ratio = rhs / coeff;
-                if (Precision.isGreaterThanOrEqual(ratio, 0.0) && Precision.isLessThan(ratio, minRatio)) {
+                if (RerePrecision.isGreaterThanOrEqual(ratio, 0.0) && RerePrecision.isLessThan(ratio, minRatio)) {
                     minRatio = ratio;
                     leavingVar = i;
                 }
@@ -1373,7 +1373,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
     private void performPivotOperation(IMatrix tableau, int pivotRow, int pivotCol) {
         double pivot = RereMathUtil.safeDoubleValue(tableau.get(pivotRow, pivotCol));
         
-        if (Precision.equalsZero(pivot, epsilon)) {
+        if (RerePrecision.equalsZero(pivot, epsilon)) {
             throw new RuntimeException("枢轴元素太小: " + pivot);
         }
         
@@ -1407,13 +1407,13 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // 寻找第i行的基变量（只有一�?，其他都�?的列�?
             for (int j = 0; j < n; j++) {
                 double value = RereMathUtil.safeDoubleValue(tableau.get(i, j));
-                if (Precision.equals(value, 1.0, epsilon)) {
+                if (RerePrecision.equals(value, 1.0, epsilon)) {
                     // 检查这一列在其他行是否都�?
                     boolean isBasic = true;
                     for (int k = 0; k < m; k++) {
                         if (k != i) {
                             double otherValue = RereMathUtil.safeDoubleValue(tableau.get(k, j));
-                            if (!Precision.equalsZero(otherValue, epsilon)) {
+                            if (!RerePrecision.equalsZero(otherValue, epsilon)) {
                                 isBasic = false;
                                 break;
                             }

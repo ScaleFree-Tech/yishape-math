@@ -1460,7 +1460,16 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     @Override
     public String toString() {
         var ls = IntStream.range(0, this.data.length)
-                .mapToObj(i -> String.format("Value: %.6f", this.data[i]))
+                .mapToObj(i -> {
+                    double value = this.data[i];
+                    // 如果四舍五入到2位小数后为0.00，不显示负号
+                    double rounded = Math.round(value * 100.0) / 100.0;
+                    if (rounded == 0.0) {
+                        return String.format("Value: %.2f", 0.0);
+                    } else {
+                        return String.format("Value: %.2f", value);
+                    }
+                })
                 .toArray(String[]::new);
         return StringUtils.join(ls, ", ");
     }

@@ -149,7 +149,8 @@ public class MatrixInversionSolver {
                 // If Hessenberg fails, fall back to other methods
             }
         }
-        
+        boolean well = isWellConditioned(A);
+//        System.out.println(well);
         // 4. Check if matrix is a square matrix for general purpose inversion
         if (A.rows() == A.cols()) {
             try {
@@ -170,7 +171,8 @@ public class MatrixInversionSolver {
         }
         
         // 5. Check if matrix is well-conditioned
-        if (isWellConditioned(A)) {
+        if (well) {
+            System.out.println("QR");
             try {
                 // Well-conditioned square matrix, use QR decomposition
                 IQRDecomposition qr = Decomps.createQR();
@@ -291,7 +293,7 @@ public class MatrixInversionSolver {
             
             // Check condition number
             double conditionNumber = matrix.cond();
-            
+//            System.out.println("condition number:"+conditionNumber);
             // A matrix is well-conditioned if its condition number is not too large
             return conditionNumber < CONDITION_THRESHOLD;
         } catch (Exception e) {

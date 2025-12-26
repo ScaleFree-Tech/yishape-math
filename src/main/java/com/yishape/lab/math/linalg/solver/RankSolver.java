@@ -3,7 +3,7 @@ package com.yishape.lab.math.linalg.solver;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.decomposition.Decomps;
 import com.yishape.lab.math.linalg.decomposition.DecompositionFailedException;
-import com.yishape.lab.math.util.Precision;
+import com.yishape.lab.math.util.RerePrecision;
 
 /**
  * Unified matrix rank calculator that automatically selects the most appropriate
@@ -359,14 +359,14 @@ public class RankSolver {
             // 寻找主元
             int pivotRow = rank;
             for (int row = rank + 1; row < rows; row++) {
-                if (!Precision.equalsZero(matrix[row][col], 1e-12) &&
-                    (Precision.equalsZero(matrix[pivotRow][col], 1e-12) ||
+                if (!RerePrecision.equalsZero(matrix[row][col], 1e-12) &&
+                    (RerePrecision.equalsZero(matrix[pivotRow][col], 1e-12) ||
                      Math.abs(matrix[row][col]) > Math.abs(matrix[pivotRow][col]))) {
                     pivotRow = row;
                 }
             }
 
-            if (!Precision.equalsZero(matrix[pivotRow][col], tolerance)) {
+            if (!RerePrecision.equalsZero(matrix[pivotRow][col], tolerance)) {
                 // 交换行
                 if (pivotRow != rank) {
                     double[] temp = matrix[rank];

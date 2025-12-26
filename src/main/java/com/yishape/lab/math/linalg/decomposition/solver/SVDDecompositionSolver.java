@@ -48,24 +48,15 @@ public class SVDDecompositionSolver implements IDecompositionSolver {
     @Override
     public IMatrix<Double> solve(IMatrix<Double> b) {
         // For SVD decomposition A = U * S * V^T, to solve A * X = B:
-        // 1. Compute Y = U^T * B
-        // 2. Solve S * Z = Y for Z (element-wise division by singular values)
-        // 3. Compute X = V * Z
+        // Use pseudoinverse approach for both singular and non-singular matrices
+        // A^+ = V * S^+ * U^T, where S^+ is the pseudoinverse of S
+        // X = A^+ * B
         
-        // Check for singularity first
-        if (!isNonSingular()) {
-            throw new RuntimeException("Matrix is singular");
-        }
+        // Compute A^+ = V * S^+ * U^T
+        IMatrix<Double> aPseudoInverse = getInverse();
         
-        // Step 1: Y = U^T * B
-        IMatrix<Double> y = uMatrix.transpose().mmul(b);
-        
-        // Step 2: Solve S * Z = Y for Z (element-wise division)
-        IMatrix<Double> z = solveDiagonalSystem(singularValues, y);
-        
-        // Step 3: X = V * Z (where V = vtMatrix^T)
-        IMatrix<Double> vMatrix = vtMatrix.transpose();
-        return vMatrix.mmul(z);
+        // Return X = A^+ * B
+        return aPseudoInverse.mmul(b);
     }
     
     @Override
@@ -93,20 +84,31 @@ public class SVDDecompositionSolver implements IDecompositionSolver {
     
     @Override
     public IMatrix<Double> getInverse() {
-        // For SVD decomposition A = U * S * V^T, A^(-1) = V * S^(-1) * U^T
-        // Check for singularity first
-        if (!isNonSingular()) {
-            throw new RuntimeException("Matrix is singular");
+        // For SVD decomposition A = U * S * V^T, A^+ = V * S^+ * U^T
+        // For non-singular matrices, A^+ = A^(-1)
+        
+        // Dimensions: A is m x n
+        // U is m x m, S is m x n (diagonal p = min(m,n)), V is n x n
+        // A^+ must be n x m
+        // S^+ must be n x m
+        
+        int m = uMatrix.rows();
+        int n = vtMatrix.cols();
+        int p = singularValues.length();
+        
+        // Create S^+ matrix with dimensions n x m
+        IMatrix<Double> sInv = Linalg.zeros(n, m);
+        for (int i = 0; i < p; i++) {
+            double sv = singularValues.get(i);
+            if (Math.abs(sv) > epsilon) {
+                sInv.put(i, i, 1.0 / sv);
+            } else {
+                sInv.put(i, i, 0.0);
+            }
         }
         
-        // Create diagonal matrix with inverted singular values
-        int n = singularValues.length();
-        IMatrix<Double> sInv = Linalg.zeros(n, n);
-        for (int i = 0; i < n; i++) {
-            sInv.put(i, i, 1.0 / singularValues.get(i));
-        }
-        
-        // Compute A^(-1) = V * S^(-1) * U^T
+        // Compute A^+ = V * S^+ * U^T
+        // V is n x n, S^+ is n x m, U^T is m x m
         IMatrix<Double> vMatrix = vtMatrix.transpose();
         IMatrix<Double> uTranspose = uMatrix.transpose();
         return vMatrix.mmul(sInv).mmul(uTranspose);
