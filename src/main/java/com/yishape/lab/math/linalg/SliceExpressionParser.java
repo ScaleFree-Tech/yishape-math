@@ -86,8 +86,8 @@ public class SliceExpressionParser {
         int step = stepStr == null ? 1 : Integer.parseInt(stepStr);
         
         // 验证step
-        if (step <= 0) {
-            throw new IllegalArgumentException("步长必须大于0 / Step must be greater than 0");
+        if (step == 0) {
+            throw new IllegalArgumentException("步长不能为0 / Step cannot be zero");
         }
         
         // 处理负数索引
@@ -101,15 +101,43 @@ public class SliceExpressionParser {
             actualEnd = maxSize + end;
         }
         
-        // 边界检查
-        if (actualStart < 0) {
-            actualStart = 0;
-        }
-        if (actualEnd > maxSize) {
-            actualEnd = maxSize;
-        }
-        if (actualStart > actualEnd) {
-            actualStart = actualEnd;
+        // 边界检查和调整
+        if (step > 0) {
+            // 正数步长的边界检查
+            if (actualStart < 0) {
+                actualStart = 0;
+            }
+            if (actualEnd > maxSize) {
+                actualEnd = maxSize;
+            }
+            if (actualStart > actualEnd) {
+                actualStart = actualEnd;
+            }
+        } else {
+            // 负数步长的边界检查和调整
+            // 对于负数步长，我们需要特殊处理
+            if (actualStart < 0) {
+                actualStart = maxSize - 1;
+            }
+            if (actualStart > maxSize - 1) {
+                actualStart = maxSize - 1;
+            }
+            if (actualEnd < -1) {
+                actualEnd = -1;
+            }
+            if (actualEnd > maxSize) {
+                actualEnd = maxSize;
+            }
+            // 对于负数步长，如果start <= end，我们需要调整
+            if (actualStart <= actualEnd) {
+                if (actualEnd == maxSize) {
+                    actualEnd = -1; // 表示到开头
+                }
+                if (actualStart == 0 && actualEnd == -1) {
+                    // 特殊情况：::-1 应该从最后一个元素开始
+                    actualStart = maxSize - 1;
+                }
+            }
         }
         
         return new SliceResult(start, end, step, actualStart, actualEnd);

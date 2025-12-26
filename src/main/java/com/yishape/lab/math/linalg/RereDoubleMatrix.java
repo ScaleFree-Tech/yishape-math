@@ -73,8 +73,14 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * </p>
      */
     double[][] data;
+    
+    /**
+     * 对于空矩阵（行数为0），存储列数信息 / For empty matrices (0 rows), store column count information
+     * 当data.length == 0时，这个字段存储预期的列数
+     */
+    int emptyMatrixCols = 0;
 
-    private final IDoubleVectorComputer computer = new DoubleVectorComputer();
+    private static final IDoubleVectorComputer computer = new DoubleVectorComputer();
 
     // ========== 性能优化相关字段 / Performance Optimization Fields ==========
     /**
@@ -176,7 +182,9 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             throw new IllegalArgumentException("矩阵数据不能为null / Matrix data cannot be null");
         }
         if (data.length == 0) {
-            throw new IllegalArgumentException("矩阵不能为空 / Matrix cannot be empty");
+            // 允许空矩阵
+            this.data = data;
+            return;
         }
 
         // 检查二维数组的一致性
@@ -511,6 +519,10 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public int getColNum() {
+        if (data.length == 0) {
+            System.out.println("DEBUG: getColNum() called on empty matrix, returning: " + emptyMatrixCols);
+            return emptyMatrixCols; // 对于空矩阵，返回存储的列数
+        }
         return data[0].length;
     }
 
@@ -1738,26 +1750,76 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         int stepCol = colResult.step;
 
         // 计算结果矩阵的尺寸
-        int resultRows = (endRow - startRow + stepRow - 1) / stepRow;
-        int resultCols = (endCol - startCol + stepCol - 1) / stepCol;
+        int resultRows = calculateSliceSize(startRow, endRow, stepRow);
+        int resultCols = calculateSliceSize(startCol, endCol, stepCol);
 
         if (resultRows <= 0 || resultCols <= 0) {
+            // 返回空矩阵而不是抛出异常
             return IDoubleMatrix.of(new double[0][0]);
         }
 
         double[][] result = new double[resultRows][resultCols];
 
         int resultRow = 0;
-        for (int i = startRow; i < endRow; i += stepRow) {
-            int resultCol = 0;
-            for (int j = startCol; j < endCol; j += stepCol) {
-                result[resultRow][resultCol] = data[i][j];
-                resultCol++;
+        if (stepRow > 0) {
+            for (int i = startRow; i < endRow; i += stepRow) {
+                int resultCol = 0;
+                if (stepCol > 0) {
+                    for (int j = startCol; j < endCol; j += stepCol) {
+                        result[resultRow][resultCol] = data[i][j];
+                        resultCol++;
+                    }
+                } else {
+                    for (int j = startCol; j > endCol; j += stepCol) {
+                        result[resultRow][resultCol] = data[i][j];
+                        resultCol++;
+                    }
+                }
+                resultRow++;
             }
-            resultRow++;
+        } else {
+            for (int i = startRow; i > endRow; i += stepRow) {
+                int resultCol = 0;
+                if (stepCol > 0) {
+                    for (int j = startCol; j < endCol; j += stepCol) {
+                        result[resultRow][resultCol] = data[i][j];
+                        resultCol++;
+                    }
+                } else {
+                    for (int j = startCol; j > endCol; j += stepCol) {
+                        result[resultRow][resultCol] = data[i][j];
+                        resultCol++;
+                    }
+                }
+                resultRow++;
+            }
         }
 
         return IDoubleMatrix.of(result);
+    }
+
+    /**
+     * 计算切片结果的尺寸
+     * Calculate the size of slice result
+     */
+    private int calculateSliceSize(int start, int end, int step) {
+        if (step > 0) {
+            return Math.max(0, (end - start + step - 1) / step);
+        } else {
+            // 对于负数步长，我们需要特殊处理
+            // 当end为-1时，表示到开头
+            int absStep = Math.abs(step);
+            if (start < end) {
+                return 0; // 如果start < end且step为负，没有元素
+            }
+            if (end == -1) {
+                // 表示到开头，元素个数 = (start - 0) / abs(step) + 1
+                return Math.max(0, start / absStep + 1);
+            } else {
+                // 一般情况：元素个数 = (start - end - 1) / abs(step) + 1
+                return Math.max(0, (start - end - 1) / absStep + 1);
+            }
+        }
     }
 
     /**
@@ -2075,7 +2137,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
     @Override
     public int cols() {
-        return data[0].length;
+        return this.getColNum();
     }
 
     /**
