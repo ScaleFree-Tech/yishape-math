@@ -355,7 +355,7 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 #### 最优化算法 / Optimization Algorithms
 ```java
 // L-BFGS优化器示例 / L-BFGS Optimizer Example
-RereLBFGS optimizer = new RereLBFGS();
+IOptimizer optimizer = Opts.lbfgs();
 
 // 定义目标函数（Rosenbrock函数）/ Define objective function (Rosenbrock function)
 IObjectiveFunction objFun = new IObjectiveFunction() {
@@ -404,6 +404,61 @@ for (int i = 0; i < numIterations; i++) {
     if (loss < tolerance) break;
 }
 ```
+
+
+#### 线性规划 / Linear Programming
+```java
+// 创建单纯形法求解器 / Create simplex solver
+ILinProgSolver solver = Opts.simplexLinProgSolver();
+
+// 定义线性规划问题 / Define linear programming problem
+// minimize 2x1 + 3x2
+// subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
+IVector c = Linalg.vector(new double[]{2.0, 3.0});
+IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector b_eq = Linalg.vector(new double[]{5.0});
+
+// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solve(c, A_eq, b_eq);
+
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
+
+System.out.println("最优解: " + optimalSolution);
+System.out.println("最优值: " + optimalValue);
+
+```
+
+#### 整数规划（0-1规划） / Integer Programming (0-1 Programming)
+```java
+// 创建整数规划求解器 / Create integer programming solver
+IIntegerProg solver = Opts.intLinProgSolver();
+
+// 定义整数规划问题 / Define integer programming problem
+// minimize x1 + x2
+// subject to x1 + x2 = 3, x1 ≥ 0, x2 ≥ 0, x1,x2 ∈ Z
+IVector c = Linalg.vector(new double[]{1.0, 1.0});
+IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector b_eq = Linalg.vector(new double[]{3.0});
+
+// 设置所有变量为整数(如果不是所有变量序号，则为混合整数规划) / Set all variables as integer(if not all variable indexes, it is mixed integer programming)
+solver.addIntegerVariables(0, 1);
+// 另一种方法设置所有变量为整数变量 / Another method to set all variables as integer variables
+//solver.setAllVariablesInteger();
+// 设置所有变量为二进制变量（0-1变量） / set all variables as binary variables (0-1 variables)
+//solver.setAllVariablesBinary();
+
+// 求解(等式约束调用solveWithNonNegativeEqualConstraints，小于等于约束调用solve) / Solve(use solveWithNonNegativeEqualConstraints() for equal constraints, use solve() for less than or equal constraints)
+OptResult result = solver.solve(c, A_eq, b_eq);
+
+double optimalValue = result.getOptimalValue();
+IVector optimalSolution = result.getOptimalPoint();
+
+System.out.println("最优整数解 / Optimal solution: " + optimalSolution);
+System.out.println("最优值 / Optimal value: " + optimalValue);
+
+```
+
 
 #### 线性回归 / Linear Regression
 ```java
