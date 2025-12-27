@@ -10,6 +10,7 @@ import com.yishape.lab.math.ml.ISerializableModel;
  */
 public interface IClassification extends ISerializableModel{
     
+    
     /**
      * 
      * @param feature
@@ -18,6 +19,7 @@ public interface IClassification extends ISerializableModel{
      */
     public ClassificationResult fit(IMatrix feature, String[] labels);
     
+    
     /**
      * 
      * @param x
@@ -25,11 +27,20 @@ public interface IClassification extends ISerializableModel{
      */
     public String predict(IVector x);
     
+    
     /**
      * 
      * @param features
      * @return 
      */
     public String[] predictBatch(IMatrix features);
+    
+    
+    /**
+     * 
+     * @param features
+     * @return 
+     */
+    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features);
     
 }

@@ -4,6 +4,7 @@ import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.cls.BatchPredictionResult;
 import com.yishape.lab.math.ml.cls.IClassification;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
@@ -180,7 +181,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         this.isTrained = true;
         
         // 计算训练准确率
-        String[] trainPredictions = predict(features);
+        String[] trainPredictions = predictBatch(features);
         double trainAccuracy = computeAccuracy(labels, trainPredictions);
         
         // 创建结果对象
@@ -217,7 +218,8 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
      * @param features 特征矩阵
      * @return 预测标签数组
      */
-    public String[] predict(IMatrix features) {
+    @Override
+    public String[] predictBatch(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练");
         }
@@ -233,10 +235,51 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
     }
 
     @Override
-    public String[] predictBatch(IMatrix features) {
-        return predict(features);
+    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型尚未训练");
+        }
+
+        int numSamples = features.rows();
+        String[] predictions = new String[numSamples];
+        double[][] classProbabilities = new double[numSamples][numClasses];
+
+        // 获取反向标签映射的列表（按索引排序）
+        List<String> classLabelsList = new ArrayList<>();
+        for (int i = 0; i < numClasses; i++) {
+            classLabelsList.add(reverseLabelMapping.get(i));
+        }
+
+        for (int i = 0; i < numSamples; i++) {
+            IVector instance = features.getRow(i);
+            Map<String, Double> probMap = predictProba(instance);
+
+            // 找到概率最大的类别作为预测
+            String predictedClass = null;
+            double maxProb = -1.0;
+
+            // 获取预测标签和概率
+            for (Map.Entry<String, Double> entry : probMap.entrySet()) {
+                String className = entry.getKey();
+                double prob = entry.getValue();
+
+                // 填充概率矩阵
+                int classIdx = labelMapping.get(className);
+                classProbabilities[i][classIdx] = prob;
+
+                // 记录最大概率的类别
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    predictedClass = className;
+                }
+            }
+
+            predictions[i] = predictedClass;
+        }
+
+        return new BatchPredictionResult(predictions, classProbabilities);
     }
-    
+
     
     
     

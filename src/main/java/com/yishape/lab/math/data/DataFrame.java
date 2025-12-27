@@ -512,6 +512,15 @@ public class DataFrame implements Serializable {
     }
 
     /**
+     * 获取列数 / Get column count
+     *
+     * @return
+     */
+    public int cols() {
+        return this.getColumnCount();
+    }
+
+    /**
      * 获取行数 / Get row count
      * <p>
      * 返回DataFrame的行数</p>
@@ -522,6 +531,15 @@ public class DataFrame implements Serializable {
      */
     public int getRowCount() {
         return rowCount;
+    }
+
+    /**
+     * 获取行数 / Get row count
+     *
+     * @return
+     */
+    public int rows() {
+        return this.getRowCount();
     }
 
     /**

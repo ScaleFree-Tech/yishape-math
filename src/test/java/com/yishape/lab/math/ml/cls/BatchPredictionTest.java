@@ -43,7 +43,7 @@ public class BatchPredictionTest {
         IMatrix testFeatures = Linalg.matrix(testData);
 
         // 使用新的批量预测方法
-        RereLogisticRegression.BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
+        BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
 
         System.out.println("预测结果: " + result);
         System.out.println("预测标签: " + java.util.Arrays.toString(result.getPredictions()));
@@ -78,7 +78,7 @@ public class BatchPredictionTest {
         IMatrix testFeatures = Linalg.matrix(testData);
 
         // 使用新的批量预测方法
-        RereLogisticRegression.BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
+        BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
 
         System.out.println("预测结果: " + result);
         System.out.println("预测标签: " + java.util.Arrays.toString(result.getPredictions()));
@@ -118,7 +118,7 @@ public class BatchPredictionTest {
         IMatrix testFeatures = Linalg.matrix(testData);
 
         // 使用新的批量预测方法
-        RereLogisticRegression.BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
+        BatchPredictionResult result = model.predictBatchWithProbabilities(testFeatures);
 
         System.out.println("批量预测结果: " + result);
         System.out.println("预测标签: " + java.util.Arrays.toString(result.getPredictions()));

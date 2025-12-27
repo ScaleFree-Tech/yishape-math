@@ -69,7 +69,7 @@ public class RereRandomForestTest {
             {6.5, 7.5}
         };
         IMatrix<Double> testMatrix = Linalg.matrix(testData);
-        String[] predictions = randomForest.predict(testMatrix);
+        String[] predictions = randomForest.predictBatch(testMatrix);
         assertNotNull(predictions);
         assertEquals(2, predictions.length);
         

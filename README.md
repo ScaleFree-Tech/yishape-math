@@ -490,19 +490,19 @@ try {
     var df = DataFrame.readCsv(path);
     // 提取特征和标签 / Extract features and labels
     var feature = df.sliceColumn(0, -1).toMatrix();
-    var labels = df.get(df.getColumnCount()-1).toStringArray();
+    var labels = df.getColumn(df.cols()-1).toStringArray();
     // 创建逻辑回归分类器（两个参数分别是L1和L2正则化系数） / Create logistic regression classifier (the two parameters are L1 and L2 regularization coefficients)
-    var lr = new RereLogisticRegression(0.0,0.0);
+    var lr = ML.logisticRegression(0.0,0.0);
     // 训练模型 / Train model
     var res = lr.fit(feature, labels);
     System.out.println(res);
     // 预测分类 / Predict classification
-    var predicted = lr.predictBatchWithProbabilities(feature);
+    var predicted = lr.predictBatch(feature);
     // 计算分类指标 / Compute classification metrics
-    ClassificationMetrics metrics = ClassificationMetrics.compute(labels, predicted);
+    var metrics = ML.classificationMetrics(lr, feature, labels);
     System.out.println(metrics);
     // 交叉验证 / Cross validation
-    var result = CrossValidation.kFoldCrossValidation(lr, feature, labels, 3);
+    var result = ML.kFoldCrossValidation(lr, feature, labels, 3);
     System.out.println(result);
 } catch (Exception e) {
     e.printStackTrace();

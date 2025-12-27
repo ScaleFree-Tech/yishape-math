@@ -4,6 +4,7 @@ import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.cls.BatchPredictionResult;
 import com.yishape.lab.math.ml.cls.IClassification;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
@@ -291,7 +292,8 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
      * @param features 特征矩阵
      * @return 预测标签数组
      */
-    public String[] predict(IMatrix features) {
+    @Override
+    public String[] predictBatch(IMatrix features) {
         int numSamples = features.rows();
         String[] predictions = new String[numSamples];
         
@@ -303,10 +305,52 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
     }
 
     @Override
-    public String[] predictBatch(IMatrix features) {
-        return predict(features);
+    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+
+        if (features == null) {
+            throw new IllegalArgumentException("特征矩阵不能为null");
+        }
+
+        int numSamples = features.rows();
+        String[] predictions = new String[numSamples];
+        int outputDim = isBinary ? 2 : numClasses;
+        double[][] classProbabilities = new double[numSamples][outputDim];
+
+        // 使用现有的批量概率预测方法
+        IMatrix probMatrix = predictProba(features);
+
+        for (int i = 0; i < numSamples; i++) {
+            // 找到概率最大的类别作为预测
+            int maxIndex = 0;
+            double maxProb = probMatrix.get(i, 0).doubleValue();
+
+            for (int j = 1; j < outputDim; j++) {
+                double prob = probMatrix.get(i, j).doubleValue();
+                classProbabilities[i][j] = prob;
+
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    maxIndex = j;
+                }
+            }
+
+            // 填充第一个类别的概率
+            if (isBinary) {
+                classProbabilities[i][0] = 1.0 - maxProb;
+            } else {
+                classProbabilities[i][0] = probMatrix.get(i, 0).doubleValue();
+            }
+
+            // 转换为类别标签
+            predictions[i] = indexToLabel.get(maxIndex);
+        }
+
+        return new BatchPredictionResult(predictions, classProbabilities);
     }
-    
+
     
     
     /**

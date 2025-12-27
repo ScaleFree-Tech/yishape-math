@@ -269,7 +269,7 @@ public class RandomForestHyperparameterOptimizer implements IObjectiveFunction {
             rf.fit(trainFeatures, trainLabels);
             
             // 在验证集上评估
-            String[] predictions = rf.predict(validFeatures);
+            String[] predictions = rf.predictBatch(validFeatures);
             
             // 计算错误率（目标是最小化）
             int errors = 0;

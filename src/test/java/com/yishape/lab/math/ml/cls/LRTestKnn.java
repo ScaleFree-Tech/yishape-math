@@ -25,7 +25,7 @@ public class LRTestKnn {
             var res = lr.fit(feature, labels);
             System.out.println(res);
             var predicted = lr.predictBatch(feature);
-            ClassificationMetrics metrics = ClassificationMetrics.compute(labels, predicted);
+            ClassificationMetrics metrics = ClassificationMetrics.compute(lr,feature,labels);
             System.out.println(metrics);
             
             var result = CrossValidation.kFoldCrossValidation(lr, feature, labels, 3);

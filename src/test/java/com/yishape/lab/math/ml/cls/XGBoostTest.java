@@ -68,7 +68,7 @@ public class XGBoostTest {
         assertTrue(prediction.equals("A") || prediction.equals("B"));
         
         // 测试批量预测
-        String[] predictions = xgboost.predict(features);
+        String[] predictions = xgboost.predictBatch(features);
         assertNotNull(predictions);
         assertEquals(features.rows(), predictions.length);
         
@@ -105,7 +105,7 @@ public class XGBoostTest {
         Assertions.assertEquals(3, result.getNumClasses());
         
         // 测试预测
-        String[] predictions = xgboost.predict(multiFeatures);
+        String[] predictions = xgboost.predictBatch(multiFeatures);
         assertNotNull(predictions);
         assertEquals(multiFeatures.rows(), predictions.length);
         

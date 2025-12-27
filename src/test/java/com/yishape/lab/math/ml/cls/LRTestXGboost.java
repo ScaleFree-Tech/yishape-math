@@ -12,8 +12,8 @@ import com.yishape.lab.math.ml.metric.CrossValidation;
 public class LRTestXGboost {
 
     public static void main(String args[]) {
-
-        String path = "C:\\Users\\lteb2\\Downloads\\d9c2cb80-3944-4f82-b884-93cad3e586fc.csv";
+String path = "G:\\电子科技大学-工作\\商务统计_2025\\data\\iris.csv";
+//        String path = "C:\\Users\\lteb2\\Downloads\\d9c2cb80-3944-4f82-b884-93cad3e586fc.csv";
 //        String path = "F:\\电子科技大学工作\\商务统计_2025\\data\\wine.csv";
         try {
             var df = DataFrame.readCsv(path);
@@ -25,7 +25,7 @@ public class LRTestXGboost {
             var res = lr.fit(feature, labels);
             System.out.println(res);
             var predicted = lr.predictBatch(feature);
-            ClassificationMetrics metrics = ClassificationMetrics.compute(labels, predicted);
+            ClassificationMetrics metrics = ClassificationMetrics.compute(lr,feature,labels);
             System.out.println(metrics);
             
             var result = CrossValidation.kFoldCrossValidation(lr, feature, labels, 3);

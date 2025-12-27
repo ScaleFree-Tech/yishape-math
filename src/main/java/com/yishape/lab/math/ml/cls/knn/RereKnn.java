@@ -3,6 +3,7 @@ package com.yishape.lab.math.ml.cls.knn;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.cls.BatchPredictionResult;
 import com.yishape.lab.math.ml.cls.ClassificationResult;
 import com.yishape.lab.math.ml.cls.IClassification;
 
@@ -201,6 +202,68 @@ public class RereKnn implements IClassification {
 
         return predictions;
     }
+
+    @Override
+    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+
+        if (features == null) {
+            throw new IllegalArgumentException("特征矩阵不能为null");
+        }
+
+        if (features.getColNum() != featureDimension) {
+            throw new IllegalArgumentException("特征维度与训练特征维度不匹配");
+        }
+
+        int numSamples = features.getRowNum();
+        String[] predictions = new String[numSamples];
+        double[][] classProbabilities = new double[numSamples][numClasses];
+
+        for (int i = 0; i < numSamples; i++) {
+            IVector instance = features.getRow(i);
+            predictions[i] = predict(instance);
+            
+            // 计算每个样本的概率分布
+            List<Neighbor> neighbors = findKNearestNeighbors(instance, k);
+            double[] votes = new double[numClasses];
+            double totalWeight = 0.0;
+
+            for (Neighbor neighbor : neighbors) {
+                String label = trainingLabels[neighbor.index];
+                int classIndex = labelMapping.get(label);
+
+                double weight = 1.0;
+                switch (distanceWeighting) {
+                    case INVERSE:
+                        weight = 1.0 / (neighbor.distance + 0.001);
+                        break;
+                    case SIMILARITY:
+                        weight = 1.0 - neighbor.distance;
+                        break;
+                    case NONE:
+                    default:
+                        weight = 1.0;
+                        break;
+                }
+
+                votes[classIndex] += weight;
+                totalWeight += weight;
+            }
+
+            // 归一化得到概率
+            for (int j = 0; j < numClasses; j++) {
+                classProbabilities[i][j] = totalWeight > 0 ? votes[j] / totalWeight : 1.0 / numClasses;
+            }
+        }
+
+        return new BatchPredictionResult(predictions, classProbabilities);
+    }
+    
+    
+    
+    
 
     @Override
     public void save(String path) {

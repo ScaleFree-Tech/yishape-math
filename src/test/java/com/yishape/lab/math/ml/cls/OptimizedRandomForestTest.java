@@ -254,7 +254,7 @@ public class OptimizedRandomForestTest {
         
         // 预测
         startTime = System.currentTimeMillis();
-        String[] standardPredictions = standardRF.predict(testFeatures);
+        String[] standardPredictions = standardRF.predictBatch(testFeatures);
         long standardPredictTime = System.currentTimeMillis() - startTime;
         
         // 创建优化后的随机森林（通过超参数优化）
@@ -276,7 +276,7 @@ public class OptimizedRandomForestTest {
         
         // 预测
         startTime = System.currentTimeMillis();
-        String[] optimizedPredictions = optimizedResult.bestModel.predict(testFeatures);
+        String[] optimizedPredictions = optimizedResult.bestModel.predictBatch(testFeatures);
         long optimizedPredictTime = System.currentTimeMillis() - startTime;
         
         // 输出性能比较
@@ -321,7 +321,7 @@ public class OptimizedRandomForestTest {
         EnsembleClassifier.EnsembleResult ensembleResult = ensemble.predict(testFeatures);
         
         // 3. 比较结果
-        String[] optimizedPredictions = optimizedResult.bestModel.predict(testFeatures);
+        String[] optimizedPredictions = optimizedResult.bestModel.predictBatch(testFeatures);
         
         System.out.println("Optimized RF predictions: " + String.join(", ", optimizedPredictions));
         System.out.println("Ensemble predictions: " + String.join(", ", ensembleResult.predictions));

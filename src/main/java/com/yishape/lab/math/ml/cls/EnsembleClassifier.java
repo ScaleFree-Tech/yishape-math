@@ -208,9 +208,9 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
         }
         
         // 获取各分类器的预测
-        String[] rfPredictions = randomForest.predict(features);
+        String[] rfPredictions = randomForest.predictBatch(features);
         String[] lrPredictions = logisticRegression.predictBatch(features);
-        String[] xgbPredictions = xgboost.predict(features);
+        String[] xgbPredictions = xgboost.predictBatch(features);
         
         // 获取各分类器的概率预测
         IMatrix rfProbs = convertPredictionsToProbs(rfPredictions);
@@ -429,7 +429,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
                 RFTree.SplitCriterion.GINI, randomSeed + fold
             );
             tempRF.fit(trainFeatures, trainLabels);
-            accuracies[0] += computeAccuracy(tempRF.predict(validFeatures), validLabels);
+            accuracies[0] += computeAccuracy(tempRF.predictBatch(validFeatures), validLabels);
             
             RereLogisticRegression tempLR = new RereLogisticRegression();
             tempLR.fit(trainFeatures, trainLabels);
@@ -438,7 +438,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
             RereXGboost tempXGB = new RereXGboost(0.1, 50, 6, 0.0, 1.0);
             tempXGB.setRandomSeed(randomSeed + fold);
             tempXGB.fit(trainFeatures, trainLabels);
-            accuracies[2] += computeAccuracy(tempXGB.predict(validFeatures), validLabels);
+            accuracies[2] += computeAccuracy(tempXGB.predictBatch(validFeatures), validLabels);
         }
         
         // 平均准确率
@@ -529,10 +529,40 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
      * @param features 特征矩阵
      * @return 预测的类别标签数组
      */
+    @Override
     public String[] predictBatch(IMatrix features) {
         EnsembleResult result = predict(features);
         return result.predictions;
     }
+
+    @Override
+    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型必须先训练才能进行预测");
+        }
+
+        if (features == null) {
+            throw new IllegalArgumentException("特征矩阵不能为null");
+        }
+
+        // 使用现有的predict方法获取集成结果
+        EnsembleResult result = predict(features);
+
+        // 将IMatrix概率转换为double[][]
+        int numSamples = result.probabilities.rows();
+        int numClasses = result.probabilities.cols();
+        double[][] classProbabilities = new double[numSamples][numClasses];
+
+        for (int i = 0; i < numSamples; i++) {
+            for (int j = 0; j < numClasses; j++) {
+                classProbabilities[i][j] = result.probabilities.get(i, j).doubleValue();
+            }
+        }
+
+        return new BatchPredictionResult(result.predictions, classProbabilities);
+    }
+    
+    
     
     // Getters
     public boolean isTrained() { return isTrained; }

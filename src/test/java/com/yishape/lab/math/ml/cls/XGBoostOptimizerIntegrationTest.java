@@ -60,7 +60,7 @@ public class XGBoostOptimizerIntegrationTest {
         assertTrue(result.getTrees().size() > 0);
         
         // 测试预测
-        String[] predictions = xgboost.predict(features);
+        String[] predictions = xgboost.predictBatch(features);
         assertNotNull(predictions);
         assertEquals(features.rows(), predictions.length);
         
@@ -88,7 +88,7 @@ public class XGBoostOptimizerIntegrationTest {
         assertTrue(result.getTrees().size() > 0);
         
         // 测试预测
-        String[] predictions = xgboost.predict(features);
+        String[] predictions = xgboost.predictBatch(features);
         assertNotNull(predictions);
         assertEquals(features.rows(), predictions.length);
         
