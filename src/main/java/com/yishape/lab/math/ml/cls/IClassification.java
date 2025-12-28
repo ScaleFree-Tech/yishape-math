@@ -43,4 +43,11 @@ public interface IClassification extends ISerializableModel{
      */
     public BatchPredictionResult predictBatchWithProbabilities(IMatrix features);
     
+    
+    /**
+     * 
+     * @return 
+     */
+    public boolean isTrained();
+    
 }

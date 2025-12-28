@@ -483,6 +483,7 @@ public class RereKnn implements IClassification {
         this.windowSize = windowSize;
     }
 
+    @Override
     public boolean isTrained() {
         return isTrained;
     }

@@ -496,7 +496,7 @@ try {
     // 训练模型 / Train model
     var res = lr.fit(feature, labels);
     System.out.println(res);
-    // 预测分类 / Predict classification
+    // 预测类别 / Predict classes
     var predicted = lr.predictBatch(feature);
     // 计算分类指标 / Compute classification metrics
     var metrics = ML.classificationMetrics(lr, feature, labels);

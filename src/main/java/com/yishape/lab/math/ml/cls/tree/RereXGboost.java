@@ -103,6 +103,9 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
     /** 当前预测矩阵，用于优化计算 */
     private IMatrix predictions;
     
+    /** 是否已训练 */
+    private boolean isTrained = false;
+    
     // 优化器相关字段
     private IOnlineOptimizer optimizer;
     private String optimizerType = "adam"; // 默认使用SGD
@@ -137,6 +140,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
     
     @Override
     public XGBoostResult fit(IMatrix features, String[] labels) {
+        
         // 初始化
         initializeModel(features, labels);
         
@@ -231,6 +235,8 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         
         // 计算特征重要性
         computeFeatureImportance();
+        
+        this.isTrained = true;
         
         // 创建结果对象
         return createResult();
@@ -864,18 +870,14 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
      */
     private void initializeOptimizer() {
         switch (optimizerType) {
-            case "sgd":
-                optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9); // 学习率和动量
-                break;
-            case "adam":
-                optimizer = new RereOnlineAdam(optimizerLearningRate);
-                break;
-            default:
+            case "sgd" -> optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9); // 学习率和动量
+            case "adam" -> optimizer = new RereOnlineAdam(optimizerLearningRate);
+            default -> {
                 // 对于无效的优化器类型，默认使用SGD
                 System.out.println("警告: 不支持的优化器类型 '" + optimizerType + "'，使用默认的SGD优化器");
                 optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9);
                 optimizerType = "sgd"; // 更新为实际使用的类型
-                break;
+            }
         }
     }
     
@@ -896,6 +898,12 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
             this.validLabels = validLabels;
         }
     }
+
+    @Override
+    public boolean isTrained() {
+        return isTrained;
+    }
+
     
     /**
      * 将模型保存在本地

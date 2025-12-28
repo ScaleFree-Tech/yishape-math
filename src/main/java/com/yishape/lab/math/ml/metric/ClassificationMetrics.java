@@ -165,13 +165,16 @@ public class ClassificationMetrics {
     }
 
     /**
-     * 
+     *
      * @param model
      * @param feature
      * @param yTrue
-     * @return 
+     * @return
      */
     public static ClassificationMetrics compute(IClassification model, IMatrix feature, String[] yTrue) {
+        if (!model.isTrained()) {
+            model.fit(feature, yTrue);
+        }
         BatchPredictionResult prdResults = model.predictBatchWithProbabilities(feature);
         return compute(yTrue, prdResults);
     }

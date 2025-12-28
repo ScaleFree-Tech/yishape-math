@@ -592,6 +592,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         return result;
     }
     
+    @Override
     public boolean isTrained() {
         return isTrained;
     }

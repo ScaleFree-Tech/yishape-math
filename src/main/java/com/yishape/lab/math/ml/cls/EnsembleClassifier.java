@@ -565,6 +565,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
     
     
     // Getters
+    @Override
     public boolean isTrained() { return isTrained; }
     public String[] getClassLabels() { return classLabels; }
     public IVector getClassifierWeights() { return classifierWeights; }
