@@ -282,4 +282,12 @@ public abstract class ClassificationResult implements Serializable{
         sb.append("特征重要性: ").append(hasFeatureImportance() ? "可用" : "不可用");
         return sb.toString();
     }
+
+    @Override
+    public String toString() {
+        return this.getBasicStats(); 
+    }
+    
+    
+    
 }

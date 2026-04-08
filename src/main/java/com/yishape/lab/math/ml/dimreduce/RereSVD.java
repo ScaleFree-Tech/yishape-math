@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.dimreduce;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -22,6 +25,9 @@ import java.io.*;
  * @author lteb2
  */
 public class RereSVD implements IDimReduce, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereSVD.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -104,7 +110,7 @@ public class RereSVD implements IDimReduce, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

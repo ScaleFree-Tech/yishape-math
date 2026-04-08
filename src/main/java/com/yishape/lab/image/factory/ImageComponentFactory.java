@@ -1,5 +1,8 @@
 package com.yishape.lab.image.factory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.image.core.*;
 
 import java.util.Map;
@@ -22,6 +25,9 @@ import java.util.function.Supplier;
  * @since 2.0
  */
 public class ImageComponentFactory {
+
+    private static final Logger log = LoggerFactory.getLogger(ImageComponentFactory.class);
+
     
     /**
      * 组件类型枚举 / Component Type Enum
@@ -483,7 +489,7 @@ public class ImageComponentFactory {
                 }
             } catch (Exception e) {
                 // 忽略参数设置错误 / Ignore parameter setting errors
-                System.err.println("Warning: Failed to set parameter " + entry.getKey() + ": " + e.getMessage());
+                log.warn("Warning: Failed to set parameter " + entry.getKey() + ": " + e.getMessage());
             }
         }
     }

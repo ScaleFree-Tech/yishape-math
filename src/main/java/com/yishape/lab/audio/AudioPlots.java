@@ -1,5 +1,8 @@
 package com.yishape.lab.audio;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioStatistics;
 import com.yishape.lab.audio.core.AudioQuality;
@@ -35,6 +38,9 @@ import java.util.HashMap;
  * @since 1.0
  */
 public class AudioPlots {
+
+    private static final Logger log = LoggerFactory.getLogger(AudioPlots.class);
+
     
     // Maximum number of points to display in waveform for visualization
     private static final int MAX_WAVEFORM_POINTS = 10000;
@@ -439,8 +445,8 @@ public class AudioPlots {
         } catch (Exception e) {
             // 如果STFT计算失败，回退到原来的mock实现并记录错误
             // If STFT calculation fails, fall back to the original mock implementation and log the error
-            System.err.println("Failed to calculate spectrogram, using mock data: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to calculate spectrogram, using mock data: " + e.getMessage());
+            log.error("exception", e);
             
             // 计算STFT / Calculate STFT
             Tuple2<IVector<Double>, IVector<Double>> stftResult = Audios.stft(audioData);

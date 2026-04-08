@@ -1,5 +1,8 @@
 package com.yishape.lab.music.analysis.basic;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.exception.AudioProcessingException;
 import com.yishape.lab.math.linalg.IVector;
@@ -24,6 +27,9 @@ import java.util.Arrays;
  * @since 1.0
  */
 public class BeatAnalyzerImpl implements IBeatAnalyzer {
+
+    private static final Logger log = LoggerFactory.getLogger(BeatAnalyzerImpl.class);
+
 
     // 标准化置信度计算器 / Standardized confidence calculator
     private final StandardizedConfidenceCalculator confidenceCalculator = new StandardizedConfidenceCalculator();
@@ -258,7 +264,7 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             if (timeInSeconds >= 0 && timeInSeconds <= audioDuration) {
                 peaks.add(timeInSeconds);
             } else {
-//                System.err.println("Warning: Invalid beat time " + timeInSeconds
+//                log.warn("Warning: Invalid beat time " + timeInSeconds
 //                        + "s detected (audio duration: " + audioDuration + "s)");
             }
         }
@@ -268,12 +274,12 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
             double firstBeat = peaks.get(0);
             double lastBeat = peaks.get(peaks.size() - 1);
 
-            System.out.println("Beat Detection Debug:");
-            System.out.println("  Total beats: " + peaks.size());
-            System.out.println("  First beat: " + String.format("%.3f", firstBeat) + "s");
-            System.out.println("  Last beat: " + String.format("%.3f", lastBeat) + "s");
-            System.out.println("  Audio duration: " + String.format("%.3f", audioDuration) + "s");
-            System.out.println("  Beats per second: " + String.format("%.2f", peaks.size() / audioDuration));
+            log.debug("Beat Detection Debug:");
+            log.debug("  Total beats: " + peaks.size());
+            log.debug("  First beat: " + String.format("%.3f", firstBeat) + "s");
+            log.debug("  Last beat: " + String.format("%.3f", lastBeat) + "s");
+            log.debug("  Audio duration: " + String.format("%.3f", audioDuration) + "s");
+            log.debug("  Beats per second: " + String.format("%.2f", peaks.size() / audioDuration));
         }
 
         return peaks;

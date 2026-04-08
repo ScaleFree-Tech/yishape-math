@@ -11,9 +11,9 @@ This document provides detailed usage examples for the `IMatrix<T>` generic inte
 ### 矩阵创建和基本操作 / Matrix Creation and Basic Operations
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
+import com.yishape.lab.math.linalg.IDoubleVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,20 +24,21 @@ public class MatrixBasicExample {
         double[][] data = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
         IMatrix<Double> matrix = Linalg.matrix(data);
 
-        // 从List创建 / Create from List
-        List<double[]> rows = Arrays.asList(
+        // 从 List<double[]> 创建（每行一个 double[]）/ Create from list of row arrays
+        List<double[]> rowList = Arrays.asList(
                 new double[]{1.0, 2.0, 3.0},
                 new double[]{4.0, 5.0, 6.0},
                 new double[]{7.0, 8.0, 9.0}
         );
-        IMatrix<Double> matrix2 = Linalg.matrix(rows);
+        IMatrix<Double> matrix2 = Linalg.matrixFromDoubleList(rowList);
 
-        // 从Vector数组创建 / Create from Vector array
-        IVector<Double>[] vectors = new IVector[]{
-                Linalg.vector(new double[]{1.0, 2.0}),
-                Linalg.vector(new double[]{3.0, 4.0})
+        // 从行向量数组创建：IMatrix.of 需要 IDoubleVector[]（体现与 Linalg 分工）/ Rows as IDoubleVector[]
+        IDoubleVector[] rowVecs = new IDoubleVector[]{
+                IDoubleVector.of(new double[]{1.0, 2.0, 3.0}),
+                IDoubleVector.of(new double[]{4.0, 5.0, 6.0}),
+                IDoubleVector.of(new double[]{7.0, 8.0, 9.0})
         };
-        IMatrix<Double> matrix3 = Linalg.matrix(vectors);
+        IMatrix<Double> matrixFromRows = IMatrix.of(rowVecs);
 
         // 创建特殊矩阵 / Create special matrices
         IMatrix<Double> ones = Linalg.ones(3, 3);
@@ -61,12 +62,12 @@ public class MatrixBasicExample {
         // 从一维数组创建 / Create from 1D array
         IMatrix<Double> reshaped = Linalg.fromArray(new double[]{1.0, 2.0, 3.0, 4.0}, 2, 2);
 
-        // 从文件加载 / Load from file
-        IMatrix<Double> loaded = Linalg.load("matrix.txt");
+        // 从文件加载（需存在可读矩阵文本文件）/ Load from file when present
+        // IMatrix<Double> loaded = Linalg.load("matrix.txt");
 
-        // 矩阵平均 / Matrix averaging
-        IMatrix<Double>[] matrices = {matrix, matrix2, matrix3};
-        IMatrix<Double> averaged = Linalg.average(matrices);
+        // 同形状矩阵逐元素平均：使用 IMatrix.average（两矩阵版本）
+        // Linalg.average(多个矩阵) 面向「列向量数组」的高级用法，一般矩阵平均请用本方法
+        IMatrix<Double> averaged = IMatrix.average(matrix, matrix2, Double.class);
 
         // 基本运算 / Basic operations
         IMatrix<Double> sum = matrix.add(ones);
@@ -74,7 +75,9 @@ public class MatrixBasicExample {
         IMatrix<Double> transposed = matrix.transpose();
 
         System.out.println("矩阵: " + matrix);
+        System.out.println("从行向量构建: " + matrixFromRows);
         System.out.println("转置: " + transposed);
+        System.out.println("多矩阵平均: " + averaged);
     }
 }
 ```
@@ -82,6 +85,9 @@ public class MatrixBasicExample {
 ### 基本数学运算 / Basic Mathematical Operations
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+
 public class BasicMathOperationsExample {
     public static void main(String[] args) {
         // 创建矩阵 / Create matrices
@@ -95,20 +101,29 @@ public class BasicMathOperationsExample {
         IMatrix<Double> diff = matrix1.sub(matrix2);                   // [[-4.0, -4.0], [-4.0, -4.0]]
         IMatrix<Double> matrixProduct = matrix1.mmul(matrix2);         // [[19.0, 22.0], [43.0, 50.0]]
 
-        // 标量运算 / Scalar operations
-        IMatrix<Double> scaled = matrix1.mmul(2.0);                    // [[2.0, 4.0], [6.0, 8.0]]
-        IMatrix<Double> shifted = matrix1.sub(10.0);                   // [[-9.0, -8.0], [-7.0, -6.0]]
-        
-        // 向量点积 / Vector dot product
-        Double dotProduct = matrix1.dot(matrix2); // 要求都是列向量
-        
-        // 矩阵外积 / Matrix outer product
-        IMatrix<Double> outerProduct = matrix1.outer(matrix2);
-        
+        // 标量逐元素乘：multiplyScalar 与 mmul(标量) 等价（对齐 NumPy A*s）
+        IMatrix<Double> scaled = matrix1.multiplyScalar(2.0);          // [[2.0, 4.0], [6.0, 8.0]]
+        IMatrix<Double> scaled2 = matrix1.mmul(2.0);
+        IMatrix<Double> shifted = matrix1.sub(10.0);                     // [[-9.0, -8.0], [-7.0, -6.0]]
+
+        // Frobenius 内积（对应元素相乘再求和）/ Frobenius inner product
+        Double frob = matrix1.dot(matrix2);
+
+        // 元素级乘法（Hadamard）/ Element-wise product
+        IMatrix<Double> hadamard = matrix1.multiply(matrix2);
+
+        // Kronecker 积（numpy.kron）与展平外积（np.outer(ravel,ravel)）
+        IMatrix<Double> kron = matrix1.kron(matrix2);
+        IMatrix<Double> flatOuter = matrix1.outer(matrix2);
+
         System.out.println("矩阵加法结果: " + sum);
         System.out.println("矩阵乘法结果: " + matrixProduct);
         System.out.println("标量乘法结果: " + scaled);
-        System.out.println("矩阵外积结果: " + outerProduct);
+        System.out.println("mmul(标量) 与上式相同: " + scaled2.get(0, 0));
+        System.out.println("Frobenius 内积: " + frob);
+        System.out.println("Hadamard 积: " + hadamard);
+        System.out.println("Kronecker 形状: " + kron.rows() + "x" + kron.cols());
+        System.out.println("展平外积形状: " + flatOuter.rows() + "x" + flatOuter.cols());
     }
 }
 ```
@@ -163,6 +178,11 @@ public class MatrixTransformationsExample {
 #### 特征分解 / Eigendecomposition
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple2;
+
 public class EigendecompositionExample {
     public static void main(String[] args) {
         // 特征分解 / Eigendecomposition
@@ -179,10 +199,12 @@ public class EigendecompositionExample {
         // 验证：A * v = λ * v
         IVector<Double> eigenVector1 = eigenVectors.getColumn(0);
         IVector<Double> result = matrix.mmul(eigenVector1);
-        // result ≈ 6 * eigenVector1
-        
-        // QR算法特征分解 / QR algorithm eigendecomposition
-        Tuple2<IVector<Double>, IMatrix<Double>> qrEigenResult = matrix.qrEigenDecomposition();
+        // result ≈ λ * eigenVector1
+
+        // qrEigen() / qrEigenDecomposition() 与 eigen() 相同；与 matrix.qr()（A=QR 因子分解）完全不同
+        Tuple2<IVector<Double>, IMatrix<Double>> evShort = matrix.qrEigen();
+        System.out.println("qrEigen 特征值: " + evShort._1);
+        System.out.println("qrEigenDecomposition 特征值: " + matrix.qrEigenDecomposition()._1);
     }
 }
 ```
@@ -190,6 +212,11 @@ public class EigendecompositionExample {
 #### 奇异值分解 / Singular Value Decomposition
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple3;
+
 public class SVDExample {
     public static void main(String[] args) {
         double[][] data = {{4.0, -2.0}, {-2.0, 4.0}};
@@ -215,7 +242,7 @@ public class MatrixDecompositionExample {
     public static void main(String[] args) {
         IMatrix<Double> matrix = Linalg.matrix(new double[][]{{2.0, 1.0}, {1.0, 3.0}});
         
-        // QR分解 / QR decomposition
+        // QR 因子分解 A=QR（非特征分解）/ QR factorization, not eigendecomposition
         Tuple2<IMatrix<Double>, IMatrix<Double>> qrResult = matrix.qr();
         IMatrix<Double> Q = qrResult._1;                   // 正交矩阵 / Orthogonal matrix
         IMatrix<Double> R = qrResult._2;                   // 上三角矩阵 / Upper triangular matrix
@@ -343,6 +370,12 @@ public class MatrixStatisticsExample {
 ### 数据访问和操作 / Data Access and Manipulation
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+
+import java.util.Arrays;
+
 public class DataAccessExample {
     public static void main(String[] args) {
         IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}});
@@ -350,16 +383,16 @@ public class DataAccessExample {
         // 获取行 / Get row
         IVector<Double> row = matrix.getRow(0);
 
-        // 获取列 / Get column
+        // 获取列 / Get column（向量形式 n；矩阵形式 n×1 用 getColumnMatrix / getColumnAsCloumnVector）
         IVector<Double> column = matrix.getColumn(0);
-        IMatrix<Double> columnMatrix = matrix.getColumn(0);
+        IMatrix<Double> columnMatrix = matrix.getColumnMatrix(0);
 
-        // 设置列 / Set column
+        // 设置列 / Set column（向量用 setColumn；矩阵形式列用 putColumn）
         IVector<Double> newColumn = Linalg.vector(new double[]{10.0, 11.0, 12.0});
-        matrix.putColumn(0, newColumn);
+        matrix.setColumn(0, newColumn);
 
-        // 获取多个列 / Get multiple columns
-        IMatrix<Double>[] columns = matrix.getColumns(new int[]{0, 2});
+        // 获取多个列 / Get multiple columns（返回列向量数组）
+        IVector<Double>[] columnVecs = matrix.getColumns(new int[]{0, 2});
 
         // 获取形状 / Get shape
         int[] shape = matrix.shape();             // [行数, 列数]
@@ -375,7 +408,9 @@ public class DataAccessExample {
         matrix.put(-1, -1, 100.0);               // 设置最后一个元素
         
         System.out.println("第0行: " + row);
-        System.out.println("第0列: " + column);
+        System.out.println("第0列(向量): " + column);
+        System.out.println("第0列(n×1矩阵)行数: " + columnMatrix.rows());
+        System.out.println("列向量数组长度: " + columnVecs.length);
         System.out.println("矩阵形状: " + Arrays.toString(shape));
         System.out.println("最后一个元素: " + lastElement);
     }
@@ -681,7 +716,7 @@ public class MethodChainingExample {
     public static void main(String[] args) {
         IMatrix<Double> result = Linalg.ones(3, 3)                     // 创建3x3全1矩阵
             .sub(5.0)                                                  // 每个元素减5
-            .mmul(2.0)                                                 // 每个元素乘2
+            .multiplyScalar(2.0)                                                 // 每个元素乘2
             .transpose()                                               // 转置
             .pow(2);                                                   // 每个元素平方
             
@@ -784,7 +819,7 @@ public class ImageProcessingExample {
         
         // 图像变换 / Image transformations
         IMatrix<Double> image_transposed = image.transpose();        // 转置
-        IMatrix<Double> image_scaled = image.mmul(2.0);             // 缩放
+        IMatrix<Double> image_scaled = image.multiplyScalar(2.0);             // 缩放
         IMatrix<Double> image_shifted = image.add(0.5);             // 亮度调整
         
         // 计算图像统计信息 / Compute image statistics
@@ -813,13 +848,13 @@ public class MemoryOptimizationExample {
         
         // 不好的做法 / Bad practice
         IMatrix<Double> temp1 = matrix.add(Linalg.ones(2, 2));
-        IMatrix<Double> temp2 = temp1.mmul(2.0);
+        IMatrix<Double> temp2 = temp1.multiplyScalar(2.0);
         IMatrix<Double> temp3 = temp2.transpose();
         IMatrix<Double> result1 = temp3.pow(2);
         
         // 好的做法 / Good practice
         IMatrix<Double> result2 = matrix.add(Linalg.ones(2, 2))
-                                        .mmul(2.0)
+                                        .multiplyScalar(2.0)
                                         .transpose()
                                         .pow(2);
         
@@ -851,7 +886,7 @@ public class BatchOperationsExample {
         // 批量处理 / Batch processing
         IMatrix<Double>[] results = new IMatrix[batchSize];
         for (int i = 0; i < batchSize; i++) {
-            results[i] = matrices[i].transpose().mmul(2.0);
+            results[i] = matrices[i].transpose().multiplyScalar(2.0);
         }
         
         // 计算批量统计 / Compute batch statistics

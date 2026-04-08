@@ -1,17 +1,21 @@
 package com.yishape.lab.math.ml.cls.tree;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.cls.BatchPredictionResult;
-import com.yishape.lab.math.ml.cls.IClassification;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.io.*;
+import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * 随机森林分类器
@@ -24,7 +28,10 @@ import java.io.*;
  * @version 1.0
  * @since 1.0
  */
-public class RereRandomForest implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+public class RereRandomForest implements IClassifier, IGradientFunction, IObjectiveFunction, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereRandomForest.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -78,6 +85,8 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
     
     /** 类别数量 */
     private int numClasses;
+    
+    private ClassificationMetrics metrics;
     
     /**
      * 默认构造函数
@@ -235,7 +244,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
     }
 
     @Override
-    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+    public BatchPredictionResult predictBatchWithProbs(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练");
         }
@@ -252,7 +261,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
 
         for (int i = 0; i < numSamples; i++) {
             IVector instance = features.getRow(i);
-            Map<String, Double> probMap = predictProba(instance);
+            Map<String, Double> probMap = predictProb(instance);
 
             // 找到概率最大的类别作为预测
             String predictedClass = null;
@@ -288,7 +297,8 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
      * @param x 特征向量
      * @return 各类别的概率分布
      */
-    public Map<String, Double> predictProba(IVector x) {
+    @Override
+    public Map<String, Double> predictProb(IVector x) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练");
         }
@@ -330,7 +340,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         double epsilon = 1e-6;
         
         // 获取原始预测概率
-        Map<String, Double> originalProba = predictProba(x);
+        Map<String, Double> originalProba = predictProb(x);
         String predictedClass = predict(x);
         double originalProb = originalProba.get(predictedClass);
         
@@ -341,7 +351,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
             perturbedX.set(i, x.get(i).doubleValue() + epsilon);
             
             // 计算扰动后的预测概率
-            Map<String, Double> perturbedProba = predictProba(perturbedX);
+            Map<String, Double> perturbedProba = predictProb(perturbedX);
             double perturbedProb = perturbedProba.get(predictedClass);
             
             // 计算梯度
@@ -358,7 +368,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
             throw new IllegalStateException("模型尚未训练");
         }
         
-        Map<String, Double> probabilities = predictProba(x);
+        Map<String, Double> probabilities = predictProb(x);
         double entropy = 0.0;
         
         for (double prob : probabilities.values()) {
@@ -629,6 +639,19 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
             this.outOfBagIndices = outOfBagIndices;
         }
     }
+
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
+    }
+    
+    
+    
     
     /**
      * 将模型保存在本地
@@ -639,7 +662,7 @@ public class RereRandomForest implements IClassification, IGradientFunction, IOb
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

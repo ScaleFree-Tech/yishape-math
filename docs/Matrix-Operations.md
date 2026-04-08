@@ -34,7 +34,13 @@ The `IMatrix` interface provides comprehensive generic matrix mathematical opera
 ```java
 // 推荐使用 Linalg 工厂方法 / Recommended to use Linalg factory methods
 
-import linalg.math.com.yishape.lab.Linalg;
+import com.yishape.lab.math.linalg.IDoubleVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+
+import java.util.Arrays;
+import java.util.List;
 
 // 从二维数组创建 / Create from 2D array
 double[][] data = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
@@ -65,9 +71,12 @@ List<float[]> floatRows = Arrays.asList(
 );
 IMatrix<Float> matrix3f = Linalg.matrixFromFloatList(floatRows);
 
-// 从Vector数组创建 / Create from Vector array
-IVector<Double>[] vectors = {Linalg.vector(new double[]{1, 2}), Linalg.vector(new double[]{3, 4})};
-IMatrix<Double> matrix4 = IMatrix.of(vectors);
+// 从行向量数组创建（需 IDoubleVector[]；配合 import com.yishape.lab.math.linalg.IDoubleVector）
+IDoubleVector[] rowVecs = {
+    IDoubleVector.of(new double[]{1, 2}),
+    IDoubleVector.of(new double[]{3, 4})
+};
+IMatrix<Double> matrix4 = IMatrix.of(rowVecs);
 
 
 // 创建特殊矩阵 / Create special matrices
@@ -100,9 +109,8 @@ IMatrix<Float> reshapedF = Linalg.fromArray(new float[]{1f, 2f, 3f, 4f}, 2, 2);
 IMatrix<Double> loaded = Linalg.load("matrix.txt");
 IMatrix<Float> loadedF = Linalg.load("matrix.txt", Float.class);
 
-// 矩阵平均 / Matrix averaging
-IMatrix<Double>[] matrices = {matrix1, matrix2, matrix3};
-IMatrix<Double> averaged = Linalg.average(matrices);
+// 两矩阵逐元素平均 / Element-wise average of two matrices（同维度）
+IMatrix<Double> averaged = IMatrix.average(matrix1, matrix2, Double.class);
 ```
 
 ### 2. 基本数学运算 / Basic Mathematical Operations
@@ -125,6 +133,13 @@ IVector<Double> matrixVectorProduct = matrix1.mmul(vector);
 
 // 元素级除法 / Element-wise division
 IMatrix<Double> quotient = matrix1.divide(matrix2);
+
+// Kronecker 积（NumPy numpy.kron）/ Kronecker product
+IMatrix<Double> k = matrix1.kron(matrix2);
+// 或 / or: IMatrix<Double> k2 = Linalg.kron(matrix1, matrix2);
+
+// 展平后外积（NumPy np.outer(A.ravel(), B.ravel())，行优先）/ Outer after row-major flatten
+IMatrix<Double> o = matrix1.outer(matrix2);
 ```
 
 #### 标量运算 / Scalar Operations
@@ -133,14 +148,15 @@ IMatrix<Double> quotient = matrix1.divide(matrix2);
 // 标量减法 / Scalar subtraction
 IMatrix<Double> result1 = matrix1.sub(5.0);
 
-// 标量乘法 / Scalar multiplication
-IMatrix<Double> result2 = matrix1.mmul(3.0);
+// 标量乘法 / Scalar multiplication（与 multiplyScalar 等价，对齐 ndarray * scalar）
+IMatrix<Double> result2 = matrix1.multiplyScalar(3.0);
+IMatrix<Double> result2b = matrix1.mmul(3.0);
 
-// 向量点积 / Vector dot product
-Double dotProduct = matrix1.dot(matrix2); // 要求都是列向量
+// Frobenius 内积（逐元素相乘再求和）/ Frobenius inner product
+Double frob = matrix1.dot(matrix2);
 
-// 矩阵外积 / Matrix outer product
-IMatrix<Double> outerProduct = matrix1.outer(matrix2);
+// 元素级乘法（Hadamard）/ Element-wise multiply
+IMatrix<Double> hadamard = matrix1.multiply(matrix2);
 ```
 
 ### 3. 矩阵变换 / Matrix Transformations
@@ -180,8 +196,10 @@ Tuple2<IVector<Double>, IMatrix<Double>> eigenResult = matrix1.eigen();
 IVector<Double> eigenValues = eigenResult._1;      // 特征值 / Eigenvalues
 IMatrix<Double> eigenVectors = eigenResult._2;     // 特征向量 / Eigenvectors
 
-// QR算法特征分解 / QR algorithm eigendecomposition
-Tuple2<IVector<Double>, IMatrix<Double>> qrEigenResult = matrix1.qrEigenDecomposition();
+// 与 eigen() 相同：QR 算法求特征值（非 qr() 因子分解）。简短名 qrEigen() 与 qrEigenDecomposition() 等价
+Tuple2<IVector<Double>, IMatrix<Double>> byQrAlgo = matrix1.qrEigen();
+Tuple2<IVector<Double>, IMatrix<Double>> byQrAlgoLong = matrix1.qrEigenDecomposition();
+
 ```
 
 #### 奇异值分解 / Singular Value Decomposition
@@ -490,9 +508,7 @@ IVector<Double> diagonal = matrix1.diag();       // 获取对角线元素
 #### 矩阵平均和加载 / Matrix Averaging and Loading
 
 ```java
-// 矩阵平均 / Matrix averaging
-IMatrix<Double>[] matrices = {matrix1, matrix2, matrix3};
-IMatrix<Double> average = Linalg.average(matrices); // 计算多个矩阵的平均值
+IMatrix<Double> average = IMatrix.average(matrix1, matrix2, Double.class);
 
 // 从文件加载（指定类型）/ Load from file with type specification
 IMatrix<Float> floatMatrix = Linalg.load("matrix.txt", Float.class);
@@ -586,28 +602,33 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 | 矩阵乘法 / Matrix multiplication | `matrix1.mmul(matrix2)` | `matrix1 @ matrix2` | 矩阵乘法 / Matrix multiplication |
 | 矩阵与向量乘法 / Matrix-vector multiplication | `matrix.mmul(vector)` | `matrix @ vector` | 矩阵与向量乘法 / Matrix-vector multiplication |
 | 元素级除法 / Element-wise division | `matrix1.divide(matrix2)` | `matrix1 / matrix2` | 元素级除法 / Element-wise division |
-| 标量运算 / Scalar operations | `matrix.mmul(scalar)` | `matrix * scalar` | 标量乘法 / Scalar multiplication |
-| 标量减法 / Scalar subtraction | `matrix.sub(scalar)` | `matrix - scalar` | 标量减法 / Scalar subtraction |
-| 矩阵外积 / Matrix outer product | `matrix1.outer(matrix2)` | `np.outer(matrix1, matrix2)` | 矩阵外积 / Matrix outer product |
+| 标量乘法 / Scalar multiply | `matrix.multiplyScalar(s)` 或 `matrix.mmul(s)` | `matrix * scalar` | 逐元素乘标量；`mmul(矩阵)` 仍为矩阵乘 / Scale; `mmul(matrix)` is matmul |
+| 标量减法 / Scalar subtraction | `matrix.sub(scalar)` | `matrix - scalar` | 逐元素减标量 / Subtract scalar from each element |
+| 元素级乘法 / Hadamard product | `matrix1.multiply(matrix2)` | `matrix1 * matrix2` | 同形状逐元素乘 / Element-wise product |
+| Frobenius 内积 / Frobenius dot | `matrix1.dot(matrix2)` | `np.sum(matrix1 * matrix2)` | 对应元素乘积之和 / Sum of element-wise products |
+| 向量外积 / Vector outer | `v1.outer(v2)`（IVector） | `np.outer(v1, v2)` | 两向量外积 / Outer product of vectors |
+| 展平外积 / Outer (flattened) | `A.outer(B)` | `np.outer(A.ravel(), B.ravel())` | 行优先展平再外积 / Row-major flatten then outer |
+| Kronecker 积 / Kronecker | `A.kron(B)` 或 `Linalg.kron(A,B)` | `np.kron(A, B)` | 分块张量积 / Block tensor product |
 | **矩阵变换 / Matrix Transformations** | | | |
 | 转置 / Transpose | `matrix.transpose(),matrix.t()` | `matrix.T` | 矩阵转置 / Matrix transpose |
 | 幂运算 / Power | `matrix.pow(n)` | `np.power(matrix, n)` | 元素级幂运算 / Element-wise power |
 | 开方 / Square root | `matrix.sqrt()` | `np.sqrt(matrix)` | 元素级开方 / Element-wise square root |
 | 求逆 / Inverse | `matrix.inv()` | `np.linalg.inv(matrix)` | 矩阵求逆 / Matrix inverse |
 | **线性代数 / Linear Algebra** | | | |
-| 特征分解 / Eigendecomposition | `matrix.eigen()` | `np.linalg.eig(matrix)` | 特征值和特征向量 / Eigenvalues and eigenvectors |
+| 特征分解 / Eigendecomposition | `matrix.eigen()` | `np.linalg.eig(matrix)` | 特征值与特征向量 / Eigenpairs |
+| QR 算法特征（别名）/ Eigen via QR algo | `matrix.qrEigen()` 或 `qrEigenDecomposition()` | 同 `eigen` 数值结果 | 与 `eigen()` 相同；<strong>不是</strong> `qr()` 因子分解 / Same as eigen; not QR factorization |
 | SVD分解 / SVD decomposition | `matrix.svd()` | `np.linalg.svd(matrix)` | 奇异值分解 / Singular value decomposition |
 | LU分解 / LU decomposition | `matrix.lu()` | `scipy.linalg.lu(matrix)` | LU分解 / LU decomposition |
-| QR分解 / QR decomposition | `matrix.qr()` | `np.linalg.qr(matrix)` | QR分解 / QR decomposition |
+| QR 因子分解 / QR factorization | `matrix.qr()` | `np.linalg.qr(matrix)` | A=QR（Q 正交、R 上三角）；<strong>不是</strong>特征分解 / A=QR; not eigen |
 | Cholesky分解 / Cholesky decomposition | `matrix.cholesky()` | `np.linalg.cholesky(matrix)` | Cholesky分解 / Cholesky decomposition |
 | 行列式 / Determinant | `matrix.det()` | `np.linalg.det(matrix)` | 矩阵行列式 / Matrix determinant |
 | 矩阵秩 / Matrix rank | `matrix.rank()` | `np.linalg.matrix_rank(matrix)` | 矩阵秩 / Matrix rank |
 | 线性方程组求解 / Linear system solving | `matrix.solve(vector)` | `np.linalg.solve(matrix, vector)` | 求解Ax=b / Solve Ax=b |
 | **统计运算 / Statistical Operations** | | | |
-| 行求和 / Row sums | `matrix.rowSums()` | `np.sum(matrix, axis=0)` | 按列求和（注意命名）/ Sum by columns (note naming) |
-| 列求和 / Column sums | `matrix.colSums()` | `np.sum(matrix, axis=1)` | 按行求和（注意命名）/ Sum by rows (note naming) |
-| 行均值 / Row means | `matrix.rowMeans()` | `np.mean(matrix, axis=0)` | 按列求均值（注意命名）/ Mean by columns (note naming) |
-| 列均值 / Column means | `matrix.colMeans()` | `np.mean(matrix, axis=1)` | 按行求均值（注意命名）/ Mean by rows (note naming) |
+| 行求和 / Row sums | `matrix.rowSums()` | `np.sum(matrix, axis=1)` | 每行元素之和，结果长度=行数 / Sum within each row |
+| 列求和 / Column sums | `matrix.colSums()` | `np.sum(matrix, axis=0)` | 每列元素之和，结果长度=列数 / Sum within each column |
+| 行均值 / Row means | `matrix.rowMeans()` | `np.mean(matrix, axis=1)` | 每行均值 / Mean of each row |
+| 列均值 / Column means | `matrix.colMeans()` | `np.mean(matrix, axis=0)` | 每列均值 / Mean of each column |
 | 整体求和 / Overall sum | `matrix.sum()` | `np.sum(matrix)` | 矩阵所有元素求和 / Sum all matrix elements |
 | 整体均值 / Overall mean | `matrix.mean()` | `np.mean(matrix)` | 矩阵所有元素均值 / Mean of all matrix elements |
 | 方差 / Variance | `matrix.var()` | `np.var(matrix)` | 矩阵元素方差 / Matrix element variance |

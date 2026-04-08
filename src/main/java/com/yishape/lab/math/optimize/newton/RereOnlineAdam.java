@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize.newton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.IOnlineOptimizer;
 import com.yishape.lab.math.util.RerePrecision;
@@ -16,6 +19,9 @@ import java.util.function.Function;
  * @author lteb2
  */
 public class RereOnlineAdam implements IOnlineOptimizer {
+
+    private static final Logger log = LoggerFactory.getLogger(RereOnlineAdam.class);
+
     
     private double learningRate = 0.001;     // 学习率 (α)
     private double beta1 = 0.9;              // 一阶矩估计的指数衰减率
@@ -97,7 +103,7 @@ public class RereOnlineAdam implements IOnlineOptimizer {
         this.initialized = true;
         
         if (verbose) {
-            System.out.println("在线Adam优化器已初始化，参数维度: " + initialParams.size());
+            log.debug("在线Adam优化器已初始化，参数维度: " + initialParams.size());
         }
     }
 
@@ -172,7 +178,7 @@ public class RereOnlineAdam implements IOnlineOptimizer {
         currentParams = currentParams.sub(update);
         
         if (verbose && currentStep % 1000 == 0) {
-            System.out.printf("在线Adam步骤 %d: 学习率 = %.6f\n", currentStep, learningRate);
+            log.debug(String.format("在线Adam步骤 %d: 学习率 = %.6f\n", currentStep, learningRate));
         }
         
         return currentParams.copy();
@@ -183,8 +189,8 @@ public class RereOnlineAdam implements IOnlineOptimizer {
         IVector result = step(gradient);
         
         if (verbose && currentStep % 1000 == 0) {
-            System.out.printf("在线Adam步骤 %d: 损失 = %.6f, 学习率 = %.6f\n", 
-                             currentStep, loss, learningRate);
+            log.debug(String.format("在线Adam步骤 %d: 损失 = %.6f, 学习率 = %.6f\n",
+                             currentStep, loss, learningRate));
         }
         
         return result;
@@ -252,7 +258,7 @@ public class RereOnlineAdam implements IOnlineOptimizer {
         this.initialized = false;
         
         if (verbose) {
-            System.out.println("在线Adam优化器状态已重置");
+            log.debug("在线Adam优化器状态已重置");
         }
     }
 

@@ -997,7 +997,6 @@ public class RereFloatVector implements IFloatVector,Serializable {
      * @param position 位置索引（从0开始，支持负数索引） / Position index (0-based, supports
      * negative indexing)
      * @param value 要设置的值 / Value to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position index is out
      * of bounds
      */
@@ -1025,7 +1024,6 @@ public class RereFloatVector implements IFloatVector,Serializable {
      * indexing)
      * @param step 步长 / Step size
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1063,7 +1061,6 @@ public class RereFloatVector implements IFloatVector,Serializable {
      * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
      * indexing)
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1222,7 +1219,6 @@ public class RereFloatVector implements IFloatVector,Serializable {
      * </p>
      *
      * @param value 填充值 / Fill value
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      */
     @Override
     public void fill(Float value) {
@@ -1820,6 +1816,50 @@ public class RereFloatVector implements IFloatVector,Serializable {
     }
 
     @Override
+    public IVector<Float> cross(IVector<Float> other) {
+        if (other == null) {
+            throw new NullPointerException("other不能为null / other cannot be null");
+        }
+        if (length() != 3 || other.length() != 3) {
+            throw new IllegalArgumentException(
+                    "叉积要求两向量长度均为 3 / Cross product requires both vectors to have length 3");
+        }
+        float[] b = other.toFloatArray();
+        float ax = data[0], ay = data[1], az = data[2];
+        float bx = b[0], by = b[1], bz = b[2];
+        float cx = ay * bz - az * by;
+        float cy = az * bx - ax * bz;
+        float cz = ax * by - ay * bx;
+        return IFloatVector.of(new float[]{cx, cy, cz});
+    }
+
+    @Override
+    public int searchSorted(Float value) {
+        float v = value;
+        int n = length();
+        if (n == 0) {
+            return 0;
+        }
+        for (int i = 1; i < n; i++) {
+            if (data[i] < data[i - 1]) {
+                throw new IllegalArgumentException(
+                        "searchSorted 要求向量非降序 / searchSorted requires non-decreasing order");
+            }
+        }
+        int lo = 0;
+        int hi = n;
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (data[mid] < v) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    @Override
     public float[] toFloatArray() {
         return this.data;
     }
@@ -1998,8 +2038,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
      * <p>
      * 协方差的性质：
      * <ul>
-     * <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大</li>
-     * <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小</li> <li>cov(X,Y ) = 0: 无线性相关</li>
+     * <li>cov(X,Y) &gt; 0: 正相关，X增大时Y倾向于增大</li>
+     * <li>cov(X,Y) &lt; 0: 负相关，X增大时Y倾向于减小</li> <li>cov(X,Y ) = 0: 无线性相关</li>
      * <li>cov(X,X) = var(X): 自协方差等于方差</li>
      * </ul>
      * </p>

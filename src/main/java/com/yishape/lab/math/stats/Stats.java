@@ -755,8 +755,8 @@ public class Stats {
      * 
      * <h4>协方差的性质 / Properties of Covariance:</h4>
      * <ul>
-     *   <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大 / Positive correlation, Y tends to increase when X increases</li>
-     *   <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小 / Negative correlation, Y tends to decrease when X increases</li>
+     *   <li>cov(X,Y) &gt; 0: 正相关，X增大时Y倾向于增大 / Positive correlation, Y tends to increase when X increases</li>
+     *   <li>cov(X,Y) &lt; 0: 负相关，X增大时Y倾向于减小 / Negative correlation, Y tends to decrease when X increases</li>
      *   <li>cov(X,Y) = 0: 无线性相关 / No linear correlation</li>
      *   <li>cov(X,X) = var(X): 自协方差等于方差 / Auto-covariance equals variance</li>
      * </ul>

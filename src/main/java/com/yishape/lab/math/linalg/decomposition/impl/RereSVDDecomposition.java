@@ -1,5 +1,8 @@
 package com.yishape.lab.math.linalg.decomposition.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IDoubleMatrix;
@@ -37,6 +40,9 @@ import com.yishape.lab.util.Tuple3;
  * </ul>
  */
 public class RereSVDDecomposition implements ISVDDecomposition {
+
+    private static final Logger log = LoggerFactory.getLogger(RereSVDDecomposition.class);
+
     
     /** Cached value of U. */
     private IMatrix<Double> cachedU;
@@ -325,7 +331,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             
         } catch (Exception e) {
             // 如果分治算法失败，回退到双对角SVD
-            System.err.println("Divide-and-conquer SVD failed, falling back to bidiagonal SVD: " + e.getMessage());
+            log.warn("Divide-and-conquer SVD failed, falling back to bidiagonal SVD: " + e.getMessage());
             bidiagonalSVD(matrix);
         }
     }
@@ -365,7 +371,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             
         } catch (Exception e) {
             // 如果分治失败，回退到QR算法
-            System.err.println("Divide-and-conquer failed for bidiagonal matrix, using QR: " + e.getMessage());
+            log.warn("Divide-and-conquer failed for bidiagonal matrix, using QR: " + e.getMessage());
             return qrAlgorithmForBidiagonalWithIMatrix(B, n, n);
         }
     }
@@ -472,7 +478,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             
         } catch (Exception e) {
             // 合并失败时的简单处理：直接组合结果
-            System.err.println("Merge failed, using simple combination: " + e.getMessage());
+            log.warn("Merge failed, using simple combination: " + e.getMessage());
             return combineResults(result1, result2);
         }
     }
@@ -528,7 +534,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             return new Tuple3<>(newSingularValues, newU, newV);
             
         } catch (Exception e) {
-            System.err.println("Rank-1 update failed: " + e.getMessage());
+            log.warn("Rank-1 update failed: " + e.getMessage());
             return null;
         }
     }
@@ -1189,7 +1195,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             
         } catch (Exception e) {
             // 如果优化算法失败，回退到双对角SVD
-            System.err.println("Optimized SVD failed, falling back to bidiagonal SVD: " + e.getMessage());
+            log.warn("Optimized SVD failed, falling back to bidiagonal SVD: " + e.getMessage());
             bidiagonalSVD(matrix);
         }
     }

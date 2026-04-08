@@ -409,5 +409,43 @@ public interface IDoubleVector extends IVector<Double> {
      */
     public double[] getData();
 
+    // ========== 一维双精度工具（见 {@link IVector} 同名静态方法）==========
+
+    static IVector.HistogramResult histogram(double[] x, int bins) {
+        return IVector.histogram(x, bins);
+    }
+
+    static IVector.HistogramResult histogram(IVector<Double> x, int bins) {
+        return IVector.histogram(x, bins);
+    }
+
+    static int[] digitize(double[] x, double[] bins) {
+        return IVector.digitize(x, bins);
+    }
+
+    static int[] digitize(IVector<Double> x, double[] bins) {
+        return IVector.digitize(x, bins);
+    }
+
+    static double[] polyfit(double[] x, double[] y, int deg) {
+        return IVector.polyfit(x, y, deg);
+    }
+
+    @SuppressWarnings("unchecked")
+    static IVector<Double> polyfit(IVector<Double> x, IVector<Double> y, int deg) {
+        return (IVector<Double>) IVector.polyfit(x, y, deg);
+    }
+
+    static double[] where(boolean[] cond, double x, double y) {
+        return IVector.where(cond, x, y);
+    }
+
+    static double[] where(boolean[] cond, double[] x, double[] y) {
+        return IVector.where(cond, x, y);
+    }
+
+    static IVector<Double> where(IVector<Double> v, boolean[] cond, double x, double y) {
+        return IVector.where(v, cond, x, y);
+    }
 
 }

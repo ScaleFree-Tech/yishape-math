@@ -1,5 +1,8 @@
 package com.yishape.lab.music;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.music.analysis.basic.BeatDetectionResult;
 import com.yishape.lab.music.analysis.basic.ChordDetectionResult;
 import com.yishape.lab.music.analysis.basic.KeyDetectionResult;
@@ -52,6 +55,9 @@ import java.util.List;
  * @since 1.0
  */
 public class Musics {
+
+    private static final Logger log = LoggerFactory.getLogger(Musics.class);
+
 
     // ========== 音乐分析器创建方法 / Music Analyzer Creation Methods ==========
     /**
@@ -294,7 +300,7 @@ public class Musics {
             MusicFeatureResult result = extractor.extractMusicFeatures(audio);
             return result;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
         return null;
     }
@@ -316,7 +322,7 @@ public class Musics {
 
             return features;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
             throw new RuntimeException("Failed to extract music features", e);
         }
     }

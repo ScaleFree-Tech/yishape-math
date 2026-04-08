@@ -68,7 +68,7 @@ import com.yishape.lab.math.util.RerePrecision;
  * 
  * @since 2.0
  * @see Decomps For creating specific decomposition instances
- * @see IDecompositionSolver For individual solver interfaces
+ * @see com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver For individual solver interfaces
  */
 public class RankSolver {
     

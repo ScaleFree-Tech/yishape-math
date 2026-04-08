@@ -1,5 +1,8 @@
 package com.yishape.lab.math.viz;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -54,6 +57,9 @@ import org.icepear.echarts.render.Engine;
  */
 public class RerePlot implements Serializable, IPlot {
 
+    private static final Logger log = LoggerFactory.getLogger(RerePlot.class);
+
+
     private Title title;
     private Legend legend;
     private Tooltip tooltip;
@@ -92,7 +98,7 @@ public class RerePlot implements Serializable, IPlot {
             this.engine = new Engine();
         } catch (Exception e) {
             this.engine = null;
-            System.err.println("警告：无法初始化 ECharts Engine，图表渲染功能将不可用");
+            log.warn("警告：无法初始化 ECharts Engine，图表渲染功能将不可用");
         }
         this.option = new Option();
         this.width = 800;
@@ -1499,7 +1505,7 @@ public class RerePlot implements Serializable, IPlot {
         try {
             // 1. 检查当前平台是否支持Desktop
             if (!Desktop.isDesktopSupported()) {
-                System.out.println("当前环境不支持 Desktop.");
+                log.debug("当前环境不支持 Desktop.");
                 return;
             }
 
@@ -1507,7 +1513,7 @@ public class RerePlot implements Serializable, IPlot {
 
             // 2. 检查是否支持BROWSE动作
             if (!desktop.isSupported(Desktop.Action.BROWSE)) {
-                System.out.println("当前环境不支持打开浏览器.");
+                log.debug("当前环境不支持打开浏览器.");
                 return;
             }
 
@@ -1515,7 +1521,7 @@ public class RerePlot implements Serializable, IPlot {
             desktop.browse(uri);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 
@@ -1541,7 +1547,7 @@ public class RerePlot implements Serializable, IPlot {
             java.nio.file.Files.write(path, html.getBytes());
             this.openBrowseWith(path.toUri());
             // engine.render(tempFile, option, width + "px", height + "px", true);
-            System.out.println("图表已生成并在浏览器中打开: " + tempFile);
+            log.debug("图表已生成并在浏览器中打开: " + tempFile);
         } catch (Exception e) {
             throw new PlotException("显示图表失败: " + e.getMessage(), e);
         }
@@ -1562,7 +1568,7 @@ public class RerePlot implements Serializable, IPlot {
             String html = engine.renderHtml(option, height + "px", width + "px");
             // String html = engine.renderHtml(option);
             java.nio.file.Files.write(java.nio.file.Paths.get(filename), html.getBytes());
-            System.out.println("图表已保存到: " + filename);
+            log.debug("图表已保存到: " + filename);
         } catch (Exception e) {
             throw new PlotException("保存图表失败: " + e.getMessage(), e);
         }
@@ -1808,7 +1814,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setVisualMap(visualMap);
 
         } catch (Exception e) {
-            System.err.println("创建热力图时出错: " + e.getMessage());
+            log.warn("创建热力图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -1903,7 +1909,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建雷达图时出错: " + e.getMessage());
+            log.warn("创建雷达图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -1984,7 +1990,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建仪表盘时出错: " + e.getMessage());
+            log.warn("创建仪表盘时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2044,7 +2050,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setSeries(new org.icepear.echarts.charts.bar.BarSeries[] { series });
 
         } catch (Exception e) {
-            System.err.println("创建极坐标柱状图时出错: " + e.getMessage());
+            log.warn("创建极坐标柱状图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2104,7 +2110,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建极坐标线图时出错: " + e.getMessage());
+            log.warn("创建极坐标线图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2164,7 +2170,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建极坐标散点图时出错: " + e.getMessage());
+            log.warn("创建极坐标散点图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2577,7 +2583,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setYAxis(yAxis);
 
         } catch (Exception e) {
-            System.err.println("创建K线图时出错: " + e.getMessage());
+            log.warn("创建K线图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2635,7 +2641,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建漏斗图时出错: " + e.getMessage());
+            log.warn("创建漏斗图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2716,7 +2722,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setSeries(new org.icepear.echarts.charts.sankey.SankeySeries[] { series });
 
         } catch (Exception e) {
-            System.err.println("创建桑基图时出错: " + e.getMessage());
+            log.warn("创建桑基图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2767,7 +2773,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建旭日图时出错: " + e.getMessage());
+            log.warn("创建旭日图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -2933,7 +2939,7 @@ public class RerePlot implements Serializable, IPlot {
             themeRiverChart.setSingleAxis(singleAxis);
 
         } catch (Exception e) {
-            System.err.println("创建主题河流图时出错: " + e.getMessage());
+            log.warn("创建主题河流图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -3080,7 +3086,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setSeries(new org.icepear.echarts.charts.tree.TreeSeries[] { series });
 
         } catch (Exception e) {
-            System.err.println("创建树图时出错: " + e.getMessage());
+            log.warn("创建树图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -3154,7 +3160,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建矩形树图时出错: " + e.getMessage());
+            log.warn("创建矩形树图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -3297,7 +3303,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setSeries(new org.icepear.echarts.charts.graph.GraphSeries[] { series });
 
         } catch (Exception e) {
-            System.err.println("创建关系图时出错: " + e.getMessage());
+            log.warn("创建关系图时出错: " + e.getMessage());
         }
         return this;
     }
@@ -3360,7 +3366,7 @@ public class RerePlot implements Serializable, IPlot {
             this.option.setTooltip(tooltip);
 
         } catch (Exception e) {
-            System.err.println("创建平行坐标图时出错: " + e.getMessage());
+            log.warn("创建平行坐标图时出错: " + e.getMessage());
         }
         return this;
     }

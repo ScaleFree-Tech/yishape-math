@@ -3,6 +3,7 @@ package com.yishape.lab.math.linalg;
 import com.yishape.lab.math.RereMathUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Float类型向量操作接口 / Float Vector Operations Interface
@@ -397,6 +398,48 @@ public interface IFloatVector extends IVector<Float> {
             v[i] = (float) Math.pow(10, start + i * step);
         }
         return IFloatVector.of(v);
+    }
+
+    // ========== 一维工具（见 {@link IVector} 同名静态方法）==========
+
+    static IVector.HistogramResult histogram(float[] x, int bins) {
+        return IVector.histogram(x, bins);
+    }
+
+    static IVector.HistogramResult histogram(IVector<Float> x, int bins) {
+        return IVector.histogram(x, bins);
+    }
+
+    static int[] digitize(float[] x, float[] bins) {
+        return IVector.digitize(x, bins);
+    }
+
+    static int[] digitize(IVector<Float> x, float[] bins) {
+        Objects.requireNonNull(x, "x");
+        return IVector.digitize(x, RereMathUtil.floatToDouble(bins));
+    }
+
+    static float[] polyfit(float[] x, float[] y, int deg) {
+        return IVector.polyfit(x, y, deg);
+    }
+
+    @SuppressWarnings("unchecked")
+    static IVector<Float> polyfit(IVector<Float> x, IVector<Float> y, int deg) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        return (IVector<Float>) IVector.polyfit(x, y, deg);
+    }
+
+    static float[] where(boolean[] cond, float x, float y) {
+        return IVector.where(cond, x, y);
+    }
+
+    static float[] where(boolean[] cond, float[] x, float[] y) {
+        return IVector.where(cond, x, y);
+    }
+
+    static IVector<Float> where(IVector<Float> v, boolean[] cond, float x, float y) {
+        return IVector.where(v, cond, x, y);
     }
 
     /**

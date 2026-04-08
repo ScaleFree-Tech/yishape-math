@@ -12,11 +12,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Advanced Simplex Tableau implementation for industrial-strength linear programming
    RereSimplexTableau with native constraint type handling
  */
 class RereSimplexTableau {
+
+    private static final Logger log = LoggerFactory.getLogger(RereSimplexTableau.class);
     
     // IEEE 754 bit manipulation constants for numerical scaling (like commons-math4)
     private static final long EXPN = 0x7ff0000000000000L;
@@ -133,7 +138,7 @@ class RereSimplexTableau {
         
         if (this.currentPhase == 2) {
             // 纯不等式约束，直接进入Phase II，松弛变量作为初始基变量
-            System.out.println("Pure inequality constraints detected, starting directly in Phase II");
+            log.debug("Pure inequality constraints detected, starting directly in Phase II");
         }
         // initialize the basic variables for phase 1:
         //   we know that only slack or artificial variables can be basic
@@ -349,12 +354,12 @@ class RereSimplexTableau {
         // Intelligent scaling control
         if (shouldApplyScaling(scaled, scaledRhs)) {
             if (verbose) {
-                System.out.println("Applying numerical scaling based on coefficient analysis");
+                log.debug("Applying numerical scaling based on coefficient analysis");
             }
             scale(scaled, scaledRhs);
         } else {
             if (verbose) {
-                System.out.println("Skipping scaling - coefficients in safe numerical range");
+                log.debug("Skipping scaling - coefficients in safe numerical range");
             }
             // Initialize variableExpChange array to zeros when scaling is disabled
             Arrays.fill(variableExpChange, 0);
@@ -487,49 +492,49 @@ class RereSimplexTableau {
         // 3. Apply scaling for moderate ranges that can benefit from normalization
         
         if (verbose) {
-            System.out.println("Scaling analysis: maxCoeff=" + maxCoeff + 
+            log.debug("Scaling analysis: maxCoeff=" + maxCoeff + 
                              ", minCoeff=" + minCoeff + 
                              ", range=" + coeffRange);
         }
         
         // Conservative scaling policy based on memory experience
         if (verbose) {
-            System.out.println("Scaling decision logic:");
-            System.out.println("  coeffRange > 1e6? " + (coeffRange > 1e6));
-            System.out.println("  maxCoeff > 1e4? " + (maxCoeff > 1e4));
-            System.out.println("  coeffRange < 10 && maxCoeff < 100? " + (coeffRange < 10 && maxCoeff < 100));
-            System.out.println("  coeffRange > 100 && maxCoeff < 1000? " + (coeffRange > 100 && maxCoeff < 1000));
+            log.debug("Scaling decision logic:");
+            log.debug("  coeffRange > 1e6? " + (coeffRange > 1e6));
+            log.debug("  maxCoeff > 1e4? " + (maxCoeff > 1e4));
+            log.debug("  coeffRange < 10 && maxCoeff < 100? " + (coeffRange < 10 && maxCoeff < 100));
+            log.debug("  coeffRange > 100 && maxCoeff < 1000? " + (coeffRange > 100 && maxCoeff < 1000));
         }
         
         if (coeffRange > 1e6) {
             // Very large range - scaling may introduce precision errors
             if (verbose) {
-                System.out.println("Scaling decision: DISABLED (very large coefficient range)");
+                log.debug("Scaling decision: DISABLED (very large coefficient range)");
             }
             return false;
         } else if (maxCoeff > 1e4) {
             // Large coefficients like testLargeNumbersProblem - risky for scaling
             if (verbose) {
-                System.out.println("Scaling decision: DISABLED (large coefficients > 1e4)");
+                log.debug("Scaling decision: DISABLED (large coefficients > 1e4)");
             }
             return false;
         } else if (coeffRange < 10 && maxCoeff < 100) {
             // Well-conditioned problem - scaling not necessary
             if (verbose) {
-                System.out.println("Scaling decision: DISABLED (well-conditioned problem)");
+                log.debug("Scaling decision: DISABLED (well-conditioned problem)");
             }
             return false;
         } else if (coeffRange > 100 && maxCoeff < 1000) {
             // Moderate range that can benefit from scaling
             if (verbose) {
-                System.out.println("Scaling decision: ENABLED (moderate range benefits from scaling)");
+                log.debug("Scaling decision: ENABLED (moderate range benefits from scaling)");
             }
             return useNumericalScaling;
         }
         
         // Default: use user preference for borderline cases
         if (verbose) {
-            System.out.println("Scaling decision: USER_PREFERENCE (borderline case, useNumericalScaling=" + useNumericalScaling + ")");
+            log.debug("Scaling decision: USER_PREFERENCE (borderline case, useNumericalScaling=" + useNumericalScaling + ")");
         }
         return useNumericalScaling;
     }
@@ -641,13 +646,13 @@ class RereSimplexTableau {
         int constraintRowStart = getNumObjectiveFunctions();
         
         if (verbose) {
-            System.out.println("Initializing basic variables, constraintRowStart=" + constraintRowStart + ", getWidth()=" + getWidth() + ", getHeight()=" + getHeight());
+            log.debug("Initializing basic variables, constraintRowStart=" + constraintRowStart + ", getWidth()=" + getWidth() + ", getHeight()=" + getHeight());
         }
         
         for (int i = startColumn; i < getWidth() - 1; i++) {
             Integer row = findBasicRow(i);
             if (verbose) {
-                System.out.println("Checking column " + i + " for basic variable, found row: " + row);
+                log.debug("Checking column " + i + " for basic variable, found row: " + row);
             }
             if (row != null && row >= constraintRowStart) {
                 int adjustedRow = row - constraintRowStart;
@@ -655,7 +660,7 @@ class RereSimplexTableau {
                     basicVariables[i] = row;  // Store absolute row index
                     basicRows[adjustedRow] = i;
                     if (verbose) {
-                        System.out.println("Set basicVariables[" + i + "] = " + row + ", basicRows[" + adjustedRow + "] = " + i);
+                        log.debug("Set basicVariables[" + i + "] = " + row + ", basicRows[" + adjustedRow + "] = " + i);
                     }
                 }
             }
@@ -663,14 +668,14 @@ class RereSimplexTableau {
         
         if (currentPhase == 2 && numSlackVariables > 0) {
             // 对于纯LEQ约束，松弛变量应该是初始基变量
-            System.out.println("Initializing slack variables as basic variables for Phase II");
+            log.debug("Initializing slack variables as basic variables for Phase II");
         }
         
         if (verbose) {
-            System.out.println("Basic variables mapping completed:");
+            log.debug("Basic variables mapping completed:");
             for (int i = 0; i < basicVariables.length; i++) {
                 if (basicVariables[i] != -1) {
-                    System.out.println("Column " + i + " -> Row " + basicVariables[i]);
+                    log.debug("Column " + i + " -> Row " + basicVariables[i]);
                 }
             }
         }
@@ -679,27 +684,27 @@ class RereSimplexTableau {
     private Integer findBasicRow(final int col) {
         Integer row = null;
         if (verbose) {
-            System.out.println("findBasicRow checking column " + col + ", height=" + getHeight());
+            log.debug("findBasicRow checking column " + col + ", height=" + getHeight());
         }
         for (int i = 0; i < getHeight(); i++) {
             final double entry = getEntry(i, col);
             if (verbose) {
-                System.out.println("  Entry at (" + i + ", " + col + ") = " + entry);
+                log.debug("  Entry at (" + i + ", " + col + ") = " + entry);
             }
             if (RerePrecision.equals(entry, 1d, maxUlps) && row == null) {
                 row = i;
                 if (verbose) {
-                    System.out.println("  Found 1 at row " + i);
+                    log.debug("  Found 1 at row " + i);
                 }
             } else if (!RerePrecision.equals(entry, 0d, maxUlps)) {
                 if (verbose) {
-                    System.out.println("  Found non-zero at row " + i + ", returning null");
+                    log.debug("  Found non-zero at row " + i + ", returning null");
                 }
                 return null;
             }
         }
         if (verbose) {
-            System.out.println("  Returning row: " + row);
+            log.debug("  Returning row: " + row);
         }
         return row;
     }
@@ -826,7 +831,7 @@ class RereSimplexTableau {
             int col = i + getArtificialVariableOffset();
             Integer basicRow = findBasicRow(col);
             if (basicRow != null) {
-                System.out.println("Warning: Artificial variable a" + i + " still basic in row " + basicRow);
+                log.debug("Warning: Artificial variable a" + i + " still basic in row " + basicRow);
                 // 根据记忆中的经验，这里需要强制移除人工变量
                 // 通过新的pivot操作来移除人工变量
                 removeArtificialVariableFromBasis(col, basicRow);
@@ -850,7 +855,7 @@ class RereSimplexTableau {
             double entry = getEntry(basicRow, col);
             if (!RerePrecision.equals(entry, 0.0, maxUlps)) {
                 // 找到了非零元素，可以进行pivot操作
-                System.out.println("Removing artificial variable col=" + artificialCol + 
+                log.debug("Removing artificial variable col=" + artificialCol + 
                                  " by pivoting with col=" + col + " in row=" + basicRow);
                 
                 // 执行pivot操作，使非人工变量成为基变量
@@ -860,7 +865,7 @@ class RereSimplexTableau {
         }
         
         // 如果没有找到合适的非人工变量，这可能是一个冗余约束
-        System.out.println("Warning: Cannot remove artificial variable col=" + artificialCol + 
+        log.debug("Warning: Cannot remove artificial variable col=" + artificialCol + 
                          ", may be a redundant constraint");
     }
     
@@ -998,7 +1003,7 @@ class RereSimplexTableau {
                         basicVariables[col] = basicRow; // 存储绝对行索引（相对于新tableau）
                         basicRows[constraintRow] = col; // 存储约束行索引到列的映射
                         if (verbose) {
-                            System.out.println("Phase II转换: 找到基变量 col=" + col + " -> row=" + basicRow);
+                            log.debug("Phase II转换: 找到基变量 col=" + col + " -> row=" + basicRow);
                         }
                     }
                 }
@@ -1006,10 +1011,10 @@ class RereSimplexTableau {
         }
         
         if (verbose) {
-            System.out.println("Phase II基变量映射重建完成:");
+            log.debug("Phase II基变量映射重建完成:");
             for (int i = 0; i < basicRows.length; i++) {
                 if (basicRows[i] != -1) {
-                    System.out.println("约束行 " + i + " -> 列 " + basicRows[i]);
+                    log.debug("约束行 " + i + " -> 列 " + basicRows[i]);
                 }
             }
         }

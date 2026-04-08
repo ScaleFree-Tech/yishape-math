@@ -1,5 +1,8 @@
 package com.yishape.lab.image.enhancement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.image.ImageData;
 import com.yishape.lab.image.core.IImageProcessor;
 import com.yishape.lab.image.core.ImageProcessingException;
@@ -24,6 +27,9 @@ import java.util.Map;
  * @since 2.0
  */
 public class AdvancedImageEnhancement {
+
+    private static final Logger log = LoggerFactory.getLogger(AdvancedImageEnhancement.class);
+
     
     /**
      * 多尺度Retinex增强器 / Multi-Scale Retinex Enhancer
@@ -143,7 +149,7 @@ public class AdvancedImageEnhancement {
             } catch (Exception e) {
                 if (useGPU) {
                     // GPU失败时回退到CPU / Fallback to CPU when GPU fails
-                    System.out.println("GPU processing failed, falling back to CPU: " + e.getMessage());
+                    log.debug("GPU processing failed, falling back to CPU: " + e.getMessage());
                     return applyMultiScaleRetinexCPU(channel);
                 } else {
                     throw ImageProcessingException.processingFailed(getName(), "MSR processing failed", e);

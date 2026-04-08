@@ -1,8 +1,10 @@
 package com.yishape.lab.math.linalg;
 
 import com.yishape.lab.math.RereMathUtil;
+
 import java.util.List;
 import java.util.Random;
+import java.util.function.DoubleBinaryOperator;
 
 /**
  * Double类型矩阵操作接口 / Double Matrix Operations Interface
@@ -513,6 +515,31 @@ public interface IDoubleMatrix extends IMatrix<Double> {
 
     public static IDoubleMatrix diag(IDoubleVector diagonal) {
         return diag(diagonal.getData());
+    }
+
+    /** 两矩阵广播后的形状；见 {@link IMatrix#broadcastShape(IMatrix, IMatrix)}。 */
+    static int[] broadcastShape(IMatrix<Double> a, IMatrix<Double> b) {
+        return IMatrix.broadcastShape(a, b);
+    }
+
+    static int[] broadcastShape(int rowsA, int colsA, int rowsB, int colsB) {
+        return IMatrix.broadcastShape(rowsA, colsA, rowsB, colsB);
+    }
+
+    static double[][] broadcastTo(double[][] data, int targetRows, int targetCols) {
+        return IMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static IDoubleMatrix broadcastTo(IDoubleMatrix data, int targetRows, int targetCols) {
+        return IMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static double[][] broadcastElementWise(double[][] a, double[][] b, DoubleBinaryOperator op) {
+        return IMatrix.broadcastElementWise(a, b, op);
+    }
+
+    static IDoubleMatrix broadcastElementWise(IMatrix<Double> a, IMatrix<Double> b, DoubleBinaryOperator op) {
+        return IMatrix.broadcastElementWise(a, b, op);
     }
 
     // Note: copy(), max(), min(), sum(), mean() are inherited from IMatrix<Double>

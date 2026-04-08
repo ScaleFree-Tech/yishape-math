@@ -1,5 +1,8 @@
 package com.yishape.lab.music;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.Audios;
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.math.viz.IPlot;
@@ -9,6 +12,9 @@ import com.yishape.lab.math.viz.IPlot;
  * method
  */
 public class MusicRadarDemo {
+
+    private static final Logger log = LoggerFactory.getLogger(MusicRadarDemo.class);
+
 
     public static void main(String[] args) {
 
@@ -21,10 +27,10 @@ public class MusicRadarDemo {
 
             // Create the radar chart
             IPlot radarPlot = MusicPlots.plotMusicFeaturesRadar(audioData, "Music Features Radar Chart");
-            System.out.println(radarPlot.toJson());
+            log.debug(radarPlot.toJson());
             radarPlot.show();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
 
     }

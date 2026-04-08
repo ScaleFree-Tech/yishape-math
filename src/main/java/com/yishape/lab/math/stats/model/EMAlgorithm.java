@@ -1,5 +1,8 @@
 package com.yishape.lab.math.stats.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -21,6 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Used for parameter estimation in Gaussian Mixture Models
  */
 public class EMAlgorithm {
+
+    private static final Logger log = LoggerFactory.getLogger(EMAlgorithm.class);
+
     
     /** 最大迭代次数 / Maximum number of iterations */
     private final int maxIterations;
@@ -299,12 +305,12 @@ public class EMAlgorithm {
         
         if (useKMeansPlusPlus) {
             if (verbose) {
-                System.out.println("使用K-means++初始化GMM分量...");
+                log.debug("使用K-means++初始化GMM分量...");
             }
             gmm.initializeWithKMeansPlusPlus(data);
         } else {
             if (verbose) {
-                System.out.println("使用随机初始化GMM分量...");
+                log.debug("使用随机初始化GMM分量...");
             }
             // 默认的随机初始化已在构造函数中完成
         }
@@ -335,12 +341,12 @@ public class EMAlgorithm {
         GaussianMixtureModel bestGMM = null;
         
         if (verbose) {
-            System.out.printf("开始多次初始化训练，初始化次数: %d\n", numInitializations);
+            log.debug(String.format("开始多次初始化训练，初始化次数: %d\n", numInitializations));
         }
         
         for (int init = 0; init < numInitializations; init++) {
             if (verbose) {
-                System.out.printf("\n=== 初始化 %d/%d ===\n", init + 1, numInitializations);
+                log.debug(String.format("\n=== 初始化 %d/%d ===\n", init + 1, numInitializations));
             }
             
             try {
@@ -359,8 +365,8 @@ public class EMAlgorithm {
                 EMResult result = fit(data, gmm);
                 
                 if (verbose) {
-                    System.out.printf("初始化 %d 结果: 对数似然=%.6f, 收敛=%s, 迭代次数=%d\n", 
-                                    init + 1, result.logLikelihood, result.converged ? "是" : "否", result.iterations);
+                    log.debug(String.format("初始化 %d 结果: 对数似然=%.6f, 收敛=%s, 迭代次数=%d\n",
+                                    init + 1, result.logLikelihood, result.converged ? "是" : "否", result.iterations));
                 }
                 
                 // 选择最佳结果（基于对数似然值）
@@ -370,13 +376,13 @@ public class EMAlgorithm {
                     bestGMM = gmm;
                     
                     if (verbose) {
-                        System.out.printf("✅ 发现更好的结果，对数似然: %.6f\n", bestLogLikelihood);
+                        log.debug(String.format("✅ 发现更好的结果，对数似然: %.6f\n", bestLogLikelihood));
                     }
                 }
                 
             } catch (Exception e) {
                 if (verbose) {
-                    System.out.printf("❌ 初始化 %d 失败: %s\n", init + 1, e.getMessage());
+                    log.debug(String.format("❌ 初始化 %d 失败: %s\n", init + 1, e.getMessage()));
                 }
                 // 继续尝试下一个初始化
             }
@@ -387,14 +393,14 @@ public class EMAlgorithm {
         }
         
         if (verbose) {
-            System.out.printf("\n=== 多次初始化完成 ===\n");
-            System.out.printf("最佳结果: 对数似然=%.6f, 收敛=%s, 迭代次数=%d\n", 
-                            bestResult.logLikelihood, bestResult.converged ? "是" : "否", bestResult.iterations);
+            log.debug(String.format("\n=== 多次初始化完成 ===\n"));
+            log.debug(String.format("最佳结果: 对数似然=%.6f, 收敛=%s, 迭代次数=%d\n",
+                            bestResult.logLikelihood, bestResult.converged ? "是" : "否", bestResult.iterations));
             
             // 计算BIC和AIC
             double bic = computeBIC(data, bestGMM);
             double aic = computeAIC(data, bestGMM);
-            System.out.printf("最佳模型 BIC: %.6f, AIC: %.6f\n", bic, aic);
+            log.debug(String.format("最佳模型 BIC: %.6f, AIC: %.6f\n", bic, aic));
         }
         
         return bestResult;
@@ -419,7 +425,7 @@ public class EMAlgorithm {
         int successfulRuns = 0;
         
         if (verbose) {
-            System.out.printf("开始多重启动策略，计划进行 %d 次重启...\n", numRestarts);
+            log.debug(String.format("开始多重启动策略，计划进行 %d 次重启...\n", numRestarts));
         }
         
         for (int restart = 0; restart < numRestarts; restart++) {
@@ -446,24 +452,24 @@ public class EMAlgorithm {
                         bestResult = result;
                         
                         if (verbose) {
-                            System.out.printf("重启 %d: 找到更好的解，对数似然 = %.6f\n", 
-                                            restart + 1, result.logLikelihood);
+                            log.debug(String.format("重启 %d: 找到更好的解，对数似然 = %.6f\n",
+                                            restart + 1, result.logLikelihood));
                         }
                     } else if (verbose) {
-                        System.out.printf("重启 %d: 对数似然 = %.6f (当前最佳: %.6f)\n", 
-                                        restart + 1, result.logLikelihood, bestLogLikelihood);
+                        log.debug(String.format("重启 %d: 对数似然 = %.6f (当前最佳: %.6f)\n",
+                                        restart + 1, result.logLikelihood, bestLogLikelihood));
                     }
                 }
             } catch (Exception e) {
                 if (verbose) {
-                    System.out.printf("重启 %d 失败: %s\n", restart + 1, e.getMessage());
+                    log.debug(String.format("重启 %d 失败: %s\n", restart + 1, e.getMessage()));
                 }
             }
         }
         
         if (verbose) {
-            System.out.printf("多重启动完成: %d/%d 次成功，最佳对数似然 = %.6f\n", 
-                            successfulRuns, numRestarts, bestLogLikelihood);
+            log.debug(String.format("多重启动完成: %d/%d 次成功，最佳对数似然 = %.6f\n",
+                            successfulRuns, numRestarts, bestLogLikelihood));
         }
         
         return bestResult != null ? bestResult : 
@@ -491,7 +497,7 @@ public class EMAlgorithm {
             
         } catch (Exception e) {
             if (verbose) {
-                System.out.printf("重启 %d 执行失败: %s\n", restartIndex + 1, e.getMessage());
+                log.debug(String.format("重启 %d 执行失败: %s\n", restartIndex + 1, e.getMessage()));
             }
             return null;
         }
@@ -562,8 +568,8 @@ public class EMAlgorithm {
         IMatrix<Double> posteriors = null;
         
         if (verbose) {
-            System.out.println("开始EM算法训练，样本数: " + numSamples + ", 分量数: " + numComponents);
-            System.out.println("并行计算: " + (enableParallel ? "启用" : "禁用") + ", 线程数: " + threadPoolSize);
+            log.debug("开始EM算法训练，样本数: " + numSamples + ", 分量数: " + numComponents);
+            log.debug("并行计算: " + (enableParallel ? "启用" : "禁用") + ", 线程数: " + threadPoolSize);
         }
         
         for (int iteration = 0; iteration < maxIterations; iteration++) {
@@ -580,14 +586,14 @@ public class EMAlgorithm {
             double currentLogLikelihood = computeLogLikelihood(data, gmm);
             
             if (verbose) {
-                System.out.printf("迭代 %d/%d, 对数似然: %.6f%n", 
-                                iteration + 1, maxIterations, currentLogLikelihood);
+                log.debug(String.format("迭代 %d/%d, 对数似然: %.6f%n",
+                                iteration + 1, maxIterations, currentLogLikelihood));
             }
             
             // 检测数值不稳定性
             if (detectNumericalInstability(currentLogLikelihood, previousLogLikelihood)) {
                 if (verbose) {
-                    System.out.println("检测到数值不稳定，提前终止算法");
+                    log.debug("检测到数值不稳定，提前终止算法");
                 }
                 return new EMResult(previousLogLikelihood, iteration + 1, false, posteriors);
             }
@@ -595,7 +601,7 @@ public class EMAlgorithm {
             // 检查连续下降趋势
             if (checkConsecutiveDecreases(true)) { // 默认使用K-means++的阈值
                 if (verbose) {
-                    System.out.println("检测到连续下降趋势，可能陷入局部最优");
+                    log.debug("检测到连续下降趋势，可能陷入局部最优");
                 }
                 // 继续执行但记录警告
             }
@@ -603,7 +609,7 @@ public class EMAlgorithm {
             // 使用改进的收敛检查机制
             if (checkImprovedConvergence(currentLogLikelihood, previousLogLikelihood, iteration)) {
                 if (verbose) {
-                    System.out.println("EM算法收敛（改进收敛检测），迭代次数: " + (iteration + 1));
+                    log.debug("EM算法收敛（改进收敛检测），迭代次数: " + (iteration + 1));
                 }
                 return new EMResult(currentLogLikelihood, iteration + 1, true, posteriors);
             }
@@ -612,7 +618,7 @@ public class EMAlgorithm {
         }
         
         if (verbose) {
-            System.out.println("EM算法达到最大迭代次数，未完全收敛");
+            log.debug("EM算法达到最大迭代次数，未完全收敛");
         }
         
         return new EMResult(previousLogLikelihood, maxIterations, false, posteriors);
@@ -776,7 +782,7 @@ public class EMAlgorithm {
         // 检查协方差矩阵健康状况
         if (!checkCovarianceHealth(newCovariance, dimension)) {
             if (verbose) {
-                System.out.printf("警告: 分量%d的协方差矩阵不健康，使用单位矩阵替代\n", componentIndex);
+                log.debug(String.format("警告: 分量%d的协方差矩阵不健康，使用单位矩阵替代\n", componentIndex));
             }
             // 使用单位矩阵作为备选方案
             newCovariance = createIdentityMatrix(dimension);
@@ -873,13 +879,13 @@ public class EMAlgorithm {
             // 病态矩阵需要强正则化
             regularization = MAX_REGULARIZATION;
             if (verbose) {
-                System.out.printf("检测到病态协方差矩阵: %s\n", health.issues);
+                log.debug(String.format("检测到病态协方差矩阵: %s\n", health.issues));
             }
         } else if (health.conditionNumber > 1e12) {
             // 严重病态矩阵，使用强正则化
             regularization = NUMERICAL_STABILITY_REG * ADAPTIVE_REG_FACTOR * 2;
             if (verbose) {
-                System.out.printf("应用强正则化: 条件数 %.2e\n", health.conditionNumber);
+                log.debug(String.format("应用强正则化: 条件数 %.2e\n", health.conditionNumber));
             }
         } else if (health.conditionNumber > 1e9) {
             // 中度病态矩阵，使用中等正则化
@@ -924,13 +930,13 @@ public class EMAlgorithm {
                 }
             }
             if (verbose) {
-                System.out.println("正则化失败，使用单位矩阵替代");
+                log.debug("正则化失败，使用单位矩阵替代");
             }
         }
         
         if (verbose && regularization > NUMERICAL_STABILITY_REG) {
-            System.out.printf("协方差正则化: 条件数=%.2e->%.2e, 正则化强度=%.2e\n", 
-                            health.conditionNumber, newHealth.conditionNumber, regularization);
+            log.debug(String.format("协方差正则化: 条件数=%.2e->%.2e, 正则化强度=%.2e\n",
+                            health.conditionNumber, newHealth.conditionNumber, regularization));
         }
         
         // 5. 确保矩阵对称性（数值误差可能破坏对称性）
@@ -1059,7 +1065,7 @@ public class EMAlgorithm {
         
         if (health.isPathological) {
             if (verbose) {
-                System.out.printf("警告: 协方差矩阵不健康: %s\n", health.issues);
+                log.debug(String.format("警告: 协方差矩阵不健康: %s\n", health.issues));
             }
             return false;
         }
@@ -1067,7 +1073,7 @@ public class EMAlgorithm {
         // 额外检查：条件数阈值
         if (health.conditionNumber > 1e12) {
             if (verbose) {
-                System.out.printf("警告: 协方差矩阵条件数过大: %.2e\n", health.conditionNumber);
+                log.debug(String.format("警告: 协方差矩阵条件数过大: %.2e\n", health.conditionNumber));
             }
             return false;
         }
@@ -1075,7 +1081,7 @@ public class EMAlgorithm {
         // 检查最小对角元素
         if (health.minDiagonal < 1e-12) {
             if (verbose) {
-                System.out.printf("警告: 协方差矩阵最小对角元素过小: %.2e\n", health.minDiagonal);
+                log.debug(String.format("警告: 协方差矩阵最小对角元素过小: %.2e\n", health.minDiagonal));
             }
             return false;
         }
@@ -1109,7 +1115,7 @@ public class EMAlgorithm {
      */
     private void applyStrongRegularization(IMatrix<Double> covariance, int dimension, double conditionNumber) {
         if (verbose) {
-            System.out.printf("警告: 协方差矩阵条件数过大 (%.2e)，应用强正则化\n", conditionNumber);
+            log.debug(String.format("警告: 协方差矩阵条件数过大 (%.2e)，应用强正则化\n", conditionNumber));
         }
         
         // 计算矩阵的迹（对角线元素之和）
@@ -1314,8 +1320,8 @@ public class EMAlgorithm {
             
             if (relativeChange < adaptiveTolerance || absoluteChange < tolerance) {
                 if (verbose) {
-                    System.out.printf("收敛检测: 相对变化 %.2e < 自适应阈值 %.2e 或绝对变化 %.2e < 阈值 %.2e (迭代%d)\n", 
-                                    relativeChange, adaptiveTolerance, absoluteChange, tolerance, iteration);
+                    log.debug(String.format("收敛检测: 相对变化 %.2e < 自适应阈值 %.2e 或绝对变化 %.2e < 阈值 %.2e (迭代%d)\n",
+                                    relativeChange, adaptiveTolerance, absoluteChange, tolerance, iteration));
                 }
                 return true;
             }
@@ -1339,8 +1345,8 @@ public class EMAlgorithm {
         
         if (convergenceIndicators >= 2) {
             if (verbose) {
-                System.out.printf("收敛检测: 多重指标收敛 (趋势:%s, 停滞:%s, 平台:%s)\n", 
-                                trendConverged, stagnationDetected, plateauDetected);
+                log.debug(String.format("收敛检测: 多重指标收敛 (趋势:%s, 停滞:%s, 平台:%s)\n",
+                                trendConverged, stagnationDetected, plateauDetected));
             }
             return true;
         }
@@ -1367,7 +1373,7 @@ public class EMAlgorithm {
         }
         
         if (allSmallChanges && verbose) {
-            System.out.println("收敛检测: 最近5次迭代变化都很小");
+            log.debug("收敛检测: 最近5次迭代变化都很小");
         }
         
         return allSmallChanges;
@@ -1389,7 +1395,7 @@ public class EMAlgorithm {
         
         boolean isStagnant = maxImprovement < MIN_IMPROVEMENT_THRESHOLD;
         if (isStagnant && verbose) {
-            System.out.printf("收敛检测: 算法停滞，最近10次迭代最大改进 %.2e\n", maxImprovement);
+            log.debug(String.format("收敛检测: 算法停滞，最近10次迭代最大改进 %.2e\n", maxImprovement));
         }
         
         return isStagnant;
@@ -1440,8 +1446,8 @@ public class EMAlgorithm {
         boolean isPlateau = smallRange && smallVariance && noTrend;
         
         if (isPlateau && verbose) {
-            System.out.printf("收敛检测: 检测到平台期，相对范围=%.2e, 相对标准差=%.2e\n", 
-                            relativeRange, relativeStddev);
+            log.debug(String.format("收敛检测: 检测到平台期，相对范围=%.2e, 相对标准差=%.2e\n",
+                            relativeRange, relativeStddev));
         }
         
         return isPlateau;
@@ -1485,7 +1491,7 @@ public class EMAlgorithm {
         // 检查对数似然值是否为无穷大或NaN
         if (!Double.isFinite(currentLogLikelihood)) {
             if (verbose) {
-                System.out.println("警告: 对数似然值为无穷大或NaN");
+                log.debug("警告: 对数似然值为无穷大或NaN");
             }
             return true;
         }
@@ -1493,7 +1499,7 @@ public class EMAlgorithm {
         // 检查对数似然值是否过小（可能的数值下溢）
         if (currentLogLikelihood < -1e10) {
             if (verbose) {
-                System.out.printf("警告: 对数似然值过小 %.6e，可能存在数值下溢\n", currentLogLikelihood);
+                log.debug(String.format("警告: 对数似然值过小 %.6e，可能存在数值下溢\n", currentLogLikelihood));
             }
             return true;
         }
@@ -1541,8 +1547,8 @@ public class EMAlgorithm {
             
             if ((significantAbsoluteDecrease && significantRelativeDecrease) || hasConsecutiveAbnormalDecreases) {
                 if (verbose) {
-                    System.out.printf("警告: 检测到数值不稳定，对数似然下降 %.6f (相对: %.2f%%, 阈值: %.2f%%)\n", 
-                                    decrease, relativeDecrease * 100, threshold * 100);
+                    log.debug(String.format("警告: 检测到数值不稳定，对数似然下降 %.6f (相对: %.2f%%, 阈值: %.2f%%)\n",
+                                    decrease, relativeDecrease * 100, threshold * 100));
                 }
                 return true;
             }
@@ -1571,7 +1577,7 @@ public class EMAlgorithm {
         
         boolean hasConsecutiveDecreases = consecutiveDecreases >= maxDecreases;
         if (hasConsecutiveDecreases && verbose) {
-            System.out.printf("警告: 检测到连续%d次下降\n", consecutiveDecreases);
+            log.debug(String.format("警告: 检测到连续%d次下降\n", consecutiveDecreases));
         }
         
         return hasConsecutiveDecreases;

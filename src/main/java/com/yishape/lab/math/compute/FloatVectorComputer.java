@@ -1,5 +1,8 @@
 package com.yishape.lab.math.compute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Serializable;
 
 /**
@@ -8,6 +11,9 @@ import java.io.Serializable;
  * @author lteb2
  */
 public class FloatVectorComputer implements IFloatVectorComputer,Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(FloatVectorComputer.class);
+
 
     private static IFloatVectorComputer gpu = null;
     private static IFloatVectorComputer simd = null;
@@ -62,15 +68,29 @@ public class FloatVectorComputer implements IFloatVectorComputer,Serializable {
                     Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUFloatComputer");
                     gpu = (IFloatVectorComputer) gpuClass.getDeclaredConstructor().newInstance();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("exception", e);
                 }
             }
             computer = gpu;
         } else if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {
             if (simd == null) {
-                simd = new SIMDFloatComputer();
+                try {
+                    Class<?> simdClass = Class.forName("com.yishape.lab.math.compute.SIMDFloatComputer");
+                    simd = (IFloatVectorComputer) simdClass.getDeclaredConstructor().newInstance();
+                } catch (Throwable t) {
+                    log.debug("SIMD unavailable, using SISD: {}", t.toString());
+                    ifSIMDSupported = false;
+                    simd = null;
+                }
             }
-            computer = simd;
+            if (simd != null) {
+                computer = simd;
+            } else {
+                if (sisd == null) {
+                    sisd = new SISDFloatComputer();
+                }
+                computer = sisd;
+            }
         } else {
             if (sisd == null) {
                 sisd = new SISDFloatComputer();

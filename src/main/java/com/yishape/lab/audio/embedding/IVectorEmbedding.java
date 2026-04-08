@@ -1,5 +1,8 @@
 package com.yishape.lab.audio.embedding;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -31,6 +34,9 @@ import java.io.Serializable;
  * @author lteb2
  */
 public class IVectorEmbedding implements IAudioEmbedding, Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(IVectorEmbedding.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -103,17 +109,17 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
             throw new IllegalArgumentException("训练数据不能为空 / Training data cannot be empty");
         }
         
-        System.out.println("开始训练i-vector模型... / Starting i-vector model training...");
+        log.debug("开始训练i-vector模型... / Starting i-vector model training...");
         
         // 第一步：训练UBM / Step 1: Train UBM
-        System.out.println("训练UBM... / Training UBM...");
+        log.debug("训练UBM... / Training UBM...");
         trainUBM(trainingData);
         
         // 预计算UBM协方差矩阵的逆
         precomputeUBMInvCovariances();
         
         // 第二步：计算T矩阵 / Step 2: Compute T-matrix
-        System.out.println("计算T矩阵... / Computing T-matrix...");
+        log.debug("计算T矩阵... / Computing T-matrix...");
         List<IVector<Double>> allFeatures = new ArrayList<>();
         for (IMatrix<Double> mfcc : trainingData) {
             for (int i = 0; i < mfcc.rows(); i++) {
@@ -123,7 +129,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
         computeTMatrix(allFeatures);
         
         this.isTrained = true;
-        System.out.println("i-vector模型训练完成 / i-vector model training completed");
+        log.debug("i-vector模型训练完成 / i-vector model training completed");
     }
 
     /**
@@ -140,14 +146,14 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
         }
         
         int totalFrames = allFeatures.size();
-        System.out.println("总训练帧数: " + totalFrames + " / Total training frames: " + totalFrames);
+        log.debug("总训练帧数: " + totalFrames + " / Total training frames: " + totalFrames);
         
         // 使用新的GaussianMixtureModel训练UBM / Train UBM using new GaussianMixtureModel
         ubm = new GaussianMixtureModel(numComponents, featureDim);
         EMAlgorithm emAlgorithm = new EMAlgorithm(20, 1e-6, true);
         ubm.fit(allFeatures, emAlgorithm); // 使用EM算法训练
         
-        System.out.println("UBM训练完成 / UBM training completed");
+        log.debug("UBM训练完成 / UBM training completed");
     }
 
     /**
@@ -171,17 +177,17 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
      * T矩阵是i-vector模型中的关键参数，用于将超向量映射到i-vector空间
      */
     private void computeTMatrix(List<IVector<Double>> features) {
-        System.out.println("计算总变异性矩阵... / Computing total variability matrix...");
+        log.debug("计算总变异性矩阵... / Computing total variability matrix...");
         // 计算总变异性矩阵 S
         IMatrix<Double> S = computeTotalVariabilityMatrix(features);
         
-        System.out.println("执行PCA降维... / Performing PCA dimensionality reduction...");
+        log.debug("执行PCA降维... / Performing PCA dimensionality reduction...");
         // 使用PCA方法计算T矩阵，避免直接对大矩阵进行特征值分解
         Tuple2<IVector<Double>, IMatrix<Double>> pcaResult = computeTMatrixUsingPCA(S);
         IVector<Double> singularValues = pcaResult._1;
         IMatrix<Double> U = pcaResult._2;
         
-        System.out.println("构建T矩阵... / Building T matrix...");
+        log.debug("构建T矩阵... / Building T matrix...");
         // 选择前len个主成分
         int numComponents = Math.min(len, singularValues.length());
         
@@ -200,7 +206,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
         }
         
         this.tMatrix = Linalg.matrix(tData);
-        System.out.println("T矩阵计算完成 / T-matrix computation completed");
+        log.debug("T矩阵计算完成 / T-matrix computation completed");
     }
 
     /**
@@ -209,7 +215,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
      */
     private Tuple2<IVector<Double>, IMatrix<Double>> computeTMatrixUsingPCA(IMatrix<Double> S) {
         int targetDimensions = Math.min(len * 2, supervectorDim); // 目标维度
-        System.out.println("目标维度: " + targetDimensions + " / Target dimensions: " + targetDimensions);
+        log.debug("目标维度: " + targetDimensions + " / Target dimensions: " + targetDimensions);
         
         // 生成随机投影矩阵
         IMatrix<Double> randomProjection = Linalg.rand(supervectorDim, targetDimensions, 42L);
@@ -277,7 +283,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
         IMatrix<Double> S = Linalg.zeros(supervectorDim, supervectorDim);
         
         int totalFeatures = features.size();
-        System.out.println("处理 " + totalFeatures + " 个特征向量 / Processing " + totalFeatures + " feature vectors");
+        log.debug("处理 " + totalFeatures + " 个特征向量 / Processing " + totalFeatures + " feature vectors");
         
         // 为了提高效率，我们只使用一部分特征来计算总变异性矩阵
         // 这在实际应用中是常见的做法
@@ -303,7 +309,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
             processed++;
             // 显示进度
             if (processed % 20 == 0 || processed == sampleSize) {
-                System.out.println("进度: " + processed + "/" + sampleSize);
+                log.debug("进度: " + processed + "/" + sampleSize);
             }
         }
         
@@ -417,7 +423,7 @@ public class IVectorEmbedding implements IAudioEmbedding, Serializable {
             var mat = AudioUtil.calculateMFCCMatrix(audioData);
             return this.embed(mat);
         } catch (Exception e) { 
-            e.printStackTrace();
+            log.error("exception", e);
         }
         return null;
     }

@@ -145,7 +145,7 @@ public class RereRandomForestTest {
         
         // 测试概率预测
         IVector<Double> testSample = Linalg.vector(new double[]{3.0, 4.0});
-        Map<String, Double> probabilities = randomForest.predictProba(testSample);
+        Map<String, Double> probabilities = randomForest.predictProb(testSample);
         assertNotNull(probabilities);
         
         // 验证概率和为1

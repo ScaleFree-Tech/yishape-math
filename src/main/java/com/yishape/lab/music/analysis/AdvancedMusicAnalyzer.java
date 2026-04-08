@@ -1,5 +1,8 @@
 package com.yishape.lab.music.analysis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioFormat;
 import com.yishape.lab.audio.exception.AudioProcessingException;
@@ -34,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0
  */
 public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
+
+    private static final Logger log = LoggerFactory.getLogger(AdvancedMusicAnalyzer.class);
+
 
     private final IAdvancedAnalyzer emotionAnalyzer;
     private final IAdvancedAnalyzer genreAnalyzer;
@@ -125,19 +131,19 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
 
             // 记录分析开始信息 / Log analysis start information
             if (audioDuration > 60) {
-                System.out.println("Starting advanced music analysis for " + String.format("%.1f", audioDuration) + " second audio file...");
-                System.out.println("Estimated timeout: " + timeoutSeconds + " seconds");
+                log.debug("Starting advanced music analysis for " + String.format("%.1f", audioDuration) + " second audio file...");
+                log.debug("Estimated timeout: " + timeoutSeconds + " seconds");
             }
 
             // 并行执行高级分析 / Execute advanced analysis in parallel
             CompletableFuture<Map<String, Object>> emotionFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     if (audioDuration > 60) {
-                        System.out.println("Starting emotion analysis...");
+                        log.debug("Starting emotion analysis...");
                     }
                     Map<String, Object> result = emotionAnalyzer.analyze(audioData, effectiveParameters);
                     if (audioDuration > 60) {
-                        System.out.println("Emotion analysis completed");
+                        log.debug("Emotion analysis completed");
                     }
                     return result;
                 } catch (Exception e) {
@@ -148,11 +154,11 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
             CompletableFuture<Map<String, Object>> genreFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     if (audioDuration > 60) {
-                        System.out.println("Starting genre analysis...");
+                        log.debug("Starting genre analysis...");
                     }
                     Map<String, Object> result = genreAnalyzer.analyze(audioData, effectiveParameters);
                     if (audioDuration > 60) {
-                        System.out.println("Genre analysis completed");
+                        log.debug("Genre analysis completed");
                     }
                     return result;
                 } catch (Exception e) {
@@ -163,11 +169,11 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
             CompletableFuture<Map<String, Object>> complexityFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     if (audioDuration > 60) {
-                        System.out.println("Starting complexity analysis...");
+                        log.debug("Starting complexity analysis...");
                     }
                     Map<String, Object> result = complexityAnalyzer.analyze(audioData, effectiveParameters);
                     if (audioDuration > 60) {
-                        System.out.println("Complexity analysis completed");
+                        log.debug("Complexity analysis completed");
                     }
                     return result;
                 } catch (Exception e) {
@@ -178,11 +184,11 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
             CompletableFuture<Map<String, Object>> structureFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     if (audioDuration > 60) {
-                        System.out.println("Starting structure analysis...");
+                        log.debug("Starting structure analysis...");
                     }
                     Map<String, Object> result = structureAnalyzer.analyze(audioData, effectiveParameters);
                     if (audioDuration > 60) {
-                        System.out.println("Structure analysis completed");
+                        log.debug("Structure analysis completed");
                     }
                     return result;
                 } catch (Exception e) {

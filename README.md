@@ -105,14 +105,31 @@
 </dependency>
 ```
 
-**启用Java Vector API(可选) / Enable Java Vector API (Optional)**
+**JVM 运行参数（可选 SIMD / Vector API） / Optional JVM options for SIMD**
+
+本库编译与测试依赖 **JDK 21**。**不加** `--add-modules jdk.incubator.vector` 时，本库仍可正常使用，向量运算走标量（SISD）实现；**加上**该参数后，运行时会探测并成功加载 Vector API，即可使用 SIMD 路径（默认尝试 SIMD，可用 `-Dyishape.math.use.simd=false` 强制始终使用标量）。
+
+The library is built and tested with **JDK 21**. **Without** `--add-modules jdk.incubator.vector`, it still runs normally and vector ops use scalar (SISD) paths. **With** that flag, the runtime can load the Vector API and use SIMD (SIMD is tried by default; use `-Dyishape.math.use.simd=false` to force scalar).
+
+在需要 SIMD、运行测试或与 `pom.xml` 中 Surefire 配置一致时，可将下列参数加入 JVM：
+
+When you need SIMD, run tests, or align with Surefire in `pom.xml`, add:
 
 ```
-# vm args:
-
---add-modules=jdk.incubator.vector
-
+--enable-native-access=ALL-UNNAMED
+--add-opens java.base/java.lang=ALL-UNNAMED
+--add-modules jdk.incubator.vector
 ```
+
+集成到自己的应用时，可将上述参数写入启动脚本、`JAVA_TOOL_OPTIONS` 或 IDE Run Configuration。若未添加 `--add-modules` 且出现与 `jdk.incubator.vector` 相关的 `NoClassDefFoundError`（例如自行反射加载 SIMD 类），请补全模块参数或保持默认标量路径即可。
+
+Put these in your launch script, `JAVA_TOOL_OPTIONS`, or IDE Run Configuration. If you omit `--add-modules` and see `NoClassDefFoundError` for `jdk.incubator.vector` (e.g. when reflecting into SIMD classes), add the module flags or stay on the default scalar path.
+
+**日志 / Logging**
+
+库使用 **SLF4J** 门面记录日志；请在应用中提供绑定实现（如 `logback-classic`、`slf4j-simple` 等）。未配置绑定时，默认无输出（SLF4J NOP），不会产生控制台刷屏。
+
+The library logs through the **SLF4J** facade; provide a binding in your app (e.g. `logback-classic`, `slf4j-simple`). With no binding, output is suppressed by default (SLF4J NOP), so the console is not flooded.
 
 
 ### 基本使用示例 / Basic Usage Examples
@@ -615,6 +632,7 @@ IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / 
 - [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
 - [时间序列分析示例](./docs/examples/Time-Series-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Examples.md)
 - [音频处理示例](./docs/examples/Audio-Examples.md) / [Audio Processing Examples](./docs/examples/Audio-Examples.md)
+- [稠密数组与广播示例](./docs/examples/Dense-Arrays-Examples.md) / [Dense Arrays & Broadcasting Examples](./docs/examples/Dense-Arrays-Examples.md)
 
 ## 项目结构 / Project Structure
 

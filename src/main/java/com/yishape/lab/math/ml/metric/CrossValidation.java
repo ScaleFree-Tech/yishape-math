@@ -2,83 +2,104 @@ package com.yishape.lab.math.ml.metric;
 
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
-import com.yishape.lab.math.ml.cls.IClassification;
 import com.yishape.lab.math.ml.cls.ClassificationResult;
+import java.io.Serializable;
 
 import java.util.*;
+import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * 交叉验证工具类
  * <p>
- * 提供多种交叉验证方法，用于分类器模型的训练和评估。
- * 支持K折交叉验证、分层K折交叉验证、随机分割等多种验证方式。
+ * 提供多种交叉验证方法，用于分类器模型的训练和评估。 支持K折交叉验证、分层K折交叉验证、随机分割等多种验证方式。
  * 与ClassificationMetrics配合使用，提供全面的模型评估。
  * </p>
- * 
+ *
  * @author yishape
  * @version 1.0
  * @since 1.0
  */
-public class CrossValidation {
-    
+public class CrossValidation implements Serializable {
+
     // ==================== 交叉验证类型枚举 ====================
-    
     /**
      * 交叉验证类型
      */
     public enum CrossValidationType {
-        /** K折交叉验证 */
+        /**
+         * K折交叉验证
+         */
         K_FOLD,
-        /** 分层K折交叉验证 (保持各类别比例) */
+        /**
+         * 分层K折交叉验证 (保持各类别比例)
+         */
         STRATIFIED_K_FOLD,
-        /** 随机分割交叉验证 */
+        /**
+         * 随机分割交叉验证
+         */
         RANDOM_SPLIT,
-        /** 留一法交叉验证 */
+        /**
+         * 留一法交叉验证
+         */
         LEAVE_ONE_OUT,
-        /** 多次K折交叉验证 */
+        /**
+         * 多次K折交叉验证
+         */
         REPEATED_K_FOLD
     }
-    
 
-    
     // ==================== 静态交叉验证方法 ====================
     
-    /**
-     * K折交叉验证
-     * K-Fold Cross Validation
-     * 
-     * @param classifier 分类器
-     * @param X 特征矩阵
-     * @param y 标签数组
-     * @param k 折数
-     * @return 交叉验证结果
-     */
-    public static CrossValidationResult kFoldCrossValidation(IClassification classifier, 
-                                                            IMatrix<Double> X, String[] y, int k) {
-        return crossValidate(classifier, X, y, CrossValidationType.K_FOLD, 
-                createKFoldSplits(y.length, k));
-    }
     
     /**
-     * 分层K折交叉验证
-     * Stratified K-Fold Cross Validation
-     * 
+     * K折交叉验证 K-Fold Cross Validation
+     *
      * @param classifier 分类器
      * @param X 特征矩阵
      * @param y 标签数组
      * @param k 折数
      * @return 交叉验证结果
      */
-    public static CrossValidationResult stratifiedKFoldCrossValidation(IClassification classifier,
-                                                                      IMatrix<Double> X, String[] y, int k) {
+    public static CrossValidationResult kFoldCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y, int k) {
+        return crossValidate(classifier, X, y, CrossValidationType.K_FOLD,
+                createKFoldSplits(y.length, k), null);
+    }
+
+    /**
+     * K折交叉验证 K-Fold Cross Validation
+     *
+     * @param classifier 分类器
+     * @param X 特征矩阵
+     * @param y 标签数组
+     * @param k 折数
+     * @param logger
+     * @return 交叉验证结果
+     */
+    public static CrossValidationResult kFoldCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y, int k, CrossValidationLogger logger) {
+        return crossValidate(classifier, X, y, CrossValidationType.K_FOLD,
+                createKFoldSplits(y.length, k), logger);
+    }
+
+    /**
+     * 分层K折交叉验证 Stratified K-Fold Cross Validation
+     *
+     * @param classifier 分类器
+     * @param X 特征矩阵
+     * @param y 标签数组
+     * @param k 折数
+     * @return 交叉验证结果
+     */
+    public static CrossValidationResult stratifiedKFoldCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y, int k) {
         return crossValidate(classifier, X, y, CrossValidationType.STRATIFIED_K_FOLD,
-                createStratifiedKFoldSplits(y, k));
+                createStratifiedKFoldSplits(y, k),null);
     }
-    
+
     /**
-     * 随机分割交叉验证
-     * Random Split Cross Validation
-     * 
+     * 随机分割交叉验证 Random Split Cross Validation
+     *
      * @param classifier 分类器
      * @param X 特征矩阵
      * @param y 标签数组
@@ -87,33 +108,31 @@ public class CrossValidation {
      * @param randomSeed 随机种子
      * @return 交叉验证结果
      */
-    public static CrossValidationResult randomSplitCrossValidation(IClassification classifier,
-                                                                  IMatrix<Double> X, String[] y,
-                                                                  double testSize, int nSplits,
-                                                                  int randomSeed) {
+    public static CrossValidationResult randomSplitCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y,
+            double testSize, int nSplits,
+            int randomSeed) {
         return crossValidate(classifier, X, y, CrossValidationType.RANDOM_SPLIT,
-                createRandomSplits(y.length, testSize, nSplits, randomSeed));
+                createRandomSplits(y.length, testSize, nSplits, randomSeed),null);
     }
-    
+
     /**
-     * 留一法交叉验证
-     * Leave-One-Out Cross Validation
-     * 
+     * 留一法交叉验证 Leave-One-Out Cross Validation
+     *
      * @param classifier 分类器
      * @param X 特征矩阵
      * @param y 标签数组
      * @return 交叉验证结果
      */
-    public static CrossValidationResult leaveOneOutCrossValidation(IClassification classifier,
-                                                                 IMatrix<Double> X, String[] y) {
+    public static CrossValidationResult leaveOneOutCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y) {
         return crossValidate(classifier, X, y, CrossValidationType.LEAVE_ONE_OUT,
-                createLeaveOneOutSplits(y.length));
+                createLeaveOneOutSplits(y.length),null);
     }
-    
+
     /**
-     * 多次K折交叉验证
-     * Repeated K-Fold Cross Validation
-     * 
+     * 多次K折交叉验证 Repeated K-Fold Cross Validation
+     *
      * @param classifier 分类器
      * @param X 特征矩阵
      * @param y 标签数组
@@ -122,19 +141,18 @@ public class CrossValidation {
      * @param randomSeed 随机种子
      * @return 交叉验证结果
      */
-    public static CrossValidationResult repeatedKFoldCrossValidation(IClassification classifier,
-                                                                    IMatrix<Double> X, String[] y,
-                                                                    int k, int nRepeats,
-                                                                    int randomSeed) {
+    public static CrossValidationResult repeatedKFoldCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y,
+            int k, int nRepeats,
+            int randomSeed) {
         return crossValidate(classifier, X, y, CrossValidationType.REPEATED_K_FOLD,
-                createRepeatedKFoldSplits(y.length, k, nRepeats, randomSeed));
+                createRepeatedKFoldSplits(y.length, k, nRepeats, randomSeed),null);
     }
-    
+
     // ==================== 通用交叉验证方法 ====================
-    
     /**
      * 通用交叉验证方法
-     * 
+     *
      * @param classifier 分类器
      * @param X 特征矩阵
      * @param y 标签数组
@@ -142,17 +160,17 @@ public class CrossValidation {
      * @param splits 分割列表
      * @return 交叉验证结果
      */
-    private static CrossValidationResult crossValidate(IClassification classifier, IMatrix<Double> X, String[] y,
-                                                      CrossValidationType validationType,
-                                                      List<IndexPair>[] splits) {
+    private static CrossValidationResult crossValidate(IClassifier classifier, IMatrix<Double> X, String[] y,
+            CrossValidationType validationType,
+            List<IndexPair>[] splits, CrossValidationLogger logger) {
         if (classifier == null || X == null || y == null) {
             throw new IllegalArgumentException("分类器、特征矩阵和标签不能为空");
         }
-        
+
         if (y.length != X.getRowNum()) {
             throw new IllegalArgumentException("标签数量与特征矩阵行数不一致");
         }
-        
+
         List<Double> accuracyScores = new ArrayList<>();
         List<Double> f1Scores = new ArrayList<>();
         List<Double> precisionScores = new ArrayList<>();
@@ -160,9 +178,16 @@ public class CrossValidation {
         List<Double> aucScores = new ArrayList<>();
         List<Long> trainingTimes = new ArrayList<>();
         List<Long> predictionTimes = new ArrayList<>();
-        
+        int k=0;
         for (List<IndexPair> foldSplits : splits) {
+            k++;
             CrossValidationResult foldResult = singleFoldValidation(classifier, X, y, foldSplits);
+
+            //用于检验过程中的日志输出
+            if (logger != null) {
+                logger.log(k,foldResult);
+            }
+            
             
             accuracyScores.addAll(foldResult.getAccuracyScores());
             f1Scores.addAll(foldResult.getF1Scores());
@@ -172,16 +197,17 @@ public class CrossValidation {
             trainingTimes.addAll(foldResult.getTrainingTimes());
             predictionTimes.addAll(foldResult.getPredictionTimes());
         }
-        
+
         return new CrossValidationResult(accuracyScores, f1Scores, precisionScores, recallScores,
-                                       aucScores, trainingTimes, predictionTimes, validationType);
+                aucScores, trainingTimes, predictionTimes, validationType);
     }
-    
+
+
     /**
      * 单折验证
      */
-    private static CrossValidationResult singleFoldValidation(IClassification classifier, IMatrix<Double> X,
-                                                            String[] y, List<IndexPair> splits) {
+    private static CrossValidationResult singleFoldValidation(IClassifier classifier, IMatrix<Double> X,
+            String[] y, List<IndexPair> splits) {
         List<Double> accuracyScores = new ArrayList<>();
         List<Double> f1Scores = new ArrayList<>();
         List<Double> precisionScores = new ArrayList<>();
@@ -192,21 +218,22 @@ public class CrossValidation {
         
         for (IndexPair split : splits) {
             long trainStartTime = System.currentTimeMillis();
-            
+
             // 提取训练集
             IMatrix<Double> trainX = extractRows(X, split.trainIndices);
             String[] trainY = extractLabels(y, split.trainIndices);
-            
+
             // 训练模型
             ClassificationResult result = classifier.fit(trainX, trainY);
-            long trainEndTime = System.currentTimeMillis();
             
+            long trainEndTime = System.currentTimeMillis();
+
             // 提取测试集
             IMatrix<Double> testX = extractRows(X, split.testIndices);
             String[] testY = extractLabels(y, split.testIndices);
-            
+
             long predStartTime = System.currentTimeMillis();
-            
+
             // 进行预测
             String[] predictions = new String[testX.getRowNum()];
 
@@ -219,7 +246,7 @@ public class CrossValidation {
 
             // 计算评估指标 (不使用概率，避免硬编码)
             ClassificationMetrics metrics = ClassificationMetrics.compute(testY, predictions);
-            
+
             accuracyScores.add(metrics.getAccuracy());
             f1Scores.add(metrics.getWeightedF1());
             precisionScores.add(metrics.getWeightedPrecision());
@@ -228,26 +255,26 @@ public class CrossValidation {
             trainingTimes.add(trainEndTime - trainStartTime);
             predictionTimes.add(predEndTime - predStartTime);
         }
-        
+
         return new CrossValidationResult(accuracyScores, f1Scores, precisionScores, recallScores,
-                                       aucScores, trainingTimes, predictionTimes, CrossValidationType.K_FOLD);
+                aucScores, trainingTimes, predictionTimes, CrossValidationType.K_FOLD);
     }
-    
+
     // ==================== 数据分割方法 ====================
-    
     /**
      * 索引对
      */
     private static class IndexPair {
+
         final int[] trainIndices;
         final int[] testIndices;
-        
+
         IndexPair(int[] trainIndices, int[] testIndices) {
             this.trainIndices = trainIndices;
             this.testIndices = testIndices;
         }
     }
-    
+
     /**
      * 创建K折分割
      */
@@ -298,7 +325,7 @@ public class CrossValidation {
 
         return splits;
     }
-    
+
     /**
      * 创建分层K折分割
      */
@@ -350,81 +377,81 @@ public class CrossValidation {
             }
 
             splitList.add(new IndexPair(
-                trainIndices.stream().mapToInt(Integer::intValue).toArray(),
-                testIndices.stream().mapToInt(Integer::intValue).toArray()
+                    trainIndices.stream().mapToInt(Integer::intValue).toArray(),
+                    testIndices.stream().mapToInt(Integer::intValue).toArray()
             ));
             splits[fold] = splitList;
         }
 
         return splits;
     }
-    
+
     /**
      * 创建随机分割
      */
-    private static List<IndexPair>[] createRandomSplits(int nSamples, double testSize, 
-                                                       int nSplits, int randomSeed) {
+    private static List<IndexPair>[] createRandomSplits(int nSamples, double testSize,
+            int nSplits, int randomSeed) {
         Random random = new Random(randomSeed);
         List<IndexPair>[] splits = new ArrayList[nSplits];
-        
+
         for (int i = 0; i < nSplits; i++) {
             List<IndexPair> splitList = new ArrayList<>();
-            
+
             // 生成随机分割
             int[] indices = new int[nSamples];
             for (int j = 0; j < nSamples; j++) {
                 indices[j] = j;
             }
-            
+
             // 打乱数组
             shuffleArray(indices, random);
-            
+
             int testCount = (int) (nSamples * testSize);
-            
+
             int[] testIndices = new int[testCount];
             int[] trainIndices = new int[nSamples - testCount];
-            
+
             System.arraycopy(indices, 0, testIndices, 0, testCount);
             System.arraycopy(indices, testCount, trainIndices, 0, nSamples - testCount);
-            
+
             splitList.add(new IndexPair(trainIndices, testIndices));
             splits[i] = splitList;
         }
-        
+
         return splits;
     }
-    
+
     /**
      * 创建留一法分割
      */
     private static List<IndexPair>[] createLeaveOneOutSplits(int nSamples) {
         List<IndexPair>[] splits = new ArrayList[nSamples];
-        
+
         for (int i = 0; i < nSamples; i++) {
             List<IndexPair> splitList = new ArrayList<>();
-            
+
             int[] trainIndices = new int[nSamples - 1];
             int[] testIndices = new int[]{i};
-            
+
             int trainIdx = 0;
             for (int j = 0; j < nSamples; j++) {
                 if (j != i) {
                     trainIndices[trainIdx++] = j;
                 }
             }
-            
+
             splitList.add(new IndexPair(trainIndices, testIndices));
             splits[i] = splitList;
         }
-        
+
         return splits;
     }
-    
+
     /**
      * 创建重复K折分割
      */
     private static List<IndexPair>[] createRepeatedKFoldSplits(int nSamples, int k,
-                                                              int nRepeats, int randomSeed) {
+            int nRepeats, int randomSeed) {
         Random random = new Random(randomSeed);
         List<IndexPair> allSplits = new ArrayList<>();
 
@@ -439,9 +466,8 @@ public class CrossValidation {
         List<IndexPair>[] result = new ArrayList[allSplits.size()];
         return allSplits.toArray(result);
     }
-    
+
     // ==================== 工具方法 ====================
-    
     /**
      * 数组打乱
      */
@@ -454,7 +480,7 @@ public class CrossValidation {
             array[j] = temp;
         }
     }
-    
+
     /**
      * 数组打乱 (带随机种子)
      */
@@ -466,14 +492,14 @@ public class CrossValidation {
             array[j] = temp;
         }
     }
-    
+
     /**
      * 提取矩阵行
      */
     private static IMatrix<Double> extractRows(IMatrix<Double> X, int[] indices) {
         int nRows = indices.length;
         int nCols = X.getColNum();
-        
+
         double[][] data = new double[nRows][nCols];
         for (int i = 0; i < nRows; i++) {
             int rowIdx = indices[i];
@@ -481,10 +507,10 @@ public class CrossValidation {
                 data[i][j] = X.get(rowIdx, j);
             }
         }
-        
+
         return IMatrix.of(data);
     }
-    
+
     /**
      * 提取标签
      */

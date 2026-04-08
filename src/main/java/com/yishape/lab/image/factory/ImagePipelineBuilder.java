@@ -3,6 +3,9 @@ package com.yishape.lab.image.factory;
 import com.yishape.lab.image.ImageData;
 import com.yishape.lab.image.core.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.function.Function;
 
@@ -43,6 +46,7 @@ public class ImagePipelineBuilder {
      * 流水线上下文类 / Pipeline Context Class
      */
     public static class PipelineContext {
+        private static final Logger LOGGER = LoggerFactory.getLogger(PipelineContext.class);
         private final Map<String, Object> parameters = new java.util.concurrent.ConcurrentHashMap<>();
         private final Map<String, ImageData> intermediateResults = new java.util.concurrent.ConcurrentHashMap<>();
         private final java.util.List<String> executionLog = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -80,7 +84,7 @@ public class ImagePipelineBuilder {
             String logEntry = String.format("[%d] %s", System.currentTimeMillis() - startTime, message);
             executionLog.add(logEntry);
             if (debugMode) {
-                System.out.println(logEntry);
+                LOGGER.debug(logEntry);
             }
         }
         

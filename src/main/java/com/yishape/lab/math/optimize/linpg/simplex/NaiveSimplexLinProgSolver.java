@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize.linpg.simplex;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -10,6 +13,9 @@ import com.yishape.lab.math.optimize.OptResult;
  * 专注于稳定性和正确性，而不是复杂的优化
  */
 public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
+
+    private static final Logger log = LoggerFactory.getLogger(NaiveSimplexLinProgSolver.class);
+
 
     private boolean verbose = false;
     private static final double DEFAULT_EPSILON = 1e-6;
@@ -44,10 +50,10 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
         
         
         if (verbose) {
-            System.out.println("=== BetterSimplexLinProgSolver.maximizeWithNonNegativeEqualConstraints 开始 ===");
-            System.out.println("c = " + c);
-            System.out.println("A_eq = " + A_eq);
-            System.out.println("b_eq = " + b_eq);
+            log.debug("=== BetterSimplexLinProgSolver.maximizeWithNonNegativeEqualConstraints 开始 ===");
+            log.debug("c = " + c);
+            log.debug("A_eq = " + A_eq);
+            log.debug("b_eq = " + b_eq);
         }
 
         try {
@@ -66,7 +72,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             int n = A_eq.cols();  // 变量数量
             
             if (verbose) {
-                System.out.println("问题规模: " + m + " 个约束, " + n + " 个变量");
+                log.debug("问题规模: " + m + " 个约束, " + n + " 个变量");
             }
             
             // 检查是否为方阵系统（等式约束数 = 变量数）
@@ -81,9 +87,9 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
                 throw new IllegalArgumentException("约束数量超过变量数量，系统可能无解");
             }
         } catch (Exception e) {
-            System.err.println("求解失败: " + e.getMessage());
+            log.warn("求解失败: " + e.getMessage());
             if (verbose) {
-                e.printStackTrace();
+                log.error("exception", e);
             }
             
             // 返回失败结果
@@ -101,7 +107,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
      */
     private OptResult solveDeterminateSystem(IVector c, IMatrix A_eq, IVector b_eq) {
         if (verbose) {
-            System.out.println("求解方阵系统...");
+            log.debug("求解方阵系统...");
         }
         
         try {
@@ -110,7 +116,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             if (Math.abs(det) < epsilon) {
                 // 矩阵奇异，可能不可行或有无穷解
                 if (verbose) {
-                    System.out.println("矩阵奇异，检查一致性...");
+                    log.debug("矩阵奇异，检查一致性...");
                 }
                 return checkConsistency(c, A_eq, b_eq);
             }
@@ -129,7 +135,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             
             if (!feasible) {
                 if (verbose) {
-                    System.out.println("解不满足非负性约束");
+                    log.debug("解不满足非负性约束");
                 }
                 IVector fallbackSolution = IVector.zeros(c.length());
                 return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -146,8 +152,8 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             }
             
             if (verbose) {
-                System.out.println("找到可行解: " + solution);
-                System.out.println("目标函数值: " + objectiveValue);
+                log.debug("找到可行解: " + solution);
+                log.debug("目标函数值: " + objectiveValue);
             }
             
             return new OptResult.Builder(objectiveValue, solution)
@@ -158,7 +164,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
                 
         } catch (Exception e) {
             if (verbose) {
-                System.out.println("方阵求解失败: " + e.getMessage());
+                log.debug("方阵求解失败: " + e.getMessage());
             }
             IVector fallbackSolution = IVector.zeros(c.length());
             return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -243,7 +249,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
                         if (Math.abs(bRatio - ratio) > epsilon) {
                             // 不一致系统
                             if (verbose) {
-                                System.out.println("检测到不一致的约束：行" + i + "和行" + j);
+                                log.debug("检测到不一致的约束：行" + i + "和行" + j);
                             }
                             IVector fallbackSolution = IVector.zeros(c.length());
                             return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -255,7 +261,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
                     } else if (Math.abs(bi) > epsilon) {
                         // bj = 0 但 bi != 0，不一致
                         if (verbose) {
-                            System.out.println("检测到不一致的约束：行" + i + "和行" + j);
+                            log.debug("检测到不一致的约束：行" + i + "和行" + j);
                         }
                         IVector fallbackSolution = IVector.zeros(c.length());
                         return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -298,7 +304,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
      */
     private OptResult solveUnderdeterminedSystem(IVector c, IMatrix A_eq, IVector b_eq) {
         if (verbose) {
-            System.out.println("求解欠定系统，使用单纯形法...");
+            log.debug("求解欠定系统，使用单纯形法...");
         }
         
         int m = A_eq.rows();
@@ -331,7 +337,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
         }
         
         if (verbose) {
-            System.out.println("初始单纯形表已构建，维度: " + tableau.rows() + "x" + tableau.cols());
+            log.debug("初始单纯形表已构建，维度: " + tableau.rows() + "x" + tableau.cols());
             printTableau(tableau, m, n);
         }
         
@@ -350,7 +356,7 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             if (leavingVar == -1) {
                 // 无界解
                 if (verbose) {
-                    System.out.println("检测到无界解");
+                    log.debug("检测到无界解");
                 }
                 IVector unboundedSolution = extractCurrentSolution(tableau, n, m);
                 return new OptResult.Builder(Double.POSITIVE_INFINITY, unboundedSolution)
@@ -365,12 +371,12 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
             iteration++;
             
             if (verbose && iteration % 10 == 0) {
-                System.out.println("迭代 " + iteration + "，入基: " + enteringVar + ", 出基: " + leavingVar);
+                log.debug("迭代 " + iteration + "，入基: " + enteringVar + ", 出基: " + leavingVar);
             }
         }
         
         if (iteration >= MAX_ITERATIONS) {
-            System.err.println("达到最大迭代次数");
+            log.warn("达到最大迭代次数");
         }
         
         // 提取最终解
@@ -378,9 +384,9 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
         double objectiveValue = RereMathUtil.safeDoubleValue(tableau.get(m, n + m));
         
         if (verbose) {
-            System.out.println("单纯形法完成，迭代次数: " + iteration);
-            System.out.println("最终解: " + solution);
-            System.out.println("目标函数值: " + objectiveValue);
+            log.debug("单纯形法完成，迭代次数: " + iteration);
+            log.debug("最终解: " + solution);
+            log.debug("目标函数值: " + objectiveValue);
             printTableau(tableau, m, n);
         }
         
@@ -504,13 +510,13 @@ public class NaiveSimplexLinProgSolver implements ISimplexLinProgSolver {
     private void printTableau(IMatrix tableau, int m, int n) {
         if (!verbose) return;
         
-        System.out.println("单纯形表:");
+        log.debug("单纯形表:");
         for (int i = 0; i < tableau.rows(); i++) {
             for (int j = 0; j < tableau.cols(); j++) {
-                System.out.printf("%8.3f ", RereMathUtil.safeDoubleValue(tableau.get(i, j)));
+                log.debug(String.format("%8.3f ", RereMathUtil.safeDoubleValue(tableau.get(i, j))));
             }
-            System.out.println();
+            log.debug("");
         }
-        System.out.println();
+        log.debug("");
     }
 }

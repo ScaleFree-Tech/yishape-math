@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.dimreduce;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -24,6 +27,9 @@ import java.io.*;
  * @author lteb2
  */
 public class RereUMAP implements IDimReduce, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereUMAP.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -47,29 +53,29 @@ public class RereUMAP implements IDimReduce, ISerializableModel {
      * @return 降维后的矩阵
      */
     public IMatrix dimensionReduction(IMatrix originalData, int dim){
-        System.out.println("开始UMAP降维，数据形状: " + Arrays.toString(originalData.shape()) + 
+        log.debug("开始UMAP降维，数据形状: " + Arrays.toString(originalData.shape()) + 
                           "，目标维度: " + dim);
         
         int n = originalData.getRowNum();
         
         // 第一步：构建k近邻图
-        System.out.println("步骤1: 构建k近邻图...");
+        log.debug("步骤1: 构建k近邻图...");
         int[][] knnIndices = computeKNearestNeighbors(originalData);
         double[][] knnDistances = computeKNNDistances(originalData, knnIndices);
         
         // 第二步：计算流形结构（fuzzy simplicial complex）
-        System.out.println("步骤2: 计算流形结构...");
+        log.debug("步骤2: 计算流形结构...");
         IMatrix weights = computeFuzzySimplicialComplex(knnIndices, knnDistances, n);
         
         // 第三步：初始化低维嵌入
-        System.out.println("步骤3: 初始化低维嵌入...");
+        log.debug("步骤3: 初始化低维嵌入...");
         IMatrix embedding = initializeEmbedding(n, dim);
         
         // 第四步：优化低维嵌入
-        System.out.println("步骤4: 优化低维嵌入...");
+        log.debug("步骤4: 优化低维嵌入...");
         embedding = optimizeEmbedding(weights, embedding, knnIndices);
         
-        System.out.println("UMAP降维完成");
+        log.debug("UMAP降维完成");
         return embedding;
     }
     
@@ -290,7 +296,7 @@ public class RereUMAP implements IDimReduce, ISerializableModel {
             
             // 打印进度
             if (epoch % 100 == 0) {
-                System.out.println("Epoch " + epoch + "/" + nEpochs);
+                log.debug("Epoch " + epoch + "/" + nEpochs);
             }
         }
         
@@ -450,7 +456,7 @@ public class RereUMAP implements IDimReduce, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

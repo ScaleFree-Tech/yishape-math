@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.cls;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
@@ -12,6 +15,7 @@ import java.util.Random;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.optimize.newton.RereLBFGS;
 
 /**
@@ -20,19 +24,28 @@ import com.yishape.lab.math.optimize.newton.RereLBFGS;
  * 本类实现了逻辑回归算法，自动检测并支持二分类和多分类问题： - 二分类：使用sigmoid函数，输出单个概率值 -
  * 多分类：使用softmax函数，输出多个类别的概率分布
  * </p>
+ * <p>
+ * 正则化：{@code setRegularization(λ₁, λ₂)} 的类型推断与参数校验与
+ * {@link com.yishape.lab.math.ml.lr.RereLinearRegression} 一致；正则项仅作用于权重矩阵，不含偏置。
+ * </p>
  *
  * @author lteb2
  * @version 2.0
  * @since 1.0
  */
-public class RereLogisticRegression implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+public class RereLogisticRegression implements IClassifier, IGradientFunction, IObjectiveFunction, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereLogisticRegression.class);
+
 
     private static final long serialVersionUID = 1L;
 
-    // 创建LBFGS优化器
-    IOptimizer optimizer = new RereLBFGS();
-//    IOptimizer optimizer = new RereConjugateGradient();
-//    IOptimizer optimizer = new RereSteepestDescent();
+    /**
+     * 创建LBFGS优化器（标记为transient，不参与序列化）
+     */
+    private transient IOptimizer optimizer = new RereLBFGS();
+//  private transient IOptimizer optimizer = new RereConjugateGradient();
+//  private transient IOptimizer optimizer = new RereSteepestDescent();
 
     // ==================== 模型参数 ====================
     /**
@@ -69,6 +82,8 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * L2正则化系数（λ₂）
      */
     private double lambda2 = 0.0;
+    
+    private ClassificationMetrics metrics;
 
     /**
      * 正则化类型枚举
@@ -253,7 +268,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         this.tolerance = tolerance;
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
-        this.regularizationType = inferRegularizationType(lambda1, lambda2);
+        updateRegularizationFromLambdas();
     }
 
     /**
@@ -276,7 +291,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         this();
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
-        this.regularizationType = inferRegularizationType(lambda1, lambda2);
+        updateRegularizationFromLambdas();
     }
 
     // ==================== 核心训练方法 ====================
@@ -352,15 +367,15 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         double finalLoss = computeObjective(createParameterVector());
 
         // 输出训练摘要
-        System.out.println("=== 逻辑回归训练完成 ===");
-        System.out.println("模型类型: " + getModelTypeDescription());
-        System.out.println("特征维度: " + featureDimension);
-        System.out.println("训练样本数: " + trainingFeatures.getRowNum());
-        System.out.println("最终损失: " + String.format("%.6f", finalLoss));
-        System.out.println("正则化: " + getRegularizationDescription());
-        System.out.println("特征归一化: " + (standardizeFeatures ? "启用" : "禁用"));
-        System.out.println("类别权重: " + (classWeights != null ? "启用" : "禁用"));
-        System.out.println("随机种子: " + randomSeed);
+        log.debug("=== 逻辑回归训练完成 ===");
+        log.debug("模型类型: " + getModelTypeDescription());
+        log.debug("特征维度: " + featureDimension);
+        log.debug("训练样本数: " + trainingFeatures.getRowNum());
+        log.debug("最终损失: " + String.format("%.6f", finalLoss));
+        log.debug("正则化: " + getRegularizationDescription());
+        log.debug("特征归一化: " + (standardizeFeatures ? "启用" : "禁用"));
+        log.debug("类别权重: " + (classWeights != null ? "启用" : "禁用"));
+        log.debug("随机种子: " + randomSeed);
 
         // 创建并返回训练结果
         LogisticRegressionResult result = new LogisticRegressionResult();
@@ -401,12 +416,12 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
                 // 创建初始参数向量
                 IVector initParams = createParameterVector();
                 long start = System.currentTimeMillis();
-                System.out.println("Start to optimize...");
+                log.debug("Start to optimize...");
                 // 执行优化
                 var optimizationResult = optimizer.optimize(initParams, this, this);
-                System.out.println("Optimization finished.");
+                log.debug("Optimization finished.");
                 long end = System.currentTimeMillis();
-                System.out.println("Optimization time cost (s):" + (end - start) / 1000.0);
+                log.debug("Optimization time cost (s):" + (end - start) / 1000.0);
                 // 计算最终损失
                 double finalLoss = computeObjective(optimizationResult.getOptimalPoint());
 
@@ -423,12 +438,12 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
                 }
 
                 if (retry < maxRetries) {
-                    System.out.println(String.format("训练尝试 %d 未收敛或损失较高 (损失: %.6f)，尝试重新初始化...",
+                    log.debug(String.format("训练尝试 %d 未收敛或损失较高 (损失: %.6f)，尝试重新初始化...",
                             retry + 1, finalLoss));
                 }
 
             } catch (Exception e) {
-                System.out.println("训练尝试 " + (retry + 1) + " 失败: " + e.getMessage());
+                log.debug("训练尝试 " + (retry + 1) + " 失败: " + e.getMessage());
                 if (retry == maxRetries) {
                     throw new RuntimeException("所有训练尝试都失败", e);
                 }
@@ -437,7 +452,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
 
         // 检查最终结果
         if (!converged) {
-            System.out.println(String.format("警告：经过 %d 次尝试，优化器仍未完全收敛，最终损失值：%.6f",
+            log.debug(String.format("警告：经过 %d 次尝试，优化器仍未完全收敛，最终损失值：%.6f",
                     maxRetries + 1, bestLoss));
         }
 
@@ -555,6 +570,58 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         }
     }
 
+    @Override
+    public Map<String, Double> predictProb(IVector x) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+
+        if (x == null) {
+            throw new IllegalArgumentException("输入特征向量不能为null");
+        }
+
+        if (x.length() != featureDimension) {
+            throw new IllegalArgumentException(
+                    String.format("输入特征维度不匹配：期望%d维，实际%d维",
+                            featureDimension, x.length()));
+        }
+
+        // 归一化输入特征（如果启用）
+        IVector standardizedX = normalizePredictionFeatures(x);
+
+        // 检查输入向量是否包含无效值
+        for (int i = 0; i < standardizedX.length(); i++) {
+            double val = (double) standardizedX.get(i);
+            if (Double.isNaN(val) || Double.isInfinite(val)) {
+                throw new IllegalArgumentException(
+                        String.format("输入特征向量包含无效值：位置%d，值%s", i, val));
+            }
+        }
+
+        Map<String, Double> result = new HashMap<>();
+
+        if (isBinaryClassification) {
+            // 二分类：使用sigmoid函数
+            double probability = predictProbability(standardizedX);
+            // 返回两个类别的概率
+            String positiveClass = reverseLabelMapping.get(1);
+            String negativeClass = reverseLabelMapping.get(0);
+            result.put(positiveClass, probability);
+            result.put(negativeClass, 1.0 - probability);
+        } else {
+            // 多分类：使用softmax函数
+            double[] probabilities = predictProbabilities(standardizedX);
+            for (int i = 0; i < numClasses; i++) {
+                String className = reverseLabelMapping.get(i);
+                result.put(className, probabilities[i]);
+            }
+        }
+
+        return result;
+    }
+    
+    
+
     /**
      * 批量预测
      *
@@ -638,7 +705,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      * @return 包含预测标签和概率的BatchPredictionResult对象
      */
     @Override
-    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+    public BatchPredictionResult predictBatchWithProbs(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
@@ -1325,22 +1392,56 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     }
 
     /**
-     * 根据lambda1和lambda2的值自动判断正则化类型
+     * 根据 λ₁、λ₂ 推断正则化类型，规则与 {@link com.yishape.lab.math.ml.lr.RereLinearRegression} 一致：
+     * <ul>
+     * <li>λ₁&gt;0 且 λ₂&gt;0 → ElasticNet</li>
+     * <li>λ₁&gt;0 且 λ₂≤0 → L1</li>
+     * <li>λ₁≤0 且 λ₂&gt;0 → L2</li>
+     * <li>否则 → 无正则</li>
+     * </ul>
      */
     private RegularizationType inferRegularizationType(double lambda1, double lambda2) {
-        // 如果两个参数都很小，认为是无正则化
-        if (lambda1 < 1e-6 && lambda2 < 1e-6) {
-            return RegularizationType.NONE;
-        } // 如果L1明显大于L2，使用L1正则化
-        else if (lambda1 > lambda2 * 10) {
-            return RegularizationType.L1;
-        } // 如果L2明显大于L1，使用L2正则化
-        else if (lambda2 > lambda1 * 10) {
-            return RegularizationType.L2;
-        } // 否则使用ElasticNet
-        else {
+        if (lambda1 > 0 && lambda2 > 0) {
             return RegularizationType.ELASTIC_NET;
         }
+        if (lambda1 > 0 && lambda2 <= 0) {
+            return RegularizationType.L1;
+        }
+        if (lambda1 <= 0 && lambda2 > 0) {
+            return RegularizationType.L2;
+        }
+        return RegularizationType.NONE;
+    }
+
+    /**
+     * 校验当前 {@link #regularizationType} 与 λ₁、λ₂ 是否一致（与线性回归相同规则）。
+     */
+    private void validateRegularizationParameters() {
+        switch (regularizationType) {
+            case L1:
+                if (lambda1 <= 0) {
+                    throw new IllegalArgumentException("L1正则化系数必须大于0");
+                }
+                break;
+            case L2:
+                if (lambda2 <= 0) {
+                    throw new IllegalArgumentException("L2正则化系数必须大于0");
+                }
+                break;
+            case ELASTIC_NET:
+                if (lambda1 <= 0 || lambda2 <= 0) {
+                    throw new IllegalArgumentException("ElasticNet正则化系数必须都大于0");
+                }
+                break;
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    private void updateRegularizationFromLambdas() {
+        this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
+        validateRegularizationParameters();
     }
 
     /**
@@ -1649,7 +1750,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      */
     public void setLambda1(double lambda1) {
         this.lambda1 = lambda1;
-        this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
+        updateRegularizationFromLambdas();
     }
 
     /**
@@ -1664,7 +1765,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
      */
     public void setLambda2(double lambda2) {
         this.lambda2 = lambda2;
-        this.regularizationType = inferRegularizationType(this.lambda1, this.lambda2);
+        updateRegularizationFromLambdas();
     }
 
     /**
@@ -1673,7 +1774,7 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
     public void setRegularization(double lambda1, double lambda2) {
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
-        this.regularizationType = inferRegularizationType(lambda1, lambda2);
+        updateRegularizationFromLambdas();
     }
 
     /**
@@ -1768,20 +1869,76 @@ public class RereLogisticRegression implements IClassification, IGradientFunctio
         }
     }
 
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
+    }
+
 
 
 
     /**
-     * 将模型保存在本地
+     * 将模型保存在本地（轻量级，只保存推理必需的参数）
+     * <p>
+     * 注意：此方法会清除训练数据和缓存，保存后模型处于"未训练"状态，
+     * 加载后可继续用于推理（需要先设置参数），如需重新训练需调用fit()
+     * </p>
      *
      * @param path 保存路径
      */
     @Override
     public void save(String path) {
+        clearTrainingData();
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
+    
+    /**
+     * 清除训练数据和缓存（用于序列化前清理）
+     * <p>
+     * 注意：保留isTrained=true状态，以便加载后可以用于推理
+     * </p>
+     */
+    public void clearTrainingData() {
+        this.trainingFeatures = null;
+        this.trainingLabels = null;
+        this.cachedLabelsMatrix = null;
+        this.cachedOneHotLabels = null;
+        this.cachedLinearOutput = null;
+        this.cachedProbabilities = null;
+        this.cachedTrainingFeaturesTranspose = null;
+        this.cachedWeightsTranspose = null;
+        this.cachedWeightsForTranspose = null;
+        this.currentParamVector = null;
+        // 保留isTrained=true，保留归一化参数用于推理
+        // optimizer已标记为transient，不需要手动清空
+    }
+    
+    /**
+     * 自定义序列化方法：序列化时自动清除训练数据
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        clearTrainingData();
+        out.defaultWriteObject();
+    }
+    
+    /**
+     * 自定义反序列化方法
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        // 优化器已标记为transient，反序列化后需要重新初始化
+        optimizer = new RereLBFGS();
+        // 如果有权重和偏置，isTrained保持true，可用于推理
+        // 如果没有权重数据，isTrained应为false，需要重新训练
+    }
+
 }

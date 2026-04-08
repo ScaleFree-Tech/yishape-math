@@ -2,7 +2,9 @@ package com.yishape.lab.math.linalg;
 
 import com.yishape.lab.math.RereMathUtil;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.function.DoubleBinaryOperator;
 
 /**
  * Float类型矩阵操作接口 / Float Matrix Operations Interface
@@ -511,6 +513,53 @@ public interface IFloatMatrix extends IMatrix<Float> {
 
     public static IFloatMatrix diag(IFloatVector diagonal) {
         return diag(diagonal.getData());
+    }
+
+    // ========== 二维广播（形状见 {@link IMatrix}；`float[][]` 转 double 运算再转回 float）==========
+
+    static int[] broadcastShape(IMatrix<Float> a, IMatrix<Float> b) {
+        return IMatrix.broadcastShape(a, b);
+    }
+
+    static int[] broadcastShape(int rowsA, int colsA, int rowsB, int colsB) {
+        return IMatrix.broadcastShape(rowsA, colsA, rowsB, colsB);
+    }
+
+    static float[][] broadcastTo(float[][] data, int targetRows, int targetCols) {
+        return double2dToFloat(RereDoubleMatrix.broadcastTo(float2dToDouble(data), targetRows, targetCols));
+    }
+
+    static IFloatMatrix broadcastTo(IFloatMatrix data, int targetRows, int targetCols) {
+        Objects.requireNonNull(data, "data");
+        return IFloatMatrix.of(broadcastTo(data.getData(), targetRows, targetCols));
+    }
+
+    static float[][] broadcastElementWise(float[][] a, float[][] b, DoubleBinaryOperator op) {
+        return double2dToFloat(RereDoubleMatrix.broadcastElementWise(float2dToDouble(a), float2dToDouble(b), op));
+    }
+
+    static IFloatMatrix broadcastElementWise(IMatrix<Float> a, IMatrix<Float> b, DoubleBinaryOperator op) {
+        Objects.requireNonNull(a, "a");
+        Objects.requireNonNull(b, "b");
+        return IFloatMatrix.of(broadcastElementWise(a.toFloatArray(), b.toFloatArray(), op));
+    }
+
+    private static double[][] float2dToDouble(float[][] a) {
+        Objects.requireNonNull(a, "a");
+        double[][] d = new double[a.length][];
+        for (int i = 0; i < a.length; i++) {
+            d[i] = RereMathUtil.floatToDouble(a[i]);
+        }
+        return d;
+    }
+
+    private static float[][] double2dToFloat(double[][] a) {
+        Objects.requireNonNull(a, "a");
+        float[][] f = new float[a.length][];
+        for (int i = 0; i < a.length; i++) {
+            f[i] = RereMathUtil.doubleToFloat(a[i]);
+        }
+        return f;
     }
 
     // Note: copy(), max(), min(), sum(), mean() are inherited from IMatrix<Float>

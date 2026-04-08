@@ -101,10 +101,10 @@ Time series decomposition class providing time series decomposition functionalit
 #### 1.1 创建时间序列数据 / Creating Time Series Data
 
 ```
-import timeseries.math.com.yishape.lab.Series;
-import timeseries.math.com.yishape.lab.TimeSeriesData;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
+import com.yishape.lab.math.timeseries.Series;
+import com.yishape.lab.math.timeseries.TimeSeriesData;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -212,7 +212,7 @@ TimeSeriesData seriesFromBuilder = builder
 #### 2.1 统一分析器 / Unified Analyzer
 
 ```
-import timeseries.math.com.yishape.lab.TimeSeriesAnalyzer;
+import com.yishape.lab.math.timeseries.TimeSeriesAnalyzer;
 
 // 创建分析器 / Create analyzer
 TimeSeriesAnalyzer analyzer = new TimeSeriesAnalyzer(values, "temperature");
@@ -264,7 +264,7 @@ System.out.println("是否有季节性: " + seasonal.get("hasSeasonality"));
 #### 3.1 简单预测方法 / Simple Forecasting Methods
 
 ```
-import timeseries.math.com.yishape.lab.Series;
+import com.yishape.lab.math.timeseries.Series;
 
 // 简单移动平均预测 / Simple moving average forecasting
 TimeSeriesForecasting.ForecastResult smaResult = Series.simpleMovingAverage(
@@ -336,7 +336,7 @@ System.out.println("平均绝对百分比误差: " + mape + "%");
 #### 4.1 基础滤波方法 / Basic Filtering Methods
 
 ```
-import timeseries.math.com.yishape.lab.Series;
+import com.yishape.lab.math.timeseries.Series;
 
 // 移动平均滤波 / Moving average filtering
 TimeSeriesFiltering.FilterResult maResult = Series.movingAverage(
@@ -395,7 +395,7 @@ System.out.println("噪声数据长度: " + noise.getLength());
 #### 5.1 经典分解方法 / Classical Decomposition Methods
 
 ```
-import timeseries.math.com.yishape.lab.Series;
+import com.yishape.lab.math.timeseries.Series;
 
 // 经典分解（加法模型）/ Classical decomposition (additive model)
 TimeSeriesDecomposition.DecompositionResult classicResult = 
@@ -452,7 +452,7 @@ System.out.println("季节周期: " + result.period);
 #### 6.1 基础图表 / Basic Charts
 
 ```
-import timeseries.math.com.yishape.lab.Series;
+import com.yishape.lab.math.timeseries.Series;
 
 // 时间序列线图 / Time series line chart
 IPlot plot1 = Series.plotTimeSeries(timeSeries, "Temperature Over Time");
@@ -477,7 +477,7 @@ IPlot plot5 = Series.plotAutocorrelation(timeSeries, 20, "ACF Plot");
 IPlot plot6 = Series.plotPartialAutocorrelation(timeSeries, 20, "PACF Plot");
 
 // 功率谱密度图 / Power spectral density plot
-IPlot plot7 = signal.math.com.yishape.lab.Signals.plotPowerSpectralDensity(
+IPlot plot7 = com.yishape.lab.math.signal.Signals.plotPowerSpectralDensity(
     timeSeries.getVariable(0), timeSeries.getSamplingRate(), 256, 0.5, "PSD Plot");
 
 // 小波变换图 / Wavelet transform plot

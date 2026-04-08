@@ -1,5 +1,8 @@
 package com.yishape.lab.music.analysis.feature;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioUtil;
 import com.yishape.lab.audio.core.AudioStatistics;
@@ -41,6 +44,9 @@ import java.util.ArrayList;
  * @since 2.0
  */
 public class FeatureExtractorImpl implements IFeatureExtractor {
+
+    private static final Logger log = LoggerFactory.getLogger(FeatureExtractorImpl.class);
+
 
     // 音乐特征类型枚举 / Music feature type enumeration
     public enum MusicFeatureType {
@@ -147,7 +153,7 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
             return result;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
             throw new AudioProcessingException("Music feature extraction failed: " + e.getMessage(), e);
         }
     }
@@ -308,23 +314,23 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
             // 使用ComprehensiveMusicAnalyzer进行结构分析
             MusicDetectionResult structureResult = structureAnalyzer.analyzeMusic(limitedAudioData, parameters);
 
-            System.out.println("=== Structure Analysis Debug ===");
+            log.debug("=== Structure Analysis Debug ===");
 
-            System.out.println("Structure result type: "
+            log.debug("Structure result type: "
                     + (structureResult != null ? structureResult.getClass().getName() : "null"));
 
             if (structureResult instanceof UnifiedMusicAnalysisResult) {
                 UnifiedMusicAnalysisResult unifiedResult = (UnifiedMusicAnalysisResult) structureResult;
                 Map<String, Object> structuralAnalysis = unifiedResult.getStructuralAnalysis();
 
-                System.out.println("Structural analysis: "
+                log.debug("Structural analysis: "
                         + (structuralAnalysis != null ? "present" : "null"));
 
                 if (structuralAnalysis != null) {
-                    System.out.println("Structural analysis keys: " + structuralAnalysis.keySet());
-                    System.out.println("Structural analysis content:");
+                    log.debug("Structural analysis keys: " + structuralAnalysis.keySet());
+                    log.debug("Structural analysis content:");
                     for (Map.Entry<String, Object> entry : structuralAnalysis.entrySet()) {
-                        System.out.println("  " + entry.getKey() + " = " + entry.getValue());
+                        log.debug("  " + entry.getKey() + " = " + entry.getValue());
                     }
                 }
 
@@ -384,8 +390,8 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
                 return result;
             } else {
 
-                System.err.println("WARNING: Structure result is not UnifiedMusicAnalysisResult!");
-                System.err.println("Actual type: "
+                log.warn("WARNING: Structure result is not UnifiedMusicAnalysisResult!");
+                log.warn("Actual type: "
                         + (structureResult != null ? structureResult.getClass().getName() : "null"));
 
                 // Fallback if structureResult is not UnifiedMusicAnalysisResult
@@ -1346,7 +1352,7 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
                 validBeats.add(beatTime);
             } else if (beatTime > audioDuration) {
                 // 记录警告但不添加
-                System.err.println("Warning: Beat time " + beatTime + "s exceeds audio duration " + audioDuration + "s");
+                log.warn("Warning: Beat time " + beatTime + "s exceeds audio duration " + audioDuration + "s");
             }
         }
 

@@ -118,8 +118,8 @@ IAudioAnalyzer stftAnalyzer = Audios.createSTFTAnalyzer();
 #### 基本音频分析 / Basic Audio Analysis
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.util.Tuple2;
 
 // 频谱分析 / Spectrum analysis
 Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.spectrum(audioData);
@@ -156,7 +156,7 @@ IAudioFeatureExtractor featureExtractor = Audios.createStandardFeatureExtractor(
 #### 基本特征提取 / Basic Feature Extraction
 
 ```java
-import linalg.math.com.yishape.lab.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 
 // 提取基本特征向量 / Extract basic feature vector
 IVector<Double> features = Audios.extractFeatures(audioData);
@@ -270,7 +270,7 @@ The i-vector model is a commonly used audio embedding method that uses a Univers
 
 ```java
 import embedding.audio.com.yishape.lab.IVectorEmbedding;
-import linalg.math.com.yishape.lab.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 
 import java.util.List;
 
@@ -297,7 +297,7 @@ For large-scale audio datasets, online incremental training methods can be used 
 
 ```java
 import embedding.audio.com.yishape.lab.OnlineIVectorEmbedding;
-import linalg.math.com.yishape.lab.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 
 // 创建在线i-vector嵌入器 / Create online i-vector embedder
 OnlineIVectorEmbedding onlineEmbedder = new OnlineIVectorEmbedding(64);

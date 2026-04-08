@@ -18,10 +18,10 @@ This document provides complete usage examples of the YiShape-Math signal proces
 ### 1.1 基本信号生成 / Basic Signal Generation
 
 ``java
-import signal.math.com.yishape.lab.Signals;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.signal.Signals;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple2;
 
 public class BasicSignalGenerationExample {
     public static void main(String[] args) {
@@ -91,14 +91,14 @@ public class CompositeSignalGenerationExample {
         System.out.println("狄拉克δ函数生成完成，长度: " + diracDelta.length());
         
         // 使用复合信号生成方法 / Using composite signal generation method
-        generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType[] signalTypes = {
-            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.SINE,
-            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.COSINE
+        com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType[] signalTypes = {
+            com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType.SINE,
+            com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType.COSINE
         };
         
-        generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters[] parameters = {
-            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().frequency(10.0).amplitude(1.0).samplingRate(1000.0),
-            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().frequency(20.0).amplitude(0.5).samplingRate(1000.0)
+        com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters[] parameters = {
+            new com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters().frequency(10.0).amplitude(1.0).samplingRate(1000.0),
+            new com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters().frequency(20.0).amplitude(0.5).samplingRate(1000.0)
         };
         
         IVector<Double> compositeSignal = Signals.compositeSignal(signalTypes, 1000, parameters);
@@ -107,8 +107,8 @@ public class CompositeSignalGenerationExample {
         // 添加噪声 / Add noise
         IVector<Double> noisySignal = Signals.addNoise(
             compositeSignal, 
-            generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType.WHITE_NOISE, 
-            new generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters().noiseVariance(0.1).samplingRate(1000.0)
+            com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType.WHITE_NOISE, 
+            new com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters().noiseVariance(0.1).samplingRate(1000.0)
         );
         System.out.println("带噪声信号生成完成，长度: " + noisySignal.length());
         
@@ -167,11 +167,11 @@ public class BasicFilteringExample {
 ### 2.1 完整信号处理流程 / Complete Signal Processing Workflow
 
 ```java
-import signal.math.com.yishape.lab.Signals;
+import com.yishape.lab.math.signal.Signals;
 import com.yishape.lab.math.signal.SignalUtilities;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple2;
 
 public class CompleteSignalProcessingExample {
     public static void main(String[] args) {
@@ -263,7 +263,7 @@ public class AdvancedWaveletAnalysisExample {
             System.out.println("\n--- 使用 " + waveletType + " 小波 / Using " + waveletType + " Wavelet ---");
             
             // 小波分解 / Wavelet decomposition
-            com.yishape.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = signal.math.com.yishape.lab.Signals.discreteWaveletTransform(
+            com.yishape.lab.math.signal.WaveletAnalysis.WaveletCoefficients coeffs = com.yishape.lab.math.signal.Signals.discreteWaveletTransform(
                 noisySignal, waveletType, 5, getWaveletParameter(waveletType)
             );
             
@@ -359,7 +359,7 @@ public class AdvancedWaveletAnalysisExample {
         IVector<Double> scales = Linalg.linspace(1.0, 100.0, 50);
         
         // 执行连续小波变换 / Perform continuous wavelet transform
-        linalg.math.com.yishape.lab.IMatrix<Double> cwt = com.yishape.lab.math.signal.WaveletAnalysis.continuousWaveletTransform(
+        com.yishape.lab.math.linalg.IMatrix<Double> cwt = com.yishape.lab.math.signal.WaveletAnalysis.continuousWaveletTransform(
             signal, com.yishape.lab.math.signal.WaveletAnalysis.WaveletType.MORLET, scales, 5.0
         );
         
@@ -381,10 +381,10 @@ public class AdvancedWaveletAnalysisExample {
 ### 3.1 实时信号处理 / Real-time Signal Processing
 
 ```java
-import signal.math.com.yishape.lab.Signals;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.signal.Signals;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple2;
 
 public class RealTimeSignalProcessingExample {
     public static void main(String[] args) {
@@ -561,7 +561,7 @@ public class KalmanFilteringExample {
         
         // 通过工厂模式使用卡尔曼滤波器 / Using Kalman filter through factory pattern
         try {
-            filter.signal.math.com.yishape.lab.ISignalFilter<Double> kalmanFilter = Signals.createFilter("kalman");
+            com.yishape.lab.math.signal.filter.ISignalFilter<Double> kalmanFilter = Signals.createFilter("kalman");
             IVector<Double> factoryFiltered = kalmanFilter.process(noisySignal);
             System.out.println("工厂模式卡尔曼滤波完成");
         } catch (Exception e) {
@@ -596,7 +596,7 @@ public class WienerFilteringExample {
         
         // 通过工厂模式使用维纳滤波器 / Using Wiener filter through factory pattern
         try {
-            filter.signal.math.com.yishape.lab.ISignalFilter<Double> wienerFilter = Signals.createFilter("wiener");
+            com.yishape.lab.math.signal.filter.ISignalFilter<Double> wienerFilter = Signals.createFilter("wiener");
             IVector<Double> factoryFiltered = wienerFilter.process(noisySignal);
             System.out.println("工厂模式维纳滤波完成");
         } catch (Exception e) {
@@ -638,7 +638,7 @@ public class BandStopFilteringExample {
         
         // 通过工厂模式使用带阻滤波器 / Using band-stop filter through factory pattern
         try {
-            filter.signal.math.com.yishape.lab.ISignalFilter<Double> bandStopFilter = Signals.createFilter("bandstop");
+            com.yishape.lab.math.signal.filter.ISignalFilter<Double> bandStopFilter = Signals.createFilter("bandstop");
             IVector<Double> factoryFiltered = bandStopFilter.process(noisySignal);
             System.out.println("工厂模式带阻滤波完成");
         } catch (Exception e) {

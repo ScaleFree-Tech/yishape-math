@@ -11,6 +11,7 @@ This document provides detailed usage examples for the `IVector<T>` generic inte
 ### 示例1：向量创建和基本操作 / Example 1: Vector Creation and Basic Operations
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 
@@ -41,6 +42,7 @@ public class VectorBasicExample {
         IVector<Double> v6 = Linalg.vector(5.0);
         System.out.println("v6 (single value): " + v6);
 
+        // 从double数组创建向量 / Create vector from double array
         IVector<Double> v7 = Linalg.vector(new double[]{1.0, 2.0});
         System.out.println("v7 (two values): " + v7);
 

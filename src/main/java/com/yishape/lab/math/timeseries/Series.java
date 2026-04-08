@@ -255,7 +255,7 @@ public class Series {
     
     /**
      * STL分解 / STL Decomposition
-     * @see TimeSeriesDecomposition#stlDecomposition(TimeSeriesData, int, int, int)
+     * @see TimeSeriesDecomposition#stlDecomposition(TimeSeriesData, int, int, int, int)
      */
     public static DecompositionResult stlDecomposition(TimeSeriesData timeSeries, int variableIndex, 
                                                         int period, int seasonalWindow, int trendWindow) {

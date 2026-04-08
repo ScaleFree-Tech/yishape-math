@@ -7,7 +7,9 @@ import com.yishape.lab.util.Tuple3;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -87,10 +89,11 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
-     * IMatrix&lt;Double&gt; matrix = IMatrix.of(data);
-     * </pre>
+     * IMatrix<Double> matrix = IMatrix.of(data);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(double[][] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
@@ -108,10 +111,11 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * Double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
-     * IMatrix&lt;Double&gt; matrix = IMatrix.of(data);
-     * </pre>
+     * IMatrix<Double> matrix = IMatrix.of(data);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(Double[][] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
@@ -128,10 +132,11 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * float[][] data = {{1.0f, 2.0f}, {3.0f, 4.0f}};
-     * IMatrix&lt;Float&gt; matrix = IMatrix.of(data);
-     * </pre>
+     * IMatrix<Float> matrix = IMatrix.of(data);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(float[][] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
@@ -148,10 +153,11 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * Float[][] data = {{1.0f, 2.0f}, {3.0f, 4.0f}};
-     * IMatrix&lt;Float&gt; matrix = IMatrix.of(data);
-     * </pre>
+     * IMatrix<Float> matrix = IMatrix.of(data);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(Float[][] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
@@ -183,13 +189,14 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * IDoubleVector[] vectors = {
      *     IDoubleVector.of(1.0, 2.0),
      *     IDoubleVector.of(3.0, 4.0)
      * };
-     * IMatrix&lt;Double&gt; matrix = IMatrix.of(vectors);
-     * </pre>
+     * IMatrix<Double> matrix = IMatrix.of(vectors);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(IDoubleVector[] data) {
         return (IMatrix<T>) IDoubleMatrix.of(data);
@@ -221,13 +228,14 @@ public interface IMatrix<T extends Number> {
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * IFloatVector[] vectors = {
      *     IFloatVector.of(1.0f, 2.0f),
      *     IFloatVector.of(3.0f, 4.0f)
      * };
-     * IMatrix&lt;Float&gt; matrix = IMatrix.of(vectors);
-     * </pre>
+     * IMatrix<Float> matrix = IMatrix.of(vectors);
+     * }</pre>
      */
     public static <T extends Number> IMatrix<T> of(IFloatVector[] data) {
         return (IMatrix<T>) IFloatMatrix.of(data);
@@ -486,10 +494,11 @@ public interface IMatrix<T extends Number> {
      * @throws IllegalArgumentException 如果数组为null或空，或数组长度与目标尺寸不匹配 / if array is
      * null or empty, or array length doesn't match target dimensions
      *
-     * @example      <pre>
+     * <p><b>Example:</b></p>
+     * <pre>{@code
      * Double[] data = {1.0, 2.0, 3.0, 4.0};
-     * IMatrix&lt;Double&gt; matrix = IMatrix.fromArray(data, 2, 2);
-     * </pre>
+     * IMatrix<Double> matrix = IMatrix.fromArray(data, 2, 2);
+     * }</pre>
      */
     static <T extends Number> IMatrix<T> fromArray(T[] data, int rows, int cols) {
         if (data == null || data.length == 0) {
@@ -849,7 +858,7 @@ public interface IMatrix<T extends Number> {
      * @param <T> 数值类型 / Numeric type
      * @return 正态分布随机矩阵 / Normal distribution random matrix
      * @throws IllegalArgumentException 如果行数或列数小于等于0，或均值、标准差为null / If rows or
-     * cols <= 0, or mean/std is null
+     * cols &lt;= 0, or mean/std is null
      */
     static <T extends Number> IMatrix<T> randn(int rows, int cols, T mean, T std) {
         if (mean == null || std == null) {
@@ -990,6 +999,46 @@ public interface IMatrix<T extends Number> {
 
     static IMatrix<Double> load(String path) {
         return (IMatrix<Double>) IDoubleMatrix.load(path);
+    }
+
+    // ========== 二维广播（double 见 {@link RereDoubleMatrix}；float 经 {@link IFloatMatrix} 转 double）==========
+
+    static int[] broadcastShape(IMatrix<? extends Number> a, IMatrix<? extends Number> b) {
+        Objects.requireNonNull(a, "a");
+        Objects.requireNonNull(b, "b");
+        return RereDoubleMatrix.broadcastShape(a.rows(), a.cols(), b.rows(), b.cols());
+    }
+
+    static int[] broadcastShape(int rowsA, int colsA, int rowsB, int colsB) {
+        return RereDoubleMatrix.broadcastShape(rowsA, colsA, rowsB, colsB);
+    }
+
+    static double[][] broadcastTo(double[][] data, int targetRows, int targetCols) {
+        return RereDoubleMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static IDoubleMatrix broadcastTo(IDoubleMatrix data, int targetRows, int targetCols) {
+        return RereDoubleMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static float[][] broadcastTo(float[][] data, int targetRows, int targetCols) {
+        return IFloatMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static IFloatMatrix broadcastTo(IFloatMatrix data, int targetRows, int targetCols) {
+        return IFloatMatrix.broadcastTo(data, targetRows, targetCols);
+    }
+
+    static double[][] broadcastElementWise(double[][] a, double[][] b, DoubleBinaryOperator op) {
+        return RereDoubleMatrix.broadcastElementWise(a, b, op);
+    }
+
+    static IDoubleMatrix broadcastElementWise(IMatrix<Double> a, IMatrix<Double> b, DoubleBinaryOperator op) {
+        return RereDoubleMatrix.broadcastElementWise(a, b, op);
+    }
+
+    static float[][] broadcastElementWise(float[][] a, float[][] b, DoubleBinaryOperator op) {
+        return IFloatMatrix.broadcastElementWise(a, b, op);
     }
 
     /**
@@ -1201,6 +1250,48 @@ public interface IMatrix<T extends Number> {
      * @throws NullPointerException 如果other为null / if other is null
      */
     public IVector<T> mmul(IVector<T> other);
+
+    /**
+     * 标量逐元素乘法 / Scalar multiply (element-wise)
+     * <p>
+     * 等价于 {@link #multiplyScalar(Number)}，便于对齐 NumPy 中 {@code A * s}、MATLAB {@code A * s}
+     * 等常见写法；注意与矩阵乘矩阵 {@link #mmul(IMatrix)} 不同。
+     * </p>
+     *
+     * @param scalar 标量 / Scalar
+     * @return 新矩阵 / New matrix
+     */
+    default IMatrix<T> mmul(T scalar) {
+        return multiplyScalar(scalar);
+    }
+
+    /**
+     * 外积（展平后）/ Outer product after flattening
+     * <p>
+     * 将当前矩阵与 {@code other} 按行优先（C-order）展平为一维后做向量外积，等价于 NumPy
+     * {@code numpy.outer(A.ravel(), B.ravel())}。若只需向量外积，可直接使用 {@link IVector#outer(IVector)}。
+     * </p>
+     *
+     * @param other 另一矩阵 / Other matrix
+     * @return 形状为 {@code (rows*cols) × (other.rows*other.cols)} 的矩阵
+     */
+    default IMatrix<T> outer(IMatrix<T> other) {
+        if (other == null) {
+            throw new NullPointerException("other不能为null / other cannot be null");
+        }
+        return this.flatten().outer(other.flatten());
+    }
+
+    /**
+     * Kronecker 积 / Kronecker product
+     * <p>
+     * 计算 A ⊗ B，等价于 NumPy {@code numpy.kron(A, B)}：若 A 为 m×n、B 为 p×q，则结果为 (mp)×(nq)。
+     * </p>
+     *
+     * @param other 矩阵 B / Matrix B
+     * @return Kronecker 积矩阵
+     */
+    IMatrix<T> kron(IMatrix<T> other);
 
     /**
      * 矩阵复制 / Matrix copy
@@ -1534,7 +1625,6 @@ public interface IMatrix<T extends Number> {
      *
      * @param colIndex 列索引（从0开始）/ Column index (0-based)
      * @param column 要设置的列向量 / Column vector to set
-     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
      * @throws IndexOutOfBoundsException 如果列索引超出范围 / if column index is out of
      * bounds
      * @throws IllegalArgumentException 如果向量长度不匹配 / if vector length doesn't
@@ -2062,8 +2152,37 @@ public interface IMatrix<T extends Number> {
      * @throws IllegalArgumentException 如果矩阵不是方阵 / if matrix is not square
      * @throws ArithmeticException 如果矩阵无法进行特征分解 / if matrix cannot be
      * eigendecomposed
+     * @see #qr() QR 因子分解（与特征分解不同）/ QR factorization (distinct from this)
      */
     public Tuple2<IVector<T>, IMatrix<T>> eigen();
+
+    /**
+     * 用 QR 算法得到的特征分解结果（与 {@link #eigen()} 相同）/ Eigenpairs via internal QR-based algorithm (same as {@link #eigen()})
+     * <p>
+     * <strong>与 {@link #qr()} 完全不同：</strong>{@link #qr()} 是矩阵的 <em>QR 因子分解</em> A = QR（返回正交阵 Q
+     * 与上三角 R）；本方法返回的是 <em>特征值与特征向量</em>，与 {@link #eigen()} 一致。实现上特征值计算在
+     * {@code RereEigenDecomposition} 中采用 Hessenberg 化与带位移的 QR 迭代，与「只做一次 qr() 因子分解」不是同一运算。
+     * </p>
+     *
+     * @return 特征值向量与特征向量矩阵（列向量为特征向量）/ Eigenvalues and eigenvector matrix
+     * @see #eigen()
+     * @see #qr()
+     */
+    default Tuple2<IVector<T>, IMatrix<T>> qrEigenDecomposition() {
+        return eigen();
+    }
+
+    /**
+     * {@link #qrEigenDecomposition()} 的简短别名 / Short alias for {@link #qrEigenDecomposition()}
+     * <p>
+     * 不能命名为 {@code qr()}：{@link #qr()} 已用于标准 QR 因子分解 A = QR。
+     * </p>
+     *
+     * @return 与 {@link #eigen()} 相同 / Same as {@link #eigen()}
+     */
+    default Tuple2<IVector<T>, IMatrix<T>> qrEigen() {
+        return eigen();
+    }
 
     /**
      * 奇异值分解 / Singular Value Decomposition (SVD)
@@ -2086,21 +2205,266 @@ public interface IMatrix<T extends Number> {
     public Tuple3<IMatrix<T>, IVector<T>, IMatrix<T>> svd();
 
     /**
-     * QR分解 / QR decomposition
+     * QR 因子分解 / QR factorization (not eigendecomposition)
      * <p>
-     * 将矩阵A分解为A = QR的形式，其中Q是正交矩阵，R是上三角矩阵 Decomposes matrix A into A = QR form,
-     * where Q is an orthogonal matrix and R is an upper triangular matrix
+     * 将矩阵 A 分解为 A = QR，Q 为正交（酉）矩阵，R 为上三角矩阵。用于最小二乘、求 Schur 型等。
+     * <strong>不是</strong>特征分解：特征值/特征向量请用 {@link #eigen()}、{@link #qrEigen()} 或
+     * {@link #qrEigenDecomposition()}。
      * </p>
      * <p>
-     * QR分解常用于求解线性方程组和最小二乘问题 QR decomposition is commonly used for solving
-     * linear systems and least squares problems
+     * Decomposes A into A = QR with Q orthogonal and R upper triangular. For eigenvalues use
+     * {@link #eigen()}, not this method.
      * </p>
      *
-     * @return 包含Q矩阵和R矩阵的元组 Tuple containing Q matrix and R matrix
-     * @throws ArithmeticException 如果矩阵无法进行QR分解 / if matrix cannot be QR
-     * decomposed
+     * @return Q 与 R / Tuple of Q and R
+     * @see #eigen()
+     * @see #qrEigen()
      */
     public Tuple2<IMatrix<T>, IMatrix<T>> qr();
+
+    // ========== NumPy 风格数组运算（非统计/非信号）/ NumPy-style array ops ==========
+
+    /**
+     * 将 double 标量转为与 sample 同包装类型 / Coerce Double for matrix element type
+     */
+    private static <T extends Number> T coerceScalar(double v, T sample) {
+        if (sample instanceof Float) {
+            @SuppressWarnings("unchecked")
+            T t = (T) Float.valueOf((float) v);
+            return t;
+        }
+        @SuppressWarnings("unchecked")
+        T t = (T) Double.valueOf(v);
+        return t;
+    }
+
+    /**
+     * 逐元素裁剪（{@code numpy.clip}）/ Element-wise clip
+     */
+    default IMatrix<T> clip(T min, T max) {
+        IMatrix<T> out = copy();
+        int m = rows();
+        int n = cols();
+        if (m == 0 || n == 0) {
+            return out;
+        }
+        T sample = get(0, 0);
+        double lo = min.doubleValue();
+        double hi = max.doubleValue();
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                double v = get(i, j).doubleValue();
+                double c = Math.max(lo, Math.min(hi, v));
+                out.set(i, j, coerceScalar(c, sample));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 翻转 axis=0 为上下翻转（flipud），axis=1 为左右翻转（fliplr）/ Flip rows or columns
+     */
+    default IMatrix<T> flipAxis(int axis) {
+        int m = rows();
+        int n = cols();
+        IMatrix<T> out = copy();
+        if (axis == 0) {
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    out.set(i, j, get(m - 1 - i, j));
+                }
+            }
+            return out;
+        }
+        if (axis == 1) {
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    out.set(i, j, get(i, n - 1 - j));
+                }
+            }
+            return out;
+        }
+        throw new IllegalArgumentException("axis 须为 0 或 1 / axis must be 0 or 1");
+    }
+
+    /**
+     * 逆时针旋转 k 个 90°（{@code numpy.rot90}）/ Rotate counter-clockwise by k*90°
+     */
+    default IMatrix<T> rot90(int k) {
+        if (rows() == 0 || cols() == 0) {
+            return copy();
+        }
+        k = ((k % 4) + 4) % 4;
+        IMatrix<T> a = this;
+        for (int t = 0; t < k; t++) {
+            int m = a.rows();
+            int n = a.cols();
+            @SuppressWarnings("unchecked")
+            Class<T> type = (Class<T>) a.get(0, 0).getClass();
+            IMatrix<T> b = IMatrix.zeros(n, m, type);
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    b.set(i, j, a.get(j, n - 1 - i));
+                }
+            }
+            a = b;
+        }
+        return a;
+    }
+
+    /**
+     * 沿轴循环移位（{@code numpy.roll}）/ Circular shift along axis
+     */
+    default IMatrix<T> roll(int shift, int axis) {
+        int m = rows();
+        int n = cols();
+        if (m == 0 || n == 0) {
+            return copy();
+        }
+        @SuppressWarnings("unchecked")
+        Class<T> type = (Class<T>) get(0, 0).getClass();
+        IMatrix<T> out = IMatrix.zeros(m, n, type);
+        if (axis == 0) {
+            int r = ((shift % m) + m) % m;
+            for (int i = 0; i < m; i++) {
+                int src = (i - r + m) % m;
+                for (int j = 0; j < n; j++) {
+                    out.set(i, j, get(src, j));
+                }
+            }
+            return out;
+        }
+        if (axis == 1) {
+            int c = ((shift % n) + n) % n;
+            for (int j = 0; j < n; j++) {
+                int src = (j - c + n) % n;
+                for (int i = 0; i < m; i++) {
+                    out.set(i, j, get(i, src));
+                }
+            }
+            return out;
+        }
+        throw new IllegalArgumentException("axis 须为 0 或 1 / axis must be 0 or 1");
+    }
+
+    /**
+     * 常数边界填充（{@code numpy.pad} 常数模式）/ Constant padding
+     */
+    default IMatrix<T> pad(int padTop, int padBottom, int padLeft, int padRight, T value) {
+        int m = rows();
+        int n = cols();
+        int nm = m + padTop + padBottom;
+        int nn = n + padLeft + padRight;
+        if (rows() == 0 || cols() == 0) {
+            // 退化：无法推断类型，仅返回零矩阵
+            IMatrix<T> empty = copy();
+            return empty;
+        }
+        @SuppressWarnings("unchecked")
+        Class<T> type = (Class<T>) get(0, 0).getClass();
+        IMatrix<T> out = IMatrix.zeros(nm, nn, type);
+        for (int i = 0; i < nm; i++) {
+            for (int j = 0; j < nn; j++) {
+                out.set(i, j, value);
+            }
+        }
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                out.set(padTop + i, padLeft + j, get(i, j));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 平铺重复（{@code numpy.tile}）/ Tile matrix in grid (rowRep x colRep blocks)
+     */
+    default IMatrix<T> tile(int rowRep, int colRep) {
+        if (rowRep < 1 || colRep < 1) {
+            throw new IllegalArgumentException("重复次数须 >=1 / repetition must be >= 1");
+        }
+        IMatrix<T> row = this;
+        for (int c = 1; c < colRep; c++) {
+            row = row.hstack(this);
+        }
+        IMatrix<T> acc = row;
+        for (int r = 1; r < rowRep; r++) {
+            acc = acc.vstack(row);
+        }
+        return acc;
+    }
+
+    /**
+     * 按条件取元素（{@code numpy.where} 标量）/ Element-wise selection
+     */
+    default IMatrix<T> where(boolean[][] cond, T x, T y) {
+        int m = rows();
+        int n = cols();
+        if (cond.length != m) {
+            throw new IllegalArgumentException("cond 行数须与矩阵一致 / cond rows must match matrix");
+        }
+        IMatrix<T> out = copy();
+        for (int i = 0; i < m; i++) {
+            if (cond[i] == null || cond[i].length != n) {
+                throw new IllegalArgumentException("cond 每列长度须与矩阵一致 / cond cols must match matrix");
+            }
+            for (int j = 0; j < n; j++) {
+                out.set(i, j, cond[i][j] ? x : y);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 方阵幂（{@code numpy.linalg.matrix_power}）/ Matrix power for square matrices
+     */
+    default IMatrix<T> matrixPower(int n) {
+        if (!isSquare()) {
+            throw new IllegalArgumentException("matrixPower 要求方阵 / matrixPower requires square matrix");
+        }
+        if (n < 0) {
+            throw new IllegalArgumentException("暂不支持负指数；请使用 inv() / Negative exponent not supported");
+        }
+        int sz = rows();
+        @SuppressWarnings("unchecked")
+        Class<T> type = (Class<T>) get(0, 0).getClass();
+        if (n == 0) {
+            return IMatrix.eye(sz, type);
+        }
+        if (n == 1) {
+            return copy();
+        }
+        IMatrix<T> r = copy();
+        for (int k = 1; k < n; k++) {
+            r = r.mmul(this);
+        }
+        return r;
+    }
+
+    /**
+     * 符号与对数行列式（{@code numpy.linalg.slogdet}）：det = sign * exp(logdet)
+     */
+    default Tuple2<Double, Double> slogdet() {
+        if (!isSquare()) {
+            throw new IllegalArgumentException("slogdet 要求方阵 / slogdet requires square matrix");
+        }
+        double d = det().doubleValue();
+        if (Double.isNaN(d) || d == 0.0) {
+            return new Tuple2<>(0.0, Double.NEGATIVE_INFINITY);
+        }
+        double sign = d > 0 ? 1.0 : -1.0;
+        return new Tuple2<>(sign, Math.log(Math.abs(d)));
+    }
+
+    /**
+     * 对称/Hermitian 专用特征分解（对齐 {@code numpy.linalg.eigh} 命名；当前实现为对称检测后委托 {@link #eigen()}）
+     */
+    default Tuple2<IVector<T>, IMatrix<T>> eigh() {
+        if (!isSymmetric()) {
+            throw new IllegalArgumentException("eigh 要求实对称矩阵 / eigh requires real symmetric matrix");
+        }
+        return eigen();
+    }
 
     // ========== 线性方程组求解 / Linear System Solving ==========
     /**
@@ -2441,7 +2805,6 @@ public interface IMatrix<T extends Number> {
      *
      * @param diagonal 对角线向量，长度应不超过min(rows, cols) / Diagonal vector, length
      * should not exceed min(rows, cols)
-     * @return 修改后的矩阵（就地操作） / Modified matrix (in-place operation)
      * @throws IllegalArgumentException 如果diagonal为null或长度超过对角线长度 / if diagonal
      * is null or length exceeds diagonal length
      */
@@ -2497,7 +2860,7 @@ public interface IMatrix<T extends Number> {
      * }</pre>
      * </p>
      *
-     * @param colVector 用于广播的向量，长度必须等于矩阵列数 / Vector for broadcasting, length
+     * @param rowVector 用于广播的向量，长度必须等于矩阵列数 / Vector for broadcasting, length
      * must equal matrix column count
      * @param fun 双参数函数，定义行向量与广播向量的运算规则 / Binary function defining operation
      * between row vector and broadcast vector
@@ -2530,7 +2893,7 @@ public interface IMatrix<T extends Number> {
      * matrix
      * </p>
      *
-     * @param colVector 用于加法的向量 / Vector for addition
+     * @param rowVector 用于加法的向量 / Vector for addition
      * @return 加法运算后的新矩阵 / New matrix after addition
      */
     default IMatrix<T> broadcastAddRow(IVector<T> rowVector) {
@@ -2560,7 +2923,7 @@ public interface IMatrix<T extends Number> {
      * 将矩阵的每一行减去向量 Subtracts the vector from each row of the matrix
      * </p>
      *
-     * @param colVector 用于减法的向量 / Vector for subtraction
+     * @param rowVector 用于减法的向量 / Vector for subtraction
      * @return 减法运算后的新矩阵 / New matrix after subtraction
      */
     default IMatrix<T> broadcastSubRow(IVector<T> rowVector) {
@@ -2622,7 +2985,7 @@ public interface IMatrix<T extends Number> {
      * 将矩阵的每一行除以向量 Divides each row of the matrix by the vector
      * </p>
      *
-     * @param colVector 用于除法的向量 / Vector for division
+     * @param rowVector 用于除法的向量 / Vector for division
      * @return 除法运算后的新矩阵 / New matrix after division
      */
     default IMatrix<T> broadcastDivideRow(IVector<T> rowVector) {

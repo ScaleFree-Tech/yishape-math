@@ -1,4 +1,8 @@
-package com.yishape.lab.math.ml.metric;
+package com.yishape.lab.math.ml.lr;
+
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,8 +17,11 @@ import java.util.Map;
  */
 public class ClassificationMetricsExample {
 
+    private static final Logger log = LoggerFactory.getLogger(ClassificationMetricsExample.class);
+
+
     public static void main(String[] args) {
-        System.out.println("=== ClassificationMetrics 使用示例 ===\n");
+        log.debug("=== ClassificationMetrics 使用示例 ===\n");
         
         // 示例1: 二分类评估 (无概率)
         exampleBinaryClassificationWithoutProb();
@@ -33,7 +40,7 @@ public class ClassificationMetricsExample {
      * 示例1: 二分类评估 (无概率)
      */
     private static void exampleBinaryClassificationWithoutProb() {
-        System.out.println("=== 示例1: 二分类评估 (无概率) ===");
+        log.debug("=== 示例1: 二分类评估 (无概率) ===");
         
         // 模拟真实标签和预测标签
         String[] yTrue = {"spam", "ham", "spam", "ham", "spam", "ham", "spam", "ham", "ham", "spam"};
@@ -43,24 +50,24 @@ public class ClassificationMetricsExample {
         ClassificationMetrics metrics = ClassificationMetrics.compute(yTrue, yPred);
         
         // 输出评估结果
-        System.out.println("分类报告:");
-        System.out.println(metrics.getClassificationReport());
+        log.debug("分类报告:");
+        log.debug(metrics.getClassificationReport());
         
-        System.out.println("\n混淆矩阵:");
-        System.out.println(metrics.getConfusionMatrixString());
+        log.debug("\n混淆矩阵:");
+        log.debug(metrics.getConfusionMatrixString());
         
         // 获取具体指标值
-        System.out.printf("准确率: %.4f\n", metrics.getAccuracy());
-        System.out.printf("宏平均F1分数: %.4f\n", metrics.getMacroF1());
-        System.out.printf("加权平均F1分数: %.4f\n", metrics.getWeightedF1());
-        System.out.println();
+        log.debug(String.format("准确率: %.4f\n", metrics.getAccuracy()));
+        log.debug(String.format("宏平均F1分数: %.4f\n", metrics.getMacroF1()));
+        log.debug(String.format("加权平均F1分数: %.4f\n", metrics.getWeightedF1()));
+        log.debug("");
     }
     
     /**
      * 示例2: 二分类评估 (带概率，计算AUC)
      */
     private static void exampleBinaryClassificationWithProb() {
-        System.out.println("=== 示例2: 二分类评估 (带概率，计算AUC) ===");
+        log.debug("=== 示例2: 二分类评估 (带概率，计算AUC) ===");
         
         // 模拟真实标签和预测标签 (疾病诊断)
         String[] yTrue = {"healthy", "sick", "sick", "healthy", "sick", "healthy", "sick", "healthy"};
@@ -73,34 +80,34 @@ public class ClassificationMetricsExample {
         ClassificationMetrics metrics = ClassificationMetrics.compute(yTrue, yPred, yProb);
         
         // 输出评估结果
-        System.out.println("分类报告 (包含AUC):");
-        System.out.println(metrics.getClassificationReport());
+        log.debug("分类报告 (包含AUC):");
+        log.debug(metrics.getClassificationReport());
         
-        System.out.println("\n混淆矩阵:");
-        System.out.println(metrics.getConfusionMatrixString());
+        log.debug("\n混淆矩阵:");
+        log.debug(metrics.getConfusionMatrixString());
         
         // 获取AUC值
         if (metrics.isBinaryClassification() && metrics.getAuc() >= 0) {
-            System.out.printf("AUC (ROC曲线下面积): %.4f\n", metrics.getAuc());
+            log.debug(String.format("AUC (ROC曲线下面积): %.4f\n", metrics.getAuc()));
             
             if (metrics.getAuc() > 0.9) {
-                System.out.println("AUC解释: 优秀的分类性能 (>0.9)");
+                log.debug("AUC解释: 优秀的分类性能 (>0.9)");
             } else if (metrics.getAuc() > 0.8) {
-                System.out.println("AUC解释: 良好的分类性能 (>0.8)");
+                log.debug("AUC解释: 良好的分类性能 (>0.8)");
             } else if (metrics.getAuc() > 0.7) {
-                System.out.println("AUC解释: 一般的分类性能 (>0.7)");
+                log.debug("AUC解释: 一般的分类性能 (>0.7)");
             } else {
-                System.out.println("AUC解释: 较差的分类性能 (≤0.7)");
+                log.debug("AUC解释: 较差的分类性能 (≤0.7)");
             }
         }
-        System.out.println();
+        log.debug("");
     }
     
     /**
      * 示例3: 多分类评估
      */
     private static void exampleMulticlassClassification() {
-        System.out.println("=== 示例3: 多分类评估 ===");
+        log.debug("=== 示例3: 多分类评估 ===");
         
         // 模拟图像分类结果 (猫、狗、鸟)
         String[] yTrue = {"cat", "dog", "bird", "cat", "dog", "bird", "cat", "dog", "bird", "cat", "dog", "bird"};
@@ -110,63 +117,63 @@ public class ClassificationMetricsExample {
         ClassificationMetrics metrics = ClassificationMetrics.compute(yTrue, yPred);
         
         // 输出评估结果
-        System.out.println("分类报告:");
-        System.out.println(metrics.getClassificationReport());
+        log.debug("分类报告:");
+        log.debug(metrics.getClassificationReport());
         
-        System.out.println("\n混淆矩阵:");
-        System.out.println(metrics.getConfusionMatrixString());
+        log.debug("\n混淆矩阵:");
+        log.debug(metrics.getConfusionMatrixString());
         
         // 显示每类别的详细指标
-        System.out.println("每类别的详细指标:");
+        log.debug("每类别的详细指标:");
         metrics.getPrecisionPerClass().forEach((label, precision) -> {
-            System.out.printf("  %s: 精确率=%.4f, 召回率=%.4f, F1=%.4f, 支持数=%d\n",
+            log.debug(String.format("  %s: 精确率=%.4f, 召回率=%.4f, F1=%.4f, 支持数=%d\n",
                     label,
                     metrics.getPrecisionPerClass().get(label),
                     metrics.getRecallPerClass().get(label),
                     metrics.getF1PerClass().get(label),
-                    metrics.getSupportPerClass().get(label));
+                    metrics.getSupportPerClass().get(label)));
         });
         
         // 多分类不计算AUC
-        System.out.printf("AUC: %.4f (多分类问题不计算AUC)\n", metrics.getAuc());
-        System.out.println();
+        log.debug(String.format("AUC: %.4f (多分类问题不计算AUC)\n", metrics.getAuc()));
+        log.debug("");
     }
     
     /**
      * 示例4: 完美分类和最差分类
      */
     private static void examplePerfectAndWorstClassification() {
-        System.out.println("=== 示例4: 完美分类和最差分类 ===");
+        log.debug("=== 示例4: 完美分类和最差分类 ===");
         
         // 完美分类
-        System.out.println("--- 完美分类示例 ---");
+        log.debug("--- 完美分类示例 ---");
         String[] yTrue = {"A", "B", "C", "A", "B", "C"};
         String[] yPred = {"A", "B", "C", "A", "B", "C"};
         
         ClassificationMetrics perfectMetrics = ClassificationMetrics.compute(yTrue, yPred);
-        System.out.println(perfectMetrics.getClassificationReport());
+        log.debug(perfectMetrics.getClassificationReport());
         
         // 最差分类
-        System.out.println("\n--- 最差分类示例 ---");
+        log.debug("\n--- 最差分类示例 ---");
         String[] worstYPred = {"B", "C", "A", "C", "A", "B"};
         
         ClassificationMetrics worstMetrics = ClassificationMetrics.compute(yTrue, worstYPred);
-        System.out.println(worstMetrics.getClassificationReport());
+        log.debug(worstMetrics.getClassificationReport());
         
         // 性能对比
-        System.out.println("\n--- 性能对比 ---");
-        System.out.printf("完美分类准确率: %.4f\n", perfectMetrics.getAccuracy());
-        System.out.printf("最差分类准确率: %.4f\n", worstMetrics.getAccuracy());
-        System.out.printf("性能差距: %.4f\n", perfectMetrics.getAccuracy() - worstMetrics.getAccuracy());
+        log.debug("\n--- 性能对比 ---");
+        log.debug(String.format("完美分类准确率: %.4f\n", perfectMetrics.getAccuracy()));
+        log.debug(String.format("最差分类准确率: %.4f\n", worstMetrics.getAccuracy()));
+        log.debug(String.format("性能差距: %.4f\n", perfectMetrics.getAccuracy() - worstMetrics.getAccuracy()));
         
-        System.out.println();
+        log.debug("");
     }
     
     /**
      * 附加功能示例: 自定义评估指标
      */
     public static void demonstrateAdvancedFeatures() {
-        System.out.println("=== 高级功能演示 ===");
+        log.debug("=== 高级功能演示 ===");
         
         // 创建测试数据
         String[] yTrue = {"cat", "dog", "bird", "cat", "dog", "bird", "cat", "dog", "bird"};
@@ -175,36 +182,36 @@ public class ClassificationMetricsExample {
         ClassificationMetrics metrics = ClassificationMetrics.compute(yTrue, yPred);
         
         // 1. 获取原始数据
-        System.out.println("1. 获取原始数据:");
-        System.out.println("真实标签: " + Arrays.toString(yTrue));
-        System.out.println("预测标签: " + Arrays.toString(yPred));
-        System.out.println("类别标签: " + Arrays.toString(metrics.getClassLabels()));
+        log.debug("1. 获取原始数据:");
+        log.debug("真实标签: " + Arrays.toString(yTrue));
+        log.debug("预测标签: " + Arrays.toString(yPred));
+        log.debug("类别标签: " + Arrays.toString(metrics.getClassLabels()));
         
         // 2. 获取混淆矩阵进行自定义分析
-        System.out.println("\n2. 混淆矩阵分析:");
+        log.debug("\n2. 混淆矩阵分析:");
         int[][] confusionMatrix = metrics.getConfusionMatrix();
         for (int i = 0; i < confusionMatrix.length; i++) {
             for (int j = 0; j < confusionMatrix[i].length; j++) {
-                System.out.printf("%4d ", confusionMatrix[i][j]);
+                log.debug(String.format("%4d ", confusionMatrix[i][j]));
             }
-            System.out.println();
+            log.debug("");
         }
         
         // 3. 自定义指标计算
-        System.out.println("\n3. 自定义指标:");
+        log.debug("\n3. 自定义指标:");
         double accuracy = metrics.getAccuracy();
         double macroF1 = metrics.getMacroF1();
         double weightedF1 = metrics.getWeightedF1();
         
         // 计算平衡准确率 (对类别不平衡不敏感)
         double balancedAccuracy = calculateBalancedAccuracy(yTrue, yPred);
-        System.out.printf("准确率 (Accuracy): %.4f\n", accuracy);
-        System.out.printf("平衡准确率: %.4f\n", balancedAccuracy);
-        System.out.printf("宏平均F1: %.4f\n", macroF1);
-        System.out.printf("加权平均F1: %.4f\n", weightedF1);
+        log.debug(String.format("准确率 (Accuracy): %.4f\n", accuracy));
+        log.debug(String.format("平衡准确率: %.4f\n", balancedAccuracy));
+        log.debug(String.format("宏平均F1: %.4f\n", macroF1));
+        log.debug(String.format("加权平均F1: %.4f\n", weightedF1));
         
         // 4. 性能诊断
-        System.out.println("\n4. 性能诊断:");
+        log.debug("\n4. 性能诊断:");
         diagnoseClassificationPerformance(metrics);
     }
     
@@ -262,18 +269,18 @@ public class ClassificationMetricsExample {
         
         // 准确率分析
         if (accuracy > 0.9) {
-            System.out.println("✓ 准确率很高，分类器表现优秀");
+            log.debug("✓ 准确率很高，分类器表现优秀");
         } else if (accuracy > 0.8) {
-            System.out.println("△ 准确率良好，但仍有改进空间");
+            log.debug("△ 准确率良好，但仍有改进空间");
         } else {
-            System.out.println("✗ 准确率较低，需要优化模型");
+            log.debug("✗ 准确率较低，需要优化模型");
         }
         
         // F1分数分析
         if (Math.abs(macroF1 - weightedF1) > 0.1) {
-            System.out.println("⚠ 宏平均和加权平均F1差异较大，可能存在类别不平衡问题");
+            log.debug("⚠ 宏平均和加权平均F1差异较大，可能存在类别不平衡问题");
         } else {
-            System.out.println("✓ 宏平均和加权平均F1差异较小，类别分布相对平衡");
+            log.debug("✓ 宏平均和加权平均F1差异较小，类别分布相对平衡");
         }
         
         // 类别不平衡分析
@@ -282,7 +289,7 @@ public class ClassificationMetricsExample {
         long minSupport = support.values().stream().mapToLong(Integer::longValue).min().orElse(0);
         
         if ((double) maxSupport / minSupport > 3) {
-            System.out.println("⚠ 存在明显的类别不平衡，建议使用加权指标或采样技术");
+            log.debug("⚠ 存在明显的类别不平衡，建议使用加权指标或采样技术");
         }
     }
 }

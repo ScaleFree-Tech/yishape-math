@@ -1,7 +1,10 @@
 package com.yishape.lab.math.linalg;
 
+import com.yishape.lab.math.RereMathUtil;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -719,6 +722,107 @@ public interface IVector<T extends Number> {
      */
     static IVector<Double> logspace(Double start, Double stop, int num) {
         return (IVector<Double>) IDoubleVector.logspace(start, stop, num);
+    }
+
+    // ========== 一维样本工具（实现见 {@link RereDoubleVector}；float 经 double 再转回）==========
+
+    /**
+     * 一维等宽直方图结果（计数与分箱边界；边界为 double[]）。
+     */
+    final class HistogramResult {
+        public final long[] counts;
+        public final double[] binEdges;
+
+        public HistogramResult(long[] counts, double[] binEdges) {
+            this.counts = counts;
+            this.binEdges = binEdges;
+        }
+    }
+
+    static HistogramResult histogram(double[] x, int bins) {
+        return RereDoubleVector.histogram(x, bins);
+    }
+
+    static HistogramResult histogram(float[] x, int bins) {
+        return RereDoubleVector.histogram(RereMathUtil.floatToDouble(x), bins);
+    }
+
+    /**
+     * 样本来自向量（与 {@link IDoubleVector}/{@link IFloatVector} 兼容；避免与 float/double 重载产生相同擦除疑符而合并为一）。
+     */
+    static HistogramResult histogram(IVector<? extends Number> x, int bins) {
+        Objects.requireNonNull(x, "x");
+        if (x instanceof IDoubleVector) {
+            return RereDoubleVector.histogram((IVector<Double>) x, bins);
+        }
+        if (x instanceof IFloatVector) {
+            return RereDoubleVector.histogram(RereMathUtil.floatToDouble(((IFloatVector) x).getData()), bins);
+        }
+        throw new IllegalArgumentException("仅支持 Double 或 Float 元素向量 / Only Double or Float element vectors");
+    }
+
+    static int[] digitize(double[] x, double[] bins) {
+        return RereDoubleVector.digitize(x, bins);
+    }
+
+    static int[] digitize(float[] x, float[] bins) {
+        return RereDoubleVector.digitize(RereMathUtil.floatToDouble(x), RereMathUtil.floatToDouble(bins));
+    }
+
+    static int[] digitize(IVector<? extends Number> x, double[] bins) {
+        Objects.requireNonNull(x, "x");
+        if (x instanceof IDoubleVector) {
+            return RereDoubleVector.digitize((IVector<Double>) x, bins);
+        }
+        if (x instanceof IFloatVector) {
+            return RereDoubleVector.digitize(RereMathUtil.floatToDouble(((IFloatVector) x).getData()), bins);
+        }
+        throw new IllegalArgumentException("仅支持 Double 或 Float 元素向量 / Only Double or Float element vectors");
+    }
+
+    static double[] polyfit(double[] x, double[] y, int deg) {
+        return RereDoubleVector.polyfit(x, y, deg);
+    }
+
+    static float[] polyfit(float[] x, float[] y, int deg) {
+        return RereMathUtil.doubleToFloat(RereDoubleVector.polyfit(
+                RereMathUtil.floatToDouble(x), RereMathUtil.floatToDouble(y), deg));
+    }
+
+    @SuppressWarnings("unchecked")
+    static IVector<? extends Number> polyfit(IVector<? extends Number> x, IVector<? extends Number> y, int deg) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        if (x instanceof IDoubleVector && y instanceof IDoubleVector) {
+            return RereDoubleVector.polyfit((IVector<Double>) x, (IVector<Double>) y, deg);
+        }
+        if (x instanceof IFloatVector && y instanceof IFloatVector) {
+            return IFloatVector.of(IVector.polyfit(
+                    ((IFloatVector) x).getData(), ((IFloatVector) y).getData(), deg));
+        }
+        throw new IllegalArgumentException("x 与 y 须同为 Double 或同为 Float 向量 / x and y must both be Double or both be Float");
+    }
+
+    static double[] where(boolean[] cond, double x, double y) {
+        return RereDoubleVector.where(cond, x, y);
+    }
+
+    static float[] where(boolean[] cond, float x, float y) {
+        return RereMathUtil.doubleToFloat(RereDoubleVector.where(cond, (double) x, (double) y));
+    }
+
+    static double[] where(boolean[] cond, double[] x, double[] y) {
+        return RereDoubleVector.where(cond, x, y);
+    }
+
+    static float[] where(boolean[] cond, float[] x, float[] y) {
+        return RereMathUtil.doubleToFloat(RereDoubleVector.where(
+                cond, RereMathUtil.floatToDouble(x), RereMathUtil.floatToDouble(y)));
+    }
+
+    static <T extends Number> IVector<T> where(IVector<T> v, boolean[] cond, T x, T y) {
+        Objects.requireNonNull(v, "v");
+        return v.where(cond, x, y);
     }
 
     // ========== 向量实例方法 / Vector Instance Methods ==========
@@ -1575,6 +1679,20 @@ public interface IVector<T extends Number> {
      */
     public IMatrix<T> outer(IVector<T> other);
 
+    /**
+     * 三维欧氏向量叉积 / Cross product (aligned with {@code numpy.cross} for 3-vectors)
+     *
+     * @throws IllegalArgumentException 若任一向量长度不为 3 / unless both lengths are 3
+     */
+    IVector<T> cross(IVector<T> other);
+
+    /**
+     * 升序向量中查找插入位置（左边界，等价 {@code numpy.searchsorted(..., side='left')}）/ Sorted search index
+     *
+     * @throws IllegalArgumentException 若向量未按非降序排列 / if not sorted non-decreasing
+     */
+    int searchSorted(T value);
+
     // ========== IVector<T> 特有方法 / IVector<T>-specific Methods ==========
     // Note: 大部分方法现在在 IVector 中定义，这里保留类型特化的方法
     // Note: Most methods are now defined in IVector, keeping type-specific methods here
@@ -1738,7 +1856,6 @@ public interface IVector<T extends Number> {
      * @param end 结束位置（不包含） / End position (exclusive)
      * @param step 步长 / Step size
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1756,7 +1873,6 @@ public interface IVector<T extends Number> {
      * @param start 开始位置 / Start position
      * @param end 结束位置（不包含） / End position (exclusive)
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1771,7 +1887,6 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param value 填充值 / Fill value
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      */
     public void fill(T value);
 
@@ -2134,11 +2249,11 @@ public interface IVector<T extends Number> {
      * <li>skewness = 0: 对称分布 / Symmetric distribution</li>
      * <li>skewness > 0: 右偏分布（正偏） / Right-skewed distribution (positive
      * skew)</li>
-     * <li>skewness < 0: 左偏分布（负偏） / Left-skewed distribution (negative
+     * <li>skewness &lt; 0: 左偏分布（负偏） / Left-skewed distribution (negative
      * skew)</li> </ul>
      *
      * @return 偏度值 / Skewness value
-     * @th rows ArithmeticException 如果向量长度小于3或标准差为0 / if vector length is less
+     * @throws ArithmeticException 如果向量长度小于3或标准差为0 / if vector length is less
      * than 3 or standard deviation is 0
      */
     public T skewness();
@@ -2157,13 +2272,11 @@ public interface IVector<T extends Number> {
      * <ul>
      * <li>kurtosis = 0: 正态分布峰度 / Normal distribution kurtosis</li>
      * <li>kurtosis > 0: 尖峰分布（重尾） / Leptokurtic distribution (heavy tails)</li>
-     * <li>kurtosis < 0: 平峰分布（轻尾） / Platykurtic distribution (light tails)</li>
+     * <li>kurtosis &lt; 0: 平峰分布（轻尾） / Platykurtic distribution (light tails)</li>
      * </ul>
      *
-     * @return 峰度值 / Kurtosis val
-     * ue
-     * @
-     * throws ArithmeticException 如果向量长度小于4或标准差为0 / if vector length is less
+     * @return 峰度值 / Kurtosis value
+     * @throws ArithmeticException 如果向量长度小于4或标准差为0 / if vector length is less
      * than 4 or standard deviation is 0
      */
     public T kurtosis();
@@ -2346,9 +2459,7 @@ public interface IVector<T extends Number> {
     }
 
     /**
-     * 向量拼接
-     *
-     * @param other /** 向量连接 / Vector concatenation
+     * 向量连接 / Vector concatenation
      * <p>
      * 将当前向量与另一个向量连接，形成一个新的向量 Concatenates current vector with another vector to
      * form a new vector
@@ -2447,7 +2558,7 @@ public interface IVector<T extends Number> {
      * 
      * @return 对角Hessian矩阵，类型为IMatrix<Float>
      * @throws IllegalArgumentException 如果向量包含NaN或无穷大值
-     * @see RereMathUtil#sigmoid(double)
+     * @see com.yishape.lab.math.RereMathUtil#sigmoid(double)
      * @see IMatrix
      */
     public IMatrix<T> hessianMatrix();

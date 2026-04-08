@@ -7,6 +7,7 @@ import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import java.io.Serializable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.concurrent.*;
 import java.util.Queue;
@@ -1021,7 +1022,6 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      * indexing)
      * @param step 步长 / Step size
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1059,7 +1059,6 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      * @param end 结束位置（不包含，支持负数索引） / End position (exclusive, supports negative
      * indexing)
      * @param values 要设置的值数组 / Array of values to set
-     * @return 修改后的向量（就地操作） / Modified vector (in-place operation)
      * @throws IndexOutOfBoundsException 如果位置索引超出范围 / if position indices are
      * out of bounds
      * @throws IllegalArgumentException 如果值数组长度不匹配 / if values array length
@@ -1824,6 +1823,50 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     }
 
     @Override
+    public IVector<Double> cross(IVector<Double> other) {
+        if (other == null) {
+            throw new NullPointerException("other不能为null / other cannot be null");
+        }
+        if (length() != 3 || other.length() != 3) {
+            throw new IllegalArgumentException(
+                    "叉积要求两向量长度均为 3 / Cross product requires both vectors to have length 3");
+        }
+        double[] b = other.toDoubleArray();
+        double ax = data[0], ay = data[1], az = data[2];
+        double bx = b[0], by = b[1], bz = b[2];
+        double cx = ay * bz - az * by;
+        double cy = az * bx - ax * bz;
+        double cz = ax * by - ay * bx;
+        return IDoubleVector.of(new double[]{cx, cy, cz});
+    }
+
+    @Override
+    public int searchSorted(Double value) {
+        double v = value;
+        int n = length();
+        if (n == 0) {
+            return 0;
+        }
+        for (int i = 1; i < n; i++) {
+            if (data[i] < data[i - 1]) {
+                throw new IllegalArgumentException(
+                        "searchSorted 要求向量非降序 / searchSorted requires non-decreasing order");
+            }
+        }
+        int lo = 0;
+        int hi = n;
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (data[mid] < v) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    @Override
     public double[] toDoubleArray() {
         return this.data;
     }
@@ -2002,8 +2045,8 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      * <p>
      * 协方差的性质：
      * <ul>
-     * <li>cov(X,Y) > 0: 正相关，X增大时Y倾向于增大</li>
-     * <li>cov(X,Y) < 0: 负相关，X增大时Y倾向于减小</li> <li>cov(X,Y ) = 0: 无线性相关</li>
+     * <li>cov(X,Y) &gt; 0: 正相关，X增大时Y倾向于增大</li>
+     * <li>cov(X,Y) &lt; 0: 负相关，X增大时Y倾向于减小</li> <li>cov(X,Y ) = 0: 无线性相关</li>
      * <li>cov(X,X) = var(X): 自协方差等于方差</li>
      * </ul>
      * </p>
@@ -2258,6 +2301,227 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
         }
 
         return result;
+    }
+
+    // ========== 一维双精度：直方图、分箱、多项式拟合、where（静态，原 RereMathUtil 迁入）==========
+
+    /**
+     * 一维直方图（等宽 bins），样本来自向量。
+     */
+    public static IVector.HistogramResult histogram(IVector<Double> x, int bins) {
+        Objects.requireNonNull(x, "x");
+        return histogram(x.toDoubleArray(), bins);
+    }
+
+    /**
+     * 一维直方图（等宽 bins）。
+     */
+    public static IVector.HistogramResult histogram(double[] x, int bins) {
+        Objects.requireNonNull(x, "x");
+        if (bins < 1) {
+            throw new IllegalArgumentException("bins >= 1");
+        }
+        if (x.length == 0) {
+            return new IVector.HistogramResult(new long[bins], new double[bins + 1]);
+        }
+        double min = Arrays.stream(x).min().orElse(0);
+        double max = Arrays.stream(x).max().orElse(0);
+        if (min == max) {
+            long[] h = new long[bins];
+            h[0] = x.length;
+            double[] edges = new double[bins + 1];
+            for (int i = 0; i <= bins; i++) {
+                edges[i] = min + (i - bins / 2.0) * 1e-12;
+            }
+            return new IVector.HistogramResult(h, edges);
+        }
+        double[] edges = new double[bins + 1];
+        for (int i = 0; i <= bins; i++) {
+            edges[i] = min + (max - min) * i / bins;
+        }
+        long[] hist = new long[bins];
+        double width = (max - min) / bins;
+        if (width == 0) {
+            width = 1;
+        }
+        for (double v : x) {
+            int b = (int) Math.floor((v - min) / width);
+            if (b < 0) {
+                b = 0;
+            }
+            if (b >= bins) {
+                b = bins - 1;
+            }
+            hist[b]++;
+        }
+        return new IVector.HistogramResult(hist, edges);
+    }
+
+    /**
+     * 分箱索引，样本来自向量。
+     */
+    public static int[] digitize(IVector<Double> x, double[] bins) {
+        Objects.requireNonNull(x, "x");
+        return digitize(x.toDoubleArray(), bins);
+    }
+
+    /**
+     * 将每个标量映射到升序分界点左侧区间编号；{@code bins} 须严格升序。
+     */
+    public static int[] digitize(double[] x, double[] bins) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(bins, "bins");
+        if (bins.length < 1) {
+            throw new IllegalArgumentException("bins 非空");
+        }
+        for (int i = 1; i < bins.length; i++) {
+            if (bins[i] <= bins[i - 1]) {
+                throw new IllegalArgumentException("bins 须严格升序 / bins must be increasing");
+            }
+        }
+        int[] out = new int[x.length];
+        for (int i = 0; i < x.length; i++) {
+            int lo = 0;
+            int hi = bins.length;
+            while (lo < hi) {
+                int mid = (lo + hi) >>> 1;
+                if (bins[mid] <= x[i]) {
+                    lo = mid + 1;
+                } else {
+                    hi = mid;
+                }
+            }
+            out[i] = lo;
+        }
+        return out;
+    }
+
+    /**
+     * 多项式拟合，自变量与因变量均为向量；系数高次项在前。
+     */
+    public static IVector<Double> polyfit(IVector<Double> x, IVector<Double> y, int deg) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        return IDoubleVector.of(polyfit(x.toDoubleArray(), y.toDoubleArray(), deg));
+    }
+
+    /**
+     * 最小二乘多项式拟合（{@code deg} 次），系数从高次到低次。
+     */
+    public static double[] polyfit(double[] x, double[] y, int deg) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x 与 y 长度须一致");
+        }
+        if (deg < 0 || x.length <= deg) {
+            throw new IllegalArgumentException("deg 合法且点数须大于 deg");
+        }
+        int m = x.length;
+        int n = deg + 1;
+        double[][] a = new double[m][n];
+        for (int i = 0; i < m; i++) {
+            double xp = 1.0;
+            for (int j = n - 1; j >= 0; j--) {
+                a[i][j] = xp;
+                xp *= x[i];
+            }
+        }
+        return polyfitLeastSquares(a, y);
+    }
+
+    private static double[] polyfitLeastSquares(double[][] a, double[] y) {
+        int m = a.length;
+        int n = a[0].length;
+        double[][] ata = new double[n][n];
+        double[] aty = new double[n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                double s = 0;
+                for (int k = 0; k < m; k++) {
+                    s += a[k][i] * a[k][j];
+                }
+                ata[i][j] = s;
+            }
+            double s = 0;
+            for (int k = 0; k < m; k++) {
+                s += a[k][i] * y[k];
+            }
+            aty[i] = s;
+        }
+        return polyfitSolveSymmetric(ata, aty);
+    }
+
+    private static double[] polyfitSolveSymmetric(double[][] mat, double[] b) {
+        int n = b.length;
+        double[][] aug = new double[n][n + 1];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(mat[i], 0, aug[i], 0, n);
+            aug[i][n] = b[i];
+        }
+        for (int col = 0; col < n; col++) {
+            int piv = col;
+            for (int r = col + 1; r < n; r++) {
+                if (Math.abs(aug[r][col]) > Math.abs(aug[piv][col])) {
+                    piv = r;
+                }
+            }
+            double[] tmp = aug[col];
+            aug[col] = aug[piv];
+            aug[piv] = tmp;
+            double div = aug[col][col];
+            if (Math.abs(div) < 1e-15) {
+                throw new ArithmeticException("奇异矩阵 / singular");
+            }
+            for (int j = col; j <= n; j++) {
+                aug[col][j] /= div;
+            }
+            for (int r = 0; r < n; r++) {
+                if (r != col) {
+                    double f = aug[r][col];
+                    for (int j = col; j <= n; j++) {
+                        aug[r][j] -= f * aug[col][j];
+                    }
+                }
+            }
+        }
+        double[] sol = new double[n];
+        for (int i = 0; i < n; i++) {
+            sol[i] = aug[i][n];
+        }
+        return sol;
+    }
+
+    /** 标量分支 */
+    public static double[] where(boolean[] cond, double x, double y) {
+        Objects.requireNonNull(cond, "cond");
+        double[] out = new double[cond.length];
+        for (int i = 0; i < cond.length; i++) {
+            out[i] = cond[i] ? x : y;
+        }
+        return out;
+    }
+
+    /** 向量分支 */
+    public static double[] where(boolean[] cond, double[] x, double[] y) {
+        Objects.requireNonNull(cond, "cond");
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        if (cond.length != x.length || cond.length != y.length) {
+            throw new IllegalArgumentException("长度须一致");
+        }
+        double[] out = new double[cond.length];
+        for (int i = 0; i < cond.length; i++) {
+            out[i] = cond[i] ? x[i] : y[i];
+        }
+        return out;
+    }
+
+    /**
+     * 委托 {@link IVector#where(IVector, boolean[], Number, Number)}（标量分支）。
+     */
+    public static IVector<Double> where(IVector<Double> v, boolean[] cond, double x, double y) {
+        return IVector.where(v, cond, x, y);
     }
 
 }

@@ -472,13 +472,13 @@ public interface IPlot {
      * 设置X轴刻度 / Set X-axis ticks
      * @param xticks X轴刻度配置 / X-axis tick configuration
      */
-    void setXticks(viz.math.com.yishape.lab.AxisTicks xticks);
+    void setXticks(com.yishape.lab.math.viz.AxisTicks xticks);
 
     /**
      * 设置Y轴刻度 / Set Y-axis ticks
      * @param yticks Y轴刻度配置 / Y-axis tick configuration
      */
-    void setYticks(viz.math.com.yishape.lab.AxisTicks yticks);
+    void setYticks(com.yishape.lab.math.viz.AxisTicks yticks);
 
     /**
      * 获取图表宽度 / Get chart width

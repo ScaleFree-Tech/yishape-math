@@ -24,7 +24,7 @@ public class LRTest2 {
             var lr = new RereLogisticRegression(0.0,0.1);
             var res = lr.fit(feature, labels);
             System.out.println(res);
-            var predicted = lr.predictBatchWithProbabilities(feature);
+            var predicted = lr.predictBatchWithProbs(feature);
             
             ClassificationMetrics metrics = ClassificationMetrics.compute(labels, predicted);
             System.out.println(metrics);

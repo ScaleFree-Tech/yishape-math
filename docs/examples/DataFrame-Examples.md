@@ -11,11 +11,11 @@ This document provides detailed usage examples for the `DataFrame` class, coveri
 ### DataFrame 创建和基本操作 / DataFrame Creation and Basic Operations
 
 ```java
-import com.yishape.lab.data.DataFrame;
-import com.yishape.lab.data.Column;
-import com.yishape.lab.data.ColumnType;
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.data.DataFrame;
+import com.yishape.lab.math.data.Column;
+import com.yishape.lab.math.data.ColumnType;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,14 +34,14 @@ public class DataFrameBasicExample {
         // 添加数值列 / Add numeric column
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f, 28.0f));
         df.addColumn(ageColumn);
         
         // 添加薪资列 / Add salary column
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(50000.0f, 60000.0f, 70000.0f, 55000.0f));
         df.addColumn(salaryColumn);
         
@@ -60,8 +60,10 @@ public class DataFrameBasicExample {
 ### 从CSV文件读取数据 / Reading Data from CSV Files
 
 ```java
-import com.yishape.lab.data.DataFrame;
+import com.yishape.lab.math.data.DataFrame;
+
 import java.io.IOException;
+import java.util.Arrays;
 
 public class CSVReadingExample {
     public static void main(String[] args) {
@@ -129,7 +131,7 @@ public class DataAccessExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f, 28.0f));
         df.addColumn(ageColumn);
         
@@ -183,13 +185,13 @@ public class SlicingExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(ages));
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(salaries));
         df.addColumn(salaryColumn);
         
@@ -248,19 +250,19 @@ public class DataConversionExample {
         // 只添加数值列用于矩阵转换 / Add only numeric columns for matrix conversion
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f, 28.0f));
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(50000.0f, 60000.0f, 70000.0f, 55000.0f));
         df.addColumn(salaryColumn);
         
         Column experienceColumn = new Column();
         experienceColumn.setName("experience");
-        experienceColumn.setColumnType(ColumnType.Float);
+        experienceColumn.setColumnType(ColumnType.Numeric);
         experienceColumn.setData(Arrays.asList(2.0f, 5.0f, 8.0f, 3.0f));
         df.addColumn(experienceColumn);
         
@@ -308,7 +310,7 @@ public class DataSavingExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f));
         df.addColumn(ageColumn);
         
@@ -378,7 +380,7 @@ public class DataAnalysisExample {
         System.out.println("\n=== 数值型列统计 ===");
         for (int i = 0; i < df.getColumnCount(); i++) {
             Column col = df.get(i);
-            if (col.getColumnType() == ColumnType.Float) {
+            if (col.getColumnType() == ColumnType.Numeric) {
                 System.out.println("\n列 " + col.getName() + " 的统计信息:");
                 
                 // 转换为向量进行统计 / Convert to vector for statistics
@@ -419,19 +421,19 @@ public class DataAnalysisExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(ages));
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(salaries));
         df.addColumn(salaryColumn);
         
         Column expColumn = new Column();
         expColumn.setName("experience");
-        expColumn.setColumnType(ColumnType.Float);
+        expColumn.setColumnType(ColumnType.Numeric);
         expColumn.setData(Arrays.asList(experience));
         df.addColumn(expColumn);
         
@@ -546,7 +548,7 @@ public class DataValidationExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f, 28.0f));
         df.addColumn(ageColumn);
         
@@ -576,7 +578,7 @@ public class BatchProcessingExample {
             // 计算数值列的统计信息 / Calculate statistics for numeric columns
             for (int j = 0; j < df.getColumnCount(); j++) {
                 Column col = df.get(j);
-                if (col.getColumnType() == ColumnType.Float) {
+                if (col.getColumnType() == ColumnType.Numeric) {
                     IVector vector = col.toVec();
                     System.out.println("  列 " + col.getName() + " 均值: " + vector.mean());
                 }
@@ -623,13 +625,13 @@ public class BatchProcessingExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(ages));
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(salaries));
         df.addColumn(salaryColumn);
         
@@ -717,7 +719,7 @@ public class DataValidationDebuggingExample {
             System.out.println("列 " + col.getName() + " 类型: " + col.getColumnType());
             
             // 验证数据是否与类型匹配 / Verify data matches type
-            if (col.getColumnType() == ColumnType.Float) {
+            if (col.getColumnType() == ColumnType.Numeric) {
                 boolean allNumeric = true;
                 for (Object value : col.getData()) {
                     try {
@@ -752,7 +754,7 @@ public class DataValidationDebuggingExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f));
         df.addColumn(ageColumn);
         
@@ -811,13 +813,13 @@ public class MemoryOptimizationExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(ages);
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(salaries);
         df.addColumn(salaryColumn);
         

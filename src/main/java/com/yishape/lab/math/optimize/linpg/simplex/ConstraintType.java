@@ -6,9 +6,9 @@ package com.yishape.lab.math.optimize.linpg.simplex;
 public enum ConstraintType {
     /** Equality relationship: ax = b */
     EQ("="),
-    /** Less than or equal relationship: ax <= b */
+    /** Less than or equal relationship: ax &lt;= b */
     LEQ("<="),
-    /** Greater than or equal relationship: ax >= b */
+    /** Greater than or equal relationship: ax &gt;= b */
     GEQ(">=");
 
     /** Display string for the relationship. */

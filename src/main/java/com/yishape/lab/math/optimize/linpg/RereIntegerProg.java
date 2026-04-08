@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize.linpg;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -17,6 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author lteb2
  */
 public class RereIntegerProg implements IIntegerProg {
+
+    private static final Logger log = LoggerFactory.getLogger(RereIntegerProg.class);
+
 
     // 默认参数
     private static final double DEFAULT_TOLERANCE = 1e-6;
@@ -424,7 +430,7 @@ public class RereIntegerProg implements IIntegerProg {
                 bestObjectiveValue = (Double) c.innerProduct(initX);
                 bestSolution = initX.copy();
                 if (verbose) {
-                    System.out.println("采用热启动初始可行整数解，目标值 = " + String.format("%.2f", bestObjectiveValue));
+                    log.debug("采用热启动初始可行整数解，目标值 = " + String.format("%.2f", bestObjectiveValue));
                 }
             }
         }
@@ -476,9 +482,9 @@ public class RereIntegerProg implements IIntegerProg {
         boolean logIterations = verbose && maxIterations > 100;
 
         if (verbose) {
-            System.out.println("开始分支定界算法，变量数: " + c.length() + ", 约束数: " + A_eq.rows());
-            System.out.println("整数变量: " + integerVariables);
-            System.out.println("0-1变量: " + binaryVariables);
+            log.debug("开始分支定界算法，变量数: " + c.length() + ", 约束数: " + A_eq.rows());
+            log.debug("整数变量: " + integerVariables);
+            log.debug("0-1变量: " + binaryVariables);
         }
 
         // 添加一个集合来跟踪已经探索过的解模式，避免重复探索
@@ -498,7 +504,7 @@ public class RereIntegerProg implements IIntegerProg {
             BranchNode currentNode = nodeQueue.poll();
 
             if (logIterations && iterations % 100 == 0) {
-                System.out.println("迭代 " + iterations + ": 队列大小 = " + nodeQueue.size()
+                log.debug("迭代 " + iterations + ": 队列大小 = " + nodeQueue.size()
                         + ", 当前下界 = " + currentNode.lowerBound
                         + ", 最佳目标值 = " + (bestSolution != null ? bestObjectiveValue : "未找到"));
             }
@@ -507,7 +513,7 @@ public class RereIntegerProg implements IIntegerProg {
             if (currentNode.depth > adaptiveMaxDepth) {
                 prunedNodes++;
                 if (verbose) {
-                    System.out.println("  深度剪枝 (自适应深度限制: " + adaptiveMaxDepth + ")");
+                    log.debug("  深度剪枝 (自适应深度限制: " + adaptiveMaxDepth + ")");
                 }
                 // 将节点返回对象池
                 if (nodePool.size() < 100) { // 限制对象池大小
@@ -522,7 +528,7 @@ public class RereIntegerProg implements IIntegerProg {
                 lpResult = solveLPRelaxation(c, A_eq, b_eq, currentNode, initX);
             } catch (Exception e) {
                 if (verbose) {
-                    System.out.println("求解LP松弛问题时出错: " + e.getMessage());
+                    log.debug("求解LP松弛问题时出错: " + e.getMessage());
                 }
                 prunedNodes++;
                 // 将节点返回对象池
@@ -536,7 +542,7 @@ public class RereIntegerProg implements IIntegerProg {
                 // 无可行解，剪枝
                 prunedNodes++;
                 if (verbose) {
-                    System.out.println("  无可行解，剪枝");
+                    log.debug("  无可行解，剪枝");
                 }
                 // 将节点返回对象池
                 if (nodePool.size() < 100) { // 限制对象池大小
@@ -558,7 +564,7 @@ public class RereIntegerProg implements IIntegerProg {
             if (Double.isNaN(objectiveValue) || Double.isInfinite(objectiveValue)) {
                 prunedNodes++;
                 if (verbose) {
-                    System.out.println("  无效解，剪枝");
+                    log.debug("  无效解，剪枝");
                 }
                 // 将节点返回对象池
                 if (nodePool.size() < 100) { // 限制对象池大小
@@ -572,7 +578,7 @@ public class RereIntegerProg implements IIntegerProg {
             currentNode.solution = solution;
 
             if (verbose) {
-                System.out.println("  LP松弛解: " + solution + ", 目标值: " + objectiveValue);
+                log.debug("  LP松弛解: " + solution + ", 目标值: " + objectiveValue);
             }
 
             // 高级启发：简化代价固定
@@ -584,7 +590,7 @@ public class RereIntegerProg implements IIntegerProg {
             if (iterations % 100 == 0 && !isIntegerSolution(solution)) {
                 boolean cutsAdded = generateCuts(currentNode, c, A_eq, b_eq, INTEGER_TOLERANCE);
                 if (cutsAdded && verbose) {
-                    System.out.println("  生成了切割平面，重新求解LP松弛");
+                    log.debug("  生成了切割平面，重新求解LP松弛");
                     // 重新求解LP松弛问题
                     OptResult newLpResult = solveLPRelaxation(c, A_eq, b_eq, currentNode, initX);
                     if (newLpResult != null && newLpResult.getOptimalValue() < objectiveValue) {
@@ -593,7 +599,7 @@ public class RereIntegerProg implements IIntegerProg {
                         currentNode.lowerBound = objectiveValue;
                         currentNode.solution = solution;
                         if (verbose) {
-                            System.out.println("  切割后新的LP解: 目标值=" + objectiveValue);
+                            log.debug("  切割后新的LP解: 目标值=" + objectiveValue);
                         }
                     }
                 }
@@ -617,7 +623,7 @@ public class RereIntegerProg implements IIntegerProg {
                         if (lhs > rhs + BOUND_TOLERANCE) {
                             satisfiesConstraints = false;
                             if (verbose) {
-                                System.out.println("  整数解违反约束 " + r + ": " + lhs + " > " + rhs);
+                                log.debug("  整数解违反约束 " + r + ": " + lhs + " > " + rhs);
                             }
                             break;
                         }
@@ -631,14 +637,14 @@ public class RereIntegerProg implements IIntegerProg {
                         bestSolution = solution.copy(); // 创建副本
 
                         if (verbose) {
-                            System.out.println("找到新的最优整数解，目标值 = " + String.format("%.2f", bestObjectiveValue));
-                            System.out.println("解: " + bestSolution);
+                            log.debug("找到新的最优整数解，目标值 = " + String.format("%.2f", bestObjectiveValue));
+                            log.debug("解: " + bestSolution);
                             
                             // 输出当前最优解的详细信息
                             if (objectiveCoefficients != null) {
                                 double totalValue = 0;
                                 double totalWeight = 0;
-                                System.out.print("  当前最优解包含物品: ");
+                                StringBuilder knap = new StringBuilder("  当前最优解包含物品: ");
                                 for (int i = 0; i < Math.min(bestSolution.length(), objectiveCoefficients.length()); i++) {
                                     double val = (Double) bestSolution.get(i);
                                     if (val > 0.5) { // 二进制变量，大于0.5认为是1
@@ -647,20 +653,20 @@ public class RereIntegerProg implements IIntegerProg {
                                         if (constraintMatrix != null && constraintMatrix.rows() > 0 && i < constraintMatrix.cols()) {
                                             double weight = Math.abs((Double) constraintMatrix.get(0, i));
                                             totalWeight += weight;
-                                            System.out.print("物品" + i + "(价值" + value + ",重量" + weight + ") ");
+                                            knap.append("物品").append(i).append("(价值").append(value).append(",重量").append(weight).append(") ");
                                         }
                                     }
                                 }
-                                System.out.println();
-                                System.out.println("  总价值: " + totalValue + ", 总重量: " + totalWeight);
+                                log.debug(knap.toString());
+                                log.debug("  总价值: " + totalValue + ", 总重量: " + totalWeight);
                             }
                         }
                     } else if (verbose) {
-                        System.out.println("找到整数解，但不是更优解: 目标值 = " + String.format("%.2f", objectiveValue));
-                        System.out.println("解: " + solution);
+                        log.debug("找到整数解，但不是更优解: 目标值 = " + String.format("%.2f", objectiveValue));
+                        log.debug("解: " + solution);
                     }
                 } else if (verbose) {
-                    System.out.println("整数解不满足原始约束，继续搜索");
+                    log.debug("整数解不满足原始约束，继续搜索");
                 }
                 // 将节点返回对象池
                 if (nodePool.size() < 100) { // 限制对象池大小
@@ -675,7 +681,7 @@ public class RereIntegerProg implements IIntegerProg {
             if (bestSolution != null && isNodePrunable(currentNode, bestObjectiveValue)) {
                 prunedNodes++;
                 if (verbose) {
-                    System.out.println("  界限剪枝: 下界(" + objectiveValue + ") >= 最优值(" + bestObjectiveValue + ") + 容差(" + Math.max(gapTolerance, 1.0) + ")");
+                    log.debug("  界限剪枝: 下界(" + objectiveValue + ") >= 最优值(" + bestObjectiveValue + ") + 容差(" + Math.max(gapTolerance, 1.0) + ")");
                 }
                 if (nodePool.size() < 100) {
                     nodePool.offer(currentNode);
@@ -699,8 +705,8 @@ public class RereIntegerProg implements IIntegerProg {
                     nodeQueue.offer(rightChild);
 
                     if (verbose) {
-                        System.out.println("  创建0-1子节点: 左节点(x" + branchingVariable + " = 0), 右节点(x" + branchingVariable + " = 1)");
-                        System.out.println("    左节点 ID = " + leftChild.id + ", 右节点 ID = " + rightChild.id);
+                        log.debug("  创建0-1子节点: 左节点(x" + branchingVariable + " = 0), 右节点(x" + branchingVariable + " = 1)");
+                        log.debug("    左节点 ID = " + leftChild.id + ", 右节点 ID = " + rightChild.id);
                     }
                 } else {
                     // 对于一般整数变量，使用标准的分支策略
@@ -717,13 +723,13 @@ public class RereIntegerProg implements IIntegerProg {
                     nodeQueue.offer(rightChild);
 
                     if (verbose) {
-                        System.out.println("  创建子节点: 左节点(x" + branchingVariable + " <= " + floorValue
+                        log.debug("  创建子节点: 左节点(x" + branchingVariable + " <= " + floorValue
                                 + "), 右节点(x" + branchingVariable + " >= " + ceilValue + ")");
-                        System.out.println("    左节点 ID = " + leftChild.id + ", 右节点 ID = " + rightChild.id);
+                        log.debug("    左节点 ID = " + leftChild.id + ", 右节点 ID = " + rightChild.id);
                     }
                 }
             } else if (verbose) {
-                System.out.println("  无法选择分支变量");
+                log.debug("  无法选择分支变量");
             }
 
             // 将处理完的节点返回对象池
@@ -733,38 +739,38 @@ public class RereIntegerProg implements IIntegerProg {
         }
 
         if (verbose) {
-            System.out.println("分支定界算法完成，总迭代次数: " + iterations + ", 剪枝节点数: " + prunedNodes);
-            System.out.println("缓存统计: 命中 " + cacheHits + ", 未命中 " + cacheMisses + ", 命中率: "
+            log.debug("分支定界算法完成，总迭代次数: " + iterations + ", 剪枝节点数: " + prunedNodes);
+            log.debug("缓存统计: 命中 " + cacheHits + ", 未命中 " + cacheMisses + ", 命中率: "
                     + (cacheMisses + cacheHits > 0 ? String.format("%.2f%%", cacheHits * 100.0 / (cacheHits + cacheMisses)) : "0%"));
             if (bestSolution != null) {
-                System.out.println("最优解: " + bestSolution + ", 最优值: " + bestObjectiveValue);
+                log.debug("最优解: " + bestSolution + ", 最优值: " + bestObjectiveValue);
             } else {
-                System.out.println("未找到可行的整数解");
+                log.debug("未找到可行的整数解");
             }
             
             // 输出分支统计信息
-            System.out.println("分支统计:");
+            log.debug("分支统计:");
             branchingCounts.entrySet().stream()
                 .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
                 .limit(5)
-                .forEach(entry -> System.out.println("  变量x" + entry.getKey() + "被分支了" + entry.getValue() + "次"));
+                .forEach(entry -> log.debug("  变量x" + entry.getKey() + "被分支了" + entry.getValue() + "次"));
         }
 
         // 检查是否因为达到最大迭代次数而退出
         boolean maxIterationsReached = iterations >= maxIterations;
         if (maxIterationsReached) {
             if (verbose) {
-                System.out.println("达到最大迭代次数");
+                log.debug("达到最大迭代次数");
             }
             // 只返回整数解，不返回松弛解
             if (bestSolution != null) {
                 if (verbose) {
-                    System.out.println("返回找到的整数解");
+                    log.debug("返回找到的整数解");
                 }
                 return new BranchAndBoundResult(new Tuple2<>(bestObjectiveValue, bestSolution), true);
             } else {
                 if (verbose) {
-                    System.out.println("未找到可行的整数解");
+                    log.debug("未找到可行的整数解");
                 }
                 return new BranchAndBoundResult(null, true);
             }
@@ -773,14 +779,14 @@ public class RereIntegerProg implements IIntegerProg {
         // 只返回整数解，不返回松弛解
         if (bestSolution != null) {
             if (verbose) {
-                System.out.println("返回最优整数解");
+                log.debug("返回最优整数解");
             }
             return new BranchAndBoundResult(new Tuple2<>(bestObjectiveValue, bestSolution), false);
         }
 
         // 如果没有找到整数解，返回null而不是松弛解
         if (verbose) {
-            System.out.println("未找到可行的整数解");
+            log.debug("未找到可行的整数解");
         }
         return new BranchAndBoundResult(null, false);
     }
@@ -924,7 +930,7 @@ public class RereIntegerProg implements IIntegerProg {
             
             if (verbose && !isInfeasibleSubproblem) {
                 // 只在verbose模式下且不是正常的不可行子问题时输出异常信息
-                System.err.println("solveLPRelaxation异常: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                log.warn("solveLPRelaxation异常: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             }
             
             // 对于不可行子问题，直接返回null让调用者处理
@@ -1174,14 +1180,14 @@ public class RereIntegerProg implements IIntegerProg {
             if (value > 0.9 && reducedCost > lpGap * 0.8) {
                 node.variableBounds.put(i, new Tuple2<>(1.0, 1.0));
                 if (verbose) {
-                    System.out.println("  简化代价固定: x" + (i+1) + " = 1 (代价=" + String.format("%.2f", reducedCost) + ")");
+                    log.debug("  简化代价固定: x" + (i+1) + " = 1 (代价=" + String.format("%.2f", reducedCost) + ")");
                 }
             }
             // 如果固定为1的代价超过当前间隙，则固定为0
             else if (value < 0.1 && reducedCost > lpGap * 0.8) {
                 node.variableBounds.put(i, new Tuple2<>(0.0, 0.0));
                 if (verbose) {
-                    System.out.println("  简化代价固定: x" + (i+1) + " = 0 (代价=" + String.format("%.2f", reducedCost) + ")");
+                    log.debug("  简化代价固定: x" + (i+1) + " = 0 (代价=" + String.format("%.2f", reducedCost) + ")");
                 }
             }
         }
@@ -1686,7 +1692,7 @@ public class RereIntegerProg implements IIntegerProg {
      */
     private void preprocessProblem(IVector c, IMatrix A_eq, IVector b_eq) {
         if (verbose) {
-            System.out.println("开始问题预处理...");
+            log.debug("开始问题预处理...");
         }
         
         // 1. 分析约束矩阵的特性
@@ -1701,7 +1707,7 @@ public class RereIntegerProg implements IIntegerProg {
         tightenObviousBounds(c, A_eq, b_eq);
         
         if (verbose) {
-            System.out.println("问题预处理完成");
+            log.debug("问题预处理完成");
         }
     }
     
@@ -1722,7 +1728,7 @@ public class RereIntegerProg implements IIntegerProg {
         double sparsity = 1.0 - (double) nonZeroCount / (A_eq.rows() * A_eq.cols());
         
         if (verbose) {
-            System.out.printf("约束矩阵稀疏性: %.2f%%\n", sparsity * 100);
+            log.debug(String.format("约束矩阵稀疏性: %.2f%%\n", sparsity * 100));
         }
     }
     
@@ -1746,10 +1752,10 @@ public class RereIntegerProg implements IIntegerProg {
         densityList.sort((a, b) -> Double.compare(b.getSecond(), a.getSecond()));
         
         if (verbose && !densityList.isEmpty()) {
-            System.out.println("价值密度排序 (TOP 5):");
+            log.debug("价值密度排序 (TOP 5):");
             for (int i = 0; i < Math.min(5, densityList.size()); i++) {
                 Tuple2<Integer, Double> item = densityList.get(i);
-                System.out.printf("  x%d: %.3f\n", item.getFirst(), item.getSecond());
+                log.debug(String.format("  x%d: %.3f\n", item.getFirst(), item.getSecond()));
             }
         }
     }
@@ -1776,7 +1782,7 @@ public class RereIntegerProg implements IIntegerProg {
                     }
                     
                     if (allNonNegative && verbose) {
-                        System.out.printf("变量x%d可能可以固定为0 (目标系数为0且约束系数非负)\n", index);
+                        log.debug(String.format("变量x%d可能可以固定为0 (目标系数为0且约束系数非负)\n", index));
                     }
                 }
             }
@@ -1815,7 +1821,7 @@ public class RereIntegerProg implements IIntegerProg {
                     cutsAdded++;
                     
                     if (verbose) {
-                        System.out.println("  添加切割: x" + (i+1) + " <= " + floorValue + 
+                        log.debug("  添加切割: x" + (i+1) + " <= " + floorValue + 
                                          " (当前值=" + String.format("%.3f", value) + ")");
                     }
                 }

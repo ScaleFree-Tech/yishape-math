@@ -29,7 +29,7 @@ public class EnsembleClassifierInterfaceTest {
             EnsembleClassifier.EnsembleStrategy.VOTING, 42L);
         
         // 验证实现了IClassification接口
-        assertTrue(classifier instanceof IClassification, 
+        assertTrue(classifier instanceof IClassifier, 
                   "EnsembleClassifier应该实现IClassification接口");
         
         // 测试fit方法返回ClassificationResult

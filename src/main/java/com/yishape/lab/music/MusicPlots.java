@@ -1,5 +1,8 @@
 package com.yishape.lab.music;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.Audios;
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.math.linalg.IVector;
@@ -32,6 +35,9 @@ import java.util.Map;
  * @since 1.0
  */
 public class MusicPlots {
+
+    private static final Logger log = LoggerFactory.getLogger(MusicPlots.class);
+
 
     /**
      * 绘制音乐频谱图 / Plot music spectrogram
@@ -297,8 +303,8 @@ public class MusicPlots {
                     .xlabel("音乐特征 / Music Features")
                     .ylabel("特征值 / Feature Value");
         } catch (Exception e) {
-            System.err.println("Failed to create music features radar chart: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to create music features radar chart: " + e.getMessage());
+            log.error("exception", e);
             
             // Fallback to a simple radar chart with default values if feature extraction fails
             List<String> defaultFeatureNames = List.of("节奏稳定性", "音调清晰度", "和声丰富度", "音色变化", "动态范围");

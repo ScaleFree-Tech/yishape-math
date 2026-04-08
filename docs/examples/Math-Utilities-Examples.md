@@ -9,9 +9,11 @@
 ### 类型转换函数 / Type Conversion Functions
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+
+import java.util.Arrays;
 
 public class TypeConversionExample {
     public static void main(String[] args) {
@@ -100,9 +102,9 @@ public class TypeConversionExample {
 ### 随机数生成 / Random Number Generation
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
 
 public class RandomNumberExample {
     public static void main(String[] args) {
@@ -167,7 +169,7 @@ public class RandomNumberExample {
 ### 概率分布函数 / Probability Distribution Functions
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
+import com.yishape.lab.math.RereMathUtil;
 
 public class ProbabilityDistributionExample {
     public static void main(String[] args) {
@@ -230,7 +232,7 @@ public class ProbabilityDistributionExample {
 ### 组合数学函数 / Combinatorics Functions
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
+import com.yishape.lab.math.RereMathUtil;
 
 public class CombinatoricsExample {
     public static void main(String[] args) {
@@ -302,9 +304,9 @@ public class CombinatoricsExample {
 ### 基本数学函数 / Basic Mathematical Functions
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
 
 public class MathematicalFunctionsExample {
     public static void main(String[] args) {
@@ -377,9 +379,9 @@ public class MathematicalFunctionsExample {
 ### 统计函数 / Statistical Functions
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
 
 public class StatisticalFunctionsExample {
     public static void main(String[] args) {
@@ -474,10 +476,10 @@ public class StatisticalFunctionsExample {
 ### 数组变换和操作 / Array Transformation and Operations
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.util.Tuple2;
 
 public class ArrayOperationsExample {
     public static void main(String[] args) {
@@ -570,9 +572,9 @@ public class ArrayOperationsExample {
 ### 数据预处理 / Data Preprocessing
 
 ```java
-import math.com.yishape.lab.RereMathUtil;
-import com.yishape.lab.math.IVector;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.RereMathUtil;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
 
 public class DataPreprocessingExample {
     public static void main(String[] args) {

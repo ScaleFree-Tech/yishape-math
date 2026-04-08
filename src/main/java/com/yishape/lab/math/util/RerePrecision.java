@@ -71,7 +71,7 @@ public class RerePrecision {
      * 
      * @param x 第一个值
      * @param y 第二个值
-     * @return 如果x < y返回-1，如果x > y返回1，如果相等返回0
+     * @return 如果x &lt; y返回-1，如果x &gt; y返回1，如果相等返回0
      */
     public static int compareTo(double x, double y) {
         return compareTo(x, y, EPSILON);
@@ -83,7 +83,7 @@ public class RerePrecision {
      * @param x 第一个值
      * @param y 第二个值
      * @param eps 绝对误差
-     * @return 如果x < y返回-1，如果x > y返回1，如果相等返回0
+     * @return 如果x &lt; y返回-1，如果x &gt; y返回1，如果相等返回0
      */
     public static int compareTo(double x, double y, double eps) {
         if (equals(x, y, eps)) {
@@ -101,7 +101,7 @@ public class RerePrecision {
      * @param x 第一个值
      * @param y 第二个值
      * @param maxUlps 最大ULP数
-     * @return 如果x < y返回-1，如果x > y返回1，如果相等返回0
+     * @return 如果x &lt; y返回-1，如果x &gt; y返回1，如果相等返回0
      */
     public static int compareTo(double x, double y, int maxUlps) {
         if (equals(x, y, maxUlps)) {
@@ -301,7 +301,7 @@ public class RerePrecision {
      * @param x 第一个值
      * @param y 第二个值
      * @param eps 绝对误差
-     * @return 如果x < y返回true，否则返回false
+     * @return 如果x &lt; y返回true，否则返回false
      */
     public static boolean isLessThan(double x, double y, double eps) {
         return compareTo(x, y, eps) < 0;
@@ -325,7 +325,7 @@ public class RerePrecision {
      * @param x 第一个值
      * @param y 第二个值
      * @param eps 绝对误差
-     * @return 如果x <= y返回true，否则返回false
+     * @return 如果x &lt;= y返回true，否则返回false
      */
     public static boolean isLessThanOrEqual(double x, double y, double eps) {
         return compareTo(x, y, eps) <= 0;
@@ -347,7 +347,7 @@ public class RerePrecision {
      * 
      * @param x 第一个值
      * @param y 第二个值
-     * @return 如果x < y返回true，否则返回false
+     * @return 如果x &lt; y返回true，否则返回false
      */
     public static boolean isLessThan(double x, double y) {
         return isLessThan(x, y, EPSILON);
@@ -369,7 +369,7 @@ public class RerePrecision {
      * 
      * @param x 第一个值
      * @param y 第二个值
-     * @return 如果x <= y返回true，否则返回false
+     * @return 如果x &lt;= y返回true，否则返回false
      */
     public static boolean isLessThanOrEqual(double x, double y) {
         return isLessThanOrEqual(x, y, EPSILON);

@@ -204,7 +204,7 @@ public interface IOnlineOptimizer  extends Serializable{
      * Set learning rate
      * 
      * @param learningRate 新的学习率 / New learning rate
-     * @throws IllegalArgumentException 如果学习率小于等于0 / if learning rate is <= 0
+     * @throws IllegalArgumentException 如果学习率小于等于0 / if learning rate is &lt;= 0
      */
     void setLearningRate(double learningRate);
     

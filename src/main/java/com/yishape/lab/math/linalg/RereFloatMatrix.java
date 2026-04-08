@@ -1,5 +1,8 @@
 package com.yishape.lab.math.linalg;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.compute.FloatVectorComputer;
@@ -64,6 +67,9 @@ import java.util.function.Function;
  * @since 1.0
  */
 public class RereFloatMatrix implements IFloatMatrix,Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(RereFloatMatrix.class);
+
 
     /**
      * 矩阵数据存储数组 / Matrix data storage array
@@ -520,7 +526,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
     @Override
     public int getColNum() {
         if (data.length == 0) {
-            System.out.println("DEBUG: getColNum() called on empty matrix, returning: " + emptyMatrixCols);
+            log.debug("DEBUG: getColNum() called on empty matrix, returning: " + emptyMatrixCols);
             return emptyMatrixCols; // 对于空矩阵，返回存储的列数
         }
         return data[0].length;
@@ -697,6 +703,31 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
     @Override
     public IMatrix<Float> mmul(IMatrix<Float> other) {
         var res = this.computer.mmul(data, other.toFloatArray());
+        return IFloatMatrix.of(res);
+    }
+
+    @Override
+    public IMatrix<Float> kron(IMatrix<Float> other) {
+        if (other == null) {
+            throw new NullPointerException("other不能为null / other cannot be null");
+        }
+        int m = getRowNum();
+        int n = getColNum();
+        int p = other.getRowNum();
+        int q = other.getColNum();
+        float[][] a = this.toFloatArray();
+        float[][] b = other.toFloatArray();
+        float[][] res = new float[m * p][n * q];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                float aij = a[i][j];
+                for (int k = 0; k < p; k++) {
+                    for (int l = 0; l < q; l++) {
+                        res[i * p + k][j * q + l] = aij * b[k][l];
+                    }
+                }
+            }
+        }
         return IFloatMatrix.of(res);
     }
 
@@ -1137,7 +1168,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      * same number of rows
      * </p>
      *
-     * @param other 要连接的另一个矩阵 / The other matrix to concatenate
+     * @param other1 要连接的另一个矩阵 / The other matrix to concatenate
      * @return 连接后的矩阵 / Concatenated matrix
      * @throws IllegalArgumentException 如果矩阵行数不匹配 / if matrix row counts don't
      * match
@@ -1181,7 +1212,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      * number of columns
      * </p>
      *
-     * @param other 要连接的另一个矩阵 / The other matrix to concatenate
+     * @param other1 要连接的另一个矩阵 / The other matrix to concatenate
      * @return 连接后的矩阵 / Concatenated matrix
      * @throws IllegalArgumentException 如果矩阵列数不匹配 / if matrix column counts
      * don't match
@@ -1360,14 +1391,18 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
     @Override
     public IMatrix<Float> copy() {
         int rows = data.length;
-        int cols = data[0].length;
+        int cols = rows > 0 ? data[0].length : emptyMatrixCols;
         float[][] copyData = new float[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             System.arraycopy(data[i], 0, copyData[i], 0, cols);
         }
 
-        return IFloatMatrix.of(copyData);
+        RereFloatMatrix out = new RereFloatMatrix(copyData);
+        if (rows == 0) {
+            out.emptyMatrixCols = cols;
+        }
+        return out;
     }
 
     /**

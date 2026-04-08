@@ -1,10 +1,10 @@
-# 统计操作示例 (Statsistics Examples)
+# 统计操作示例 (Statistics Examples)
 
 ## 概述 / Overview
 
-本文档按照从简单到复杂的顺序，系统性地编排了统计操作包的详细使用示例。每个级别都包含相应的理论背景、实践示例和进阶指导。
+本文档按从简到繁介绍 `Stats` 工厂与各分布、检验等用法；向量数据推荐用 `Linalg.vector(...)` 得到 `IVector<Double>`，再与统计模块配合。
 
-This document systematically organizes detailed usage examples for the statistics package in order from simple to complex. Each level includes corresponding theoretical background, practical examples, and advanced guidance.
+This document introduces the `Stats` factory and distributions/tests in order of complexity. Use `Linalg.vector(...)` for `IVector<Double>` data alongside statistics APIs.
 
 ---
 
@@ -12,17 +12,21 @@ This document systematically organizes detailed usage examples for the statistic
 
 ### 1.1 基本概念 / Environment Setup and Basic Concepts
 
-#### 基本统计量计算 / Basic Statsistics Calculation
+#### 基本统计量计算 / Basic Statistics on Vectors
 
 ```java
-public class BasicStatsisticsExample {
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import java.util.Arrays;
+
+public class BasicStatisticsExample {
     public static void main(String[] args) {
         // 创建示例数据 / Create sample data
         double[] data = {1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8};
-        IDoubleVector vector = Linalg.vector(data);
+        IVector<Double> vector = Linalg.vector(data);
         
         // 计算基本统计量 / Calculate basic statistics
-        System.out.println("=== 基本统计量 / Basic Statsistics ===");
+        System.out.println("=== 基本统计量 / Basic statistics ===");
         System.out.println("数据: " + Arrays.toString(data) + " / Data: " + Arrays.toString(data));
         System.out.println("均值: " + vector.mean() + " / Mean: " + vector.mean());
         System.out.println("中位数: " + vector.median() + " / Median: " + vector.median());
@@ -38,6 +42,9 @@ public class BasicStatsisticsExample {
 ### 1.2 正态分布基础 / Normal Distribution Basics
 
 ```java
+import com.yishape.lab.math.stats.Stats;
+import com.yishape.lab.math.stats.distribution.NormalDistribution;
+
 public class NormalDistributionBasicExample {
     public static void main(String[] args) {
         // 创建标准正态分布（均值为0，标准差为1） / Create standard normal distribution (mean=0, std=1)
@@ -68,10 +75,13 @@ public class NormalDistributionBasicExample {
 ### 1.3 均匀分布基础 / Uniform Distribution Basics
 
 ```java
+import com.yishape.lab.math.stats.Stats;
+import com.yishape.lab.math.stats.distribution.UniformDistribution;
+
 public class UniformDistributionBasicExample {
     public static void main(String[] args) {
         // 创建均匀分布 [0, 1] / Create uniform distribution [0, 1]
-        UniformDistribution uniform = Stats.uniform(0.0f, 1.0f);
+        UniformDistribution uniform = Stats.uniform(0.0, 1.0);
         System.out.println("均匀分布[0,1]: " + uniform + " / Uniform distribution [0,1]: " + uniform);
         
         // 基本统计量 / Basic statistics
@@ -1092,9 +1102,9 @@ public class MultivariateDistributionExample {
         System.out.println("生成了 " + samples.length + " 个随机样本 / Generated " + samples.length + " random samples");
         
         // 计算样本统计量 / Calculate sample statistics
-        IDoubleVector sample1 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[0]).toArray());
-        IDoubleVector sample2 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[1]).toArray());
-        IDoubleVector sample3 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[2]).toArray());
+        IVector<Double> sample1 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[0]).toArray());
+        IVector<Double> sample2 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[1]).toArray());
+        IVector<Double> sample3 = Linalg.vector(Arrays.stream(samples).mapToDouble(s -> s[2]).toArray());
         
         System.out.println("样本统计量: / Sample statistics:");
         System.out.println("  第1维均值: " + sample1.mean() + " (理论值: " + mean[0] + ") / Dim 1 mean: " + sample1.mean() + " (theoretical: " + mean[0] + ")");
@@ -1106,7 +1116,7 @@ public class MultivariateDistributionExample {
         System.out.println("\n--- 多元t分布示例 / Multivariate t-Distribution Example ---");
         
         // 创建2维多元t分布 / Create 2D multivariate t-distribution
-        IDoubleVector mean = Linalg.vector(new double[]{0.0, 0.0});
+        IVector<Double> mean = Linalg.vector(new double[]{0.0, 0.0});
         IMatrix<Double> scale = Linalg.eye(2);
         double degreesOfFreedom = 5.0;
         
@@ -1297,13 +1307,13 @@ public class EMAlgorithmAdvancedExample {
         List<Double> trueWeights = new ArrayList<>();
         
         // 第一个分量 / First component
-        IDoubleVector mean1 = Linalg.vector(new double[]{1.0, 2.0});
+        IVector<Double> mean1 = Linalg.vector(new double[]{1.0, 2.0});
         IMatrix<Double> cov1 = Linalg.eye(2);
         trueComponents.add(new MultivariateNormalDistribution(mean1, cov1));
         trueWeights.add(0.4);
         
         // 第二个分量 / Second component
-        IDoubleVector mean2 = Linalg.vector(new double[]{5.0, 6.0});
+        IVector<Double> mean2 = Linalg.vector(new double[]{5.0, 6.0});
         IMatrix<Double> cov2 = Linalg.eye(2);
         trueComponents.add(new MultivariateNormalDistribution(mean2, cov2));
         trueWeights.add(0.6);

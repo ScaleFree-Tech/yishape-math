@@ -92,7 +92,7 @@ public class AudioFeatureResult {
      * @param spectralBandwidth 频谱带宽 / Spectral bandwidth
      * @param spectralRolloff 频谱滚降点 / Spectral rolloff
      * @param zeroCrossingRate 零交叉率 / Zero crossing rate
-     * @param mfcc MFCC特征（均值） / MFCC features (means)
+     * @param mfccMeans MFCC特征（均值） / MFCC features (means)
      * @param spectralContrast 频谱对比度 / Spectral contrast
      * @param sampleRate 采样率 / Sample rate
      */

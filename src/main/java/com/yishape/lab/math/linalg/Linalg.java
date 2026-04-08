@@ -1,6 +1,8 @@
 package com.yishape.lab.math.linalg;
 
 import java.util.List;
+import java.util.Objects;
+
 import com.yishape.lab.util.Tuple2;
 
 /**
@@ -455,6 +457,13 @@ public class Linalg {
 
     public static IMatrix<Float> fromArray(float[] data, int rows, int cols) {
         return IMatrix.fromArray(data, rows, cols);
+    }
+
+    /**
+     * Kronecker 积，等价于 {@code a.kron(b)} 与 NumPy {@code numpy.kron(a, b)}。
+     */
+    public static <T extends Number> IMatrix<T> kron(IMatrix<T> a, IMatrix<T> b) {
+        return a.kron(b);
     }
 
     @SafeVarargs
@@ -1083,6 +1092,114 @@ public class Linalg {
         }
         
         return result;
+    }
+
+    /**
+     * 一维线性插值（对齐 {@code numpy.interp}：区间外取端点）/ 1D linear interpolation
+     */
+    public static IVector<Double> interp(IVector<Double> xq, IVector<Double> xp, IVector<Double> fp) {
+        Objects.requireNonNull(xq, "xq");
+        Objects.requireNonNull(xp, "xp");
+        Objects.requireNonNull(fp, "fp");
+        int n = xp.length();
+        if (fp.length() != n) {
+            throw new IllegalArgumentException("xp 与 fp 长度须相同 / xp and fp must have same length");
+        }
+        if (n < 2) {
+            throw new IllegalArgumentException("xp 至少长度 2 / xp must have length >= 2");
+        }
+        for (int i = 1; i < n; i++) {
+            if (xp.get(i) < xp.get(i - 1)) {
+                throw new IllegalArgumentException("xp 须非降序 / xp must be non-decreasing");
+            }
+        }
+        int nq = xq.length();
+        double[] out = new double[nq];
+        for (int q = 0; q < nq; q++) {
+            double x = xq.get(q);
+            if (x <= xp.get(0)) {
+                out[q] = fp.get(0);
+                continue;
+            }
+            if (x >= xp.get(n - 1)) {
+                out[q] = fp.get(n - 1);
+                continue;
+            }
+            int lo = 0;
+            int hi = n - 1;
+            while (lo < hi - 1) {
+                int mid = (lo + hi) >>> 1;
+                if (xp.get(mid) <= x) {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            double x0 = xp.get(lo);
+            double x1 = xp.get(lo + 1);
+            double t = (x - x0) / (x1 - x0);
+            out[q] = (1.0 - t) * fp.get(lo) + t * fp.get(lo + 1);
+        }
+        return vector(out);
+    }
+
+    /**
+     * 二维网格（默认 {@code indexing='xy'}，与 NumPy {@code meshgrid} 一致）/ Coordinate grids
+     */
+    public static Tuple2<IMatrix<Double>, IMatrix<Double>> meshgrid(IVector<Double> x, IVector<Double> y) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(y, "y");
+        int nx = x.length();
+        int ny = y.length();
+        double[][] xd = new double[ny][nx];
+        double[][] yd = new double[ny][nx];
+        for (int i = 0; i < ny; i++) {
+            for (int j = 0; j < nx; j++) {
+                xd[i][j] = x.get(j);
+                yd[i][j] = y.get(i);
+            }
+        }
+        return new Tuple2<>(matrix(xd), matrix(yd));
+    }
+
+    /**
+     * 沿轴堆叠矩阵（axis=0 为垂直拼接，axis=1 为水平拼接）/ Stack like {@code numpy.stack} for 2D
+     */
+    @SafeVarargs
+    public static <T extends Number> IMatrix<T> stack(int axis, IMatrix<T>... matrices) {
+        if (matrices == null || matrices.length == 0) {
+            throw new IllegalArgumentException("至少一个矩阵 / At least one matrix required");
+        }
+        if (axis == 0) {
+            IMatrix<T> acc = matrices[0];
+            for (int i = 1; i < matrices.length; i++) {
+                acc = acc.vstack(matrices[i]);
+            }
+            return acc;
+        }
+        if (axis == 1) {
+            IMatrix<T> acc = matrices[0];
+            for (int i = 1; i < matrices.length; i++) {
+                acc = acc.hstack(matrices[i]);
+            }
+            return acc;
+        }
+        throw new IllegalArgumentException("axis 仅支持 0 或 1 / axis must be 0 or 1");
+    }
+
+    /**
+     * 链式矩阵乘（对齐 {@code numpy.linalg.multi_dot} 从左到右顺序）/ Matrix chain product
+     */
+    @SafeVarargs
+    public static IMatrix<Double> multiDot(IMatrix<Double>... matrices) {
+        if (matrices == null || matrices.length == 0) {
+            throw new IllegalArgumentException("至少一个矩阵 / At least one matrix required");
+        }
+        IMatrix<Double> r = matrices[0];
+        for (int i = 1; i < matrices.length; i++) {
+            r = r.mmul(matrices[i]);
+        }
+        return r;
     }
 
 }

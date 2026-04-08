@@ -92,8 +92,8 @@ public class AudioFormatConversionExample {
 import core.audio.com.yishape.lab.AudioData;
 import audio.com.yishape.lab.Audios;
 import analysis.audio.com.yishape.lab.IAudioAnalyzer;
-import linalg.math.com.yishape.lab.IVector;
-import util.com.yishape.lab.Tuple2;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.util.Tuple2;
 
 public class AudioAnalysisExample {
     public static void main(String[] args) {
@@ -151,8 +151,8 @@ import core.audio.com.yishape.lab.AudioData;
 import audio.com.yishape.lab.Audios;
 import feature.audio.com.yishape.lab.IAudioFeatureExtractor;
 import feature.audio.com.yishape.lab.AudioFeatureResult;
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
 
 public class AudioFeatureExtractionExample {
     public static void main(String[] args) {
@@ -319,7 +319,7 @@ public class AudioEnhancementExample {
 ```java
 import core.audio.com.yishape.lab.AudioData;
 import audio.com.yishape.lab.AudioPlots;
-import viz.math.com.yishape.lab.IPlot;
+import com.yishape.lab.math.viz.IPlot;
 
 import java.util.List;
 
@@ -378,7 +378,7 @@ public class AudioVisualizationExample {
 import core.audio.com.yishape.lab.AudioData;
 import audio.com.yishape.lab.AudioPlots;
 import audio.com.yishape.lab.Audios;
-import viz.math.com.yishape.lab.IPlot;
+import com.yishape.lab.math.viz.IPlot;
 
 public class AudioComparisonVisualizationExample {
     public static void main(String[] args) {
@@ -423,8 +423,8 @@ public class AudioComparisonVisualizationExample {
 import embedding.audio.com.yishape.lab.IVectorEmbedding;
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioUtil;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -541,8 +541,8 @@ public class IVectorTrainingExample {
 import embedding.audio.com.yishape.lab.OnlineIVectorEmbedding;
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioUtil;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 
 import java.io.File;
 import java.util.List;
@@ -701,7 +701,7 @@ public class RealAudioEmbeddingExample {
 
 import core.audio.com.yishape.lab.AudioData;
 import audio.com.yishape.lab.Audios;
-import linalg.math.com.yishape.lab.IVector;
+import com.yishape.lab.math.linalg.IVector;
 
 public class AudioSegmentationExample {
     public static void main(String[] args) {
@@ -927,7 +927,7 @@ import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioStatistics;
 import audio.com.yishape.lab.Audios;
 import audio.com.yishape.lab.AudioPlots;
-import viz.math.com.yishape.lab.IPlot;
+import com.yishape.lab.math.viz.IPlot;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;

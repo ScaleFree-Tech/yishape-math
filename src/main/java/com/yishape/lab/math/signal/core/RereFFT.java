@@ -1,10 +1,19 @@
 package com.yishape.lab.math.signal.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  *
  * @author lteb2
  */
 public class RereFFT {
+
+    private static final Logger log = LoggerFactory.getLogger(RereFFT.class);
+
     
     // 快速傅里叶变换
     public static Complex[] fft(Complex[] x) {
@@ -66,6 +75,66 @@ public class RereFFT {
         }
         
         return result;
+    }
+
+    /**
+     * 实数输入的离散傅里叶变换（半谱）：内部补零至 2 的幂后做复 FFT，返回前 {@code N/2+1} 个频点。
+     *
+     * @param x 实数序列（任意长度）
+     * @return 长度 {@code nextPowerOfTwo(x.length)/2 + 1} 的复频谱
+     */
+    public static Complex[] rfft(double[] x) {
+        if (x.length == 0) {
+            throw new IllegalArgumentException("空序列 / empty sequence");
+        }
+        int n = nextPowerOfTwo(x.length);
+        Complex[] cx = new Complex[n];
+        for (int i = 0; i < x.length; i++) {
+            cx[i] = new Complex(x[i], 0);
+        }
+        for (int i = x.length; i < n; i++) {
+            cx[i] = new Complex(0, 0);
+        }
+        Complex[] full = fft(cx);
+        return Arrays.copyOf(full, n / 2 + 1);
+    }
+
+    /**
+     * {@link #rfft(double[])} 的逆变换：由半谱还原指定长度的实数序列。
+     *
+     * @param y 长度须为 {@code nextPowerOfTwo(n)/2 + 1}
+     * @param n 输出实数长度
+     */
+    public static double[] irfft(Complex[] y, int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n > 0");
+        }
+        Objects.requireNonNull(y, "y");
+        int nfft = nextPowerOfTwo(n);
+        if (y.length != nfft / 2 + 1) {
+            throw new IllegalArgumentException(
+                    "频谱长度须为 nextPowerOfTwo(n)/2+1 / spectrum length must be nextPowerOfTwo(n)/2+1");
+        }
+        Complex[] full = new Complex[nfft];
+        full[0] = y[0];
+        for (int k = 1; k < nfft / 2; k++) {
+            full[k] = y[k];
+            full[nfft - k] = y[k].conjugate();
+        }
+        full[nfft / 2] = y[nfft / 2];
+        Complex[] time = ifft(full);
+        double[] out = new double[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = time[i].real;
+        }
+        return out;
+    }
+
+    /**
+     * 不小于 n 的最小 2 的幂（用于 FFT 补零）。
+     */
+    public static int nextPowerOfTwoLength(int n) {
+        return nextPowerOfTwo(n);
     }
 
     /**
@@ -184,27 +253,27 @@ public class RereFFT {
             x[i] = new Complex(signal[i], 0);
         }
         
-        System.out.println("原始信号:");
+        log.debug("原始信号:");
         for (int i = 0; i < N; i++) {
-            System.out.printf("x[%d] = %.3f\n", i, signal[i]);
+            log.debug(String.format("x[%d] = %.3f\n", i, signal[i]));
         }
         
         // 执行FFT
         Complex[] spectrum = fft(x);
         
-        System.out.println("\n频域表示 (FFT结果):");
+        log.debug("\n频域表示 (FFT结果):");
         for (int i = 0; i < N; i++) {
-            System.out.printf("X[%d] = %s, 幅度: %.3f\n", 
-                i, spectrum[i], spectrum[i].magnitude());
+            log.debug(String.format("X[%d] = %s, 幅度: %.3f\n",
+                i, spectrum[i], spectrum[i].magnitude()));
         }
         
         // 执行逆FFT
         Complex[] reconstructed = ifft(spectrum);
         
-        System.out.println("\n重建的信号 (IFFT结果):");
+        log.debug("\n重建的信号 (IFFT结果):");
         for (int i = 0; i < N; i++) {
-            System.out.printf("x[%d] = %.3f (原始: %.3f)\n", 
-                i, reconstructed[i].real, signal[i]);
+            log.debug(String.format("x[%d] = %.3f (原始: %.3f)\n",
+                i, reconstructed[i].real, signal[i]));
         }
     }
 }

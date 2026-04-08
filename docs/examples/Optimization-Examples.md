@@ -9,11 +9,11 @@
 ### L-BFGS优化器基础使用 / Basic L-BFGS Optimizer Usage
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class BasicLBFGSExample {
@@ -87,11 +87,11 @@ public class BasicLBFGSExample {
 ### 在线SGD优化器使用 / Online SGD Optimizer Usage
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereOnlineSGD;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereOnlineSGD;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 
 public class OnlineSGDExample {
     public static void main(String[] args) {
@@ -188,11 +188,11 @@ public class OnlineSGDExample {
 ### 在线Adam优化器使用 / Online Adam Optimizer Usage
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereOnlineAdam;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereOnlineAdam;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 
 public class OnlineAdamExample {
     public static void main(String[] args) {
@@ -290,11 +290,11 @@ public class OnlineAdamExample {
 ### 多峰函数优化 / Multi-modal Function Optimization
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class MultiModalOptimizationExample {
@@ -394,12 +394,12 @@ public class MultiModalOptimizationExample {
 ### 拉格朗日乘数法约束优化 / Lagrange Multiplier Constrained Optimization
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import constraint.optimize.math.com.yishape.lab.LagrangeMultiplierSolver;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.constraint.LagrangeMultiplierSolver;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class LagrangeMultiplierExample {
@@ -482,9 +482,9 @@ public class LagrangeMultiplierExample {
 #### 单纯形法示例 / Simplex Method Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.optimize.linpg.SimplexLinProgSolver;
 
 public class SimplexLinProgExample {
@@ -530,10 +530,10 @@ public class SimplexLinProgExample {
 #### 内点法示例 / Interior Point Method Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import linpg.optimize.math.com.yishape.lab.InteriorPointLinProgSolver;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.linpg.InteriorPointLinProgSolver;
 
 public class InteriorPointLinProgExample {
     public static void main(String[] args) {
@@ -582,10 +582,10 @@ public class InteriorPointLinProgExample {
 #### 纯整数规划示例 / Pure Integer Programming Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import linpg.optimize.math.com.yishape.lab.RereIntegerProg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.linpg.RereIntegerProg;
 import com.yishape.lab.math.optimize.linpg.SimplexLinProgSolver;
 import com.yishape.lab.optimize.OptResult;
 
@@ -655,11 +655,11 @@ public class PureIntegerProgrammingExample {
 #### 混合整数规划示例 / Mixed Integer Programming Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import linpg.optimize.math.com.yishape.lab.RereIntegerProg;
-import linpg.optimize.math.com.yishape.lab.InteriorPointLinProgSolver;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.linpg.RereIntegerProg;
+import com.yishape.lab.math.optimize.linpg.InteriorPointLinProgSolver;
 import com.yishape.lab.optimize.OptResult;
 
 public class MixedIntegerProgrammingExample {
@@ -735,10 +735,10 @@ public class MixedIntegerProgrammingExample {
 #### 0-1整数规划示例 / Binary Integer Programming Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import linpg.optimize.math.com.yishape.lab.RereIntegerProg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.linpg.RereIntegerProg;
 import com.yishape.lab.math.optimize.linpg.SimplexLinProgSolver;
 import com.yishape.lab.optimize.OptResult;
 
@@ -838,12 +838,12 @@ public class ComplexIntegerProgrammingExample {
 #### 求解器性能比较示例 / Solver Performance Comparison Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import linpg.optimize.math.com.yishape.lab.RereIntegerProg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.linpg.RereIntegerProg;
 import com.yishape.lab.math.optimize.linpg.SimplexLinProgSolver;
-import linpg.optimize.math.com.yishape.lab.InteriorPointLinProgSolver;
+import com.yishape.lab.math.optimize.linpg.InteriorPointLinProgSolver;
 import com.yishape.lab.optimize.OptResult;
 
 public class SolverPerformanceComparisonExample {
@@ -927,12 +927,12 @@ public class SolverPerformanceComparisonExample {
 ### 共轭梯度法示例 / Conjugate Gradient Method Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereConjugateGradient;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereConjugateGradient;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class ConjugateGradientExample {
@@ -1012,11 +1012,11 @@ public class ConjugateGradientExample {
 ### DFP算法示例 / DFP Algorithm Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereDFP;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereDFP;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class DFPExample {
@@ -1086,11 +1086,11 @@ public class DFPExample {
 ### 最速下降法示例 / Steepest Descent Method Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereSteepestDescent;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereSteepestDescent;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class SteepestDescentExample {
@@ -1163,11 +1163,11 @@ public class SteepestDescentExample {
 #### 多目标优化示例 / Multi-objective Optimization Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class MultiObjectiveOptimizationExample {
@@ -1237,11 +1237,11 @@ public class MultiObjectiveOptimizationExample {
 #### 鲁棒优化示例 / Robust Optimization Example
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 import java.util.Random;
@@ -1342,11 +1342,11 @@ public class RobustOptimizationExample {
 ### 约束优化问题 / Constrained Optimization Problems
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class ConstrainedOptimizationExample {
@@ -1453,12 +1453,12 @@ public class ConstrainedOptimizationExample {
 ### 大规模优化问题 / Large-scale Optimization Problems
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.IMatrix;
-import linalg.math.com.yishape.lab.Linalg;
-import newton.optimize.math.com.yishape.lab.RereLBFGS;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.newton.RereLBFGS;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.optimize.OptResult;
 
 public class LargeScaleOptimizationExample {
@@ -1555,11 +1555,11 @@ public class LargeScaleOptimizationExample {
 ### Armijo线搜索 / Armijo Line Search
 
 ```java
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
-import optimize.math.com.yishape.lab.RereLineSearch;
-import optimize.math.com.yishape.lab.IObjectiveFunction;
-import optimize.math.com.yishape.lab.IGradientFunction;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.RereLineSearch;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IGradientFunction;
 
 public class LineSearchExample {
     public static void main(String[] args) {

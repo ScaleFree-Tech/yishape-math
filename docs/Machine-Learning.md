@@ -119,6 +119,20 @@ public enum RegularizationType {
 }
 ```
 
+### 正则化参数与 API（`RereLinearRegression`）/ Regularization parameters & API
+
+与源码一致的主要约定如下：
+
+| 方式 | 含义 |
+|------|------|
+| `setRegularization(double lambda1, double lambda2)` | 同时设置 λ₁、λ₂，并**自动推断** `RegularizationType`：二者都 &gt;0 → ElasticNet；仅 λ₁&gt;0 → L1；仅 λ₂&gt;0 → L2；否则 → NONE。 |
+| `setRegularization(RegularizationType type, double lambda1, double lambda2)` | **显式**指定类型与系数；须满足校验（如 L2 要求 λ₂&gt;0，ElasticNet 要求 λ₁、λ₂ 均 &gt;0）。 |
+| `setLambda1` / `setLambda2` | 只改一个系数，会按当前两系数**重新推断**类型。 |
+
+查询：`getRegularizationType()`、`getLambda1()`、`getLambda2()`、`getRegularizationDescription()`。
+
+**实现细节（阅读论文/对比 sklearn 时请注意）**：目标函数里 L2 项为 `(λ₂/2)·‖w‖²`（见源码）；这里的 **w 为增广权重向量**（`includeBias == true` 时最后一维对应截距）。因此 **截距与特征权重一同进入 L1/L2/ElasticNet**，若需要「不惩罚截距」，需在业务上关闭 `includeBias` 并自行处理常数项，或后续扩展实现。
+
 ### IRegression 接口 / IRegression Interface
 
 ```java
@@ -144,13 +158,7 @@ public interface IRegression {
 
 ```java
 public class RegressionResult {
-    private IVector weights;      // 权重向量 / Weight vector
-    private float loss;           // 损失值 / Loss value
-    private float r2Score;        // R²分数 / R² score
-    private float mse;            // 均方误差 / Mean squared error
-    private float mae;            // 平均绝对误差 / Mean absolute error
-    
-    // getters and setters
+    // 实现以源码为准：getWeights、getBias、getLoss、getR2Score（训练集 R²）
 }
 ```
 
@@ -243,9 +251,8 @@ Where ∇R(w) is the gradient of the regularization term:
 // 创建线性回归模型 / Create linear regression model
 RereLinearRegression lr = new RereLinearRegression();
 
-// 配置正则化 / Configure regularization
-lr.setRegularizationType(RegularizationType.L2);
-lr.setLambda2(0.1f);
+// 配置正则化：推荐两参数形式，自动推断 L1/L2/ElasticNet/NONE（无 setRegularizationType）
+lr.setRegularization(0.0, 0.1); // 仅 L2（Ridge），λ₂=0.1
 
 // 配置偏置项 / Configure bias term
 lr.setIncludeBias(true);
@@ -265,21 +272,20 @@ lr.setOptimizer(new RereLBFGS());
 ### 3. 多种正则化选项 / Multiple Regularization Options
 
 ```java
-// 无正则化 / No regularization
-lr.setRegularizationType(RegularizationType.NONE);
+// 无正则化：两系数均为 0 / No regularization
+lr.setRegularization(0.0, 0.0);
 
-// L1正则化（Lasso）/ L1 regularization (Lasso)
-lr.setRegularizationType(RegularizationType.L1);
-lr.setLambda1(0.01f);
+// L1（Lasso）：仅 λ₁>0 / L1 only
+lr.setRegularization(0.01, 0.0);
 
-// L2正则化（Ridge）/ L2 regularization (Ridge)
-lr.setRegularizationType(RegularizationType.L2);
-lr.setLambda2(0.1f);
+// L2（Ridge）：仅 λ₂>0 / L2 only
+lr.setRegularization(0.0, 0.1);
 
-// ElasticNet正则化 / ElasticNet regularization
-lr.setRegularizationType(RegularizationType.ELASTIC_NET);
-lr.setLambda1(0.01f);
-lr.setLambda2(0.1f);
+// ElasticNet：λ₁>0 且 λ₂>0
+lr.setRegularization(0.01, 0.1);
+
+// 或显式指定类型（须与系数一致）/ Or set type explicitly
+lr.setRegularization(RegularizationType.L2, 0.0, 0.1);
 ```
 
 ## 使用示例 / Usage Examples
@@ -303,14 +309,14 @@ IVector labels = IVector.of(labelData);
 RereLinearRegression lr = new RereLinearRegression();
 RegressionResult result = lr.fit(features, labels);
 
-// 获取结果 / Get results
+// 获取结果 / Get results（训练集 R² 在 result.getR2Score()，无需再传训练特征）
 IVector weights = result.getWeights();
-float loss = result.getLoss();
-float r2Score = result.getR2Score();
+double loss = result.getLoss();
+double r2 = result.getR2Score();
 
         System.out.println("权重: " + weights); // Weights
         System.out.println("损失: " + loss); // Loss
-        System.out.println("R²分数: " + r2Score); // R² score
+        System.out.println("R²: " + r2); // Training R²
 
 // 预测新样本 / Predict new sample
 IVector newFeatures = IVector.of(new float[]{2, 3, 4});
@@ -321,35 +327,30 @@ System.out.println("预测值: " + prediction); // Prediction
 ### 示例2：带正则化的线性回归 / Example 2: Linear Regression with Regularization
 
 ```java
-// 创建带L2正则化的模型 / Create model with L2 regularization
+// 创建带 L2（Ridge）的模型：setRegularization(λ₁, λ₂)，此处为仅 L2
 RereLinearRegression lr = new RereLinearRegression();
-lr.setRegularizationType(RegularizationType.L2);
-lr.setLambda2(0.1f);
+lr.setRegularization(0.0, 0.1);
 
 // 训练模型 / Train model
 RegressionResult result = lr.fit(features, labels);
 
 // 查看正则化效果 / View regularization effects
-        System.out.println("L2正则化系数: " + lr.getLambda2()); // L2 regularization coefficient
-        System.out.println("最终损失: " + result.getLoss()); // Final loss
+        System.out.println("正则: " + lr.getRegularizationDescription());
+        System.out.println("λ₂: " + lr.getLambda2());
+        System.out.println("最终损失: " + result.getLoss());
 ```
 
 ### 示例3：ElasticNet正则化 / Example 3: ElasticNet Regularization
 
 ```java
-// 创建ElasticNet正则化模型 / Create ElasticNet regularization model
 RereLinearRegression lr = new RereLinearRegression();
-lr.setRegularizationType(RegularizationType.ELASTIC_NET);
-lr.setLambda1(0.01f);  // L1正则化系数 / L1 regularization coefficient
-lr.setLambda2(0.1f);   // L2正则化系数 / L2 regularization coefficient
+lr.setRegularization(0.01, 0.1); // λ₁>0 且 λ₂>0 → ElasticNet
 
-// 训练模型 / Train model
 RegressionResult result = lr.fit(features, labels);
 
-// 查看结果 / View results
-        System.out.println("L1正则化系数: " + lr.getLambda1()); // L1 regularization coefficient
-        System.out.println("L2正则化系数: " + lr.getLambda2()); // L2 regularization coefficient
-        System.out.println("最终损失: " + result.getLoss()); // Final loss
+        System.out.println("正则: " + lr.getRegularizationDescription());
+        System.out.println("λ₁: " + lr.getLambda1() + ", λ₂: " + lr.getLambda2());
+        System.out.println("最终损失: " + result.getLoss());
 ```
 
 ### 示例4：模型评估 / Example 4: Model Evaluation
@@ -359,23 +360,9 @@ RegressionResult result = lr.fit(features, labels);
 RereLinearRegression lr = new RereLinearRegression();
 RegressionResult result = lr.fit(features, labels);
 
-// 评估指标 / Evaluation metrics
-float mse = result.getMse();           // 均方误差 / Mean squared error
-float mae = result.getMae();           // 平均绝对误差 / Mean absolute error
-float r2Score = result.getR2Score();   // R²分数 / R² score
-
-System.out.println("均方误差 (MSE): " + mse);
-System.out.println("平均绝对误差 (MAE): " + mae);
-System.out.println("R²分数: " + r2Score);
-
-// 解释R²分数 / Interpret R² score
-if (r2Score > 0.8) {
-    System.out.println("模型拟合很好 / Model fits well");
-} else if (r2Score > 0.6) {
-    System.out.println("模型拟合一般 / Model fits moderately");
-} else {
-    System.out.println("模型拟合较差 / Model fits poorly");
-}
+System.out.println("训练损失: " + result.getLoss());
+System.out.println("训练集 R²: " + result.getR2Score());
+// 验证集 R²：lr.r2ScoreOn(X_val, y_val)（模型已记住训练时的特征维数）
 ```
 
 ### 示例5：特征重要性分析 / Example 5: Feature Importance Analysis
@@ -448,7 +435,7 @@ mae /= labels.length();
 
 System.out.println("均方误差 (MSE): " + mse);
 System.out.println("平均绝对误差 (MAE): " + mae);
-System.out.println("R²分数: " + result.getR2Score());
+// R² 等可在此基于 predictions 与 labels 进一步计算
 ```
 
 ## 性能特性 / Performance Features
@@ -517,40 +504,42 @@ The `RereLogisticRegression` class implements a unified logistic regression algo
 
 主要的逻辑回归实现类，实现了以下接口：
 The main logistic regression implementation class that implements the following interfaces:
-- `IClassification`: 分类模型接口 / Classification model interface
+- `IClassifier`: 分类模型接口（字符串标签、批量与概率预测）/ Classification API with string labels and batch/probability prediction
 - `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
 - `IObjectiveFunction`: 目标函数接口 / Objective function interface
+- `ISerializableModel`: 可序列化模型标记 / Serializable model marker
 
-### IClassification 接口 / IClassification Interface
+### 正则化参数与 API（`RereLogisticRegression`）/ Regularization (logistic)
+
+`setRegularization(λ₁, λ₂)`、`setLambda1`、`setLambda2` 的**类型推断与参数校验**与 `RereLinearRegression` **一致**（规则见上文「正则化参数与 API（RereLinearRegression）」表：双正 → ElasticNet，仅 λ₁&gt;0 → L1，仅 λ₂&gt;0 → L2，否则 NONE；无效组合会抛 `IllegalArgumentException`）。
+
+**与线性回归的差异仅在正则作用对象**：逻辑回归中正则施加在**权重矩阵 `W` 上，不包含偏置 `b`**（见源码 `computeRegularizationTerm`）。L2 为 (λ₂/2)·‖W‖_F²；L1 为 λ₁·Σ|W|；ElasticNet 为两者之和。
+
+逻辑回归**无** `setRegularization(RegularizationType, λ₁, λ₂)` 重载；若需显式类型，可先 `setRegularization(λ₁, λ₂)` 再核对 `getRegularizationDescription()`。
+
+### IClassifier 接口 / IClassifier Interface
+
+推荐使用 `com.yishape.lab.math.ml.ML` 的工厂方法（如 `ML.logisticRegression(lambda1, lambda2)`）获得配置好的 `IClassifier` 实例。
 
 ```java
-public interface IClassification {
-    /**
-     * 训练分类模型 / Train classification model
-     * @param features 特征矩阵 / Feature matrix
-     * @param labels 标签数组 / Label array
-     * @return 分类结果 / Classification result
-     */
-    ClassificationResult fit(IMatrix features, String[] labels);
-    
-    /**
-     * 预测新样本 / Predict new sample
-     * @param features 特征向量 / Feature vector
-     * @return 预测类别 / Predicted class
-     */
-    String predict(IVector features);
+public interface IClassifier extends ISerializableModel {
+    ClassificationResult fit(IMatrix feature, String[] labels);
+    String predict(IVector x);
+    java.util.Map<String, Double> predictProb(IVector x);
+    String[] predictBatch(IMatrix features);
+    BatchPredictionResult predictBatchWithProbs(IMatrix features);
+    boolean isTrained();
+    ClassificationMetrics getMetrics();
+    void setMetrics(ClassificationMetrics metrics);
 }
 ```
 
 ### LogisticRegressionResult 类 / LogisticRegressionResult Class
 
 ```java
+// 实现以源码为准：二分类时 weights 为特征维向量；多分类时为权重矩阵按行展平后的向量
 public class LogisticRegressionResult extends ClassificationResult {
-    private IVector weights;      // 权重向量 / Weight vector
-    private IVector bias;         // 偏置向量 / Bias vector
-    private float loss;           // 损失值 / Loss value
-    
-    // getters and setters
+    // getWeights(), getBias(), getLoss() 等见 ClassificationResult / LogisticRegressionResult 源码
 }
 ```
 
@@ -698,18 +687,20 @@ lr.setRegularization(0.01f, 0.1f); // L1=0.01, L2=0.1
 
 ### 3. 多种正则化选项 / Multiple Regularization Options
 
+（推断规则与线性回归相同，见上文「正则化参数与 API（RereLogisticRegression）」。）
+
 ```java
 // 无正则化 / No regularization
-lr.setRegularization(0.0f, 0.0f);
+lr.setRegularization(0.0, 0.0);
 
-// L1正则化（Lasso）/ L1 regularization (Lasso)
-lr.setLambda1(0.01f);
+// 仅 L2（Ridge）
+lr.setRegularization(0.0, 0.1);
 
-// L2正则化（Ridge）/ L2 regularization (Ridge)
-lr.setLambda2(0.1f);
+// 仅 L1（Lasso）
+lr.setRegularization(0.05, 0.0);
 
-// ElasticNet正则化 / ElasticNet regularization
-lr.setRegularization(0.01f, 0.1f);
+// ElasticNet（λ₁ 与 λ₂ 均 &gt; 0）
+lr.setRegularization(0.01, 0.1);
 ```
 
 ## 使用示例 / Usage Examples
@@ -717,10 +708,10 @@ lr.setRegularization(0.01f, 0.1f);
 ### 示例1：二分类逻辑回归 / Example 1: Binary Classification
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
-import cls.ml.math.com.yishape.lab.RereLogisticRegression;
-import cls.ml.math.com.yishape.lab.LogisticRegressionResult;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.ml.cls.RereLogisticRegression;
+import com.yishape.lab.math.ml.cls.LogisticRegressionResult;
 
 public class BinaryClassificationExample {
     public static void main(String[] args) {
@@ -741,7 +732,7 @@ public class BinaryClassificationExample {
         // 获取结果 / Get results
         IVector weights = result.getWeights();
         IVector bias = result.getBias();
-        float loss = result.getLoss();
+        double loss = result.getLoss();
 
         System.out.println("权重: " + weights); // Weights
         System.out.println("偏置: " + bias); // Bias
@@ -752,8 +743,8 @@ public class BinaryClassificationExample {
         String prediction = lr.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
 
-        // 预测概率 / Predict probability
-        float probability = lr.predictProbability(newFeatures);
+        // 预测概率（二分类）/ Predict probability (binary)
+        double probability = lr.predictProbability(newFeatures);
         System.out.println("正类概率: " + probability); // Positive class probability
     }
 }
@@ -762,6 +753,8 @@ public class BinaryClassificationExample {
 ### 示例2：多分类逻辑回归 / Example 2: Multiclass Classification
 
 ```java
+import java.util.Arrays;
+
 public class MulticlassClassificationExample {
     public static void main(String[] args) {
         // 准备训练数据 / Prepare training data
@@ -790,7 +783,7 @@ public class MulticlassClassificationExample {
         System.out.println("预测类别: " + prediction); // Predicted class
         
         // 预测所有类别的概率 / Predict probabilities for all classes
-        float[] probabilities = lr.predictProbabilities(newFeatures);
+        double[] probabilities = lr.predictProbabilities(newFeatures);
         System.out.println("各类别概率: " + Arrays.toString(probabilities)); // Class probabilities
     }
 }
@@ -801,16 +794,13 @@ public class MulticlassClassificationExample {
 ```java
 public class RegularizedLogisticRegressionExample {
     public static void main(String[] args) {
-        // 创建带正则化的模型 / Create model with regularization
         RereLogisticRegression lr = new RereLogisticRegression();
-        lr.setRegularization(0.01f, 0.1f); // L1=0.01, L2=0.1
+        lr.setRegularization(0.01, 0.1); // ElasticNet（λ₁、λ₂ 均 &gt;0）
         
-        // 训练模型 / Train model
         LogisticRegressionResult result = lr.fit(features, labels);
         
-        // 查看正则化效果 / View regularization effects
-        System.out.println("正则化类型: " + lr.getRegularizationDescription()); // Regularization type
-        System.out.println("最终损失: " + result.getLoss()); // Final loss
+        System.out.println(lr.getRegularizationDescription());
+        System.out.println("最终损失: " + result.getLoss());
     }
 }
 ```
@@ -979,7 +969,7 @@ The `RereRandomForest` class implements the Random Forest algorithm based on Boo
 
 主要的随机森林实现类，实现了以下接口：
 The main Random Forest implementation class that implements the following interfaces:
-- `IClassification`: 分类模型接口 / Classification model interface
+- `IClassifier`: 分类模型接口 / Classification model interface
 - `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
 - `IObjectiveFunction`: 目标函数接口 / Objective function interface
 
@@ -1160,7 +1150,7 @@ The `RereXGboost` class implements the XGBoost (eXtreme Gradient Boosting) algor
 
 主要的XGBoost实现类，实现了以下接口：
 The main XGBoost implementation class that implements the following interfaces:
-- `IClassification`: 分类模型接口 / Classification model interface
+- `IClassifier`: 分类模型接口 / Classification model interface
 - `IGradientFunction`: 梯度计算接口 / Gradient calculation interface
 - `IObjectiveFunction`: 目标函数接口 / Objective function interface
 
@@ -1355,7 +1345,7 @@ The `EnsembleClassifier` class combines multiple classification algorithms for e
 
 主要的集成分类器实现类，实现了以下接口：
 The main ensemble classifier implementation class that implements the following interfaces:
-- `IClassification`: 分类模型接口 / Classification model interface
+- `IClassifier`: 分类模型接口 / Classification model interface
 
 ### 集成策略 / Ensemble Strategies
 

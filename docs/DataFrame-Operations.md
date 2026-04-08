@@ -33,13 +33,25 @@ The `DataFrame` class provides functionality similar to pandas DataFrame for han
 #### 构造函数 / Constructors
 
 ```java
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 // 默认构造函数 / Default constructor
 DataFrame df1 = new DataFrame();
 
-// 带列列表的构造函数 / Constructor with column list
+// 带列列表的构造函数 / Constructor with column list（Column 仅有默认构造，需 setName/setColumnType/setData）
 List<Column> columns = new ArrayList<>();
-columns.add(new Column("name", ColumnType.String, Arrays.asList("Alice", "Bob")));
-columns.add(new Column("age", ColumnType.Float, Arrays.asList(25.0f, 30.0f)));
+Column nameCol = new Column();
+nameCol.setName("name");
+nameCol.setColumnType(ColumnType.String);
+nameCol.setData(Arrays.asList("Alice", "Bob"));
+columns.add(nameCol);
+Column ageCol = new Column();
+ageCol.setName("age");
+ageCol.setColumnType(ColumnType.Numeric);
+ageCol.setData(Arrays.asList(25.0f, 30.0f));
+columns.add(ageCol);
 DataFrame df2 = new DataFrame(columns);
 ```
 
@@ -178,10 +190,10 @@ df.setColumns(newColumns);
 #### 创建和操作DataFrame / Creating and Manipulating DataFrame
 
 ```java
-import com.yishape.lab.data.DataFrame;
-import com.yishape.lab.data.Column;
-import com.yishape.lab.data.ColumnType;
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.data.DataFrame;
+import com.yishape.lab.math.data.Column;
+import com.yishape.lab.math.data.ColumnType;
+import com.yishape.lab.math.linalg.IMatrix;
 import java.util.Arrays;
 import java.util.List;
 
@@ -199,13 +211,13 @@ public class DataFrameBasicExample {
         
         Column ageColumn = new Column();
         ageColumn.setName("age");
-        ageColumn.setColumnType(ColumnType.Float);
+        ageColumn.setColumnType(ColumnType.Numeric);
         ageColumn.setData(Arrays.asList(25.0f, 30.0f, 35.0f));
         df.addColumn(ageColumn);
         
         Column salaryColumn = new Column();
         salaryColumn.setName("salary");
-        salaryColumn.setColumnType(ColumnType.Float);
+        salaryColumn.setColumnType(ColumnType.Numeric);
         salaryColumn.setData(Arrays.asList(50000.0f, 60000.0f, 70000.0f));
         df.addColumn(salaryColumn);
         
@@ -221,7 +233,7 @@ public class DataFrameBasicExample {
 #### 从CSV文件读取 / Reading from CSV File
 
 ```java
-import com.yishape.lab.data.DataFrame;
+import com.yishape.lab.math.data.DataFrame;
 import java.io.IOException;
 
 public class CSVReadingExample {
@@ -354,7 +366,7 @@ public class DataAnalysisExample {
         // 数值型列的统计 / Statistics for numeric columns
         for (int i = 0; i < df.getColumnCount(); i++) {
             Column col = df.get(i);
-            if (col.getColumnType() == ColumnType.Float) {
+            if (col.getColumnType() == ColumnType.Numeric) {
                 System.out.println("\n列 " + col.getName() + " 的统计信息:");
                 
                 // 转换为向量进行统计 / Convert to vector for statistics

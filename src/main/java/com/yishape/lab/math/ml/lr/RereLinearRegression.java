@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.lr;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
@@ -51,6 +54,9 @@ import java.io.*;
  * @since 1.0
  */
 public class RereLinearRegression implements IRegression, IGradientFunction, IObjectiveFunction, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereLinearRegression.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -329,6 +335,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         }
         
         result.setLoss(finalLoss);
+        result.setR2Score(computeR2Score(feature, labels));
         
         return result;
     }
@@ -366,6 +373,64 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         double prediction = (double)this.trainedWeights.innerProduct(augmentedX);
         
         return prediction;
+    }
+
+    /**
+     * 决定系数 R²（{@code 1 - SS_res/SS_tot}），在给定特征与标签上计算。
+     * <p>
+     * 训练集 R² 已在 {@link RegressionResult#getR2Score()} 中给出，无需再传训练数据。
+     * 本方法用于<strong>验证集、测试集</strong>等另一组 (X, y) 的 R²。
+     * </p>
+     *
+     * @param features 特征矩阵（列数须与训练时一致）
+     * @param labels 真实标签
+     * @return R²；若标签无方差且残差为 0 返回 1.0，若常数标签但残差非 0 返回 0.0
+     * @throws IllegalStateException 若尚未训练
+     */
+    public double r2ScoreOn(IMatrix features, IVector labels) {
+        return computeR2Score(features, labels);
+    }
+
+    private double computeR2Score(IMatrix features, IVector labels) {
+        if (this.trainedWeights == null) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+        if (features == null || labels == null) {
+            throw new IllegalArgumentException("特征矩阵和标签向量不能为null");
+        }
+        int n = features.getRowNum();
+        if (n != labels.length()) {
+            throw new IllegalArgumentException("样本数量不匹配：特征矩阵行数(" + n
+                    + ") != 标签向量长度(" + labels.length() + ")");
+        }
+        if (n == 0) {
+            throw new IllegalArgumentException("样本数量不能为0");
+        }
+        if (features.getColNum() != this.featureCount) {
+            throw new IllegalArgumentException("特征维度不匹配：输入列数(" + features.getColNum()
+                    + ") != 训练时特征数(" + this.featureCount + ")");
+        }
+        double meanSum = 0.0;
+        for (int i = 0; i < n; i++) {
+            meanSum += labels.get(i).doubleValue();
+        }
+        double yMean = meanSum / n;
+        double ssTot = 0.0;
+        for (int i = 0; i < n; i++) {
+            double d = labels.get(i).doubleValue() - yMean;
+            ssTot += d * d;
+        }
+        double ssRes = 0.0;
+        for (int i = 0; i < n; i++) {
+            double yHat = predict(features.getRow(i));
+            double e = labels.get(i).doubleValue() - yHat;
+            ssRes += e * e;
+        }
+        final double eps = 1e-15;
+        if (ssTot < eps) {
+            return ssRes < eps ? 1.0 : 0.0;
+        }
+        return 1.0 - ssRes / ssTot;
     }
 
     @Override
@@ -824,7 +889,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

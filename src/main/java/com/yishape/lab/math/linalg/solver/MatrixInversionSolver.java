@@ -1,5 +1,8 @@
 package com.yishape.lab.math.linalg.solver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IDoubleMatrix;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -84,6 +87,9 @@ import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
  * @see IDecompositionSolver For individual solver interfaces
  */
 public class MatrixInversionSolver {
+
+    private static final Logger log = LoggerFactory.getLogger(MatrixInversionSolver.class);
+
     
     /** Default epsilon for numerical comparisons. */
     private static final double DEFAULT_EPSILON = 1e-12;
@@ -150,7 +156,7 @@ public class MatrixInversionSolver {
             }
         }
         boolean well = isWellConditioned(A);
-//        System.out.println(well);
+//        log.debug(well);
         // 4. Check if matrix is a square matrix for general purpose inversion
         if (A.rows() == A.cols()) {
             try {
@@ -172,7 +178,7 @@ public class MatrixInversionSolver {
         
         // 5. Check if matrix is well-conditioned
         if (well) {
-            System.out.println("QR");
+            log.debug("QR");
             try {
                 // Well-conditioned square matrix, use QR decomposition
                 IQRDecomposition qr = Decomps.createQR();
@@ -293,7 +299,7 @@ public class MatrixInversionSolver {
             
             // Check condition number
             double conditionNumber = matrix.cond();
-//            System.out.println("condition number:"+conditionNumber);
+//            log.debug("condition number:"+conditionNumber);
             // A matrix is well-conditioned if its condition number is not too large
             return conditionNumber < CONDITION_THRESHOLD;
         } catch (Exception e) {

@@ -53,7 +53,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  * @see MultivariateNormalDistribution
- * @see MultivariateStudentDistribution
+ * @see MultivariateTDistribution
  * @see IVector
  * @see IMatrix
  */

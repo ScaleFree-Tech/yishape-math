@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.optimize.newton.RereOnlineAdam;
 import com.yishape.lab.math.optimize.newton.RereOnlineSGD;
 import com.yishape.lab.math.optimize.newton.RereLBFGS;
@@ -15,6 +18,9 @@ import com.yishape.lab.math.linalg.Linalg;
  * @author lteb2
  */
 public class OptimizerExample {
+
+    private static final Logger log = LoggerFactory.getLogger(OptimizerExample.class);
+
     
     /**
      * 简单的二次函数目标函数: f(x) = (x-2)² + (y-3)²
@@ -48,7 +54,7 @@ public class OptimizerExample {
     }
     
     public static void main(String[] args) {
-        System.out.println("=== 优化器使用示例 ===\n");
+        log.debug("=== 优化器使用示例 ===\n");
         
         // 创建目标函数和梯度函数
         QuadraticObjective objFun = new QuadraticObjective();
@@ -57,11 +63,11 @@ public class OptimizerExample {
         // 初始点
         IVector initX = Linalg.vector(new double[]{0.0, 0.0});
         
-        System.out.println("目标函数: f(x,y) = (x-2)² + (y-3)²");
-        System.out.println("理论最优解: x=2, y=3, f_min=0");
-        System.out.println("初始点: " + initX);
-        System.out.println("初始损失: " + objFun.computeObjective(initX));
-        System.out.println();
+        log.debug("目标函数: f(x,y) = (x-2)² + (y-3)²");
+        log.debug("理论最优解: x=2, y=3, f_min=0");
+        log.debug("初始点: " + initX);
+        log.debug("初始损失: " + objFun.computeObjective(initX));
+        log.debug("");
         
         
         // 测试批量LBFGS
@@ -75,21 +81,21 @@ public class OptimizerExample {
     }
     
     private static void testBatchLBFGS(IVector initX, QuadraticObjective objFun, QuadraticGradient grdFun) {
-        System.out.println("=== 批量LBFGS优化 ===");
+        log.debug("=== 批量LBFGS优化 ===");
         
         RereLBFGS sgd = new RereLBFGS();
         
         OptResult result = sgd.optimize(initX, objFun, grdFun);
         
-        System.out.println("最终损失: " + result.getOptimalValue());
-        System.out.println("最优解: " + result.getOptimalPoint());
-        System.out.println();
+        log.debug("最终损失: " + result.getOptimalValue());
+        log.debug("最优解: " + result.getOptimalPoint());
+        log.debug("");
     }
     
 
     
     private static void testOnlineSGD(IVector initX, QuadraticObjective objFun, QuadraticGradient grdFun) {
-        System.out.println("=== 在线SGD优化 ===");
+        log.debug("=== 在线SGD优化 ===");
         
         RereOnlineSGD onlineSgd = new RereOnlineSGD(0.1, 0.9)  // 学习率0.1，动量0.9
                 .setVerbose(false);
@@ -107,20 +113,20 @@ public class OptimizerExample {
             
             // 检查收敛
             if (loss < 1e-6) {
-                System.out.println("在线SGD在第" + (i+1) + "步收敛");
+                log.debug("在线SGD在第" + (i+1) + "步收敛");
                 break;
             }
         }
         
         double finalLoss = objFun.computeObjective(currentParams);
-        System.out.println("最终损失: " + finalLoss);
-        System.out.println("最优解: " + currentParams);
-        System.out.println("总步数: " + onlineSgd.getCurrentStep());
-        System.out.println();
+        log.debug("最终损失: " + finalLoss);
+        log.debug("最优解: " + currentParams);
+        log.debug("总步数: " + onlineSgd.getCurrentStep());
+        log.debug("");
     }
     
     private static void testOnlineAdam(IVector initX, QuadraticObjective objFun, QuadraticGradient grdFun) {
-        System.out.println("=== 在线Adam优化 ===");
+        log.debug("=== 在线Adam优化 ===");
         
         RereOnlineAdam onlineAdam = new RereOnlineAdam(0.1)  // 学习率0.1
                 .setVerbose(false);
@@ -138,15 +144,15 @@ public class OptimizerExample {
             
             // 检查收敛
             if (loss < 1e-6) {
-                System.out.println("在线Adam在第" + (i+1) + "步收敛");
+                log.debug("在线Adam在第" + (i+1) + "步收敛");
                 break;
             }
         }
         
         double finalLoss = objFun.computeObjective(currentParams);
-        System.out.println("最终损失: " + finalLoss);
-        System.out.println("最优解: " + currentParams);
-        System.out.println("总步数: " + onlineAdam.getCurrentStep());
-        System.out.println();
+        log.debug("最终损失: " + finalLoss);
+        log.debug("最优解: " + currentParams);
+        log.debug("总步数: " + onlineAdam.getCurrentStep());
+        log.debug("");
     }
 }

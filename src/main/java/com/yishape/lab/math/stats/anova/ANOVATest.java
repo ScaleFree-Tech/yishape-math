@@ -1,5 +1,8 @@
 package com.yishape.lab.math.stats.anova;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.stats.Stats;
 import com.yishape.lab.math.stats.distribution.NormalDistribution;
 import com.yishape.lab.math.linalg.IDoubleVector;
@@ -10,8 +13,11 @@ import com.yishape.lab.math.linalg.IDoubleVector;
  */
 public class ANOVATest {
 
+    private static final Logger log = LoggerFactory.getLogger(ANOVATest.class);
+
+
     public static void demonstrateOneWayANOVA() {
-        System.out.println("=== 单因素方差分析 / One-way ANOVA ===");
+        log.debug("=== 单因素方差分析 / One-way ANOVA ===");
 
         // 生成三个组的数据
         // 创建三个不同均值的正态分布，模拟不同处理组
@@ -42,29 +48,29 @@ public class ANOVATest {
         // 返回值：ANOVAResult对象，包含ANOVA分析结果
         ANOVAResult result = Stats.anova.performOneWayANOVA(vector1, vector2, vector3);
 
-        System.out.println("组别统计量 / Group statistics:");
+        log.debug("组别统计量 / Group statistics:");
         // IDoubleVector.mean() - 计算组均值
         // IDoubleVector.std() - 计算组标准差
-        System.out.println("  组1 / Group 1: 均值=" + vector1.mean() + ", 标准差=" + vector1.std());
-        System.out.println("  组2 / Group 2: 均值=" + vector2.mean() + ", 标准差=" + vector2.std());
-        System.out.println("  组3 / Group 3: 均值=" + vector3.mean() + ", 标准差=" + vector3.std());
+        log.debug("  组1 / Group 1: 均值=" + vector1.mean() + ", 标准差=" + vector1.std());
+        log.debug("  组2 / Group 2: 均值=" + vector2.mean() + ", 标准差=" + vector2.std());
+        log.debug("  组3 / Group 3: 均值=" + vector3.mean() + ", 标准差=" + vector3.std());
 
-        System.out.println("\nANOVA结果 / ANOVA results:");
+        log.debug("\nANOVA结果 / ANOVA results:");
         // ANOVAResult.ssBetween - 组间平方和
-        System.out.println("  组间平方和 / Between-group sum of squares: " + result.ssBetween);
+        log.debug("  组间平方和 / Between-group sum of squares: " + result.ssBetween);
         // ANOVAResult.ssWithin - 组内平方和
-        System.out.println("  组内平方和 / Within-group sum of squares: " + result.ssWithin);
+        log.debug("  组内平方和 / Within-group sum of squares: " + result.ssWithin);
         // ANOVAResult.ssTotal - 总平方和
-        System.out.println("  总平方和 / Total sum of squares: " + result.ssTotal);
+        log.debug("  总平方和 / Total sum of squares: " + result.ssTotal);
         // ANOVAResult.fStatistic - F统计量
-        System.out.println("  F统计量 / F-statistic: " + result.fStatistic);
+        log.debug("  F统计量 / F-statistic: " + result.fStatistic);
         // ANOVAResult.pValue - p值
-        System.out.println("  p值 / p-value: " + result.pValue);
-        System.out.println("  结论 / Conclusion: " + (result.pValue < 0.05f ? "拒绝等均值假设 / Reject equal means hypothesis" : "接受等均值假设 / Accept equal means hypothesis"));
+        log.debug("  p值 / p-value: " + result.pValue);
+        log.debug("  结论 / Conclusion: " + (result.pValue < 0.05f ? "拒绝等均值假设 / Reject equal means hypothesis" : "接受等均值假设 / Accept equal means hypothesis"));
     }
 
     public static void demonstrateTwoWayANOVA() {
-        System.out.println("\n=== 两因素方差分析 / Two-way ANOVA ===");
+        log.debug("\n=== 两因素方差分析 / Two-way ANOVA ===");
 
         // 模拟2×3设计的数据
         double[][][] data = new double[2][3][10]; // 2个因素，3个水平，每组10个观测
@@ -81,17 +87,17 @@ public class ANOVATest {
         // 计算两因素ANOVA / Calculate two-way ANOVA
         TwoWayANOVAResult result = Stats.anova.performTwoWayANOVA(data);
 
-        System.out.println("两因素ANOVA结果 / Two-way ANOVA results:");
-        System.out.println("  因素A主效应F值 / Factor A main effect F-value: " + result.factorAF);
-        System.out.println("  因素A p值 / Factor A p-value: " + result.factorAP);
-        System.out.println("  因素B主效应F值 / Factor B main effect F-value: " + result.factorBF);
-        System.out.println("  因素B p值 / Factor B p-value: " + result.factorBP);
-        System.out.println("  交互效应F值 / Interaction effect F-value: " + result.interactionF);
-        System.out.println("  交互效应p值 / Interaction effect p-value: " + result.interactionP);
+        log.debug("两因素ANOVA结果 / Two-way ANOVA results:");
+        log.debug("  因素A主效应F值 / Factor A main effect F-value: " + result.factorAF);
+        log.debug("  因素A p值 / Factor A p-value: " + result.factorAP);
+        log.debug("  因素B主效应F值 / Factor B main effect F-value: " + result.factorBF);
+        log.debug("  因素B p值 / Factor B p-value: " + result.factorBP);
+        log.debug("  交互效应F值 / Interaction effect F-value: " + result.interactionF);
+        log.debug("  交互效应p值 / Interaction effect p-value: " + result.interactionP);
     }
 
     public static void demonstrateRepeatedMeasuresANOVA() {
-        System.out.println("\n=== 重复测量ANOVA / Repeated Measures ANOVA ===");
+        log.debug("\n=== 重复测量ANOVA / Repeated Measures ANOVA ===");
 
         // 模拟重复测量数据（3个时间点，10个被试）
         double[][] repeatedData = new double[10][3];
@@ -107,10 +113,10 @@ public class ANOVATest {
         // 计算重复测量ANOVA
         RepeatedMeasuresANOVAResult result = Stats.anova.performRepeatedMeasuresANOVA(repeatedData);
 
-        System.out.println("重复测量ANOVA结果 / Repeated Measures ANOVA results:");
-        System.out.println("  时间效应F值 / Time effect F-value: " + result.timeF);
-        System.out.println("  时间效应p值 / Time effect p-value: " + result.timeP);
-        System.out.println("  被试效应F值 / Subject effect F-value: " + result.subjectF);
-        System.out.println("  被试效应p值 / Subject effect p-value: " + result.subjectP);
+        log.debug("重复测量ANOVA结果 / Repeated Measures ANOVA results:");
+        log.debug("  时间效应F值 / Time effect F-value: " + result.timeF);
+        log.debug("  时间效应p值 / Time effect p-value: " + result.timeP);
+        log.debug("  被试效应F值 / Subject effect F-value: " + result.subjectF);
+        log.debug("  被试效应p值 / Subject effect p-value: " + result.subjectP);
     }
 }

@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.cls;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -7,6 +10,7 @@ import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.cls.tree.RereRandomForest;
 import com.yishape.lab.math.ml.cls.tree.RereXGboost;
 import com.yishape.lab.math.ml.cls.tree.RFTree;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 
 import java.util.*;
 import java.io.*;
@@ -29,7 +33,10 @@ import java.io.*;
  * @version 1.0
  * @since 1.0
  */
-public class EnsembleClassifier implements IClassification, ISerializableModel {
+public class EnsembleClassifier implements IClassifier, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(EnsembleClassifier.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -56,6 +63,8 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
     
     /** 随机种子 */
     private long randomSeed;
+    
+    private ClassificationMetrics metrics;
     
     /**
      * 集成策略枚举
@@ -166,13 +175,13 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
         Arrays.sort(this.classLabels);
         
         // 训练各个分类器
-        System.out.println("Training Random Forest...");
+        log.debug("Training Random Forest...");
         randomForest.fit(features, labels);
         
-        System.out.println("Training Logistic Regression...");
+        log.debug("Training Logistic Regression...");
         logisticRegression.fit(features, labels);
         
-        System.out.println("Training XGBoost...");
+        log.debug("Training XGBoost...");
         xgboost.fit(features, labels);
         
         // 如果使用加权投票，根据验证性能调整权重
@@ -181,7 +190,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
         }
         
         this.isTrained = true;
-        System.out.println("Ensemble training completed!");
+        log.debug("Ensemble training completed!");
         
         // 计算训练准确率
         EnsembleResult trainResult = predict(features);
@@ -456,7 +465,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
             });
         }
         
-        System.out.println("Adjusted weights based on validation: " + 
+        log.debug("Adjusted weights based on validation: " + 
                           "RF=" + String.format("%.3f", classifierWeights.get(0).doubleValue()) +
                           ", LR=" + String.format("%.3f", classifierWeights.get(1).doubleValue()) +
                           ", XGB=" + String.format("%.3f", classifierWeights.get(2).doubleValue()));
@@ -536,7 +545,52 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
     }
 
     @Override
-    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+    public Map<String, Double> predictProb(IVector x) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型必须先训练才能进行预测");
+        }
+
+        if (x == null) {
+            throw new IllegalArgumentException("输入特征向量不能为null");
+        }
+
+        // 将向量转换为1x特征数的矩阵
+        double[][] featureMatrix = new double[1][x.size()];
+        for (int i = 0; i < x.size(); i++) {
+            featureMatrix[0][i] = x.get(i).doubleValue();
+        }
+        IMatrix singleSampleMatrix = Linalg.matrix(featureMatrix);
+
+        // 使用现有的predictBatchWithProbs方法
+        BatchPredictionResult batchResult = predictBatchWithProbs(singleSampleMatrix);
+
+        // 转换为Map<String, Double>格式
+        Map<String, Double> result = new HashMap<>();
+        
+        if (batchResult.isBinaryClassification()) {
+            // 二分类：probabilities是double[]，存储正类概率
+            double positiveProb = batchResult.getProbabilities()[0];
+            double negativeProb = 1.0 - positiveProb;
+            // 根据classLabels确定哪个是positive/negative
+            if (classLabels.length >= 2) {
+                result.put(classLabels[0], negativeProb);
+                result.put(classLabels[1], positiveProb);
+            }
+        } else {
+            // 多分类：classProbabilities是double[][]
+            double[][] probs = batchResult.getClassProbabilities();
+            for (int j = 0; j < classLabels.length; j++) {
+                result.put(classLabels[j], probs[0][j]);
+            }
+        }
+
+        return result;
+    }
+    
+    
+
+    @Override
+    public BatchPredictionResult predictBatchWithProbs(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型必须先训练才能进行预测");
         }
@@ -570,6 +624,19 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
     public String[] getClassLabels() { return classLabels; }
     public IVector getClassifierWeights() { return classifierWeights; }
     public EnsembleStrategy getStrategy() { return strategy; }
+
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
+    }
+    
+    
+    
     
     /**
      * 将模型保存在本地
@@ -580,7 +647,7 @@ public class EnsembleClassifier implements IClassification, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

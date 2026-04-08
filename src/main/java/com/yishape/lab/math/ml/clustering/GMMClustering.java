@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.clustering;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -21,6 +24,9 @@ import java.util.*;
  * @author reremouse
  */
 public class GMMClustering implements IClustering, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(GMMClustering.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -110,8 +116,8 @@ public class GMMClustering implements IClustering, ISerializableModel {
         }
         
         if (verbose) {
-            System.out.printf("开始GMM聚类: %d个数据点, %d维, %d个聚类\n", 
-                            data.size(), dimension, numClusters);
+            log.debug(String.format("开始GMM聚类: %d个数据点, %d维, %d个聚类\n",
+                            data.size(), dimension, numClusters));
         }
         
         // 多重启动策略
@@ -128,7 +134,7 @@ public class GMMClustering implements IClustering, ISerializableModel {
         double fallbackLogLikelihood = Double.NEGATIVE_INFINITY;
         
         if (verbose) {
-            System.out.printf("开始多重启动策略，计划进行 %d 次重启...\n", numRestarts);
+            log.debug(String.format("开始多重启动策略，计划进行 %d 次重启...\n", numRestarts));
         }
         
         for (int restart = 0; restart < numRestarts; restart++) {
@@ -146,13 +152,13 @@ public class GMMClustering implements IClustering, ISerializableModel {
                         try {
                             gmm.initializeWithKMeansPlusPlus(data);
                             if (verbose) {
-                                System.out.printf("重启 %d: 使用K-means++初始化\n", restart + 1);
+                                log.debug(String.format("重启 %d: 使用K-means++初始化\n", restart + 1));
                             }
                         } catch (Exception e) {
                             // 如果K-means++失败，回退到智能随机初始化
                             gmm.initializeWithSmartRandom(data);
                             if (verbose) {
-                                System.out.printf("重启 %d: K-means++失败，回退到智能随机初始化\n", restart + 1);
+                                log.debug(String.format("重启 %d: K-means++失败，回退到智能随机初始化\n", restart + 1));
                             }
                         }
                         break;
@@ -160,7 +166,7 @@ public class GMMClustering implements IClustering, ISerializableModel {
                         // 智能随机初始化
                         gmm.initializeWithSmartRandom(data);
                         if (verbose) {
-                            System.out.printf("重启 %d: 使用智能随机初始化\n", restart + 1);
+                            log.debug(String.format("重启 %d: 使用智能随机初始化\n", restart + 1));
                         }
                         break;
                     case 2:
@@ -168,13 +174,13 @@ public class GMMClustering implements IClustering, ISerializableModel {
                         try {
                             initializeWithDataDrivenStrategy(gmm, data);
                             if (verbose) {
-                                System.out.printf("重启 %d: 使用数据驱动初始化\n", restart + 1);
+                                log.debug(String.format("重启 %d: 使用数据驱动初始化\n", restart + 1));
                             }
                         } catch (Exception e) {
                             // 回退到智能随机初始化
                             gmm.initializeWithSmartRandom(data);
                             if (verbose) {
-                                System.out.printf("重启 %d: 数据驱动初始化失败，回退到智能随机初始化\n", restart + 1);
+                                log.debug(String.format("重启 %d: 数据驱动初始化失败，回退到智能随机初始化\n", restart + 1));
                             }
                         }
                         break;
@@ -182,7 +188,7 @@ public class GMMClustering implements IClustering, ISerializableModel {
                         // 随机初始化（作为基准）
                         gmm.initializeRandomly(data);
                         if (verbose) {
-                            System.out.printf("重启 %d: 使用随机初始化\n", restart + 1);
+                            log.debug(String.format("重启 %d: 使用随机初始化\n", restart + 1));
                         }
                         break;
                 }
@@ -207,12 +213,12 @@ public class GMMClustering implements IClustering, ISerializableModel {
                             bestGmm = gmm;
                             
                             if (verbose) {
-                                System.out.printf("重启 %d: 找到更好的有效解，对数似然 = %.6f\n", 
-                                                restart + 1, result.logLikelihood);
+                                log.debug(String.format("重启 %d: 找到更好的有效解，对数似然 = %.6f\n",
+                                                restart + 1, result.logLikelihood));
                             }
                         } else if (verbose) {
-                            System.out.printf("重启 %d: 有效解，对数似然 = %.6f (当前最佳: %.6f)\n", 
-                                            restart + 1, result.logLikelihood, bestLogLikelihood);
+                            log.debug(String.format("重启 %d: 有效解，对数似然 = %.6f (当前最佳: %.6f)\n",
+                                            restart + 1, result.logLikelihood, bestLogLikelihood));
                         }
                     } else {
                         // 无效聚类，作为备选方案
@@ -223,14 +229,14 @@ public class GMMClustering implements IClustering, ISerializableModel {
                         }
                         
                         if (verbose) {
-                            System.out.printf("重启 %d: 产生无效聚类（存在空聚类），对数似然 = %.6f\n", 
-                                            restart + 1, result.logLikelihood);
+                            log.debug(String.format("重启 %d: 产生无效聚类（存在空聚类），对数似然 = %.6f\n",
+                                            restart + 1, result.logLikelihood));
                         }
                     }
                 }
             } catch (Exception e) {
                 if (verbose) {
-                    System.out.printf("重启 %d 失败: %s\n", restart + 1, e.getMessage());
+                    log.debug(String.format("重启 %d 失败: %s\n", restart + 1, e.getMessage()));
                 }
             }
         }
@@ -244,20 +250,20 @@ public class GMMClustering implements IClustering, ISerializableModel {
             finalGmm = bestGmm;
             finalResult = bestResult;
             if (verbose) {
-                System.out.printf("多重启动完成，选择有效聚类，对数似然 = %.6f\n", bestLogLikelihood);
+                log.debug(String.format("多重启动完成，选择有效聚类，对数似然 = %.6f\n", bestLogLikelihood));
             }
         } else if (fallbackGmm != null) {
             // 没有有效聚类，使用备选方案
             finalGmm = fallbackGmm;
             finalResult = fallbackResult;
             if (verbose) {
-                System.out.printf("多重启动完成，所有聚类都无效，选择最佳备选方案，对数似然 = %.6f\n", fallbackLogLikelihood);
-                System.out.println("警告：选择的聚类可能包含空聚类");
+                log.debug(String.format("多重启动完成，所有聚类都无效，选择最佳备选方案，对数似然 = %.6f\n", fallbackLogLikelihood));
+                log.debug("警告：选择的聚类可能包含空聚类");
             }
         } else {
              // 最后的备选方案：强制创建有效聚类
              if (verbose) {
-                 System.out.println("所有重启都失败，使用强制有效聚类策略");
+                 log.debug("所有重启都失败，使用强制有效聚类策略");
              }
              
              // 使用K-means算法作为强制策略
@@ -739,7 +745,7 @@ public class GMMClustering implements IClustering, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
     

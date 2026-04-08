@@ -1,5 +1,7 @@
 package com.yishape.lab.math.ml;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 
 /**
@@ -32,11 +34,11 @@ public interface ISerializableModel extends Serializable {
                 
                 return model;
             } else {
-                System.err.println("加载的对象不是有效的ISerializableModel实例");
+                LoggerFactory.getLogger(ISerializableModel.class).warn("加载的对象不是有效的ISerializableModel实例");
                 return null;
             }
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+//            log.error("exception", e);
             return null;
         }
     }

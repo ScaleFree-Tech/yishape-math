@@ -178,8 +178,8 @@ Signal visualization class providing signal data visualization functionality.
 
 ```java
 
-import linalg.math.com.yishape.lab.IVector;
-import linalg.math.com.yishape.lab.Linalg;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
 
 // 生成正弦波信号 / Generate sine wave signal
 IVector<Double>sineWave=Signals.sineWave(
@@ -215,10 +215,10 @@ IVector<Double>sineWave=Signals.sineWave(
         );
 
 // 使用工厂模式创建信号生成器 / Using factory pattern to create signal generators
-import factory.signal.math.com.yishape.lab.SignalProcessorFactory;
-import generation.signal.math.com.yishape.lab.ISignalGenerator;
-import generation.signal.math.com.yishape.lab.ISignalGenerator.SignalType;
-import generation.signal.math.com.yishape.lab.ISignalGenerator.SignalParameters;
+import factory.com.yishape.lab.math.signal.SignalProcessorFactory;
+import com.yishape.lab.math.signal.generation.ISignalGenerator;
+import com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType;
+import com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters;
 
 // 方法1: 使用工厂创建不同类型的生成器 / Method 1: Using factory to create different types of generators
 try{
@@ -408,7 +408,7 @@ IVector<Double> diracDelta = Signals.diracDelta(1000, 100, 1.0);
 #### 2.1 基础滤波方法 / Basic Filtering Methods
 
 ```java
-import signal.math.com.yishape.lab.Signals;
+import com.yishape.lab.math.signal.Signals;
 
 // 移动平均滤波 / Moving average filtering
 IVector<Double> filtered = Signals.movingAverage(signal, 5);
@@ -458,10 +458,10 @@ IVector<Double> wienerFiltered = Signals.wienerFilter(
 );
 
 // 使用高级滤波器接口 / Using advanced filter interface
-import filter.signal.math.com.yishape.lab.ISignalFilter;
-import filter.signal.math.com.yishape.lab.ChebyshevFilter;
-import filter.signal.math.com.yishape.lab.ISignalFilter.FilterType;
-import filter.signal.math.com.yishape.lab.ISignalFilter.FilterImplementation;
+import com.yishape.lab.math.signal.filter.ISignalFilter;
+import com.yishape.lab.math.signal.filter.ChebyshevFilter;
+import com.yishape.lab.math.signal.filter.ISignalFilter.FilterType;
+import com.yishape.lab.math.signal.filter.ISignalFilter.FilterImplementation;
 
 // 创建切比雪夫滤波器 / Create Chebyshev filter
 try {
@@ -497,7 +497,7 @@ try {
 }
 
 // 使用滤波器工厂创建滤波器 / Using filter factory to create filters
-import factory.signal.math.com.yishape.lab.SignalProcessorFactory;
+import factory.com.yishape.lab.math.signal.SignalProcessorFactory;
 
 try {
     SignalProcessorFactory factory = SignalProcessorFactory.getInstance();
@@ -523,9 +523,9 @@ try {
 #### 3.1 频谱分析 / Spectral Analysis
 
 ```java
-import signal.math.com.yishape.lab.Signals;
-import util.com.yishape.lab.Tuple2;
-import util.com.yishape.lab.Tuple3;
+import com.yishape.lab.math.signal.Signals;
+import com.yishape.lab.util.Tuple2;
+import com.yishape.lab.util.Tuple3;
 
 // 计算功率谱密度 (PSD) / Calculate Power Spectral Density (PSD)
 Tuple2<IVector<Double>, IVector<Double>> psdResult = Signals.powerSpectralDensity(
@@ -572,10 +572,10 @@ double snr=Signals.signalToNoiseRatio(originalSignal,noiseSignal);
         double psnr=Signals.peakSignalToNoiseRatio(originalSignal,reconstructedSignal);
 
 // 使用信号分析器接口的高级分析 / Advanced analysis using signal analyzer interface
-import analysis.signal.math.com.yishape.lab.ISignalAnalyzer;
-import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisType;
-import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisParameters;
-import analysis.signal.math.com.yishape.lab.ISignalAnalyzer.AnalysisResult;
+import analysis.com.yishape.lab.math.signal.ISignalAnalyzer;
+import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisType;
+import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisParameters;
+import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisResult;
 
 // 创建自定义信号分析器 / Create custom signal analyzer
 ISignalAnalyzer<Double> analyzer = new ISignalAnalyzer<Double>() {
@@ -799,11 +799,11 @@ IVector<Double>energy=WaveletAnalysis.waveletEnergyAnalysis(coeffs);
         IVector<Double>features=WaveletAnalysis.waveletFeatureExtraction(coeffs);
 
 // 使用信号变换接口进行小波分析 / Using signal transform interface for wavelet analysis
-import transform.signal.math.com.yishape.lab.ISignalTransform;
-import transform.signal.math.com.yishape.lab.ChirpZTransform;
-import core.signal.math.com.yishape.lab.ISignalProcessor;
-import core.signal.math.com.yishape.lab.AbstractSignalProcessor;
-import core.signal.math.com.yishape.lab.SignalProcessingException;
+import transform.com.yishape.lab.math.signal.ISignalTransform;
+import transform.com.yishape.lab.math.signal.ChirpZTransform;
+import core.com.yishape.lab.math.signal.ISignalProcessor;
+import core.com.yishape.lab.math.signal.AbstractSignalProcessor;
+import core.com.yishape.lab.math.signal.SignalProcessingException;
 
 // 创建自定义小波变换器 / Create custom wavelet transformer
 ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients> waveletTransformer =

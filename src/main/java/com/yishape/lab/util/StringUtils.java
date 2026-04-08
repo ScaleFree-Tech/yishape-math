@@ -1,10 +1,16 @@
 package com.yishape.lab.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 字符串工具类 / String Utility Class
  * @author lteb2
  */
 public class StringUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(StringUtils.class);
+
     
     /**
      * 拼接数组中的元素为字符串，类似 org.apache.commons.lang3.StringUtils.join
@@ -134,18 +140,18 @@ public class StringUtils {
     
     public static void main(String[] args) {
         String[] arr = {"apple", "banana", "orange"};
-        System.out.println(StringUtils.join(arr, ", ")); // 输出: apple, banana, orange
+        log.debug(StringUtils.join(arr, ", ")); // 输出: apple, banana, orange
         
         Integer[] numbers = {1, 2, 3, 4, 5};
-        System.out.println(StringUtils.join(numbers, "-")); // 输出: 1-2-3-4-5
+        log.debug(StringUtils.join(numbers, "-")); // 输出: 1-2-3-4-5
         
-        System.out.println(StringUtils.join(new String[]{"a", null, "b"}, ",")); // 输出: a,,b（保留null位置）
+        log.debug(StringUtils.join(new String[]{"a", null, "b"}, ",")); // 输出: a,,b（保留null位置）
         
         // 测试新增的字符串检查方法
-        System.out.println("isBlank测试:");
-        System.out.println("null: " + isBlank(null)); // true
-        System.out.println("空字符串: " + isBlank("")); // true
-        System.out.println("空白字符串: " + isBlank("   ")); // true
-        System.out.println("正常字符串: " + isBlank("hello")); // false
+        log.debug("isBlank测试:");
+        log.debug("null: " + isBlank(null)); // true
+        log.debug("空字符串: " + isBlank("")); // true
+        log.debug("空白字符串: " + isBlank("   ")); // true
+        log.debug("正常字符串: " + isBlank("hello")); // false
     }
 }

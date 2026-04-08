@@ -1,5 +1,8 @@
 package com.yishape.lab.music.processing;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioFormat;
 import com.yishape.lab.audio.exception.AudioProcessingException;
@@ -28,6 +31,9 @@ import java.util.HashSet;
  * @since 1.0
  */
 public class Quantizer implements IMusicProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(Quantizer.class);
+
     
     private static final String NAME = "Music Quantizer";
     private static final String VERSION = "1.0.0";
@@ -238,7 +244,7 @@ public class Quantizer implements IMusicProcessor {
             int swing = (Integer) parameters.get("swing");
             
             if (verboseLogging) {
-                System.out.println("Quantizing audio to " + gridResolution + " grid with " + strength + "% strength");
+                log.debug("Quantizing audio to " + gridResolution + " grid with " + strength + "% strength");
             }
             
             AudioData result = performQuantization(audioData, gridResolution, strength, swing, parameters);
@@ -663,17 +669,13 @@ public class Quantizer implements IMusicProcessor {
     }
     
     @Override
-    public AudioData generateScale(ScaleTheory scale, int rootNote, int octave, double duration) throws AudioProcessingException {
-        // Quantizer doesn't support scale generation
-        double[] samples = new double[(int)(duration * 44100)];
-        return new AudioData(Linalg.zeros(samples.length), 44100, 1, samples.length, AudioFormat.WAV);
+    public AudioData generateScale(ScaleTheory.ScaleType scaleType, int rootNote, int octave, double duration) throws AudioProcessingException {
+        return new MusicTheoryProcessor().generateScale(scaleType, rootNote, octave, duration);
     }
     
     @Override
-    public AudioData generateChord(ChordTheory chord, int rootNote, int octave, double duration) throws AudioProcessingException {
-        // Quantizer doesn't support chord generation
-        double[] samples = new double[(int)(duration * 44100)];
-        return new AudioData(Linalg.zeros(samples.length), 44100, 1, samples.length, AudioFormat.WAV);
+    public AudioData generateChord(ChordTheory.ChordType chordType, int rootNote, int octave, double duration) throws AudioProcessingException {
+        return new MusicTheoryProcessor().generateChord(chordType, rootNote, octave, duration);
     }
     
     @Override

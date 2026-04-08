@@ -11,41 +11,41 @@ This document provides detailed API reference for all public classes and methods
 ### 🎯 推荐使用的公开API / Recommended Public APIs
 
 #### 核心工厂类 / Core Factory Classes
-- **`Linalg`** - 线性代数工厂类，创建矩阵和向量（**推荐使用**）
-- **`Stats`** - 统计工厂类，创建概率分布和统计工具（**推荐使用**）
-- **`Plots`** - 绘图工厂类，创建各种图表（**推荐使用**）
-- **`RereMathUtil`** - 数学工具类，提供常用数学函数
-- **`TimeSeriesAnalyzer`** - 时间序列分析工具类（**推荐使用**）
+- **`Linalg`** - 线性代数工厂类，创建矩阵和向量（**推荐使用**） / Linear algebra factory for matrices and vectors (**recommended**)
+- **`Stats`** - 统计工厂类，创建概率分布和统计工具（**推荐使用**） / Statistics factory for distributions and tools (**recommended**)
+- **`Plots`** - 绘图工厂类，创建各种图表（**推荐使用**） / Plotting factory for charts (**recommended**)
+- **`RereMathUtil`** - 数学工具类，提供常用数学函数 / Math utilities
+- **`TimeSeriesAnalyzer`** - 时间序列分析工具类（**推荐使用**） / Time series analysis utilities (**recommended**)
 
 #### 核心接口 / Core Interfaces
-- **`IMatrix<T>`** - 矩阵操作接口，用户操作矩阵的主要接口
-- **`IVector<T>`** - 向量操作接口，用户操作向量的主要接口
-- **`IPlot`** - 绘图接口，用户创建图表的主要接口
-- **`IRegression`** - 回归算法接口
-- **`IClassification`** - 分类算法接口
+- **`IMatrix<T>`** - 矩阵操作接口，用户操作矩阵的主要接口 / Matrix operations; primary matrix API
+- **`IVector<T>`** - 向量操作接口，用户操作向量的主要接口 / Vector operations; primary vector API
+- **`IPlot`** - 绘图接口，用户创建图表的主要接口 / Plotting API
+- **`IRegression`** - 回归算法接口 / Regression interface
+- **`IClassifier`** - 分类算法接口（`com.yishape.lab.math.ml.cls`） / Classification interface (`com.yishape.lab.math.ml.cls`)
 
 #### 算法实现类 / Algorithm Implementation Classes
-- **`RereLinearRegression`** - 线性回归
-- **`RereLogisticRegression`** - 逻辑回归
-- **`RereLBFGS`** - LBFGS优化器
-- **`RerePCA`** - 主成分分析
-- **`RereSVD`** - 奇异值分解
-- **`RereTSNE`** - t-SNE降维
-- **`RereUMAP`** - UMAP降维
-- **`TimeSeriesForecasting`** - 时间序列预测
-- **`TimeSeriesFiltering`** - 时间序列滤波
-- **`TimeSeriesDecomposition`** - 时间序列分解
+- **`RereLinearRegression`** - 线性回归 / Linear regression
+- **`RereLogisticRegression`** - 逻辑回归 / Logistic regression
+- **`RereLBFGS`** - LBFGS优化器 / L-BFGS optimizer
+- **`RerePCA`** - 主成分分析 / PCA
+- **`RereSVD`** - 奇异值分解 / SVD
+- **`RereTSNE`** - t-SNE降维 / t-SNE
+- **`RereUMAP`** - UMAP降维 / UMAP
+- **`TimeSeriesForecasting`** - 时间序列预测 / Time series forecasting
+- **`TimeSeriesFiltering`** - 时间序列滤波 / Time series filtering
+- **`TimeSeriesDecomposition`** - 时间序列分解 / Time series decomposition
 
 #### 数据结构 / Data Structures
-- **`DataFrame`** - 数据框类
-- **`Column`** - 列数据结构
-- **`Tuple2` 到 `Tuple9`** - 元组类
-- **`TimeSeriesData`** - 时间序列数据类
+- **`DataFrame`** - 数据框类 / Data frame
+- **`Column`** - 列数据结构 / Column
+- **`Tuple2` 到 `Tuple9`** - 元组类 / Tuple types
+- **`TimeSeriesData`** - 时间序列数据类 / Time series data
 
 #### 可视化类 / Visualization Classes
-- **`RerePlot`** - 绘图实现类
-- **`ColorPalette`** - 颜色调色板
-- **`ThemeManager`** - 主题管理器
+- **`RerePlot`** - 绘图实现类 / Plot implementation
+- **`ColorPalette`** - 颜色调色板 / Color palette
+- **`ThemeManager`** - 主题管理器 / Theme manager
 
 ### ⚠️ 内部实现类 / Internal Implementation Classes
 
@@ -53,11 +53,10 @@ This document provides detailed API reference for all public classes and methods
 
 The following classes are internal implementation classes that users typically don't need to use directly:
 
-- **具体实现类**: `RereFloatMatrix`, `RereDoubleMatrix`, `RereFloatVector`, `RereDoubleVector`
-- **类型特定接口**: `IFloatMatrix`, `IDoubleMatrix`, `IFloatVector`, `IDoubleVector`
-- **计算工具类**: `GPUComputeFloatUtils`, `GPUComputeDoubleUtils`, `CPUComputeFloatUtils`, `CPUComputeDoubleUtils`, `GPUConfig`
-- **分布实现类**: `NormalDistribution`, `StudentDistribution`, `UniformDistribution` 等
-- **内部工具类**: `SliceExpressionParser`, `StyleConverter`, `UniversalStyleApplier` 等
+- **对外契约 / Public contract**：矩阵/向量以 **`IMatrix` / `IVector`** 及精度特化 **`IFloatMatrix` / `IDoubleMatrix` / `IFloatVector` / `IDoubleVector`** 为准；`linalg` 包内另有具体实现类，替换实现时勿依赖具体类名。 / Matrices and vectors: **`IMatrix` / `IVector`** and precision types **`IFloatMatrix` / `IDoubleMatrix` / `IFloatVector` / `IDoubleVector`**; do not depend on concrete classes when swapping implementations.
+- **计算工具类 / Compute helpers**: `GPUComputeFloatUtils`, `GPUComputeDoubleUtils`, `CPUComputeFloatUtils`, `CPUComputeDoubleUtils`, `GPUConfig`
+- **分布实现类 / Distribution impls**: `NormalDistribution`, `StudentDistribution`, `UniformDistribution`, etc.
+- **内部工具类 / Internal helpers**: `SliceExpressionParser`, `StyleConverter`, `UniversalStyleApplier`, etc.
 
 这些类由框架内部自动调用，用户通过公开API使用功能时，框架会自动选择合适的实现。
 
@@ -66,63 +65,74 @@ These classes are automatically called by the framework internally. When users u
 ## 主要功能模块 / Main Functional Modules
 
 ### 1. 线性代数 (Linear Algebra)
-- **Linalg**: 线性代数工厂类，提供矩阵和向量的创建方法（推荐使用）
-- **IMatrix/IVector**: 矩阵和向量的核心接口，用户操作的主要接口
+- **Linalg**: 线性代数工厂类，提供矩阵和向量的创建方法（推荐使用） / Factory for matrix and vector creation (**recommended**)
+- **IMatrix/IVector**: 矩阵和向量的核心接口，用户操作的主要接口 / Core matrix and vector APIs
 
 ### 2. 统计分析 (Statistical Analysis)
-- **Stats**: 统计工厂类，提供概率分布创建方法（推荐使用）
-- **概率分布**: 支持14种重要概率分布（正态、t分布、卡方、F分布、Beta、Gamma、泊松等）
-- **假设检验**: 参数估计和假设检验功能
-- **方差分析**: 支持常见的方差分析功能
+- **Stats**: 统计工厂类，提供概率分布创建方法（推荐使用） / Statistics factory (**recommended**)
+- **概率分布**: 支持14种重要概率分布（正态、t分布、卡方、F分布、Beta、Gamma、泊松等） / 14+ distributions (normal, t, chi-squared, F, Beta, Gamma, Poisson, …)
+- **假设检验**: 参数估计和假设检验功能 / Hypothesis testing and estimation
+- **方差分析**: 支持常见的方差分析功能 / ANOVA
 
 ### 3. 机器学习 (Machine Learning)
-- **RereLinearRegression**: 线性回归实现，支持L1/L2/ElasticNet正则化
-- **RereLogisticRegression**: 逻辑回归实现，支持二分类和多分类
-- **IClassification/IRegression**: 分类和回归的统一接口
+- **RereLinearRegression**: 线性回归实现，支持L1/L2/ElasticNet正则化 / Linear regression with L1/L2/ElasticNet
+- **RereLogisticRegression**: 逻辑回归实现，支持二分类和多分类 / Logistic regression (binary & multiclass)
+- **`ML`**: 机器学习工厂与交叉验证、指标等入口（**推荐使用**） / ML factory, CV, metrics (**recommended**)
+- **IClassifier / IRegression**: 分类与回归模型接口 / Classification and regression interfaces
 
 ### 4. 数据可视化 (Data Visualization)
-- **Plots**: 绘图静态工厂类（推荐使用）
-- **RerePlot**: 基于ECharts的绘图实现类
-- **IPlot**: 绘图接口，支持20+种图表类型
-- **ColorPalette**: 颜色调色板管理
-- **ThemeManager**: 主题管理器
+- **Plots**: 绘图静态工厂类（推荐使用） / Plotting factory (**recommended**)
+- **RerePlot**: 基于ECharts的绘图实现类 / ECharts-based plot impl
+- **IPlot**: 绘图接口，支持20+种图表类型 / Plot API (20+ chart types)
+- **ColorPalette**: 颜色调色板管理 / Color palettes
+- **ThemeManager**: 主题管理器 / Themes
 
 ### 5. 优化算法 (Optimization Algorithms)
-- **RereLBFGS**: 有限内存BFGS优化算法
-- **IOptimizer**: 优化器接口
+- **RereLBFGS**: 有限内存BFGS优化算法 / L-BFGS
+- **IOptimizer**: 优化器接口 / Optimizer interface
 
 ### 6. 降维算法 (Dimensionality Reduction)
-- **RerePCA**: 主成分分析
-- **RereSVD**: 奇异值分解
-- **RereTSNE**: t分布随机邻域嵌入
-- **RereUMAP**: 均匀流形近似和投影
+- **RerePCA**: 主成分分析 / PCA
+- **RereSVD**: 奇异值分解 / SVD
+- **RereTSNE**: t分布随机邻域嵌入 / t-SNE
+- **RereUMAP**: 均匀流形近似和投影 / UMAP
 
 ### 7. 数据结构 (Data Structures)
-- **DataFrame**: 数据框类，支持CSV读写和矩阵转换
-- **Column**: 列数据结构
-- **Tuple系列**: 泛型元组类（Tuple2-Tuple9）
+- **DataFrame**: 数据框类，支持CSV读写和矩阵转换 / Data frame with CSV I/O and matrix conversion
+- **Column**: 列数据结构 / Column
+- **Tuple系列**: 泛型元组类（Tuple2-Tuple9） / Generic tuples
 
 ### 8. 数学工具 (Mathematical Utilities)
-- **RereMathUtil**: 数学工具类，提供类型转换、随机数生成、统计函数等
+- **RereMathUtil**: 数学工具类，提供类型转换、随机数生成、统计函数等 / Conversions, RNG, math helpers
 
 ### 9. 时间序列分析 (Time Series Analysis)
-- **TimeSeriesData**: 时间序列数据类，支持单变量和多变量时间序列
-- **TimeSeriesAnalyzer**: 统一时间序列分析工具类，提供完整分析功能
-- **TimeSeriesForecasting**: 时间序列预测类，支持多种预测方法
-- **TimeSeriesFiltering**: 时间序列滤波类，提供多种滤波方法
-- **TimeSeriesDecomposition**: 时间序列分解类，支持趋势、季节性分解
+- **TimeSeriesData**: 时间序列数据类，支持单变量和多变量时间序列 / Uni- and multivariate series
+- **TimeSeriesAnalyzer**: 统一时间序列分析工具类，提供完整分析功能 / Unified analysis
+- **TimeSeriesForecasting**: 时间序列预测类，支持多种预测方法 / Forecasting
+- **TimeSeriesFiltering**: 时间序列滤波类，提供多种滤波方法 / Filtering
+- **TimeSeriesDecomposition**: 时间序列分解类，支持趋势、季节性分解 / Decomposition (trend, seasonal)
 
 ### 10. 信号处理 (Signal Processing)
-- **SignalGeneration**: 信号生成类，提供各种波形和噪声信号生成
-- **SignalFiltering**: 信号滤波类，提供多种数字滤波器
-- **SignalAnalysis**: 信号分析类，提供频谱分析、功率谱密度等功能
-- **SignalUtilities**: 信号工具类，提供窗函数、重采样、信号检测等工具
-- **WaveletAnalysis**: 小波分析类，提供小波变换和小波分析功能
-- **RereFFT**: 快速傅里叶变换类，提供FFT和IFFT功能
-- **RereDCT**: 离散余弦变换类，提供DCT变换和压缩功能
-- **RereHilbert**: 希尔伯特变换类，提供解析信号分析功能
-- **SignalVisualizer**: 信号可视化类，提供信号数据可视化功能
-- **Complex**: 复数类，提供复数运算功能
+- **SignalGeneration**: 信号生成类，提供各种波形和噪声信号生成 / Waveforms and noise
+- **SignalFiltering**: 信号滤波类，提供多种数字滤波器 / Digital filters
+- **SignalAnalysis**: 信号分析类，提供频谱分析、功率谱密度等功能 / Spectral analysis, PSD
+- **SignalUtilities**: 信号工具类，提供窗函数、重采样、信号检测等工具 / Windows, resampling, detection
+- **WaveletAnalysis**: 小波分析类，提供小波变换和小波分析功能 / Wavelets
+- **RereFFT**: 快速傅里叶变换类，提供FFT和IFFT功能 / FFT / IFFT
+- **RereDCT**: 离散余弦变换类，提供DCT变换和压缩功能 / DCT
+- **RereHilbert**: 希尔伯特变换类，提供解析信号分析功能 / Hilbert
+- **SignalVisualizer**: 信号可视化类，提供信号数据可视化功能 / Signal visualization
+- **Complex**: 复数类，提供复数运算功能 / Complex numbers
+
+### 11. 稠密 float / double 辅助（并入既有 API） / Dense float/double helpers (merged into existing API)
+- **`IMatrix`**（首选入口）：`broadcastShape` / `broadcastTo` / `broadcastElementWise`（`double[][]` / `IDoubleMatrix` 与 `float[][]` 等；两矩阵形参因 Java 泛型擦除不能同时提供 `IMatrix<Double>` 与 `IMatrix<Float>` 重载，**对两个 `IMatrix<Float>` 请用 `IFloatMatrix.broadcastElementWise`**）；float 数组路径经 `IFloatMatrix` 转 double 再转回 / Primary entry: broadcasting helpers; for two **`IMatrix<Float>`** operands use **`IFloatMatrix.broadcastElementWise`** (erasure); float paths delegate via double.
+- **`IDoubleMatrix`** / **`IFloatMatrix`**：`broadcast*` 中可与 `IMatrix` 对齐的部分**委托**至 `IMatrix`；`IFloatMatrix.broadcastElementWise(IMatrix<Float>, IMatrix<Float>, …)` 保留在 `IFloatMatrix` / Aligned `broadcast*` delegates to **`IMatrix`**; float–float element-wise stays on **`IFloatMatrix`**.
+- **`IMatrix` / `IVector`**：矩阵乘、转置、行和、向量 `fancyGet` / `booleanGet` / `repeat` 等，不另建平行工具类 / No parallel ndarray-style utility layer.
+- **`IVector`**（首选入口）：`histogram`、`digitize`、`polyfit`、`where`（原始数组 `double[]`/`float[]`；向量样本用 **`IVector<? extends Number>`** 统一入口以避免与 `IVector<Double>`/`IVector<Float>` 产生相同擦除疑符；**`polyfit` 两向量**返回 **`IVector<? extends Number>`**，可按需转为 `IVector<Double>`/`IVector<Float>`）；嵌套类型 **`IVector.HistogramResult`** / Static helpers; **`polyfit`** on two vectors returns **`IVector<? extends Number>`**; nested **`IVector.HistogramResult`**.
+- **`IDoubleVector`** / **`IFloatVector`**：与上相同签名的静态方法，**委托**至 `IVector` / Same static signatures delegate to **`IVector`**.
+- **`NpyArrayIO`**（`util`）：`.npy` 读写；可与 `Linalg.matrix` / `IMatrix` 配合 / `.npy` I/O; works with **`Linalg.matrix`** / **`IMatrix`**.
+- 实数 FFT：**`RereFFT`** / Real FFT: **`RereFFT`**.
+- 说明见 [`examples/Dense-Arrays-Examples.md`](examples/Dense-Arrays-Examples.md) / See [`examples/Dense-Arrays-Examples.md`](examples/Dense-Arrays-Examples.md).
 
 ## 核心工厂类 / Core Factory Classes
 
@@ -139,7 +149,7 @@ public class Linalg {
     // 从数组创建矩阵 / Create matrix from arrays
     static IMatrix matrix(float[][] array);      // Create matrix from 2D float array
     static IMatrix matrix(double[][] array);     // Create matrix from 2D double array
-    static IMatrix matrix(int[][] array);        // Create matrix from 2D int array
+    // 无 int[][] 重载：请转为 float[][] / double[][] 或使用包装类数组
     
     // 特殊矩阵创建 / Special matrix creation
     static IMatrix zeros(int rows, int cols);    // Create zero matrix
@@ -154,7 +164,7 @@ public class Linalg {
     // 从数组创建向量 / Create vector from arrays
     static IVector vector(float[] array);        // Create vector from float array
     static IVector vector(double[] array);       // Create vector from double array
-    static IVector vector(int[] array);          // Create vector from int array
+    // 无 int[] 重载：请转为 float[] / double[] 或使用 IVector.of(int[]) 等工厂
     
     // 特殊向量创建 / Special vector creation
     static IVector zeros(int length);            // Create zero vector
@@ -165,6 +175,9 @@ public class Linalg {
     static IVector range(int start, int end, int step); // Create range vector with step
     static IVector linspace(float start, float stop, int num); // Create linear space vector
     static IVector logspace(float start, float stop, int num); // Create logarithmic space vector
+
+    // Kronecker 积，等价于 a.kron(b) / NumPy numpy.kron
+    static <T extends Number> IMatrix<T> kron(IMatrix<T> a, IMatrix<T> b);
 }
 ```
 
@@ -476,6 +489,13 @@ public interface IMatrix {
     IMatrix cos();                           // Cosine
     IMatrix tan();                           // Tangent
     IMatrix pow(float exponent);             // Power
+
+    // 与 NumPy / 常见数值库名称对齐的补充（实际签名为泛型 IMatrix&lt;T&gt;）/ NumPy-aligned extras
+    IMatrix mmul(Number scalar);             // 同 multiplyScalar；mmul(IMatrix) 仍为矩阵乘 / like A*s in NumPy
+    IMatrix outer(IMatrix other);            // np.outer(A.ravel(), B.ravel()) 行优先展平 / row-major flatten
+    IMatrix kron(IMatrix other);             // np.kron(A, B)
+    Tuple2<IVector, IMatrix> qrEigen(); // 与 eigen() 相同；短名 / same as eigen(), short name
+    Tuple2<IVector, IMatrix> qrEigenDecomposition(); // 与 qrEigen()、eigen() 相同 / same as qrEigen()
 }
 ```
 
@@ -679,20 +699,22 @@ public interface IRegression {
 }
 ```
 
-### IClassification 接口 / IClassification Interface
+### IClassifier 接口 / IClassifier Interface
 
-The core interface for classification algorithms, providing methods for training and prediction.
+The core interface for classification algorithms: string labels, probability outputs, and batch APIs aligned with the rest of the library.
 
-分类算法的核心接口，提供训练和预测方法。
+分类算法的核心接口：类别为字符串标签，支持概率预测与批量预测，与 `ML` 工厂类配合使用。
 
 ```java
-public interface IClassification {
-    // 训练方法 / Training methods
-    ClassificationResult fit(IMatrix features, String[] labels); // Train classification model
-    
-    // 预测方法 / Prediction methods
-    String predict(IVector features);        // Predict single sample class
-    String[] predict(IMatrix features);      // Predict multiple sample classes
+public interface IClassifier extends ISerializableModel {
+    ClassificationResult fit(IMatrix feature, String[] labels);
+    String predict(IVector x);
+    Map<String, Double> predictProb(IVector x);
+    String[] predictBatch(IMatrix features);
+    BatchPredictionResult predictBatchWithProbs(IMatrix features);
+    boolean isTrained();
+    ClassificationMetrics getMetrics();
+    void setMetrics(ClassificationMetrics metrics);
 }
 ```
 
@@ -704,32 +726,18 @@ Implementation of linear regression with support for various regularization tech
 
 ```java
 public class RereLinearRegression implements IRegression {
-    // 构造函数 / Constructors
-    public RereLinearRegression();                    // Create linear regression with default settings
-    public RereLinearRegression(boolean includeBias, double lambda1, double lambda2); // Create with parameters
-    
-    // 正则化类型枚举 / Regularization type enum
-    public enum RegularizationType {
-        NONE,        // 无正则化 / No regularization
-        L1,          // L1正则化 (Lasso) / L1 regularization (Lasso)
-        L2,          // L2正则化 (Ridge) / L2 regularization (Ridge)
-        ELASTIC_NET  // 弹性网络 / Elastic Net
-    }
-    
-    // 参数设置 / Parameter settings
-    void setRegularizationType(RegularizationType type); // Set regularization type
-    void setLambda1(double lambda1);                  // Set L1 regularization strength
-    void setLambda2(double lambda2);                  // Set L2 regularization strength
-    void setIncludeBias(boolean includeBias);        // Set whether to fit intercept
-    void setOptimizer(IOptimizer optimizer);         // Set optimization algorithm
-    
-    // 模型参数 / Model parameters
-    IVector getWeights();                            // Get regression coefficients
-    double getIntercept();                           // Get intercept term
-    RegressionResult getLastResult();                // Get last training result
-    
-    // 特征重要性 / Feature importance
-    IVector getFeatureImportance();                  // Get feature importance scores
+    RegressionResult fit(IMatrix feature, IVector labels);
+    double predict(IVector x);
+    double r2ScoreOn(IMatrix features, IVector labels);
+    /** λ₁、λ₂ 同时设置，内部根据符号自动推断 RegularizationType */
+    void setRegularization(double lambda1, double lambda2);
+    void setRegularization(RegularizationType type, double lambda1, double lambda2);
+    void setLambda1(double lambda1);
+    void setLambda2(double lambda2);
+    RegularizationType getRegularizationType();
+    double getLambda1();
+    double getLambda2();
+    String getRegularizationDescription();
 }
 ```
 
@@ -740,38 +748,16 @@ Implementation of logistic regression supporting both binary and multi-class cla
 支持二分类和多分类的逻辑回归实现。
 
 ```java
-public class RereLogisticRegression implements IClassification {
-    // 构造函数 / Constructors
-    public RereLogisticRegression();                    // Create logistic regression with default settings
-    public RereLogisticRegression(double learningRate, int maxIterations); // Create with parameters
-    
-    // 正则化类型枚举 / Regularization type enum
-    public enum RegularizationType {
-        NONE,        // 无正则化 / No regularization
-        L1,          // L1正则化 (Lasso) / L1 regularization (Lasso)
-        L2,          // L2正则化 (Ridge) / L2 regularization (Ridge)
-        ELASTIC_NET  // 弹性网络 / Elastic Net
-    }
-    
-    // 参数设置 / Parameter settings
-    void setLearningRate(double learningRate);       // Set learning rate
-    void setMaxIterations(int maxIterations);        // Set maximum iterations
-    void setTolerance(double tolerance);              // Set convergence tolerance
-    void setRegularizationType(RegularizationType type); // Set regularization type
-    void setLambda1(double lambda1);                 // Set L1 regularization strength
-    void setLambda2(double lambda2);                 // Set L2 regularization strength
-    
-    // 训练和预测 / Training and prediction
-    ClassificationResult fit(IMatrix features, String[] labels); // Train model
-    String predict(IVector features);                // Predict single sample
-    String[] predict(IMatrix features);              // Predict multiple samples
-    
-    // 模型参数 / Model parameters
-    IMatrix getWeights();                            // Get weight matrix
-    IVector getBias();                               // Get bias vector
-    boolean isBinaryClassification();               // Check if binary classification
-    int getNumClasses();                            // Get number of classes
-    Map<String, Integer> getLabelMapping();          // Get label mapping
+public class RereLogisticRegression implements IClassifier, IGradientFunction, IObjectiveFunction, ISerializableModel {
+    public enum RegularizationType { NONE, L1, L2, ELASTIC_NET }
+    void setRegularization(double lambda1, double lambda2); // 推断规则与 RereLinearRegression 一致（见主文档）
+    void setLambda1(double lambda1);
+    void setLambda2(double lambda2);
+    RegularizationType getRegularizationType();
+    double getLambda1();
+    double getLambda2();
+    String getRegularizationDescription();
+    // 训练、predict、predictProb 等见 IClassifier 与源码
 }
 ```
 
@@ -782,30 +768,16 @@ Container class for regression analysis results, including model parameters and 
 回归分析结果的容器类，包含模型参数和评估指标。
 
 ```java
+/** 线性回归训练结果（以源码 com.yishape.lab.math.ml.lr.RegressionResult 为准） */
 public class RegressionResult {
-    // 构造函数 / Constructors
-    public RegressionResult(IVector weights, double intercept, double loss); // Create result with parameters
-    
-    // 结果访问 / Result access
-    IVector getWeights();                            // Get regression coefficients
-    double getIntercept();                           // Get intercept term
-    double getLoss();                                // Get training loss
-    double getR2Score();                            // Get R² score
-    double getMSE();                                 // Get mean squared error
-    double getRMSE();                                // Get root mean squared error
-    double getMAE();                                 // Get mean absolute error
-    
-    // 统计信息 / Statistical information
-    double getExplainedVariance();                   // Get explained variance
-    double getUnexplainedVariance();                 // Get unexplained variance
-    double getTotalVariance();                       // Get total variance
-    int getDegreesOfFreedom();                       // Get degrees of freedom
-    
-    // 置信区间 / Confidence intervals
-    Tuple2<Double, Double> getWeightConfidenceInterval(int index, double alpha); // Get weight confidence interval
-    Tuple2<Double, Double> getInterceptConfidenceInterval(double alpha);         // Get intercept confidence interval
+    IVector getWeights();
+    IVector getBias();
+    double getLoss();
+    double getR2Score(); // 训练集决定系数 R²，由 fit 填充
 }
 ```
+
+验证集 R² 使用 `RereLinearRegression.r2ScoreOn(X_val, y_val)`（需另行传入，因未参与训练）。
 
 ### ClassificationResult 类 / ClassificationResult Class
 

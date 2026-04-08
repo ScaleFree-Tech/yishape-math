@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  * 支持的格式：
  * - 颜色: r,g,b,k,w,y,c,m 或 #RRGGBB 或颜色名称
  * - 线条样式: -, --, :, -.
- * - 标记: o,s,^,v,<,>,d,*,+,x,|,_
+ * - 标记: o,s,^,v,&lt;,&gt;,d,*,+,x,|,_ 
  * 
  * @author lteb2
  */

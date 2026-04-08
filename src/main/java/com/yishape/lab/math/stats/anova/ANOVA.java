@@ -1,5 +1,8 @@
 package com.yishape.lab.math.stats.anova;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.stats.Stats;
 import com.yishape.lab.math.stats.distribution.FDistribution;
 import com.yishape.lab.math.linalg.IDoubleVector;
@@ -9,6 +12,9 @@ import com.yishape.lab.math.linalg.IDoubleVector;
  * @author lteb2
  */
 public class ANOVA {
+
+    private static final Logger log = LoggerFactory.getLogger(ANOVA.class);
+
 
     public ANOVAResult performOneWayANOVA(IDoubleVector... groups) {
         // 单因素方差分析的核心计算方法
@@ -225,7 +231,7 @@ public class ANOVA {
     }
 
     public static boolean testNormality(IDoubleVector group) {
-        System.out.println("=== 正态性检验 / Normality Test ===");
+        log.debug("=== 正态性检验 / Normality Test ===");
 
         // 简化的正态性检验（使用偏度和峰度）
         // IDoubleVector.skewness() - 计算偏度，衡量分布的对称性
@@ -236,16 +242,16 @@ public class ANOVA {
         // 峰度 = 0 表示正态分布，|峰度| < 1 表示接近正态分布
         double kurtosis = group.kurtosis();
 
-        System.out.println("  偏度 / Skewness: " + skewness);
-        System.out.println("  峰度 / Kurtosis: " + kurtosis);
+        log.debug("  偏度 / Skewness: " + skewness);
+        log.debug("  峰度 / Kurtosis: " + kurtosis);
         // 简化的正态性判断标准：|偏度| < 1 且 |峰度| < 1
-        System.out.println("  正态性 / Normality: "
+        log.debug("  正态性 / Normality: "
                 + (Math.abs(skewness) < 1.0f && Math.abs(kurtosis) < 1.0f ? "通过 / Pass" : "未通过 / Fail"));
         return Math.abs(skewness) < 1.0f && Math.abs(kurtosis) < 1.0f;
     }
 
     public boolean testHomogeneityOfVariance(IDoubleVector... groups) {
-        System.out.println("\n=== 方差齐性检验 / Homogeneity of Variance Test ===");
+        log.debug("\n=== 方差齐性检验 / Homogeneity of Variance Test ===");
 
         // 计算各组的方差
         double[] variances = new double[groups.length];
@@ -268,13 +274,13 @@ public class ANOVA {
         // 方差比 = 最大方差 / 最小方差
         // 如果方差比 < 4，通常认为满足方差齐性假设
         double ratio = maxVar / minVar;
-        System.out.println("方差比 / Variance ratio: " + ratio);
-        System.out.println("方差齐性 / Homogeneity of variance: " + (ratio < 4.0f ? "通过 / Pass" : "未通过 / Fail"));
+        log.debug("方差比 / Variance ratio: " + ratio);
+        log.debug("方差齐性 / Homogeneity of variance: " + (ratio < 4.0f ? "通过 / Pass" : "未通过 / Fail"));
         return ratio < 4.0f;
     }
 
     public void performTukeyHSD(IDoubleVector... groups) {
-        System.out.println("=== Tukey HSD多重比较 / Tukey HSD Multiple Comparisons ===");
+        log.debug("=== Tukey HSD多重比较 / Tukey HSD Multiple Comparisons ===");
 
         // Tukey HSD多重比较的核心计算方法
         // 参数：groups - 可变参数，每个double[]代表一个组的数据
@@ -314,8 +320,8 @@ public class ANOVA {
         // 其中：q是Tukey临界值，MSE是合并方差，n是每组样本量
         double hsd = qCritical * (double) Math.sqrt(pooledVariance / (double) n);
 
-        System.out.println("Tukey HSD临界值 / Tukey HSD critical value: " + hsd);
-        System.out.println("\n组间比较 / Between-group comparisons:");
+        log.debug("Tukey HSD临界值 / Tukey HSD critical value: " + hsd);
+        log.debug("\n组间比较 / Between-group comparisons:");
 
         // 进行所有组对之间的比较
         for (int i = 0; i < k; i++) {
@@ -325,8 +331,8 @@ public class ANOVA {
                 // 判断差异是否显著
                 // 如果|均值差异| > HSD，则认为差异显著
                 boolean significant = diff > hsd;
-                System.out.printf("组%d vs 组%d: 差异=%.3f, %s%n",
-                        i + 1, j + 1, diff, significant ? "显著" : "不显著");
+                log.debug(String.format("组%d vs 组%d: 差异=%.3f, %s%n",
+                        i + 1, j + 1, diff, significant ? "显著" : "不显著"));
             }
         }
     }

@@ -5,7 +5,12 @@ package com.yishape.lab.math.compute;
  * @author lteb2
  */
 public class ComputerConfig {
-    public static final boolean USE_SIMD = false;
+    /**
+     * 是否尝试使用 SIMD（Vector API）。默认 true；若 JVM 未 {@code --add-modules jdk.incubator.vector}，
+     * 探测会失败并自动回退到 SISD。可通过 {@code -Dyishape.math.use.simd=false} 强制标量路径。
+     */
+    public static final boolean USE_SIMD = Boolean.parseBoolean(
+            System.getProperty("yishape.math.use.simd", "true"));
     public static final boolean USE_GPU = false;
     //矩阵或者向量元素多于此数就使用GPU
     public static final int GPU_THRESHOLD = 10000000; // 10M elements - scalar operations need much higher threshold due to overhead

@@ -1,14 +1,18 @@
 package com.yishape.lab.math.ml;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
-import com.yishape.lab.math.ml.cls.IClassification;
 import com.yishape.lab.math.ml.cls.RereLogisticRegression;
 import com.yishape.lab.math.ml.cls.knn.RereKnn;
 import com.yishape.lab.math.ml.cls.tree.RereRandomForest;
 import com.yishape.lab.math.ml.cls.tree.RereXGboost;
 import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.ml.metric.CrossValidation;
+import com.yishape.lab.math.ml.metric.CrossValidationLogger;
 import com.yishape.lab.math.ml.metric.CrossValidationResult;
+import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * 算法工具类，提供各种机器学习算法的工厂方法和评估工具。
@@ -24,22 +28,25 @@ import com.yishape.lab.math.ml.metric.CrossValidationResult;
  * 使用示例：</p>
  * <pre>{@code
  * // 创建逻辑回归分类器
- * IClassification lr = ML.logisticRegression(0.1, 0.01);
- *
- * // 创建随机森林分类器
- * IClassification rf = ML.randomForest();
- *
- * // 计算分类性能指标
- * ClassificationMetrics metrics = ML.classificationMetric(model, features, labels);
- *
- * // 执行k折交叉验证
- * CrossValidationResult cvResult = ML.kFoldCrossValidation(classifier, X, y, 5);
- * }</pre>
+IClassifier lr = ML.logisticRegression(0.1, 0.01);
+
+// 创建随机森林分类器
+IClassifier rf = ML.randomForest();
+
+// 计算分类性能指标
+ClassificationMetrics metrics = ML.classificationMetric(model, features, labels);
+
+// 执行k折交叉验证
+CrossValidationResult cvResult = ML.kFoldCrossValidation(classifier, X, y, 5);
+}</pre>
  *
  * @author lteb2
  * @since 1.0
  */
 public class ML {
+
+    private static final Logger log = LoggerFactory.getLogger(ML.class);
+
 
     /**
      * 创建带有L1和L2正则化的逻辑回归分类器。
@@ -57,7 +64,7 @@ public class ML {
      * @see <a href="https://en.wikipedia.org/wiki/Logistic_regression">Logistic
      * Regression</a>
      */
-    public static IClassification logisticRegression(double l1Weight, double l2Weight) {
+    public static IClassifier logisticRegression(double l1Weight, double l2Weight) {
         return new RereLogisticRegression(l1Weight, l2Weight);
     }
 
@@ -79,7 +86,7 @@ public class ML {
      * @see <a href="https://en.wikipedia.org/wiki/Random_forest">Random
      * Forest</a>
      */
-    public static IClassification randomForest() {
+    public static IClassifier randomForest() {
         return new RereRandomForest();
     }
 
@@ -101,7 +108,7 @@ public class ML {
      * @see RereXGboost
      * @see <a href="https://xgboost.readthedocs.io/">XGBoost Documentation</a>
      */
-    public static IClassification xGboost() {
+    public static IClassifier xGboost() {
         return new RereXGboost();
     }
 
@@ -125,7 +132,7 @@ public class ML {
      * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">K-Nearest
      * Neighbors</a>
      */
-    public static IClassification kNN(int k) {
+    public static IClassifier kNN(int k) {
         return new RereKnn(k);
     }
 
@@ -153,7 +160,7 @@ public class ML {
      * <a href="https://en.wikipedia.org/wiki/Precision_and_recall">Precision
      * and Recall</a>
      */
-    public static ClassificationMetrics classificationMetrics(IClassification model, IMatrix feature, String[] trueLabels) {
+    public static ClassificationMetrics classificationMetrics(IClassifier model, IMatrix feature, String[] trueLabels) {
         ClassificationMetrics metrics = ClassificationMetrics.compute(model, feature, trueLabels);
         return metrics;
     }
@@ -182,9 +189,40 @@ public class ML {
      * @see
      * <a href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">Cross-Validation</a>
      */
-    public static CrossValidationResult kFoldCrossValidation(IClassification classifier,
+    public static CrossValidationResult kFoldCrossValidation(IClassifier classifier,
             IMatrix<Double> X, String[] y, int k) {
         var result = CrossValidation.kFoldCrossValidation(classifier, X, y, k);
+        return result;
+    }
+    
+        /**
+     * 执行k折交叉验证来评估分类器的性能。
+     *
+     * <p>
+     * 交叉验证是一种评估模型泛化能力的统计方法。k折交叉验证的步骤：</p>
+     * <ol>
+     * <li>将数据集随机分成k个大小相等的子集</li>
+     * <li>对于每个子集，使用其余k-1个子集作为训练集，该子集作为测试集</li>
+     * <li>训练模型并在测试集上评估性能</li>
+     * <li>重复k次，计算平均性能指标</li>
+     * </ol>
+     *
+     * @param classifier 要评估的分类器
+     * @param X 特征矩阵，每一行代表一个样本，每一列代表一个特征
+     * @param y 类别标签数组，长度必须与特征矩阵的行数一致
+     * @param k 折数，通常取5或10
+     * @param logger 交叉检验折间输出的训练日志
+     * @return 交叉验证结果，包含每次验证的性能指标和平均值
+     * @throws IllegalArgumentException 当k小于2或数据集大小不足以进行k折分割时抛出
+     *
+     * @see CrossValidation
+     * @see CrossValidationResult
+     * @see
+     * <a href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">Cross-Validation</a>
+     */
+    public static CrossValidationResult kFoldCrossValidation(IClassifier classifier,
+            IMatrix<Double> X, String[] y, int k, CrossValidationLogger logger) {
+        var result = CrossValidation.kFoldCrossValidation(classifier, X, y, k,logger);
         return result;
     }
 
@@ -194,12 +232,12 @@ public class ML {
      * @param modelPath
      * @return
      */
-    public static IClassification loadClassifier(String modelPath) {
+    public static IClassifier loadClassifier(String modelPath) {
         try {
             ISerializableModel model = ISerializableModel.load(modelPath);
-            return (IClassification) model;
+            return (IClassifier) model;
         } catch (Exception e) {
-            e.printStackTrace();
+//            log.error("exception", e);
         }
         return null;
     }
@@ -209,7 +247,7 @@ public class ML {
      * @param classifier
      * @param modelPath 
      */
-    public static void saveClassifier(IClassification classifier, String modelPath) {
+    public static void saveClassifier(IClassifier classifier, String modelPath) {
         classifier.save(modelPath);
     }
     

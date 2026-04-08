@@ -1,5 +1,8 @@
 package com.yishape.lab.math.compute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Serializable;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.VectorMask;
@@ -13,6 +16,9 @@ import jdk.incubator.vector.VectorSpecies;
  * @author lteb2
  */
 public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(SIMDDoubleComputer.class);
+
     
     // 性能优化常量
     private static final VectorSpecies<Double> PREFERRED_SPECIES;
@@ -97,8 +103,8 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
             
             if (ENABLE_DETAILED_LOGGING && totalOperations % 10000 == 0) {
                 double vectorizationRate = (double) totalVectorizedOperations / totalOperations * 100;
-                System.out.printf("SIMD Stats: Operations=%d, Vectorization Rate=%.2f%%, Data Size=%d%n", 
-                    totalOperations, vectorizationRate, dataSize);
+                log.debug(String.format("SIMD Stats: Operations=%d, Vectorization Rate=%.2f%%, Data Size=%d%n",
+                    totalOperations, vectorizationRate, dataSize));
             }
         }
     }
@@ -170,19 +176,31 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     /**
-     * 检查是否支持Java Vector API计算
+     * 检查是否支持Java Vector API计算（加载、运算、归约烟测；失败则回退 SISD）
      *
      * @return true if Vector API is supported, false otherwise
      */
     public static boolean checkIfSupport() {
         try {
-            // 测试基本的Vector API操作
             VectorSpecies<Double> species = PREFERRED_SPECIES;
-            var len = species.length();
-//            System.out.println("Optimal SPECIES Length: " + len);
-//            System.out.println("Optimal Block Size: " + OPTIMAL_BLOCK_SIZE);
-            return true;
-        } catch (Exception ex) {
+            int vl = species.length();
+            if (vl <= 0) {
+                return false;
+            }
+            double[] a = new double[vl];
+            double[] b = new double[vl];
+            java.util.Arrays.fill(a, 1.0);
+            java.util.Arrays.fill(b, 1.0);
+            DoubleVector va = DoubleVector.fromArray(species, a, 0);
+            DoubleVector vb = DoubleVector.fromArray(species, b, 0);
+            DoubleVector vs = va.add(vb);
+            double sum = vs.reduceLanes(VectorOperators.ADD);
+            if (Double.isNaN(sum) || Double.isInfinite(sum)) {
+                return false;
+            }
+            double expected = 2.0 * vl;
+            return Math.abs(sum - expected) <= Math.ulp(expected) * 4;
+        } catch (Throwable ex) {
             return false;
         }
     }

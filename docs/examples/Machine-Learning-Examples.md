@@ -2,9 +2,9 @@
 
 ## 概述 / Overview
 
-本文档提供了 `com.yishape.lab.math` 包中机器学习算法的详细使用示例。包括线性回归和逻辑回归的完整示例代码，涵盖从基础使用到高级特性的各个方面。
+本文档提供了 `com.yishape.lab.math` 包中机器学习算法的详细使用示例。矩阵与向量推荐通过 `com.yishape.lab.math.linalg.Linalg` 创建（`Linalg.matrix` / `Linalg.vector`），与库内其余文档一致。部分片段为节选，需自行补上与首节相同的 `import`。
 
-This document provides detailed usage examples for machine learning algorithms in the `com.yishape.lab.math` package. It includes complete example code for linear regression and logistic regression, covering everything from basic usage to advanced features.
+This document provides machine learning usage examples for `com.yishape.lab.math`. Prefer `Linalg.matrix` and `Linalg.vector` for `IMatrix` / `IVector` construction. Some blocks are excerpts—add the same imports as in the first complete example where needed.
 
 ## 目录 / Table of Contents
 
@@ -22,40 +22,42 @@ This document provides detailed usage examples for machine learning algorithms i
 ### 基本线性回归 / Basic Linear Regression
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.lr.RereLinearRegression;
 import com.yishape.lab.math.ml.lr.RegressionResult;
 
 public class BasicLinearRegressionExample {
     public static void main(String[] args) {
-        // 准备训练数据 / Prepare training data
-        float[][] featureData = {
+        // 准备训练数据 / Prepare training data（Linalg 统一入口；线性回归内部对类型一致敏感，推荐 double 全链路）
+        double[][] featureData = {
                 {1, 2, 3},
                 {4, 5, 6},
                 {7, 8, 9}
         };
-        float[] labelData = {14, 32, 50};
+        double[] labelData = {14, 32, 50};
 
-        IMatrix features = IMatrix.of(featureData);
-        IVector labels = IVector.of(labelData);
+        IMatrix<Double> features = Linalg.matrix(featureData);
+        IVector<Double> labels = Linalg.vector(labelData);
 
         // 创建和训练模型 / Create and train model
         RereLinearRegression lr = new RereLinearRegression();
         RegressionResult result = lr.fit(features, labels);
 
-        // 获取结果 / Get results
+        // 获取结果 / Get results（weights、bias、loss；训练集 R² 为属性）
         IVector weights = result.getWeights();
-        float loss = result.getLoss();
-        float r2Score = result.getR2Score();
+        double loss = result.getLoss();
+        double r2 = result.getR2Score();
 
         System.out.println("权重: " + weights);
         System.out.println("损失: " + loss);
-        System.out.println("R²分数: " + r2Score);
+        System.out.println("R²: " + r2);
+        // 验证集 R²：lr.r2ScoreOn(X_val, y_val)
 
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{2, 3, 4});
-        float prediction = lr.predict(newFeatures);
+        IVector<Double> newFeatures = Linalg.vector(new double[]{2, 3, 4});
+        double prediction = lr.predict(newFeatures);
         System.out.println("预测值: " + prediction);
     }
 }
@@ -63,18 +65,21 @@ public class BasicLinearRegressionExample {
 
 ### 带正则化的线性回归 / Linear Regression with Regularization
 
+`setRegularization(λ₁, λ₂)` 会按两系数**自动推断** L1 / L2 / ElasticNet / 无正则（见主文档 `Machine-Learning.md` 中「正则化参数与 API」）。**不存在** `setRegularizationType` 方法。
+
 ```java
 public class RegularizedLinearRegressionExample {
     public static void main(String[] args) {
-        // 创建带L2正则化的模型 / Create model with L2 regularization
+        // L2（Ridge）：λ₁=0, λ₂>0
         RereLinearRegression lr = new RereLinearRegression();
-        lr.setRegularization(0.0, 0.1); // L1=0.0, L2=0.1
+        lr.setRegularization(0.0, 0.1);
         
         // 训练模型 / Train model
         RegressionResult result = lr.fit(features, labels);
         
         // 查看正则化效果 / View regularization effects
-        System.out.println("L2正则化系数: " + lr.getLambda2());
+        System.out.println(lr.getRegularizationDescription());
+        System.out.println("λ₂: " + lr.getLambda2());
         System.out.println("最终损失: " + result.getLoss());
     }
 }
@@ -82,11 +87,14 @@ public class RegularizedLinearRegressionExample {
 
 ## 逻辑回归示例 / Logistic Regression Examples
 
+**正则化**：`setRegularization(λ₁, λ₂)` 的类型推断与 `RereLinearRegression` **一致**（双正 ElasticNet、仅 L1、仅 L2、无正则）；详见主文档 `Machine-Learning.md`。训练时 `fit` 会打印正则与损失，也可用 `getRegularizationDescription()` 确认。
+
 ### 基本二分类逻辑回归 / Basic Binary Classification
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.cls.RereLogisticRegression;
 import com.yishape.lab.math.ml.cls.LogisticRegressionResult;
 
@@ -100,7 +108,7 @@ public class BasicBinaryClassificationExample {
         String[] labelData = {"正类", "正类", "正类", "正类",
                 "负类", "负类", "负类", "负类"};
 
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
 
         // 创建和训练模型 / Create and train model
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -109,19 +117,19 @@ public class BasicBinaryClassificationExample {
         // 获取结果 / Get results
         IVector weights = result.getWeights();
         IVector bias = result.getBias();
-        float loss = result.getLoss();
+        double loss = result.getLoss();
 
         System.out.println("权重: " + weights); // Weights
         System.out.println("偏置: " + bias); // Bias
         System.out.println("损失: " + loss); // Loss
 
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{2.5f, 3.5f});
+        IVector<Float> newFeatures = Linalg.vector(new float[]{2.5f, 3.5f});
         String prediction = lr.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
 
         // 预测概率 / Predict probability
-        float probability = lr.predictProbability(newFeatures);
+        double probability = lr.predictProbability(newFeatures);
         System.out.println("正类概率: " + probability); // Positive class probability
     }
 }
@@ -144,7 +152,7 @@ public class MulticlassClassificationExample {
                              "类别B", "类别B", "类别B", "类别B", 
                              "类别C", "类别C", "类别C", "类别C"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建和训练模型 / Create and train model
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -155,12 +163,12 @@ public class MulticlassClassificationExample {
         System.out.println("类别数量: " + lr.getNumClasses()); // Number of classes
         
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{2.5f, 3.5f});
+        IVector<Float> newFeatures = Linalg.vector(new float[]{2.5f, 3.5f});
         String prediction = lr.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
         
         // 预测所有类别的概率 / Predict probabilities for all classes
-        float[] probabilities = lr.predictProbabilities(newFeatures);
+        double[] probabilities = lr.predictProbabilities(newFeatures);
         System.out.println("各类别概率: " + Arrays.toString(probabilities)); // Class probabilities
     }
 }
@@ -169,28 +177,29 @@ public class MulticlassClassificationExample {
 ### 带正则化的逻辑回归 / Logistic Regression with Regularization
 
 ```java
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.cls.LogisticRegressionResult;
+import com.yishape.lab.math.ml.cls.RereLogisticRegression;
+
 public class RegularizedLogisticRegressionExample {
     public static void main(String[] args) {
-        // 准备数据 / Prepare data
         float[][] featureData = {
             {1, 2}, {2, 3}, {3, 4}, {4, 5},
             {5, 6}, {6, 7}, {7, 8}, {8, 9}
         };
-        String[] labelData = {"正类", "正类", "正类", "正类", 
+        String[] labelData = {"正类", "正类", "正类", "正类",
                              "负类", "负类", "负类", "负类"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
-        // 创建带正则化的模型 / Create model with regularization
         RereLogisticRegression lr = new RereLogisticRegression();
-        lr.setRegularization(0.01, 0.1); // L1=0.01, L2=0.1
+        lr.setRegularization(0.01, 0.1); // λ₁、λ₂ 均 &gt;0 → ElasticNet
         
-        // 训练模型 / Train model
         LogisticRegressionResult result = lr.fit(features, labelData);
         
-        // 查看正则化效果 / View regularization effects
-        System.out.println("正则化类型: " + lr.getRegularizationDescription()); // Regularization type
-        System.out.println("最终损失: " + result.getLoss()); // Final loss
+        System.out.println(lr.getRegularizationDescription());
+        System.out.println("最终损失: " + result.getLoss());
     }
 }
 ```
@@ -210,7 +219,7 @@ public class BatchPredictionExample {
         String[] trainLabels = {"正类", "正类", "正类", "正类", 
                                "负类", "负类", "负类", "负类"};
         
-        IMatrix trainFeatures = IMatrix.of(trainData);
+        IMatrix<Float> trainFeatures = Linalg.matrix(trainData);
         
         // 训练模型 / Train model
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -220,7 +229,7 @@ public class BatchPredictionExample {
         float[][] testData = {
             {1.5f, 2.5f}, {2.5f, 3.5f}, {3.5f, 4.5f}
         };
-        IMatrix testFeatures = IMatrix.of(testData);
+        IMatrix<Float> testFeatures = Linalg.matrix(testData);
         
         // 批量预测 / Batch prediction
         String[] predictions = lr.predictBatch(testFeatures);
@@ -243,7 +252,7 @@ public class ModelEvaluationExample {
         String[] trainLabels = {"正类", "正类", "正类", "正类", 
                                "负类", "负类", "负类", "负类"};
         
-        IMatrix trainFeatures = IMatrix.of(trainData);
+        IMatrix<Float> trainFeatures = Linalg.matrix(trainData);
         
         // 训练模型 / Train model
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -259,7 +268,7 @@ public class ModelEvaluationExample {
         };
         String[] testLabels = {"正类", "正类", "负类", "负类"};
         
-        IMatrix testFeatures = IMatrix.of(testData);
+        IMatrix<Float> testFeatures = Linalg.matrix(testData);
         
         // 在测试集上评估 / Evaluate on test set
         String[] testPredictions = lr.predictBatch(testFeatures);
@@ -298,7 +307,7 @@ public class AdvancedConfigurationExample {
         String[] labelData = {"正类", "正类", "正类", "正类",
                              "负类", "负类", "负类", "负类"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建模型并配置参数 / Create model and configure parameters
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -345,7 +354,7 @@ public class CrossValidationExample {
         String[] labelData = {"正类", "正类", "正类", "正类",
                              "负类", "负类", "负类", "负类"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建逻辑回归模型 / Create logistic regression model
         RereLogisticRegression lr = new RereLogisticRegression();
@@ -377,8 +386,8 @@ public class CrossValidationExample {
 ### 基本随机森林分类 / Basic Random Forest Classification
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.ml.cls.tree.RereRandomForest;
 import com.yishape.lab.math.ml.cls.tree.RandomForestResult;
 
@@ -392,7 +401,7 @@ public class BasicRandomForestExample {
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
 
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
 
         // 创建和训练随机森林模型 / Create and train Random Forest model
         RereRandomForest rf = new RereRandomForest();
@@ -406,13 +415,13 @@ public class BasicRandomForestExample {
         System.out.println("特征重要性: " + featureImportance); // Feature importance
 
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        IVector<Float> newFeatures = Linalg.vector(new float[]{3, 4, 5});
         String prediction = rf.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
 
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
-        IMatrix testFeatures = IMatrix.of(testData);
+        IMatrix<Float> testFeatures = Linalg.matrix(testData);
         String[] predictions = rf.predictBatch(testFeatures);
         System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
     }
@@ -431,7 +440,7 @@ public class ConfiguredRandomForestExample {
         };
         String[] labelData = {"类别A", "类别A", "类别B", "类别B", "类别A", "类别A", "类别B", "类别B"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建随机森林并配置参数 / Create Random Forest and configure parameters
         RereRandomForest rf = new RereRandomForest();
@@ -486,7 +495,7 @@ public class RandomForestFeatureImportanceExample {
         String[] labelData = {"正类", "正类", "负类", "负类", "正类", "正类", "负类", "负类"};
         String[] featureNames = {"特征1", "特征2", "特征3", "特征4", "特征5"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 训练随机森林 / Train Random Forest
         RereRandomForest rf = new RereRandomForest();
@@ -520,8 +529,8 @@ public class RandomForestFeatureImportanceExample {
 ### 基本XGBoost分类 / Basic XGBoost Classification
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.ml.cls.tree.RereXGboost;
 import com.yishape.lab.math.ml.cls.tree.XGBoostResult;
 
@@ -537,7 +546,7 @@ public class BasicXGBoostExample {
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
 
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
 
         // 创建和训练XGBoost模型 / Create and train XGBoost model
         RereXGboost xgb = new RereXGboost();
@@ -551,13 +560,13 @@ public class BasicXGBoostExample {
         System.out.println("最终训练损失: " + trainLoss.get(trainLoss.size() - 1)); // Final training loss
 
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        IVector<Float> newFeatures = Linalg.vector(new float[]{3, 4, 5});
         String prediction = xgb.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
 
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
-        IMatrix testFeatures = IMatrix.of(testData);
+        IMatrix<Float> testFeatures = Linalg.matrix(testData);
         String[] predictions = xgb.predictBatch(testFeatures);
         System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
     }
@@ -576,7 +585,7 @@ public class ConfiguredXGBoostExample {
         };
         String[] labelData = {"类别A", "类别A", "类别B", "类别B", "类别A", "类别A", "类别B", "类别B"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建XGBoost并配置参数 / Create XGBoost and configure parameters
         RereXGboost xgb = new RereXGboost();
@@ -639,7 +648,7 @@ public class XGBoostEarlyStoppingExample {
             labelData[i] = (i % 2 == 0) ? "正类" : "负类";
         }
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建XGBoost并配置早停 / Create XGBoost and configure early stopping
         RereXGboost xgb = new RereXGboost();
@@ -678,8 +687,8 @@ public class XGBoostEarlyStoppingExample {
 ### 基本集成分类 / Basic Ensemble Classification
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.ml.cls.EnsembleClassifier;
 import com.yishape.lab.math.ml.cls.EnsembleResult;
 
@@ -695,7 +704,7 @@ public class BasicEnsembleExample {
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
 
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
 
         // 创建集成分类器 / Create ensemble classifier
         EnsembleClassifier ensemble = new EnsembleClassifier(
@@ -712,13 +721,13 @@ public class BasicEnsembleExample {
         System.out.println("分类器权重: " + weights); // Classifier weights
 
         // 预测新样本 / Predict new sample
-        IVector newFeatures = IVector.of(new float[]{3, 4, 5});
+        IVector<Float> newFeatures = Linalg.vector(new float[]{3, 4, 5});
         String prediction = ensemble.predict(newFeatures);
         System.out.println("预测类别: " + prediction); // Predicted class
 
         // 批量预测 / Batch prediction
         float[][] testData = {{2, 3, 4}, {8, 9, 10}};
-        IMatrix testFeatures = IMatrix.of(testData);
+        IMatrix<Float> testFeatures = Linalg.matrix(testData);
         String[] predictions = ensemble.predictBatch(testFeatures);
         System.out.println("批量预测结果: " + java.util.Arrays.toString(predictions));
     }
@@ -738,7 +747,7 @@ public class EnsembleStrategyComparisonExample {
         };
         String[] labelData = {"A", "A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B"};
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 测试不同的集成策略 / Test different ensemble strategies
         EnsembleClassifier.EnsembleStrategy[] strategies = {
@@ -765,7 +774,7 @@ public class EnsembleStrategyComparisonExample {
             }
             
             // 预测测试样本 / Predict test sample
-            IVector testFeatures = IVector.of(new float[]{5, 6, 7, 8});
+            IVector<Float> testFeatures = Linalg.vector(new float[]{5, 6, 7, 8});
             String prediction = ensemble.predict(testFeatures);
             System.out.println("预测结果: " + prediction); // Prediction result
         }
@@ -790,14 +799,14 @@ public class EnsembleWeightOptimizationExample {
             labelData[i] = (i % 3 == 0) ? "类别A" : (i % 3 == 1) ? "类别B" : "类别C";
         }
         
-        IMatrix features = IMatrix.of(featureData);
+        IMatrix<Float> features = Linalg.matrix(featureData);
         
         // 创建集成分类器 / Create ensemble classifier
         EnsembleClassifier ensemble = new EnsembleClassifier(
             EnsembleClassifier.EnsembleStrategy.WEIGHTED_VOTING, 42L);
         
         // 手动设置初始权重 / Manually set initial weights
-        IVector initialWeights = IVector.of(new float[]{0.4f, 0.3f, 0.3f});
+        IVector<Float> initialWeights = Linalg.vector(new float[]{0.4f, 0.3f, 0.3f});
         ensemble.setClassifierWeights(initialWeights);
         
         System.out.println("初始权重: " + initialWeights); // Initial weights
@@ -829,8 +838,8 @@ public class EnsembleWeightOptimizationExample {
 ### K-Means++聚类示例 / K-Means++ Clustering Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.clustering.KMeansPlusPlus;
 import com.yishape.lab.math.ml.clustering.ClusteringMetrics;
@@ -874,8 +883,8 @@ public class KMeansExample {
 ### 高斯混合模型聚类示例 / Gaussian Mixture Model Clustering Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
-import com.yishape.lab.math.IVector;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.clustering.GMMClustering;
 
@@ -930,7 +939,7 @@ public class GMMExample {
 ### PCA降维示例 / PCA Dimensionality Reduction Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.dimreduce.RerePCA;
 
@@ -968,7 +977,7 @@ public class PCAExample {
 ### SVD降维示例 / SVD Dimensionality Reduction Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.dimreduce.RereSVD;
 
@@ -1004,7 +1013,7 @@ public class SVDExample {
 ### t-SNE降维示例 / t-SNE Dimensionality Reduction Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.dimreduce.RereTSNE;
 
@@ -1049,7 +1058,7 @@ public class TSNEExample {
 ### UMAP降维示例 / UMAP Dimensionality Reduction Example
 
 ```java
-import com.yishape.lab.math.IMatrix;
+import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.Linalg;
 import com.yishape.lab.math.ml.dimreduce.RereUMAP;
 

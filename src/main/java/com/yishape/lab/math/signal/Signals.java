@@ -1,5 +1,8 @@
 package com.yishape.lab.math.signal;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.signal.wavele.WaveletAnalysis;
 import com.yishape.lab.math.signal.wavele.WaveletPlots;
@@ -31,6 +34,9 @@ import com.yishape.lab.math.signal.wavele.WaveletCoefficients;
  * @since 1.0
  */
 public class Signals {
+
+    private static final Logger log = LoggerFactory.getLogger(Signals.class);
+
     
     // ========== 信号生成方法 / Signal Generation Methods ==========
     
@@ -838,32 +844,32 @@ public class Signals {
     public static void main(String[] args) {
         try {
             // Test signal generation
-            System.out.println("Testing signal generation...");
+            log.debug("Testing signal generation...");
             IVector<Double> sineWave = Signals.sineWave(100, 10, 1000, 1.0, 0);
-            System.out.println("Generated sine wave with " + sineWave.length() + " samples");
+            log.debug("Generated sine wave with " + sineWave.length() + " samples");
             
             IVector<Double> cosineWave = Signals.cosineWave(100, 10, 1000, 1.0, 0);
-            System.out.println("Generated cosine wave with " + cosineWave.length() + " samples");
+            log.debug("Generated cosine wave with " + cosineWave.length() + " samples");
             
             IVector<Double> squareWave = Signals.squareWave(100, 10, 1000, 1.0, 0.5);
-            System.out.println("Generated square wave with " + squareWave.length() + " samples");
+            log.debug("Generated square wave with " + squareWave.length() + " samples");
             
             IVector<Double> noise = Signals.whiteNoise(100, 0.1);
-            System.out.println("Generated white noise with " + noise.length() + " samples");
+            log.debug("Generated white noise with " + noise.length() + " samples");
             
             // Test signal filtering
-            System.out.println("\nTesting signal filtering...");
+            log.debug("\nTesting signal filtering...");
             IVector<Double> filtered = Signals.butterworthLowPass(sineWave, 50, 1000, 4);
-            System.out.println("Applied Butterworth filter");
+            log.debug("Applied Butterworth filter");
             
             // Test signal analysis
-            System.out.println("\nTesting signal analysis...");
+            log.debug("\nTesting signal analysis...");
             IVector<Double> autocorr = Signals.autocorrelation(sineWave);
-            System.out.println("Calculated autocorrelation with " + autocorr.length() + " samples");
+            log.debug("Calculated autocorrelation with " + autocorr.length() + " samples");
             
-            System.out.println("\nAll tests passed!");
+            log.debug("\nAll tests passed!");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

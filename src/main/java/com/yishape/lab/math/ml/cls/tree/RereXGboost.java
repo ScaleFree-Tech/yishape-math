@@ -1,11 +1,14 @@
 package com.yishape.lab.math.ml.cls.tree;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.cls.BatchPredictionResult;
-import com.yishape.lab.math.ml.cls.IClassification;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.IOnlineOptimizer;
@@ -14,6 +17,7 @@ import com.yishape.lab.math.optimize.newton.RereOnlineAdam;
 
 import java.util.*;
 import java.io.*;
+import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * RereXGboost分类器
@@ -26,7 +30,10 @@ import java.io.*;
  * @version 1.0
  * @since 1.0
  */
-public class RereXGboost implements IClassification, IGradientFunction, IObjectiveFunction, ISerializableModel {
+public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFunction, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereXGboost.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -110,6 +117,8 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
     private IOnlineOptimizer optimizer;
     private String optimizerType = "adam"; // 默认使用SGD
     private double optimizerLearningRate = 0.01;
+    
+    private ClassificationMetrics metrics;
     
     /**
      * 默认构造函数
@@ -217,7 +226,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
                 } else {
                     noImprovementCount++;
                     if (noImprovementCount >= earlyStoppingRounds) {
-                        System.out.println("Early stopping at iteration " + iteration);
+                        log.debug("Early stopping at iteration " + iteration);
                         break;
                     }
                 }
@@ -225,11 +234,12 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
             
             // 打印进度
             if ((iteration + 1) % 10 == 0) {
-                System.out.printf("Iteration %d: Train Loss = %.6f", iteration + 1, trainLoss);
                 if (validPredictions != null) {
-                    System.out.printf(", Valid Loss = %.6f", validationLossHistory.get(iteration));
+                    log.debug(String.format("Iteration %d: Train Loss = %.6f, Valid Loss = %.6f",
+                            iteration + 1, trainLoss, validationLossHistory.get(iteration)));
+                } else {
+                    log.debug(String.format("Iteration %d: Train Loss = %.6f", iteration + 1, trainLoss));
                 }
-                System.out.println();
             }
         }
         
@@ -249,7 +259,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         }
         
         // 获取预测概率
-        IVector probabilities = predictProba(x);
+        IVector probabilities = predictProbInternal(x);
         
         // 使用向量API找到最大概率对应的类别索引
         int maxIndex = probabilities.argMax();
@@ -262,7 +272,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
      * @param x 特征向量
      * @return 各类别的概率
      */
-    public IVector predictProba(IVector x) {
+    public IVector predictProbInternal(IVector x) {
         if (trees.isEmpty()) {
             throw new IllegalStateException("Model has not been trained yet.");
         }
@@ -292,6 +302,51 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         IMatrix probMatrix = lossFunction.predictProba(predictions);
         return probMatrix.getRow(0);
     }
+
+    @Override
+    public Map<String, Double> predictProb(IVector x) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+        
+        if (x == null) {
+            throw new IllegalArgumentException("输入特征向量不能为null");
+        }
+        
+        // 获取预测概率向量
+        IVector probabilities = predictProbInternal(x);
+        
+        // 转换为Map格式
+        Map<String, Double> result = new HashMap<>();
+        
+        if (isBinary) {
+            // 二分类：返回两个类别的概率
+            double prob1 = probabilities.get(0).doubleValue();
+            double prob0 = 1.0 - prob1;
+            // 获取类别标签
+            String label0 = null;
+            String label1 = null;
+            for (Map.Entry<String, Integer> entry : labelToIndex.entrySet()) {
+                if (entry.getValue() == 0) {
+                    label0 = entry.getKey();
+                } else if (entry.getValue() == 1) {
+                    label1 = entry.getKey();
+                }
+            }
+            result.put(label0, prob0);
+            result.put(label1, prob1);
+        } else {
+            // 多分类
+            for (int i = 0; i < numClasses; i++) {
+                String label = indexToLabel.get(i);
+                result.put(label, probabilities.get(i).doubleValue());
+            }
+        }
+        
+        return result;
+    }
+    
+    
     
     /**
      * 批量预测
@@ -311,7 +366,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
     }
 
     @Override
-    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+    public BatchPredictionResult predictBatchWithProbs(IMatrix features) {
         if (trees.isEmpty()) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
@@ -874,7 +929,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
             case "adam" -> optimizer = new RereOnlineAdam(optimizerLearningRate);
             default -> {
                 // 对于无效的优化器类型，默认使用SGD
-                System.out.println("警告: 不支持的优化器类型 '" + optimizerType + "'，使用默认的SGD优化器");
+                log.debug("警告: 不支持的优化器类型 '" + optimizerType + "'，使用默认的SGD优化器");
                 optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9);
                 optimizerType = "sgd"; // 更新为实际使用的类型
             }
@@ -904,6 +959,16 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         return isTrained;
     }
 
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
+    }
+
     
     /**
      * 将模型保存在本地
@@ -914,7 +979,7 @@ public class RereXGboost implements IClassification, IGradientFunction, IObjecti
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

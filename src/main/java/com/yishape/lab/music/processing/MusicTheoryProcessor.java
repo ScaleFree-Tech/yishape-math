@@ -25,64 +25,6 @@ import java.util.*;
 public class MusicTheoryProcessor implements IMusicProcessor {
     
     /**
-     * 音阶类型枚举 / Scale Type Enumeration
-     */
-    public enum ScaleType {
-        MAJOR("大调", new int[]{0, 2, 4, 5, 7, 9, 11}),
-        MINOR("小调", new int[]{0, 2, 3, 5, 7, 8, 10}),
-        HARMONIC_MINOR("和声小调", new int[]{0, 2, 3, 5, 7, 8, 11}),
-        MELODIC_MINOR("旋律小调", new int[]{0, 2, 3, 5, 7, 9, 11}),
-        DORIAN("多利亚调式", new int[]{0, 2, 3, 5, 7, 9, 10}),
-        PHRYGIAN("弗里吉亚调式", new int[]{0, 1, 3, 5, 7, 8, 10}),
-        LYDIAN("利底亚调式", new int[]{0, 2, 4, 6, 7, 9, 11}),
-        MIXOLYDIAN("混合利底亚调式", new int[]{0, 2, 4, 5, 7, 9, 10}),
-        PENTATONIC("五声音阶", new int[]{0, 2, 4, 7, 9}),
-        BLUES("布鲁斯音阶", new int[]{0, 3, 5, 6, 7, 10}),
-        CHROMATIC("半音音阶", new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
-        
-        private final String chineseName;
-        private final int[] intervals;
-        
-        ScaleType(String chineseName, int[] intervals) {
-            this.chineseName = chineseName;
-            this.intervals = intervals;
-        }
-        
-        public String getChineseName() { return chineseName; }
-        public int[] getIntervals() { return intervals.clone(); }
-    }
-    
-    /**
-     * 和弦类型枚举 / Chord Type Enumeration
-     */
-    public enum ChordType {
-        MAJOR("大三和弦", new int[]{0, 4, 7}),
-        MINOR("小三和弦", new int[]{0, 3, 7}),
-        DIMINISHED("减三和弦", new int[]{0, 3, 6}),
-        AUGMENTED("增三和弦", new int[]{0, 4, 8}),
-        MAJOR7("大七和弦", new int[]{0, 4, 7, 11}),
-        MINOR7("小七和弦", new int[]{0, 3, 7, 10}),
-        DOMINANT7("属七和弦", new int[]{0, 4, 7, 10}),
-        DIMINISHED7("减七和弦", new int[]{0, 3, 6, 9}),
-        HALF_DIMINISHED7("半减七和弦", new int[]{0, 3, 6, 10}),
-        MAJOR9("大九和弦", new int[]{0, 4, 7, 11, 14}),
-        MINOR9("小九和弦", new int[]{0, 3, 7, 10, 14}),
-        SUS2("挂二和弦", new int[]{0, 2, 7}),
-        SUS4("挂四和弦", new int[]{0, 5, 7});
-        
-        private final String chineseName;
-        private final int[] intervals;
-        
-        ChordType(String chineseName, int[] intervals) {
-            this.chineseName = chineseName;
-            this.intervals = intervals;
-        }
-        
-        public String getChineseName() { return chineseName; }
-        public int[] getIntervals() { return intervals.clone(); }
-    }
-    
-    /**
      * 调性枚举 / Key Enumeration
      */
     public enum Key {
@@ -110,8 +52,8 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     // 默认参数 / Default parameters
     private static final String DEFAULT_OPERATION = "generate_scale";
     private static final int DEFAULT_ROOT_NOTE = 0; // C
-    private static final ScaleType DEFAULT_SCALE_TYPE = ScaleType.MAJOR;
-    private static final ChordType DEFAULT_CHORD_TYPE = ChordType.MAJOR;
+    private static final ScaleTheory.ScaleType DEFAULT_SCALE_TYPE = ScaleTheory.ScaleType.MAJOR;
+    private static final ChordTheory.ChordType DEFAULT_CHORD_TYPE = ChordTheory.ChordType.MAJOR;
     private static final int DEFAULT_OCTAVE = 4;
     private static final double DEFAULT_DURATION = 1.0;
     private static final double DEFAULT_SAMPLE_RATE = 44100.0;
@@ -282,15 +224,17 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     }
     
     public AudioData process(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
-        if (audioData == null) {
-            throw new AudioProcessingException("音频数据不能为空 / Audio data cannot be null");
-        }
-        
         if (parameters == null) {
             parameters = this.parameters;
         }
         
         String operation = (String) parameters.getOrDefault("operation", DEFAULT_OPERATION);
+        String opLower = operation.toLowerCase(Locale.ROOT);
+        boolean needsInputAudio = !"generate_scale".equals(opLower) && !"generate_chord".equals(opLower)
+                && !"chord_progression".equals(opLower);
+        if (needsInputAudio && audioData == null) {
+            throw new AudioProcessingException("音频数据不能为空 / Audio data cannot be null");
+        }
         
         try {
             processingProgress = 0.0;
@@ -299,7 +243,7 @@ public class MusicTheoryProcessor implements IMusicProcessor {
             long startTime = System.currentTimeMillis();
             AudioData result;
             
-            switch (operation.toLowerCase()) {
+            switch (opLower) {
                 case "generate_scale":
                     result = generateScaleAudio(parameters);
                     break;
@@ -339,26 +283,90 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     
     @Override
     public AudioData processTimeRange(AudioData audioData, double startTime, double endTime) throws AudioProcessingException {
-        // TODO: Implement time range processing
-        return process(audioData);
+        return processTimeRange(audioData, startTime, endTime, parameters);
     }
     
     @Override
     public AudioData processTimeRange(AudioData audioData, double startTime, double endTime, Map<String, Object> parameters) throws AudioProcessingException {
-        // TODO: Implement time range processing with parameters
-        return process(audioData, parameters);
+        if (audioData == null) {
+            throw new AudioProcessingException("音频数据不能为空 / Audio data cannot be null");
+        }
+        if (startTime < 0 || endTime <= startTime || endTime > audioData.getDuration()) {
+            throw new AudioProcessingException("无效时间范围 / Invalid time range");
+        }
+        AudioData segment = extractTimeSegment(audioData, startTime, endTime);
+        AudioData processed = process(segment, parameters != null ? parameters : this.parameters);
+        return insertProcessedSegment(audioData, processed, startTime, endTime);
     }
     
     @Override
     public AudioData processStream(AudioData audioData, double windowSize, double hopSize) throws AudioProcessingException {
-        // TODO: Implement stream processing
-        return process(audioData);
+        return processStream(audioData, windowSize, hopSize, parameters);
     }
     
     @Override
     public AudioData processStream(AudioData audioData, double windowSize, double hopSize, Map<String, Object> parameters) throws AudioProcessingException {
-        // TODO: Implement stream processing with parameters
-        return process(audioData, parameters);
+        if (audioData == null) {
+            throw new AudioProcessingException("音频数据不能为空 / Audio data cannot be null");
+        }
+        if (windowSize <= 0 || hopSize <= 0) {
+            return process(audioData, parameters);
+        }
+        double sampleRate = audioData.getSampleRate();
+        int channels = audioData.getChannels();
+        int windowSamples = (int) Math.round(windowSize * sampleRate);
+        int hopSamples = (int) Math.round(hopSize * sampleRate);
+        double[] in = audioData.getSamples().toDoubleArray();
+        if (windowSamples <= 0 || hopSamples <= 0 || windowSamples > in.length) {
+            return process(audioData, parameters);
+        }
+        Map<String, Object> p = parameters != null ? parameters : this.parameters;
+        List<double[]> pieces = new ArrayList<>();
+        for (int pos = 0; pos + windowSamples <= in.length; pos += hopSamples) {
+            double[] block = new double[windowSamples];
+            System.arraycopy(in, pos, block, 0, windowSamples);
+            AudioData blockAudio = new AudioData(Linalg.vector(block), sampleRate, channels, windowSamples, audioData.getFormat());
+            AudioData proc = process(blockAudio, p);
+            pieces.add(proc.getSamples().toDoubleArray());
+        }
+        if (pieces.isEmpty()) {
+            return process(audioData, parameters);
+        }
+        int totalLen = pieces.stream().mapToInt(a -> a.length).sum();
+        double[] merged = new double[totalLen];
+        int off = 0;
+        for (double[] piece : pieces) {
+            System.arraycopy(piece, 0, merged, off, piece.length);
+            off += piece.length;
+        }
+        return new AudioData(Linalg.vector(merged), sampleRate, channels, merged.length, audioData.getFormat());
+    }
+
+    private AudioData extractTimeSegment(AudioData audioData, double startTime, double endTime) {
+        double sampleRate = audioData.getSampleRate();
+        int startSample = (int) (startTime * sampleRate);
+        int endSample = (int) (endTime * sampleRate);
+        int segmentLength = Math.max(0, endSample - startSample);
+        double[] originalSamples = audioData.getSamples().toDoubleArray();
+        double[] segmentSamples = new double[segmentLength];
+        System.arraycopy(originalSamples, startSample, segmentSamples, 0,
+                Math.min(segmentLength, originalSamples.length - startSample));
+        return new AudioData(Linalg.vector(segmentSamples), sampleRate, audioData.getChannels(),
+                segmentLength, audioData.getFormat());
+    }
+
+    private AudioData insertProcessedSegment(AudioData originalAudio, AudioData processedSegment,
+            double startTime, double endTime) {
+        double sampleRate = originalAudio.getSampleRate();
+        int startSample = (int) (startTime * sampleRate);
+        double[] originalSamples = originalAudio.getSamples().toDoubleArray();
+        double[] processedSamples = processedSegment.getSamples().toDoubleArray();
+        double[] outputSamples = new double[originalSamples.length];
+        System.arraycopy(originalSamples, 0, outputSamples, 0, originalSamples.length);
+        System.arraycopy(processedSamples, 0, outputSamples, startSample,
+                Math.min(processedSamples.length, outputSamples.length - startSample));
+        return new AudioData(Linalg.vector(outputSamples), sampleRate, originalAudio.getChannels(),
+                outputSamples.length, originalAudio.getFormat());
     }
     
     /**
@@ -376,23 +384,17 @@ public class MusicTheoryProcessor implements IMusicProcessor {
      */
     private AudioData generateScaleAudio(Map<String, Object> params) throws AudioProcessingException {
         int rootNote = (Integer) params.getOrDefault("rootNote", DEFAULT_ROOT_NOTE);
-        ScaleType scaleType = (ScaleType) params.getOrDefault("scaleType", DEFAULT_SCALE_TYPE);
+        ScaleTheory.ScaleType scaleType = (ScaleTheory.ScaleType) params.getOrDefault("scaleType", DEFAULT_SCALE_TYPE);
         int octave = (Integer) params.getOrDefault("octave", DEFAULT_OCTAVE);
         double duration = (Double) params.getOrDefault("duration", DEFAULT_DURATION);
         double sampleRate = (Double) params.getOrDefault("sampleRate", DEFAULT_SAMPLE_RATE);
         
         try {
-            int[] scalePattern = scaleType.getIntervals();
-            
-            // 计算音阶中每个音的频率
-            double[] frequencies = new double[scalePattern.length];
-            for (int i = 0; i < scalePattern.length; i++) {
-                int noteNumber = (rootNote + scalePattern[i]) % 12;
-                int noteOctave = octave + (rootNote + scalePattern[i]) / 12;
-                frequencies[i] = calculateFrequency(noteNumber, noteOctave);
+            int[] noteNumbers = ScaleTheory.generateScale(rootNote, scaleType);
+            double[] frequencies = new double[noteNumbers.length];
+            for (int i = 0; i < noteNumbers.length; i++) {
+                frequencies[i] = calculateFrequency(noteNumbers[i], octave);
             }
-            
-            // 生成音阶音频
             return generateToneSequence(frequencies, duration, sampleRate);
             
         } catch (Exception e) {
@@ -405,23 +407,17 @@ public class MusicTheoryProcessor implements IMusicProcessor {
      */
     private AudioData generateChordAudio(Map<String, Object> params) throws AudioProcessingException {
         int rootNote = (Integer) params.getOrDefault("rootNote", DEFAULT_ROOT_NOTE);
-        ChordType chordType = (ChordType) params.getOrDefault("chordType", DEFAULT_CHORD_TYPE);
+        ChordTheory.ChordType chordType = (ChordTheory.ChordType) params.getOrDefault("chordType", DEFAULT_CHORD_TYPE);
         int octave = (Integer) params.getOrDefault("octave", DEFAULT_OCTAVE);
         double duration = (Double) params.getOrDefault("duration", DEFAULT_DURATION);
         double sampleRate = (Double) params.getOrDefault("sampleRate", DEFAULT_SAMPLE_RATE);
         
         try {
-            int[] chordPattern = chordType.getIntervals();
-            
-            // 计算和弦中每个音的频率
-            double[] frequencies = new double[chordPattern.length];
-            for (int i = 0; i < chordPattern.length; i++) {
-                int noteNumber = (rootNote + chordPattern[i]) % 12;
-                int noteOctave = octave + (rootNote + chordPattern[i]) / 12;
-                frequencies[i] = calculateFrequency(noteNumber, noteOctave);
+            int[] notes = ChordTheory.generateChord(rootNote, chordType);
+            double[] frequencies = new double[notes.length];
+            for (int i = 0; i < notes.length; i++) {
+                frequencies[i] = calculateFrequency(notes[i], octave);
             }
-            
-            // 生成和弦音频（同时播放）
             return generateChordTones(frequencies, duration, sampleRate);
             
         } catch (Exception e) {
@@ -498,7 +494,7 @@ public class MusicTheoryProcessor implements IMusicProcessor {
         
         for (String chord : chords) {
             // 根据罗马数字和调性生成和弦
-            ChordType chordType = parseRomanNumeral(chord);
+            ChordTheory.ChordType chordType = parseRomanNumeral(chord);
             int rootNote = calculateRootNote(chord, key);
             
             Map<String, Object> chordParams = new HashMap<>();
@@ -518,20 +514,20 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     /**
      * 解析罗马数字和弦 / Parse Roman numeral chord
      */
-    private ChordType parseRomanNumeral(String romanNumeral) {
-        switch (romanNumeral.toUpperCase()) {
+    private ChordTheory.ChordType parseRomanNumeral(String romanNumeral) {
+        switch (romanNumeral.toUpperCase(Locale.ROOT)) {
             case "I":
             case "IV":
             case "V":
-                return ChordType.MAJOR;
+                return ChordTheory.ChordType.MAJOR;
             case "II":
             case "III":
             case "VI":
-                return ChordType.MINOR;
+                return ChordTheory.ChordType.MINOR;
             case "VII":
-                return ChordType.DIMINISHED;
+                return ChordTheory.ChordType.DIMINISHED;
             default:
-                return ChordType.MAJOR;
+                return ChordTheory.ChordType.MAJOR;
         }
     }
     
@@ -658,9 +654,9 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     }
     
     @Override
-    public AudioData generateScale(ScaleTheory scale, int rootNote, int octave, double duration) throws AudioProcessingException {
+    public AudioData generateScale(ScaleTheory.ScaleType scaleType, int rootNote, int octave, double duration) throws AudioProcessingException {
         Map<String, Object> params = new HashMap<>();
-        params.put("scaleType", scale);
+        params.put("scaleType", scaleType);
         params.put("rootNote", rootNote);
         params.put("octave", octave);
         params.put("duration", duration);
@@ -669,9 +665,9 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     }
     
     @Override
-    public AudioData generateChord(ChordTheory chord, int rootNote, int octave, double duration) throws AudioProcessingException {
+    public AudioData generateChord(ChordTheory.ChordType chordType, int rootNote, int octave, double duration) throws AudioProcessingException {
         Map<String, Object> params = new HashMap<>();
-        params.put("chordType", chord);
+        params.put("chordType", chordType);
         params.put("rootNote", rootNote);
         params.put("octave", octave);
         params.put("duration", duration);
@@ -843,15 +839,15 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     /**
      * 获取支持的音阶类型 / Get supported scale types
      */
-    public static ScaleType[] getSupportedScaleTypes() {
-        return ScaleType.values();
+    public static ScaleTheory.ScaleType[] getSupportedScaleTypes() {
+        return ScaleTheory.ScaleType.values();
     }
     
     /**
      * 获取支持的和弦类型 / Get supported chord types
      */
-    public static ChordType[] getSupportedChordTypes() {
-        return ChordType.values();
+    public static ChordTheory.ChordType[] getSupportedChordTypes() {
+        return ChordTheory.ChordType.values();
     }
     
     /**
@@ -864,9 +860,10 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     /**
      * 根据名称获取音阶类型 / Get scale type by name
      */
-    public static ScaleType getScaleTypeByName(String name) {
-        for (ScaleType type : ScaleType.values()) {
-            if (type.name().equalsIgnoreCase(name) || type.getChineseName().equals(name)) {
+    public static ScaleTheory.ScaleType getScaleTypeByName(String name) {
+        for (ScaleTheory.ScaleType type : ScaleTheory.ScaleType.values()) {
+            if (type.name().equalsIgnoreCase(name) || type.getChineseName().equals(name)
+                    || type.getEnglishName().equalsIgnoreCase(name)) {
                 return type;
             }
         }
@@ -876,9 +873,10 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     /**
      * 根据名称获取和弦类型 / Get chord type by name
      */
-    public static ChordType getChordTypeByName(String name) {
-        for (ChordType type : ChordType.values()) {
-            if (type.name().equalsIgnoreCase(name) || type.getChineseName().equals(name)) {
+    public static ChordTheory.ChordType getChordTypeByName(String name) {
+        for (ChordTheory.ChordType type : ChordTheory.ChordType.values()) {
+            if (type.name().equalsIgnoreCase(name) || type.getChineseName().equals(name)
+                    || type.getEnglishName().equalsIgnoreCase(name)) {
                 return type;
             }
         }

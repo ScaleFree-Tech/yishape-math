@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize.linpg;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.optimize.IGradientFunction;
@@ -17,6 +20,9 @@ import java.util.List;
  * @author lteb2
  */
 public class InteriorPointLinProgSolver implements ILinProgSolver{
+
+    private static final Logger log = LoggerFactory.getLogger(InteriorPointLinProgSolver.class);
+
 
     // 障碍参数的衰减因子
     private static final double MU_DECAY = 0.9;
@@ -193,8 +199,8 @@ public class InteriorPointLinProgSolver implements ILinProgSolver{
         }
         
         if (!feasible) {
-            System.err.println("警告：最终解不满足约束条件 / Warning: Final solution does not satisfy constraints");
-            System.err.println(errorMsg.toString());
+            log.warn("警告：最终解不满足约束条件 / Warning: Final solution does not satisfy constraints");
+            log.warn(errorMsg.toString());
         }
         
         // 构建丰富的OptResult

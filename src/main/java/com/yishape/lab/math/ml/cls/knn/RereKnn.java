@@ -1,21 +1,28 @@
 package com.yishape.lab.math.ml.cls.knn;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.ml.cls.BatchPredictionResult;
 import com.yishape.lab.math.ml.cls.ClassificationResult;
-import com.yishape.lab.math.ml.cls.IClassification;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 
 import java.io.*;
 import java.util.*;
+import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * k近邻分类器实现
  * 参考weka的IBk算法，支持距离加权、交叉验证选择k值等功能
  * @author lteb2
  */
-public class RereKnn implements IClassification {
+public class RereKnn implements IClassifier {
+
+    private static final Logger log = LoggerFactory.getLogger(RereKnn.class);
+
 
     private static final long serialVersionUID = 1L;
 
@@ -61,6 +68,8 @@ public class RereKnn implements IClassification {
 
     /** 是否已训练 */
     private boolean isTrained = false;
+    
+    private ClassificationMetrics metrics;
 
     // ==================== 构造函数 ====================
     public RereKnn() {
@@ -119,14 +128,14 @@ public class RereKnn implements IClassification {
 
         this.isTrained = true;
 
-        System.out.println("=== k近邻分类器训练完成 ===");
-        System.out.println("k值: " + k);
-        System.out.println("距离加权: " + distanceWeighting);
-        System.out.println("交叉验证: " + (crossValidate ? "启用" : "禁用"));
-        System.out.println("窗口大小: " + (windowSize > 0 ? windowSize : "无限制"));
-        System.out.println("训练样本数: " + trainingFeatures.getRowNum());
-        System.out.println("特征维度: " + featureDimension);
-        System.out.println("类别数量: " + numClasses);
+        log.debug("=== k近邻分类器训练完成 ===");
+        log.debug("k值: " + k);
+        log.debug("距离加权: " + distanceWeighting);
+        log.debug("交叉验证: " + (crossValidate ? "启用" : "禁用"));
+        log.debug("窗口大小: " + (windowSize > 0 ? windowSize : "无限制"));
+        log.debug("训练样本数: " + trainingFeatures.getRowNum());
+        log.debug("特征维度: " + featureDimension);
+        log.debug("类别数量: " + numClasses);
 
         // kNN没有具体的模型参数，返回基本的分类结果
         return new ClassificationResult() {
@@ -181,6 +190,72 @@ public class RereKnn implements IClassification {
     }
 
     @Override
+    public Map<String, Double> predictProb(IVector x) {
+        if (!isTrained) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+
+        if (x == null) {
+            throw new IllegalArgumentException("输入特征向量不能为null");
+        }
+
+        if (x.length() != featureDimension) {
+            throw new IllegalArgumentException(
+                String.format("输入特征维度不匹配：期望%d维，实际%d维",
+                    featureDimension, x.length()));
+        }
+
+        // 检查输入向量是否包含无效值
+        for (int i = 0; i < x.length(); i++) {
+            double val = (double) x.get(i);
+            if (Double.isNaN(val) || Double.isInfinite(val)) {
+                throw new IllegalArgumentException(
+                    String.format("输入特征向量包含无效值：位置%d，值%s", i, val));
+            }
+        }
+
+        // 找到k个最近邻
+        List<Neighbor> neighbors = findKNearestNeighbors(x, k);
+        
+        // 计算每个类别的投票权重
+        double[] votes = new double[numClasses];
+        double totalWeight = 0.0;
+
+        for (Neighbor neighbor : neighbors) {
+            String label = trainingLabels[neighbor.index];
+            int classIndex = labelMapping.get(label);
+
+            double weight = 1.0;
+            switch (distanceWeighting) {
+                case INVERSE:
+                    weight = 1.0 / (neighbor.distance + 0.001);
+                    break;
+                case SIMILARITY:
+                    weight = 1.0 - neighbor.distance;
+                    break;
+                case NONE:
+                default:
+                    weight = 1.0;
+                    break;
+            }
+
+            votes[classIndex] += weight;
+            totalWeight += weight;
+        }
+
+        // 转换为Map格式
+        Map<String, Double> result = new HashMap<>();
+        for (Map.Entry<Integer, String> entry : reverseLabelMapping.entrySet()) {
+            int classIndex = entry.getKey();
+            String className = entry.getValue();
+            double probability = totalWeight > 0 ? votes[classIndex] / totalWeight : 1.0 / numClasses;
+            result.put(className, probability);
+        }
+        
+        return result;
+    }
+
+    @Override
     public String[] predictBatch(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
@@ -204,7 +279,7 @@ public class RereKnn implements IClassification {
     }
 
     @Override
-    public BatchPredictionResult predictBatchWithProbabilities(IMatrix features) {
+    public BatchPredictionResult predictBatchWithProbs(IMatrix features) {
         if (!isTrained) {
             throw new IllegalStateException("模型尚未训练，请先调用fit方法");
         }
@@ -270,7 +345,7 @@ public class RereKnn implements IClassification {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 
@@ -446,7 +521,7 @@ public class RereKnn implements IClassification {
         }
 
         this.k = bestK;
-        System.out.println("交叉验证选择的最佳k值: " + bestK + ", 错误率: " + String.format("%.4f", minError));
+        log.debug("交叉验证选择的最佳k值: " + bestK + ", 错误率: " + String.format("%.4f", minError));
     }
 
     // ==================== Getter和Setter ====================
@@ -486,6 +561,16 @@ public class RereKnn implements IClassification {
     @Override
     public boolean isTrained() {
         return isTrained;
+    }
+
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
     }
 
     // ==================== 内部类 ====================

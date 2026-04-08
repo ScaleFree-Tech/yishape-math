@@ -58,26 +58,26 @@ public interface IMusicProcessor extends IAdvancedAudioProcessor {
     /**
      * 生成音阶 / Generate scale
      * 
-     * @param scale 音阶定义 / Scale definition
+     * @param scaleType 音阶类型 / Scale type
      * @param rootNote 根音 / Root note
      * @param octave 八度 / Octave
      * @param duration 持续时间 / Duration
      * @return 生成的音阶音频 / Generated scale audio
      * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
-    AudioData generateScale(ScaleTheory scale, int rootNote, int octave, double duration) throws AudioProcessingException;
+    AudioData generateScale(ScaleTheory.ScaleType scaleType, int rootNote, int octave, double duration) throws AudioProcessingException;
 
     /**
      * 生成和弦 / Generate chord
      * 
-     * @param chord 和弦定义 / Chord definition
+     * @param chordType 和弦类型 / Chord type
      * @param rootNote 根音 / Root note
      * @param octave 八度 / Octave
      * @param duration 持续时间 / Duration
      * @return 生成的和弦音频 / Generated chord audio
      * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
-    AudioData generateChord(ChordTheory chord, int rootNote, int octave, double duration) throws AudioProcessingException;
+    AudioData generateChord(ChordTheory.ChordType chordType, int rootNote, int octave, double duration) throws AudioProcessingException;
 
     /**
      * 应用音乐理论变换 / Apply music theory transformation

@@ -44,6 +44,9 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                 case DIVIDE:
                     result[i] = x1[i] / x2[i];
                     break;
+                case REMAINDER:
+                    result[i] = x1[i] % x2[i];
+                    break;
                 default:
                     throw new IllegalArgumentException("不支持的操作: " + operation);
             }
@@ -76,6 +79,9 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                     break;
                 case DIVIDE:
                     result[i] = x1[i] / x2;
+                    break;
+                case REMAINDER:
+                    result[i] = x1[i] % x2;
                     break;
                 default:
                     throw new IllegalArgumentException("不支持的操作: " + operation);
@@ -234,8 +240,12 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                 || operation == ReduceOperation.MIN
                 || operation == ReduceOperation.MAX
                 || operation == ReduceOperation.VARIANCE
-                || operation == ReduceOperation.STANDARD_DEVIATION)
+                || operation == ReduceOperation.STANDARD_DEVIATION
+                || operation == ReduceOperation.PROD)
                 && x.length == 0) {
+            if (operation == ReduceOperation.PROD) {
+                return 1.0f;
+            }
             throw new IllegalArgumentException("向量不能为空");
         }
 
@@ -313,6 +323,14 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                 return (float)Math.sqrt(variance);
             }
 
+            case PROD: {
+                float p = 1.0f;
+                for (int i = 0; i < x.length; i++) {
+                    p *= x[i];
+                }
+                return p;
+            }
+
             default:
                 throw new IllegalArgumentException("不支持的操作: " + operation);
         }
@@ -330,7 +348,8 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                 || operation == ReduceOperation.MIN
                 || operation == ReduceOperation.MAX
                 || operation == ReduceOperation.VARIANCE
-                || operation == ReduceOperation.STANDARD_DEVIATION)
+                || operation == ReduceOperation.STANDARD_DEVIATION
+                || operation == ReduceOperation.PROD)
                 && (x.length == 0 || x[0].length == 0)) {
             throw new IllegalArgumentException("矩阵不能为空");
         }
@@ -428,6 +447,16 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                 float variance = varianceSum / totalElements;
 
                 return (float)Math.sqrt(variance);
+            }
+
+            case PROD: {
+                float productResult = 1.0f;
+                for (float[] row : x) {
+                    for (int j = 0; j < row.length; j++) {
+                        productResult *= row[j];
+                    }
+                }
+                return productResult;
             }
 
             default:

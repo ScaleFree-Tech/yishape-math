@@ -2,9 +2,13 @@ package com.yishape.lab.math.ml.metric;
 
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.ml.cls.BatchPredictionResult;
-import com.yishape.lab.math.ml.cls.IClassification;
+import java.io.Serializable;
 
 import java.util.*;
+import com.yishape.lab.math.ml.cls.IClassifier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 分类评估指标工具类
@@ -12,11 +16,13 @@ import java.util.*;
  * 提供类似sk-learn的分类器评估功能，包括准确率、精确率、召回率、F1分数、AUC等指标的计算。 支持二分类和多分类场景，提供全面的性能评估。
  * </p>
  *
- * @author yishape
+ * @author lteb2002
  * @version 1.0
  * @since 1.0
  */
-public class ClassificationMetrics {
+public class ClassificationMetrics implements Serializable{
+
+    private static final Logger log = LoggerFactory.getLogger(ClassificationMetrics.class);
 
     // ==================== 核心指标属性 ====================
     /**
@@ -171,11 +177,11 @@ public class ClassificationMetrics {
      * @param yTrue
      * @return
      */
-    public static ClassificationMetrics compute(IClassification model, IMatrix feature, String[] yTrue) {
+    public static ClassificationMetrics compute(IClassifier model, IMatrix feature, String[] yTrue) {
         if (!model.isTrained()) {
             model.fit(feature, yTrue);
         }
-        BatchPredictionResult prdResults = model.predictBatchWithProbabilities(feature);
+        BatchPredictionResult prdResults = model.predictBatchWithProbs(feature);
         return compute(yTrue, prdResults);
     }
 
@@ -755,8 +761,7 @@ public class ClassificationMetrics {
             boolean reverseDirection = posMeanProb < negMeanProb;
             
             if (reverseDirection) {
-                System.out.println("警告: 正类平均概率(" + posMeanProb + ")小于负类平均概率(" + negMeanProb + ")");
-                System.out.println("这可能导致AUC接近0，正在调整计算方向...");
+                log.debug("AUC: 正类平均概率({})小于负类平均概率({})，可能需调整方向", posMeanProb, negMeanProb);
             }
 
             double auc = 0.0;
@@ -778,13 +783,13 @@ public class ClassificationMetrics {
 
             // 如果预测方向相反，AUC应该接近0，这时我们可以计算1-AUC作为修正
             if (reverseDirection && auc < 0.5) {
-                System.out.println("检测到预测方向相反，AUC修正: " + auc + " -> " + (1.0 - auc));
+                log.debug("AUC 方向修正: {} -> {}", auc, (1.0 - auc));
                 auc = 1.0 - auc;
             }
 
             // 验证AUC值的合理性
             if (auc < 0.0 || auc > 1.0) {
-                System.out.println("警告: AUC值超出合理范围 [" + auc + "]，设置为-1");
+                log.debug("AUC 超出 [0,1]，置为 -1，原值={}", auc);
                 auc = -1.0;
             }
 

@@ -1,5 +1,8 @@
 package com.yishape.lab.math;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Random;
 
 /**
@@ -8,6 +11,9 @@ import java.util.Random;
  * @author lteb2
  */
 public class RereMathUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(RereMathUtil.class);
+
 
     /**
      * 将float数组转换为double数组
@@ -238,7 +244,7 @@ public class RereMathUtil {
      * @param end 结束数（不包括）
      * @param num 要生成的随机整数数量
      * @return 包含num个随机整数的数组，每个整数都在[start, end)范围内
-     * @throws IllegalArgumentException 如果start >= end 或 num < 0
+     * @throws IllegalArgumentException 如果start &gt;= end 或 num &lt; 0
      */
     public static int[] generateRandomInts(int seed, int start, int end, int num) {
         if (start >= end) {
@@ -266,7 +272,7 @@ public class RereMathUtil {
      * @param end 结束数（不包括）
      * @param num 要生成的随机整数数量
      * @return 包含num个随机整数的数组，每个整数都在[start, end)范围内
-     * @throws IllegalArgumentException 如果start >= end 或 num < 0
+     * @throws IllegalArgumentException 如果start &gt;= end 或 num &lt; 0
      */
     public static int[] generateRandomInts(int start, int end, int num) {
         if (start >= end) {
@@ -869,10 +875,43 @@ public class RereMathUtil {
         return number.doubleValue();
     }
     
+    /**
+     * 近似相等（对齐 NumPy {@code numpy.isclose} 默认 rtol/atol）/ Element-wise closeness
+     */
+    public static boolean isClose(double a, double b, double rtol, double atol) {
+        return Math.abs(a - b) <= atol + rtol * Math.abs(b);
+    }
+
+    /**
+     * 默认 rtol=1e-5, atol=1e-8，与 NumPy {@code isclose} 默认一致。
+     */
+    public static boolean isClose(double a, double b) {
+        return isClose(a, b, 1e-5, 1e-8);
+    }
+
+    /**
+     * 两数组逐元素近似相等（对齐 {@code numpy.allclose}）。
+     */
+    public static boolean allClose(double[] a, double[] b, double rtol, double atol) {
+        if (a == null || b == null || a.length != b.length) {
+            return false;
+        }
+        for (int i = 0; i < a.length; i++) {
+            if (!isClose(a[i], b[i], rtol, atol)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean allClose(double[] a, double[] b) {
+        return allClose(a, b, 1e-5, 1e-8);
+    }
+
     public static void main(String args[]) {
         var r1 = RereMathUtil.generateRandomInts(0, 0, 10, 5);
         for (var i : r1) {
-            System.out.println(i);
+            log.debug("{}", i);
         }
 
     }

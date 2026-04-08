@@ -1,5 +1,8 @@
 package com.yishape.lab.audio.embedding;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -28,6 +31,9 @@ import java.io.Serializable;
  * Supports incremental training with small batches of MFCC samples, providing more flexible training control
  */
 public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(OnlineIVectorEmbedding.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -188,7 +194,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             throw new IllegalArgumentException("MFCC批次不能为空 / MFCC batch cannot be empty");
         }
         
-        System.out.println("使用小批量MFCC样本进行增量训练，批次大小: " + mfccBatch.length + 
+        log.debug("使用小批量MFCC样本进行增量训练，批次大小: " + mfccBatch.length + 
                           " / Incremental training with small batch of MFCC samples, batch size: " + mfccBatch.length);
         
         // 收集所有特征
@@ -236,7 +242,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             throw new IllegalStateException("模型尚未初始化 / Model not initialized");
         }
         
-        System.out.println("选择性更新模型，样本数: " + batchFeatures.size() + 
+        log.debug("选择性更新模型，样本数: " + batchFeatures.size() + 
                           "，更新UBM: " + updateUBM + "，更新T矩阵: " + updateTMatrix +
                           " / Selective model update, sample count: " + batchFeatures.size() + 
                           ", update UBM: " + updateUBM + ", update T-matrix: " + updateTMatrix);
@@ -280,7 +286,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             throw new IllegalArgumentException("MFCC特征维度不匹配 / MFCC feature dimension mismatch");
         }
         
-        System.out.println("使用单个MFCC样本进行增量训练，帧数: " + mfcc.getRowNum() + 
+        log.debug("使用单个MFCC样本进行增量训练，帧数: " + mfcc.getRowNum() + 
                           " / Incremental training with single MFCC sample, frame count: " + mfcc.getRowNum());
         
         // 如果是第一次训练，需要初始化UBM
@@ -307,7 +313,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
      * @param sampleData 样本数据用于初始化 / Sample data for initialization
      */
     private void initializeUBM(IMatrix<Double> sampleData) {
-        System.out.println("初始化在线i-vector模型... / Initializing online i-vector model...");
+        log.debug("初始化在线i-vector模型... / Initializing online i-vector model...");
         
         // 收集样本特征用于初始化
         List<IVector<Double>> sampleFeatures = new ArrayList<>();
@@ -321,7 +327,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         // 确保高斯分量数不超过样本数
         int actualNumComponents = Math.min(numComponents, Math.max(1, sampleFeatures.size() / 2));
         if (actualNumComponents != numComponents) {
-            System.out.println("调整高斯分量数从 " + numComponents + " 到 " + actualNumComponents + 
+            log.debug("调整高斯分量数从 " + numComponents + " 到 " + actualNumComponents + 
                              " 以适应样本大小 / Adjusting number of Gaussian components from " + 
                              numComponents + " to " + actualNumComponents + " to fit sample size");
         }
@@ -334,13 +340,13 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             ubm.fit(sampleFeatures, emAlgorithm);
         } catch (Exception e) {
             // 如果K-means++初始化失败，使用随机初始化
-            System.out.println("K-means++初始化失败，使用随机初始化 / K-means++ initialization failed, using random initialization");
+            log.debug("K-means++初始化失败，使用随机初始化 / K-means++ initialization failed, using random initialization");
             try {
                 ubm.initializeRandomly(sampleFeatures);
                 EMAlgorithm emAlgorithm = new EMAlgorithm(10, 1e-4, true);
                 EMAlgorithm.EMResult result = emAlgorithm.fit(sampleFeatures, ubm);
             } catch (Exception e2) {
-                System.err.println("UBM初始化失败 / UBM initialization failed: " + e2.getMessage());
+                log.warn("UBM初始化失败 / UBM initialization failed: " + e2.getMessage());
                 throw new RuntimeException("无法初始化UBM模型 / Failed to initialize UBM model", e2);
             }
         }
@@ -352,14 +358,14 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         precomputeUBMInvCovariances();
         
         this.isTrained = true;
-        System.out.println("在线i-vector模型初始化完成 / Online i-vector model initialization completed");
+        log.debug("在线i-vector模型初始化完成 / Online i-vector model initialization completed");
     }
     
     /**
      * 计算初始T矩阵
      */
     private void computeInitialTMatrix(List<IVector<Double>> features) {
-        System.out.println("计算初始T矩阵... / Computing initial T-matrix...");
+        log.debug("计算初始T矩阵... / Computing initial T-matrix...");
         
         // 计算总变异性矩阵
         IMatrix<Double> S = computeTotalVariabilityMatrix(features);
@@ -385,7 +391,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         }
         
         this.tMatrix = Linalg.matrix(tData);
-        System.out.println("初始T矩阵计算完成 / Initial T-matrix computation completed");
+        log.debug("初始T矩阵计算完成 / Initial T-matrix computation completed");
     }
     
     /**
@@ -397,7 +403,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             throw new IllegalStateException("模型尚未初始化 / Model not initialized");
         }
         
-        System.out.println("使用批次数据更新模型，样本数: " + batchFeatures.size() + 
+        log.debug("使用批次数据更新模型，样本数: " + batchFeatures.size() + 
                           " / Updating model with batch data, sample count: " + batchFeatures.size());
         
         // 更新UBM参数
@@ -433,7 +439,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             }
             
         } catch (Exception e) {
-            System.err.println("UBM更新过程中出现错误: " + e.getMessage());
+            log.warn("UBM更新过程中出现错误: " + e.getMessage());
         }
     }
     
@@ -474,7 +480,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             this.tMatrix = Linalg.matrix(tData);
             
         } catch (Exception e) {
-            System.err.println("T矩阵更新过程中出现错误: " + e.getMessage());
+            log.warn("T矩阵更新过程中出现错误: " + e.getMessage());
         }
     }
     
@@ -504,7 +510,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
             accumulatedFeatures.clear();
         }
         
-        System.out.println("在线训练完成，总共处理样本数: " + processedSamples + 
+        log.debug("在线训练完成，总共处理样本数: " + processedSamples + 
                           " / Online training completed, total processed samples: " + processedSamples);
     }
     
@@ -517,7 +523,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         IMatrix<Double> S = Linalg.zeros(supervectorDim, supervectorDim);
         
         int totalFeatures = features.size();
-        System.out.println("处理 " + totalFeatures + " 个特征向量 / Processing " + totalFeatures + " feature vectors");
+        log.debug("处理 " + totalFeatures + " 个特征向量 / Processing " + totalFeatures + " feature vectors");
         
         // 为了提高效率，我们只使用一部分特征来计算总变异性矩阵
         int sampleSize = Math.min(features.size(), 50); // 进一步减少样本数量
@@ -563,7 +569,7 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
      */
     private Tuple2<IVector<Double>, IMatrix<Double>> computeTMatrixUsingPCA(IMatrix<Double> S) {
         int targetDimensions = Math.min(len * 2, supervectorDim);
-        System.out.println("目标维度: " + targetDimensions + " / Target dimensions: " + targetDimensions);
+        log.debug("目标维度: " + targetDimensions + " / Target dimensions: " + targetDimensions);
         
         // 生成随机投影矩阵
         IMatrix<Double> randomProjection = IMatrix.rand(supervectorDim, targetDimensions, 42L);

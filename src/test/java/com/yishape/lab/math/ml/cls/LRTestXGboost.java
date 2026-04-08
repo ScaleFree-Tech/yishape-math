@@ -1,9 +1,10 @@
 package com.yishape.lab.math.ml.cls;
 
 import com.yishape.lab.math.data.DataFrame;
+import com.yishape.lab.math.ml.ML;
 import com.yishape.lab.math.ml.cls.tree.RereXGboost;
 import com.yishape.lab.math.ml.metric.ClassificationMetrics;
-import com.yishape.lab.math.ml.metric.CrossValidation;
+import com.yishape.lab.math.ml.metric.CrossValidationLogger;
 
 /**
  *
@@ -27,8 +28,8 @@ String path = "G:\\电子科技大学-工作\\商务统计_2025\\data\\iris.csv"
             var predicted = lr.predictBatch(feature);
             ClassificationMetrics metrics = ClassificationMetrics.compute(lr,feature,labels);
             System.out.println(metrics);
-            
-            var result = CrossValidation.kFoldCrossValidation(lr, feature, labels, 3);
+            CrossValidationLogger logger = new CrossValidationLogger(){};
+            var result = ML.kFoldCrossValidation(lr, feature, labels, 3,logger);
             System.out.println(result);
         } catch (Exception e) {
             e.printStackTrace();

@@ -8,6 +8,9 @@ import com.yishape.lab.music.theory.ScaleTheory;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.audio.processing.IAudioProcessor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -15,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Locale;
 
 /**
  * 音乐和声器 / Music Harmonizer
@@ -28,6 +32,8 @@ import java.util.HashSet;
  * @since 1.0
  */
 public class Harmonizer implements IMusicProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(Harmonizer.class);
 
     private static final String NAME = "Music Harmonizer";
     private static final String VERSION = "1.0.0";
@@ -227,7 +233,7 @@ public class Harmonizer implements IMusicProcessor {
             String mode = (String) parameters.get("mode");
 
             if (verboseLogging) {
-                System.out.println("Harmonizing audio with " + voiceCount + " voices in " + key + " " + mode);
+                log.debug("Harmonizing audio with {} voices in {} {}", voiceCount, key, mode);
             }
 
             AudioData result = performHarmonization(audioData, harmonyType, voiceCount, key, mode, parameters);
@@ -692,8 +698,7 @@ public class Harmonizer implements IMusicProcessor {
 
     @Override
     public AudioData transpose(AudioData audioData, int semitones) throws AudioProcessingException {
-        // TODO: Implement transpose functionality
-        return audioData;
+        return new Transposer().transpose(audioData, semitones);
     }
 
     @Override
@@ -706,26 +711,36 @@ public class Harmonizer implements IMusicProcessor {
 
     @Override
     public AudioData quantize(AudioData audioData, double gridSize) throws AudioProcessingException {
-        // TODO: Implement quantize functionality
-        return audioData;
+        return new Quantizer().quantize(audioData, gridSize);
     }
 
     @Override
-    public AudioData generateScale(ScaleTheory scale, int rootNote, int octave, double duration) throws AudioProcessingException {
-        // TODO: Implement generateScale functionality
-        return new AudioData(Linalg.zeros((int)(duration * 44100)), 44100, 1, 16, AudioFormat.WAV);
+    public AudioData generateScale(ScaleTheory.ScaleType scaleType, int rootNote, int octave, double duration) throws AudioProcessingException {
+        return new MusicTheoryProcessor().generateScale(scaleType, rootNote, octave, duration);
     }
 
     @Override
-    public AudioData generateChord(ChordTheory chord, int rootNote, int octave, double duration) throws AudioProcessingException {
-        // TODO: Implement generateChord functionality
-        return new AudioData(Linalg.zeros((int)(duration * 44100)), 44100, 1, 16, AudioFormat.WAV);
+    public AudioData generateChord(ChordTheory.ChordType chordType, int rootNote, int octave, double duration) throws AudioProcessingException {
+        return new MusicTheoryProcessor().generateChord(chordType, rootNote, octave, duration);
     }
 
     @Override
     public AudioData applyMusicTransformation(AudioData audioData, String transformation, Map<String, Object> parameters) throws AudioProcessingException {
-        // TODO: Implement applyMusicTransformation functionality
-        return audioData;
+        if (transformation == null) {
+            throw new AudioProcessingException("transformation 不能为空 / transformation cannot be null");
+        }
+        if (parameters == null) {
+            parameters = new HashMap<>();
+        }
+        String t = transformation.toLowerCase(Locale.ROOT);
+        return switch (t) {
+            case "transpose" -> transpose(audioData, ((Number) parameters.getOrDefault("semitones", 0)).intValue());
+            case "harmonize" -> harmonize(audioData,
+                    (String) parameters.getOrDefault("harmonyType", "thirds"),
+                    ((Number) parameters.getOrDefault("voiceCount", 2)).intValue());
+            case "quantize" -> quantize(audioData, ((Number) parameters.getOrDefault("gridSize", 0.25)).doubleValue());
+            default -> process(audioData, parameters);
+        };
     }
 
     @Override

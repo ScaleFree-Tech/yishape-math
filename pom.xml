@@ -3,12 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.yishape.lab</groupId>
     <artifactId>yishape-math</artifactId>
-    <version>0.3.7</version>
+    <version>0.3.8</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.surefire.argLine>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-modules jdk.incubator.vector</maven.surefire.argLine>
+        <!-- JaCoCo 与 Surefire 共用：prepare-agent 会注入 agent 前缀 -->
+        <argLine>${maven.surefire.argLine}</argLine>
     </properties>
     
     <repositories>
@@ -72,13 +74,28 @@
         </dependency>
         -->
         
-        <!-- JUnit 5 for testing -->
+        <!-- SLF4J API：库内记录日志，由应用提供绑定实现 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+        <!--
+          仅测试使用：scope=test 的依赖不会参与主代码编译产物的传递解析，
+          发布到仓库的 POM 中虽会列出，但引用本库时 Maven 不会拉取这些依赖；
+          主 JAR 仅含 src/main，不含 JUnit 与 src/test。
+        -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.0</version>
             <scope>test</scope>
-            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.16</version>
+            <scope>test</scope>
         </dependency>
         <!--
         <dependency>
@@ -142,7 +159,7 @@
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
                     </includes>
-                    <argLine>${maven.surefire.argLine}</argLine>
+                    <argLine>${argLine}</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -154,6 +171,61 @@
                         <compress>true</compress> <!-- 启用压缩 -->
                         <index>true</index> <!-- 创建索引加快加载 -->
                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.11.3</version>
+                <configuration>
+                    <!-- 使用 release；勿再使用已过时的 -source 1.1 / -1.1 等选项 -->
+                    <release>21</release>
+                    <doclint>none</doclint>
+                    <quiet>true</quiet>
+                    <!-- 与 compiler 一致：否则 javadoc 无法解析 jdk.incubator.vector -->
+                    <additionalOptions>
+                        <additionalOption>--add-modules</additionalOption>
+                        <additionalOption>jdk.incubator.vector</additionalOption>
+                    </additionalOptions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.9.3.0</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                    <failOnError>false</failOnError>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
             <plugin>
@@ -170,6 +242,7 @@
                             <outputDirectory>
                                 ${project.build.directory}/libs
                             </outputDirectory>
+                            <!-- copy-dependencies 默认仅处理 runtime 作用域，不包含 scope=test（JUnit、slf4j-simple 测试绑定等） -->
                         </configuration>
                     </execution>
                 </executions>

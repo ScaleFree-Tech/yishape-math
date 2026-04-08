@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.dimreduce;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import java.util.Random;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -17,6 +20,9 @@ import java.io.*;
  * @author lteb2
  */
 public class RereTSNE implements IDimReduce, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(RereTSNE.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -45,7 +51,7 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
             throw new IllegalArgumentException("样本数量必须至少为2");
         }
         
-        System.out.println("开始t-SNE降维：样本数=" + n + "，原始维度=" + originalDim + "，目标维度=" + dim);
+        log.debug("开始t-SNE降维：样本数=" + n + "，原始维度=" + originalDim + "，目标维度=" + dim);
         
         // 步骤1：计算高维空间中的相似度矩阵P
         IMatrix P = computeHighDimSimilarities(originalData);
@@ -56,7 +62,7 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
         // 步骤3：使用梯度下降优化Y
         Y = optimizeEmbedding(P, Y);
         
-        System.out.println("t-SNE降维完成");
+        log.debug("t-SNE降维完成");
         return Y;
     }
     
@@ -233,7 +239,7 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
             // 检查收敛性
             if (iter % 100 == 0) {
                 double klDivergence = computeKLDivergence(P, Q);
-                System.out.println("Iteration " + iter + ", KL divergence: " + klDivergence);
+                log.debug("Iteration " + iter + ", KL divergence: " + klDivergence);
             }
         }
         
@@ -383,7 +389,7 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

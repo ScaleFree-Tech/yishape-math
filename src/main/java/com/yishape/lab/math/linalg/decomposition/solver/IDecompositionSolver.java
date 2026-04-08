@@ -10,7 +10,7 @@ import com.yishape.lab.math.linalg.IVector;
  * matrices from which they can solve A &times; X = B in least squares sense: they find X
  * such that ||A &times; X - B|| is minimal.
  * <p>
- * Some solvers like {@link ILUDecomposition} can only find the solution for
+ * Some solvers like {@link com.yishape.lab.math.linalg.decomposition.ILUDecomposition} can only find the solution for
  * square matrices and when the solution is an exact linear solution, i.e. when
  * ||A &times; X - B|| is exactly 0. Other solvers can also find solutions
  * with non-square matrix A and with non-null minimal norm. If an exact linear

@@ -1,5 +1,8 @@
 package com.yishape.lab.math.linalg;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
@@ -16,7 +19,9 @@ import java.io.Serializable;
 import java.util.concurrent.*;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -64,6 +69,9 @@ import java.util.function.Function;
  * @since 1.0
  */
 public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
+
+    private static final Logger log = LoggerFactory.getLogger(RereDoubleMatrix.class);
+
 
     /**
      * 矩阵数据存储数组 / Matrix data storage array
@@ -520,7 +528,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
     @Override
     public int getColNum() {
         if (data.length == 0) {
-            System.out.println("DEBUG: getColNum() called on empty matrix, returning: " + emptyMatrixCols);
+            log.debug("DEBUG: getColNum() called on empty matrix, returning: " + emptyMatrixCols);
             return emptyMatrixCols; // 对于空矩阵，返回存储的列数
         }
         return data[0].length;
@@ -694,6 +702,31 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
     @Override
     public IMatrix<Double> mmul(IMatrix<Double> other) {
         var res = this.computer.mmul(data, other.toDoubleArray());
+        return IDoubleMatrix.of(res);
+    }
+
+    @Override
+    public IMatrix<Double> kron(IMatrix<Double> other) {
+        if (other == null) {
+            throw new NullPointerException("other不能为null / other cannot be null");
+        }
+        int m = getRowNum();
+        int n = getColNum();
+        int p = other.getRowNum();
+        int q = other.getColNum();
+        double[][] a = this.toDoubleArray();
+        double[][] b = other.toDoubleArray();
+        double[][] res = new double[m * p][n * q];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                double aij = a[i][j];
+                for (int k = 0; k < p; k++) {
+                    for (int l = 0; l < q; l++) {
+                        res[i * p + k][j * q + l] = aij * b[k][l];
+                    }
+                }
+            }
+        }
         return IDoubleMatrix.of(res);
     }
 
@@ -1134,7 +1167,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * same number of rows
      * </p>
      *
-     * @param other 要连接的另一个矩阵 / The other matrix to concatenate
+     * @param other1 要连接的另一个矩阵 / The other matrix to concatenate
      * @return 连接后的矩阵 / Concatenated matrix
      * @throws IllegalArgumentException 如果矩阵行数不匹配 / if matrix row counts don't
      * match
@@ -1178,7 +1211,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * number of columns
      * </p>
      *
-     * @param other 要连接的另一个矩阵 / The other matrix to concatenate
+     * @param other1 要连接的另一个矩阵 / The other matrix to concatenate
      * @return 连接后的矩阵 / Concatenated matrix
      * @throws IllegalArgumentException 如果矩阵列数不匹配 / if matrix column counts
      * don't match
@@ -1357,14 +1390,18 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
     @Override
     public IMatrix<Double> copy() {
         int rows = data.length;
-        int cols = data[0].length;
+        int cols = rows > 0 ? data[0].length : emptyMatrixCols;
         double[][] copyData = new double[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             System.arraycopy(data[i], 0, copyData[i], 0, cols);
         }
 
-        return IDoubleMatrix.of(copyData);
+        RereDoubleMatrix out = new RereDoubleMatrix(copyData);
+        if (rows == 0) {
+            out.emptyMatrixCols = cols;
+        }
+        return out;
     }
 
     /**
@@ -2741,5 +2778,125 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         return sb.toString();
     }
 
+    // ========== 二维广播 ==========
+
+    /**
+     * 两矩阵形状广播后的行、列数。
+     */
+    public static int[] broadcastShape(IMatrix<Double> a, IMatrix<Double> b) {
+        Objects.requireNonNull(a, "a");
+        Objects.requireNonNull(b, "b");
+        return broadcastShape(a.rows(), a.cols(), b.rows(), b.cols());
+    }
+
+    /**
+     * 计算两矩阵形状广播后的行数、列数。
+     */
+    public static int[] broadcastShape(int rowsA, int colsA, int rowsB, int colsB) {
+        int r = broadcastDim(rowsA, rowsB);
+        int c = broadcastDim(colsA, colsB);
+        return new int[]{r, c};
+    }
+
+    private static int broadcastDim(int x, int y) {
+        if (x == y) {
+            return x;
+        }
+        if (x == 1) {
+            return y;
+        }
+        if (y == 1) {
+            return x;
+        }
+        throw new IllegalArgumentException(
+                "无法广播形状: (" + x + " vs " + y + ") / Cannot broadcast dimensions");
+    }
+
+    /**
+     * 将二维数据广播到目标形状（仅允许长度为 1 的维被拉伸）。
+     */
+    public static double[][] broadcastTo(double[][] data, int targetRows, int targetCols) {
+        Objects.requireNonNull(data, "data");
+        if (data.length == 0 || data[0].length == 0) {
+            throw new IllegalArgumentException("空矩阵无法广播 / Empty matrix cannot broadcast");
+        }
+        int r = data.length;
+        int c = data[0].length;
+        int br = broadcastDim(r, targetRows);
+        int bc = broadcastDim(c, targetCols);
+        if (br != targetRows || bc != targetCols) {
+            throw new IllegalArgumentException(
+                    "目标形状与广播规则不一致 / Target shape incompatible with broadcast");
+        }
+        if (r == targetRows && c == targetCols) {
+            return copy2dForBroadcast(data);
+        }
+        double[][] out = new double[targetRows][targetCols];
+        for (int i = 0; i < targetRows; i++) {
+            int si = (r == 1) ? 0 : i;
+            for (int j = 0; j < targetCols; j++) {
+                int sj = (c == 1) ? 0 : j;
+                out[i][j] = data[si][sj];
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 将矩阵广播到目标形状。
+     */
+    public static IDoubleMatrix broadcastTo(IDoubleMatrix data, int targetRows, int targetCols) {
+        Objects.requireNonNull(data, "data");
+        return IDoubleMatrix.of(broadcastTo(data.toDoubleArray(), targetRows, targetCols));
+    }
+
+    /**
+     * 对两矩阵先广播到公共形状，再逐元素应用 {@code op}。
+     */
+    public static double[][] broadcastElementWise(
+            double[][] a,
+            double[][] b,
+            DoubleBinaryOperator op) {
+        Objects.requireNonNull(op, "op");
+        Objects.requireNonNull(a, "a");
+        Objects.requireNonNull(b, "b");
+        if (a.length == 0 || b.length == 0) {
+            throw new IllegalArgumentException("空矩阵 / Empty matrix");
+        }
+        int ra = a.length;
+        int ca = a[0].length;
+        int rb = b.length;
+        int cb = b[0].length;
+        int[] sh = broadcastShape(ra, ca, rb, cb);
+        double[][] ba = broadcastTo(a, sh[0], sh[1]);
+        double[][] bb = broadcastTo(b, sh[0], sh[1]);
+        double[][] out = new double[sh[0]][sh[1]];
+        for (int i = 0; i < sh[0]; i++) {
+            for (int j = 0; j < sh[1]; j++) {
+                out[i][j] = op.applyAsDouble(ba[i][j], bb[i][j]);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 对两双精度矩阵逐元素运算（广播），返回新矩阵。
+     */
+    public static IDoubleMatrix broadcastElementWise(
+            IMatrix<Double> a,
+            IMatrix<Double> b,
+            DoubleBinaryOperator op) {
+        Objects.requireNonNull(a, "a");
+        Objects.requireNonNull(b, "b");
+        return IDoubleMatrix.of(broadcastElementWise(a.toDoubleArray(), b.toDoubleArray(), op));
+    }
+
+    private static double[][] copy2dForBroadcast(double[][] data) {
+        double[][] c = new double[data.length][];
+        for (int i = 0; i < data.length; i++) {
+            c[i] = data[i].clone();
+        }
+        return c;
+    }
 
 }

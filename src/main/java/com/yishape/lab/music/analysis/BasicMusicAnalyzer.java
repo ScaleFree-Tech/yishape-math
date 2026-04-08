@@ -1,5 +1,8 @@
 package com.yishape.lab.music.analysis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.exception.AudioProcessingException;
 import com.yishape.lab.music.analysis.basic.BeatDetectionResult;
@@ -35,6 +38,9 @@ import java.util.concurrent.TimeoutException;
  * @since 1.0
  */
 public class BasicMusicAnalyzer implements IMusicAnalyzer {
+
+    private static final Logger log = LoggerFactory.getLogger(BasicMusicAnalyzer.class);
+
 
     private final IBeatAnalyzer beatAnalyzer;
     private final IKeyAnalyzer keyAnalyzer;
@@ -137,16 +143,15 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 // Add timeout to prevent indefinite hanging
                 beatResult = beatFuture.get(30, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
-                System.err.println("Beat analysis timed out");
+                log.warn("Beat analysis timed out");
                 beatFuture.cancel(true);
             } catch (InterruptedException e) {
-                System.err.println("Beat analysis interrupted");
+                log.warn("Beat analysis interrupted");
                 Thread.currentThread().interrupt();
             } catch (ExecutionException e) {
                 // Handle exception in beat analysis
                 if (verboseLogging) {
-                    System.err.println("Beat analysis failed: " + e.getCause().getMessage());
-                    e.getCause().printStackTrace();
+                    log.warn("Beat analysis failed: " + e.getCause().getMessage(), e.getCause());
                 }
             }
             
@@ -154,16 +159,15 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 // Add timeout to prevent indefinite hanging
                 keyResult = keyFuture.get(30, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
-                System.err.println("Key analysis timed out");
+                log.warn("Key analysis timed out");
                 keyFuture.cancel(true);
             } catch (InterruptedException e) {
-                System.err.println("Key analysis interrupted");
+                log.warn("Key analysis interrupted");
                 Thread.currentThread().interrupt();
             } catch (ExecutionException e) {
                 // Handle exception in key analysis
                 if (verboseLogging) {
-                    System.err.println("Key analysis failed: " + e.getCause().getMessage());
-                    e.getCause().printStackTrace();
+                    log.warn("Key analysis failed: " + e.getCause().getMessage(), e.getCause());
                 }
             }
 
@@ -184,8 +188,8 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 }
             } catch (AudioProcessingException e) {
                 if (verboseLogging) {
-                    System.err.println("Chord analysis failed: " + e.getMessage());
-                    e.printStackTrace();
+                    log.warn("Chord analysis failed: " + e.getMessage());
+                    log.error("exception", e);
                 }
                 chordResults = new ArrayList<>();
             }
@@ -633,7 +637,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 result.getBeatDetectionResult().setConfidence(adjustedConfidence);
                 
                 if (verboseLogging) {
-                    System.out.println("警告: BPM异常值检测 - BPM: " + bpm + ", 置信度已调整");
+                    log.debug("警告: BPM异常值检测 - BPM: " + bpm + ", 置信度已调整");
                 }
             }
         }
@@ -646,7 +650,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 result.getKeyDetectionResult().setConfidence(0.05);
                 
                 if (verboseLogging) {
-                    System.out.println("警告: 调性置信度异常低 - " + keyConfidence);
+                    log.debug("警告: 调性置信度异常低 - " + keyConfidence);
                 }
             }
         }
@@ -661,7 +665,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 result.getChordDetectionResult().setConfidence(chordConfidence * 0.3);
                 
                 if (verboseLogging) {
-                    System.out.println("警告: 和弦名称异常 - " + chord);
+                    log.debug("警告: 和弦名称异常 - " + chord);
                 }
             }
         }
@@ -882,7 +886,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
             }
             
             if (verboseLogging) {
-                System.out.println("警告: 有效结果数量不足 (" + validResults + "/3), 应用置信度惩罚");
+                log.debug("警告: 有效结果数量不足 (" + validResults + "/3), 应用置信度惩罚");
             }
         }
         
@@ -957,7 +961,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                     return performAlternativeAnalysis(audioData, alternativeParams1);
                 } catch (Exception e) {
                     if (verboseLogging) {
-                        System.err.println("Alternative analysis 1 failed: " + e.getMessage());
+                        log.warn("Alternative analysis 1 failed: " + e.getMessage());
                     }
                     return null;
                 }
@@ -968,7 +972,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                     return performAlternativeAnalysis(audioData, alternativeParams2);
                 } catch (Exception e) {
                     if (verboseLogging) {
-                        System.err.println("Alternative analysis 2 failed: " + e.getMessage());
+                        log.warn("Alternative analysis 2 failed: " + e.getMessage());
                     }
                     return null;
                 }
@@ -980,7 +984,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 if (alt1 != null) validationResults.add(alt1);
             } catch (Exception e) {
                 if (verboseLogging) {
-                    System.err.println("Alternative analysis 1 timeout or failed");
+                    log.warn("Alternative analysis 1 timeout or failed");
                 }
             }
             
@@ -989,7 +993,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
                 if (alt2 != null) validationResults.add(alt2);
             } catch (Exception e) {
                 if (verboseLogging) {
-                    System.err.println("Alternative analysis 2 timeout or failed");
+                    log.warn("Alternative analysis 2 timeout or failed");
                 }
             }
             
@@ -1003,7 +1007,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
             
         } catch (Exception e) {
             if (verboseLogging) {
-                System.err.println("Multi-algorithm validation failed: " + e.getMessage());
+                log.warn("Multi-algorithm validation failed: " + e.getMessage());
             }
             return result; // 返回原始结果 / Return original result
         }
@@ -1082,7 +1086,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
             double score = calculateValidationScore(result, results);
             
             if (verboseLogging) {
-                System.out.println("Validation score for " + result.getAlgorithm() + ": " + score);
+                log.debug("Validation score for " + result.getAlgorithm() + ": " + score);
             }
             
             if (score > bestScore) {
@@ -1316,7 +1320,7 @@ public class BasicMusicAnalyzer implements IMusicAnalyzer {
         enhancedResult.setConfidence(Math.min(1.0, enhancedConfidence));
         
         if (verboseLogging) {
-            System.out.println("Enhanced confidence: " + originalConfidence + " -> " + enhancedResult.getConfidence());
+            log.debug("Enhanced confidence: " + originalConfidence + " -> " + enhancedResult.getConfidence());
         }
         
         return enhancedResult;

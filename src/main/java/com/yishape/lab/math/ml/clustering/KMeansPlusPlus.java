@@ -1,5 +1,8 @@
 package com.yishape.lab.math.ml.clustering;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.ml.ISerializableModel;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
@@ -15,6 +18,9 @@ import java.util.*;
  * @author reremouse
  */
 public class KMeansPlusPlus implements IClustering, ISerializableModel {
+
+    private static final Logger log = LoggerFactory.getLogger(KMeansPlusPlus.class);
+
     
     private static final long serialVersionUID = 1L;
     
@@ -635,7 +641,7 @@ public class KMeansPlusPlus implements IClustering, ISerializableModel {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("exception", e);
         }
     }
 }

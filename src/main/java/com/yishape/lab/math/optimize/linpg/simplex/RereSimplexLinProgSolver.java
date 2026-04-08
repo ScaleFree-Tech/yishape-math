@@ -1,5 +1,8 @@
 package com.yishape.lab.math.optimize.linpg.simplex;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
@@ -21,6 +24,9 @@ import com.yishape.lab.math.util.RerePrecision;
  * 
  */
 public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
+
+    private static final Logger log = LoggerFactory.getLogger(RereSimplexLinProgSolver.class);
+
 
     // Configuration
     private boolean verbose = false;
@@ -111,16 +117,16 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         long startTime = System.nanoTime();
         
         if (verbose) {
-            System.out.println("=== BetterSimplexLinProgSolver: Industrial-Strength Simplex Method ===");
+            log.debug("=== BetterSimplexLinProgSolver: Industrial-Strength Simplex Method ===");
             int totalConstraints = (A_ub != null ? A_ub.rows() : 0) + (A_eq != null ? A_eq.rows() : 0);
-            System.out.println("Problem size: " + totalConstraints + " constraints, " + c.length() + " variables");
+            log.debug("Problem size: " + totalConstraints + " constraints, " + c.length() + " variables");
             if (A_ub != null) {
-                System.out.println("Inequality constraints: " + A_ub.rows());
+                log.debug("Inequality constraints: " + A_ub.rows());
             }
             if (A_eq != null) {
-                System.out.println("Equality constraints: " + A_eq.rows());
+                log.debug("Equality constraints: " + A_eq.rows());
             }
-            System.out.println("Configuration: scaling=" + useNumericalScaling + 
+            log.debug("Configuration: scaling=" + useNumericalScaling + 
                              ", degeneracy=" + useAdvancedDegeneracyHandling +
                              ", memory_opt=" + useMemoryOptimization);
         }
@@ -141,9 +147,9 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // Verbose mode is set during construction for scaling analysis
             
             if (verbose) {
-                System.out.println("Tableau construction time: " + tableau.getConstructionTime() / 1_000_000 + " ms");
-                System.out.println("Initial phase: " + tableau.getCurrentPhase());
-                System.out.println("Native constraint processing: LEQ=" + (A_ub != null ? A_ub.rows() : 0) + 
+                log.debug("Tableau construction time: " + tableau.getConstructionTime() / 1_000_000 + " ms");
+                log.debug("Initial phase: " + tableau.getCurrentPhase());
+                log.debug("Native constraint processing: LEQ=" + (A_ub != null ? A_ub.rows() : 0) + 
                                  ", EQ=" + (A_eq != null ? A_eq.rows() : 0));
             }
             
@@ -157,7 +163,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 // Transition to Phase II
                 tableau.transitionToPhaseII();
                 if (verbose) {
-                    System.out.println("Transitioned to Phase II");
+                    log.debug("Transitioned to Phase II");
                 }
             }
             
@@ -170,17 +176,17 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             problemsSolved++;
             
             if (verbose) {
-                System.out.println("Total solve time: " + solveTime / 1_000_000 + " ms");
-                System.out.println("Pivot operations: " + tableau.getPivotOperations());
-                System.out.println("Average solve time: " + (totalSolveTime / problemsSolved) / 1_000_000 + " ms");
+                log.debug("Total solve time: " + solveTime / 1_000_000 + " ms");
+                log.debug("Pivot operations: " + tableau.getPivotOperations());
+                log.debug("Average solve time: " + (totalSolveTime / problemsSolved) / 1_000_000 + " ms");
             }
             
             return result;
             
         } catch (Exception e) {
             if (verbose) {
-                System.err.println("Solver exception: " + e.getMessage());
-                e.printStackTrace();
+                log.warn("Solver exception: " + e.getMessage());
+                log.error("exception", e);
             }
             
             return createFailureResult(c.length(), "Solver failed: " + e.getMessage());
@@ -233,8 +239,8 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 double objectiveValue = RereMathUtil.safeDoubleValue(c.dot(solution));
                 
                 if (verbose) {
-                    System.out.println("Direct solution found: " + solution);
-                    System.out.println("Objective value: " + objectiveValue);
+                    log.debug("Direct solution found: " + solution);
+                    log.debug("Objective value: " + objectiveValue);
                 }
                 
                 return new OptResult.Builder(objectiveValue, solution)
@@ -247,7 +253,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         } catch (Exception e) {
             // If direct solution fails, fall back to simplex method
             if (verbose) {
-                System.out.println("Direct solution failed, using simplex method: " + e.getMessage());
+                log.debug("Direct solution failed, using simplex method: " + e.getMessage());
             }
         }
         
@@ -302,19 +308,19 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
      */
     private boolean solvePhaseI(RereSimplexTableau tableau) {
         if (verbose) {
-            System.out.println("Starting Phase I: Finding initial feasible solution");
+            log.debug("Starting Phase I: Finding initial feasible solution");
         }
         
         int iteration = 0;
         while (!tableau.isOptimal() && iteration < MAX_ITERATIONS) {
             if (verbose) {
-                System.out.println("Phase I iteration " + iteration + ", isOptimal: " + tableau.isOptimal());
+                log.debug("Phase I iteration " + iteration + ", isOptimal: " + tableau.isOptimal());
             }
             
             // Select entering variable
             Integer enteringVar = selectEnteringVariable(tableau);
             if (verbose) {
-                System.out.println("Phase I entering variable: " + enteringVar);
+                log.debug("Phase I entering variable: " + enteringVar);
             }
             if (enteringVar == null) {
                 break; // Optimal or no improvement possible
@@ -325,7 +331,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             if (leavingVar == null) {
                 // Unbounded in Phase I should not happen with artificial variables
                 if (verbose) {
-                    System.err.println("Warning: Unbounded solution in Phase I");
+                    log.warn("Warning: Unbounded solution in Phase I");
                 }
                 return false;
             }
@@ -345,7 +351,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             if (verbose) {
 
             
-                System.out.println("After pivot, checking objective row coefficients:");
+                log.debug("After pivot, checking objective row coefficients:");
 
             
                 int objRow = (tableau.getCurrentPhase() == 1) ? 0 : ((tableau.getNumObjectiveFunctions() == 2) ? 1 : 0);
@@ -354,7 +360,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 for (int j = tableau.getNumObjectiveFunctions(); j < Math.min(tableau.getNumObjectiveFunctions() + 10, tableau.getWidth() - 1); j++) {
 
             
-                    System.out.printf("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j));
+                    log.debug(String.format("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j)));
 
             
                 }
@@ -363,13 +369,13 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             }
             
             if (verbose && iteration % 100 == 0) {
-                System.out.println("Phase I iteration " + iteration);
+                log.debug("Phase I iteration " + iteration);
             }
         }
         
         if (iteration >= MAX_ITERATIONS) {
             if (verbose) {
-                System.err.println("Phase I reached iteration limit");
+                log.warn("Phase I reached iteration limit");
             }
             return false;
         }
@@ -382,10 +388,10 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         boolean feasible = RerePrecision.equalsZero(phaseIObjective, epsilon);
         
         if (verbose) {
-            System.out.println("Phase I completed in " + iteration + " iterations");
-            System.out.println("Phase I objective value: " + phaseIObjective);
-            System.out.println("Problem " + (feasible ? "is feasible" : "is infeasible"));
-            System.out.println("Phase I feasibility check: |" + phaseIObjective + "| <= " + epsilon + " = " + feasible);
+            log.debug("Phase I completed in " + iteration + " iterations");
+            log.debug("Phase I objective value: " + phaseIObjective);
+            log.debug("Problem " + (feasible ? "is feasible" : "is infeasible"));
+            log.debug("Phase I feasibility check: |" + phaseIObjective + "| <= " + epsilon + " = " + feasible);
         }
         
         return feasible;
@@ -397,15 +403,15 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
     private OptResult solvePhaseII(RereSimplexTableau tableau, IVector originalObjective) {
         if (verbose) {
 
-            System.out.println("Starting Phase II: Optimizing original objective");
+            log.debug("Starting Phase II: Optimizing original objective");
 
-            System.out.println("Initial objective row coefficients:");
+            log.debug("Initial objective row coefficients:");
 
             int objRow = (tableau.getCurrentPhase() == 1) ? 0 : ((tableau.getNumObjectiveFunctions() == 2) ? 1 : 0);
 
             for (int j = tableau.getNumObjectiveFunctions(); j < Math.min(tableau.getNumObjectiveFunctions() + 10, tableau.getWidth() - 1); j++) {
 
-                System.out.printf("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j));
+                log.debug(String.format("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j)));
 
             }
 
@@ -416,17 +422,17 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         
         while (!tableau.isOptimal() && iteration < MAX_ITERATIONS) {
             if (verbose) {
-                System.out.println("Phase II iteration " + iteration + ", isOptimal: " + tableau.isOptimal());
+                log.debug("Phase II iteration " + iteration + ", isOptimal: " + tableau.isOptimal());
             }
             
             // Select entering variable
             Integer enteringVar = selectEnteringVariable(tableau);
             if (verbose) {
-                System.out.println("Phase II entering variable: " + enteringVar);
+                log.debug("Phase II entering variable: " + enteringVar);
             }
             if (enteringVar == null) {
                 if (verbose) {
-                    System.out.println("No entering variable found, optimal solution reached");
+                    log.debug("No entering variable found, optimal solution reached");
                 }
                 break; // Optimal
             }
@@ -435,7 +441,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             Integer leavingVar = pivotStrategy.selectLeavingVariable(tableau, enteringVar);
             if (leavingVar == null) {
                 if (verbose) {
-                    System.err.println("Unbounded solution detected in Phase II");
+                    log.warn("Unbounded solution detected in Phase II");
                 }
                 IVector unboundedSolution = extractSolution(tableau, originalObjective.length());
                 return new OptResult.Builder(Double.POSITIVE_INFINITY, unboundedSolution)
@@ -446,7 +452,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             }
             
             if (verbose) {
-                System.out.println("Phase II leaving variable (row): " + leavingVar);
+                log.debug("Phase II leaving variable (row): " + leavingVar);
             }
             
             // Perform pivot operation
@@ -464,7 +470,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             if (verbose) {
 
             
-                System.out.println("After pivot, checking objective row coefficients:");
+                log.debug("After pivot, checking objective row coefficients:");
 
             
                 int objRow = (tableau.getCurrentPhase() == 1) ? 0 : ((tableau.getNumObjectiveFunctions() == 2) ? 1 : 0);
@@ -473,7 +479,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 for (int j = tableau.getNumObjectiveFunctions(); j < Math.min(tableau.getNumObjectiveFunctions() + 10, tableau.getWidth() - 1); j++) {
 
             
-                    System.out.printf("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j));
+                    log.debug(String.format("  Col %d: %.6f%n", j, tableau.getEntry(objRow, j)));
 
             
                 }
@@ -484,17 +490,17 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // Check for improvement to prevent cycling
             double currentObjective = tableau.getEntry(0, tableau.getRhsOffset());
             if (verbose) {
-                System.out.printf("Phase II iteration %d objective: %.6f%n", iteration, currentObjective);
+                log.debug(String.format("Phase II iteration %d objective: %.6f%n", iteration, currentObjective));
             }
             
             if (iteration % 100 == 0 && verbose) {
-                System.out.println("Phase II iteration " + iteration + ", current objective: " + currentObjective);
+                log.debug("Phase II iteration " + iteration + ", current objective: " + currentObjective);
             }
         }
         
         if (iteration >= MAX_ITERATIONS) {
             if (verbose) {
-                System.err.println("Phase II reached iteration limit");
+                log.warn("Phase II reached iteration limit");
             }
             return createFailureResult(originalObjective.length(), "Phase II iteration limit exceeded");
         }
@@ -506,10 +512,10 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         double objectiveValue = calculateObjectiveValue(originalObjective, solution);
         
         if (verbose) {
-            System.out.println("Phase II completed in " + iteration + " iterations");
-            System.out.println("Tableau objective value: " + tableau.getEntry(0, tableau.getRhsOffset()));
-            System.out.println("True objective value: " + objectiveValue);
-            System.out.println("Extracted solution: " + solution);
+            log.debug("Phase II completed in " + iteration + " iterations");
+            log.debug("Tableau objective value: " + tableau.getEntry(0, tableau.getRhsOffset()));
+            log.debug("True objective value: " + objectiveValue);
+            log.debug("Extracted solution: " + solution);
         }
         
         return new OptResult.Builder(objectiveValue, solution)
@@ -562,7 +568,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         }
         
         if (verbose && minPos != null) {
-            System.out.println("Dantzig rule: entering variable col=" + minPos + ", coeff=" + minValue + " (objectiveRow=" + objectiveRow + ")");
+            log.debug("Dantzig rule: entering variable col=" + minPos + ", coeff=" + minValue + " (objectiveRow=" + objectiveRow + ")");
         }
         
         return minPos;
@@ -620,7 +626,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             // Check if variable j is basic
             Integer basicRow = findBasicRow(tableau, j);
             if (verbose) {
-                System.out.println("Debug: variable x" + j + " (col " + (tableau.getNumObjectiveFunctions() + j) + ") -> basicRow = " + basicRow);
+                log.debug("Debug: variable x" + j + " (col " + (tableau.getNumObjectiveFunctions() + j) + ") -> basicRow = " + basicRow);
             }
             if (basicRow != null) {
                 // basicRow is now the absolute tableau row, we need to use it directly
@@ -629,7 +635,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                 solution.set(j, value);
                 
                 if (verbose) {
-                    System.out.println("Found basic variable x" + j + " = " + value + " in row " + basicRow);
+                    log.debug("Found basic variable x" + j + " = " + value + " in row " + basicRow);
                 }
             }
         }
@@ -645,7 +651,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
                     solution.set(i, unscaledValue);
                     
                     if (verbose) {
-                        System.out.println("Reversing scaling for x" + i + ": " + scaledValue + " -> " + unscaledValue + " (exp change: " + variableScaling[i] + ")");
+                        log.debug("Reversing scaling for x" + i + ": " + scaledValue + " -> " + unscaledValue + " (exp change: " + variableScaling[i] + ")");
                     }
                 }
             }
@@ -665,7 +671,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         Integer basicRow = tableau.getBasicRow(actualCol);
         
         if (verbose) {
-            System.out.println("findBasicRow: variable x" + col + " (actualCol=" + actualCol + ") -> basicRow=" + basicRow);
+            log.debug("findBasicRow: variable x" + col + " (actualCol=" + actualCol + ") -> basicRow=" + basicRow);
         }
         
         return basicRow;
@@ -734,7 +740,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
         // Try to find the correct solution by solving the constraint system directly
         
         if (verbose) {
-            System.out.println("Verifying large scale solution: " + solution);
+            log.debug("Verifying large scale solution: " + solution);
         }
         
         // Extract constraint matrix and RHS from tableau
@@ -743,8 +749,7 @@ public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
             numConstraints = tableau.getHeight() - 2; // Exclude both objective rows
         }
         
-        // For now, return the original solution
-        // TODO: Implement constraint system solving for verification
+        // 大规模问题可在此用约束残差进一步校正；当前返回 tableau 提取解。
         return solution;
     }
     
@@ -811,7 +816,7 @@ For Phase II tableau, this should respect optimality conditions
                 
                 if (isBasic) {
                     if (verbose) {
-                        System.out.println("Found existing basic variable x" + col + " in row " + constraintRow);
+                        log.debug("Found existing basic variable x" + col + " in row " + constraintRow);
                     }
                     return col;
                 }
@@ -830,7 +835,7 @@ For Phase II tableau, this should respect optimality conditions
             double constraintCoeff = tableau.getEntry(constraintRow, col);
             if (Math.abs(constraintCoeff) > adjustedEpsilon) {
                 if (verbose) {
-                    System.out.println("Using first non-zero variable x" + col + " for row " + constraintRow);
+                    log.debug("Using first non-zero variable x" + col + " for row " + constraintRow);
                 }
                 return col;
             }
@@ -865,7 +870,7 @@ For Phase II tableau, this should respect optimality conditions
         // If we found a variable that should be basic according to optimality
         if (bestVariable >= 0) {
             if (verbose) {
-                System.out.println("Selected variable x" + bestVariable + " as basic (reduced cost: " + bestReducedCost + ")");
+                log.debug("Selected variable x" + bestVariable + " as basic (reduced cost: " + bestReducedCost + ")");
             }
             return bestVariable;
         }
@@ -960,7 +965,7 @@ For Phase II tableau, this should respect optimality conditions
                         solution.set(bestVar, Math.max(0.0, solutionValue));
                         
                         if (verbose) {
-                            System.out.println("Set variable x" + bestVar + " = " + solutionValue + " as basic variable");
+                            log.debug("Set variable x" + bestVar + " = " + solutionValue + " as basic variable");
                         }
                         
                         // For single constraint, set other variables to 0 (they are non-basic)
@@ -995,7 +1000,7 @@ For Phase II tableau, this should respect optimality conditions
                         solution.set(bestVar, Math.max(0.0, solutionValue));
                         
                         if (verbose) {
-                            System.out.println("Set variable x" + bestVar + " = " + solutionValue + " from constraint " + i);
+                            log.debug("Set variable x" + bestVar + " = " + solutionValue + " from constraint " + i);
                         }
                         break; // Use only one constraint to avoid over-determination
                     }
@@ -1035,7 +1040,7 @@ For Phase II tableau, this should respect optimality conditions
      */
     private OptResult solveDeterminateSystem(IVector c, IMatrix A_eq, IVector b_eq) {
         if (verbose) {
-            System.out.println("求解方阵系统...");
+            log.debug("求解方阵系统...");
         }
         
         try {
@@ -1044,7 +1049,7 @@ For Phase II tableau, this should respect optimality conditions
             if (RerePrecision.equalsZero(det, epsilon)) {
                 // 矩阵奇异，可能不可行或有无穷�?
                 if (verbose) {
-                    System.out.println("矩阵奇异，检查一致�?..");
+                    log.debug("矩阵奇异，检查一致�?..");
                 }
                 return checkConsistency(c, A_eq, b_eq);
             }
@@ -1063,7 +1068,7 @@ For Phase II tableau, this should respect optimality conditions
             
             if (!feasible) {
                 if (verbose) {
-                    System.out.println("解不满足非负性约");
+                    log.debug("解不满足非负性约");
                 }
                 IVector fallbackSolution = IVector.zeros(c.length());
                 return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -1080,8 +1085,8 @@ For Phase II tableau, this should respect optimality conditions
             }
             
             if (verbose) {
-                System.out.println("找到可行�? " + solution);
-                System.out.println("目标函数�? " + objectiveValue);
+                log.debug("找到可行�? " + solution);
+                log.debug("目标函数�? " + objectiveValue);
             }
             
             return new OptResult.Builder(objectiveValue, solution)
@@ -1092,7 +1097,7 @@ For Phase II tableau, this should respect optimality conditions
                 
         } catch (Exception e) {
             if (verbose) {
-                System.out.println("方阵求解失败: " + e.getMessage());
+                log.debug("方阵求解失败: " + e.getMessage());
             }
             IVector fallbackSolution = IVector.zeros(c.length());
             return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -1177,7 +1182,7 @@ For Phase II tableau, this should respect optimality conditions
                         if (!RerePrecision.equals(bRatio, ratio, epsilon)) {
                             // 不一致系�?
                             if (verbose) {
-                                System.out.println("检测到不一致的约束：行" + i + "和行" + j);
+                                log.debug("检测到不一致的约束：行" + i + "和行" + j);
                             }
                             IVector fallbackSolution = IVector.zeros(c.length());
                             return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -1188,7 +1193,7 @@ For Phase II tableau, this should respect optimality conditions
                         }
                     } else if (!RerePrecision.equalsZero(bi, epsilon)) {
                         if (verbose) {
-                            System.out.println("检测到不一致的约束：行" + i + "和行" + j);
+                            log.debug("检测到不一致的约束：行" + i + "和行" + j);
                         }
                         IVector fallbackSolution = IVector.zeros(c.length());
                         return new OptResult.Builder(Double.NEGATIVE_INFINITY, fallbackSolution)
@@ -1231,7 +1236,7 @@ For Phase II tableau, this should respect optimality conditions
      */
     private OptResult solveUnderdeterminedSystem(IVector c, IMatrix A_eq, IVector b_eq) {
         if (verbose) {
-            System.out.println("求解欠定系统，使用单纯形�?..");
+            log.debug("求解欠定系统，使用单纯形�?..");
         }
         
         int m = A_eq.rows();
@@ -1264,7 +1269,7 @@ For Phase II tableau, this should respect optimality conditions
         }
         
         if (verbose) {
-            System.out.println("初始单纯形表已构建，维度: " + tableau.rows() + "x" + tableau.cols());
+            log.debug("初始单纯形表已构建，维度: " + tableau.rows() + "x" + tableau.cols());
             printTableau(tableau, m, n);
         }
         
@@ -1283,7 +1288,7 @@ For Phase II tableau, this should respect optimality conditions
             if (leavingVar == -1) {
                 // 无界�?
                 if (verbose) {
-                    System.out.println("检测到无界");
+                    log.debug("检测到无界");
                 }
                 IVector unboundedSolution = extractCurrentSolution(tableau, n, m);
                 return new OptResult.Builder(Double.POSITIVE_INFINITY, unboundedSolution)
@@ -1298,12 +1303,12 @@ For Phase II tableau, this should respect optimality conditions
             iteration++;
             
             if (verbose && iteration % 10 == 0) {
-                System.out.println("迭代 " + iteration + "，入�? " + enteringVar + ", 出基: " + leavingVar);
+                log.debug("迭代 " + iteration + "，入�? " + enteringVar + ", 出基: " + leavingVar);
             }
         }
         
         if (iteration >= MAX_ITERATIONS) {
-            System.err.println("达到最大迭代次");
+            log.warn("达到最大迭代次");
         }
         
         // 提取最终解
@@ -1311,9 +1316,9 @@ For Phase II tableau, this should respect optimality conditions
         double objectiveValue = RereMathUtil.safeDoubleValue(tableau.get(m, n + m));
         
         if (verbose) {
-            System.out.println("单纯形法完成，迭代次�? " + iteration);
-            System.out.println("最终解: " + solution);
-            System.out.println("目标函数�? " + objectiveValue);
+            log.debug("单纯形法完成，迭代次�? " + iteration);
+            log.debug("最终解: " + solution);
+            log.debug("目标函数�? " + objectiveValue);
             printTableau(tableau, m, n);
         }
         
@@ -1437,13 +1442,13 @@ For Phase II tableau, this should respect optimality conditions
     private void printTableau(IMatrix tableau, int m, int n) {
         if (!verbose) return;
         
-        System.out.println("单纯形表:");
+        log.debug("单纯形表:");
         for (int i = 0; i < tableau.rows(); i++) {
             for (int j = 0; j < tableau.cols(); j++) {
-                System.out.printf("%8.3f ", RereMathUtil.safeDoubleValue(tableau.get(i, j)));
+                log.debug(String.format("%8.3f ", RereMathUtil.safeDoubleValue(tableau.get(i, j))));
             }
-            System.out.println();
+            log.debug("");
         }
-        System.out.println();
+        log.debug("");
     }
 }

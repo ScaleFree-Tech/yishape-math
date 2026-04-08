@@ -1,5 +1,8 @@
 package com.yishape.lab.math.compute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Serializable;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorMask;
@@ -13,6 +16,9 @@ import jdk.incubator.vector.VectorSpecies;
  * @author lteb2
  */
 public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(SIMDFloatComputer.class);
+
     
     // 性能优化常量
     private static final VectorSpecies<Float> PREFERRED_SPECIES;
@@ -97,8 +103,8 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
             
             if (ENABLE_DETAILED_LOGGING && totalOperations % 10000 == 0) {
                 float vectorizationRate = (float) totalVectorizedOperations / totalOperations * 100;
-                System.out.printf("SIMD Stats: Operations=%d, Vectorization Rate=%.2f%%, Data Size=%d%n", 
-                    totalOperations, vectorizationRate, dataSize);
+                log.debug(String.format("SIMD Stats: Operations=%d, Vectorization Rate=%.2f%%, Data Size=%d%n",
+                    totalOperations, vectorizationRate, dataSize));
             }
         }
     }
@@ -170,18 +176,31 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     /**
-     * 检查是否支持Java Vector API计算
+     * 检查是否支持Java Vector API计算（加载、运算、归约烟测；失败则回退 SISD）
      *
      * @return true if Vector API is supported, false otherwise
      */
     public static boolean checkIfSupport() {
         try {
-            // 测试基本的Vector API操作
             VectorSpecies<Float> species = PREFERRED_SPECIES;
-            System.out.println("Optimal SPECIES Length: " + species.length());
-            System.out.println("Optimal Block Size: " + OPTIMAL_BLOCK_SIZE);
-            return true;
-        } catch (UnsupportedOperationException | NoClassDefFoundError | ExceptionInInitializerError e) {
+            int vl = species.length();
+            if (vl <= 0) {
+                return false;
+            }
+            float[] a = new float[vl];
+            float[] b = new float[vl];
+            java.util.Arrays.fill(a, 1.0f);
+            java.util.Arrays.fill(b, 1.0f);
+            FloatVector va = FloatVector.fromArray(species, a, 0);
+            FloatVector vb = FloatVector.fromArray(species, b, 0);
+            FloatVector vs = va.add(vb);
+            float sum = vs.reduceLanes(VectorOperators.ADD);
+            if (Float.isNaN(sum) || Float.isInfinite(sum)) {
+                return false;
+            }
+            float expected = 2.0f * vl;
+            return Math.abs(sum - expected) <= Math.ulp(expected) * 8f;
+        } catch (Throwable ex) {
             return false;
         }
     }
