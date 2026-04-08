@@ -34,7 +34,8 @@ public class ComputerConfig {
             Class<?> simdClass = Class.forName("com.yishape.lab.math.compute.SIMDDoubleComputer");
             // 通过反射调用checkIfSupport方法
             return (Boolean) simdClass.getMethod("checkIfSupport").invoke(null);
-        } catch (Exception e) {
+        } catch (Throwable t) {
+            // NoClassDefFoundError / LinkageError 等是 Error 子类，不能仅用 Exception 捕获
             return false;
         }
     
@@ -50,7 +51,7 @@ public class ComputerConfig {
             Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUDoubleComputer");
             // 通过反射调用isGPUAvailable方法
             return (Boolean) gpuClass.getMethod("isGPUAvailable").invoke(null);
-        } catch (Exception e) {
+        } catch (Throwable t) {
             return false;
         }
     
