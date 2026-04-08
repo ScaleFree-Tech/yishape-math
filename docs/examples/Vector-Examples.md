@@ -6,6 +6,10 @@
 
 This document provides detailed usage examples for the `IVector<T>` generic interface, covering various practical application scenarios to help users quickly master vector operations. It is recommended to use the `Linalg` factory class to create vector instances.
 
+二维广播、`.npy` 等与矩阵侧共用的入口速查见 [Matrix-Examples.md](Matrix-Examples.md) 文首「广播与相关 API 速查」。
+
+For 2D broadcasting, `.npy` I/O, and related entry points shared with matrices, see **Quick reference: broadcasting and related APIs** at the start of [Matrix-Examples.md](Matrix-Examples.md).
+
 ## 基础示例 / Basic Examples
 
 ### 示例1：向量创建和基本操作 / Example 1: Vector Creation and Basic Operations

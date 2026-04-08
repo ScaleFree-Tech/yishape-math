@@ -6,6 +6,10 @@
 
 The `IMatrix` interface provides comprehensive generic matrix mathematical operations supporting Float and Double types, including basic mathematical operations, matrix transformations, linear algebra operations, eigendecomposition, and more. The interface uses generic design, supports method chaining, and offers rich matrix operation functionalities.
 
+广播、`.npy` 等与矩阵相关的常用入口速查见 [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) 文首。
+
+For a quick table of broadcasting, `.npy` I/O, and related matrix entry points, see the opening section of [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md).
+
 ## 核心接口 / Core Interface
 
 ### IMatrix 接口 / IMatrix Interface

@@ -124,15 +124,15 @@ These classes are automatically called by the framework internally. When users u
 - **SignalVisualizer**: 信号可视化类，提供信号数据可视化功能 / Signal visualization
 - **Complex**: 复数类，提供复数运算功能 / Complex numbers
 
-### 11. 稠密 float / double 辅助（并入既有 API） / Dense float/double helpers (merged into existing API)
-- **`IMatrix`**（首选入口）：`broadcastShape` / `broadcastTo` / `broadcastElementWise`（`double[][]` / `IDoubleMatrix` 与 `float[][]` 等；两矩阵形参因 Java 泛型擦除不能同时提供 `IMatrix<Double>` 与 `IMatrix<Float>` 重载，**对两个 `IMatrix<Float>` 请用 `IFloatMatrix.broadcastElementWise`**）；float 数组路径经 `IFloatMatrix` 转 double 再转回 / Primary entry: broadcasting helpers; for two **`IMatrix<Float>`** operands use **`IFloatMatrix.broadcastElementWise`** (erasure); float paths delegate via double.
-- **`IDoubleMatrix`** / **`IFloatMatrix`**：`broadcast*` 中可与 `IMatrix` 对齐的部分**委托**至 `IMatrix`；`IFloatMatrix.broadcastElementWise(IMatrix<Float>, IMatrix<Float>, …)` 保留在 `IFloatMatrix` / Aligned `broadcast*` delegates to **`IMatrix`**; float–float element-wise stays on **`IFloatMatrix`**.
-- **`IMatrix` / `IVector`**：矩阵乘、转置、行和、向量 `fancyGet` / `booleanGet` / `repeat` 等，不另建平行工具类 / No parallel ndarray-style utility layer.
-- **`IVector`**（首选入口）：`histogram`、`digitize`、`polyfit`、`where`（原始数组 `double[]`/`float[]`；向量样本用 **`IVector<? extends Number>`** 统一入口以避免与 `IVector<Double>`/`IVector<Float>` 产生相同擦除疑符；**`polyfit` 两向量**返回 **`IVector<? extends Number>`**，可按需转为 `IVector<Double>`/`IVector<Float>`）；嵌套类型 **`IVector.HistogramResult`** / Static helpers; **`polyfit`** on two vectors returns **`IVector<? extends Number>`**; nested **`IVector.HistogramResult`**.
-- **`IDoubleVector`** / **`IFloatVector`**：与上相同签名的静态方法，**委托**至 `IVector` / Same static signatures delegate to **`IVector`**.
-- **`NpyArrayIO`**（`util`）：`.npy` 读写；可与 `Linalg.matrix` / `IMatrix` 配合 / `.npy` I/O; works with **`Linalg.matrix`** / **`IMatrix`**.
+### 11. 广播与稠密数组相关 API / Broadcasting and dense-array-related APIs
+- **`IMatrix`**：`broadcastShape` / `broadcastTo` / `broadcastElementWise`（`double[][]` / `IMatrix<Double>` / `float[][]` 等）；两个操作数均为 **`IMatrix<Float>`** 时用 **`IFloatMatrix.broadcastElementWise`**（泛型擦除） / **`IMatrix`** broadcasting; for two **`IMatrix<Float>`** operands use **`IFloatMatrix.broadcastElementWise`** (type erasure).
+- **`IDoubleMatrix`** / **`IFloatMatrix`**：与 `IMatrix` 对齐的 `broadcast*`；`IFloatMatrix.broadcastElementWise(IMatrix<Float>, IMatrix<Float>, …)` / `broadcast*` aligned with **`IMatrix`**; **`IFloatMatrix.broadcastElementWise`** for float–float element-wise.
+- **`IMatrix` / `IVector`**：矩阵乘、转置、行和；向量 `fancyGet` / `booleanGet` / `repeat` 等 / Matrix ops; vector indexing helpers.
+- **`IVector`**：`histogram`、`digitize`、`polyfit`、`where`（原始数组 `double[]`/`float[]`；向量样本用 **`IVector<? extends Number>`**；**`polyfit`（两向量）** 返回 **`IVector<? extends Number>`**）；**`IVector.HistogramResult`** / Static helpers; **`polyfit`** on two vectors returns **`IVector<? extends Number>`**; **`IVector.HistogramResult`**.
+- **`IDoubleVector`** / **`IFloatVector`**：与 **`IVector`** 相同签名的静态便捷方法 / Convenience statics mirroring **`IVector`**.
+- **`NpyArrayIO`**：`.npy` 读写；可与 **`Linalg.matrix`** / **`IMatrix`** 配合 / `.npy` I/O with **`Linalg.matrix`** / **`IMatrix`**.
 - 实数 FFT：**`RereFFT`** / Real FFT: **`RereFFT`**.
-- 说明见 [`examples/Dense-Arrays-Examples.md`](examples/Dense-Arrays-Examples.md) / See [`examples/Dense-Arrays-Examples.md`](examples/Dense-Arrays-Examples.md).
+- 示例见 [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) 文首「广播与相关 API 速查」/ Examples: opening **Quick reference: broadcasting and related APIs** in [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md).
 
 ## 核心工厂类 / Core Factory Classes
 

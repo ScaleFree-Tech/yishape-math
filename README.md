@@ -604,6 +604,8 @@ IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / 
 ```
 
 ## 核心类文档 / Core Classes Documentation
+- [内容导读 (Reading Guide)](./docs/README.md) / [Reading Guide](./docs/README.md)
+- [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
 
 - [向量操作 (Vector Operations)](./docs/Vector-Operations.md) / [Vector Operations Documentation](./docs/Vector-Operations.md)
 - [矩阵操作 (Matrix Operations)](./docs/Matrix-Operations.md) / [Matrix Operations Documentation](./docs/Matrix-Operations.md)
@@ -616,7 +618,7 @@ IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / 
 - [信号处理 (Signal Processing)](./docs/Signal-Processing.md) / [Signal Processing Documentation](./docs/Signal-Processing.md)
 - [时间序列分析 (Time Series Analysis)](./docs/Time-Series-Analysis.md) / [Time Series Analysis Documentation](./docs/Time-Series-Analysis.md)
 - [音频操作 (Audio Operations)](./docs/Audio-Operations.md) / [Audio Operations Documentation](./docs/Audio-Operations.md)
-- [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
+
 
 
 ## 使用示例 / Usage Examples
@@ -632,7 +634,6 @@ IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / 
 - [信号处理示例](./docs/examples/Signal-Processing-Examples.md) / [Signal Processing Examples](./docs/examples/Signal-Processing-Examples.md)
 - [时间序列分析示例](./docs/examples/Time-Series-Examples.md) / [Time Series Analysis Examples](./docs/examples/Time-Series-Examples.md)
 - [音频处理示例](./docs/examples/Audio-Examples.md) / [Audio Processing Examples](./docs/examples/Audio-Examples.md)
-- [稠密数组与广播示例](./docs/examples/Dense-Arrays-Examples.md) / [Dense Arrays & Broadcasting Examples](./docs/examples/Dense-Arrays-Examples.md)
 
 ## 项目结构 / Project Structure
 

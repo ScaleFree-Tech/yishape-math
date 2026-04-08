@@ -6,6 +6,10 @@
 
 The `IVector<T>` interface provides comprehensive generic vector mathematical operations supporting `Float` and `Double` types, including basic mathematical operations, statistical operations, slicing and indexing, universal functions, and more. The interface features clean design, powerful functionality, and supports method chaining. It is recommended to use the `Linalg` factory class to create vector instances.
 
+与矩阵共用的广播、`.npy` 等入口速查见 [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) 文首。
+
+For shared broadcasting and `.npy` entry points with matrices, see the opening section of [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md).
+
 ## 核心接口 / Core Interface
 
 ### IVector 接口 / IVector Interface
