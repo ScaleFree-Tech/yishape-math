@@ -604,9 +604,9 @@ IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / 
 ```
 
 ## 核心类文档 / Core Classes Documentation
+
 - [内容导读 (Reading Guide)](./docs/README.md) / [Reading Guide](./docs/README.md)
 - [API参考手册 (API Reference)](./docs/API-Reference.md) / [API Reference Manual](./docs/API-Reference.md)
-
 - [向量操作 (Vector Operations)](./docs/Vector-Operations.md) / [Vector Operations Documentation](./docs/Vector-Operations.md)
 - [矩阵操作 (Matrix Operations)](./docs/Matrix-Operations.md) / [Matrix Operations Documentation](./docs/Matrix-Operations.md)
 - [DataFrame 数据框操作 (DataFrame Operations)](./docs/DataFrame-Operations.md) / [DataFrame Operations Documentation](./docs/DataFrame-Operations.md)
