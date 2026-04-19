@@ -7,8 +7,8 @@ ppt/
 scripts/
 .vscode/
 .obsidian/
-ppt.zip/
-.obsidian.zip/
+ppt.zip
+.obsidian.zip
 backups/
 ddml/
 src/main/java/org/
