@@ -5,6 +5,7 @@ promotion/
 temp/
 ppt/
 .vscode/
+.obsidian/
 backups/
 ddml/
 src/main/java/org/
