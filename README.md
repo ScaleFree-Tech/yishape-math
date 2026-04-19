@@ -3,7 +3,6 @@
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-0.3.8-blue.svg)]()
-[![CI](https://github.com/ScaleFree-Tech/YiShape-Math/actions/workflows/maven.yml/badge.svg)](https://github.com/ScaleFree-Tech/YiShape-Math/actions/workflows/maven.yml)
 
 ## 项目简介 / Project Introduction
 
