@@ -1697,25 +1697,25 @@ public interface IVector<T extends Number> {
     // Note: 大部分方法现在在 IVector 中定义，这里保留类型特化的方法
     // Note: Most methods are now defined in IVector, keeping type-specific methods here
     /**
-     * 向量与矩阵的点积 / Vector-matrix dot product
      * <p>
-     * 计算向量与矩阵的点积运算 Computes the dot product between vector and matrix
+     * 行向量与矩阵相乘（与 NumPy {@code np.dot(v, M)}、{@link #mmul(IMatrix)} 一致）
+     * / Row vector times matrix, aligned with NumPy {@code np.dot(v, M)} and {@link #mmul(IMatrix)}
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
      * <pre>{@code
      * IVector<Double> vector = Linalg.vector(new double[]{1, 2, 3});
      * IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1, 2}, {3, 4}, {5, 6}});
-     * IMatrix<Double> result = vector.dot(matrix);  // 结果: [22, 28]
+     * IVector<Double> result = vector.dot(matrix);  // [22, 28]，等价 vector.mmul(matrix)
      * }</pre>
      * </p>
      *
      * @param m 矩阵 / Matrix
-     * @return 点积结果矩阵 / Dot product result matrix
+     * @return 长度为矩阵列数的行向量结果 / Row-shaped result vector (length = matrix columns)
      * @throws IllegalArgumentException 如果矩阵为null或维度不匹配 / if matrix is null or
      * dimensions don't match
      */
-    public IMatrix<T> dot(IMatrix<T> m);
+    public IVector<T> dot(IMatrix<T> m);
 
     /**
      * 向量相等比较 / Vector equality comparison

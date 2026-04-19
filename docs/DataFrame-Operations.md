@@ -2,29 +2,36 @@
 
 ## 概述 / Overview
 
-`DataFrame` 类提供了类似pandas DataFrame的功能，用于处理结构化数据。它支持从CSV文件读取数据、列切片和行切片操作、数据类型转换、与IMatrix的互转换等功能。 / The `DataFrame` class provides functionality similar to pandas DataFrame for handling structured data. It supports reading data from CSV files, column and row slicing operations, data type conversion, mutual conversion with IMatrix, and more.
+`DataFrame` 类提供了类似 pandas DataFrame 的功能，用于处理结构化数据。支持从 CSV 文件读取、行列切片、数据类型转换、与 IMatrix 互转。
 
-The `DataFrame` class provides functionality similar to pandas DataFrame for handling structured data. It supports reading data from CSV files, column and row slicing operations, data type conversion, mutual conversion with IMatrix, and more.
+`DataFrame` provides functionality similar to pandas DataFrame for handling structured data, including reading from CSV, row/column slicing, type conversion, and IMatrix interconversion.
+
+## 快速上手 / Quick Start
+
+```java
+// 最简方式：从 CSV 读取（推荐）/ Simplest: read from CSV (recommended)
+DataFrame df = DataFrame.readCsv("data.csv", ",", true);
+
+// 手写 DataFrame（用 Column 构造）/ Build manually with Column
+Column nameCol = new Column();
+nameCol.setName("name").setColumnType(ColumnType.String)
+    .setData(Arrays.asList("Alice", "Bob", "Carol"));
+Column ageCol = new Column();
+ageCol.setName("age").setColumnType(ColumnType.Numeric)
+    .setData(Arrays.asList(25.0f, 30.0f, 35.0f));
+DataFrame df2 = new DataFrame(Arrays.asList(nameCol, ageCol));
+
+// 查看数据 / View data
+df2.head();           // 前几行 / First few rows
+df2.describe();       // 数值列统计 / Numeric column statistics
+df2.get("age");      // 获取列 / Get column by name
+```
 
 ## 核心类 / Core Classes
 
 ### DataFrame 类 / DataFrame Class
 
-`DataFrame` 是数据框操作的核心类，提供了完整的数据处理功能。 / `DataFrame` is the core class for data frame operations, providing comprehensive data processing functionality.
-
-`DataFrame` is the core class for data frame operations, providing comprehensive data processing functionality.
-
-### Column 类 / Column Class
-
-`Column` 类表示数据框中的一列，包含列名、数据类型和数据。 / `Column` class represents a column in the data frame, containing column name, data type, and data.
-
-`Column` class represents a column in the data frame, containing column name, data type, and data.
-
-### ColumnType 枚举 / ColumnType Enum
-
-`ColumnType` 枚举定义了支持的数据类型：String 和 Float。 / `ColumnType` enum defines supported data types: String and Float.
-
-`ColumnType` enum defines supported data types: String and Float.
+`DataFrame` 是数据框操作的核心类。`Column` 表示其中一列，`ColumnType` 枚举定义列的类型（`String` — 字符串列，`Numeric` — 数值列）。
 
 ## 主要功能 / Main Features
 
@@ -497,6 +504,50 @@ public class MLDataPreparationExample {
 
 ---
 
-**DataFrame 数据框操作** - 结构化数据处理的核心，让数据分析更简单！ / **DataFrame Operations** - The core of structured data processing, making data analysis simpler!
+**DataFrame 数据框操作** - 结构化数据处理的核心，让数据分析更简单！
 
 **DataFrame Operations** - The core of structured data processing, making data analysis simpler!
+
+## 常见问题 / FAQ
+
+### Q1: CSV 有中文表头或中文内容乱码？
+
+确保文件是 UTF-8 编码，`readCsv` 默认支持 UTF-8。若仍乱码，检查：
+1. 文件本身编码 → 用记事本/IDE 另存为 UTF-8
+2. Windows 系统默认 ANSI → 改用 UTF-8 with BOM 或转换编码
+
+### Q2: `sliceColumn` 负索引是什么意思？
+
+`-1` 表示倒数第一列，`-2` 表示倒数第二列：
+```java
+var df = DataFrame.readCsv("data.csv");
+df.sliceColumn(0, -1);   // 第 1 列到倒数第 1 列（不含），即除最后一列外的所有列
+df.sliceColumn(0, -2);   // 第 1 列到倒数第 2 列
+df.getColumn(-1);        // 获取最后一列
+```
+
+### Q3: `toMatrix()` 和 `toVec()` 返回的类型不对？
+
+`toMatrix()` 需要所有列都是数值类型。若某列是 `String` 类型，会抛异常。先过滤或编码非数值列：
+```java
+// 只取数值列（排除字符串列）
+var numericDf = df.select(df.getColumnTypes().stream()
+    .map(t -> t != ColumnType.String).toArray(Boolean[]::new));
+var matrix = numericDf.toMatrix();
+```
+
+### Q4: 训练机器学习模型时特征列顺序乱了？
+
+用 `sliceColumn` 显式指定特征顺序，不要依赖 CSV 列顺序：
+```java
+// 显式取特征列（顺序可靠）
+var features = df.sliceColumn(0, df.cols() - 1).toMatrix();
+// 标签列单独取
+var labels = df.getColumn(df.cols() - 1).toStringArray();
+```
+
+### Q5: 大 CSV 文件读取很慢？
+
+- 指定精确列类型，避免自动推断：`DataFrame.readCsv(path, ",", true, colTypes)`
+- 只读取需要的列，不用全读：逐列 `getColumn()` 而非 `toMatrix()`
+- 对超大型数据，考虑分块读取后合并

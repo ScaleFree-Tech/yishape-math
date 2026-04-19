@@ -428,30 +428,12 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     }
 
     /**
-     * 向量与矩阵的点积 / Vector-matrix dot product
-     * <p>
-     * 计算向量与矩阵的点积，向量长度必须与矩阵行数相等 Computes the dot product of vector and matrix,
-     * vector length must equal matrix row count
-     * </p>
-     *
-     * @param m 矩阵 / IDoubleMatrix
-     * @return 结果矩阵 / Result matrix
-     * @throws IllegalArgumentException 如果向量长度与矩阵行数不匹配 / if vector length
-     * doesn't match matrix row count
+     * 行向量与矩阵相乘（委托 {@link #mmul(IMatrix)}，对齐 NumPy {@code np.dot(v, M)}）
+     * / Row vector times matrix; delegates to {@link #mmul(IMatrix)} (NumPy {@code np.dot(v, M)})
      */
     @Override
-    public IMatrix<Double> dot(IMatrix<Double> m) {
-        IDoubleMatrix m0 = (IDoubleMatrix) m;
-        double[][] mm = new double[m.getRowNum()][m.getColNum()];
-        for (int i = 0; i < data.length; i++) {
-            double w = data[i];
-            double[] v = m0.getData()[i];
-            for (int j = 0; j < v.length; j++) {
-                v[j] = w * v[j];
-            }
-            mm[i] = v;
-        }
-        return IDoubleMatrix.of(mm);
+    public IVector<Double> dot(IMatrix<Double> m) {
+        return this.mmul(m);
     }
 
     /**

@@ -85,7 +85,6 @@ public interface IMatrix<T extends Number> {
      * </p>
      *
      * @param data 二维double数组 / 2D double array
-     * @param <T> 数值类型 / Numeric type
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
@@ -95,8 +94,8 @@ public interface IMatrix<T extends Number> {
      * IMatrix<Double> matrix = IMatrix.of(data);
      * }</pre>
      */
-    public static <T extends Number> IMatrix<T> of(double[][] data) {
-        return (IMatrix<T>) IDoubleMatrix.of(data);
+    public static IMatrix<Double> of(double[][] data) {
+        return IDoubleMatrix.of(data);
     }
 
     /**
@@ -107,7 +106,6 @@ public interface IMatrix<T extends Number> {
      * </p>
      *
      * @param data 二维Double包装类数组 / 2D Double wrapper array
-     * @param <T> 数值类型 / Numeric type
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
@@ -117,8 +115,8 @@ public interface IMatrix<T extends Number> {
      * IMatrix<Double> matrix = IMatrix.of(data);
      * }</pre>
      */
-    public static <T extends Number> IMatrix<T> of(Double[][] data) {
-        return (IMatrix<T>) IDoubleMatrix.of(data);
+    public static IMatrix<Double> of(Double[][] data) {
+        return IDoubleMatrix.of(data);
     }
 
     /**
@@ -128,7 +126,6 @@ public interface IMatrix<T extends Number> {
      * </p>
      *
      * @param data 二维float数组 / 2D float array
-     * @param <T> 数值类型 / Numeric type
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
@@ -138,8 +135,8 @@ public interface IMatrix<T extends Number> {
      * IMatrix<Float> matrix = IMatrix.of(data);
      * }</pre>
      */
-    public static <T extends Number> IMatrix<T> of(float[][] data) {
-        return (IMatrix<T>) IFloatMatrix.of(data);
+    public static IMatrix<Float> of(float[][] data) {
+        return IFloatMatrix.of(data);
     }
 
     /**
@@ -149,7 +146,6 @@ public interface IMatrix<T extends Number> {
      * </p>
      *
      * @param data 二维Float包装类数组 / 2D Float wrapper array
-     * @param <T> 数值类型 / Numeric type
      * @return 矩阵对象 / Matrix object
      * @throws IllegalArgumentException 如果数组为null或空 / if array is null or empty
      *
@@ -159,8 +155,8 @@ public interface IMatrix<T extends Number> {
      * IMatrix<Float> matrix = IMatrix.of(data);
      * }</pre>
      */
-    public static <T extends Number> IMatrix<T> of(Float[][] data) {
-        return (IMatrix<T>) IFloatMatrix.of(data);
+    public static IMatrix<Float> of(Float[][] data) {
+        return IFloatMatrix.of(data);
     }
 
     /**
@@ -1186,22 +1182,23 @@ public interface IMatrix<T extends Number> {
     public IMatrix<T> divideByScalar(T scalar);
 
     /**
-     * 矩阵点积运算 / Matrix dot product
      * <p>
-     * 计算两个矩阵的Frobenius内积（对应元素相乘后求和） Calculates the Frobenius inner product of
-     * two matrices (sum of element-wise multiplication)
+     * Frobenius 内积（与 NumPy 的 {@code np.sum(A * B)} 同形逐元素乘再求和一致；勿与
+     * {@link #mmul(IMatrix)} / {@code np.dot(A,B)} 二维矩阵乘混淆）
+     * / Frobenius inner product (same as summing element-wise product like NumPy
+     * {@code np.sum(A * B)}; not matrix multiply — use {@link #mmul(IMatrix)} for that)
      * </p>
      * <p>
-     * 公式：dot = Σᵢⱼ Aᵢⱼ × Bᵢⱼ Formula: dot = Σᵢⱼ Aᵢⱼ × Bᵢⱼ
+     * 公式：Σᵢⱼ Aᵢⱼ × Bᵢⱼ / Formula: Σᵢⱼ Aᵢⱼ × Bᵢⱼ
      * </p>
      *
      * @param other 另一个矩阵 / The other matrix
-     * @return 点积结果 / Dot product result
+     * @return Frobenius 内积标量 / Frobenius inner product scalar
      * @throws IllegalArgumentException 如果矩阵维度不匹配 / if matrix dimensions don't
      * match
      * @throws NullPointerException 如果other为null / if other is null
      */
-    public T dot(IMatrix<T> other);
+    public T frobeniusInnerProduct(IMatrix<T> other);
 
     /**
      * 矩阵乘法运算 / Matrix multiplication
@@ -3491,7 +3488,7 @@ public interface IMatrix<T extends Number> {
         } catch (Exception e) {
             // Fallback to a simple estimation method
             // This is not as accurate but better than nothing
-            Number sq = Math.sqrt(this.dot(this).doubleValue());
+            Number sq = Math.sqrt(this.frobeniusInnerProduct(this).doubleValue());
             return (T)sq;
         }
     }

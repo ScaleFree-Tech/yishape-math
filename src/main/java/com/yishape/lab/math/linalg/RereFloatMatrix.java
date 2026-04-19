@@ -321,19 +321,17 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
     }
 
     /**
-     * 向量点积运算 / Vector dot product
+     * Frobenius 内积 / Frobenius inner product
      * <p>
-     * 计算两个列向量的点积，要求两个矩阵都是列向量且维度相同 Computes the dot product of two column
-     * vectors, requires both matrices to be column vectors with same dimensions
+     * 同形矩阵对应元素相乘后求和 / Sum of element-wise products for same-shaped matrices
      * </p>
      *
-     * @param other 另一个列向量矩阵 / The other column vector matrix
-     * @return 点积结果 / The dot product result
-     * @throws IllegalArgumentException 如果不是列向量或维度不匹配 / if not column vectors or
-     * dimensions don't match
+     * @param other 另一个矩阵 / The other matrix
+     * @return Frobenius 内积 / Frobenius inner product
+     * @throws IllegalArgumentException 如果维度不匹配 / if dimensions don't match
      */
     @Override
-    public Float dot(IMatrix<Float> other) {
+    public Float frobeniusInnerProduct(IMatrix<Float> other) {
         var res = this.computer.binaryReduceOperate(data, other.toFloatArray(), IFloatVectorComputer.BinaryReduceOperation.DOT);
         return res;
     }

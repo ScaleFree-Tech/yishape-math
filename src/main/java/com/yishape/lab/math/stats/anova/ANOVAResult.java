@@ -11,7 +11,7 @@ public class ANOVAResult {
     double ssWithin;     // 组内平方和（Sum of Squares Within）
     double ssTotal;      // 总平方和（Sum of Squares Total）
     double fStatistic;   // F统计量
-    double pValue;       // p值
+    double p;       // p值
 
     // 构造函数
     // 参数说明：
@@ -19,12 +19,12 @@ public class ANOVAResult {
     //   - ssWithin: 组内平方和，衡量组内变异
     //   - ssTotal: 总平方和，等于ssBetween + ssWithin
     //   - fStatistic: F统计量，用于假设检验
-    //   - pValue: p值，表示在原假设为真时观察到当前F值或更极端值的概率
+    //   - p: p值，表示在原假设为真时观察到当前F值或更极端值的概率
     ANOVAResult(double ssBetween, double ssWithin, double ssTotal, double fStatistic, double pValue) {
         this.ssBetween = ssBetween;
         this.ssWithin = ssWithin;
         this.ssTotal = ssTotal;
         this.fStatistic = fStatistic;
-        this.pValue = pValue;
+        this.p = pValue;
     }
 }

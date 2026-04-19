@@ -73,6 +73,14 @@ public class VectorBasicExample {
         Double dotProduct = v1.innerProduct(v3);
         System.out.println("v1 · v3 = " + dotProduct);
 
+        // 行向量 × 矩阵（与 np.dot(v, M) 一致；dot(IMatrix) 与 mmul(IMatrix) 等价）
+        // Row vector × matrix (np.dot(v, M) / v @ M); dot(IMatrix) ≡ mmul(IMatrix)
+        IMatrix<Double> m = Linalg.matrix(new double[][]{{1, 2}, {3, 4}, {5, 6}});
+        IVector<Double> row = Linalg.vector(new double[]{1, 2, 3});
+        IVector<Double> byMmul = row.mmul(m);
+        IVector<Double> byDot = row.dot(m);
+        System.out.println("row @ M (mmul): " + byMmul + " equals dot: " + byMmul.sub(byDot).norm2());
+
         // 外积 / Outer product
         IMatrix<Double> outerProduct = v1.outer(v3);
         System.out.println("v1 ⊗ v3 = " + outerProduct);
@@ -339,7 +347,7 @@ public class VectorUniversalFunctionsExample {
         System.out.println("\n=== 数学函数 / Mathematical Functions ===");
         
         // 基本数学函数 / Basic mathematical functions
-        IVector<Double> squared = vector.squre();
+        IVector<Double> squared = vector.square();
         System.out.println("平方: " + squared);
         
         IVector<Double> sqrt = vector.sqrt();
@@ -405,7 +413,7 @@ public class VectorChainingExample {
             .slice(10, 90)                                              // 取10-89
             .multiplyScalar(0.1)                                        // 乘以0.1
             .addScalar(5.0)                                             // 加5
-            .squre()                                                    // 平方
+            .square()                                                    // 平方
             .sqrt()                                                     // 开方
             .multiplyScalar(2.0);                                       // 乘以2
         
@@ -612,8 +620,8 @@ public class SignalProcessingExample {
     // 计算信噪比 / Calculate signal-to-noise ratio
     private static Double calculateSNR(IVector<Double> original, IVector<Double> filtered) {
         IVector<Double> noise = original.sub(filtered);
-        Double signalPower = filtered.squre().mean();
-        Double noisePower = noise.squre().mean();
+        Double signalPower = filtered.square().mean();
+        Double noisePower = noise.square().mean();
         
         return 10 * Math.log10(signalPower / noisePower);
     }
@@ -659,7 +667,7 @@ public class ImageProcessingExample {
         IVector<Double> edgeImage = detectEdges(image, width, height);
         
         System.out.println("边缘图像统计:");
-        System.out.println("  边缘像素比例: " + (edgeImage.greaterThan(0.5).sum() / totalPixels * 100) + "%");
+        System.out.println("  边缘像素比例: " + (edgeImage.gt(0.5).sum() / totalPixels * 100) + "%");
     }
     
     // 生成测试图像 / Generate test image
@@ -737,7 +745,7 @@ public class BatchOperationExample {
         IVector<Double> result = largeData
             .addScalar(100.0)
             .multiplyScalar(2.0)
-            .squre()
+            .square()
             .sqrt();
         
         long endTime = System.currentTimeMillis();

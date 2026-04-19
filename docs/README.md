@@ -25,8 +25,8 @@ This directory contains conceptual notes, API summaries, and runnable examples u
 | 文档 / Document | 说明 / Description |
 |-----------------|-------------------|
 | [API-Reference.md](API-Reference.md) | 公共 API 与模块索引 / Public API and module index |
-| [Vector-Operations.md](Vector-Operations.md) | 向量接口与运算 / Vector API and operations |
-| [Matrix-Operations.md](Matrix-Operations.md) | 矩阵接口与运算；[`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) 文首含广播与相关 API 速查 / Matrix API; [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) opens with broadcasting quick reference |
+| [Vector-Operations.md](Vector-Operations.md) | 向量接口与运算；`dot(IMatrix)` 与 `mmul(IMatrix)` 等价说明见文内 NumPy 对照 / Vector API; `dot(IMatrix)` ≡ `mmul(IMatrix)` in NumPy table |
+| [Matrix-Operations.md](Matrix-Operations.md) | 矩阵接口与运算；含与 NumPy `np.dot` / `frobeniusInnerProduct` 对照；[`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) 文首含广播与相关 API 速查 / Matrix API; includes NumPy `np.dot` vs Frobenius mapping; [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md) opens with broadcasting quick reference |
 | [Math-Utilities.md](Math-Utilities.md) | 数学工具类 / Math utilities |
 | [Statistics-Operations.md](Statistics-Operations.md) | 统计与分布 / Statistics and distributions |
 | [Machine-Learning.md](Machine-Learning.md) | 机器学习概述 / Machine learning overview |

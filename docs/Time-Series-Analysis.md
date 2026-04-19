@@ -6,6 +6,33 @@
 
 The `math.timeseries` package provides comprehensive time series analysis functionality including data preprocessing, model selection, forecasting, filtering, decomposition, and visualization. This module integrates existing `linalg`, `stats`, and `signal` package functionality to provide a unified and efficient solution for time series analysis.
 
+## 快速上手 / Quick Start
+
+```java
+// 创建时间序列（用 Series 工厂 + Linalg）
+IVector<Double> temperature = Linalg.randn(100);           // 模拟温度数据
+TimeSeriesData ts = Series.createTimeSeries(temperature, "temperature");
+System.out.println("序列长度: " + ts.getLength());            // → 100
+
+// 简单移动平均（平滑）
+TimeSeriesForecasting.ForecastResult sma = Series.simpleMovingAverage(ts, "temperature", 5, 10, 0.95);
+System.out.println("MA 预测值: " + sma.getForecast().get(0));  // 未来第1步预测
+
+// 指数平滑预测 / Exponential smoothing forecast
+TimeSeriesForecasting.ForecastResult es = Series.exponentialSmoothing(ts, "temperature", 0.3, 10, 0.95);
+
+// 线性回归趋势 / Linear regression trend
+TimeSeriesForecasting.ForecastResult lr = Series.linearRegression(ts, "temperature", 10, 0.95);
+
+// 序列分解（趋势 + 季节 + 残差）
+var decomp = TimeSeriesDecomposition.stlDecomposition(ts, "temperature", 12, 5, 5);
+IVector<Double> trend = decomp.trend;      // 趋势成分
+IVector<Double> seasonal = decomp.seasonal; // 季节成分
+
+// 时间序列滤波 / Filter noise
+TimeSeriesData filtered = Series.lowPassFilter(ts, "temperature", 0.5, 1);  // 截止频率0.5Hz，阶数1
+```
+
 ## 核心类 / Core Classes
 
 ### Series 类 / Series Class
@@ -261,6 +288,37 @@ System.out.println("是否有季节性: " + seasonal.get("hasSeasonality"));
 
 ### 3. 时间序列预测 / Time Series Forecasting
 
+#### 算法原理 / Algorithm Principles
+
+时间序列预测的核心思想是：**利用数据的时间依赖性，用历史数据推断未来**。
+
+**三种时间序列成分**：
+
+- **趋势（T）**：长期方向（上升、下降、平稳）
+- **季节性（S）**：固定周期的波动（如每年夏天销量上升）
+- **残差（R）**：无法解释的随机波动
+
+一个加法模型：`Y(t) = T(t) + S(t) + R(t)` 或乘法模型 `Y(t) = T(t) × S(t) × R(t)`。
+
+**ARIMA 的直观理解**：
+
+- **AR（自回归）**：用过去 p 个值预测当前值
+- **I（差分）**：让不平稳序列变平稳
+- **MA（滑动平均）**：用过去 q 个预测误差调整
+
+Holt-Winters 是 ARIMA 的季节性扩展，加入了：
+- 平滑水平 α、平滑趋势 β、平滑季节 γ（均在 0~1 之间，越接近 0 越重视历史）
+
+**选型建议**：
+
+| 数据特征 | 推荐方法 |
+|---------|---------|
+| 无趋势、无季节（随机波动）| 简单均值或白噪声 |
+| 有趋势、无季节 | Holt 线性指数平滑 |
+| 有趋势、有季节 | Holt-Winters |
+| 有自相关（AR 性质明显）| ARIMA |
+| 数据量小、特征复杂 | 机器学习（ML 回归）|
+
 #### 3.1 简单预测方法 / Simple Forecasting Methods
 
 ```
@@ -292,7 +350,7 @@ TimeSeriesForecasting.ForecastResult seasonalResult = Series.seasonalForecast(
 
 // Holt-Winters预测 / Holt-Winters forecasting
 TimeSeriesForecasting.ForecastResult hwResult = Series.holtWintersForecast(
-    timeSeries, "temperature", 0.3, 0.1, 0.1, 12, 10, 0.95);
+    timeSeries, 0, 0.3, 0.1, 0.1, 12, 10, 0.95);  // 参数: data, variableIndex, alpha, beta, gamma, period, forecastSteps, confidenceLevel
 
 // GARCH预测 / GARCH forecasting
 TimeSeriesForecasting.ForecastResult garchResult = Series.garchForecast(
@@ -756,3 +814,45 @@ public class MultivariateTimeSeriesAnalysis {
 **时间序列分析** - 让时间序列数据处理更简单、更高效！
 
 **Time Series Analysis** - Making time series data processing simpler and more efficient!
+
+## 常见问题 / FAQ
+
+### Q1: 何时用移动平均，何时用指数平滑？
+
+| 场景 | 方法 | 原因 |
+|------|------|------|
+| 趋势稳定的平滑 | 移动平均 | 简单，计算快 |
+| 近期数据更重要 | 指数平滑（EWMA）| 近期数据权重指数衰减 |
+| 有明显季节性 | Holt-Winters | 同时捕捉趋势和季节性 |
+| 需要自动选择 | ARIMA | AIC/BIC 自动定阶 |
+
+### Q2: ARIMA 阶数 (p, d, q) 怎么选？
+
+- **d（差分阶数）**：让序列平稳所需的差分次数。通常 d=0 或 d=1，d=2 很少用。
+- **p（自相关阶数）**：用 ACF（自相关函数）和 PACF（偏自相关函数）判断：PACF 在 p 阶后截尾 → p = 该阶数
+- **q（移动平均阶数）**：ACF 在 q 阶后截尾 → q = 该阶数
+
+实际中先用 `d=0` 尝试，若序列仍不平稳逐步加 d；p 和 q 通常不超过 5。
+
+### Q3: 预测值和实际值差距大？
+
+1. **数据不稳定** → 先检验平稳性（ADF 检验），不平稳先差分
+2. **季节性未捕捉** → 考虑 Holt-Winters 或季节性 ARIMA（SARIMA）
+3. **外推太远** → 时间序列预测只适合短期，长期预测误差急剧增大
+4. **异常值影响** → 先去噪或用中值滤波预处理
+
+### Q4: 如何判断模型好坏？
+
+主要指标：
+- **MAE / RMSE**：预测误差的平均幅度，越小越好
+- **MAPE**：误差相对于实际值的百分比，适合业务理解
+- **AIC / BIC**：同时惩罚误差和模型复杂度，越小越好，用于模型选择
+
+建议同时报告多个指标，而不仅仅看 RMSE。
+
+### Q5: 非等间隔时间序列怎么处理？
+
+`TimeSeriesData` 支持非等间隔数据，但：
+1. 插值到等间隔后再用标准方法（`TimeSeriesData.interpolate()`）
+2. 或使用适合不等间隔的模型（如 Gaussian Process）
+3. 趋势分析时注明时间间隔变化点

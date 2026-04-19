@@ -2,7 +2,8 @@
 
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.oracle.com/java/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.3.7-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.3.8-blue.svg)]()
+[![CI](https://github.com/ScaleFree-Tech/YiShape-Math/actions/workflows/maven.yml/badge.svg)](https://github.com/ScaleFree-Tech/YiShape-Math/actions/workflows/maven.yml)
 
 ## 项目简介 / Project Introduction
 
@@ -159,6 +160,8 @@ var matrix3 = Linalg.rand(3, 3);
 // 矩阵运算 / Matrix operations
 var result = matrix1.add(matrix2).mmul(2.0);
 var transposed = matrix2.t();
+// 二维矩阵乘对应 NumPy np.dot(A,B) / A @ B，用 mmul；同形逐元素乘再求和用 frobeniusInnerProduct（≈ np.sum(A*B)）
+// 2D matmul like np.dot(A,B) uses mmul; Frobenius inner product uses frobeniusInnerProduct
 ```
 
 #### DataFrame 数据框操作 / DataFrame Operations

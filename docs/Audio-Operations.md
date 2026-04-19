@@ -6,6 +6,25 @@
 
 The `com.yishape.lab.audio` package provides comprehensive audio processing capabilities, including audio file I/O, audio analysis, feature extraction, audio processing, audio effects, and audio visualization. The package uses modular design, supports multiple audio formats, and offers rich audio processing and analysis functionalities.
 
+## 快速上手 / Quick Start
+
+```java
+// 读取音频 / Read audio
+AudioData audio = AudioIO.readAudio("input.wav");
+System.out.println("采样率: " + audio.getSampleRate() + "Hz, 时长: " + audio.getDuration() + "s");
+
+// 音频处理：标准化 / Process: normalize
+IAdvancedAudioProcessor normalizer = Audios.createNormalizeProcessor();
+AudioData normalized = normalizer.processTimeRange(audio, 0.0, audio.getDuration());
+
+// 频谱分析（返回 幅度谱+频率轴）/ Spectrum: returns magnitude + frequency axis
+Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.createSpectrumAnalyzer().calculateSpectrum(normalized);
+System.out.println("频谱点数: " + spectrum._1.length());
+
+// 保存结果 / Save result
+AudioIO.writeAudio(normalized, "output.wav");
+```
+
 ## 核心接口 / Core Interface
 
 ### Audios 工厂类 / Audios Factory Class
@@ -40,9 +59,9 @@ The `com.yishape.lab.audio` package provides comprehensive audio processing capa
 ```java
 // 推荐使用 AudioIO 类进行音频文件操作 / Recommended to use AudioIO class for audio file operations
 
-import core.audio.com.yishape.lab.AudioIO;
-import core.audio.com.yishape.lab.AudioData;
-import core.audio.com.yishape.lab.AudioFormat;
+import com.yishape.lab.audio.core.AudioIO;
+import com.yishape.lab.audio.core.AudioData;
+import com.yishape.lab.audio.core.AudioFormat;
 
 // 自动识别格式读取 / Auto-detect format and read
 AudioData audio = AudioIO.readAudio("path/to/audio.wav");
@@ -66,8 +85,8 @@ AudioIO.writeAudio(audioData, "output/path/audio.mp3", AudioFormat.MP3);
 #### 音频处理器创建 / Audio Processor Creation
 
 ```java
-import audio.com.yishape.lab.Audios;
-import processing.audio.com.yishape.lab.IAdvancedAudioProcessor;
+import com.yishape.lab.audio.Audios;
+import com.yishape.lab.audio.processing.IAdvancedAudioProcessor;
 
 // 创建音量处理器 / Create volume processor
 IAdvancedAudioProcessor volumeProcessor = Audios.createVolumeProcessor();
@@ -103,7 +122,7 @@ AudioData convertedAudio = Audios.convertChannels(audioData, 2);
 #### 音频分析器创建 / Audio Analyzer Creation
 
 ```java
-import analysis.audio.com.yishape.lab.IAudioAnalyzer;
+import com.yishape.lab.audio.analysis.IAudioAnalyzer;
 
 // 创建频谱分析器 / Create spectrum analyzer
 IAudioAnalyzer spectrumAnalyzer = Audios.createSpectrumAnalyzer();
@@ -114,6 +133,54 @@ IAudioAnalyzer pitchDetector = Audios.createPitchDetector();
 // 创建STFT分析器 / Create STFT analyzer
 IAudioAnalyzer stftAnalyzer = Audios.createSTFTAnalyzer();
 ```
+
+#### 算法原理 / Algorithm Principles
+
+音频分析的核心是**把时域信号转换到频域**，揭示声音的频率组成。
+
+**FFT（快速傅里叶变换）的物理含义**：
+
+一段音频信号可以分解为一系列正弦波的叠加。FFT 的工作就是找出每个频率成分的「强度」（幅度）：
+
+```
+音频 → FFT → 各频率点的幅度值
+```
+
+**为什么 FFT 输出是对称的？**
+
+FFT 输出包含正频率（+f）和对应的负频率（-f）。负频率是数学上的镜像，对应复数信号的共轭部分。对于**实数音频信号**，正负频率的信息是冗余的——取正频率那一半就够了。幅度谱关于 Nyquist 频率（采样率/2）对称。
+
+**频谱图（STFT）**：
+
+FFT 只适合分析**平稳**信号（整个时间段频率成分不变）。音频信号通常是非平稳的——「音乐」在变、「语音」在变。STFT（短时傅里叶变换）用滑动窗口把音频切成小段，每段做 FFT：
+
+```
+音频 → 加窗 → 分段 FFT → 拼接 → 频谱图
+```
+
+- 窗口越大 → 频率分辨率越高，时间分辨率越低（适合低频分析）
+- 窗口越小 → 时间分辨率越高，频率分辨率越低（适合瞬态检测）
+
+**MFCC（梅尔频率倒谱系数）**：
+
+MFCC 是语音识别中最常用的特征，步骤：
+
+1. **预加重**：提升高频（补偿嘴唇辐射效应）
+2. **分帧**：20~40ms 窗口，10ms 步长（相邻帧重叠 50%）
+3. **加窗**：乘以汉宁窗，减少频谱泄漏
+4. **FFT**：得到线性频谱
+5. **Mel 滤波器组**：将频率映射到 Mel 尺度（模拟人耳对低频敏感、对高频不敏感的特性）
+6. **对数变换**：压缩动态范围
+7. **DCT**：离散余弦变换，取前 13~20 个系数（去相关，得到 MFCC）
+
+**选型建议**：
+
+| 需求 | 方法 |
+|------|------|
+| 一般频谱分析 | `createSpectrumAnalyzer().calculateSpectrum()` |
+| 实时语音处理 | `createSTFTAnalyzer()` + Mel 滤波器 |
+| 语音识别特征 | `calculateMFCC()` |
+| 音高检测 | `createPitchDetector()` |
 
 #### 基本音频分析 / Basic Audio Analysis
 
@@ -147,7 +214,7 @@ double energy = Audios.calculateEnergy(audioData);
 #### 特征提取器创建 / Feature Extractor Creation
 
 ```java
-import feature.audio.com.yishape.lab.IAudioFeatureExtractor;
+import com.yishape.lab.audio.feature.IAudioFeatureExtractor;
 
 // 创建标准特征提取器 / Create standard feature extractor
 IAudioFeatureExtractor featureExtractor = Audios.createStandardFeatureExtractor();
@@ -182,7 +249,7 @@ double spectralFlatness = Audios.calculateSpectralFlatness(audioData);
 #### 音频滤波器创建 / Audio Filter Creation
 
 ```java
-import filter.audio.com.yishape.lab.IBaseAudioFilter;
+import com.yishape.lab.audio.filter.IBaseAudioFilter;
 
 // 创建低通滤波器 / Create low-pass filter
 IBaseAudioFilter lowPassFilter = Audios.createLowPassFilter();
@@ -203,7 +270,7 @@ AudioData filteredAudio = Audios.lowPassFilter(audioData, 1000.0); // 截止频�
 #### 音频效果器创建 / Audio Effect Creation
 
 ```java
-import effect.audio.com.yishape.lab.IAudioEffect;
+import com.yishape.lab.audio.effect.IAudioEffect;
 
 // 创建混响效果器 / Create reverb effect
 IAudioEffect reverbEffect = Audios.createReverbEffect();
@@ -221,7 +288,7 @@ AudioData reverbAudio = Audios.reverb(audioData, 0.5, 0.3); // 衰减0.5，湿�
 #### 音频增强器创建 / Audio Enhancer Creation
 
 ```java
-import enhancement.audio.com.yishape.lab.IAudioEnhancer;
+import com.yishape.lab.audio.enhancement.IAudioEnhancer;
 
 // 创建降噪增强器 / Create noise reduction enhancer
 IAudioEnhancer noiseReductionEnhancer = Audios.createNoiseReductionEnhancer();
@@ -269,7 +336,7 @@ i-vector模型是一种常用的音频嵌入方法，它使用通用背景模型
 The i-vector model is a commonly used audio embedding method that uses a Universal Background Model (UBM) and a Total Variability matrix (T) to generate compact vector representations of audio.
 
 ```java
-import embedding.audio.com.yishape.lab.IVectorEmbedding;
+import com.yishape.lab.audio.embedding.IVectorEmbedding;
 import com.yishape.lab.math.linalg.IMatrix;
 
 import java.util.List;
@@ -296,7 +363,7 @@ IVector<Double> embedding = ivectorEmbedder.embed(mfccMatrix);
 For large-scale audio datasets, online incremental training methods can be used to gradually update model parameters, avoiding loading all data into memory at once.
 
 ```java
-import embedding.audio.com.yishape.lab.OnlineIVectorEmbedding;
+import com.yishape.lab.audio.embedding.OnlineIVectorEmbedding;
 import com.yishape.lab.math.linalg.IMatrix;
 
 // 创建在线i-vector嵌入器 / Create online i-vector embedder
@@ -450,8 +517,8 @@ IAudioFeatureExtractor extractor = factory.createFeatureExtractor("standard");
 ### 音频处理异常 / Audio Processing Exceptions
 
 ```java
-import exception.audio.com.yishape.lab.AudioProcessingException;
-import core.audio.com.yishape.lab.UnsupportedAudioFormatException;
+import com.yishape.lab.audio.exception.AudioProcessingException;
+import com.yishape.lab.audio.core.UnsupportedAudioFormatException;
 
 try{
 // 音频文件读取 / Audio file reading
@@ -514,3 +581,48 @@ println("文件操作错误: "+e.getMessage());
 ### 4. 性能监控 / Performance Monitoring
 - 监控音频处理的执行时间
 - 记录内存使用情况
+
+## 常见问题 / FAQ
+
+### Q1: `AudioIO.readAudio` 支持哪些格式？
+
+常用格式均支持：`WAV`（推荐，无压缩）、`MP3`、`FLAC`、`AAC` 等。若遇到 `UnsupportedAudioFormatException`，检查：
+1. 文件是否损坏 → 用播放器能否打开
+2. 格式是否特殊 → 转换为 WAV 重试
+3. 采样率是否过高 → 先降采样再处理
+
+### Q2: 频谱分析结果怎么看？
+
+`calculateSpectrum` 返回 `(幅度谱, 频率轴)` 两个向量：
+```java
+Tuple2<IVector<Double>, IVector<Double>> spectrum = analyzer.calculateSpectrum(audio);
+IVector<Double> magnitude = spectrum._1;  // 各频率点的幅度
+IVector<Double> freqAxis = spectrum._2;  // 对应频率值（Hz）
+
+// 找主频率（幅度最大的频率点）
+int peakIdx = magnitude.argmax();
+double peakFreq = freqAxis.get(peakIdx);
+System.out.println("主频率: " + peakFreq + " Hz");
+```
+
+### Q3: 处理长音频内存不够怎么办？
+
+长音频不宜一次性全加载，用**分帧处理**：
+```java
+double windowSizeSec = 1.0;    // 每次处理 1 秒
+double hopSizeSec = 0.5;       // 每次滑动 0.5 秒（50% 重叠）
+IAdvancedAudioProcessor processor = Audios.createProcessor(...);
+
+double duration = audio.getDuration();
+for (double t = 0; t < duration; t += hopSizeSec) {
+    AudioData chunk = processor.processTimeRange(audio, t, t + windowSizeSec);
+    // 处理当前 chunk...
+}
+```
+
+### Q4: `Audios.createNormalizeProcessor` 和手动归一化哪个好？
+
+`createNormalizeProcessor` 是**全局归一化**（全文件统一缩放），适合快速处理。若需要：
+- **局部归一化**（每段独立缩放）→ 手动分帧归一化
+- **峰值削波限制（limiter）** → 需自己实现
+- **特定 dBFS 目标值** → 手动计算缩放系数

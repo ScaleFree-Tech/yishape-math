@@ -157,7 +157,7 @@ IMatrix<Double> result2 = matrix1.multiplyScalar(3.0);
 IMatrix<Double> result2b = matrix1.mmul(3.0);
 
 // Frobenius 内积（逐元素相乘再求和）/ Frobenius inner product
-Double frob = matrix1.dot(matrix2);
+Double frob = matrix1.frobeniusInnerProduct(matrix2);
 
 // 元素级乘法（Hadamard）/ Element-wise multiply
 IMatrix<Double> hadamard = matrix1.multiply(matrix2);
@@ -587,6 +587,17 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 - 数据可视化 / Data visualization
 - 模式识别 / Pattern recognition
 
+## 与 NumPy `np.dot` 的对照 / NumPy `np.dot` mapping
+
+NumPy 中 `np.dot` 随输入维度含义不同；本库用**不同方法名**区分，避免与「Frobenius 内积」混淆：
+
+| NumPy | 本库 YiShape | 说明 / Notes |
+|--------|----------------|---------------|
+| `np.dot(v, w)`（一维×一维） | `v.innerProduct(w)` 或 `v.dot(w)` | 向量内积 / Inner product |
+| `np.dot(v, M)`（一维×二维） | `v.mmul(M)` 或 `v.dot(M)` | 行向量×矩阵，两写法等价 / Row × matrix |
+| `np.dot(A, B)`（二维×二维） | `A.mmul(B)` | 矩阵乘法（**非** Frobenius 内积）/ Matrix multiply (not Frobenius) |
+| `np.sum(A * B)`（同形） | `A.frobeniusInnerProduct(B)` | 逐元素乘再求和（Frobenius 内积）/ Sum of element-wise products |
+
 ## 与NumPy功能对照表 / NumPy Functionality Comparison Table
 
 | 功能类别 / Function Category | IMatrix/Linalg | NumPy | 说明 / Description |
@@ -609,7 +620,7 @@ The `IMatrix` interface is designed to support extensions, making it easy to add
 | 标量乘法 / Scalar multiply | `matrix.multiplyScalar(s)` 或 `matrix.mmul(s)` | `matrix * scalar` | 逐元素乘标量；`mmul(矩阵)` 仍为矩阵乘 / Scale; `mmul(matrix)` is matmul |
 | 标量减法 / Scalar subtraction | `matrix.sub(scalar)` | `matrix - scalar` | 逐元素减标量 / Subtract scalar from each element |
 | 元素级乘法 / Hadamard product | `matrix1.multiply(matrix2)` | `matrix1 * matrix2` | 同形状逐元素乘 / Element-wise product |
-| Frobenius 内积 / Frobenius dot | `matrix1.dot(matrix2)` | `np.sum(matrix1 * matrix2)` | 对应元素乘积之和 / Sum of element-wise products |
+| Frobenius 内积 / Frobenius inner product | `matrix1.frobeniusInnerProduct(matrix2)` | `np.sum(matrix1 * matrix2)` | 对应元素乘积之和 / Sum of element-wise products |
 | 向量外积 / Vector outer | `v1.outer(v2)`（IVector） | `np.outer(v1, v2)` | 两向量外积 / Outer product of vectors |
 | 展平外积 / Outer (flattened) | `A.outer(B)` | `np.outer(A.ravel(), B.ravel())` | 行优先展平再外积 / Row-major flatten then outer |
 | Kronecker 积 / Kronecker | `A.kron(B)` 或 `Linalg.kron(A,B)` | `np.kron(A, B)` | 分块张量积 / Block tensor product |

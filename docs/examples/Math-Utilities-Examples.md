@@ -301,77 +301,48 @@ public class CombinatoricsExample {
 
 ## 数学函数示例 / Mathematical Function Examples
 
-### 基本数学函数 / Basic Mathematical Functions
+### 特殊数学函数 / Special Mathematical Functions
 
 ```java
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
 
-public class MathematicalFunctionsExample {
+public class SpecialFunctionsExample {
     public static void main(String[] args) {
-        System.out.println("=== 数学函数示例 / Mathematical Functions Example ===");
+        System.out.println("=== 特殊数学函数示例 / Special Functions Example ===");
 
-        // 1. 三角函数 / Trigonometric functions
-        System.out.println("1. 三角函数 / Trigonometric Functions");
+        // 1. 伽马函数和贝塔函数 / Gamma and Beta functions
+        System.out.println("1. 伽马函数和贝塔函数 / Gamma and Beta Functions");
+        double gamma5 = RereMathUtil.gamma(5.0);               // Γ(5) = 24
+        double beta23 = RereMathUtil.beta(2.0, 3.0);          // B(2,3)
+        System.out.println("Γ(5) = " + gamma5);
+        System.out.println("B(2,3) = " + beta23);
 
-        float[] angles = {0.0f, (float) Math.PI / 6, (float) Math.PI / 4, (float) Math.PI / 3, (float) Math.PI / 2};
-        System.out.println("角度 (弧度): " + Arrays.toString(angles));
+        // 不完全伽马/贝塔函数 / Incomplete gamma/beta functions
+        double igamma = RereMathUtil.incompleteGamma(2.0, 1.0);
+        double ibeta = RereMathUtil.incompleteBeta(2.0, 3.0, 0.5);
+        System.out.println("不完全伽马(2,1) = " + igamma);
+        System.out.println("不完全贝塔(2,3,0.5) = " + ibeta);
 
-        for (float angle : angles) {
-            float sin = RereMathUtil.sin(angle);
-            float cos = RereMathUtil.cos(angle);
-            float tan = RereMathUtil.tan(angle);
+        // 2. 误差函数和逆正态分布 / Error function and inverse normal
+        System.out.println("\n2. 误差函数和逆正态分布 / Error Function and Inverse Normal");
+        double erf1 = RereMathUtil.erf(1.0);                  // erf(1.0)
+        double invNormal95 = RereMathUtil.inverseNormalCDF(0.95); // 95%分位数
+        System.out.println("erf(1.0) = " + erf1);
+        System.out.println("正态分布 95% 分位数 = " + invNormal95);
 
-            System.out.printf("角度 %.2f: sin=%.4f, cos=%.4f, tan=%.4f%n",
-                    angle, sin, cos, tan);
+        // 3. Sigmoid 函数 / Sigmoid function
+        System.out.println("\n3. Sigmoid 函数 / Sigmoid Function");
+        double[] xs = {-2.0, -1.0, 0.0, 1.0, 2.0};
+        for (double x : xs) {
+            System.out.printf("sigmoid(%.1f) = %.4f%n", x, RereMathUtil.sigmoid(x));
         }
 
-        // 2. 指数和对数函数 / Exponential and logarithmic functions
-        System.out.println("\n2. 指数和对数函数 / Exponential and Logarithmic Functions");
-
-        float[] values = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-        System.out.println("数值: " + Arrays.toString(values));
-
-        for (float value : values) {
-            float exp = RereMathUtil.exp(value);
-            float log = RereMathUtil.log(value);
-            float log10 = RereMathUtil.log10(value);
-
-            System.out.printf("数值 %.1f: exp=%.4f, ln=%.4f, log10=%.4f%n",
-                    value, exp, log, log10);
-        }
-
-        // 3. 幂函数和根函数 / Power and root functions
-        System.out.println("\n3. 幂函数和根函数 / Power and Root Functions");
-
-        float base = 2.0f;
-        float[] exponents = {0.5f, 1.0f, 2.0f, 3.0f, 4.0f};
-        System.out.println("底数: " + base);
-        System.out.println("指数: " + Arrays.toString(exponents));
-
-        for (float exp : exponents) {
-            float power = RereMathUtil.pow(base, exp);
-            float sqrt = RereMathUtil.sqrt(RereMathUtil.pow(base, exp));
-
-            System.out.printf("指数 %.1f: %g^%.1f=%.4f, sqrt=%.4f%n",
-                    exp, base, exp, power, sqrt);
-        }
-
-        // 4. 舍入函数 / Rounding functions
-        System.out.println("\n4. 舍入函数 / Rounding Functions");
-
-        float[] roundValues = {1.4f, 1.5f, 1.6f, -1.4f, -1.5f, -1.6f};
-        System.out.println("数值: " + Arrays.toString(roundValues));
-
-        for (float value : roundValues) {
-            float floor = RereMathUtil.floor(value);
-            float ceil = RereMathUtil.ceil(value);
-            float round = RereMathUtil.round(value);
-
-            System.out.printf("数值 %.1f: floor=%.0f, ceil=%.0f, round=%.0f%n",
-                    value, floor, ceil, round);
-        }
+        // 4. 浮点近似比较 / Floating point comparison
+        System.out.println("\n4. 浮点近似比较 / Floating Point Comparison");
+        System.out.println("isClose(1.0, 1.000001): " + RereMathUtil.isClose(1.0, 1.000001));
+        System.out.println("isClose(1.0, 1.1): " + RereMathUtil.isClose(1.0, 1.1));
     }
 }
 ```
@@ -387,28 +358,11 @@ public class StatisticalFunctionsExample {
     public static void main(String[] args) {
         System.out.println("=== 统计函数示例 / Statistical Functions Example ===");
 
-        // 1. 基本统计量 / Basic statistics
-        System.out.println("1. 基本统计量 / Basic Statistics");
+        // 1. 向量统计 / Vector statistics
+        System.out.println("1. 向量统计 / Vector Statistics");
 
         float[] data = {1.2f, 3.4f, 5.6f, 7.8f, 9.0f, 2.1f, 4.3f, 6.5f, 8.7f, 0.9f};
         System.out.println("数据: " + Arrays.toString(data));
-
-        float sum = RereMathUtil.sum(data);
-        float mean = RereMathUtil.mean(data);
-        float variance = RereMathUtil.variance(data);
-        float stdDev = RereMathUtil.std(data);
-        float min = RereMathUtil.min(data);
-        float max = RereMathUtil.max(data);
-
-        System.out.println("总和: " + sum);
-        System.out.println("均值: " + mean);
-        System.out.println("方差: " + variance);
-        System.out.println("标准差: " + stdDev);
-        System.out.println("最小值: " + min);
-        System.out.println("最大值: " + max);
-
-        // 2. 向量统计 / Vector statistics
-        System.out.println("\n2. 向量统计 / Vector Statistics");
 
         IVector dataVector = IVector.of(data);
         System.out.println("数据向量: " + dataVector);
@@ -423,8 +377,8 @@ public class StatisticalFunctionsExample {
         System.out.println("向量方差: " + vectorVariance);
         System.out.println("向量标准差: " + vectorStdDev);
 
-        // 3. 矩阵统计 / Matrix statistics
-        System.out.println("\n3. 矩阵统计 / Matrix Statistics");
+        // 2. 矩阵统计 / Matrix statistics
+        System.out.println("\n2. 矩阵统计 / Matrix Statistics");
 
         float[][] matrixData = {
                 {1.1f, 2.2f, 3.3f},
@@ -436,37 +390,22 @@ public class StatisticalFunctionsExample {
 
         float matrixSum = dataMatrix.sum();
         float matrixMean = dataMatrix.mean();
-        float matrixVariance = dataMatrix.variance();
 
         System.out.println("矩阵总和: " + matrixSum);
         System.out.println("矩阵均值: " + matrixMean);
-        System.out.println("矩阵方差: " + matrixVariance);
 
-        // 4. 相关系数计算 / Correlation coefficient calculation
-        System.out.println("\n4. 相关系数计算 / Correlation Coefficient Calculation");
+        // 3. 偏度和峰度 / Skewness and kurtosis
+        System.out.println("\n3. 偏度和峰度 / Skewness and Kurtosis");
 
-        float[] x = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-        float[] y = {2.0f, 4.0f, 5.0f, 4.0f, 5.0f};
+        float[] randomData = RereMathUtil.generateRandomFloats(100);
+        System.out.println("生成100个随机数");
 
-        float correlation = RereMathUtil.correlation(x, y);
-        System.out.println("X: " + Arrays.toString(x));
-        System.out.println("Y: " + Arrays.toString(y));
-        System.out.println("相关系数: " + correlation);
+        IVector randomVec = IVector.of(randomData);
+        float dataSkew = randomVec.skewness();
+        float dataKurt = randomVec.kurtosis();
 
-        // 5. 分位数计算 / Quantile calculation
-        System.out.println("\n5. 分位数计算 / Quantile Calculation");
-
-        float[] sortedData = Arrays.copyOf(data, data.length);
-        Arrays.sort(sortedData);
-        System.out.println("排序后数据: " + Arrays.toString(sortedData));
-
-        float q25 = RereMathUtil.quantile(sortedData, 0.25f);
-        float q50 = RereMathUtil.quantile(sortedData, 0.50f);
-        float q75 = RereMathUtil.quantile(sortedData, 0.75f);
-
-        System.out.println("25%分位数: " + q25);
-        System.out.println("50%分位数 (中位数): " + q50);
-        System.out.println("75%分位数: " + q75);
+        System.out.println("偏度: " + dataSkew);
+        System.out.println("峰度: " + dataKurt);
     }
 }
 ```
@@ -479,90 +418,42 @@ public class StatisticalFunctionsExample {
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
-import com.yishape.lab.util.Tuple2;
 
 public class ArrayOperationsExample {
     public static void main(String[] args) {
         System.out.println("=== 数组操作示例 / Array Operations Example ===");
 
-        // 1. 数组排序 / Array sorting
-        System.out.println("1. 数组排序 / Array Sorting");
+        // 1. 类型转换 / Type conversion
+        System.out.println("1. 类型转换 / Type Conversion");
 
-        float[] unsortedData = {5.2f, 1.8f, 9.3f, 2.7f, 6.1f, 3.9f, 8.4f, 0.5f, 7.6f, 4.2f};
-        System.out.println("未排序数据: " + Arrays.toString(unsortedData));
+        Float[] boxedArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+        float[] primitiveArray = RereMathUtil.toPrimitive(boxedArray);
+        System.out.println("Float[] → float[]: " + Arrays.toString(primitiveArray));
 
-        // 升序排序 / Ascending sort
-        float[] ascendingData = RereMathUtil.sort(unsortedData, true);
-        System.out.println("升序排序: " + Arrays.toString(ascendingData));
+        double[] doubleArray = RereMathUtil.floatToDouble(primitiveArray);
+        System.out.println("float[] → double[]: " + Arrays.toString(doubleArray));
 
-        // 降序排序 / Descending sort
-        float[] descendingData = RereMathUtil.sort(unsortedData, false);
-        System.out.println("降序排序: " + Arrays.toString(descendingData));
+        // 2. 随机数生成 / Random number generation
+        System.out.println("\n2. 随机数生成 / Random Number Generation");
 
-        // 2. 数组查找 / Array searching
-        System.out.println("\n2. 数组查找 / Array Searching");
-
-        float searchValue = 6.1f;
-        int index = RereMathUtil.indexOf(unsortedData, searchValue);
-        System.out.println("查找值 " + searchValue + " 的索引: " + index);
-
-        boolean contains = RereMathUtil.contains(unsortedData, searchValue);
-        System.out.println("数组是否包含 " + searchValue + ": " + contains);
+        float[] randomFloats = RereMathUtil.generateRandomFloats(10);
+        IVector randomVec = IVector.of(randomFloats);
+        System.out.println("生成10个随机数: " + randomVec);
+        System.out.println("均值: " + randomVec.mean());
+        System.out.println("标准差: " + randomVec.std());
 
         // 3. 数组统计 / Array statistics
         System.out.println("\n3. 数组统计 / Array Statistics");
 
-        float[] randomData = RereMathUtil.randn(100).toArray();
-        System.out.println("生成100个标准正态分布随机数");
-
-        float dataMean = RereMathUtil.mean(randomData);
-        float dataStd = RereMathUtil.std(randomData);
-        float dataSkew = RereMathUtil.skewness(randomData);
-        float dataKurt = RereMathUtil.kurtosis(randomData);
-
-        System.out.println("均值: " + dataMean);
-        System.out.println("标准差: " + dataStd);
-        System.out.println("偏度: " + dataSkew);
-        System.out.println("峰度: " + dataKurt);
-
-        // 4. 数组变换 / Array transformation
-        System.out.println("\n4. 数组变换 / Array Transformation");
-
-        float[] originalData = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-        System.out.println("原始数据: " + Arrays.toString(originalData));
-
-        // 标准化 / Standardization
-        float[] standardizedData = RereMathUtil.standardize(originalData);
-        System.out.println("标准化后: " + Arrays.toString(standardizedData));
-
-        // 归一化到[0,1] / Normalize to [0,1]
-        float[] normalizedData = RereMathUtil.normalize(originalData);
-        System.out.println("归一化后: " + Arrays.toString(normalizedData));
-
-        // 5. 数组生成 / Array generation
-        System.out.println("\n5. 数组生成 / Array Generation");
-
-        // 生成等差数列 / Generate arithmetic sequence
-        float[] arithmeticSeq = RereMathUtil.linspace(0.0f, 10.0f, 11);
-        System.out.println("等差数列 [0,10]: " + Arrays.toString(arithmeticSeq));
-
-        // 生成对数数列 / Generate logarithmic sequence
-        float[] logSeq = RereMathUtil.logspace(0.1f, 10.0f, 10);
-        System.out.println("对数数列 [0.1,10]: " + Arrays.toString(logSeq));
-
-        // 生成网格 / Generate meshgrid
-        float[] x = RereMathUtil.linspace(-2.0f, 2.0f, 5);
-        float[] y = RereMathUtil.linspace(-2.0f, 2.0f, 5);
-        Tuple2<float[][], float[][]> mesh = RereMathUtil.meshgrid(x, y);
-
-        System.out.println("X网格:");
-        for (float[] row : mesh._1) {
-            System.out.println("  " + Arrays.toString(row));
-        }
-        System.out.println("Y网格:");
-        for (float[] row : mesh._2) {
-            System.out.println("  " + Arrays.toString(row));
-        }
+        float[] data = {1.2f, 3.4f, 5.6f, 7.8f, 9.0f};
+        IVector dataVector = IVector.of(data);
+        System.out.println("数据: " + dataVector);
+        System.out.println("总和: " + dataVector.sum());
+        System.out.println("均值: " + dataVector.mean());
+        System.out.println("标准差: " + dataVector.std());
+        System.out.println("偏度: " + dataVector.skewness());
+        System.out.println("峰度: " + dataVector.kurtosis());
+        System.out.println("排序后: " + dataVector.sort());
     }
 }
 ```
@@ -598,14 +489,15 @@ public class DataPreprocessingExample {
         }
 
         System.out.println("生成 " + samples + " 个样本");
-        System.out.println("数据范围: [" + RereMathUtil.min(noisyData) + ", " + RereMathUtil.max(noisyData) + "]");
+        IVector noisyVec = IVector.of(noisyData);
+        System.out.println("数据范围: [" + noisyVec.min() + ", " + noisyVec.max() + "]");
 
         // 2. 数据清洗 / Data cleaning
         System.out.println("\n2. 数据清洗 / Data Cleaning");
 
         // 检测异常值 / Detect outliers
-        float mean = RereMathUtil.mean(noisyData);
-        float std = RereMathUtil.std(noisyData);
+        float mean = noisyVec.mean();
+        float std = noisyVec.std();
         float threshold = 3.0f; // 3σ原则 / 3-sigma rule
 
         int outlierCount = 0;
@@ -623,13 +515,13 @@ public class DataPreprocessingExample {
 
         // Z-score标准化 / Z-score standardization
         float[] zScoreData = new float[samples];
-        float mean = RereMathUtil.mean(noisyData);
-        float std = RereMathUtil.std(noisyData);
+        float zMean = noisyVec.mean();
+        float zStd = noisyVec.std();
         for (int i = 0; i < samples; i++) {
-            zScoreData[i] = (noisyData[i] - mean) / std;
+            zScoreData[i] = (noisyData[i] - zMean) / zStd;
         }
-        float zScoreMean = RereMathUtil.mean(zScoreData);
-        float zScoreStd = RereMathUtil.std(zScoreData);
+        float zScoreMean = IVector.of(zScoreData).mean();
+        float zScoreStd = IVector.of(zScoreData).std();
 
         System.out.println("Z-score标准化后:");
         System.out.println("  均值: " + zScoreMean);
@@ -637,13 +529,13 @@ public class DataPreprocessingExample {
 
         // Min-Max归一化 / Min-Max normalization
         float[] minMaxData = new float[samples];
-        float minVal = RereMathUtil.min(noisyData);
-        float maxVal = RereMathUtil.max(noisyData);
+        float minVal = noisyVec.min();
+        float maxVal = noisyVec.max();
         for (int i = 0; i < samples; i++) {
             minMaxData[i] = (noisyData[i] - minVal) / (maxVal - minVal);
         }
-        float minMaxMin = RereMathUtil.min(minMaxData);
-        float minMaxMax = RereMathUtil.max(minMaxData);
+        float minMaxMin = IVector.of(minMaxData).min();
+        float minMaxMax = IVector.of(minMaxData).max();
 
         System.out.println("Min-Max归一化后:");
         System.out.println("  最小值: " + minMaxMin);
@@ -684,7 +576,8 @@ public class DataPreprocessingExample {
         }
 
         System.out.println("随机采样 " + sampleSize + " 个样本");
-        System.out.println("采样后数据范围: [" + RereMathUtil.min(sampledData) + ", " + RereMathUtil.max(sampledData) + "]");
+        IVector sampledVec = IVector.of(sampledData);
+        System.out.println("采样后数据范围: [" + sampledVec.min() + ", " + sampledVec.max() + "]");
     }
 }
 ```

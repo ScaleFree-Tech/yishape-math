@@ -6,6 +6,60 @@
 
 The optimization algorithms package provides implementations of various mathematical optimization solvers including L-BFGS optimizer, online optimizers (SGD, Adam), line search, and more. These algorithms provide powerful optimization support for machine learning model training, efficiently solving optimal solutions for various objective functions.
 
+## 选型指南 / Algorithm Selection Guide
+
+### 按问题类型选择 / Choose by Problem Type
+
+| 问题类型 | 约束条件 | 推荐算法 |
+|---------|---------|---------|
+| 线性规划（LP）| 线性等式/不等式 | `RereSimplexLinProgSolver`（单纯形法）|  
+| 线性规划（大规模）| 线性等式/不等式 | `InteriorPointLinProgSolver`（内点法）|  
+| 二次规划（QP）| 线性约束 + 二次目标 | `RereQPOptimizer` |
+| 非线性规划（无约束）| 无 | `RereLBFGS`（首选）或 `RereSteepestDescent` |
+| 非线性规划（有等式约束）| 等式约束 | `RereConstrainedOptimizer` |
+| 整数/组合优化 | 整数变量 | `RereIntegerProg` |
+| 在线/流数据优化 | 每次一个样本 | `RereSGD` / `RereAdam` |
+
+### 按场景选择 / Choose by Scenario
+
+| 场景 | 推荐 | 原因 |
+|------|------|------|
+| 机器学习模型训练（通用）| `RereLBFGS` | 收敛快、鲁棒、适合中小规模 |
+| 深度学习（SGD/Adam）| `RereAdam` | 适合大规模、稀疏梯度、深层网络 |
+| 线性/逻辑回归 | `RereLBFGS` 或 `RereSGD` | 统计学习标准配置 |
+| 支持向量机（SVM）| `RereSGD` | 大规模 SVM 训练 |
+| 推荐系统 | `RereALS` | 矩阵分解类推荐算法 |
+| 信号/图像去噪 | `RereSteepestDescent` | L1/L2 正则化平滑 |
+| 经济学/金融优化 | `InteriorPointLinProgSolver` | 大规模 LP，稳定 |
+
+### 快速参考 / Quick Reference
+
+| 类 | 输入 | 输出 | 特点 |
+|----|------|------|------|
+| `RereLBFGS` | `IVector → Double`, `IVector → IVector` | `OptResult` | 拟牛顿，收敛快 |
+| `RereSteepestDescent` | `IVector → Double`, `IVector` | `OptResult` | 梯度方向，简单 |
+| `RereSGD` | `IVector → Double`, `IVector → IVector` | `IVector` | 在线学习 |
+| `RereAdam` | `IVector → Double`, `IVector → IVector` | `IVector` | 自适应学习率 |
+| `RereSimplexLinProgSolver` | LP 标准型 | `OptResult` | 稀疏 LP |
+| `InteriorPointLinProgSolver` | LP 标准型 | `OptResult` | 大规模 LP |
+| `RereIntegerProg` | MILP 实例 | `OptResult` | 分支定界 |
+
+## 快速上手 / Quick Start
+
+```java
+// 线性规划：min 2x1 + 3x2，约束 x1+x2=5, x1≥0, x2≥0
+IVector<Double> c = Linalg.vector(new double[]{2.0, 3.0});
+IMatrix<Double> A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+IVector<Double> b_eq = Linalg.vector(new double[]{5.0});
+
+InteriorPointLinProgSolver solver = new InteriorPointLinProgSolver();
+OptResult result = solver.solveEq(c, A_eq, b_eq);
+System.out.println("最优解: " + result.getOptimalPoint());  // → [2.0, 3.0]
+System.out.println("最优值: " + result.getOptimalValue());   // → 13.0
+
+// 自定义目标函数 + L-BFGS（见「L-BFGS 优化器」章节）
+```
+
 ## 包结构 / Package Structure
 
 优化算法包按照功能划分为多个子包：
@@ -1024,7 +1078,9 @@ RereIntegerProg solver2 = new RereIntegerProg(new SimplexLinProgSolver());
 
 // 设置整数变量和求解 / Set integer variables and solve
 solver.addIntegerVariables(0, 1);
-Tuple2<Double, IVector> result = solver.solveEq(c, A_eq, b_eq);
+OptResult result = solver.solveEq(c, A_eq, b_eq);
+System.out.println("最优值: " + result.getOptimalValue());
+System.out.println("最优点: " + result.getOptimalPoint());
 ```
 
 ##### 0-1整数规划 / Binary Integer Programming
@@ -1263,10 +1319,10 @@ optimizer.setTolerance(1e-6);         // 收敛容差 / Convergence tolerance
 optimizer.setInitialStepSize(0.01);   // 初始步长 / Initial step size
 
 // 执行优化 / Execute optimization
-Tuple2<Double, IVector> result = optimizer.optimize(initX, objFun, grdFun);
+OptResult result = optimizer.optimize(initX, objFun, grdFun);
 
-System.out.println("最优值: " + result._1);
-System.out.println("最优点: " + result._2);
+System.out.println("最优值: " + result.getOptimalValue());
+System.out.println("最优点: " + result.getOptimalPoint());
 ```
 
 ## 高级特性 / Advanced Features
@@ -1456,7 +1512,9 @@ public class LinearRegressionObjective implements IObjectiveFunction, IGradientF
 // 使用自定义目标函数 / Use custom objective function
 LinearRegressionObjective objFun = new LinearRegressionObjective(X, y, 0.01, 0.1);
 RereLBFGS optimizer = new RereLBFGS();
-Tuple2<Double, IVector> result = optimizer.optimize(initW, objFun, objFun);
+OptResult result = optimizer.optimize(initW, objFun, objFun);  // 注意：此处应传入不同的梯度函数实例
+System.out.println("最优值: " + result.getOptimalValue());
+System.out.println("最优点: " + result.getOptimalPoint());
 ```
 
 ## 性能特性 / Performance Features
@@ -1519,3 +1577,48 @@ The optimization algorithms package is designed to support extensions:
 **优化算法** - 数学优化的核心，让求解更高效！
 
 **Optimization Algorithms** - The core of mathematical optimization, making solving more efficient!
+
+## 常见问题 / FAQ
+
+### Q1: 线性规划（LP）和非线性规划（NLP/UNLP）该用哪个？
+
+| 问题类型 | 约束/目标 | 推荐求解器 |
+|---------|----------|-----------|
+| 线性规划（LP）| 线性约束 + 线性目标 | `RereSimplexLinProgSolver`（单纯形法）或 `InteriorPointLinProgSolver`（内点法）|
+| 整数规划（ILP）| LP + 整数变量 | `RereIntegerProg` |
+| 非线性规划（NLP）| 非线性约束或目标 | `RereLBFGS` / `RereSteepestDescent` |
+
+**快速判断**：约束和目标函数都是一次多项式（直线/平面）→ 线性规划；否则是非线性规划。
+
+### Q2: 单纯形法和内点法该用哪个？
+
+| 方法 | 适合场景 | 特点 |
+|------|---------|------|
+| **单纯形法** | 稀疏矩阵、中等规模 | 对某些问题收敛快，但最坏情况指数时间 |
+| **内点法** | 大规模问题、稠密矩阵 | 保证多项式时间收敛，稳定 |
+
+**实际建议**：先用内点法（`InteriorPointLinProgSolver`），除非已知问题适合单纯形且规模较小。
+
+### Q3: L-BFGS 和梯度下降该用哪个？
+
+**几乎总是 L-BFGS 更快更好**：
+- L-BFGS 是拟牛顿法，用历史曲率信息近似 Hessian，在强凸函数上接近二阶收敛速度
+- 梯度下降是严格一阶方法，收敛较慢
+
+L-BFGS 的限制：需要目标函数可导（有梯度）。若目标函数不可导，用 `RereSteepestDescent` 或 SGD/Adam。
+
+### Q4: 优化不收敛怎么办？
+
+排查顺序：
+1. **初始点问题** → 换一个初始点试试（随机初始化或用物理意义推断）
+2. **梯度计算错误** → 用有限差分验证：`RereMathUtil.isClose(given_grad, numerical_grad, 1e-3)`
+3. **步长过大** → 梯度下降类加 line search：`optimizer.setLearningRate(1e-4)`
+4. **目标函数非凸** → 多次随机初始化，取最优结果
+5. **约束冲突** → 检查约束是否允许可行域存在
+
+### Q5: 约束优化怎么处理？
+
+`RereSteepestDescent` 支持带等式约束的优化（通过 `RereConstrainedOptimizer`）。若约束复杂：
+1. **等式约束** → 拉格朗日乘数法（`LangMultiplierLinProgSolver`）
+2. **不等式约束** → 序列二次规划（SQP）或惩罚函数法
+3. **混合约束** → 内点法（`InteriorPointLinProgSolver`）

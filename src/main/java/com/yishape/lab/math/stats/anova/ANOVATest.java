@@ -65,8 +65,8 @@ public class ANOVATest {
         // ANOVAResult.fStatistic - F统计量
         log.debug("  F统计量 / F-statistic: " + result.fStatistic);
         // ANOVAResult.pValue - p值
-        log.debug("  p值 / p-value: " + result.pValue);
-        log.debug("  结论 / Conclusion: " + (result.pValue < 0.05f ? "拒绝等均值假设 / Reject equal means hypothesis" : "接受等均值假设 / Accept equal means hypothesis"));
+        log.debug("  p值 / p-value: " + result.p);
+        log.debug("  结论 / Conclusion: " + (result.p < 0.05f ? "拒绝等均值假设 / Reject equal means hypothesis" : "接受等均值假设 / Accept equal means hypothesis"));
     }
 
     public static void demonstrateTwoWayANOVA() {

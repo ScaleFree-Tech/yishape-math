@@ -10,6 +10,26 @@ The `IVector<T>` interface provides comprehensive generic vector mathematical op
 
 For shared broadcasting and `.npy` entry points with matrices, see the opening section of [`examples/Matrix-Examples.md`](examples/Matrix-Examples.md).
 
+## 快速上手 / Quick Start
+
+```java
+// 创建向量（推荐用 Linalg）/ Create vectors (recommended via Linalg)
+IVector<Double> v = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0, 5.0});
+IVector<Double> ones = Linalg.ones(5);          // [1,1,1,1,1]
+IVector<Double> range = Linalg.range(1, 6);     // [1,2,3,4,5]
+
+// 链式操作 / Method chaining
+Double mean = v.multiplyScalar(2.0).addScalar(1.0).mean();
+System.out.println("均值: " + mean);  // 均值: 8.0
+
+// 向量运算 / Vector operations
+IVector<Double> a = Linalg.vector(new double[]{1.0, 2.0, 3.0});
+IVector<Double> b = Linalg.vector(new double[]{0.1, 0.2, 0.3});
+IVector<Double> sum = a.add(b);           // [1.1, 2.2, 3.3]
+Double dot = a.innerProduct(b);            // 内积: 1.4
+IVector<Double> norm = a.normalize();      // 归一化（返回新向量，不修改原向量）
+```
+
 ## 核心接口 / Core Interface
 
 ### IVector 接口 / IVector Interface
@@ -134,9 +154,11 @@ IVector<Double> product = v1.multiply(v2);
 Double dotProduct = v1.innerProduct(v2);
 Double dotProduct2 = v1.dot(v2);  // 简写形式
 
-// 向量与矩阵乘法 / Vector-matrix multiplication
-IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1.0, 2.0}, {3.0, 4.0}});
-IVector<Double> result = v1.mmul(matrix);  // 向量乘以矩阵
+// 向量与矩阵乘法（行向量 × 矩阵，对齐 NumPy v @ M、np.dot(v, M)；向量长度须等于矩阵行数）
+// Vector-matrix: row length must equal #matrix rows
+IMatrix<Double> matrix = Linalg.matrix(new double[][]{{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}, {7.0, 8.0}});
+IVector<Double> result = v1.mmul(matrix);
+IVector<Double> same = v1.dot(matrix);       // 与 mmul(matrix) 等价 / same as mmul(matrix)
 
 // 向量外积 / Vector outer product
 IMatrix<Double> outerProduct = v1.outer(v2);
@@ -203,7 +225,7 @@ Double q3 = v1.q3();             // 第三四分位数 / Third quartile
 IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
 
 // 数学函数 / Mathematical functions
-IVector<Double> squared = v1.squre();           // 平方 / Square
+IVector<Double> squared = v1.square();          // 平方 / Square
 IVector<Double> sqrt = v1.sqrt();               // 平方根 / Square root
 IVector<Double> exp = v1.exp();                 // 指数 / Exponential
 IVector<Double> log = v1.log();                 // 自然对数 / Natural logarithm
@@ -328,9 +350,9 @@ IVector<Double> v1 = Linalg.vector(new double[]{1.0, 2.0, 3.0, 4.0});
 IVector<Double> v2 = Linalg.vector(new double[]{2.0, 1.0, 4.0, 3.0});
 
 // 元素级比较 / Element-wise comparison
-boolean[] greater = v1.greaterThan(v2);      // 大于 / Greater than
-boolean[] less = v1.lessThan(v2);            // 小于 / Less than
-boolean[] equal = v1.equals(v2);             // 等于 / Equal
+boolean[] greater = v1.gt(v2);              // 大于 / Greater than
+boolean[] less = v1.lt(v2);                // 小于 / Less than
+boolean[] equal = v1.eq(v2);               // 等于 / Equal
 ```
 
 ### 7. 数据转换 / Data Conversion
@@ -527,7 +549,7 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.sub(v2)` | `v1 - v2` | 向量减法 / Vector subtraction |
 | `v1.multiply(v2)` | `v1 * v2` | 元素级乘法 / Element-wise multiplication |
 | `v1.innerProduct(v2)、v1.dot(v2)` | `np.dot(v1, v2)` | 内积 / Inner product |
-| `v1.mmul(matrix)` | `v1 @ matrix` | 向量与矩阵乘法 / Vector-matrix multiplication |
+| `v1.mmul(matrix)`、`v1.dot(matrix)` | `np.dot(v1, matrix)` 或 `v1 @ matrix` | 行向量×矩阵；`dot` 与 `mmul` 等价 / Row × matrix; `dot` ≡ `mmul` |
 | `v1.outer(v2)` | `np.outer(v1, v2)` | 外积 / Outer product |
 | `v1.addScalar(s)` | `v1 + s` | 标量加法 / Scalar addition |
 | `v1.subScalar(s)` | `v1 - s` | 标量减法 / Scalar subtraction |
@@ -545,7 +567,7 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.norm2()` | `np.linalg.norm(v1, 2)` | L2范数 / L2 norm |
 | `v1.normInf()` | `np.linalg.norm(v1, np.inf)` | 无穷范数 / Infinity norm |
 | `v1.norm(p)` | `np.linalg.norm(v1, p)` | Lp范数 / Lp norm |
-| `v1.squre()` | `v1 ** 2` | 平方 / Square |
+| `v1.square()` | `v1 ** 2` | 平方 / Square |
 | `v1.sqrt()` | `np.sqrt(v1)` | 平方根 / Square root |
 | `v1.exp()` | `np.exp(v1)` | 指数 / Exponential |
 | `v1.log()` | `np.log(v1)` | 自然对数 / Natural logarithm |
@@ -577,12 +599,12 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.fancyGet(indices)` | `v1[indices]` | 花式索引 / Fancy indexing |
 | `v1.fancyGet([-1, -2, 0])` | `v1[[-1, -2, 0]]` | 负数花式索引 / Negative fancy indexing |
 | `v1.booleanGet(mask)` | `v1[mask]` | 布尔索引 / Boolean indexing |
-| `v1.greaterThan(v2)` | `v1 > v2` | 大于比较 / Greater than comparison |
-| `v1.lessThan(v2)` | `v1 < v2` | 小于比较 / Less than comparison |
-| `v1.equals(v2)` | `v1 == v2` | 相等比较 / Equality comparison |
-| `v1.sort()` | `np.sort(v1)` | 排序 / Sort |
-| `v1.reverse()` | `v1[::-1]` | 反转 / Reverse |
-| `v1.copy()` | `v1.copy()` | 复制 / Copy |
+| `v1.gt(v2)` | `v1 > v2` | 大于比较，返回 `boolean[]` / Greater than comparison, returns `boolean[]` |
+| `v1.lt(v2)` | `v1 < v2` | 小于比较，返回 `boolean[]` / Less than comparison, returns `boolean[]` |
+| `v1.eq(v2)` | `v1 == v2` | 相等比较，返回 `boolean[]` / Equality comparison, returns `boolean[]` |
+| `v1.sort()` | `np.sort(v1)` | 排序（返回新向量，不修改原向量）/ Sort (returns new vector, non-mutating) |
+| `v1.reverse()` | `v1[::-1]` | 反转（返回新向量，不修改原向量）/ Reverse (returns new vector, non-mutating) |
+| `v1.copy()` | `v1.copy()` | 深拷贝（返回独立副本）/ Deep copy (returns independent copy) |
 | `v1.euclideanDistance(v2)` | `np.linalg.norm(v1 - v2)` | 欧几里得距离 / Euclidean distance |
 | `v1.manhattanDistance(v2)` | `np.sum(np.abs(v1 - v2))` | 曼哈顿距离 / Manhattan distance |
 | `v1.cosineSimilarity(v2)` | `np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))` | 余弦相似度 / Cosine similarity |
@@ -599,12 +621,12 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 | `v1.cumsum()` | `np.cumsum(v1)` | 累积求和 / Cumulative sum |
 | `v1.cumprod()` | `np.cumprod(v1)` | 累积乘积 / Cumulative product |
 | `v1.diff()` | `np.diff(v1)` | 差分 / Difference |
-| `v1.diff(n)` | `np.diff(v1, n)` | n阶差分 / n-th order difference |
+| `v1.diff(n=1)` | `np.diff(v1, n)` | n阶差分，默认一阶 / n-th order difference, default 1st |
 | `v1.logicalAnd(v2)` | `np.logical_and(v1, v2)` | 逻辑与 / Logical AND |
 | `v1.logicalOr(v2)` | `np.logical_or(v1, v2)` | 逻辑或 / Logical OR |
-| `v1.logicalNot()` | `np.logical_not(v1, v2)` | 逻辑非 / Logical NOT |
+| `v1.logicalNot()` | `np.logical_not(v1)` | 逻辑非 / Logical NOT |
 | `v1.logicalXor(v2)` | `np.logical_xor(v1, v2)` | 逻辑异或 / Logical XOR |
-| `v1.normalize()` | `v1 / np.linalg.norm(v1)` | 向量归一化 / Vector normalization |
+| `v1.normalize()` | `v1 / np.linalg.norm(v1)` | 向量归一化（返回新向量，不修改原向量）/ Vector normalization (returns new vector, non-mutating) |
 | `v1.asColumnVector()` | `v1.reshape(-1, 1)` | 向量转换为列矩阵 / Convert vector to column matrix |
 
 
@@ -613,6 +635,7 @@ The `IVector<T>` interface is designed to support extensions, making it easy to 
 YiShape的向量操作设计参考了NumPy的API设计，提供了类似的接口和功能：
 YiShape's vector operations design references NumPy's API design, providing similar interfaces and functionality:
 
+- **`np.dot` 对照** / **`np.dot` mapping**: 一维×一维内积用 `innerProduct`/`dot(IVector)`；一维×二维（行向量×矩阵）用 `mmul(IMatrix)` 或 `dot(IMatrix)`（二者等价）。二维矩阵乘请使用 `IMatrix.mmul`，不要用 `frobeniusInnerProduct`。/ For 1D×1D use `innerProduct`/`dot(IVector)`; for 1D×2D row×matrix use `mmul(IMatrix)` or `dot(IMatrix)` (equivalent). For 2D matrix multiply use `IMatrix.mmul`, not `frobeniusInnerProduct`.
 - **语法相似性** / **Syntax Similarity**: 方法命名和参数设计与NumPy保持一致 / Method naming and parameter design consistent with NumPy
 - **功能对等性** / **Functional Equivalence**: 核心功能与NumPy向量操作完全对等 / Core functionality is completely equivalent to NumPy vector operations
 - **性能优化** / **Performance Optimization**: 针对Java环境进行了性能优化 / Performance optimized for Java environment
@@ -626,4 +649,67 @@ This makes migration from Python/NumPy to Java/YiShape relatively easy while mai
 
 **向量操作** - 数学计算的基础，让数据处理更高效！
 
-**Vector Operation
+---
+
+**向量操作** - 数学计算的基础，让数据处理更高效！
+
+**Vector Operations** - Mathematical computing foundation, making data processing more efficient!
+
+## 常见问题 / FAQ
+
+### Q1: Float 和 Double 选哪个？
+
+大多数情况下用 `Double`（双精度）。`Float`（单精度）仅在：
+- 数据量极大（如数百万维向量），内存紧张时
+- 与外部系统交互（某些 C 库只支持 float32）
+- 精度要求不高的近似计算
+
+**注意**：混合使用 Float 和 Double 会触发自动类型转换，有性能开销。建议选定一种后统一使用。
+
+### Q2: 向量运算后原向量被修改了？
+
+YiShape Math 的向量操作**默认返回新向量，不修改原向量**（非 in-place）：
+
+```java
+IVector<Double> a = Linalg.vector(new double[]{1.0, 2.0, 3.0});
+IVector<Double> b = a.multiplyScalar(2.0);  // a 不变，b 是新向量
+System.out.println(a);  // [1.0, 2.0, 3.0]
+System.out.println(b);  // [2.0, 4.0, 6.0]
+```
+
+若发现原向量被改变，检查是否误用了带 `Into` 后缀的方法（如 `a.multiplyScalarInto(target, scalar)`），这类方法会将结果写入目标向量。
+
+### Q3: 向量索引从 0 还是 1 开始？
+
+**从 0 开始**，与 NumPy/Python 一致：
+
+```java
+IVector<Double> v = Linalg.range(5);  // [0.0, 1.0, 2.0, 3.0, 4.0]
+v.get(0);   // 第 1 个元素 = 0.0
+v.get(4);   // 第 5 个元素 = 4.0
+```
+
+切片也使用左闭右开区间 `[start, end)`：
+
+```java
+v.slice(1, 4);  // [1.0, 2.0, 3.0]，不含索引 4
+```
+
+### Q4: 归一化（normalize）和标准化（standardize）有什么区别？
+
+| 操作 | 公式 | 适用场景 |
+|------|------|---------|
+| **归一化** | x / \|\|x\|\|₂ | 距离度量（KNN、余弦相似度） |
+| **标准化** | (x - μ) / σ | 梯度下降类算法（线性回归、神经网络） |
+
+- 归一化：向量长度变为 1，方向不变
+- 标准化：均值=0，标准差=1（按特征计算）
+
+### Q5: `v.std()` 为什么不用 ddof 参数？
+
+`IVector.std()` 默认计算的是**样本标准差**（分母为 n-1，ddof=1），与统计学中默认的无偏估计一致。若需要总体标准差：
+
+```java
+v.std();     // 样本标准差，ddof=1
+v.std(0);    // 总体标准差，ddof=0
+```

@@ -6,6 +6,32 @@
 
 The `Stats` class and related probability distribution classes provide comprehensive statistical computation functionality, including probability density functions, cumulative distribution functions, random sampling for various probability distributions. This module supports both continuous and discrete distributions, including continuous distributions such as normal, t-distribution, uniform, exponential, chi-squared, F-distribution, Beta, Gamma distributions, and discrete distributions such as Bernoulli, binomial, Poisson, geometric, negative binomial, discrete uniform distributions. Additionally, it provides advanced statistical functions such as hypothesis testing and parameter estimation.
 
+## 快速上手 / Quick Start
+
+```java
+// 创建正态分布 / Create a normal distribution
+NormalDistribution normal = Stats.norm(0.0, 1.0);   // 均值0，标准差1
+double density = normal.pdf(0.0);                     // 概率密度: ≈0.399
+double cdf = normal.cdf(1.96);                        // 累积分布: ≈0.975
+double sample = normal.sample();                       // 随机采样
+
+// 假设检验 / Hypothesis testing
+IVector<Double> data = IVector.of(new double[]{14.1, 14.5, 14.8, 14.6, 15.1});
+boolean rejectH0 = Stats.tester.testMeanEqualWithT(14.0, data, 0.05);
+
+// GMM 聚类 / GMM clustering
+List<IVector<Double>> dataList = List.of(
+    IVector.of(new double[]{1.0, 2.0}),
+    IVector.of(new double[]{1.5, 2.5}),
+    IVector.of(new double[]{5.0, 6.0})
+);
+GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2);  // 3个簇，2维数据
+EMAlgorithm em = new EMAlgorithm();
+EMAlgorithm.EMResult result = em.fit(dataList, gmm);
+IVector<Double> testVector = IVector.of(new double[]{1.2, 2.1});
+int cluster = gmm.predictComponent(testVector);           // 预测簇标签
+```
+
 ## 核心类 / Core Classes
 
 ### Stats 类 / Stats Class
@@ -78,6 +104,38 @@ The `Stats` class and related probability distribution classes provide comprehen
 - 收敛性检测
 - 并行计算支持
 - 数值稳定性保证
+
+#### 算法原理 / Algorithm Principles
+
+ANOVA（方差分析）的核心思想是：**把总体方差「拆开」，看组间差异是否远大于组内差异**。
+
+**直观理解**：
+
+想象三组学生分数：
+- 各组内部分数有高有低（**组内方差**）
+- 三组平均分之间有差距（**组间方差**）
+
+如果组间差距 >> 组内差距，说明**不只是随机波动**，而是「组别」这个因素确实在起作用。
+
+**F 统计量**：
+
+$$F = \frac{\text{组间方差}}{\text{组内方差}} = \frac{SS_{between} / (k-1)}{SS_{within} / (N-k)}$$
+
+- k = 组数，N = 总样本数
+- SS = 平方和（Sum of Squares）
+- F 越大 → p 值越小 → 越可能拒绝原假设（各组均值不全相等）
+
+**为什么不用两两 t 检验？**
+
+两两 t 检验做多次会累积误差（多重比较问题），使假阳性率飙升。ANOVA 一次检验 k 组，省去两两比较的麻烦。ANOVA 显著后，再用 Tukey HSD 等事后检验做具体配对比较。
+
+**三种类型**：
+
+| 类型 | 何时用 | 约束 |
+|------|--------|------|
+| 单因素 ANOVA | 一个分组因素（如药物剂量 A/B/C）| 组间独立 |
+| 两因素 ANOVA | 两个分组因素（如药物 + 性别）| 可分析交互效应 |
+| 重复测量 ANOVA | 同一对象多次测量（时间点）| 球形假设（Mauchly's test）|
 
 #### 单因素方差分析 / One-Way ANOVA
 
@@ -627,6 +685,33 @@ P(X=k) = 1/n, k = a,a+1,...,b
 
 ### 4. 假设检验功能 / Hypothesis Testing Features
 
+#### 算法原理 / Algorithm Principles
+
+假设检验回答的问题是：**这个样本数据是否有足够证据拒绝我们的先验假设？**
+
+**核心思想**：先假设原假设（H₀）为真，计算观测数据出现的概率（p 值）。若 p < α，则在 α 置信度下拒绝 H₀。
+
+**两类错误**：
+- **第一类错误（α）**：H₀ 为真，但我们错误拒绝了它 — 误报
+- **第二类错误（β）**：H₀ 为假，但我们错误接受了它 — 漏报
+
+α 和 β 此消彼长，实际中选择 α=0.05 是在「误报风险」和「检验功效」之间的折中。
+
+**为什么 p < 0.05 就拒绝？**
+
+p 值的含义是：若 H₀ 为真，观测到的数据（甚至更极端的数据）出现的概率。p=0.03 意味着：如果 H₀ 为真，重复抽样 100 次，大约有 3 次会观测到当前或更极端的结果。这个概率足够小，我们就怀疑 H₀ 可能不成立。
+
+**t 检验 vs Z 检验**：当总体标准差 σ 未知时（实际中几乎总是这样），用样本标准差 s 代替，得到 t 分布。样本量越大，t 分布越接近正态分布。
+
+**使用建议** / Usage Tips:
+
+| 场景 | 方法 | 何时用 |
+|------|------|--------|
+| 总体 σ 已知 | Z 检验 | 样本量 > 30，或已知分布 |
+| 总体 σ 未知 | t 检验 | 样本量任意，通常用这个 |
+| 检验方差 | 卡方检验 | 比较样本方差与目标值 |
+| 比较多组均值 | ANOVA | 3 组以上同时比较 |
+
 #### 均值检验 / Mean Testing
 
 ```java
@@ -653,6 +738,34 @@ TestingResult result = Stats.tester.testVarEqualWithChi2(h0, sample, confidence)
 ```
 
 ### 5. 参数估计功能 / Parameter Estimation Features
+
+#### 算法原理 / Algorithm Principles
+
+参数估计回答的问题是：**从样本数据推断总体参数的最佳估计值是多少？**
+
+**点估计 vs 区间估计**：
+- **点估计**：给出一个具体数值（如样本均值 `x̄ = 5.2`），但不知道误差范围
+- **区间估计**：给出一个区间（如 `[4.8, 5.6]`），并附带置信度（如 95%）
+
+**为什么用 n-1 而不是 n 做分母？**
+
+样本方差 `s² = Σ(xi - x̄)² / (n-1)` 中的 n-1 叫**自由度**。原因：n 个数据点中只有 n-1 个是「自由的」——知道均值后，最后一个数据点的偏差可由其余 n-1 个推出。n-1 的选择使得 s² 是总体方差的无偏估计（多次抽样，平均上方差等于真实方差）。
+
+**置信区间的直观含义**：
+
+「95% 置信区间为 [4.8, 5.6]」的意思**不是**「真实均值有 95% 概率落在 [4.8, 5.6]」。
+
+而是：如果重复抽样 100 次，构建 100 个置信区间，大约有 95 个会包含真实均值。**具体某一次**的区间，要么包含真实均值（1），要么不包含（0），没有概率可言。
+
+**Z 分布 vs t 分布**：
+
+| | Z 分布 | t 分布 |
+|--|--------|--------|
+| 何时用 | σ 已知（几乎不用）| σ 未知（几乎总是） |
+| 分母 | σ/√n（总体标准差）| s/√n（样本标准差）|
+| 样本量大时 | ≈ t 分布 | ≈ Z 分布 |
+
+实际中几乎总是用 t 分布（因为总体 σ 几乎永远不会已知）。
 
 #### 均值估计 / Mean Estimation
 
@@ -713,6 +826,34 @@ double pdfValue = mvt.pdf(x);
 
 ### 7. 高斯混合模型功能 / Gaussian Mixture Model Features
 
+#### 算法原理 / Algorithm Principles
+
+GMM（高斯混合模型）把数据看作由**多个高斯分布混合生成**的，每个分布代表一个潜在的「簇」。
+
+**EM 算法的工作原理**（分两步迭代）：
+
+1. **E 步（Expectation）**：假设当前高斯参数已知，计算每条数据属于每个簇的后验概率（软分配）
+2. **M 步（Maximization）**：根据 E 步的软分配，重新估计每个高斯分布的均值、方差、权重
+
+重复直到收敛（或达到最大迭代次数）。
+
+**为什么 GMM 比 K-Means 更强？**
+
+K-Means 是硬分配（每个点只属于一个簇），GMM 是软分配（给出概率）。这意味着：
+- GMM 能发现**大小不同、形状不同**的簇
+- GMM 给出每个点的**不确定性**（后验概率）
+- GMM 能建模**协方差**（椭圆形簇，而非圆形）
+
+**协方差类型选择**：
+
+| 类型 | 参数量 | 适用场景 |
+|------|--------|---------|
+| 球形（各向同性）| K×D | 簇大小相似、圆形 |
+| 对角协方差 | K×D² | 特征独立、轴对齐椭圆 |
+| 满协方差 | K×D²(D+1)/2 | 簇形状任意、相关特征 |
+
+**K 值选择**：用 BIC 或 AIC 评估：`BIC = -2·log(L) + k·log(n)`，越小越好。
+
 #### 创建和训练GMM / Create and Train GMM
 
 ```java
@@ -727,8 +868,8 @@ double[][] data = {
 };
 
 // 使用EM算法训练模型 / Train model using EM algorithm
-EMAlgorithm em = new EMAlgorithm();
-EMAlgorithm.EMResult result = em.fit(gmm, data);
+// 注：data 需为 List<IVector<Double>>；参数顺序为 (data, gmm)
+EMAlgorithm.EMResult result = em.fit(data, gmm);
 
 // 检查训练结果 / Check training results
 System.out.println("收敛: " + result.converged + " / Converged: " + result.converged);
@@ -739,15 +880,31 @@ System.out.println("对数似然: " + result.logLikelihood + " / Log-likelihood:
 #### 聚类和密度估计 / Clustering and Density Estimation
 
 ```java
+import com.yishape.lab.math.linalg.Linalg;
+import java.util.Arrays;
+import java.util.List;
+
+// 准备新数据（注意：predict/pdf/computePosteriors 均接收 IVector<Double>，不是 double[][]）
+List<IVector<Double>> newDataList = Arrays.asList(
+    Linalg.vector(new double[]{1.2, 2.3}),
+    Linalg.vector(new double[]{5.8, 6.9}),
+    Linalg.vector(new double[]{9.1, 10.2})
+);
+
 // 对新数据进行聚类 / Cluster new data
-double[][] newData = {{1.2, 2.3}, {5.8, 6.9}, {9.1, 10.2}};
-int[] clusterAssignments = gmm.predict(newData);
+// predict(IVector<Double>) 返回分量索引的向量；predictComponent 返回 int
+for (IVector<Double> v : newDataList) {
+    int cluster = gmm.predictComponent(v);
+    System.out.println("Cluster: " + cluster);
+}
 
-// 计算概率密度 / Calculate probability density
-double[] densities = gmm.score(newData);
+// 计算概率密度 / Calculate probability density（pdf 返回 double）
+double density = gmm.pdf(newDataList.get(0));
+System.out.println("PDF at first point: " + density);
 
-// 计算后验概率 / Calculate posterior probabilities
-double[][] posteriors = gmm.predictProbs(newData);
+// 计算后验概率 / Calculate posterior probabilities（返回 IVector<Double>）
+IVector<Double> posteriors = gmm.computePosteriors(newDataList.get(0));
+System.out.println("Posteriors: " + posteriors);
 ```
 
 ### 8. 方差分析功能 / Analysis of Variance (ANOVA) Features
@@ -992,9 +1149,9 @@ public class CustomDistribution implements IContinuousDistribution {
 | 多元均匀分布 / Multivariate uniform | `MultivariateDistributions.uniform(low, high)` | `scipy.stats.uniform(low, high)` | 多元均匀分布 / Multivariate uniform distribution |
 | **高斯混合模型 / Gaussian Mixture Model** | | | |
 | GMM创建 / GMM creation | `new GaussianMixtureModel(n_components, dimension)` | `sklearn.mixture.GaussianMixture(n_components)` | 高斯混合模型 / Gaussian Mixture Model |
-| EM算法训练 / EM training | `em.fit(gmm, data)` | `gmm.fit(data)` | EM算法训练 / EM algorithm training |
-| 聚类预测 / Cluster prediction | `gmm.predict(data)` | `gmm.predict(data)` | 聚类预测 / Cluster prediction |
-| 概率密度 / Probability density | `gmm.score(data)` | `gmm.score_samples(data)` | 概率密度计算 / Probability density calculation |
+| EM算法训练 / EM training | `em.fit(data, gmm)` | `gmm.fit(data)` | EM算法训练 / EM algorithm training |
+| 聚类预测 / Cluster prediction | `gmm.predictComponent(vector)` | `gmm.predict(data)` | 聚类预测 / Cluster prediction |
+| 概率密度 / Probability density | `gmm.pdf(vector)` | `gmm.score_samples(data)` | 概率密度计算 / Probability density calculation |
 
 ## 最佳实践建议 / Best Practices Recommendations
 
@@ -1034,3 +1191,55 @@ public class CustomDistribution implements IContinuousDistribution {
 **统计操作** - 概率论与数理统计的Java实现，让数据分析更简单！
 
 **Statsistics Operations** - Java implementation of probability theory and mathematical statistics, making data analysis simpler!
+
+## 常见问题 / FAQ
+
+### Q1: p 值很小（< 0.01），能说明什么？
+
+p < 0.01 意味着：如果原假设（H₀）为真，观测到这样极端数据的概率不到 1%。这提供了较强的证据反对 H₀。但**不等于证明 H₀ 绝对为假**——仍可能是小概率事件发生，或多重比较导致的假阳性。
+
+**建议**：
+- p 值接近 0.05 边界时，报告精确 p 值而非简单「显著/不显著」
+- 结合效应量（effect size）判断实际意义，而不仅仅看 p 值
+
+### Q2: 小样本（n < 30）能用 t 检验吗？
+
+**能**，t 检验本来就是为小样本设计的（用样本标准差代替未知的总体标准差）。但需满足：
+- 数据近似正态分布（可用 `Stats.norm().ksTest(sample)` 检验）
+- 无明显异常值（可先用箱线图检查）
+
+若数据严重非正态，改用非参数检验（如 Mann-Whitney U 检验）。
+
+### Q3: 样本量很大时，t 检验总是显著？
+
+**是的**，这是大样本的「假阳性」陷阱。样本量越大，标准误越小，t 统计量越大，即使效应量极小（如两组均值差 0.01）也会显著。
+
+**解决**：
+- 始终报告效应量（如 Cohen's d）
+- 用置信区间判断实际意义：区间是否包含有实际价值的范围
+- 设定最小显著差（MID）作为实际等值边界
+
+### Q4: 正态分布的置信区间和 t 检验的置信区间有什么区别？
+
+**没有本质区别**。t 检验用 t 分布计算置信区间，当样本量足够大时，t 分布 ≈ 正态分布，两者重合。区别在于：
+- Z 分布（正态）：σ 已知时用
+- t 分布：σ 未知（通常情况）时用，结果稍宽一些
+
+### Q5: GMM 聚类收敛很慢？
+
+**原因**：
+1. 组件数 K 过多，与数据规模不匹配
+2. 协方差矩阵满秩计算量大
+3. 初始化不当导致早熟收敛
+
+**解决**：
+1. 用 K-Means++ 结果作为 GMM 的初始化（`KMeansPlusPlus` → `GaussianMixtureModel`）
+2. 限制协方差类型（如只用对角协方差）
+3. 减少最大迭代次数 `em.setMaxIterations(100)` 并监控对数似然变化
+
+### Q6: 分布拟合后，如何判断哪个分布最好？
+
+不能只看 p 值（通过检验 ≠ 最好）。选型应综合：
+1. **AIC / BIC**：越小越好，同时惩罚参数数量
+2. **可视化**：Q-Q 图比较拟合分布与经验分布
+3. **物理意义**：根据数据生成机制选择分布（如等待时间 → 指数分布）

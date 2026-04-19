@@ -140,8 +140,9 @@ public class BasicMathOperationsExample {
         IMatrix<Double> scaled2 = matrix1.mmul(2.0);
         IMatrix<Double> shifted = matrix1.sub(10.0);                     // [[-9.0, -8.0], [-7.0, -6.0]]
 
-        // Frobenius 内积（对应元素相乘再求和）/ Frobenius inner product
-        Double frob = matrix1.dot(matrix2);
+        // Frobenius 内积（≈ np.sum(matrix1 * matrix2)）；二维矩阵乘请用 mmul（≈ np.dot(A,B)）
+        // Frobenius inner product; for 2D matmul use mmul (np.dot(A,B) for 2D arrays)
+        Double frob = matrix1.frobeniusInnerProduct(matrix2);
 
         // 元素级乘法（Hadamard）/ Element-wise product
         IMatrix<Double> hadamard = matrix1.multiply(matrix2);

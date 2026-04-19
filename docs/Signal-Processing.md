@@ -6,6 +6,23 @@ YiShape-Math 信号处理模块提供了一套完整的数字信号处理功能�
 
 The YiShape-Math signal processing module provides a complete set of digital signal processing functions, including signal generation, filtering, analysis, transformation and other core operations. The module uses factory and strategy patterns for design, providing good extensibility and flexibility.
 
+## 快速上手 / Quick Start
+
+```java
+// 生成信号 / Generate signals
+// sineWave(length, frequency, samplingRate, amplitude, phase)
+IVector<Double> sine = Signals.sineWave(1000, 50.0, 1000.0, 2.0, 0.0);  // 1000采样点，50Hz，1000Hz采样率
+IVector<Double> noise = Signals.whiteNoise(1000, 0.1);  // 1000点白噪声，功率0.1
+
+// 信号处理 / Process signals
+ButterworthFilter filter = new ButterworthFilter(4, 200.0, 1000.0);  // 4阶，截止200Hz，采样率1000Hz
+IVector<Double> filtered = filter.process(sine);
+
+// 频谱分析 / Spectrum analysis (FFT)
+ISignalTransform<Double, Double> fft = SignalProcessorFactory.getInstance().createTransform("fft");
+IVector<Double> spectrum = fft.process(filtered);
+```
+
 ## 核心类 / Core Classes
 
 ### Signals 类 / Signals Class
@@ -215,7 +232,7 @@ IVector<Double>sineWave=Signals.sineWave(
         );
 
 // 使用工厂模式创建信号生成器 / Using factory pattern to create signal generators
-import factory.com.yishape.lab.math.signal.SignalProcessorFactory;
+import com.yishape.lab.math.signal.factory.SignalProcessorFactory;
 import com.yishape.lab.math.signal.generation.ISignalGenerator;
 import com.yishape.lab.math.signal.generation.ISignalGenerator.SignalType;
 import com.yishape.lab.math.signal.generation.ISignalGenerator.SignalParameters;
@@ -405,6 +422,35 @@ IVector<Double> diracDelta = Signals.diracDelta(1000, 100, 1.0);
 
 ### 2. 信号滤波 / Signal Filtering
 
+#### 算法原理 / Algorithm Principles
+
+滤波的本质是**对信号每个时刻的值进行加权平均**，权重由滤波器类型决定。
+
+**时域视角**：
+- 移动平均：窗口内 N 个点取算术平均，等权重
+- 高斯滤波：窗口内按高斯分布加权（中间点权重大，两边小）
+- 中值滤波：取窗口内排序后的中值，**对脉冲噪声（尖刺）鲁棒**
+
+**频域视角**：
+滤波器让某些频率通过（通带），阻止另一些（阻带）：
+- **低通**：保留低频，去高频（平滑、去噪）
+- **高通**：保留高频，去低频（去基线漂移、边缘检测）
+- **带通**：只保留某一频段（提取特定信号成分）
+- **带阻**：去除某一频段（去除工频干扰 50/60Hz）
+
+**滤波器阶数的含义**：阶数越高，通带与阻带之间的过渡越陡峭（越接近理想滤波器），但计算量越大，数值稳定性可能下降。Butterworth 滤波器在通带内最平坦（无纹波）。
+
+**选型建议** / Filter Selection Guide:
+
+| 需求 | 推荐滤波器 |
+|------|----------|
+| 一般去噪、平滑 | 移动平均或高斯滤波 |
+| 去除脉冲噪声 | 中值滤波 |
+| 保留边缘同时去噪 | 高斯滤波（优于移动平均）|
+| 提取特定频段 | Butterworth 带通/带阻 |
+| 去除基线漂移 | Butterworth 高通 |
+| 跟踪时变信号最优估计 | 卡尔曼滤波 |
+
 #### 2.1 基础滤波方法 / Basic Filtering Methods
 
 ```java
@@ -419,6 +465,24 @@ IVector<Double> medianFiltered = Signals.medianFilter(signal, 5);
 // 高斯滤波 / Gaussian filtering
 IVector<Double> gaussianFiltered = Signals.gaussianFilter(signal, 1.0);
 ```
+
+#### 选型指南 / Filter Selection Guide
+
+| 需求 | 推荐滤波器 | 关键参数 |
+|------|----------|---------|
+| 一般去噪、平滑 | 移动平均 | 窗口大小（越大越平滑）|
+| 去除脉冲噪声（尖刺）| 中值滤波 | 窗口大小 |
+| 保留边缘同时去噪 | 高斯滤波 | σ 值（越大越平滑）|
+| 提取低频（去高频）| Butterworth 低通 | `cutoffFreq`, `order` |
+| 提取高频（去低频/基线漂移）| Butterworth 高通 | `cutoffFreq`, `order` |
+| 只保留某频段 | Butterworth 带通 | `lowFreq`, `highFreq`, `order` |
+| 去除工频干扰 50/60Hz | Butterworth 带阻 | `lowFreq`, `highFreq`, `order` |
+| 跟踪动态系统最优估计 | 卡尔曼滤波 | `processNoise`, `measurementNoise` |
+
+**参数快速参考**：
+- 截止频率 `cutoffFreq`：通常取信号最高频率的 1.2~2 倍
+- 采样率 `samplingRate`：必须 > 2× 信号最高频率（Nyquist）
+- 阶数 `order`：越高越陡峭，但计算量越大、稳定性越差（通常 2~6）
 
 #### 2.2 频域滤波方法 / Frequency Domain Filtering Methods
 
@@ -497,7 +561,7 @@ try {
 }
 
 // 使用滤波器工厂创建滤波器 / Using filter factory to create filters
-import factory.com.yishape.lab.math.signal.SignalProcessorFactory;
+import com.yishape.lab.math.signal.factory.SignalProcessorFactory;
 
 try {
     SignalProcessorFactory factory = SignalProcessorFactory.getInstance();
@@ -572,10 +636,10 @@ double snr=Signals.signalToNoiseRatio(originalSignal,noiseSignal);
         double psnr=Signals.peakSignalToNoiseRatio(originalSignal,reconstructedSignal);
 
 // 使用信号分析器接口的高级分析 / Advanced analysis using signal analyzer interface
-import analysis.com.yishape.lab.math.signal.ISignalAnalyzer;
-import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisType;
-import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisParameters;
-import analysis.com.yishape.lab.math.signal.ISignalAnalyzer.AnalysisResult;
+import com.yishape.lab.math.signal.analysis.ISignalAnalyzer;
+import com.yishape.lab.math.signal.analysis.ISignalAnalyzer.AnalysisType;
+import com.yishape.lab.math.signal.analysis.ISignalAnalyzer.AnalysisParameters;
+import com.yishape.lab.math.signal.analysis.ISignalAnalyzer.AnalysisResult;
 
 // 创建自定义信号分析器 / Create custom signal analyzer
 ISignalAnalyzer<Double> analyzer = new ISignalAnalyzer<Double>() {
@@ -799,11 +863,11 @@ IVector<Double>energy=WaveletAnalysis.waveletEnergyAnalysis(coeffs);
         IVector<Double>features=WaveletAnalysis.waveletFeatureExtraction(coeffs);
 
 // 使用信号变换接口进行小波分析 / Using signal transform interface for wavelet analysis
-import transform.com.yishape.lab.math.signal.ISignalTransform;
-import transform.com.yishape.lab.math.signal.ChirpZTransform;
-import core.com.yishape.lab.math.signal.ISignalProcessor;
-import core.com.yishape.lab.math.signal.AbstractSignalProcessor;
-import core.com.yishape.lab.math.signal.SignalProcessingException;
+import com.yishape.lab.math.signal.transform.ISignalTransform;
+import com.yishape.lab.math.signal.transform.ChirpZTransform;
+import com.yishape.lab.math.signal.core.ISignalProcessor;
+import com.yishape.lab.math.signal.core.AbstractSignalProcessor;
+import com.yishape.lab.math.signal.core.SignalProcessingException;
 
 // 创建自定义小波变换器 / Create custom wavelet transformer
 ISignalTransform<Double, WaveletAnalysis.WaveletCoefficients> waveletTransformer =
@@ -939,6 +1003,32 @@ println("自定义处理器处理失败: "+e.getMessage());
 ```
 
 ### 6. 快速傅里叶变换 (FFT) / Fast Fourier Transform (FFT)
+
+#### 算法原理 / Algorithm Principles
+
+FFT（快速傅里叶变换）是离散傅里叶变换（DFT）的加速算法，将 O(n²) 的复杂度降到 O(n log n)。
+
+**DFT 的核心思想**：任何周期信号都可以表示为一系列正弦和余弦波的叠加。DFT 把时域信号转换为频域，得到每个频率成分的幅度和相位。
+
+**为什么 FFT 输出不对称？**
+
+FFT 输出的是复数频谱，通常包含正频率和负频率两部分（共轭对称）。对于实数输入信号，正负频率的幅度互为镜像，相位互为相反数。直观上：一个实数正弦波 `sin(2πft)` 只对应频谱上频率 f 和 -f 两个冲激，而不是一个。这是数学上正交基变换的必然结果，**不是 bug**。
+
+实际应用中只取前半部分（N/2 个频率点）即可：
+- 第 0 点：直流分量（DC，偏置）
+- 第 1 ~ N/2-1 点：正频率部分
+- 第 N/2 点：Nyquist 频率（采样率的 1/2）
+
+**幅度谱的物理含义**：第 k 点对应的频率 = `k × Fs / N`，其中 Fs 是采样率，N 是信号长度。
+
+**使用建议** / Usage Tips:
+
+| 场景 | 建议 |
+|------|------|
+| 只想看正频率幅度 | 取前半段 `spectrum[0:length/2]` |
+| 信号有直流偏移（均值不为0）| 先去均值：`signal = signal - signal.mean()` |
+| 频谱分辨率不够 | 增加信号长度（补零不能提高真实分辨率，只能插值）|
+| 分析非平稳信号 | 用短时傅里叶变换（STFT）或小波分析 |
 
 #### 6.1 基本FFT操作 / Basic FFT Operations
 
@@ -1236,3 +1326,60 @@ public class RealTimeSignalProcessingExample {
 **信号处理** - 让数字信号处理更简单、更高效！
 
 **Signal Processing** - Making digital signal processing simpler and more efficient!
+
+## 常见问题 / FAQ
+
+### Q1: FFT 结果不对称，正负频率都有？
+
+**原因**：FFT 对实数输入的输出是共轭对称的，正负频率幅度相同，这是数学性质，不是错误。
+
+**解决**：如果只需要正频率，取前半段即可：
+```java
+int halfN = fftResult.length / 2;
+for (int i = 0; i < halfN; i++) {
+    System.out.println("频率 " + i + ": " + fftResult[i].magnitude());
+}
+```
+
+### Q2: 滤波后信号幅值变小了？
+
+**原因**：某些滤波器（如 Butterworth）在通带内有小于 1 的增益，导致整体幅值衰减。
+
+**解决**：滤波后进行幅值归一化：
+```java
+IVector<Double> filtered = filter.process(signal);
+double maxAmp = filtered.abs().max();
+IVector<Double> normalized = filtered.multiplyScalar(1.0 / maxAmp);
+```
+
+### Q3: 小波去噪后信号看起来还是噪？
+
+**排查顺序**：
+1. 阈值是否过大 → 尝试更小的软阈值：`WaveletAnalysis.waveletDenoising(signal, type, level, 0.1)`
+2. 小波类型是否合适 → `DAUBECHIES` 适合突变信号，`MORLET` 适合振荡信号
+3. 分解层数是否合适 → 层数过多会丢失细节，一般 3~5 层足够
+
+### Q4: 卡尔曼滤波和维纳滤波该用哪个？
+
+| 场景 | 推荐 |
+|------|------|
+| 跟踪动态系统（雷达、导航）| 卡尔曼滤波（状态空间模型）|
+| 已知噪声统计特性的平稳信号 | 维纳滤波 |
+| 实时跟踪、时变系统 | 卡尔曼滤波 |
+| 非平稳噪声 | 卡尔曼滤波（自适应）|
+
+### Q5: 采样率设多少合适？
+
+**Nyquist 采样定理**：采样率 Fs 必须 > 2 × 信号最高频率成分。
+
+- 若信号最高频率为 1000Hz，采样率至少 2000Hz，建议 4000Hz 以上
+- 采样率过低会导致频谱混叠（aliasing），信号失真无法恢复
+- 实际中通常取信号最高频率的 3~5 倍
+
+### Q6: 移动平均和中值滤波哪个好？
+
+| 噪声类型 | 推荐 |
+|---------|------|
+| 高斯噪声（连续随机扰动）| 移动平均或高斯滤波 |
+| 脉冲噪声（偶尔的尖刺）| 中值滤波 |
+| 混合噪声 | 先中值滤波去脉冲，再移动平均去高斯噪声 |

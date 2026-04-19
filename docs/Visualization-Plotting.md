@@ -6,6 +6,41 @@
 
 The data visualization package provides powerful charting capabilities, supporting various chart types including basic charts, polar coordinate charts, statistical charts, and special charts. This package provides intuitive visualization support for mathematical calculations and data analysis, converting complex numerical data into easily understandable graphical representations.
 
+## 快速上手 / Quick Start
+
+```java
+// 创建画布（宽800 × 高600）
+RerePlot plt = Plots.of(800, 600);
+
+// 线图 / Line chart
+IVector<Double> x = Linalg.arange(0.0, 10.0, 0.1);
+IVector<Double> y = x.map(v -> Math.sin(v));
+Plots.line(x, y).show();  // 显示正弦波
+
+// 散点图 / Scatter chart
+IVector<Double> xs = Linalg.randn(100);
+IVector<Double> ys = xs.map(v -> v * 2.5 + Math.random() * 0.5);
+Plots.scatter(xs, ys).show();
+
+// 柱状图 / Bar chart
+IVector<Double> sales = Linalg.vector(new double[]{120, 75, 230, 180, 90});
+Plots.bar(sales, List.of("Mon", "Tue", "Wed", "Thu", "Fri")).show();
+
+// 直方图 / Histogram
+IVector<Double> data = Linalg.randn(1000);
+Plots.hist(data, true).show();  // true = 显示拟合曲线
+
+// 饼图 / Pie chart
+IVector<Double> shares = Linalg.vector(new double[]{35, 25, 20, 12, 8});
+Plots.pie(shares, List.of("A", "B", "C", "D", "E")).show();
+
+// 箱线图 / Box plot
+IVector<Double> group1 = Linalg.randn(50).map(v -> v * 10 + 70);
+Plots.boxplot(group1, List.of("Control")).show();
+
+// 保存为 HTML（交互式，可缩放）
+Plots.line(x, y).saveAsHtml("sine_wave.html");
+```
 
 #### 图表展示 / Chart Gallery
 

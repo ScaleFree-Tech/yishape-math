@@ -6,6 +6,23 @@
 
 The `RereMathUtil` class provides various mathematical utility methods including type conversion, random number generation, mathematical functions, and more. These utility methods provide foundational support for vector and matrix operations, ensuring data type consistency and operational convenience.
 
+## 快速上手 / Quick Start
+
+```java
+// 类型转换 / Type conversion
+float[] farr = RereMathUtil.floatToDouble(new float[]{1.0f, 2.0f}); // → double[]
+double[] darr = RereMathUtil.intToDouble(new int[]{1, 2, 3});      // → double[]
+
+// 生成随机数 / Random numbers
+float[] randoms = RereMathUtil.generateRandomFloats(100);          // 100个随机float
+double sample = RereMathUtil.normalSample(0.0, 1.0);               // 正态分布采样
+
+// 特殊数学函数 / Special math functions
+double gamma5 = RereMathUtil.gamma(5.0);            // Γ(5) = 24
+double sigmoid0 = RereMathUtil.sigmoid(0.0);         // sigmoid(0) = 0.5
+boolean close = RereMathUtil.isClose(1.0, 1.0001);  // 浮点比较
+```
+
 ## 核心类 / Core Class
 
 ### RereMathUtil 类 / RereMathUtil Class
@@ -84,52 +101,7 @@ double normalSample = RereMathUtil.normalSample(0.0, 1.0);  // 标准正态分�
 double normalSampleCustom = RereMathUtil.normalSample(5.0, 2.0);  // 均值5，标准差2 / Mean 5, std dev 2
 ```
 
-### 3. 数学函数 / Mathematical Functions
-
-#### 基本数学函数 / Basic Mathematical Functions
-
-```java
-// 平方 / Square
-float squared = RereMathUtil.square(5.0f);                // 25.0
-
-// 平方根 / Square root
-float sqrt = RereMathUtil.sqrt(16.0f);                    // 4.0
-
-// 绝对值 / Absolute value
-float abs = RereMathUtil.abs(-5.0f);                      // 5.0
-
-// 最大值 / Maximum
-float max = RereMathUtil.max(1.0f, 2.0f, 3.0f);         // 3.0
-
-// 最小值 / Minimum
-float min = RereMathUtil.min(1.0f, 2.0f, 3.0f);         // 1.0
-```
-
-#### 三角函数 / Trigonometric Functions
-
-```java
-// 正弦 / Sine
-float sin = RereMathUtil.sin(Math.PI / 2);                // 1.0
-
-// 余弦 / Cosine
-float cos = RereMathUtil.cos(0);                          // 1.0
-
-// 正切 / Tangent
-float tan = RereMathUtil.tan(Math.PI / 4);                // 1.0
-```
-
-#### 指数和对数函数 / Exponential and Logarithmic Functions
-
-```java
-// 指数 / Exponential
-float exp = RereMathUtil.exp(1.0f);                       // 2.7182818
-
-// 自然对数 / Natural logarithm
-float log = RereMathUtil.log(Math.E);                     // 1.0
-
-// 以10为底的对数 / Base-10 logarithm
-float log10 = RereMathUtil.log10(100.0f);                 // 2.0
-```
+### 3. 组合数学 / Combinatorics
 
 ### 4. 概率分布相关数学函数 / Probability Distribution Mathematical Functions
 
@@ -186,69 +158,6 @@ double logFactorial = RereMathUtil.logFactorial(100);
 double stirling = RereMathUtil.stirlingNumber2(5, 3);      // S(5,3)
 ```
 
-### 6. 统计函数 / Statistical Functions
-
-#### 基本统计 / Basic Statistics
-
-```java
-// 求和 / Sum
-float sum = RereMathUtil.sum(new float[]{1, 2, 3, 4, 5}); // 15.0
-
-// 均值 / Mean
-float mean = RereMathUtil.mean(new float[]{1, 2, 3, 4, 5}); // 3.0
-
-// 方差 / Variance
-float variance = RereMathUtil.variance(new float[]{1, 2, 3, 4, 5}); // 2.0
-
-// 标准差 / Standard deviation
-float std = RereMathUtil.std(new float[]{1, 2, 3, 4, 5}); // 1.4142135
-```
-
-#### 最值函数 / Min/Max Functions
-
-```java
-// 数组最大值 / Array maximum
-float max = RereMathUtil.max(new float[]{1, 5, 3, 9, 2}); // 9.0
-
-// 数组最小值 / Array minimum
-float min = RereMathUtil.min(new float[]{1, 5, 3, 9, 2}); // 1.0
-
-// 最大值索引 / Index of maximum
-int maxIndex = RereMathUtil.argmax(new float[]{1, 5, 3, 9, 2}); // 3
-
-// 最小值索引 / Index of minimum
-int minIndex = RereMathUtil.argmin(new float[]{1, 5, 3, 9, 2}); // 0
-```
-
-### 7. 数组操作 / Array Operations
-
-#### 数组复制和填充 / Array Copy and Fill
-
-```java
-// 复制数组 / Copy array
-float[] original = {1, 2, 3, 4, 5};
-float[] copied = RereMathUtil.copy(original);
-
-// 填充数组 / Fill array
-float[] filled = RereMathUtil.fill(5, 10.0f);            // [10.0, 10.0, 10.0, 10.0, 10.0]
-
-// 范围数组 / Range array
-float[] range = RereMathUtil.range(5);                    // [0.0, 1.0, 2.0, 3.0, 4.0]
-float[] rangeWithStep = RereMathUtil.range(0, 10, 2);    // [0.0, 2.0, 4.0, 6.0, 8.0]
-```
-
-#### 数组变换 / Array Transformations
-
-```java
-// 数组转置 / Array transpose
-float[][] matrix = {{1, 2, 3}, {4, 5, 6}};
-float[][] transposed = RereMathUtil.transpose(matrix);
-
-// 数组重塑 / Array reshape
-float[] flat = {1, 2, 3, 4, 5, 6};
-float[][] reshaped = RereMathUtil.reshape(flat, 2, 3);  // 2x3矩阵 / 2x3 matrix
-```
-
 ## 使用示例 / Usage Examples
 
 ### 示例1：类型转换 / Example 1: Type Conversion
@@ -295,28 +204,7 @@ for (int i = 0; i < size; i++) {
 }
 ```
 
-### 示例3：数学函数应用 / Example 3: Mathematical Function Application
-
-```java
-// 数学函数计算 / Mathematical function calculations
-float x = 2.0f;
-
-// 基本函数 / Basic functions
-float xSquared = RereMathUtil.square(x);                  // 4.0
-float xSqrt = RereMathUtil.sqrt(x);                       // 1.4142135
-float xAbs = RereMathUtil.abs(-x);                        // 2.0
-
-// 三角函数 / Trigonometric functions
-float xSin = RereMathUtil.sin(x);                         // 0.9092974
-float xCos = RereMathUtil.cos(x);                         // -0.4161468
-float xTan = RereMathUtil.tan(x);                         // -2.1850398
-
-// 指数和对数 / Exponential and logarithmic
-float xExp = RereMathUtil.exp(x);                         // 7.389056
-float xLog = RereMathUtil.log(x);                         // 0.6931472
-```
-
-### 示例4：概率分布和组合数学 / Example 4: Probability Distribution and Combinatorics
+### 示例3：概率分布与特殊函数 / Example 3: Probability Distribution and Special Functions
 
 ```java
 // 概率分布函数 / Probability distribution functions
@@ -329,84 +217,61 @@ double invNormal = RereMathUtil.inverseNormalCDF(0.95);        // 95%分位数
 long combination = RereMathUtil.combination(10, 3);            // C(10,3) = 120
 long factorial = RereMathUtil.factorial(10);                   // 10! = 3628800
 double logCombination = RereMathUtil.logCombination(100, 50);  // 避免溢出
-double stirling = RereMathUtil.stirlingNumber2(5, 3);          // S(5,3)
 
 // 不完全函数 / Incomplete functions
-double incompleteGamma = RereMathUtil.incompleteGamma(2.0, 1.0);
 double incompleteBeta = RereMathUtil.incompleteBeta(2.0, 3.0, 0.5);
-double regIncompleteBeta = RereMathUtil.regularizedIncompleteBeta(2.0, 3.0, 0.5);
+double incompleteGamma = RereMathUtil.incompleteGamma(2.0, 1.0);
 ```
 
-### 示例5：统计计算 / Example 5: Statistical Calculations
+### 示例4：特殊函数应用 / Example 4: Special Function Applications
 
 ```java
-// 数据集 / Dataset
-float[] data = {12.5f, 15.2f, 18.7f, 14.3f, 16.8f, 13.9f, 17.1f, 19.4f};
+// 计算 stirling 数 / Calculate Stirling numbers
+double stirling = RereMathUtil.stirlingNumber2(5, 3);          // S(5,3)
 
-// 基本统计 / Basic statistics
-float totalSum = RereMathUtil.sum(data);                  // 127.9
-float average = RereMathUtil.mean(data);                  // 15.9875
-float dataVariance = RereMathUtil.variance(data);         // 6.234375
-float dataStd = RereMathUtil.std(data);                   // 2.496873
+// 概率分布采样 / Probability distribution sampling
+double sample = RereMathUtil.normalSample(0.0, 1.0);        // 标准正态采样
+
+// sigmoid 函数 / Sigmoid function
+double sig = RereMathUtil.sigmoid(0.0);                       // 0.5
+
+// 安全类型转换 / Safe type conversion
+double safe = RereMathUtil.safeDoubleValue(null, 0.0);       // 0.0 (默认值)
+
+// 浮点近似比较 / Floating point approximate comparison
+boolean close = RereMathUtil.isClose(1.0, 1.00000001);      // true
+```
 
 // 最值 / Min/Max
-float maxValue = RereMathUtil.max(data);                  // 19.4
-float minValue = RereMathUtil.min(data);                  // 12.5
-int maxIndex = RereMathUtil.argmax(data);                 // 7
-int minIndex = RereMathUtil.argmin(data);                 // 0
-```
-
-### 示例6：数组操作 / Example 6: Array Operations
+### 示例5：类型转换综合 / Example 5: Type Conversion Comprehensive
 
 ```java
-// 数组操作 / Array operations
-float[] original = {1, 2, 3, 4, 5, 6};
+// 类型转换示例 / Type conversion examples
+double[] fromFloat = RereMathUtil.floatToDouble(new float[]{1.0f, 2.0f, 3.0f});
+float[] fromDouble = RereMathUtil.doubleToFloat(new double[]{1.0, 2.0, 3.0});
 
-// 复制数组 / Copy array
-float[] copied = RereMathUtil.copy(original);
-
-// 填充数组 / Fill array
-float[] filled = RereMathUtil.fill(5, 10.0f);            // [10.0, 10.0, 10.0, 10.0, 10.0]
-
-// 范围数组 / Range array
-float[] range = RereMathUtil.range(0, 10, 2);            // [0.0, 2.0, 4.0, 6.0, 8.0]
-
-// 数组重塑 / Array reshape
-float[][] matrix = RereMathUtil.reshape(original, 2, 3); // [[1, 2, 3], [4, 5, 6]]
-
-// 矩阵转置 / Matrix transpose
-float[][] transposed = RereMathUtil.transpose(matrix);    // [[1, 4], [2, 5], [3, 6]]
+// 包装类与基本类型互转 / Wrapper to primitive and back
+Float[] wrappers = {1.0f, 2.0f, 3.0f};
+float[] primitives = RereMathUtil.toPrimitive(wrappers);
+Float[] backToWrappers = RereMathUtil.toClassArray(primitives);
 ```
 
-### 示例7：综合应用 / Example 7: Comprehensive Application
+### 示例6：随机数与组合数学 / Example 6: Random Numbers and Combinatorics
 
 ```java
-// 数据预处理流程 / Data preprocessing pipeline
-int sampleSize = 1000;
+// 生成随机整数数组（指定范围）/ Generate random int array with range
+int[] randomInts = RereMathUtil.generateRandomInts(42, 1, 100, 10); // 种子42，1-100之间10个数
 
-// 1. 生成随机数据 / Generate random data
-float[] rawData = RereMathUtil.generateRandomFloats(sampleSize);
-// 将数据缩放到[-100, 100]范围 / Scale data to [-100, 100] range
-for (int i = 0; i < sampleSize; i++) {
-    rawData[i] = (rawData[i] - 0.5f) * 200.0f;
-}
+// 生成随机 float 数组（带种子）/ Generate random float array with seed
+float[] randomFloats = RereMathUtil.generateRandomFloats(42, 100); // 种子42，100个数
 
-// 2. 计算统计信息 / Calculate statistics
-float dataMean = RereMathUtil.mean(rawData);
-float dataStd = RereMathUtil.std(rawData);
+// 组合数 / Combination
+long comb = RereMathUtil.combination(100, 50); // C(100,50)，注意溢出风险
+double logComb = RereMathUtil.logCombination(100, 50); // 使用对数避免溢出
 
-// 3. 标准化数据 / Standardize data
-float[] standardized = new float[sampleSize];
-for (int i = 0; i < sampleSize; i++) {
-    standardized[i] = (rawData[i] - dataMean) / dataStd;
-}
-
-// 4. 验证标准化结果 / Verify standardization results
-float stdMean = RereMathUtil.mean(standardized);          // 应该接近0 / Should be close to 0
-float stdStd = RereMathUtil.std(standardized);            // 应该接近1 / Should be close to 1
-
-System.out.println("标准化后均值: " + stdMean);            // Standardized mean
-System.out.println("标准化后标准差: " + stdStd);          // Standardized standard deviation
+// 阶乘与 Stirling 数 / Factorial and Stirling numbers
+long fact10 = RereMathUtil.factorial(10); // 10! = 3628800
+double stirling = RereMathUtil.stirlingNumber2(5, 3); // 第二类 Stirling 数 S(5,3)
 ```
 
 ## 性能特性 / Performance Features
@@ -465,3 +330,40 @@ System.out.println("标准化后标准差: " + stdStd);          // Standardized
 **数学工具类** - 数学计算的基础工具，让复杂操作更简单！
 
 **Math Utilities** - The foundational tools for mathematical computing, making complex operations simpler!
+
+## 常见问题 / FAQ
+
+### Q1: `RereMathUtil` 和 `Stats` 有什么区别？
+
+| 类 | 职责 | 示例 |
+|----|------|------|
+| `RereMathUtil` | 低级数学函数（数学库级别） | `gamma()`, `sigmoid()`, `isClose()` |
+| `Stats` | 概率分布和统计推断 | `Stats.norm()`, `Stats.tester` |
+
+简单记忆：**有「分布」「检验」「估计」需求的用 `Stats`，其余底层数学用 `RereMathUtil`**。
+
+### Q2: `isClose(a, b)` 和 `a == b` 有什么区别？
+
+```java
+// == 比较精确相等，对浮点数几乎永不成立
+boolean eq = (0.1 + 0.2 == 0.3);        // → false（浮点误差）
+
+// isClose 允许一定相对/绝对误差
+boolean close = RereMathUtil.isClose(0.1 + 0.2, 0.3);  // → true
+boolean close2 = RereMathUtil.isClose(1.0, 1.0001, 0.001, 0.0);  // 自定义容差
+```
+
+### Q3: 已有 `Stats.norm()`，`RereMathUtil.randn()` 和 `Stats.norm().sample()` 该用哪个？
+
+| 需求 | 方法 | 说明 |
+|------|------|------|
+| 生成 n 个标准正态随机数数组 | `Linalg.randn(n)` | 最简洁 |
+| 生成 n 个一般正态随机数数组 | `Linalg.randn(n, mean, std)` | 最简洁 |
+| 单次采样（概率分布接口）| `Stats.norm().sample()` | 可复用分布对象 |
+| 底层 float 数组 | `RereMathUtil.randn(n)` 或 `RereMathUtil.randn(seed, n)` | 确定性（可复现）|
+
+### Q4: `normalSample` 和 `sigmoid` 属于同一类工具吗？
+
+不属于。`normalSample` 是**统计学采样**（依赖概率分布），`sigmoid` 是**确定性数学函数**。它们分别对应：
+- `RereMathUtil.normalSample` → 正态分布随机采样
+- `RereMathUtil.sigmoid` → 激活函数 `1/(1+e^(-x))`

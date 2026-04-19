@@ -13,7 +13,7 @@ This document provides detailed usage examples for the `com.yishape.lab.audio` p
 ```java
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.UnsupportedAudioFormatException;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 
 import java.io.IOException;
 
@@ -52,7 +52,7 @@ public class AudioBasicExample {
 ### 音频格式转换 / Audio Format Conversion
 
 ```java
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioFormat;
 
@@ -90,8 +90,8 @@ public class AudioFormatConversionExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
-import analysis.audio.com.yishape.lab.IAudioAnalyzer;
+import com.yishape.lab.audio.Audios;
+import com.yishape.lab.audio.analysis.IAudioAnalyzer;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.util.Tuple2;
 
@@ -148,7 +148,7 @@ public class AudioAnalysisExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 import feature.audio.com.yishape.lab.IAudioFeatureExtractor;
 import feature.audio.com.yishape.lab.AudioFeatureResult;
 import com.yishape.lab.math.linalg.IVector;
@@ -212,9 +212,9 @@ public class AudioFeatureExtractionExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
-import filter.audio.com.yishape.lab.IBaseAudioFilter;
-import effect.audio.com.yishape.lab.IAudioEffect;
+import com.yishape.lab.audio.Audios;
+import com.yishape.lab.audio.filter.IBaseAudioFilter;
+import com.yishape.lab.audio.effect.IAudioEffect;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -261,8 +261,8 @@ public class AudioFilteringEffectsExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
-import enhancement.audio.com.yishape.lab.IAudioEnhancer;
+import com.yishape.lab.audio.Audios;
+import com.yishape.lab.audio.enhancement.IAudioEnhancer;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -318,7 +318,7 @@ public class AudioEnhancementExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.AudioPlots;
+import com.yishape.lab.audio.AudioPlots;
 import com.yishape.lab.math.viz.IPlot;
 
 import java.util.List;
@@ -376,8 +376,8 @@ public class AudioVisualizationExample {
 
 ```java
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.AudioPlots;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.AudioPlots;
+import com.yishape.lab.audio.Audios;
 import com.yishape.lab.math.viz.IPlot;
 
 public class AudioComparisonVisualizationExample {
@@ -420,7 +420,7 @@ public class AudioComparisonVisualizationExample {
 ### 7.1 批量训练i-vector向量嵌入模型 / Batch Training of i-vector Embedding Model
 
 ```java
-import embedding.audio.com.yishape.lab.IVectorEmbedding;
+import com.yishape.lab.audio.embedding.IVectorEmbedding;
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioUtil;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -538,7 +538,7 @@ public class IVectorTrainingExample {
 ### 7.2 增量训练大规模音频文件的i-Vector向量嵌入模型 / Incremental Training of i-Vector-based Embedding model for Large-scale Audio Files
 
 ```java
-import embedding.audio.com.yishape.lab.OnlineIVectorEmbedding;
+import com.yishape.lab.audio.embedding.OnlineIVectorEmbedding;
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioUtil;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -700,7 +700,7 @@ public class RealAudioEmbeddingExample {
 ```java
 
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 import com.yishape.lab.math.linalg.IVector;
 
 public class AudioSegmentationExample {
@@ -759,7 +759,7 @@ public class AudioSegmentationExample {
 ```java
 
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 
 public class AudioMixingFadeExample {
     public static void main(String[] args) {
@@ -820,7 +820,7 @@ public class AudioMixingFadeExample {
 
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioFormat;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -925,8 +925,8 @@ public class BatchAudioProcessingExample {
 
 import core.audio.com.yishape.lab.AudioData;
 import core.audio.com.yishape.lab.AudioStatistics;
-import audio.com.yishape.lab.Audios;
-import audio.com.yishape.lab.AudioPlots;
+import com.yishape.lab.audio.Audios;
+import com.yishape.lab.audio.AudioPlots;
 import com.yishape.lab.math.viz.IPlot;
 
 import java.io.FileWriter;
@@ -1050,7 +1050,7 @@ public class AudioQualityAnalysisExample {
 ```java
 
 import core.audio.com.yishape.lab.AudioData;
-import audio.com.yishape.lab.Audios;
+import com.yishape.lab.audio.Audios;
 
 public class MemoryOptimizedProcessingExample {
     public static void main(String[] args) {

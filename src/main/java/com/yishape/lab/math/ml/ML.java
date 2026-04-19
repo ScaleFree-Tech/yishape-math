@@ -229,17 +229,18 @@ public class ML {
     /**
      * 从本地保存的分类器模型文件中加载恢复
      *
-     * @param modelPath
-     * @return
+     * @param modelPath 模型文件路径 / Model file path
+     * @return 加载的分类器 / Loaded classifier
+     * @throws IllegalStateException 如果加载失败 / if loading fails
      */
     public static IClassifier loadClassifier(String modelPath) {
         try {
             ISerializableModel model = ISerializableModel.load(modelPath);
             return (IClassifier) model;
         } catch (Exception e) {
-//            log.error("exception", e);
+            log.error("Failed to load classifier from: {}", modelPath, e);
+            throw new IllegalStateException("Failed to load classifier from: " + modelPath, e);
         }
-        return null;
     }
     
     /**

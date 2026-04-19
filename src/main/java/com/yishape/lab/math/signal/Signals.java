@@ -13,6 +13,8 @@ import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.viz.IPlot;
 import com.yishape.lab.math.signal.analysis.ISignalAnalyzer;
 import com.yishape.lab.math.signal.filter.ISignalFilter;
+import com.yishape.lab.math.signal.filter.ButterworthFilter;
+import com.yishape.lab.math.signal.filter.GaussianFilter;
 import com.yishape.lab.math.signal.transform.ISignalTransform;
 import com.yishape.lab.math.signal.generation.ISignalGenerator;
 import com.yishape.lab.math.signal.factory.SignalProcessorFactory;
@@ -144,10 +146,73 @@ public class Signals {
     
     /**
      * 生成粉红噪声信号 / Generate Pink Noise Signal
+     * <p>
+     * 使用Voss-McCartney算法生成粉红噪声。粉红噪声的功率谱密度与频率成反比（1/f），
+     * 在人类听觉和音乐处理中具有重要意义。
+     * </p>
+     * <p>
+     * Generates pink noise using the Voss-McCartney algorithm. Pink noise has a power spectral
+     * density proportional to 1/f, which is significant in human hearing and music processing.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param power 噪声功率 / Noise power
+     * @return 粉红噪声信号 / Pink noise signal
      */
     public static IVector<Double> pinkNoise(int length, double power) {
-        // For now, use white noise as approximation
-        return whiteNoise(length, power);
+        // Voss-McCartney algorithm for pink noise generation
+        // Number of octaves (typically 16-20 is sufficient for audio)
+        int octaves = 16;
+
+        // Arrays to store white noise for each octave and running sums
+        double[] whiteOctaves = new double[octaves];
+        double[] pinkNoiseData = new double[length];
+
+        // Initialize white octaves with random values
+        java.util.Random random = new java.util.Random();
+
+        // Calculate the target standard deviation from power
+        double targetStd = Math.sqrt(power);
+
+        // For each output sample
+        for (int i = 0; i < length; i++) {
+            // Find which octaves to update (based on binary representation)
+            int mask = i + 1;
+            int octave = 0;
+
+            while ((mask & 1) == 0 && octave < octaves - 1) {
+                mask >>= 1;
+                octave++;
+            }
+
+            // Generate new white noise for this octave
+            whiteOctaves[octave] = random.nextGaussian() * targetStd;
+
+            // Sum all octaves
+            double sum = 0;
+            for (int j = 0; j < octaves; j++) {
+                sum += whiteOctaves[j];
+            }
+
+            // Add a fresh white noise component
+            sum += random.nextGaussian() * targetStd * 0.5;
+
+            pinkNoiseData[i] = sum;
+        }
+
+        // Normalize to match target power
+        double actualPower = 0;
+        for (int i = 0; i < length; i++) {
+            actualPower += pinkNoiseData[i] * pinkNoiseData[i];
+        }
+        actualPower /= length;
+        double scale = targetStd / Math.sqrt(actualPower);
+
+        for (int i = 0; i < length; i++) {
+            pinkNoiseData[i] *= scale;
+        }
+
+        return IVector.of(pinkNoiseData);
     }
     
     // ========== 复合信号生成方法 / Composite Signal Generation Methods ==========
@@ -318,21 +383,23 @@ public class Signals {
      * 高斯滤波器 / Gaussian Filter
      */
     public static IVector<Double> gaussianFilter(IVector<Double> signal, double sigma) {
-        try {
-            ISignalFilter<Double> filter = SignalProcessorFactory.getInstance().createFilter("gaussian");
-            // Set filter parameters if needed
-            return filter.process(signal);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to apply gaussian filter", e);
+        int defaultKernelSize = (int) Math.ceil(6 * sigma);
+        if (defaultKernelSize % 2 == 0) {
+            defaultKernelSize++;
         }
+        return gaussianFilter(signal, sigma, defaultKernelSize);
     }
-    
+
     /**
      * 高斯滤波器 / Gaussian Filter
      */
     public static IVector<Double> gaussianFilter(IVector<Double> signal, double sigma, int kernelSize) {
-        // Use the simpler version for now
-        return gaussianFilter(signal, sigma);
+        try {
+            GaussianFilter filter = new GaussianFilter(sigma, kernelSize);
+            return filter.filter(signal);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to apply gaussian filter", e);
+        }
     }
     
     /**
@@ -350,10 +417,28 @@ public class Signals {
     
     /**
      * 巴特沃斯高通滤波器 / Butterworth High-pass Filter
+     * <p>
+     * 使用巴特沃斯滤波器实现高通滤波，滤除低频成分，保留高频成分。
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param cutoffFreq 截止频率 / Cutoff frequency
+     * @param samplingRate 采样率 / Sampling rate
+     * @param order 滤波器阶数 / Filter order
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> butterworthHighPass(IVector<Double> signal, double cutoffFreq, double samplingRate, int order) {
-        // For now, use the low-pass version as approximation
-        return butterworthLowPass(signal, cutoffFreq, samplingRate, order);
+        try {
+            ButterworthFilter filter = new ButterworthFilter(
+                    ISignalFilter.FilterType.HIGH_PASS,
+                    order,
+                    new double[]{cutoffFreq},
+                    samplingRate
+            );
+            return filter.filter(signal);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to apply butterworth high-pass filter", e);
+        }
     }
     
     /**
@@ -449,20 +534,42 @@ public class Signals {
     public static IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2) {
         try {
             ISignalAnalyzer<Double> analyzer = SignalProcessorFactory.getInstance().createAnalyzer("crosscorr");
-            ISignalAnalyzer.AnalysisResult<IVector<Double>> result = 
+            ISignalAnalyzer.AnalysisResult<IVector<Double>> result =
                 analyzer.analyze(signal1, ISignalAnalyzer.AnalysisType.CROSS_CORRELATION);
             return result.getResult();
         } catch (Exception e) {
             throw new RuntimeException("Failed to calculate cross-correlation", e);
         }
     }
-    
+
     /**
-     * 计算两个信号的互相关函数 / Calculate Cross-correlation Function
+     * 计算两个信号的互相关函数（带最大滞后限制）/ Calculate Cross-correlation Function with max lag
      */
     public static IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2, int maxLag) {
-        // Use the simpler version for now
-        return crossCorrelation(signal1, signal2);
+        // First get the full cross-correlation from the analyzer
+        IVector<Double> fullCorr = crossCorrelation(signal1, signal2);
+        int fullLength = fullCorr.length();
+
+        if (fullLength <= 2 * maxLag + 1) {
+            return fullCorr;
+        }
+
+        // Extract the window around center (zero lag position)
+        int center = fullLength / 2;
+        int halfWindow = maxLag;
+
+        int start = Math.max(0, center - halfWindow);
+        int end = Math.min(fullLength, center + halfWindow + 1);
+
+        double[] truncated = new double[2 * maxLag + 1];
+        int destStart = start <= center - halfWindow ? 0 : center - halfWindow - start;
+        int srcLen = end - start;
+
+        for (int i = 0; i < srcLen && (destStart + i) < truncated.length; i++) {
+            truncated[destStart + i] = fullCorr.get(start + i);
+        }
+
+        return IVector.of(truncated);
     }
     
     /**
@@ -495,8 +602,66 @@ public class Signals {
      */
     public static IMatrix<Double> shortTimeFourierTransform(
             IVector<Double> signal, int windowSize, int hopSize, double samplingRate) {
-        // This is a complex method that would need a dedicated transformer
-        throw new UnsupportedOperationException("STFT not yet implemented through factory");
+        int signalLength = signal.length();
+
+        int numFrames = (int) Math.ceil((double)(signalLength - windowSize) / hopSize) + 1;
+        int numFreqBins = windowSize / 2 + 1;
+
+        double[][] realParts = new double[numFreqBins][numFrames];
+        double[][] imagParts = new double[numFreqBins][numFrames];
+
+        double[] window = new double[windowSize];
+        for (int i = 0; i < windowSize; i++) {
+            window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (windowSize - 1)));
+        }
+
+        for (int frame = 0; frame < numFrames; frame++) {
+            int startIdx = frame * hopSize;
+
+            double[] frameData = new double[windowSize];
+            for (int i = 0; i < windowSize; i++) {
+                int idx = startIdx + i;
+                if (idx < signalLength) {
+                    frameData[i] = signal.get(idx) * window[i];
+                } else {
+                    frameData[i] = 0;
+                }
+            }
+
+            int fftSize = nextPowerOf2(windowSize);
+            Complex[] complexFrame = new Complex[fftSize];
+            for (int i = 0; i < windowSize; i++) {
+                complexFrame[i] = new Complex(frameData[i], 0);
+            }
+            for (int i = windowSize; i < fftSize; i++) {
+                complexFrame[i] = new Complex(0, 0);
+            }
+
+            Complex[] fftResult = RereFFT.fft(complexFrame);
+
+            for (int i = 0; i < numFreqBins; i++) {
+                realParts[i][frame] = fftResult[i].real;
+                imagParts[i][frame] = fftResult[i].imag;
+            }
+        }
+
+        double[][] result = new double[numFreqBins * 2][numFrames];
+        for (int f = 0; f < numFreqBins; f++) {
+            for (int fr = 0; fr < numFrames; fr++) {
+                result[2 * f][fr] = realParts[f][fr];
+                result[2 * f + 1][fr] = imagParts[f][fr];
+            }
+        }
+
+        return IMatrix.of(result);
+    }
+
+    private static int nextPowerOf2(int n) {
+        int power = 1;
+        while (power < n) {
+            power *= 2;
+        }
+        return power;
     }
     
     /**

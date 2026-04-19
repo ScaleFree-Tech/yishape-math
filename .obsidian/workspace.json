@@ -1,0 +1,216 @@
+{
+  "main": {
+    "id": "c86a3d845cc1d1d5",
+    "type": "split",
+    "children": [
+      {
+        "id": "0369ca42adbaa35e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7e543063339e6e72",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "新标签页"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7445bd2727cf562a",
+    "type": "split",
+    "children": [
+      {
+        "id": "03cd5c9855ad5267",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e200c9a406c1c520",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "1b2d695272439d4f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "6bf2cc220a1611ad",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "921a47296738f076",
+    "type": "split",
+    "children": [
+      {
+        "id": "89084e1adc6df18b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0cc740154148d791",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "book/Chapter1_LinearAlgebra/1.1.Vector.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "1.1.Vector 的反向链接列表"
+            }
+          },
+          {
+            "id": "30b136a3f32f6284",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "book/Chapter1_LinearAlgebra/1.1.Vector.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "1.1.Vector 的出链列表"
+            }
+          },
+          {
+            "id": "87403ed4372246c4",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "b90815b101bdb3e5",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "08b373023b48cb33",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "book/Chapter1_LinearAlgebra/1.1.Vector.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "1.1.Vector 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "7e543063339e6e72",
+  "lastOpenFiles": [
+    "book/Chapter1_LinearAlgebra/1.6.Numerical stability.md",
+    "book/Chapter5_Machine_learning/5.2. Classification.md",
+    "book/Chapter5_Machine_learning/5.1. Regression.md",
+    "book/Chapter4_Statistics/4.1.md",
+    "book/Chapter2_DataFrame/2.5.md",
+    "book/Chapter2_DataFrame/2.4.md",
+    "book/Chapter2_DataFrame/2.3.md",
+    "book/Chapter2_DataFrame/2.2.md",
+    "book/Chapter2_DataFrame/2.1.md",
+    "book/Chapter1_LinearAlgebra/introduction.md",
+    "book/Chapter1_LinearAlgebra/1.7.Summary.md",
+    "book/Chapter1_LinearAlgebra/1.4.Linear Equation System.md",
+    "book/Chapter1_LinearAlgebra/1.5.Applications.md",
+    "book/Chapter1_LinearAlgebra/1.3.Matrix decomposition.md",
+    "book/Chapter1_LinearAlgebra/1.2.Matrix.md",
+    "book/Chapter1_LinearAlgebra/1.1.Vector.md",
+    "target/surefire-reports/TEST-com.yishape.lab.music.MusicsTest.xml",
+    "target/surefire-reports/com.yishape.lab.music.MusicsTest.txt",
+    "target/surefire-reports/TEST-com.yishape.lab.music.MusicsFactoryTest.xml",
+    "target/surefire-reports/com.yishape.lab.music.MusicsFactoryTest.txt",
+    "target/surefire-reports/TEST-com.yishape.lab.music.analysis.GenreAndComplexityImprovementTest.xml",
+    "target/surefire-reports/com.yishape.lab.music.analysis.GenreAndComplexityImprovementTest.txt",
+    "target/surefire-reports/TEST-com.yishape.lab.music.analysis.features.MFCCFeatureTest.xml",
+    "target/surefire-reports/com.yishape.lab.music.analysis.features.MFCCFeatureTest.txt",
+    "target/surefire-reports/TEST-com.yishape.lab.music.analysis.features.FeatureExtractorImplTest.xml",
+    "target/surefire-reports/com.yishape.lab.music.analysis.features.FeatureExtractorImplTest.txt",
+    "docs/Vector-Operations.md",
+    "target/test-classes/model_zoo/naive_news_vendor/newsvendor_introduction.md",
+    "target/test-classes/model_zoo/knapsack/knapsack_introduction.md",
+    "README.md",
+    "model_zoo.md"
+  ]
+}

@@ -350,7 +350,8 @@ public interface IVector {
     IVector divide(float scalar);            // Scalar division
     
     // 线性代数运算 / Linear algebra operations
-    float dot(IVector other);                // Dot product
+    float dot(IVector other);                // Dot product (inner product)
+    IVector dot(IMatrix matrix);             // row @ matrix; same as mmul(matrix); NumPy np.dot(v, M)
     float norm1();                           // L1 norm
     float norm2();                           // L2 norm
     float normInf();                         // Infinity norm
@@ -442,7 +443,8 @@ public interface IMatrix {
     IMatrix divide(float scalar);            // Scalar division
     
     // 矩阵运算 / Matrix operations
-    IMatrix mmul(IMatrix other);             // Matrix multiplication
+    IMatrix mmul(IMatrix other);             // Matrix multiplication (NumPy np.dot(A,B) for 2D)
+    T frobeniusInnerProduct(IMatrix other);  // sum(A*B) same shape; not 2D matmul — use mmul
     IVector mmul(IVector vector);            // Matrix-vector multiplication
     IMatrix transpose();                     // Matrix transpose
     IMatrix inverse();                       // Matrix inverse

@@ -1190,7 +1190,7 @@ public class GaussianMixtureModelExample {
         
         // 使用EM算法训练模型 / Train model using EM algorithm
         EMAlgorithm em = new EMAlgorithm();
-        EMAlgorithm.EMResult result = em.fit(gmm, data);
+        EMAlgorithm.EMResult result = em.fit(data, gmm);
         
         System.out.println("训练结果: / Training results:");
         System.out.println("  收敛: " + result.converged + " / Converged: " + result.converged);
@@ -1218,7 +1218,7 @@ public class GaussianMixtureModelExample {
         };
         
         // 对新数据进行聚类 / Cluster new data
-        int[] clusterAssignments = gmm.predict(testData);
+        int[] clusterAssignments = gmm.predictComponent(testData);
         
         System.out.println("聚类结果: / Clustering results:");
         for (int i = 0; i < testData.length; i++) {
@@ -1226,7 +1226,7 @@ public class GaussianMixtureModelExample {
         }
         
         // 计算后验概率 / Calculate posterior probabilities
-        double[][] posteriors = gmm.predictProbs(testData);
+        double[][] posteriors = gmm.computePosteriors(testData);
         System.out.println("后验概率: / Posterior probabilities:");
         for (int i = 0; i < testData.length; i++) {
             System.out.println("  数据点 " + i + ": " + Arrays.toString(posteriors[i]) + " / Data point " + i + ": " + Arrays.toString(posteriors[i]));
@@ -1246,7 +1246,7 @@ public class GaussianMixtureModelExample {
         };
         
         // 计算概率密度 / Calculate probability density
-        double[] densities = gmm.score(testData);
+        double[] densities = gmm.pdf(testData);
         
         System.out.println("密度估计结果: / Density estimation results:");
         for (int i = 0; i < testData.length; i++) {
@@ -1356,7 +1356,7 @@ public class EMAlgorithmAdvancedExample {
         for (int i = 0; i < componentCounts.length; i++) {
             GaussianMixtureModel gmm = new GaussianMixtureModel(componentCounts[i], 2);
             EMAlgorithm em = new EMAlgorithm();
-            EMAlgorithm.EMResult result = em.fit(gmm, data);
+            EMAlgorithm.EMResult result = em.fit(data, gmm);
             logLikelihoods[i] = result.logLikelihood;
             
             System.out.println("分量数: " + componentCounts[i] + ", 对数似然: " + logLikelihoods[i] + " / Components: " + componentCounts[i] + ", Log-likelihood: " + logLikelihoods[i]);
@@ -1391,7 +1391,7 @@ public class EMAlgorithmAdvancedExample {
         for (double tolerance : tolerances) {
             GaussianMixtureModel gmm = new GaussianMixtureModel(3, 2);
             EMAlgorithm em = new EMAlgorithm(1000, tolerance, false, false, 4);
-            EMAlgorithm.EMResult result = em.fit(gmm, data);
+            EMAlgorithm.EMResult result = em.fit(data, gmm);
             
             System.out.println("收敛阈值: " + tolerance + ", 迭代次数: " + result.iterations + ", 收敛: " + result.converged + " / Tolerance: " + tolerance + ", Iterations: " + result.iterations + ", Converged: " + result.converged);
         }
@@ -1446,10 +1446,10 @@ public class RealWorldApplicationExample {
         // 使用GMM进行客户细分 / Use GMM for customer segmentation
         GaussianMixtureModel gmm = new GaussianMixtureModel(4, 3); // 4个客户群体，3个特征
         EMAlgorithm em = new EMAlgorithm();
-        EMAlgorithm.EMResult result = em.fit(gmm, customerData);
+        EMAlgorithm.EMResult result = em.fit(customerData, gmm);
         
         // 预测客户群体 / Predict customer segments
-        int[] segments = gmm.predict(customerData);
+        int[] segments = gmm.predictComponent(customerData);
         
         // 分析各群体的特征 / Analyze characteristics of each segment
         System.out.println("客户群体分析: / Customer segment analysis:");
@@ -1484,16 +1484,16 @@ public class RealWorldApplicationExample {
         // 使用GMM建模正常数据 / Use GMM to model normal data
         GaussianMixtureModel gmm = new GaussianMixtureModel(2, 2);
         EMAlgorithm em = new EMAlgorithm();
-        em.fit(gmm, normalData);
+        em.fit(normalData, gmm);
         
         // 计算密度阈值 / Calculate density threshold
-        double[] normalDensities = gmm.score(normalData);
+        double[] normalDensities = gmm.pdf(normalData);
         double threshold = Arrays.stream(normalDensities).min().orElse(0.0) * 0.1; // 使用10%的密度作为阈值
         
         System.out.println("密度阈值: " + threshold + " / Density threshold: " + threshold);
         
         // 检测异常 / Detect anomalies
-        double[] anomalousDensities = gmm.score(anomalousData);
+        double[] anomalousDensities = gmm.pdf(anomalousData);
         int anomalyCount = 0;
         
         for (int i = 0; i < anomalousData.length; i++) {
@@ -1517,10 +1517,10 @@ public class RealWorldApplicationExample {
         // 使用GMM进行图像分割 / Use GMM for image segmentation
         GaussianMixtureModel gmm = new GaussianMixtureModel(5, 3); // 5个颜色区域，3个RGB通道
         EMAlgorithm em = new EMAlgorithm();
-        em.fit(gmm, pixelData);
+        em.fit(pixelData, gmm);
         
         // 预测像素区域 / Predict pixel regions
-        int[] regions = gmm.predict(pixelData);
+        int[] regions = gmm.predictComponent(pixelData);
         
         // 分析各区域的颜色特征 / Analyze color characteristics of each region
         System.out.println("图像区域分析: / Image region analysis:");
