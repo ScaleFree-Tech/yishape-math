@@ -399,27 +399,21 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 var optimizer = Opts.lbfgs();
 
 // 定义目标函数（Rosenbrock函数）/ Define objective function (Rosenbrock function)
-var objFun = new IObjectiveFunction() {
-    @Override
-    public double computeObjective(IVector x) {
-        double x1 = x.get(0).doubleValue();
-        double x2 = x.get(1).doubleValue();
-        return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
-    }
-};
+IObjectiveFunction objFun = (IVector x) -> {
+            double x1 = x.get(0).doubleValue();
+            double x2 = x.get(1).doubleValue();
+            return (1 - x1) * (1 - x1) + 100 * (x2 - x1 * x1) * (x2 - x1 * x1);
+        };
 
 // 定义梯度函数 / Define gradient function
-var grdFun = new IGradientFunction() {
-    @Override
-    public IVector computeGradient(IVector x) {
-        double x1 = x.get(0).doubleValue();
-        double x2 = x.get(1).doubleValue();
-        double[] grad = new double[2];
-        grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
-        grad[1] = 200 * (x2 - x1 * x1);
-        return Linalg.vector(grad);
-    }
-};
+IGradientFunction grdFun = (IVector x) -> {
+            double x1 = x.get(0).doubleValue();
+            double x2 = x.get(1).doubleValue();
+            double[] grad = new double[2];
+            grad[0] = -2 * (1 - x1) - 400 * x1 * (x2 - x1 * x1);
+            grad[1] = 200 * (x2 - x1 * x1);
+            return Linalg.vector(grad);
+        };
 
 // 执行优化 / Execute optimization
 var initX = Linalg.ones(2);
