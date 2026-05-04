@@ -38,9 +38,10 @@
 
 ### 📊 数据可视化 / Data Visualization
 - **基础图表** / **Basic Charts**: 线图、散点图、饼图、柱状图、直方图 / Line, scatter, pie, bar, histogram charts
-- **统计图表** / **Statsistical Charts**: 箱线图、K线图、小提琴图 / Boxplot, candlestick charts, violinplot
+- **统计图表** / **Statsistical Charts**: 箱线图、K线图、小提琴图、回归图、核密度曲线图、配对图、联合图、热力图 / Boxplot, candlestick charts, violinplot, regplot, kde, pairplot, jointplot heatmap and etc.
 - **特殊图表** / **Special Charts**: 漏斗图、桑基图、旭日图、热力图、雷达图等 / Funnel, Sankey, Sunburst, heatmap, radar charts
 - **统一样式系统** / **Unified Style System**: matplotlib风格样式表达式、流式API、主题管理 / matplotlib-style expressions, fluent API, theme management
+- **三种后端实现** / **Three plotting providers**: JavaFx、Echarts、SVG三种后端实现，适用于不同场景 / JavaFx、Echarts、SVG, three kinds of ploting providers for difference applications
 
 
 ### 🧠 机器学习算法 / Machine Learning Algorithms
@@ -137,11 +138,11 @@ The library logs through the **SLF4J** facade; provide a binding in your app (e.
 #### 向量运算 / Vector Operations
 ```java
 // 创建向量 / Create vectors
-IVector<Double> v1 = Linalg.vector(new double[]{1, 2, 3, 4});
-IVector<Double> v2 = Linalg.range(10);
+var v1 = Linalg.vector(new double[]{1, 2, 3, 4});
+var v2 = Linalg.range(10);
 
 // 基本运算 / Basic operations
-IVector<Double> sum = v1.add(v2.slice("1:10:2"));
+var sum = v1.add(v2.slice("1:10:2"));
 double dotProduct = v1.dot(v2.slice(5, -1, 1));
 
 // 统计运算 / Statsistical operations
@@ -152,7 +153,7 @@ double std = v1.std(1);//ddof = 1, 计算样本标准差/ sample std
 #### 矩阵运算 / Matrix Operations
 ```java
 // 创建矩阵 / Create matrices
-IMatrix<Double> matrix1 = Linalg.ones(3, 3);
+var matrix1 = Linalg.ones(3, 3);
 var matrix2 = Linalg.eye(3, 3);
 var matrix3 = Linalg.rand(3, 3);
 
@@ -166,13 +167,13 @@ var transposed = matrix2.t();
 #### DataFrame 数据框操作 / DataFrame Operations
 ```java
 // 从CSV文件读取数据 / Read data from CSV file
-DataFrame df = DataFrame.readCsv("data.csv", ",", true);
+var df = DataFrame.readCsv("data.csv", ",", true);
 
 // 数据切片 / Data slicing
-DataFrame sliced = df.slice("1:3", "0:2");  // 行1-2，列0-1
+var sliced = df.slice("1:3", "0:2");  // 行1-2，列0-1
 
 // 转换为矩阵 / Convert to matrix
-IMatrix<Double> matrix = df.toMatrix();
+var matrix = df.toMatrix();
 
 // 保存数据 / Save data
 df.toCsv("output.csv");
@@ -181,17 +182,17 @@ df.toCsv("output.csv");
 #### 统计学分布 / Statistical Distributions
 ```java
 // 创建分布 / Create distributions
-NormalDistribution normal = Stats.norm(0, 1);  // 正态分布 / Normal distribution
-StudentDistribution tDist = Stats.t(10);  // t分布 / t-distribution
-Chi2Distribution chi2Dist = Stats.chi2(5);  // 卡方分布 / Chi-squared distribution
-FDistribution fDist = Stats.f(3, 7);  // F分布 / F-distribution
-UniformDistribution uniform = Stats.uniform(0, 1);  // 均匀分布 / Uniform distribution
-ExponentialDistribution exp = Stats.exponential(2.0);  // 指数分布 / Exponential distribution
-BetaDistribution beta = Stats.beta(2, 3);  // Beta分布 / Beta distribution
-GammaDistribution gamma = Stats.gamma(2, 1);  // Gamma分布 / Gamma distribution
-BernoulliDistribution bernoulli = Stats.bernoulli(0.3);  // 伯努利分布 / Bernoulli distribution
-BinomialDistribution binomial = Stats.binomial(10, 0.5);  // 二项分布 / Binomial distribution
-PoissonDistribution poisson = Stats.poisson(2.5);  // 泊松分布 / Poisson distribution
+var normal = Stats.norm(0, 1);  // 正态分布 / Normal distribution
+var tDist = Stats.t(10);  // t分布 / t-distribution
+var chi2Dist = Stats.chi2(5);  // 卡方分布 / Chi-squared distribution
+var fDist = Stats.f(3, 7);  // F分布 / F-distribution
+var uniform = Stats.uniform(0, 1);  // 均匀分布 / Uniform distribution
+var exp = Stats.exponential(2.0);  // 指数分布 / Exponential distribution
+var beta = Stats.beta(2, 3);  // Beta分布 / Beta distribution
+var gamma = Stats.gamma(2, 1);  // Gamma分布 / Gamma distribution
+var bernoulli = Stats.bernoulli(0.3);  // 伯努利分布 / Bernoulli distribution
+var binomial = Stats.binomial(10, 0.5);  // 二项分布 / Binomial distribution
+var poisson = Stats.poisson(2.5);  // 泊松分布 / Poisson distribution
 
 // 概率函数计算 / Probability function calculations
 double pdf = normal.pdf(1.0);  // 概率密度函数 / PDF
@@ -205,30 +206,30 @@ double[] samples = normal.sample(1000);  // 随机采样 / Random sampling
 #### 假设检验与参数估计 / Hypothesis Testing and Parameter Estimation
 ```java
 // 创建样本数据 / Create sample data
-IVector<Double> sample = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
+var sample = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 
 // 参数估计 / Parameter estimation
-Tuple2<Double, Double> meanInterval = Stats.estimator.estimateMeanIntevalWithT(sample, 0.95);  // 均值置信区间 / Mean confidence interval
+var meanInterval = Stats.estimator.estimateMeanIntevalWithT(sample, 0.95);  // 均值置信区间 / Mean confidence interval
 
 // 假设检验 / Hypothesis testing
-TestingResult meanTest = Stats.tester.testMeanEqualWithT(2.0, sample, 0.95);  // 均值检验 / Mean test
+var meanTest = Stats.tester.testMeanEqualWithT(2.0, sample, 0.95);  // 均值检验 / Mean test
 
 // 方差分析 / Analysis of Variance
-IVector<Double> group1 = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-IVector<Double> group2 = Linalg.vector(new double[]{2, 3, 4, 5, 6});
-ANOVAResult result = Stats.anova.performOneWayANOVA(group1, group2);  // 单因素方差分析 / One-way ANOVA
+var group1 = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+var group2 = Linalg.vector(new double[]{2, 3, 4, 5, 6});
+var result = Stats.anova.performOneWayANOVA(group1, group2);  // 单因素方差分析 / One-way ANOVA
 
 // 相关性分析 / Correlation analysis
-IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-IVector<Double> y = Linalg.vector(new double[]{2, 4, 6, 8, 10});
+var x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+var y = Linalg.vector(new double[]{2, 4, 6, 8, 10});
 double correlation = Stats.corr(x, y);  // 皮尔逊相关系数 / Pearson correlation coefficient
 ```
 
 #### 数据可视化 / Data Visualization
 ```java
 // 基础线图 / Basic line chart
-IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-IVector<Double> y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
+var x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+var y = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 Plots.of(800, 600)
     .line(x, y)
     .title("销售趋势图", "2024年各月销售数据")
@@ -263,12 +264,12 @@ Plots.of(800, 600, "dark")  // 使用dark主题
     .title("暗色主题图表")
     .show();
 
-// 散点图 / Scatter chart
-Plots.scatter(x, y)
+// 散点图，矢量图 / Scatter chart, vector graphics
+Plots.ofSvg().scatter(x, y)
     .title("身高体重关系图")
     .xlabel("身高（cm）")
     .ylabel("体重（kg）")
-    .saveAsHtml("scatter_chart.html");
+    .saveAsSvg("scatter_chart.svg");
 
 // 饼图 / Pie chart
 IVector<Double> data = Linalg.vector(new double[]{30, 25, 20, 15, 10});
@@ -284,7 +285,7 @@ Plots.bar(data)
     .saveAsHtml("bar_chart.html");
 
 // 直方图 / Histogram
-IVector<Double> histData = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
+var histData = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
 Plots.hist(histData, true)  // true表示显示拟合线
     .title("数据分布直方图")
     .xlabel("数值区间")
@@ -292,7 +293,7 @@ Plots.hist(histData, true)  // true表示显示拟合线
     .saveAsHtml("histogram_chart.html");
 
 // 箱线图 / Box plot
-IVector<Double> boxData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+var boxData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 List<String> labels = Arrays.asList("数据集");
 Plots.boxplot(boxData, labels)
     .title("数据分布箱线图")
@@ -302,8 +303,8 @@ Plots.boxplot(boxData, labels)
 
 // K线图 / Candlestick chart
 double[][] candlestickArray = {{100, 110, 95, 115}, {110, 120, 105, 125}, {120, 115, 110, 130}};
-IMatrix<Double> candlestickData = Linalg.vector(candlestickArray);
-List<String> dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
+var candlestickData = Linalg.matrix(candlestickArray);
+var dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
 Plots.candlestick(candlestickData, dates)
     .title("股票价格K线图")
     .xlabel("日期")
@@ -311,7 +312,7 @@ Plots.candlestick(candlestickData, dates)
     .saveAsHtml("candlestick_chart.html");
 
 // 小提琴图 / Violin plot
-IVector<Double> violinData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+var violinData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 Plots.violinplot(violinData, labels)
     .title("数据分布小提琴图")
     .xlabel("指标")
@@ -373,10 +374,10 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 #### 最优化算法 / Optimization Algorithms
 ```java
 // L-BFGS优化器示例 / L-BFGS Optimizer Example
-IOptimizer optimizer = Opts.lbfgs();
+var optimizer = Opts.lbfgs();
 
 // 定义目标函数（Rosenbrock函数）/ Define objective function (Rosenbrock function)
-IObjectiveFunction objFun = new IObjectiveFunction() {
+var objFun = new IObjectiveFunction() {
     @Override
     public double computeObjective(IVector x) {
         double x1 = x.get(0).doubleValue();
@@ -386,7 +387,7 @@ IObjectiveFunction objFun = new IObjectiveFunction() {
 };
 
 // 定义梯度函数 / Define gradient function
-IGradientFunction grdFun = new IGradientFunction() {
+var grdFun = new IGradientFunction() {
     @Override
     public IVector computeGradient(IVector x) {
         double x1 = x.get(0).doubleValue();
@@ -399,7 +400,7 @@ IGradientFunction grdFun = new IGradientFunction() {
 };
 
 // 执行优化 / Execute optimization
-IVector initX = Linalg.vector(new double[]{-1.0, -1.0});
+var initX = Linalg.vector(new double[]{-1.0, -1.0});
 var result = optimizer.optimize(initX, objFun, grdFun);
 ```
 
@@ -427,20 +428,20 @@ for (int i = 0; i < numIterations; i++) {
 #### 线性规划 / Linear Programming
 ```java
 // 创建单纯形法求解器 / Create simplex solver
-ILinProgSolver solver = Opts.simplexLinProgSolver();
+var solver = Opts.simplexLinProgSolver();
 
 // 定义线性规划问题 / Define linear programming problem
 // minimize 2x1 + 3x2
 // subject to x1 + x2 = 5, x1 ≥ 0, x2 ≥ 0
-IVector c = Linalg.vector(new double[]{2.0, 3.0});
-IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
-IVector b_eq = Linalg.vector(new double[]{5.0});
+var c = Linalg.vector(new double[]{2.0, 3.0});
+var A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+var b_eq = Linalg.vector(new double[]{5.0});
 
 // 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solveEq(c, A_eq, b_eq);
+var result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
-IVector optimalSolution = result.getOptimalPoint();
+var optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优解: " + optimalSolution);
 System.out.println("最优值: " + optimalValue);
@@ -450,14 +451,14 @@ System.out.println("最优值: " + optimalValue);
 #### 整数规划（0-1规划） / Integer Programming (0-1 Programming)
 ```java
 // 创建整数规划求解器 / Create integer programming solver
-IIntegerProg solver = Opts.intLinProgSolver();
+var solver = Opts.intLinProgSolver();
 
 // 定义整数规划问题 / Define integer programming problem
 // minimize x1 + x2
 // subject to x1 + x2 = 3, x1 ≥ 0, x2 ≥ 0, x1,x2 ∈ Z
-IVector c = Linalg.vector(new double[]{1.0, 1.0});
-IMatrix A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
-IVector b_eq = Linalg.vector(new double[]{3.0});
+var c = Linalg.vector(new double[]{1.0, 1.0});
+var A_eq = Linalg.matrix(new double[][]{{1.0, 1.0}});
+var b_eq = Linalg.vector(new double[]{3.0});
 
 // 设置所有变量为整数(如果不是所有变量序号，则为混合整数规划) / Set all variables as integer(if not all variable indexes, it is mixed integer programming)
 solver.addIntegerVariables(0, 1);
@@ -467,10 +468,10 @@ solver.addIntegerVariables(0, 1);
 //solver.setAllVariablesBinary();
 
 // 求解(等式约束调用solveEq，小于等于约束调用solve) / Solve(use solveEq() for equal constraints, use solve() for less than or equal constraints)
-OptResult result = solver.solveEq(c, A_eq, b_eq);
+var result = solver.solveEq(c, A_eq, b_eq);
 
 double optimalValue = result.getOptimalValue();
-IVector optimalSolution = result.getOptimalPoint();
+var optimalSolution = result.getOptimalPoint();
 
 System.out.println("最优整数解 / Optimal solution: " + optimalSolution);
 System.out.println("最优值 / Optimal value: " + optimalValue);
@@ -480,13 +481,11 @@ System.out.println("最优值 / Optimal value: " + optimalValue);
 
 #### 线性回归 / Linear Regression
 ```java
-// 创建线性回归模型 / Create linear regression model
-RereLinearRegression lr = new RereLinearRegression();
-lr.setRegularizationType(RegularizationType.L2);
-lr.setLambda2(0.1f);
+// 创建线性回归模型（L2正则化，岭回归） / Create linear regression model with L2 regularization, i.e., Ridge regression
+var lr = ML.linearRegression(0.0,0.1);
 
 // 训练模型 / Train model
-RegressionResult result = lr.fit(featureMatrix, labelVector);
+var result = lr.fit(featureMatrix, labelVector);
 
 // 预测 / Predict
 double prediction = lr.predict(newFeatureVector);
@@ -495,10 +494,10 @@ double prediction = lr.predict(newFeatureVector);
 #### PCA降维 / PCA Dimensionality Reduction
 ```java
 // 创建PCA降维器 / Create PCA reducer
-RerePCA pca = new RerePCA();
+var pca = ML.pcaDimReducer();
 
 // 执行降维 / Perform dimensionality reduction
-IMatrix reducedData = pca.dimensionReduction(originalData, 2);
+var reducedData = pca.dimensionReduction(originalData, 2);
 ```
 
 #### 逻辑回归分类 / Logistic Regression Classification
@@ -509,7 +508,7 @@ try {
     var df = DataFrame.readCsv(path);
     // 提取特征和标签 / Extract features and labels
     var feature = df.sliceColumn(0, -1).toMatrix();
-    var labels = df.getColumn(df.cols()-1).toStringArray();
+    var labels = df.getColumn(-1).toStringArray();
     // 创建逻辑回归分类器（两个参数分别是L1和L2正则化系数） / Create logistic regression classifier (the two parameters are L1 and L2 regularization coefficients)
     var lr = ML.logisticRegression(0.0,0.0);
     // 训练模型 / Train model
@@ -556,14 +555,14 @@ Plots.of(800, 400)
 #### 时间序列分析 / Time Series Analysis
 ```java
 // 创建时间序列数据 / Create time series data
-IVector<Double> timestamps = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-IVector<Double> values = Linalg.vector(new double[]{10, 12, 13, 15, 18, 20, 22, 25, 28, 30});
+var timestamps = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+var values = Linalg.vector(new double[]{10, 12, 13, 15, 18, 20, 22, 25, 28, 30});
 
 // 创建时间序列对象 / Create time series object
-TimeSeriesData ts = new TimeSeriesData(timestamps, values);
+var ts = new TimeSeriesData(timestamps, values);
 
 // 时间序列分析 / Time series analysis
-TimeSeriesAnalyzer analyzer = new TimeSeriesAnalyzer();
+var analyzer = new TimeSeriesAnalyzer();
 double trend = analyzer.calculateTrend(ts);  // 计算趋势 / Calculate trend
 double[] forecast = analyzer.forecast(ts, 3);  // 预测未来3个点 / Forecast next 3 points
 
@@ -581,26 +580,26 @@ Plots.of(800, 400)
 #### 音频分析 / Audio Analysis
 ```java
 // 读取音频文件 / Read audio file
-AudioData audioData = Audios.readAudio("sample.wav");
+var audioData = Audios.readAudio("sample.wav");
 
 // 音频特征提取 / Audio feature extraction
-IMatrix<Double> mfccFeatures = Audios.calculateMFCC(audioData);  // MFCC特征 / MFCC features
+var mfccFeatures = Audios.calculateMFCC(audioData);  // MFCC特征 / MFCC features
 double spectralCentroid = Audios.calculateSpectralCentroid(audioData, 1024);  // 频谱质心 / Spectral centroid
 double zeroCrossingRate = Audios.calculateZeroCrossingRate(audioData);  // 过零率 / Zero crossing rate
 
 // 音频分析 / Audio analysis
 double pitch = Audios.detectPitch(audioData);  // 音高检测 / Pitch detection
-Tuple2<IVector<Double>, IVector<Double>> spectrum = Audios.spectrum(audioData);  // 频谱分析 / Spectrum analysis
+var spectrum = Audios.spectrum(audioData);  // 频谱分析 / Spectrum analysis
 
 // 音频综合特征提取 / Audio comprehensive feature extraction
-IAudioFeatureExtractor extractor = Audios.createStandardFeatureExtractor();
-AudioFeatureResult result = extractor.extractAudioFeatures(audioData);  // 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features
-Tuple2<List<String>, IVector<Double>> result.toNumericalFeatures(); // 转换为数值特征(特征名、特征的值)
+var extractor = Audios.createStandardFeatureExtractor();
+var result = extractor.extractAudioFeatures(audioData);  // 提取时域、频域、谱域综合音频特征 / Extract time-domain, frequency-domain, and spectral features
+var tp = result.toNumericalFeatures(); // 转换为数值特征(特征名、特征的值)
 
 // 音频嵌入向量 / Audio embedding vector
-IVectorEmbedding embedder = Audios.createAudioEmbedder(64);  // 创建64维嵌入器 / Create 64-dim embedder
+var embedder = Audios.createAudioEmbedder(64);  // 创建64维嵌入器 / Create 64-dim embedder
 embedder.train(audioDataList); // 训练嵌入器
-IVector<Double> embedding = embedder.embed(audioData);  // 生成嵌入向量 / Generate embedding vector
+var embedding = embedder.embed(audioData);  // 生成嵌入向量 / Generate embedding vector
 
 
 ```
@@ -767,6 +766,11 @@ If you encounter any issues while using the library, you can get help through th
 - **社区**: 参与讨论和分享经验 / Participate in discussions and share experiences
 
 ## 更新日志 / Changelog
+
+### v0.3.8 (2026-05)
+- **Bug Fixes** / **Bug Fixes**: 修复了矩阵分解、降维等方面的错误 / Bug fixes concering matrix decomposition and dimension reduction
+- **绘图系统增加JavaFx和SVG两种新的实现 / Two new implementations of the plotting system: JavaFx and SVG**:  增加JavaFx和SVG两种新的绘图实现，增强了kde曲线、回归线、配对图、联合图等 / Added two new plotting implementations, JavaFx and SVG, which enhanced KDE curves, regression lines, scatter plots, joint plots, etc.
+- **分类器增加线性SVM和决策树，增强了XGBoost / New classifiers: linear SVM and decision tree, and enhanced XGBoost.**:  增加了线性SVM和单颗决策树，XGBoost性能得到增强 / Added linear SVM and decision tree, and the performance of XGBoost has been enhanced.
 
 ### v0.3.7 (2025-12)
 - **Bug Fixes** / **Bug Fixes**: 修复了LU分解、T检验、逻辑斯蒂回归等方面的错误 / Bug fixes and error corrections
