@@ -1,5 +1,6 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ public class SummaryChartTest {
             List<String> labels = List.of("GPU", "SIMD", "SISD");
             List<String> xLabels = List.of("GPU", "SIMD", "SISD");
             
-            RerePlot plot = new RerePlot(800, 500);
+            EchartsPlot plot = new EchartsPlot(800, 500);
             plot.bar(xLabels, avgTimes, labels)
                 .title("Average Performance Comparison Across All Operations")
                 .xlabel("Computer Type")

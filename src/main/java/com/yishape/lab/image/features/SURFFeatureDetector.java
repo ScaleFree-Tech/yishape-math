@@ -10,43 +10,100 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * SURF (Speeded Up Robust Features) feature detector implementation
- * 加速稳健特征（SURF）特征检测器实现
- * 
+ * SURF (Speeded Up Robust Features) 特征检测器实现 / SURF Feature Detector Implementation
+ * <p>
+ * 实现SURF算法，用于检测图像中的关键点和特征描述子。
+ * Implements SURF algorithm for detecting keypoints and feature descriptors in images.
+ * </p>
+ *
  * @author RereMouse
  * @version 1.0
+ * @since 1.0
  */
 public class SURFFeatureDetector implements IImageProcessor {
-    
+
+    /**
+     * SURF关键点类 / SURF Keypoint Class
+     * <p>
+     * 表示检测到的SURF特征关键点。
+     * Represents a detected SURF feature keypoint.
+     * </p>
+     */
     public static class SURFKeypoint {
-        public final double x, y, scale, orientation, response;
+        /** X坐标 / X coordinate */
+        public final double x;
+        /** Y坐标 / Y coordinate */
+        public final double y;
+        /** 尺度 / Scale */
+        public final double scale;
+        /** 方向 / Orientation */
+        public final double orientation;
+        /** 响应值 / Response value */
+        public final double response;
+        /** 描述子向量 / Descriptor vector */
         public final double[] descriptor;
+        /** 符号 / Sign */
         public final int sign;
-        
-        public SURFKeypoint(double x, double y, double scale, double orientation, 
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param x X坐标 / X coordinate
+         * @param y Y坐标 / Y coordinate
+         * @param scale 尺度 / Scale
+         * @param orientation 方向 / Orientation
+         * @param response 响应值 / Response value
+         * @param descriptor 描述子向量 / Descriptor vector
+         * @param sign 符号 / Sign
+         */
+        public SURFKeypoint(double x, double y, double scale, double orientation,
                            double response, double[] descriptor, int sign) {
             this.x = x; this.y = y; this.scale = scale; this.orientation = orientation;
             this.response = response; this.descriptor = descriptor.clone(); this.sign = sign;
         }
     }
-    
+
+    /**
+     * SURF参数类 / SURF Parameters Class
+     * <p>
+     * 存储SURF特征检测器的配置参数。
+     * Stores configuration parameters for SURF feature detector.
+     * </p>
+     */
     public static class SURFParameters {
+        /** 八度数量 / Number of octaves */
         public int nOctaves = 4;
+        /** 每八度层数 / Number of layers per octave */
         public int nLayers = 4;
+        /** Hessian阈值 / Hessian threshold */
         public double hessianThreshold = 400.0;
+        /** 描述子大小 / Descriptor size */
         public int descriptorSize = 64;
+        /** 使用扩展描述子 / Use extended descriptor */
         public boolean useExtendedDescriptor = false;
+        /** 使用 upright 版本 / Use upright version */
         public boolean useUpright = false;
+        /** 使用GPU加速 / Use GPU acceleration */
         public boolean useGPU = false;
     }
-    
+
+    /** 参数 / Parameters */
     private SURFParameters parameters;
+    /** 最近处理的关键点 / Last processed keypoints */
     private static List<SURFKeypoint> lastProcessedKeypoints = new ArrayList<>();
-    
+
+    /**
+     * 默认构造函数 / Default Constructor
+     */
     public SURFFeatureDetector() {
         this.parameters = new SURFParameters();
     }
-    
+
+    /**
+     * 带参数的构造函数 / Constructor with Parameters
+     *
+     * @param parameters SURF参数 / SURF parameters
+     */
     public SURFFeatureDetector(SURFParameters parameters) {
         this.parameters = parameters;
     }

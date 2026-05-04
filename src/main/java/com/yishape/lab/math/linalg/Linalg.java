@@ -510,12 +510,11 @@ public class Linalg {
      * </p>
      *
      * @param data double数组，表示向量数据 / double array representing vector data
-     * @param <T> 数值类型 / Numeric type
      * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Double> IVector<T> vector(double[] data) {
+    public static IVector<Double> vector(double[] data) {
         return IVector.of(data);
     }
 
@@ -528,12 +527,21 @@ public class Linalg {
      * </p>
      *
      * @param data Double数组，表示向量数据 / Double array representing vector data
-     * @param <T> 数值类型 / Numeric type
      * @return 新的向量实例（IDoubleVector）/ New vector instance (IDoubleVector)
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(Double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Double> IVector<T> vector(Double[] data) {
+    public static IVector<Double> vector(Double[] data) {
+        return IVector.of(data);
+    }
+    
+    
+    /**
+     * 创建向量
+     * @param data
+     * @return 
+     */
+    public static IVector<Double> vector(List<Double> data) {
         return IVector.of(data);
     }
 
@@ -546,12 +554,11 @@ public class Linalg {
      * </p>
      *
      * @param data float数组，表示向量数据 / float array representing vector data
-     * @param <T> 数值类型 / Numeric type
      * @return 新的向量实例（IFloatVector）/ New vector instance (IFloatVector)
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Float> IVector<T> vector(float[] data) {
+    public static IVector<Float> vector(float[] data) {
         return IVector.of(data);
     }
 
@@ -564,13 +571,21 @@ public class Linalg {
      * </p>
      *
      * @param data Float数组，表示向量数据 / Float array representing vector data
-     * @param <T> 数值类型 / Numeric type
      * @return 新的向量实例（IFloatVector）/ New vector instance (IFloatVector)
      * @throws IllegalArgumentException 如果数据为null / if data is null
      * @see IVector#of(Float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Float> IVector<T> vector(Float[] data) {
+    public static IVector<Float> vector(Float[] data) {
         return IVector.of(data);
+    }
+    
+   /**
+     * 从Float List创建向量，因为和Double List同参数签名，必须换个名字
+     * @param data Float List
+     * @return 
+     */
+    public static IVector<Float> vectorFromFloatList(List<Float> data) {
+        return IVector.ofFloatList(data);
     }
 
     /**

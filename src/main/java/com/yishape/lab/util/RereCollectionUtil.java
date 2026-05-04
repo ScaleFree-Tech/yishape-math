@@ -389,6 +389,11 @@ public class RereCollectionUtil {
         return sb.toString();
     }
     
+    /**
+     * 主方法，用于测试 / Main method, used for testing
+     *
+     * @param args 命令行参数 / Command line arguments
+     */
     public static void main(String args[]) {
         // 测试代码 / Test code
         logger.info("RereCollectionUtil 测试开始 / RereCollectionUtil test started");

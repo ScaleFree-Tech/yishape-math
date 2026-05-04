@@ -3,6 +3,7 @@ package com.yishape.lab.math.stats.distribution.multiv;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.util.Tuple2;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -322,8 +323,47 @@ public class MultivariateNormalDistribution implements IMultivariateDistribution
     
     @Override
     public IMultivariateDistribution<Double> getConditional(int[] conditionIndices, IVector<Double> conditionValues) {
-        // 实现条件分布的计算（较复杂，这里提供基本框架）
-        throw new UnsupportedOperationException("条件分布计算尚未实现");
+        if (conditionIndices == null || conditionValues == null) {
+            throw new IllegalArgumentException("条件索引与条件值不能为null");
+        }
+        if (conditionIndices.length != conditionValues.length()) {
+            throw new IllegalArgumentException("条件索引与条件值长度必须相同");
+        }
+        if (conditionIndices.length == 0) {
+            return new MultivariateNormalDistribution(mean, covariance, random);
+        }
+        if (conditionIndices.length >= dimension) {
+            throw new IllegalArgumentException("条件维度必须小于整体维度");
+        }
+
+        double[] sortedVals = new double[conditionIndices.length];
+        int[] bIdx = MultivariateDistributionMath.sortConditionIndicesWithValues(
+                conditionIndices, conditionValues, sortedVals);
+        int[] rIdx = MultivariateDistributionMath.complementIndices(dimension, bIdx);
+
+        double[][] sigmaBB = MultivariateDistributionMath.extractSubmatrix(covariance, bIdx, bIdx);
+        double[][] sigmaRB = MultivariateDistributionMath.extractSubmatrix(covariance, rIdx, bIdx);
+        double[][] sigmaBR = MultivariateDistributionMath.extractSubmatrix(covariance, bIdx, rIdx);
+        double[][] sigmaRR = MultivariateDistributionMath.extractSubmatrix(covariance, rIdx, rIdx);
+
+        IMatrix<Double> SigmaBB = Linalg.matrix(sigmaBB);
+        IMatrix<Double> SigmaRB = Linalg.matrix(sigmaRB);
+        IMatrix<Double> SigmaBR = Linalg.matrix(sigmaBR);
+        IMatrix<Double> SigmaRR = Linalg.matrix(sigmaRR);
+
+        double[] muBarr = MultivariateDistributionMath.extractMean(mean, bIdx);
+        double[] muRarr = MultivariateDistributionMath.extractMean(mean, rIdx);
+        IVector<Double> muB = Linalg.vector(muBarr);
+        IVector<Double> muR = Linalg.vector(muRarr);
+        IVector<Double> xB = Linalg.vector(sortedVals);
+
+        IMatrix<Double> invBB = SigmaBB.inv();
+        IVector<Double> diffB = xB.sub(muB);
+        IMatrix<Double> regCoeff = SigmaRB.mmul(invBB);
+        IVector<Double> muCond = muR.add(regCoeff.mmul(diffB));
+        IMatrix<Double> schur = SigmaRR.sub(SigmaRB.mmul(invBB).mmul(SigmaBR));
+
+        return new MultivariateNormalDistribution(muCond, schur, random);
     }
     
     @Override
@@ -382,14 +422,26 @@ public class MultivariateNormalDistribution implements IMultivariateDistribution
             throw new IllegalArgumentException("分布维度必须相同");
         }
         
-        // Wasserstein距离公式实现（2-Wasserstein距离）
+        // 2-Wasserstein 闭合形式（同维多元正态）：‖μ₁−μ₂‖² + tr(Σ₁+Σ₂ − 2(Σ₁½Σ₂Σ₁½)^½)
         IVector<Double> meanDiff = this.mean.sub(otherNormal.mean);
-        double meanTerm = Math.pow(meanDiff.norm2(),2);
-        
-        // 协方差项的计算较复杂，这里提供简化版本
-        double covTerm = this.covariance.frobeniusNorm() + otherNormal.covariance.frobeniusNorm();
-        
-        return Math.sqrt(meanTerm + covTerm);
+        double meanTerm = meanDiff.dot(meanDiff);
+        IMatrix<Double> sig1sqrt = symmetricPsMatrixSqrt(this.covariance);
+        IMatrix<Double> inner = sig1sqrt.mmul(otherNormal.covariance).mmul(sig1sqrt);
+        IMatrix<Double> innerSqrt = symmetricPsMatrixSqrt(inner);
+        double covTerm = this.covariance.trace() + otherNormal.covariance.trace() - 2 * innerSqrt.trace();
+        return Math.sqrt(Math.max(0.0, meanTerm + Math.max(0.0, covTerm)));
+    }
+
+    private static IMatrix<Double> symmetricPsMatrixSqrt(IMatrix<Double> s) {
+        Tuple2<IVector<Double>, IMatrix<Double>> eig = s.eigen();
+        IVector<Double> lam = eig.getFirst();
+        IMatrix<Double> q = eig.getSecond();
+        int n = lam.length();
+        IMatrix<Double> sqrtLam = Linalg.zeros(n, n);
+        for (int i = 0; i < n; i++) {
+            sqrtLam.set(i, i, Math.sqrt(Math.max(0.0, lam.get(i))));
+        }
+        return q.mmul(sqrtLam).mmul(q.transpose());
     }
     
     @Override
@@ -464,35 +516,13 @@ public class MultivariateNormalDistribution implements IMultivariateDistribution
     
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        if (dimension != 2) {
-            throw new UnsupportedOperationException("置信椭圆只支持二维分布");
+        if (dimension < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
         }
         if (confidence <= 0 || confidence >= 1) {
             throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
         }
-        
-        // 计算卡方分位数
-        double chiSquareQuantile = -2 * Math.log(1 - confidence);
-        
-        // 计算协方差矩阵的特征值和特征向量
-        // 这里需要实现特征值分解，简化版本
-        double a = covariance.get(0, 0);
-        double b = covariance.get(0, 1);
-        double c = covariance.get(1, 1);
-        
-        double trace = a + c;
-        double det = a * c - b * b;
-        double discriminant = Math.sqrt(trace * trace - 4 * det);
-        
-        double eigenvalue1 = 0.5 * (trace + discriminant);
-        double eigenvalue2 = 0.5 * (trace - discriminant);
-        
-        double majorAxis = Math.sqrt(chiSquareQuantile * eigenvalue1);
-        double minorAxis = Math.sqrt(chiSquareQuantile * eigenvalue2);
-        
-        double angle = 0.5 * Math.atan2(2 * b, a - c);
-        
-        return new ConfidenceEllipse(mean.copy(), majorAxis, minorAxis, angle);
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(mean, covariance, 0, 1, confidence);
     }
     
     // ==================== 静态工厂方法 ====================

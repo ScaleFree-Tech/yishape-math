@@ -21,6 +21,10 @@ import java.util.Arrays;
  * 基于能量检测和自相关的节拍检测实现。 Beat detection implementation based on energy detection
  * and autocorrelation.
  * </p>
+ * <p>
+ * 该分析器通过计算音频能量包络、检测峰值并估算节拍速度来识别音乐中的节拍。
+ * This analyzer identifies beats in music by calculating audio energy envelope, detecting peaks, and estimating tempo.
+ * </p>
  *
  * @author lteb2
  * @version 1.0
@@ -40,6 +44,17 @@ public class BeatAnalyzerImpl implements IBeatAnalyzer {
     private static final double DEFAULT_BEAT_SENSITIVITY = 0.5;
     private static final int DEFAULT_WINDOW_SIZE = 1024;
     private static final int DEFAULT_HOP_SIZE = 512;
+
+    /**
+     * 构造节拍分析器 / Construct a Beat Analyzer
+     * <p>
+     * 初始化节拍分析器，使用默认参数。
+     * Initializes the beat analyzer with default parameters.
+     * </p>
+     */
+    public BeatAnalyzerImpl() {
+        // Default constructor
+    }
 
     @Override
     public BeatDetectionResult detectBeats(AudioData audioData) throws AudioProcessingException {

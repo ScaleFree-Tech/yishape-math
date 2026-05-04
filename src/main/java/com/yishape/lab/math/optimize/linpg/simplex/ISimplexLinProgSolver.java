@@ -6,9 +6,15 @@ import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.optimize.linpg.ILinProgSolver;
 
 /**
- * 专门为单纯形法设计的接口，防止在实现中最小化、最大化转换混淆
+ * 单纯形法线性规划求解器接口 / Simplex Linear Programming Solver Interface
+ * <p>
+ * 专门为单纯形法设计的接口，防止在实现中最小化、最大化转换混淆。
+ * Interface designed specifically for simplex method to avoid confusion between minimization and maximization in implementation.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public interface ISimplexLinProgSolver extends ILinProgSolver {
 

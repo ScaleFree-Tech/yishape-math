@@ -267,6 +267,14 @@ public class TimeSeriesDecomposition {
     // ========== 私有辅助方法 / Private Helper Methods ==========
     /**
      * 计算趋势成分 / Calculate trend component
+     * <p>
+     * 使用移动平均法计算时间序列的趋势成分。
+     * Calculate trend component of time series using moving average method.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param period 季节周期（用于确定窗口大小）/ Seasonal period (used to determine window size)
+     * @return 趋势成分序列 / Trend component series
      */
     private static IVector<Double> calculateTrend(IVector<Double> data, int period) {
         int length = data.length();
@@ -288,6 +296,15 @@ public class TimeSeriesDecomposition {
 
     /**
      * 去趋势 / Detrend
+     * <p>
+     * 根据分解模型去除时间序列的趋势成分。
+     * Remove trend component from time series according to decomposition model.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param trend 趋势成分 / Trend component
+     * @param model 分解模型（加法或乘法）/ Decomposition model (additive or multiplicative)
+     * @return 去趋势后的序列 / Detrended series
      */
     private static IVector<Double> detrend(IVector<Double> data, IVector<Double> trend, DecompositionModel model) {
         if (model == DecompositionModel.ADDITIVE) {
@@ -299,6 +316,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 计算季节性成分 / Calculate seasonal component
+     * <p>
+     * 计算去趋势后序列的季节性成分，并进行中心化处理。
+     * Calculate seasonal component of detrended series and apply centering.
+     * </p>
+     *
+     * @param detrended 去趋势后的序列 / Detrended series
+     * @param period 季节周期 / Seasonal period
+     * @return 季节性成分序列 / Seasonal component series
      */
     private static IVector<Double> calculateSeasonal(IVector<Double> detrended, int period) {
         int length = detrended.length();
@@ -329,6 +354,16 @@ public class TimeSeriesDecomposition {
 
     /**
      * 计算残差成分 / Calculate residual component
+     * <p>
+     * 根据分解模型计算时间序列的残差成分。
+     * Calculate residual component of time series according to decomposition model.
+     * </p>
+     *
+     * @param data 原始数据 / Original data
+     * @param trend 趋势成分 / Trend component
+     * @param seasonal 季节性成分 / Seasonal component
+     * @param model 分解模型（加法或乘法）/ Decomposition model (additive or multiplicative)
+     * @return 残差成分序列 / Residual component series
      */
     private static IVector<Double> calculateResidual(IVector<Double> data, IVector<Double> trend,
             IVector<Double> seasonal, DecompositionModel model) {
@@ -341,6 +376,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 计算成分强度 / Calculate component strength
+     * <p>
+     * 计算各成分（趋势、季节性、残差）的强度，值越大说明成分越明显。
+     * Calculate strength of each component (trend, seasonal, residual), higher value indicates more prominent component.
+     * </p>
+     *
+     * @param component 成分序列 / Component series
+     * @param original 原始序列 / Original series
+     * @return 成分强度（0到1之间）/ Component strength (between 0 and 1)
      */
     private static double calculateComponentStrength(IVector<Double> component, IVector<Double> original) {
         double componentVar = component.var();
@@ -355,6 +398,13 @@ public class TimeSeriesDecomposition {
 
     /**
      * 预白化 / Pre-whitening
+     * <p>
+     * 对时间序列进行预白化处理（标准化）。
+     * Apply pre-whitening (standardization) to time series.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @return 预白化后的序列 / Pre-whitened series
      */
     private static IVector<Double> prewhiten(IVector<Double> data) {
         // 简化的预白化实现 / Simplified pre-whitening implementation
@@ -370,6 +420,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 估计趋势 / Estimate trend
+     * <p>
+     * 使用移动平均法估计时间序列的趋势。
+     * Estimate trend of time series using moving average method.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param period 季节周期 / Seasonal period
+     * @return 趋势估计序列 / Estimated trend series
      */
     private static IVector<Double> estimateTrend(IVector<Double> data, int period) {
         return calculateTrend(data, period);
@@ -377,6 +435,15 @@ public class TimeSeriesDecomposition {
 
     /**
      * 估计季节性 / Estimate seasonal
+     * <p>
+     * 估计时间序列的季节性成分。
+     * Estimate seasonal component of time series.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param trend 趋势成分 / Trend component
+     * @param period 季节周期 / Seasonal period
+     * @return 季节性估计序列 / Estimated seasonal series
      */
     private static IVector<Double> estimateSeasonal(IVector<Double> data, IVector<Double> trend, int period) {
         IVector<Double> detrended = data.sub(trend);
@@ -385,6 +452,15 @@ public class TimeSeriesDecomposition {
 
     /**
      * 季节性平滑 / Seasonal smoothing
+     * <p>
+     * 对季节性成分进行平滑处理。
+     * Apply smoothing to seasonal component.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param period 季节周期 / Seasonal period
+     * @param window 平滑窗口 / Smoothing window
+     * @return 平滑后的季节性序列 / Smoothed seasonal series
      */
     private static IVector<Double> smoothSeasonal(IVector<Double> data, int period, int window) {
         int length = data.length();
@@ -414,6 +490,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 趋势平滑 / Trend smoothing
+     * <p>
+     * 对趋势成分进行平滑处理。
+     * Apply smoothing to trend component.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param window 平滑窗口 / Smoothing window
+     * @return 平滑后的趋势序列 / Smoothed trend series
      */
     private static IVector<Double> smoothTrend(IVector<Double> data, int window) {
         int length = data.length();
@@ -432,6 +516,15 @@ public class TimeSeriesDecomposition {
 
     /**
      * 小波分解 / Wavelet decomposition
+     * <p>
+     * 使用小波变换对时间序列进行分解。
+     * Decompose time series using wavelet transform.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param wavelet 小波类型 / Wavelet type
+     * @param levels 分解层数 / Decomposition levels
+     * @return 小波系数矩阵（每行代表一层）/ Wavelet coefficients matrix (each row represents one level)
      */
     private static IMatrix<Double> waveletDecompose(IVector<Double> data, String wavelet, int levels) {
         // 简化的小波分解实现 / Simplified wavelet decomposition implementation
@@ -459,6 +552,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 重构趋势成分 / Reconstruct trend component
+     * <p>
+     * 从小波分解系数中重构趋势成分（近似系数）。
+     * Reconstruct trend component (approximation coefficients) from wavelet decomposition coefficients.
+     * </p>
+     *
+     * @param coeffs 小波系数矩阵 / Wavelet coefficients matrix
+     * @param levels 分解层数 / Decomposition levels
+     * @return 趋势成分序列 / Trend component series
      */
     private static IVector<Double> reconstructTrend(IMatrix<Double> coeffs, int levels) {
         return coeffs.getRow(0);
@@ -466,6 +567,14 @@ public class TimeSeriesDecomposition {
 
     /**
      * 重构季节性成分 / Reconstruct seasonal component
+     * <p>
+     * 从小波分解系数中重构季节性成分（高频成分之和）。
+     * Reconstruct seasonal component (sum of high frequency components) from wavelet decomposition coefficients.
+     * </p>
+     *
+     * @param coeffs 小波系数矩阵 / Wavelet coefficients matrix
+     * @param levels 分解层数 / Decomposition levels
+     * @return 季节性成分序列 / Seasonal component series
      */
     private static IVector<Double> reconstructSeasonal(IMatrix<Double> coeffs, int levels) {
         int length = coeffs.getColNum();

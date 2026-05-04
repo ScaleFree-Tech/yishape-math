@@ -114,23 +114,40 @@ public class MedianFilter extends AbstractSignalProcessor<Double> implements ISi
     public FilterType getFilterType() {
         return filterType;
     }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() {
         return implementationType;
     }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() {
         return windowSize - 1; // 返回窗口大小减1作为阶数 / Return window size minus 1 as order
     }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() {
         // 中值滤波器没有明确定义的截止频率 / Median filter has no clearly defined cutoff frequency
         return new double[]{0.0};
     }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         // 中值滤波器不支持通过截止频率设置参数 / Median filter doesn't support setting parameters via cutoff frequency
@@ -142,17 +159,32 @@ public class MedianFilter extends AbstractSignalProcessor<Double> implements ISi
         // 中值滤波器不直接使用采样率 / Median filter doesn't directly use sampling rate
         return 1.0;
     }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate (未使用 / Not used)
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         // 中值滤波器不直接使用采样率 / Median filter doesn't directly use sampling rate
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() {
         return coefficients;
     }
-    
+
+    /**
+     * 计算滤波器的频率响应 / Calculate frequency response of filter
+     * @param frequencies 频率点数组 / Frequency point array
+     * @return 频率响应 / Frequency response
+     * @throws SignalProcessingException 计算过程中发生错误时抛出 / Thrown when errors occur during calculation
+     */
     @Override
     public FrequencyResponse getFrequencyResponse(double[] frequencies) throws SignalProcessingException {
         // 中值滤波器是非线性的，没有传统的频率响应 / Median filter is nonlinear, has no traditional frequency response
@@ -170,13 +202,16 @@ public class MedianFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 获取窗口大小 / Get window size
+     * @return 窗口大小 / Window size
      */
     public int getWindowSize() {
         return windowSize;
     }
-    
+
     /**
      * 设置窗口大小 / Set window size
+     * @param windowSize 窗口大小 / Window size
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setWindowSize(int windowSize) throws SignalProcessingException {
         validateParameters(windowSize);
@@ -187,7 +222,11 @@ public class MedianFilter extends AbstractSignalProcessor<Double> implements ISi
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         return filter(input);
     }
-    
+
+    /**
+     * 克隆中值滤波器 / Clone Median filter
+     * @return 中值滤波器副本 / Median filter copy
+     */
     @Override
     public MedianFilter clone() {
         try {

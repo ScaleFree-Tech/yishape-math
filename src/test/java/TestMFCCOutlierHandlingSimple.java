@@ -3,7 +3,7 @@ import com.yishape.lab.audio.AudioPlots;
 import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.IPlot;
 
 import java.io.File;
 import java.nio.file.Paths;

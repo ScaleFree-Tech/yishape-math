@@ -12,6 +12,13 @@ import com.yishape.lab.util.Tuple3;
  * A = U * S * V^T where U and V are orthogonal matrices and S is a diagonal matrix
  * of singular values.
  * </p>
+ * <p><b>Shape contract for {@code decompose} results:</b> let A be m×n and k = min(m,n).</p>
+ * <ul>
+ *   <li>{@code U} is m×k with orthonormal columns (thin/economic left factor).</li>
+ *   <li>{@code S} (singular values vector) has length k, non‑negative and descending after post‑processing.</li>
+ *   <li>{@code V^T} is n×n in this library’s implementation (orthogonal right factor stored as transpose).</li>
+ * </ul>
+ * <p>Decomposing a matrix with zero rows or zero columns must throw {@link IllegalArgumentException}.</p>
  * 
  * <h3>Key Features</h3>
  * <ul>
@@ -28,15 +35,17 @@ import com.yishape.lab.util.Tuple3;
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
  * 
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public interface ISVDDecomposition extends IMatrixDecomposition<Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>>> {
     
     /**
      * Perform singular value decomposition on a matrix
-     * 
-     * @param matrix The matrix to decompose
-     * @return A tuple containing U, singular values, and V^T matrices
+     *
+     * @param matrix The matrix to decompose (must be non‑empty: m &gt; 0 and n &gt; 0)
+     * @return A tuple containing U (m×min(m,n)), singular values (length min(m,n)), and V^T (n×n)
      */
     @Override
     Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> decompose(IMatrix<Double> matrix);
@@ -44,9 +53,9 @@ public interface ISVDDecomposition extends IMatrixDecomposition<Tuple3<IMatrix<D
     /**
      * Perform singular value decomposition on a matrix with configurable epsilon.
      * 
-     * @param matrix The matrix to decompose
+     * @param matrix The matrix to decompose (must be non‑empty)
      * @param epsilon Threshold for considering an element as zero
-     * @return A tuple containing U, singular values, and V^T matrices
+     * @return A tuple containing U, singular values, and V^T (see class Javadoc for shapes)
      */
     @Override
     Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> decompose(IMatrix<Double> matrix, double epsilon);

@@ -16,6 +16,7 @@ import com.yishape.lab.math.optimize.newton.RereOnlineSGD;
 import com.yishape.lab.math.optimize.newton.RereOnlineAdam;
 
 import java.util.*;
+import java.util.Arrays;
 import java.io.*;
 import com.yishape.lab.math.ml.cls.IClassifier;
 
@@ -77,7 +78,42 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
     
     /** 随机种子 */
     private long randomSeed = 42;
-    
+
+    /**
+     * 建树策略：默认 {@link XGBoostTreeMethod#HIST}（直方图，大规模更快）；{@link XGBoostTreeMethod#EXACT} 用于小规模数值基准。
+     */
+    private XGBoostTreeMethod treeMethod = XGBoostTreeMethod.HIST;
+
+    /** 直方图分箱数（≥2），仅 {@link XGBoostTreeMethod#HIST} 有效 */
+    private int maxBin = 256;
+
+    /** 最小分裂增益 γ（对应 XGBoost {@code min_split_loss}） */
+    private double gamma = 0.0;
+
+    /** 子结点最小 Hessian 和（对应 XGBoost {@code min_child_weight}；0 表示不启用） */
+    private double minChildWeight = 0.0;
+
+    /** 每轮建树使用的样本比例 (0,1]，1 为全量 */
+    private double subsample = 1.0;
+
+    /** 每棵树使用的特征比例 (0,1]，1 为全特征 */
+    private double colsampleBytree = 1.0;
+
+    /**
+     * 直方图分箱：默认 Hessian 加权分位数（对齐工业库 weighted quantile）；
+     * {@link XGBoostHistogramBinning#UNIFORM} 为旧版均匀分箱。
+     */
+    private XGBoostHistogramBinning histogramBinning = XGBoostHistogramBinning.QUANTILE_WEIGHTED_SKETCH;
+
+    /**
+     * 全局初始 margin（base_score / base_margin）：{@code null} 表示按训练集标签频率自动计算；
+     * 二分类长度为 1（正类约定为索引 1 的 logit 参考方向与样本列一致），多分类长度为 K。
+     */
+    private double[] baseMarginOverride = null;
+
+    /** 训练用 RNG（不参与序列化态一致性时用 transient） */
+    private transient Random rng;
+
     // ==================== 训练状态 ====================
     
     /** 类别标签映射 */
@@ -118,6 +154,9 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
     private String optimizerType = "adam"; // 默认使用SGD
     private double optimizerLearningRate = 0.01;
     
+    /** 是否在每个 boosting 轮次用在线优化器改写 {@link #learningRate}（默认关闭，与工业 XGBoost 固定 eta 一致） */
+    private boolean adaptiveBoostingLearningRate = false;
+
     private ClassificationMetrics metrics;
     
     /**
@@ -159,11 +198,16 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
         // 分割训练集和验证集
         DataSplit dataSplit = splitData(features, labelMatrix);
         
-        // 初始化预测值
-        IMatrix trainPredictions = initializePredictions(dataSplit.trainFeatures);
+        double[] baseMargins = resolveBaseMargins(dataSplit.trainLabels);
+        this.initialPredictions = Linalg.zeros(1, baseMargins.length);
+        for (int j = 0; j < baseMargins.length; j++) {
+            this.initialPredictions.set(0, j, baseMargins[j]);
+        }
+
+        IMatrix trainPredictions = predictionMatrixFilled(dataSplit.trainFeatures.rows(), baseMargins);
         IMatrix validPredictions = null;
         if (dataSplit.validFeatures != null) {
-            validPredictions = initializePredictions(dataSplit.validFeatures);
+            validPredictions = predictionMatrixFilled(dataSplit.validFeatures.rows(), baseMargins);
         }
         
         // 梯度提升训练
@@ -512,9 +556,15 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
         this.trees.clear();
         this.trainLossHistory.clear();
         this.validationLossHistory.clear();
-        
-        // 初始化优化器
-        initializeOptimizer();
+        this.initialPredictions = null;
+
+        if (adaptiveBoostingLearningRate) {
+            initializeOptimizer();
+        } else {
+            optimizer = null;
+        }
+
+        this.rng = new Random(randomSeed);
     }
     
     /**
@@ -522,15 +572,16 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
      * @param labels 标签数组
      */
     private void buildLabelMapping(String[] labels) {
-        Set<String> uniqueLabels = new HashSet<>(Arrays.asList(labels));
-        this.numClasses = uniqueLabels.size();
+        // 与工业实践一致：类别索引按标签字典序稳定分配，避免 HashSet 迭代顺序依赖 JVM/哈希桶
+        TreeSet<String> uniqueSorted = new TreeSet<>(Arrays.asList(labels));
+        this.numClasses = uniqueSorted.size();
         this.isBinary = numClasses == 2;
         
         this.labelToIndex = new HashMap<>();
         this.indexToLabel = new HashMap<>();
         
         int index = 0;
-        for (String label : uniqueLabels) {
+        for (String label : uniqueSorted) {
             labelToIndex.put(label, index);
             indexToLabel.put(index, label);
             index++;
@@ -625,32 +676,113 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
     }
     
     /**
-     * 初始化预测值
-     * @param features 特征矩阵
-     * @return 初始预测矩阵
+     * 用给定全局 margin 填满样本×类别预测矩阵（boosting 起点）。
      */
-    private IMatrix initializePredictions(IMatrix features) {
-        int numSamples = features.rows();
-        int predCols = isBinary ? 1 : numClasses;
-        
+    private IMatrix predictionMatrixFilled(int numSamples, double[] margins) {
+        int predCols = margins.length;
         IMatrix predictions = Linalg.zeros(numSamples, predCols);
-        
-        // 初始化为0（对数几率为0，对应概率为0.5）
         for (int i = 0; i < numSamples; i++) {
             for (int j = 0; j < predCols; j++) {
-                predictions.set(i, j, 0.0);
+                predictions.set(i, j, margins[j]);
             }
         }
-        
-        // 保存初始预测值
-        if (initialPredictions == null) {
-            initialPredictions = Linalg.zeros(1, predCols);
-            for (int j = 0; j < predCols; j++) {
-                initialPredictions.set(0, j, 0.0);
-            }
-        }
-        
         return predictions;
+    }
+
+    private double[] resolveBaseMargins(IMatrix trainLabels) {
+        int expected = isBinary ? 1 : numClasses;
+        if (baseMarginOverride != null) {
+            if (baseMarginOverride.length != expected) {
+                throw new IllegalArgumentException(
+                        "baseMargin length must be " + expected + " for current task (binary=" + isBinary + ")");
+            }
+            return Arrays.copyOf(baseMarginOverride, expected);
+        }
+        return computeAutoBaseMargins(trainLabels);
+    }
+
+    /**
+     * 与常用 XGBoost/sklearn 默认一致：二分类用训练集正类比例 logit；多分类用 log 先验并中心化使 softmax 对称。
+     */
+    private double[] computeAutoBaseMargins(IMatrix trainLabels) {
+        int n = trainLabels.rows();
+        if (isBinary) {
+            double sumY = 0.0;
+            for (int i = 0; i < n; i++) {
+                sumY += trainLabels.get(i, 0).doubleValue();
+            }
+            double p = sumY / Math.max(1, n);
+            p = Math.min(1.0 - 1e-12, Math.max(1e-12, p));
+            double logit = Math.log(p / (1.0 - p));
+            return new double[]{logit};
+        }
+        double[] cnt = new double[numClasses];
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < numClasses; k++) {
+                cnt[k] += trainLabels.get(i, k).doubleValue();
+            }
+        }
+        double[] margins = new double[numClasses];
+        double mean = 0.0;
+        for (int k = 0; k < numClasses; k++) {
+            margins[k] = Math.log((cnt[k] + 1e-12) / Math.max(1, n));
+            mean += margins[k];
+        }
+        mean /= numClasses;
+        for (int k = 0; k < numClasses; k++) {
+            margins[k] -= mean;
+        }
+        return margins;
+    }
+
+    /**
+     * 行子采样索引（升序，便于缓存友好）。
+     */
+    private int[] subsampleRowIndices(int n, double fraction, Random rnd) {
+        if (fraction >= 1.0 - 1e-15 || n <= 0) {
+            int[] all = new int[n];
+            for (int i = 0; i < n; i++) {
+                all[i] = i;
+            }
+            return all;
+        }
+        double f = Math.min(1.0, Math.max(1e-6, fraction));
+        int m = Math.max(minSamplesSplit, (int) Math.round(n * f));
+        m = Math.min(m, n);
+        List<Integer> list = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list, rnd);
+        int[] out = new int[m];
+        for (int i = 0; i < m; i++) {
+            out[i] = list.get(i);
+        }
+        Arrays.sort(out);
+        return out;
+    }
+
+    /**
+     * 列子采样；{@code null} 表示使用全部特征。
+     */
+    private int[] subsampleFeatureIndices(int p, double fraction, Random rnd) {
+        if (fraction >= 1.0 - 1e-15 || p <= 0) {
+            return null;
+        }
+        double f = Math.min(1.0, Math.max(1e-6, fraction));
+        int k = Math.max(1, (int) Math.round(p * f));
+        k = Math.min(k, p);
+        List<Integer> list = new ArrayList<>(p);
+        for (int i = 0; i < p; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list, rnd);
+        int[] out = new int[k];
+        for (int i = 0; i < k; i++) {
+            out[i] = list.get(i);
+        }
+        Arrays.sort(out);
+        return out;
     }
     
     /**
@@ -662,22 +794,24 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
      */
     private List<XGTree> trainTrees(IMatrix features, IMatrix gradients, IMatrix hessians) {
         List<XGTree> iterationTrees = new ArrayList<>();
-        
-        int numTrees = isBinary ? 1 : numClasses;
-        
-        for (int treeIdx = 0; treeIdx < numTrees; treeIdx++) {
-            // 提取当前树对应的梯度和海塞
+
+        int numTreesPerIter = isBinary ? 1 : numClasses;
+        int nRows = features.rows();
+        int[] rowSampler = subsampleRowIndices(nRows, subsample, rng);
+        int[] featSampler = subsampleFeatureIndices(features.cols(), colsampleBytree, rng);
+
+        for (int treeIdx = 0; treeIdx < numTreesPerIter; treeIdx++) {
             IVector treeGradients = gradients.getColumn(treeIdx);
             IVector treeHessians = hessians.getColumn(treeIdx);
-            
-            // 创建并训练决策树
+
             XGTree tree = new XGTree(maxDepth, minSamplesSplit, minSamplesLeaf,
-                                               alpha, lambda, learningRate);
-            tree.fit(features, treeGradients, treeHessians);
-            
+                    alpha, lambda, learningRate,
+                    treeMethod, maxBin, gamma, minChildWeight, histogramBinning);
+            tree.fit(features, treeGradients, treeHessians, rowSampler, featSampler);
+
             iterationTrees.add(tree);
         }
-        
+
         return iterationTrees;
     }
     
@@ -849,7 +983,80 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
     public void setRandomSeed(long randomSeed) {
         this.randomSeed = randomSeed;
     }
-    
+
+    public XGBoostTreeMethod getTreeMethod() {
+        return treeMethod;
+    }
+
+    public void setTreeMethod(XGBoostTreeMethod treeMethod) {
+        this.treeMethod = treeMethod != null ? treeMethod : XGBoostTreeMethod.HIST;
+    }
+
+    public int getMaxBin() {
+        return maxBin;
+    }
+
+    public void setMaxBin(int maxBin) {
+        this.maxBin = Math.max(2, maxBin);
+    }
+
+    public double getGamma() {
+        return gamma;
+    }
+
+    public void setGamma(double gamma) {
+        this.gamma = gamma;
+    }
+
+    public double getMinChildWeight() {
+        return minChildWeight;
+    }
+
+    public void setMinChildWeight(double minChildWeight) {
+        this.minChildWeight = Math.max(0.0, minChildWeight);
+    }
+
+    public double getSubsample() {
+        return subsample;
+    }
+
+    public void setSubsample(double subsample) {
+        this.subsample = Math.min(1.0, Math.max(1e-6, subsample));
+    }
+
+    public double getColsampleBytree() {
+        return colsampleBytree;
+    }
+
+    public void setColsampleBytree(double colsampleBytree) {
+        this.colsampleBytree = Math.min(1.0, Math.max(1e-6, colsampleBytree));
+    }
+
+    public XGBoostHistogramBinning getHistogramBinning() {
+        return histogramBinning;
+    }
+
+    public void setHistogramBinning(XGBoostHistogramBinning histogramBinning) {
+        this.histogramBinning = histogramBinning != null ? histogramBinning : XGBoostHistogramBinning.UNIFORM;
+    }
+
+    /**
+     * 手工指定初始 margin（对应 XGBoost {@code base_score} / base_margin）。
+     * 传入 {@code null} 表示清除覆盖并恢复按训练集标签自动估计。
+     */
+    public void setBaseMargin(double[] margins) {
+        this.baseMarginOverride = margins == null ? null : Arrays.copyOf(margins, margins.length);
+    }
+
+    /** 二分类便捷 API：单一 logit 初值。 */
+    public void setBaseMargin(double scalarMargin) {
+        this.baseMarginOverride = new double[]{scalarMargin};
+    }
+
+    public double[] getBaseMarginOverride() {
+        return baseMarginOverride == null ? null : Arrays.copyOf(baseMarginOverride, baseMarginOverride.length);
+    }
+
     public List<Double> getTrainLossHistory() {
         return new ArrayList<>(trainLossHistory);
     }
@@ -878,6 +1085,14 @@ public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFu
         this.earlyStoppingRounds = earlyStopping ? 10 : 0;
     }
     
+    public void setAdaptiveBoostingLearningRate(boolean adaptiveBoostingLearningRate) {
+        this.adaptiveBoostingLearningRate = adaptiveBoostingLearningRate;
+    }
+
+    public boolean isAdaptiveBoostingLearningRate() {
+        return adaptiveBoostingLearningRate;
+    }
+
     // ==================== 优化器相关方法 ====================
     
     /**

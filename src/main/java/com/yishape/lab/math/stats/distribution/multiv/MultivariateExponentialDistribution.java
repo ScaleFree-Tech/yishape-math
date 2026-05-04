@@ -348,8 +348,40 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     
     @Override
     public IMultivariateDistribution<Double> linearTransform(IMatrix<Double> A, IVector<Double> b) {
-        // 线性变换后的指数分布一般不再是指数分布
-        throw new UnsupportedOperationException("指数分布的线性变换结果一般不再是指数分布");
+        if (A.rows() != dimension || A.cols() != dimension) {
+            throw new IllegalArgumentException("变换矩阵必须为 " + dimension + "×" + dimension);
+        }
+        if (b.length() != dimension) {
+            throw new IllegalArgumentException("平移向量维度必须为 " + dimension);
+        }
+        if (b.norm2().doubleValue() > 1e-12) {
+            throw new UnsupportedOperationException(
+                    "独立指数族的线性变换若含非零平移一般不再是独立指数分布 / "
+                            + "Nonzero translation breaks independent exponential family on R₊ⁿ");
+        }
+        if (!isPositiveDiagonal(A)) {
+            throw new UnsupportedOperationException(
+                    "仅支持正对角缩放 / Only positive diagonal scaling preserves independent exponentials");
+        }
+        double[] nr = new double[dimension];
+        for (int i = 0; i < dimension; i++) {
+            nr[i] = rates.get(i) / A.get(i, i);
+        }
+        return new MultivariateExponentialDistribution(Linalg.vector(nr), random);
+    }
+
+    private boolean isPositiveDiagonal(IMatrix<Double> A) {
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                if (i != j && Math.abs(A.get(i, j)) > 1e-12) {
+                    return false;
+                }
+            }
+            if (A.get(i, i) <= 0) {
+                return false;
+            }
+        }
+        return true;
     }
     
     @Override
@@ -485,23 +517,14 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        if (dimension != 2) {
-            throw new UnsupportedOperationException("置信椭圆只支持二维分布");
+        if (dimension < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
         }
         if (confidence <= 0 || confidence >= 1) {
             throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
         }
-        
-        // 对于二维指数分布，置信区域不是椭圆，这里用椭圆近似
-        IVector<Double> mean = getMean();
-        IVector<Double> stdDev = getStandardDeviation();
-        
-        // 使用标准差和置信水平计算椭圆参数
-        double quantile = -Math.log(1 - confidence);
-        double majorAxis = stdDev.get(0) * quantile;
-        double minorAxis = stdDev.get(1) * quantile;
-        
-        return new ConfidenceEllipse(mean, majorAxis, minorAxis, 0.0);
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(
+                getMean(), getCovariance(), 0, 1, confidence);
     }
     
     // ==================== 静态工厂方法 ====================
@@ -509,6 +532,10 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     /**
      * 从样本数据估计多元指数分布参数
      * Estimate multivariate exponential distribution parameters from sample data
+     *
+     * @param samples 样本数据列表 / List of sample data vectors
+     * @return 拟合的多元指数分布 / Fitted multivariate exponential distribution
+     * @throws IllegalArgumentException 如果样本为空或维度不一致 / If samples are empty or dimension inconsistent
      */
     public static MultivariateExponentialDistribution fitFromSamples(List<IVector<Double>> samples) {
         if (samples == null || samples.isEmpty()) {
@@ -561,8 +588,13 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     /**
      * 从加权样本数据估计多元指数分布参数
      * Estimate multivariate exponential distribution parameters from weighted sample data
+     *
+     * @param samples 样本数据列表 / List of sample data vectors
+     * @param weights 样本权重列表 / List of sample weights
+     * @return 拟合的多元指数分布 / Fitted multivariate exponential distribution
+     * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
      */
-    public static MultivariateExponentialDistribution fitFromWeightedSamples(List<IVector<Double>> samples, 
+    public static MultivariateExponentialDistribution fitFromWeightedSamples(List<IVector<Double>> samples,
                                                                            List<Double> weights) {
         if (samples == null || samples.isEmpty() || weights == null || weights.isEmpty()) {
             throw new IllegalArgumentException("样本数据和权重不能为空");
@@ -606,6 +638,10 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     /**
      * 创建标准多元指数分布（所有维度的率参数都为1）
      * Create standard multivariate exponential distribution (rate parameter 1 for all dimensions)
+     *
+     * @param dimension 维度 / Dimensionality
+     * @return 标准多元指数分布 / Standard multivariate exponential distribution
+     * @throws IllegalArgumentException 如果维度小于等于0 / If dimension <= 0
      */
     public static MultivariateExponentialDistribution standard(int dimension) {
         if (dimension <= 0) {
@@ -624,6 +660,11 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
     /**
      * 创建具有相同率参数的多元指数分布
      * Create multivariate exponential distribution with same rate parameter for all dimensions
+     *
+     * @param dimension 维度 / Dimensionality
+     * @param rate 率参数 / Rate parameter
+     * @return 多元指数分布 / Multivariate exponential distribution
+     * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
      */
     public static MultivariateExponentialDistribution uniform(int dimension, double rate) {
         if (dimension <= 0) {

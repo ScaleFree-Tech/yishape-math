@@ -4,22 +4,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.ml.cls.EnsembleClassifier;
+import com.yishape.lab.math.ml.cls.IClassifier;
 import com.yishape.lab.math.ml.cls.RereLogisticRegression;
 import com.yishape.lab.math.ml.cls.knn.RereKnn;
+import com.yishape.lab.math.ml.cls.tree.DecisionTreeCriterion;
+import com.yishape.lab.math.ml.cls.tree.RereDecisionTree;
 import com.yishape.lab.math.ml.cls.tree.RereRandomForest;
 import com.yishape.lab.math.ml.cls.tree.RereXGboost;
+import com.yishape.lab.math.ml.cls.svm.RereLinearSVM;
+import com.yishape.lab.math.ml.dimreduce.IDimReduce;
+import com.yishape.lab.math.ml.dimreduce.RerePCA;
+import com.yishape.lab.math.ml.dimreduce.RereSVD;
+import com.yishape.lab.math.ml.dimreduce.RereTSNE;
+import com.yishape.lab.math.ml.dimreduce.RereUMAP;
+import com.yishape.lab.math.ml.lr.IRegression;
+import com.yishape.lab.math.ml.lr.RereLinearRegression;
 import com.yishape.lab.math.ml.metric.ClassificationMetrics;
 import com.yishape.lab.math.ml.metric.CrossValidation;
 import com.yishape.lab.math.ml.metric.CrossValidationLogger;
 import com.yishape.lab.math.ml.metric.CrossValidationResult;
-import com.yishape.lab.math.ml.cls.IClassifier;
 
 /**
  * 算法工具类，提供各种机器学习算法的工厂方法和评估工具。
  *
  * 该类作为机器学习算法的统一入口，提供了以下功能：
  * <ul>
- * <li>分类算法的工厂方法</li>
+ * <li>分类算法工厂：{@link #logisticRegression()}、{@link #logisticRegression(double, double)}、
+ * {@link #randomForest()}、{@link #decisionTree()}、{@link #linearSvm()}、{@link #xGboost()}、{@link #kNN(int)}、{@link #ensembleClassifier(EnsembleClassifier.EnsembleStrategy, long)} 等</li>
+ * <li>线性回归 {@link #linearRegression()} 及正则化快捷构造</li>
+ * <li>降维：{@link #pcaDimReducer()}、{@link #svdDimReducer()}、{@link #tsneDimReducer()}、{@link #umapDimReducer()}</li>
  * <li>分类性能评估工具</li>
  * <li>交叉验证工具</li>
  * </ul>
@@ -27,18 +41,14 @@ import com.yishape.lab.math.ml.cls.IClassifier;
  * <p>
  * 使用示例：</p>
  * <pre>{@code
- * // 创建逻辑回归分类器
-IClassifier lr = ML.logisticRegression(0.1, 0.01);
-
-// 创建随机森林分类器
-IClassifier rf = ML.randomForest();
-
-// 计算分类性能指标
-ClassificationMetrics metrics = ML.classificationMetric(model, features, labels);
-
-// 执行k折交叉验证
-CrossValidationResult cvResult = ML.kFoldCrossValidation(classifier, X, y, 5);
-}</pre>
+ * IClassifier lr0 = ML.logisticRegression();
+ * IClassifier lr = ML.logisticRegression(0.1, 0.01);
+ * IClassifier rf = ML.randomForest();
+ * ClassificationMetrics metrics = ML.classificationMetrics(model, features, labels);
+ * CrossValidationResult cvResult = ML.kFoldCrossValidation(classifier, X, y, 5);
+ * IRegression reg = ML.linearRegression(0.0, 0.1);
+ * IMatrix Z = ML.pcaDimReducer().dimensionReduction(X, 2);
+ * }</pre>
  *
  * @author lteb2
  * @since 1.0
@@ -47,6 +57,16 @@ public class ML {
 
     private static final Logger log = LoggerFactory.getLogger(ML.class);
 
+
+    /**
+     * 创建逻辑回归分类器（无 L1/L2 正则，等价于 {@code new RereLogisticRegression()}）。
+     *
+     * @return 默认配置的逻辑回归实例
+     * @see RereLogisticRegression#RereLogisticRegression()
+     */
+    public static IClassifier logisticRegression() {
+        return new RereLogisticRegression();
+    }
 
     /**
      * 创建带有L1和L2正则化的逻辑回归分类器。
@@ -94,7 +114,8 @@ public class ML {
      * 创建XGBoost分类器。
      *
      * <p>
-     * XGBoost（Extreme Gradient Boosting）是一种高效的梯度提升框架，具有以下特点：</p>
+     * XGBoost（Extreme Gradient Boosting）是一种高效的梯度提升框架；默认含标签频率估计的初始 margin（{@code base_score}）
+     * 与 Hessian 加权分位数直方图，可通过 {@link RereXGboost#setHistogramBinning} / {@link RereXGboost#setBaseMargin} 调整。</p>
      * <ul>
      * <li>高预测精度</li>
      * <li>快速的训练速度</li>
@@ -135,6 +156,139 @@ public class ML {
     public static IClassifier kNN(int k) {
         return new RereKnn(k);
     }
+
+    /**
+     * 创建集成分类器（投票 / 加权投票 / 堆叠），等价于 {@code new EnsembleClassifier(strategy, randomSeed)}。
+     *
+     * @param strategy   集成策略
+     * @param randomSeed 随机种子
+     * @return 集成分类器实例
+     * @see EnsembleClassifier
+     */
+    public static IClassifier ensembleClassifier(EnsembleClassifier.EnsembleStrategy strategy, long randomSeed) {
+        return new EnsembleClassifier(strategy, randomSeed);
+    }
+
+    /**
+     * 创建带权重向量的集成分类器（用于加权投票等），等价于
+     * {@code new EnsembleClassifier(strategy, weights, randomSeed)}。
+     *
+     * @param strategy   集成策略
+     * @param weights    各基分类器权重
+     * @param randomSeed 随机种子
+     * @return 集成分类器实例
+     */
+    public static IClassifier ensembleClassifier(EnsembleClassifier.EnsembleStrategy strategy,
+            double[] weights, long randomSeed) {
+        return new EnsembleClassifier(strategy, weights, randomSeed);
+    }
+
+    /**
+     * 单棵决策树（默认 CART 基尼不纯度、深度不限由样本划分终止条件约束）。
+     *
+     * @see RereDecisionTree
+     * @see DecisionTreeCriterion
+     */
+    public static IClassifier decisionTree() {
+        return new RereDecisionTree();
+    }
+
+    /**
+     * 单棵决策树（指定准则与深度 / 分裂约束）。
+     *
+     * @param criterion        {@link DecisionTreeCriterion#CART_GINI} / {@link DecisionTreeCriterion#CART_ENTROPY} /
+     *                         {@link DecisionTreeCriterion#C45_GAIN_RATIO}
+     * @param maxDepth         最大深度（≤0 表示不限制）
+     * @param minSamplesSplit  结点至少样本数才允许分裂
+     * @param minSamplesLeaf   叶结点最少样本数
+     */
+    public static IClassifier decisionTree(DecisionTreeCriterion criterion, int maxDepth,
+            int minSamplesSplit, int minSamplesLeaf) {
+        return new RereDecisionTree(criterion, maxDepth, minSamplesSplit, minSamplesLeaf);
+    }
+
+    /**
+     * 线性 SVM（平方铰链 + L2，OvR 多分类），默认 {@code C=1}、训练集标准化。
+     *
+     * @see RereLinearSVM
+     */
+    public static IClassifier linearSvm() {
+        return new RereLinearSVM();
+    }
+
+    /**
+     * 线性 SVM，指定铰链损失权重 {@code C} 与是否标准化特征。
+     */
+    public static IClassifier linearSvm(double C, boolean standardizeFeatures) {
+        return new RereLinearSVM(C, standardizeFeatures);
+    }
+
+    // ========== 回归 / Regression ==========
+
+    /**
+     * 普通最小二乘线性回归（含截距、无正则化），等价于 {@code new RereLinearRegression()}。
+     *
+     * @return 
+     * @see RereLinearRegression
+     */
+    public static IRegression linearRegression() {
+        return new RereLinearRegression();
+    }
+
+    /**
+     * 线性回归（含截距），根据 {@code lambda1}、{@code lambda2} 自动选择无正则 / L1 / L2 / ElasticNet，
+     * 等价于 {@code new RereLinearRegression(true, lambda1, lambda2)}。
+     *
+     * @param lambda1 L1 系数（Lasso）
+     * @param lambda2 L2 系数（Ridge）
+     * @return 
+     * @see RereLinearRegression
+     */
+    public static IRegression linearRegression(double lambda1, double lambda2) {
+        return new RereLinearRegression(true, lambda1, lambda2);
+    }
+
+    /**
+     * 线性回归（可关闭截距），正则类型由 {@code lambda1}、{@code lambda2} 推断。
+     *
+     * @param includeBias 是否包含偏置项
+     * @param lambda1     L1 系数
+     * @param lambda2     L2 系数
+     * @return 
+     * @see RereLinearRegression
+     */
+    public static IRegression linearRegression(boolean includeBias, double lambda1, double lambda2) {
+        return new RereLinearRegression(includeBias, lambda1, lambda2);
+    }
+
+
+
+    // ========== 降维 / Dimensionality reduction ==========
+
+    /** PCA 降维器实例，等价于 {@code new RerePCA()}。
+     * @return  */
+    public static IDimReduce pcaDimReducer() {
+        return new RerePCA();
+    }
+
+    /** 基于 SVD 的线性降维器，等价于 {@code new RereSVD()}。
+     * @return  */
+    public static IDimReduce svdDimReducer() {
+        return new RereSVD();
+    }
+
+    /** t-SNE 非线性降维器，等价于 {@code new RereTSNE()}。
+     * @return  */
+    public static IDimReduce tsneDimReducer() {
+        return new RereTSNE();
+    }
+
+    /** UMAP 非线性降维器，等价于 {@code new RereUMAP()}。
+     * @return  */
+    public static IDimReduce umapDimReducer() {
+        return new RereUMAP();
+    }
+
 
     /**
      * 计算分类器的性能指标。

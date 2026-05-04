@@ -4,26 +4,33 @@ import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
 
 /**
+ * 矩阵分块操作工具类 / Block Operations Utility Class for Matrix Decompositions
+ * <p>
+ * 提供矩阵分解中常用分块操作的优化实现。使用分块技术提高大型矩阵运算的缓存性能。
+ * </p>
+ * <p>
  * Utility class for block operations in matrix decompositions.
  * <p>
  * This class provides optimized implementations of common matrix operations
  * using blocking techniques to improve cache performance for large matrices.
  * </p>
- * 
- * <h3>Performance Optimizations</h3>
+ *
+ * <h3>性能优化 / Performance Optimizations:</h3>
  * <ul>
- *   <li>Cache-friendly blocking algorithms</li>
- *   <li>Reduced memory access patterns</li>
- *   <li>Improved numerical stability</li>
- *   <li>Configurable block sizes for different architectures</li>
+ *   <li>缓存友好的分块算法 / Cache-friendly blocking algorithms</li>
+ *   <li>减少内存访问模式 / Reduced memory access patterns</li>
+ *   <li>提高数值稳定性 / Improved numerical stability</li>
+ *   <li>可配置的分块大小适应不同架构 / Configurable block sizes for different architectures</li>
  * </ul>
- * 
- * <h3>References</h3>
+ *
+ * <h3>参考文献 / References:</h3>
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Dongarra, J. J., Duff, I. S., Sorensen, D. C., &amp; van der Vorst, H. A. (1998). Numerical linear algebra for high-performance computers. SIAM.</li>
  * </ul>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class BlockOperationUtils {

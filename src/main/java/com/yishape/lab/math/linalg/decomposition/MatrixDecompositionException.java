@@ -7,7 +7,7 @@ package com.yishape.lab.math.linalg.decomposition;
  * decomposition operations, including context information about the matrix
  * that caused the error and the specific decomposition algorithm being used.
  * </p>
- * 
+ *
  * <h3>Exception Hierarchy</h3>
  * <pre>
  * Exception
@@ -19,7 +19,9 @@ package com.yishape.lab.math.linalg.decomposition;
  *            ├── NonSquareMatrixException
  *            └── DecompositionFailedException
  * </pre>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class MatrixDecompositionException extends RuntimeException {

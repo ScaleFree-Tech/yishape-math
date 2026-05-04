@@ -15,24 +15,49 @@ import java.util.Arrays;
  */
 public class TonalFeatureResult {
 
-    private final String key;                      // 调性 (如"C major", "A minor")
-    private final String mode;                     // 调式 (major/minor)
-    private final double[] chromaVector;           // 色度向量 (12维)
-    private final double keyStrength;              // 调性强度
-    private final double tonalCentroid;            // 调性重心
-    private final double harmonicComplexity;       // 和声复杂度
-    private final String[] detectedChords;         // 检测到的和弦
-    private final double[] chordProgression;       // 和弦进行强度
-    private final double confidence;               // 置信度
-
-    // 新增的高级调性特征
-    private final double[] tonnetzFeatures;        // Tonnetz特征 (6维)
-    private final double[] hpcpFeatures;           // HPCP特征 (12维)
-    private final double[] pitchStabilityFeatures; // 音调稳定性特征(4维)
-    private final double tonalStability;           // 调性稳定性
+    /** 调性 (如"C major", "A minor") / Key (e.g., "C major", "A minor") */
+    private final String key;
+    /** 调式 (major/minor) / Mode (major/minor) */
+    private final String mode;
+    /** 色度向量 (12维) / Chroma vector (12 dimensions) */
+    private final double[] chromaVector;
+    /** 调性强度 / Key strength */
+    private final double keyStrength;
+    /** 调性重心 / Tonal centroid */
+    private final double tonalCentroid;
+    /** 和声复杂度 / Harmonic complexity */
+    private final double harmonicComplexity;
+    /** 检测到的和弦 / Detected chords */
+    private final String[] detectedChords;
+    /** 和弦进行强度 / Chord progression strength */
+    private final double[] chordProgression;
+    /** 置信度 / Confidence */
+    private final double confidence;
+    /** Tonnetz特征 (6维) / Tonnetz features (6 dimensions) */
+    private final double[] tonnetzFeatures;
+    /** HPCP特征 (12维) / HPCP features (12 dimensions) */
+    private final double[] hpcpFeatures;
+    /** 音调稳定性特征 (4维) / Pitch stability features (4 dimensions) */
+    private final double[] pitchStabilityFeatures;
+    /** 调性稳定性 / Tonal stability */
+    private final double tonalStability;
 
     /**
-     * 构造函数 / Constructor
+     * 完整构造函数 / Full constructor
+     *
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param chromaVector 色度向量 (12维) / Chroma vector (12 dimensions)
+     * @param keyStrength 调性强度 / Key strength
+     * @param tonalCentroid 调性重心 / Tonal centroid
+     * @param harmonicComplexity 和声复杂度 / Harmonic complexity
+     * @param detectedChords 检测到的和弦 / Detected chords
+     * @param chordProgression 和弦进行强度 / Chord progression strength
+     * @param confidence 置信度 / Confidence
+     * @param tonnetzFeatures Tonnetz特征 (6维) / Tonnetz features (6 dimensions)
+     * @param hpcpFeatures HPCP特征 (12维) / HPCP features (12 dimensions)
+     * @param pitchStabilityFeatures 音调稳定性特征 (4维) / Pitch stability features (4 dimensions)
+     * @param tonalStability 调性稳定性 / Tonal stability
      */
     public TonalFeatureResult(String key, String mode, double[] chromaVector,
                              double keyStrength, double tonalCentroid, double harmonicComplexity,
@@ -56,6 +81,13 @@ public class TonalFeatureResult {
 
     /**
      * 带置信度的简化构造函数 / Simplified constructor with confidence
+     *
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param chromaVector 色度向量 (12维) / Chroma vector (12 dimensions)
+     * @param keyStrength 调性强度 / Key strength
+     * @param tonalStability 调性稳定性 / Tonal stability
+     * @param confidence 置信度 / Confidence
      */
     public TonalFeatureResult(String key, String mode, double[] chromaVector,
                              double keyStrength, double tonalStability, double confidence) {
@@ -65,7 +97,13 @@ public class TonalFeatureResult {
     }
 
     /**
-     * 简化构造函数 / Simplified constructor (向后兼容)
+     * 简化构造函数 (向后兼容) / Simplified constructor (backward compatible)
+     *
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param chromaVector 色度向量 (12维) / Chroma vector (12 dimensions)
+     * @param keyStrength 调性强度 / Key strength
+     * @param tonalStability 调性稳定性 / Tonal stability
      */
     public TonalFeatureResult(String key, String mode, double[] chromaVector,
                              double keyStrength, double tonalStability) {
@@ -174,6 +212,8 @@ public class TonalFeatureResult {
 
     /**
      * 判断是否为大调 / Check if major key
+     *
+     * @return 如果调式为大调返回true / True if mode is major
      */
     public boolean isMajorKey() {
         return "major".equalsIgnoreCase(mode);
@@ -181,6 +221,8 @@ public class TonalFeatureResult {
 
     /**
      * 判断是否为小调 / Check if minor key
+     *
+     * @return 如果调式为小调返回true / True if mode is minor
      */
     public boolean isMinorKey() {
         return "minor".equalsIgnoreCase(mode);
@@ -188,6 +230,8 @@ public class TonalFeatureResult {
 
     /**
      * 获取主要色度 / Get dominant chroma
+     *
+     * @return 主要色度的索引 (0-11) / Index of dominant chroma (0-11)
      */
     public int getDominantChroma() {
         int maxIndex = 0;
@@ -211,8 +255,8 @@ public class TonalFeatureResult {
 
     /**
      * 判断是否为强调性 / Check if key is strong
-     * 
-     * @return 如果调性强度大于0.7则认为是强调性 / True if key strength > 0.7
+     *
+     * @return 如果调性强度大于0.7返回true / True if key strength > 0.7
      */
     public boolean isStrongKey() {
         return keyStrength > 0.7;
@@ -220,8 +264,8 @@ public class TonalFeatureResult {
 
     /**
      * 判断调性是否稳定 / Check if tonality is stable
-     * 
-     * @return 如果调性稳定性大于0.6则认为是稳定的 / True if tonal stability > 0.6
+     *
+     * @return 如果调性稳定性大于0.6返回true / True if tonal stability > 0.6
      */
     public boolean isStableTonality() {
         return tonalStability > 0.6;

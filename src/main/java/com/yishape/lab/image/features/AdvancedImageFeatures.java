@@ -39,12 +39,24 @@ public class AdvancedImageFeatures {
          * LBP特征结果 / LBP Feature Result
          */
         public static class LBPResult implements AnalysisResult {
+            /** 直方图 / Histogram */
             private IVector<Double> histogram;
+            /** LBP图像 / LBP image */
             private IMatrix<Double> lbpImage;
+            /** 均匀性 / Uniformity */
             private double uniformity;
+            /** 统计信息 / Statistics */
             private Map<String, Double> statistics;
-            
-            public LBPResult(IVector<Double> histogram, IMatrix<Double> lbpImage, 
+
+            /**
+             * 构造LBP结果 / Construct LBPResult
+             *
+             * @param histogram 直方图 / Histogram
+             * @param lbpImage LBP图像 / LBP image
+             * @param uniformity 均匀性 / Uniformity
+             * @param statistics 统计信息 / Statistics
+             */
+            public LBPResult(IVector<Double> histogram, IMatrix<Double> lbpImage,
                            double uniformity, Map<String, Double> statistics) {
                 this.histogram = histogram;
                 this.lbpImage = lbpImage;
@@ -77,6 +89,7 @@ public class AdvancedImageFeatures {
             }
             
             public IMatrix<Double> getLBPImage() { return lbpImage; }
+            /** 获取均匀性 / Get uniformity */
             public double getUniformity() { return uniformity; }
         }
         
@@ -320,11 +333,23 @@ public class AdvancedImageFeatures {
          * HOG特征结果 / HOG Feature Result
          */
         public static class HOGResult implements AnalysisResult {
+            /** 特征向量 / Feature vector */
             private IVector<Double> features;
+            /** 梯度幅值 / Gradient magnitude */
             private IMatrix<Double> gradientMagnitude;
+            /** 梯度方向 / Gradient direction */
             private IMatrix<Double> gradientDirection;
+            /** 统计信息 / Statistics */
             private Map<String, Double> statistics;
-            
+
+            /**
+             * 构造HOG结果 / Construct HOGResult
+             *
+             * @param features 特征向量 / Feature vector
+             * @param gradientMagnitude 梯度幅值 / Gradient magnitude
+             * @param gradientDirection 梯度方向 / Gradient direction
+             * @param statistics 统计信息 / Statistics
+             */
             public HOGResult(IVector<Double> features, IMatrix<Double> gradientMagnitude,
                            IMatrix<Double> gradientDirection, Map<String, Double> statistics) {
                 this.features = features;
@@ -356,6 +381,7 @@ public class AdvancedImageFeatures {
             }
             
             public IMatrix<Double> getGradientMagnitude() { return gradientMagnitude; }
+            /** 获取梯度方向 / Get gradient direction */
             public IMatrix<Double> getGradientDirection() { return gradientDirection; }
         }
         

@@ -8,14 +8,18 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 
 /**
  * 贝叶斯推断核心类
- * Core class for Bayesian inference
+ * Core Class for Bayesian Inference
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class BayesianInference {
-    
+
     /**
      * 执行贝叶斯更新
      * Perform Bayesian update
-     * 
+     *
      * @param prior 先验分布 / Prior distribution
      * @param likelihood 似然函数 / Likelihood function
      * @param data 观测数据 / Observed data
@@ -37,12 +41,12 @@ public class BayesianInference {
     /**
      * 使用共轭先验进行贝叶斯更新（Beta-Binomial模型）
      * Bayesian update using conjugate prior (Beta-Binomial model)
-     * 
+     *
      * @param alpha Beta先验的alpha参数 / Alpha parameter of Beta prior
      * @param beta Beta先验的beta参数 / Beta parameter of Beta prior
      * @param successes 成功次数 / Number of successes
      * @param trials 试验总次数 / Total number of trials
-     * @return 包含后验Beta分布参数的数组 [alpha_posterior, beta_posterior] / Array containing posterior Beta distribution parameters
+     * @return 包含后验Beta分布参数的数组 [alpha_posterior, beta_posterior] / Array containing posterior Beta distribution parameters [alpha_posterior, beta_posterior]
      */
     public static double[] betaBinomialUpdate(double alpha, double beta, int successes, int trials) {
         if (alpha <= 0 || beta <= 0) {
@@ -63,7 +67,7 @@ public class BayesianInference {
     /**
      * 使用共轭先验进行贝叶斯更新（Dirichlet-Multinomial模型）
      * Bayesian update using conjugate prior (Dirichlet-Multinomial model)
-     * 
+     *
      * @param priorAlpha Dirichlet先验的alpha参数向量 / Alpha parameter vector of Dirichlet prior
      * @param observations 各类别观测次数 / Observation counts for each category
      * @return 后验Dirichlet分布的alpha参数向量 / Alpha parameter vector of posterior Dirichlet distribution
@@ -80,10 +84,10 @@ public class BayesianInference {
     /**
      * 计算最大后验估计（MAP）
      * Calculate Maximum A Posteriori (MAP) estimate
-     * 
-     * @param logPriorLogLikelihood 负的对数先验和负的对数似然之和的函数 / Function that returns negative log prior plus negative log likelihood
+     *
+     * @param logPriorLogLikelihood 负的对数先验加负的对数似然函数 / Function that returns negative log prior plus negative log likelihood
      * @param initialPoint 初始点 / Initial point
-     * @param optimizer 优化器 / Optimizer
+     * @param optimizer 优化器（可为null，使用默认L-BFGS） / Optimizer (can be null, uses default L-BFGS)
      * @return MAP估计结果 / MAP estimation result
      */
     public static OptResult calculateMAP(IObjectiveFunction logPriorLogLikelihood,
@@ -100,7 +104,7 @@ public class BayesianInference {
     /**
      * 计算贝叶斯因子
      * Calculate Bayes factor
-     * 
+     *
      * @param marginalLikelihood1 模型1的边际似然 / Marginal likelihood of model 1
      * @param marginalLikelihood2 模型2的边际似然 / Marginal likelihood of model 2
      * @return 贝叶斯因子 / Bayes factor

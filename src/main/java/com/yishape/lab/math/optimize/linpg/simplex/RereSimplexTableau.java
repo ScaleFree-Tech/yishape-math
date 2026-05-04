@@ -16,8 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 单纯形表实现类 / Simplex Tableau Implementation
+ * <p>
+ * 工业级线性规划的单纯形表实现，支持原生约束类型处理。
  * Advanced Simplex Tableau implementation for industrial-strength linear programming
-   RereSimplexTableau with native constraint type handling
+ * with native constraint type handling.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 class RereSimplexTableau {
 

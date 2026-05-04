@@ -21,6 +21,9 @@ public class LowPassFilter extends AbstractAudioFilterStandard {
     
     /**
      * 构造函数 / Constructor
+     *
+     * @param name 滤波器名称 / Filter name
+     * @param description 滤波器描述 / Filter description
      */
     public LowPassFilter() {
         super("lowpass", "Low-pass filter");
@@ -74,6 +77,8 @@ public class LowPassFilter extends AbstractAudioFilterStandard {
     
     /**
      * 获取采样率（辅助方法） / Get sample rate (helper method)
+     *
+     * @return 采样率 (Hz) / Sample rate (Hz)
      */
     private double getSampleRate() {
         // 在实际实现中，这可能需要通过其他方式获取 / In actual implementation, this may need to be obtained through other means
@@ -100,6 +105,11 @@ public class LowPassFilter extends AbstractAudioFilterStandard {
         return mergedData;
     }
     
+    /**
+     * 创建此滤波器的克隆 / Create clone of this filter
+     *
+     * @return 低通滤波器克隆 / Low-pass filter clone
+     */
     @Override
     public LowPassFilter clone() {
         LowPassFilter cloned = new LowPassFilter();

@@ -5,11 +5,15 @@ import org.slf4j.LoggerFactory;
 
 import com.yishape.lab.audio.Audios;
 import com.yishape.lab.audio.core.AudioData;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.IPlot;
 
 /**
  * Music Radar Chart Demo This demo shows how to use the plotMusicFeaturesRadar
  * method
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class MusicRadarDemo {
 

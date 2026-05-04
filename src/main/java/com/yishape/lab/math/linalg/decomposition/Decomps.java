@@ -16,21 +16,23 @@ import com.yishape.lab.math.linalg.decomposition.impl.RereSchurDecomposition;
  * This factory provides a consistent interface for creating all types of matrix
  * decompositions with configurable parameters for numerical stability and performance.
  * </p>
- * 
+ *
  * <h3>Usage Examples</h3>
  * <pre>
  * {@code
  // Create a QR decomposition with default parameters
  IQRDecomposition qr = Decomps.createQR();
- 
+
  // Create a Cholesky decomposition with custom epsilon
  ICholeskyDecomposition chol = Decomps.createCholesky(1e-15, 1000);
- 
+
  // Create a Schur decomposition
  ISchurDecomposition schur = Decomps.createSchur();
  }
  * </pre>
- * 
+ *
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public class Decomps {

@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 /**
  * 字符串工具类 / String Utility Class
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class StringUtils {
 
@@ -61,11 +63,22 @@ public class StringUtils {
     
     /**
      * 可变参数支持 / Variable arguments support
+     *
+     * @param separator 分隔符 / Separator
+     * @param array 要拼接的数组 / Array to join
+     * @return 拼接后的字符串 / Joined string
      */
     public static String join(String separator, Object... array) {
         return join(array, separator);
     }
     
+    /**
+     * 忽略null元素的拼接 / Join ignoring null elements
+     *
+     * @param array 要拼接的数组 / Array to join
+     * @param separator 分隔符 / Separator
+     * @return 拼接后的字符串 / Joined string
+     */
     public static String joinIgnoreNull(Object[] array, String separator) {
         if (array == null) {
             return null;
@@ -138,6 +151,11 @@ public class StringUtils {
         return !isEmpty(str);
     }
     
+    /**
+     * 主方法，用于测试 / Main method, used for testing
+     *
+     * @param args 命令行参数 / Command line arguments
+     */
     public static void main(String[] args) {
         String[] arr = {"apple", "banana", "orange"};
         log.debug(StringUtils.join(arr, ", ")); // 输出: apple, banana, orange

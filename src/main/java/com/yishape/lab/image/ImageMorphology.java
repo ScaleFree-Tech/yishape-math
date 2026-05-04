@@ -48,23 +48,63 @@ public class ImageMorphology {
     
     /**
      * 结构元素类 / Structuring Element Class
+     * <p>
+     * 表示图像形态学操作中使用的结构元素，用于定义腐蚀和膨胀操作的邻域形状。
+     * This class represents the structuring element used in image morphology operations,
+     * defining the neighborhood shape for erosion and dilation operations.
+     * </p>
      */
     public static class StructuringElement {
-        private IMatrix<Double> kernel;      // 核矩阵 / Kernel matrix
-        private int centerX;                 // 中心X坐标 / Center X coordinate
-        private int centerY;                 // 中心Y坐标 / Center Y coordinate
-        private StructuringElementType type; // 类型 / Type
-        
+        /** 核矩阵 / Kernel matrix */
+        private IMatrix<Double> kernel;
+        /** 中心X坐标 / Center X coordinate */
+        private int centerX;
+        /** 中心Y坐标 / Center Y coordinate */
+        private int centerY;
+        /** 结构元素类型 / Structuring element type */
+        private StructuringElementType type;
+
+        /**
+         * 构造结构元素 / Construct StructuringElement
+         *
+         * @param kernel 核矩阵 / Kernel matrix
+         * @param centerX 中心X坐标 / Center X coordinate
+         * @param centerY 中心Y坐标 / Center Y coordinate
+         * @param type 结构元素类型 / Structuring element type
+         */
         public StructuringElement(IMatrix<Double> kernel, int centerX, int centerY, StructuringElementType type) {
             this.kernel = kernel;
             this.centerX = centerX;
             this.centerY = centerY;
             this.type = type;
         }
-        
+
+        /**
+         * 获取核矩阵 / Get kernel matrix
+         *
+         * @return 核矩阵 / Kernel matrix
+         */
         public IMatrix<Double> getKernel() { return kernel; }
+
+        /**
+         * 获取中心X坐标 / Get center X coordinate
+         *
+         * @return 中心X坐标 / Center X coordinate
+         */
         public int getCenterX() { return centerX; }
+
+        /**
+         * 获取中心Y坐标 / Get center Y coordinate
+         *
+         * @return 中心Y坐标 / Center Y coordinate
+         */
         public int getCenterY() { return centerY; }
+
+        /**
+         * 获取结构元素类型 / Get structuring element type
+         *
+         * @return 结构元素类型 / Structuring element type
+         */
         public StructuringElementType getType() { return type; }
     }
     

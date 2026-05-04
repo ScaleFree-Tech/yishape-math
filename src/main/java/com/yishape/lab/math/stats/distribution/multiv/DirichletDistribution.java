@@ -5,6 +5,9 @@ import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.stats.distribution.GammaDistribution;
 
+import com.yishape.lab.math.stats.distribution.BetaDistribution;
+
+import java.util.Arrays;
 import java.util.Random;
 import java.util.List;
 import java.util.ArrayList;
@@ -26,24 +29,31 @@ import java.util.ArrayList;
  */
 public class DirichletDistribution implements IMultivariateDistribution<Double> {
     
+    /** 浓度参数向量 / Concentration parameter vector */
     private final IVector<Double> alpha;
+
+    /** 浓度参数之和 / Sum of concentration parameters */
     private final double alphaSum;
+
+    /** 随机数生成器 / Random number generator */
     private final Random random;
     
     /**
      * 构造函数
-     * 
-     * @param alpha 浓度参数向量，所有元素必须为正
+     * Constructor
+     *
+     * @param alpha 浓度参数向量，所有元素必须为正 / Concentration parameter vector, all elements must be positive
      */
     public DirichletDistribution(IVector<Double> alpha) {
         this(alpha, new Random());
     }
-    
+
     /**
-     * 构造函数
-     * 
-     * @param alpha 浓度参数向量，所有元素必须为正
-     * @param random 随机数生成器
+     * 构造函数（带随机数生成器）
+     * Constructor with random number generator
+     *
+     * @param alpha 浓度参数向量，所有元素必须为正 / Concentration parameter vector, all elements must be positive
+     * @param random 随机数生成器 / Random number generator
      */
     public DirichletDistribution(IVector<Double> alpha, Random random) {
         // 验证参数
@@ -92,14 +102,20 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
     
     @Override
     public IMatrix<Double> getCorrelation() {
-        // 简化实现，返回单位矩阵
-        return Linalg.eye(alpha.size());
+        IMatrix<Double> cov = getCovariance();
+        IVector<Double> std = getStandardDeviation();
+        IMatrix<Double> corr = Linalg.zeros(alpha.size(), alpha.size());
+        for (int i = 0; i < alpha.size(); i++) {
+            for (int j = 0; j < alpha.size(); j++) {
+                corr.set(i, j, cov.get(i, j) / (std.get(i) * std.get(j)));
+            }
+        }
+        return corr;
     }
-    
+
     @Override
     public IMatrix<Double> getPrecision() {
-        // 简化实现，返回单位矩阵
-        return Linalg.eye(alpha.size());
+        return getCovariance().inv();
     }
     
     @Override
@@ -114,39 +130,75 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
     
     @Override
     public double mahalanobisDistance(IVector<Double> x) {
-        // 简化实现
-        return 0.0;
+        return Math.sqrt(squaredMahalanobisDistance(x));
     }
-    
+
     @Override
     public double squaredMahalanobisDistance(IVector<Double> x) {
-        // 简化实现
-        return 0.0;
+        validateDimension(x);
+        IVector<Double> mu = meanVector();
+        IVector<Double> diff = x.sub(mu);
+        IMatrix<Double> prec = getPrecision();
+        return diff.dot(prec.mmul(diff));
     }
     
 
     
     @Override
     public IMatrix<Double> sampleMatrix(int n) {
-        // 简化实现
-        return Linalg.zeros(n, alpha.size());
+        List<IVector<Double>> samples = sample(n);
+        double[][] arr = new double[n][alpha.size()];
+        for (int i = 0; i < n; i++) {
+            IVector<Double> s = samples.get(i);
+            for (int j = 0; j < alpha.size(); j++) {
+                arr[i][j] = s.get(j).doubleValue();
+            }
+        }
+        return Linalg.matrix(arr);
     }
     
+    /**
+     * 边际：<strong>非 Dirichlet 语义澄清</strong>——分量之间不满足 Dirichlet 的独立抽样约束；
+     * 此处给出<strong>概率上正确</strong>的对象 —
+     * 单子：BetaMultivariateAdapter( {@link BetaDistribution}(α_i, α₀−α_i) )（边际 Beta）；多半集：(所选分量浓度，
+     * 其余之和浓度 α_rest 构成的 Dirichlet，维度 |子集|+1)。
+     */
     @Override
     public IMultivariateDistribution<Double> getMarginal(int... indices) {
-        // 简化实现
-        double[] marginalAlphaArray = new double[indices.length];
-        for (int i = 0; i < indices.length; i++) {
-            marginalAlphaArray[i] = alpha.get(indices[i]).doubleValue();
+        if (indices == null || indices.length == 0) {
+            throw new IllegalArgumentException("indices must be non-empty");
         }
-        IVector<Double> marginalAlpha = Linalg.vector(marginalAlphaArray);
-        return new DirichletDistribution(marginalAlpha);
+        int[] uniq = Arrays.stream(indices).distinct().sorted().toArray();
+        if (uniq.length != indices.length) {
+            throw new IllegalArgumentException("indices must be unique");
+        }
+        for (int ix : uniq) {
+            if (ix < 0 || ix >= alpha.size()) {
+                throw new IllegalArgumentException("index out of range: " + ix);
+            }
+        }
+        if (uniq.length == alpha.size()) {
+            return new DirichletDistribution(alpha.copy(), random);
+        }
+        if (uniq.length == 1) {
+            double ai = alpha.get(uniq[0]).doubleValue();
+            return new BetaMultivariateAdapter(new BetaDistribution(ai, alphaSum - ai));
+        }
+        double sumSel = 0.0;
+        double[] conc = new double[uniq.length + 1];
+        for (int i = 0; i < uniq.length; i++) {
+            double ai = alpha.get(uniq[i]).doubleValue();
+            conc[i] = ai;
+            sumSel += ai;
+        }
+        conc[uniq.length] = alphaSum - sumSel;
+        return new DirichletDistribution(Linalg.vector(conc), random);
     }
     
     @Override
     public IMultivariateDistribution<Double> getConditional(int[] conditionIndices, IVector<Double> conditionValues) {
-        // 简化实现
-        throw new UnsupportedOperationException("Conditional distribution not implemented");
+        IVector<Double> na = MultivariateBetaDistribution.reducedAlphaForConditional(alpha, conditionIndices, conditionValues);
+        return new DirichletDistribution(na, random);
     }
     
     @Override
@@ -163,26 +215,44 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
     
     @Override
     public double klDivergence(IMultivariateDistribution<Double> other) {
-        // 简化实现
-        return 0.0;
+        if (!(other instanceof DirichletDistribution)) {
+            throw new IllegalArgumentException("KL 仅定义在两个 Dirichlet 分布之间");
+        }
+        DirichletDistribution q = (DirichletDistribution) other;
+        if (q.alpha.size() != alpha.size()) {
+            throw new IllegalArgumentException("维度必须相同");
+        }
+        double kl = -logGamma(q.alphaSum) + logGamma(alphaSum);
+        for (int i = 0; i < alpha.size(); i++) {
+            kl += logGamma(q.alpha.get(i).doubleValue()) - logGamma(alpha.get(i).doubleValue());
+            kl += (alpha.get(i).doubleValue() - q.alpha.get(i).doubleValue())
+                    * (digamma(alpha.get(i).doubleValue()) - digamma(alphaSum));
+        }
+        return kl;
     }
-    
+
     @Override
     public double wassersteinDistance(IMultivariateDistribution<Double> other) {
-        // 简化实现
-        return 0.0;
+        if (!(other instanceof DirichletDistribution)) {
+            throw new IllegalArgumentException("比较双方须为 Dirichlet 分布");
+        }
+        DirichletDistribution q = (DirichletDistribution) other;
+        if (q.alpha.size() != alpha.size()) {
+            throw new IllegalArgumentException("维度必须相同");
+        }
+        return MultivariateDistributionMath.slicedWasserstein2(this, q, alpha.size(), 256, 48, random);
     }
     
     @Override
     public IMultivariateDistribution<Double> fit(List<IVector<Double>> samples) {
-        // 简化实现
-        return this;
+        MultivariateBetaDistribution mb = MultivariateBetaDistribution.fitFromSamples(samples);
+        return new DirichletDistribution(mb.getAlpha(), random);
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> fit(List<IVector<Double>> samples, List<Double> weights) {
-        // 简化实现
-        return this;
+        MultivariateBetaDistribution mb = MultivariateBetaDistribution.fitFromWeightedSamples(samples, weights);
+        return new DirichletDistribution(mb.getAlpha(), random);
     }
     
     @Override
@@ -216,21 +286,39 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
     
     @Override
     public double entropy() {
-        // 简化实现
-        return 0.0;
+        double logB = logGamma(alphaSum);
+        for (int i = 0; i < alpha.size(); i++) {
+            logB -= logGamma(alpha.get(i).doubleValue());
+        }
+        double h = logB + (alphaSum - alpha.size()) * digamma(alphaSum);
+        for (int i = 0; i < alpha.size(); i++) {
+            h -= (alpha.get(i).doubleValue() - 1.0) * digamma(alpha.get(i).doubleValue());
+        }
+        return h;
     }
-    
+
+    private double digamma(double x) {
+        if (x > 6.0) {
+            return Math.log(x) - 1.0 / (2.0 * x) - 1.0 / (12.0 * x * x);
+        }
+        return digamma(x + 1.0) - 1.0 / x;
+    }
+
     @Override
     public IMatrix<Double> informationMatrix() {
-        // 简化实现
-        return Linalg.eye(alpha.size());
+        return getPrecision();
     }
-    
+
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        // 简化实现
-        IVector<Double> center = meanVector();
-        return new ConfidenceEllipse(center, 1.0, 1.0, 0.0);
+        if (alpha.size() < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
+        }
+        if (confidence <= 0 || confidence >= 1) {
+            throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
+        }
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(
+                meanVector(), getCovariance(), 0, 1, confidence);
     }
     
     /**
@@ -337,6 +425,12 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return logPdf;
     }
     
+    /**
+     * 计算第一分量的均值
+     * Compute the mean of the first component
+     *
+     * @return 第一分量的均值 / Mean of the first component
+     */
     public double mean() {
         // For a Dirichlet distribution, return the mean of the first component
         if (alpha.size() > 0) {
@@ -361,16 +455,34 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return mean;
     }
 
+    /**
+     * 计算第一分量的标准差
+     * Compute the standard deviation of the first component
+     *
+     * @return 第一分量的标准差 / Standard deviation of the first component
+     */
     public double std() {
         return Math.sqrt(var());
     }
     
+    /**
+     * 计算第一分量的中位数（近似）
+     * Compute the median of the first component (approximation)
+     *
+     * @return 第一分量的中位数 / Median of the first component
+     */
     public double median() {
         // For a Dirichlet distribution, return the median of the first component
         // This is a simplified approximation
         return mean();
     }
     
+    /**
+     * 计算第一分量的众数（模式）
+     * Compute the mode of the first component
+     *
+     * @return 第一分量的众数 / Mode of the first component
+     */
     public double mode() {
         // For a Dirichlet distribution, return the mode of the first component
         // Mode exists only when all alpha > 1
@@ -392,16 +504,34 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return mean();
     }
     
+    /**
+     * 计算第一分量的下四分位数（近似）
+     * Compute the first quartile (Q1) of the first component (approximation)
+     *
+     * @return 第一分量的下四分位数 / First quartile of the first component
+     */
     public double q1() {
         // First quartile - simplified approximation
         return mean() - 0.6745 * std();
     }
     
+    /**
+     * 计算第一分量的上四分位数（近似）
+     * Compute the third quartile (Q3) of the first component (approximation)
+     *
+     * @return 第一分量的上四分位数 / Third quartile of the first component
+     */
     public double q3() {
         // Third quartile - simplified approximation
         return mean() + 0.6745 * std();
     }
     
+    /**
+     * 计算第一分量的偏度
+     * Compute the skewness of the first component
+     *
+     * @return 第一分量的偏度 / Skewness of the first component
+     */
     public double skewness() {
         // Skewness for first component
         if (alpha.size() > 0) {
@@ -415,6 +545,12 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return 0.0;
     }
     
+    /**
+     * 计算第一分量的峰度（超额峰度）
+     * Compute the kurtosis (excess kurtosis) of the first component
+     *
+     * @return 第一分量的超额峰度 / Excess kurtosis of the first component
+     */
     public double kurtosis() {
         // Kurtosis for first component
         if (alpha.size() > 0) {
@@ -457,12 +593,25 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return posterior.sample(n);
     }
     
+    /**
+     * 从Dirichlet分布中采样一个概率向量
+     * Sample one probability vector from Dirichlet distribution
+     *
+     * @return 采样得到的概率向量 / Sampled probability vector
+     */
     @Override
     public IVector<Double> sample() {
         // Sample from the Dirichlet distribution
         return sampleVector();
     }
     
+    /**
+     * 从Dirichlet分布中采样多个概率向量
+     * Sample multiple probability vectors from Dirichlet distribution
+     *
+     * @param n 采样数量 / Number of samples
+     * @return 采样得到的概率向量列表 / List of sampled probability vectors
+     */
     @Override
     public List<IVector<Double>> sample(int n) {
         List<IVector<Double>> samples = new ArrayList<>();
@@ -477,6 +626,13 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return pdfVector(x);
     }
     
+    /**
+     * 计算一元概率密度函数值（近似）
+     * Compute univariate probability density function value (approximation)
+     *
+     * @param x 一元点 / Univariate point
+     * @return 一元概率密度值 / Univariate probability density value
+     */
     public double pdf(double x) {
         // For a multivariate distribution, evaluating pdf at a single point is not meaningful
         // This is a simplified implementation that returns 0 for values outside [0,1] and 
@@ -507,6 +663,13 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return logDensities;
     }
     
+    /**
+     * 计算累积分布函数值（近似）
+     * Compute cumulative distribution function value (approximation)
+     *
+     * @param x 点 / Point
+     * @return 累积分布函数值 / CDF value
+     */
     public double cdf(double x) {
         // Simplified CDF implementation
         if (x <= 0) {
@@ -519,19 +682,46 @@ public class DirichletDistribution implements IMultivariateDistribution<Double> 
         return Math.min(1.0, Math.max(0.0, x));
     }
 
+    /**
+     * 计算分位数函数（百分位点函数）
+     * Compute percent point function (quantile function)
+     *
+     * @param prob 概率 / Probability
+     * @return 分位数 / Quantile
+     */
     public double ppf(double prob) {
         // Simplified percent point function
         return Math.min(1.0, Math.max(0.0, prob));
     }
 
+    /**
+     * 计算生存函数
+     * Compute survival function
+     *
+     * @param x 点 / Point
+     * @return 生存函数值 / Survival function value
+     */
     public double sf(double x) {
         return 1.0 - cdf(x);
     }
 
+    /**
+     * 计算逆生存函数（逆分位数）
+     * Compute inverse survival function (inverse quantile)
+     *
+     * @param prob 概率 / Probability
+     * @return 逆生存函数值 / Inverse survival function value
+     */
     public double isf(double prob) {
         return ppf(1.0 - prob);
     }
     
+    /**
+     * 计算第一分量的方差
+     * Compute the variance of the first component
+     *
+     * @return 第一分量的方差 / Variance of the first component
+     */
     public double var() {
         // For a Dirichlet distribution, return the variance of the first component
         if (alpha.size() > 0) {

@@ -47,6 +47,13 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     private final BeatAnalyzerImpl beatAnalyzer;
     private final StandardizedConfidenceCalculator confidenceCalculator = new StandardizedConfidenceCalculator();
     
+    /**
+     * 默认构造函数 / Default constructor
+     * <p>
+     * 初始化结构分析器，创建节拍分析器实例。
+     * Initializes the structure analyzer, creating beat analyzer instance.
+     * </p>
+     */
     public StructureAnalyzer() {
         this.beatAnalyzer = new BeatAnalyzerImpl();
     }
@@ -56,6 +63,18 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return analyze(audioData, getDefaultParameters());
     }
     
+    /**
+     * 分析音频数据获取结构特征 / Analyze audio data to get structure features
+     * <p>
+     * 使用指定参数分析音频数据的音乐结构特征。
+     * Analyzes audio data for music structure features using specified parameters.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 结构分析结果映射 / Structure analysis result map
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public Map<String, Object> analyze(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -172,6 +191,15 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 提取频谱特征向量 / Extract spectral feature vector
+     * <p>
+     * 从频谱中提取多个特征形成特征向量，包括频谱质心、频谱滚降、频谱带宽、频谱对比度和频谱平坦度。
+     * Extracts multiple features from spectrum to form feature vector, including spectral centroid, rolloff, bandwidth, contrast and flatness.
+     * </p>
+     *
+     * @param spectrum 频谱数据 / Spectrum data
+     * @param sampleRate 采样率 / Sample rate
+     * @param windowSize 窗口大小 / Window size
+     * @return 频谱特征向量 / Spectral feature vector
      */
     private double[] extractSpectralFeatures(Complex[] spectrum, double sampleRate, int windowSize) {
         // 提取多个频谱特征形成特征向量
@@ -202,6 +230,14 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 计算欧氏距离 / Calculate Euclidean distance
+     * <p>
+     * 计算两个向量之间的欧氏距离。
+     * Calculates Euclidean distance between two vectors.
+     * </p>
+     *
+     * @param vec1 第一个向量 / First vector
+     * @param vec2 第二个向量 / Second vector
+     * @return 欧氏距离 / Euclidean distance
      */
     private double calculateEuclideanDistance(double[] vec1, double[] vec2) {
         double sum = 0.0;
@@ -310,6 +346,16 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 提取段落特征 / Extract segment feature
+     * <p>
+     * 从音频段落中提取频谱包络作为段落特征。
+     * Extracts spectral envelope from audio segment as segment feature.
+     * </p>
+     *
+     * @param samples 音频样本 / Audio samples
+     * @param startIdx 起始索引 / Start index
+     * @param endIdx 结束索引 / End index
+     * @param windowSize 窗口大小 / Window size
+     * @return 段落特征向量 / Segment feature vector
      */
     private double[] extractSegmentFeature(IVector<Double> samples, int startIdx, int endIdx, int windowSize) {
         try {
@@ -363,6 +409,14 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 计算余弦相似度 / Calculate cosine similarity
+     * <p>
+     * 计算两个向量之间的余弦相似度。
+     * Calculates cosine similarity between two vectors.
+     * </p>
+     *
+     * @param vec1 第一个向量 / First vector
+     * @param vec2 第二个向量 / Second vector
+     * @return 余弦相似度 / Cosine similarity
      */
     private double calculateCosineSimilarity(double[] vec1, double[] vec2) {
         if (vec1.length != vec2.length) {
@@ -391,6 +445,15 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 计算结构复杂度 / Calculate structural complexity
+     * <p>
+     * 综合考虑段落数量、重复性和段落长度计算结构复杂度。
+     * Calculates structural complexity by comprehensively considering number of sections, repetitiveness and segment length.
+     * </p>
+     *
+     * @param numSections 段落数量 / Number of sections
+     * @param repetitiveness 重复性 / Repetitiveness
+     * @param avgSegmentLength 平均段落长度 / Average segment length
+     * @return 结构复杂度值(0.0-1.0) / Structural complexity value (0.0-1.0)
      */
     private double calculateStructuralComplexity(int numSections, double repetitiveness, double avgSegmentLength) {
         // 段落数量贡献 / Section count contribution
@@ -410,6 +473,15 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 计算结构分析置信度 / Calculate structure analysis confidence
+     * <p>
+     * 基于新颖性函数的质量和边界数量计算置信度。
+     * Calculates confidence based on novelty function quality and boundary count.
+     * </p>
+     *
+     * @param noveltyFunction 新颖性函数 / Novelty function
+     * @param boundaries 段落边界列表 / Segment boundaries list
+     * @param duration 音频持续时间 / Audio duration
+     * @return 置信度值(0.0-1.0) / Confidence value (0.0-1.0)
      */
     private double calculateStructureConfidence(double[] noveltyFunction, List<Double> boundaries, double duration) {
         // 基于新颖性函数的质量和边界数量计算置信度
@@ -440,6 +512,14 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     /**
      * 分类结构类型 / Classify structure type
+     * <p>
+     * 根据段落数量和重复性分类音乐结构类型。
+     * Classifies music structure type based on number of sections and repetitiveness.
+     * </p>
+     *
+     * @param numSections 段落数量 / Number of sections
+     * @param repetitiveness 重复性 / Repetitiveness
+     * @return 结构类型字符串 / Structure type string
      */
     private String classifyStructureType(int numSections, double repetitiveness) {
         if (numSections <= 2) {
@@ -458,6 +538,18 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return analyzeAdvancedMusic(audioData, getDefaultParameters());
     }
     
+    /**
+     * 分析音频数据获取高级音乐结果 / Analyze audio data to get advanced music result
+     * <p>
+     * 使用指定参数分析音频数据并返回高级音乐检测结果。
+     * Analyzes audio data using specified parameters and returns advanced music detection result.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 音乐检测结果 / Music detection result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public MusicDetectionResult analyzeAdvancedMusic(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         Map<String, Object> analysisResult = analyze(audioData, parameters);
@@ -470,16 +562,31 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return result;
     }
     
+    /**
+     * 获取分析器名称 / Get analyzer name
+     *
+     * @return 分析器名称 / Analyzer name
+     */
     @Override
     public String getAnalyzerName() {
         return "StructureAnalyzer";
     }
     
+    /**
+     * 获取支持的参数列表 / Get supported parameters list
+     *
+     * @return 支持的参数名称数组 / Array of supported parameter names
+     */
     @Override
     public String[] getSupportedParameters() {
         return new String[]{"windowSize", "hopSize", "segmentLength", "noveltyThreshold"};
     }
     
+    /**
+     * 获取默认参数 / Get default parameters
+     *
+     * @return 默认参数映射 / Default parameters map
+     */
     @Override
     public Map<String, Object> getDefaultParameters() {
         Map<String, Object> params = new HashMap<>();
@@ -490,6 +597,16 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return params;
     }
     
+    /**
+     * 验证参数 / Validate parameters
+     * <p>
+     * 验证提供的参数是否在支持列表中。
+     * Validates whether the provided parameters are in the supported list.
+     * </p>
+     *
+     * @param parameters 待验证的参数 / Parameters to validate
+     * @return 是否有效 / Whether valid
+     */
     @Override
     public boolean validateParameters(Map<String, Object> parameters) {
         if (parameters == null) {
@@ -505,6 +622,16 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return true;
     }
     
+    /**
+     * 设置参数 / Set parameters
+     * <p>
+     * 设置分析器参数。如果参数无效则抛出异常。
+     * Sets analyzer parameters. Throws exception if parameters are invalid.
+     * </p>
+     *
+     * @param parameters 要设置的参数 / Parameters to set
+     * @throws AudioProcessingException 参数无效 / Parameters invalid
+     */
     @Override
     public void setParameters(Map<String, Object> parameters) throws AudioProcessingException {
         if (!validateParameters(parameters)) {
@@ -512,26 +639,55 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         }
     }
     
+    /**
+     * 获取当前参数 / Get current parameters
+     *
+     * @return 当前参数映射 / Current parameters map
+     */
     @Override
     public Map<String, Object> getCurrentParameters() {
         return getDefaultParameters();
     }
     
+    /**
+     * 重置参数 / Reset parameters
+     * <p>
+     * 重置分析器参数到默认状态。此实现无需重置任何状态。
+     * Resets analyzer parameters to default state. This implementation has no state to reset.
+     */
     @Override
     public void resetParameters() {
         // No state to reset
     }
     
+    /**
+     * 获取名称 / Get name
+     *
+     * @return 分析器名称 / Analyzer name
+     */
     @Override
     public String getName() {
         return "StructureAnalyzer";
     }
     
+    /**
+     * 获取描述 / Get description
+     *
+     * @return 分析器描述 / Analyzer description
+     */
     @Override
     public String getDescription() {
         return "Analyzes music structure including sections, repetitiveness, and novelty detection";
     }
     
+    /**
+     * 检查是否支持音频格式 / Check if audio format is supported
+     *
+     * @param sampleRate 采样率 / Sample rate
+     * @param channels 声道数 / Number of channels
+     * @param bitDepth 位深度 / Bit depth
+     * @return 是否支持 / Whether supported
+     */
     @Override
     public boolean supportsAudioFormat(double sampleRate, int channels, int bitDepth) {
         return sampleRate >= 8000 && sampleRate <= 192000 && 
@@ -539,56 +695,117 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
                bitDepth >= 8 && bitDepth <= 32;
     }
     
+    /**
+     * 获取最小音频长度 / Get minimum audio length
+     *
+     * @return 最小音频长度（秒）/ Minimum audio length (seconds)
+     */
     @Override
     public double getMinimumAudioLength() {
         return 5.0; // 至少5秒才能进行结构分析
     }
     
+    /**
+     * 获取最大音频长度 / Get maximum audio length
+     *
+     * @return 最大音频长度（秒）/ Maximum audio length (seconds)
+     */
     @Override
     public double getMaximumAudioLength() {
         return 3600.0; // 最多1小时
     }
     
+    /**
+     * 估算复杂度 / Estimate complexity
+     *
+     * @param audioLength 音频长度（秒）/ Audio length (seconds)
+     * @return 估算的复杂度 / Estimated complexity
+     */
     @Override
     public double getComplexityEstimate(double audioLength) {
         return Math.log10(audioLength + 1) * 2.0;
     }
     
+    /**
+     * 预热分析器 / Warm up analyzer
+     * <p>
+     * 预热分析器以提高首次分析的准确性。此实现无需预热。
+     * Warms up the analyzer to improve accuracy of first analysis. This implementation requires no warm-up.
+     * </p>
+     *
+     * @throws AudioProcessingException 预热失败 / Warm-up failed
+     */
     @Override
     public void warmUp() throws AudioProcessingException {
         // No warm-up needed
     }
     
+    /**
+     * 清理资源 / Cleanup resources
+     * <p>
+     * 释放分析器占用的资源。此实现无需清理。
+     * Releases resources occupied by the analyzer. This implementation requires no cleanup.
+     */
     @Override
     public void cleanup() {
         // No cleanup needed
     }
     
+    /**
+     * 获取状态 / Get status
+     *
+     * @return 分析器当前状态 / Current analyzer status
+     */
     @Override
     public String getStatus() {
         return "Ready";
     }
     
+    /**
+     * 检查是否就绪 / Check if ready
+     *
+     * @return 是否就绪 / Whether ready
+     */
     @Override
     public boolean isReady() {
         return true;
     }
     
+    /**
+     * 获取上次分析统计 / Get last analysis statistics
+     *
+     * @return 统计信息映射 / Statistics map
+     */
     @Override
     public Map<String, Object> getLastAnalysisStatistics() {
         return new HashMap<>();
     }
     
+    /**
+     * 获取性能指标 / Get performance metrics
+     *
+     * @return 性能指标映射 / Performance metrics map
+     */
     @Override
     public Map<String, Object> getPerformanceMetrics() {
         return new HashMap<>();
     }
     
+    /**
+     * 设置详细日志 / Set verbose logging
+     *
+     * @param enabled 是否启用 / Whether to enable
+     */
     @Override
     public void setVerboseLogging(boolean enabled) {
         // No logging to configure
     }
     
+    /**
+     * 检查详细日志是否启用 / Check if verbose logging is enabled
+     *
+     * @return 是否启用 / Whether enabled
+     */
     @Override
     public boolean isVerboseLoggingEnabled() {
         return false;
@@ -596,6 +813,18 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
     
     // 辅助方法 / Helper methods
     
+    /**
+     * 获取整型参数值 / Get integer parameter value
+     * <p>
+     * 从参数映射中安全获取整型值，如果不存在则返回默认值。
+     * Safely gets integer value from parameters map, returning default if not exists.
+     * </p>
+     *
+     * @param parameters 参数映射 / Parameters map
+     * @param key 参数键名 / Parameter key
+     * @param defaultValue 默认值 / Default value
+     * @return 参数值或默认值 / Parameter value or default
+     */
     private int getIntParameter(Map<String, Object> parameters, String key, int defaultValue) {
         if (parameters == null || !parameters.containsKey(key)) {
             return defaultValue;
@@ -609,6 +838,18 @@ public class StructureAnalyzer implements IAdvancedAnalyzer {
         return defaultValue;
     }
     
+    /**
+     * 获取双精度浮点型参数值 / Get double parameter value
+     * <p>
+     * 从参数映射中安全获取双精度浮点型值，如果不存在则返回默认值。
+     * Safely gets double value from parameters map, returning default if not exists.
+     * </p>
+     *
+     * @param parameters 参数映射 / Parameters map
+     * @param key 参数键名 / Parameter key
+     * @param defaultValue 默认值 / Default value
+     * @return 参数值或默认值 / Parameter value or default
+     */
     private double getDoubleParameter(Map<String, Object> parameters, String key, double defaultValue) {
         if (parameters == null || !parameters.containsKey(key)) {
             return defaultValue;

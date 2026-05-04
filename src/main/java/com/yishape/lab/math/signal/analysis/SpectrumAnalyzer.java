@@ -22,12 +22,22 @@ import com.yishape.lab.util.Tuple2;
 public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements ISignalAnalyzer<Double> {
     
     /**
-     * 构造函数 / Constructor
+     * 默认构造函数 / Default constructor
      */
     public SpectrumAnalyzer() {
         super("Spectrum Analyzer", "1.0.0");
     }
-    
+
+    /**
+     * 分析信号 / Analyze signal
+     *
+     * @param signal 输入信号向量 / Input signal vector
+     * @param analysisType 分析类型 / Analysis type
+     * @param parameters 分析参数 / Analysis parameters
+     * @param <R> 返回结果类型 / Return result type
+     * @return 分析结果 / Analysis result
+     * @throws SignalProcessingException 分析过程中发生错误时抛出 / Thrown when errors occur during analysis
+     */
     @Override
     public <R> AnalysisResult<R> analyze(IVector<Double> signal, AnalysisType analysisType, AnalysisParameters parameters) throws SignalProcessingException {
         switch (analysisType) {
@@ -450,6 +460,15 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
         }
     }
     
+    /**
+     * 批量分析信号 / Batch analyze signals
+     *
+     * @param signal 输入信号向量 / Input signal vector
+     * @param analysisTypes 分析类型数组 / Analysis type array
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 分析结果数组 / Array of analysis results
+     * @throws SignalProcessingException 分析过程中发生错误时抛出 / Thrown when errors occur during analysis
+     */
     @Override
     public AnalysisResult<?>[] batchAnalyze(IVector<Double> signal, AnalysisType[] analysisTypes, AnalysisParameters parameters) throws SignalProcessingException {
         AnalysisResult<?>[] results = new AnalysisResult[analysisTypes.length];
@@ -459,12 +478,28 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
         return results;
     }
     
+    /**
+     * 比较分析两个信号 / Compare and analyze two signals
+     *
+     * @param signal1 第一个信号向量 / First signal vector
+     * @param signal2 第二个信号向量 / Second signal vector
+     * @param analysisType 分析类型 / Analysis type
+     * @param parameters 分析参数 / Analysis parameters
+     * @param <R> 返回结果类型 / Return result type
+     * @return 比较分析结果 / Comparative analysis result
+     * @throws SignalProcessingException 分析过程中发生错误时抛出 / Thrown when errors occur during analysis
+     */
     @Override
     public <R> AnalysisResult<R> compareAnalyze(IVector<Double> signal1, IVector<Double> signal2, AnalysisType analysisType, AnalysisParameters parameters) throws SignalProcessingException {
         // 简化的比较分析 / Simplified comparative analysis
         throw new UnsupportedOperationException("比较分析功能尚未实现 / Comparative analysis not yet implemented");
     }
     
+    /**
+     * 获取支持的信号分析类型列表 / Get list of supported signal analysis types
+     *
+     * @return 支持的分析类型数组 / Array of supported analysis types
+     */
     @Override
     public AnalysisType[] getSupportedAnalysisTypes() {
         return new AnalysisType[] {
@@ -485,6 +520,13 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
         };
     }
     
+    /**
+     * 验证分析参数是否有效 / Validate if analysis parameters are valid
+     *
+     * @param analysisType 分析类型 / Analysis type
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 参数是否有效 / Whether parameters are valid
+     */
     @Override
     public boolean validateParameters(AnalysisType analysisType, AnalysisParameters parameters) {
         // 基本验证 / Basic validation
@@ -497,6 +539,13 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
         return true;
     }
     
+    /**
+     * 获取推荐的分析参数 / Get recommended analysis parameters
+     *
+     * @param signal 输入信号向量 / Input signal vector
+     * @param analysisType 分析类型 / Analysis type
+     * @return 推荐的分析参数 / Recommended analysis parameters
+     */
     @Override
     public AnalysisParameters getRecommendedParameters(IVector<Double> signal, AnalysisType analysisType) {
         // 返回推荐参数 / Return recommended parameters
@@ -507,6 +556,16 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
             .nfft(512);
     }
     
+    /**
+     * 执行默认的信号处理流程 / Execute default signal processing flow
+     * <p>
+     * 默认处理：计算功率谱 / Default processing: calculate power spectrum
+     * </p>
+     *
+     * @param input 输入信号向量 / Input signal vector
+     * @return 处理后的信号向量 / Processed signal vector
+     * @throws SignalProcessingException 处理过程中发生错误时抛出 / Thrown when errors occur during processing
+     */
     @Override
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         // 默认处理：计算功率谱 / Default processing: calculate power spectrum
@@ -514,6 +573,11 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
         return result.getResult();
     }
     
+    /**
+     * 创建当前对象的副本 / Create a copy of the current object
+     *
+     * @return SpectrumAnalyzer 实例副本 / Copy of SpectrumAnalyzer instance
+     */
     @Override
     public SpectrumAnalyzer clone() {
         return new SpectrumAnalyzer();

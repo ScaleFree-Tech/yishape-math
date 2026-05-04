@@ -6,6 +6,10 @@ package com.yishape.lab.music.theory;
  * 提供调性相关的音乐理论功能。
  * Provides music theory functionality related to keys.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class KeyTheory {
     

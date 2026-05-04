@@ -11,6 +11,14 @@ import com.yishape.lab.math.linalg.Linalg;
  * linear systems. The bidiagonal form allows for more efficient solution
  * of linear systems compared to the general case, especially for least squares problems.
  * </p>
+ *
+ * <p><b>Shape contract (important):</b> In {@link com.yishape.lab.math.linalg.decomposition.impl.RereBidiagonalDecomposition},
+ * the extracted block {@code B} is always <b>square</b> {@code min(m,n) × min(m,n)} even when the original
+ * matrix {@code A} is {@code m × n} and non-square. This class therefore expects a <b>square</b> bidiagonal
+ * {@code B} consistent with that decomposition. Passing a non-square {@code B} is unsupported and indicates
+ * a mismatched constructor use—not missing support for non-square {@code A}.
+ * General least squares for an arbitrary rectangular bidiagonal system belongs to dedicated LS/SVD APIs, not here.
+ * </p>
  * 
  * <p>
  * For a linear system A * X = B where A = U * B * V^T:
@@ -26,7 +34,9 @@ import com.yishape.lab.math.linalg.Linalg;
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class BidiagonalDecompositionSolver implements IDecompositionSolver {
@@ -43,7 +53,7 @@ public class BidiagonalDecompositionSolver implements IDecompositionSolver {
     /**
      * Create a solver from bidiagonal decomposition results.
      * 
-     * @param bMatrix the bidiagonal matrix B
+     * @param bMatrix the bidiagonal matrix B (must be square; same shape as produced by {@code RereBidiagonalDecomposition})
      * @param uMatrix the orthogonal matrix U
      * @param vMatrix the orthogonal matrix V
      * @param epsilon threshold for considering an element as zero
@@ -119,8 +129,8 @@ public class BidiagonalDecompositionSolver implements IDecompositionSolver {
         double[][] yData = y.toDoubleArray();
         double[][] xData = new double[n][p];
         
-        // For now, we'll use a simple approach for square bidiagonal matrices
-        // A full implementation would handle the general case including least squares
+        // Square B only (matches decomposition output). Non-square B is not a "todo":
+        // use LS/SVD elsewhere if you need a general rectangular bidiagonal solve.
         if (m == n) {
             // Backward substitution for upper bidiagonal system
             for (int k = 0; k < p; k++) {
@@ -136,9 +146,9 @@ public class BidiagonalDecompositionSolver implements IDecompositionSolver {
                 }
             }
         } else {
-            // For non-square matrices, this is a simplified implementation
-            // A full implementation would use SVD or other least squares methods
-            throw new UnsupportedOperationException("Bidiagonal solver for non-square systems not fully implemented");
+            throw new IllegalArgumentException(
+                    "Bidiagonal B must be square (min(m,n)×min(m,n)), as produced by RereBidiagonalDecomposition.getSolver(). "
+                            + "Non-square B is not supported here; for general least squares use the appropriate LS/SVD API.");
         }
         
         // Convert back to IMatrix

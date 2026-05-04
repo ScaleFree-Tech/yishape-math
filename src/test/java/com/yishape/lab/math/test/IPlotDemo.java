@@ -1,10 +1,10 @@
 package com.yishape.lab.math.test;
 
-import com.yishape.lab.math.viz.AxisTicks;
+import com.yishape.lab.math.plot.AxisTicks;
 import java.util.Arrays;
 import java.util.List;
-import com.yishape.lab.math.viz.Plots;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.Plots;
+import com.yishape.lab.math.plot.IPlot;
 import com.yishape.lab.math.linalg.IFloatVector;
 
 /**

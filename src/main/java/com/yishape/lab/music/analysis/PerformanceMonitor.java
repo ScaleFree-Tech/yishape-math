@@ -85,6 +85,8 @@ public class PerformanceMonitor {
     
     /**
      * 获取单例实例 / Get singleton instance
+     *
+     * @return PerformanceMonitor单例实例 / Singleton instance of PerformanceMonitor
      */
     public static PerformanceMonitor getInstance() {
         return INSTANCE;
@@ -92,6 +94,13 @@ public class PerformanceMonitor {
     
     /**
      * 记录分析开始 / Record analysis start
+     * <p>
+     * 开始跟踪一个分析操作的执行时间。
+     * Starts tracking the execution time of an analysis operation.
+     * </p>
+     *
+     * @param algorithmName 算法名称 / Algorithm name
+     * @return 分析上下文，用于记录完成 / Analysis context for recording completion
      */
     public AnalysisContext recordAnalysisStart(String algorithmName) {
         return new AnalysisContext(algorithmName);
@@ -99,6 +108,13 @@ public class PerformanceMonitor {
     
     /**
      * 记录分析完成 / Record analysis completion
+     * <p>
+     * 记录分析操作的完成，更新性能统计信息。
+     * Records the completion of an analysis operation and updates performance statistics.
+     * </p>
+     *
+     * @param context 分析上下文（由recordAnalysisStart返回）/ Analysis context (returned by recordAnalysisStart)
+     * @param success 分析是否成功 / Whether analysis was successful
      */
     public void recordAnalysisComplete(AnalysisContext context, boolean success) {
         if (context == null) {
@@ -139,6 +155,12 @@ public class PerformanceMonitor {
     
     /**
      * 获取性能统计 / Get performance statistics
+     * <p>
+     * 返回所有收集到的性能统计信息。
+     * Returns all collected performance statistics.
+     * </p>
+     *
+     * @return 性能统计对象 / Performance statistics object
      */
     public PerformanceStatistics getStatistics() {
         long totalCount = analysisCounter.get();
@@ -172,6 +194,9 @@ public class PerformanceMonitor {
     
     /**
      * 重置统计信息 / Reset statistics
+     * <p>
+     * 清空所有性能统计计数器。
+     * Clears all performance statistics counters.
      */
     public void reset() {
         analysisCounter.set(0);

@@ -5,7 +5,33 @@ import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.util.Tuple2;
 
 /**
- * LU decomposition interface with partial pivoting support
+ * LU decomposition interface with partial pivoting support.
+ *
+ * <p>
+ * LU decomposition decomposes a matrix A into the form A = P^T * L * U where
+ * P is a permutation matrix, L is a lower triangular matrix with unit diagonal,
+ * and U is an upper triangular matrix. The decomposition with partial pivoting
+ * ensures numerical stability by swapping rows to place the largest pivot element
+ * in each column.
+ * </p>
+ *
+ * <h3>Key Features</h3>
+ * <ul>
+ *   <li>Partial pivoting for numerical stability</li>
+ *   <li>Efficient solving of linear systems</li>
+ *   <li>Comprehensive error handling</li>
+ *   <li>Unified interface with other decompositions</li>
+ * </ul>
+ *
+ * <h3>References</h3>
+ * <ul>
+ *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
+ *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
+ * </ul>
+ *
+ * @author lteb2
+ * @version 1.0
+ * @since 2.0
  */
 public interface ILUDecomposition extends IMatrixDecomposition<Tuple2<IMatrix<Double>, IMatrix<Double>>> {
     

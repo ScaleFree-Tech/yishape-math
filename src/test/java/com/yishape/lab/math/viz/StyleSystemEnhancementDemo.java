@@ -1,5 +1,11 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.PlotStyle;
+import com.yishape.lab.math.plot.StyleExpression;
+import com.yishape.lab.math.plot.ColorPalette;
+import com.yishape.lab.math.plot.echarts.EchartsThemeManager;
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
+import com.yishape.lab.math.plot.echarts.EchartsStyleConverter;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -58,17 +64,17 @@ public class StyleSystemEnhancementDemo {
         System.out.println("\\n✨ 颜色验证:");
         String[] testColors = {"#ff0000", "rgb(255, 0, 0)", "rgba(255, 0, 0, 0.5)", "invalid_color"};
         for (String color : testColors) {
-            boolean isValid = StyleConverter.isValidColor(color);
+            boolean isValid = EchartsStyleConverter.isValidColor(color);
             System.out.printf("   %s: %s%n", color, isValid ? "✅ 有效" : "❌ 无效");
         }
         
         // 高级渐变创建
         System.out.println("\\n✨ 高级渐变创建:");
-        Map<String, Object> linearGradient = StyleConverter.createAdvancedGradientConfig(
+        Map<String, Object> linearGradient = EchartsStyleConverter.createAdvancedGradientConfig(
             "#ff6b6b", "#4ecdc4", 90, "linear");
         System.out.printf("   线性渐变: %s%n", linearGradient.get("type"));
         
-        Map<String, Object> radialGradient = StyleConverter.createAdvancedGradientConfig(
+        Map<String, Object> radialGradient = EchartsStyleConverter.createAdvancedGradientConfig(
             "#ff6b6b", "#4ecdc4", 0, "radial");
         System.out.printf("   径向渐变: %s%n", radialGradient.get("type"));
         
@@ -126,14 +132,14 @@ public class StyleSystemEnhancementDemo {
         
         // 关系图样式
         System.out.println("✨ 关系图 (Graph) 专用样式:");
-        Map<String, Object> graphStyle = StyleConverter.toEChartsGraphStyle(style);
+        Map<String, Object> graphStyle = EchartsStyleConverter.toEChartsGraphStyle(style);
         System.out.printf("   节点样式: %s%n", graphStyle.get("nodeStyle"));
         System.out.printf("   边样式: %s%n", graphStyle.get("edgeStyle"));
         System.out.printf("   布局: %s%n", graphStyle.get("layout"));
         
         // 平行坐标图样式
         System.out.println("\\n✨ 平行坐标图 (Parallel) 专用样式:");
-        Map<String, Object> parallelStyle = StyleConverter.toEChartsParallelStyle(style);
+        Map<String, Object> parallelStyle = EchartsStyleConverter.toEChartsParallelStyle(style);
         System.out.printf("   线条样式: %s%n", parallelStyle.get("lineStyle"));
         System.out.printf("   平滑效果: %s%n", parallelStyle.get("smooth"));
         
@@ -155,7 +161,7 @@ public class StyleSystemEnhancementDemo {
         // 多色渐变
         System.out.println("✨ 多色渐变支持:");
         String[] colors = {"#ff6b6b", "#4ecdc4", "#45b7d1", "#f9ca24"};
-        Map<String, Object> multiGradient = StyleConverter.createMultiColorGradient(colors, null, "linear");
+        Map<String, Object> multiGradient = EchartsStyleConverter.createMultiColorGradient(colors, null, "linear");
         System.out.printf("   类型: %s%n", multiGradient.get("type"));
         System.out.printf("   颜色数量: %d%n", colors.length);
         
@@ -190,8 +196,8 @@ public class StyleSystemEnhancementDemo {
         String[] themes = {"academic", "business", "minimal", "rainbow", "vintage", "futuristic"};
         
         for (String theme : themes) {
-            PlotStyle themedStyle = ThemeManager.applyThemeToStyle(baseStyle, theme);
-            String palette = ThemeManager.getThemePreferredPalette(theme);
+            PlotStyle themedStyle = EchartsThemeManager.applyThemeToStyle(baseStyle, theme);
+            String palette = EchartsThemeManager.getThemePreferredPalette(theme);
             System.out.printf("   %s: 线宽=%.1f, 标记大小=%.0f, 动画=%dms, 调色板=%s%n", 
                 theme, themedStyle.getLineWidth(), themedStyle.getMarkerSize(), 
                 themedStyle.getAnimationDuration(), palette);
@@ -200,11 +206,11 @@ public class StyleSystemEnhancementDemo {
         // 智能主题推荐
         System.out.println("\\n✨ 智能主题推荐系统:");
         System.out.printf("   商务数据 + 专业风格 -> %s%n", 
-            ThemeManager.recommendTheme("business", "line", "professional"));
+            EchartsThemeManager.recommendTheme("business", "line", "professional"));
         System.out.printf("   科学数据 + 极简风格 -> %s%n", 
-            ThemeManager.recommendTheme("scientific", "scatter", "minimal"));
+            EchartsThemeManager.recommendTheme("scientific", "scatter", "minimal"));
         System.out.printf("   创意数据 + 多彩风格 -> %s%n", 
-            ThemeManager.recommendTheme("creative", "pie", "colorful"));
+            EchartsThemeManager.recommendTheme("creative", "pie", "colorful"));
         
         System.out.println();
     }
@@ -281,7 +287,7 @@ public class StyleSystemEnhancementDemo {
         for (int i = 0; i < 1000; i++) {
             StyleExpression.parse("r-o");
             ColorPalette.parseColorToRGB("#ff0000");
-            StyleConverter.isValidColor("#00ff00");
+            EchartsStyleConverter.isValidColor("#00ff00");
         }
         
         long endTime = System.currentTimeMillis();
@@ -295,7 +301,7 @@ public class StyleSystemEnhancementDemo {
     /**
      * 创建演示图表
      */
-    public static RerePlot createDemoChart() {
+    public static EchartsPlot createDemoChart() {
         // 创建测试数据
         IVector xData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8});
         IVector yData = Linalg.vector(new double[]{2, 5, 3, 8, 7, 6, 9, 4});
@@ -312,10 +318,10 @@ public class StyleSystemEnhancementDemo {
             .setProperty("shadowColor", "rgba(255, 107, 107, 0.3)");
         
         // 应用学术主题
-        PlotStyle themedStyle = ThemeManager.applyThemeToStyle(enhancedStyle, "academic");
+        PlotStyle themedStyle = EchartsThemeManager.applyThemeToStyle(enhancedStyle, "academic");
         
         // 创建演示图表
-        return new RerePlot(1000, 700)
+        return new EchartsPlot(1000, 700)
             .theme("academic")
             .enableStyleSystem(true)
             .line(xData, yData, themedStyle)

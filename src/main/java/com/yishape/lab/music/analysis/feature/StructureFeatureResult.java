@@ -17,15 +17,22 @@ import java.util.ArrayList;
  */
 public class StructureFeatureResult {
 
-    
-    private final List<MusicSegment> segments;     // 音乐段落
-    private final double[] noveltyFunction;        // 新颖性函数
-    private final double[] selfSimilarityMatrix;   // 自相似矩阵(压缩表示)
-    private final double structuralComplexity;     // 结构复杂度
-    private final double repetitiveness;           // 重复性
-    private final int estimatedSections;           // 估计段落数
-    private final double averageSegmentLength;     // 平均段落长度
-    private final double confidence;               // 置信度
+    /** 音乐段落列表 / List of music segments */
+    private final List<MusicSegment> segments;
+    /** 新颖性函数 / Novelty function */
+    private final double[] noveltyFunction;
+    /** 自相似矩阵 (压缩表示) / Self-similarity matrix (compressed) */
+    private final double[] selfSimilarityMatrix;
+    /** 结构复杂度 / Structural complexity */
+    private final double structuralComplexity;
+    /** 重复性 / Repetitiveness */
+    private final double repetitiveness;
+    /** 估计段落数 / Estimated sections */
+    private final int estimatedSections;
+    /** 平均段落长度 / Average segment length */
+    private final double averageSegmentLength;
+    /** 置信度 / Confidence */
+    private final double confidence;
     
     
     /**
@@ -37,13 +44,28 @@ public class StructureFeatureResult {
 
     /**
      * 音乐段落 / Music segment
+     *
+     * 表示音乐中的一个段落，包含时间范围和类型信息。
+     * Represents a segment in music with time range and type information.
      */
     public static class MusicSegment {
+        /** 起始时间 (秒) / Start time (seconds) */
         private final double startTime;
+        /** 结束时间 (秒) / End time (seconds) */
         private final double endTime;
+        /** 段落类型 / Segment type */
         private final SegmentType type;
+        /** 置信度 / Confidence */
         private final double confidence;
 
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param startTime 起始时间 (秒) / Start time (seconds)
+         * @param endTime 结束时间 (秒) / End time (seconds)
+         * @param type 段落类型 / Segment type
+         * @param confidence 置信度 / Confidence
+         */
         public MusicSegment(double startTime, double endTime, SegmentType type, double confidence) {
             this.startTime = startTime;
             this.endTime = endTime;
@@ -51,10 +73,39 @@ public class StructureFeatureResult {
             this.confidence = confidence;
         }
 
+        /**
+         * 获取起始时间 / Get start time
+         *
+         * @return 起始时间 (秒) / Start time (seconds)
+         */
         public double getStartTime() { return startTime; }
+
+        /**
+         * 获取结束时间 / Get end time
+         *
+         * @return 结束时间 (秒) / End time (seconds)
+         */
         public double getEndTime() { return endTime; }
+
+        /**
+         * 获取持续时间 / Get duration
+         *
+         * @return 持续时间 (秒) / Duration (seconds)
+         */
         public double getDuration() { return endTime - startTime; }
+
+        /**
+         * 获取段落类型 / Get segment type
+         *
+         * @return 段落类型 / Segment type
+         */
         public SegmentType getType() { return type; }
+
+        /**
+         * 获取置信度 / Get confidence
+         *
+         * @return 置信度 / Confidence
+         */
         public double getConfidence() { return confidence; }
 
         @Override
@@ -66,6 +117,15 @@ public class StructureFeatureResult {
 
     /**
      * 构造函数 / Constructor
+     *
+     * @param segments 音乐段落列表 / List of music segments
+     * @param noveltyFunction 新颖性函数 / Novelty function
+     * @param selfSimilarityMatrix 自相似矩阵 / Self-similarity matrix
+     * @param structuralComplexity 结构复杂度 / Structural complexity
+     * @param repetitiveness 重复性 / Repetitiveness
+     * @param estimatedSections 估计段落数 / Estimated sections
+     * @param averageSegmentLength 平均段落长度 / Average segment length
+     * @param confidence 置信度 / Confidence
      */
     public StructureFeatureResult(List<MusicSegment> segments, double[] noveltyFunction,
                                  double[] selfSimilarityMatrix, double structuralComplexity,
@@ -139,6 +199,9 @@ public class StructureFeatureResult {
 
     /**
      * 获取特定类型的段落 / Get segments of specific type
+     *
+     * @param type 段落类型 / Segment type
+     * @return 指定类型的段落列表 / List of segments of the specified type
      */
     public List<MusicSegment> getSegmentsByType(SegmentType type) {
         List<MusicSegment> result = new ArrayList<>();
@@ -160,6 +223,8 @@ public class StructureFeatureResult {
 
     /**
      * 判断是否有明确的结构 / Check if has clear structure
+     *
+     * @return 置信度大于0.7且段落数至少为2时返回true / True if confidence > 0.7 and estimated sections >= 2
      */
     public boolean hasClearStructure() {
         return confidence > 0.7 && estimatedSections >= 2;
@@ -167,6 +232,8 @@ public class StructureFeatureResult {
 
     /**
      * 判断是否高度重复 / Check if highly repetitive
+     *
+     * @return 重复性大于0.8时返回true / True if repetitiveness > 0.8
      */
     public boolean isHighlyRepetitive() {
         return repetitiveness > 0.8;
@@ -184,6 +251,8 @@ public class StructureFeatureResult {
 
     /**
      * 判断是否为简单结构 / Check if has simple structure
+     *
+     * @return 结构复杂度小于0.3时返回true / True if structural complexity < 0.3
      */
     public boolean isSimpleStructure() {
         return structuralComplexity < 0.3;
@@ -191,6 +260,8 @@ public class StructureFeatureResult {
 
     /**
      * 判断是否为复杂结构 / Check if has complex structure
+     *
+     * @return 结构复杂度大于0.6时返回true / True if structural complexity > 0.6
      */
     public boolean isComplexStructure() {
         return structuralComplexity > 0.6;
@@ -198,6 +269,8 @@ public class StructureFeatureResult {
 
     /**
      * 判断是否低重复性 / Check if has low repetitiveness
+     *
+     * @return 重复性小于0.4时返回true / True if repetitiveness < 0.4
      */
     public boolean isLowRepetitive() {
         return repetitiveness < 0.4;

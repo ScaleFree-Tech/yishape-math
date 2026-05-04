@@ -13,6 +13,10 @@ import java.util.HashMap;
  * 为所有音乐分析器提供统一的结果封装，包含基础分析和高级分析结果。
  * Provides unified result encapsulation for all music analyzers, including basic and advanced analysis results.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class UnifiedMusicAnalysisResult extends MusicDetectionResult {
     // 基础分析结果 / Basic analysis results

@@ -16,7 +16,9 @@ import com.yishape.lab.math.linalg.Linalg;
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  * </ul>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class SVDDecompositionSolver implements IDecompositionSolver {

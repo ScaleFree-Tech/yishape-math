@@ -5,18 +5,35 @@ import org.slf4j.LoggerFactory;
 
 import com.yishape.lab.math.stats.Stats;
 import com.yishape.lab.math.stats.distribution.FDistribution;
-import com.yishape.lab.math.linalg.IDoubleVector;
+import com.yishape.lab.math.linalg.IVector;
 
 /**
- * 用户方差分析的类
+ * 方差分析类 / Analysis of Variance (ANOVA) Class
+ * <p>
+ * 提供单因素、双因素和重复测量方差分析功能。
+ * Provides one-way, two-way, and repeated measures ANOVA functionality.
+ * </p>
+ *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class ANOVA {
 
     private static final Logger log = LoggerFactory.getLogger(ANOVA.class);
 
 
-    public ANOVAResult performOneWayANOVA(IDoubleVector... groups) {
+    /**
+     * 执行单因素方差分析 / Perform One-Way ANOVA
+     * <p>
+     * 检验多个组之间的均值是否存在显著差异。
+     * Tests whether there are significant differences in means between multiple groups.
+     * </p>
+     *
+     * @param groups 可变参数，每个IVector代表一个组的数据 / Variable parameters, each IVector represents a group's data
+     * @return ANOVAResult 包含ANOVA分析结果 / Contains ANOVA analysis results
+     */
+    public ANOVAResult performOneWayANOVA(IVector... groups) {
         // 单因素方差分析的核心计算方法
         // 参数：groups - 可变参数，每个IVector代表一个组的数据
         // 返回值：ANOVAResult对象，包含ANOVA分析结果
@@ -28,17 +45,17 @@ public class ANOVA {
         // 计算总均值（Grand Mean）
         // 所有观测值的平均值
         double grandMean = 0;
-        for (IDoubleVector group : groups) {
+        for (IVector group : groups) {
             // IDoubleVector.sum() - 计算向量元素之和
-            grandMean += group.sum();
+            grandMean += group.sum().doubleValue();
         }
         grandMean /= totalN;
 
         // 计算组间平方和（SSB - Sum of Squares Between）
         // 衡量组间差异的大小
         double ssBetween = 0;
-        for (IDoubleVector group : groups) {
-            double groupMean = group.mean();  // 组均值
+        for (IVector group : groups) {
+            double groupMean = group.mean().doubleValue();  // 组均值
             // 公式：SSB = Σ n_i * (x̄_i - x̄̄)²
             ssBetween += n * (groupMean - grandMean) * (groupMean - grandMean);
         }
@@ -46,11 +63,11 @@ public class ANOVA {
         // 计算组内平方和（SSW - Sum of Squares Within）
         // 衡量组内变异的大小
         double ssWithin = 0;
-        for (IDoubleVector group : groups) {
-            double groupMean = group.mean();
+        for (IVector group : groups) {
+            double groupMean = group.mean().doubleValue();
             for (int i = 0; i < group.length(); i++) {
                 // IDoubleVector.get(i) - 获取第i个元素
-                double diff = group.get(i) - groupMean;
+                double diff = group.get(i).doubleValue() - groupMean;
                 // 公式：SSW = Σ Σ (x_ij - x̄_i)²
                 ssWithin += diff * diff;
             }
@@ -78,6 +95,16 @@ public class ANOVA {
         return new ANOVAResult(ssBetween, ssWithin, ssBetween + ssWithin, fStatistic, pValue);
     }
 
+    /**
+     * 执行两因素方差分析 / Perform Two-Way ANOVA
+     * <p>
+     * 检验两个因素及其交互效应的影响。
+     * Tests the effects of two factors and their interaction.
+     * </p>
+     *
+     * @param data 三维数组 [因素A水平数][因素B水平数][每组观测数] / 3D array [levels of factor A][levels of factor B][observations per group]
+     * @return TwoWayANOVAResult 两因素方差分析结果 / Two-way ANOVA results
+     */
     public TwoWayANOVAResult performTwoWayANOVA(double[][][] data) {
         int a = data.length; // 因素A的水平数
         int b = data[0].length; // 因素B的水平数
@@ -91,7 +118,7 @@ public class ANOVA {
 
         for (int i = 0; i < a; i++) {
             for (int j = 0; j < b; j++) {
-                IDoubleVector cell = IDoubleVector.of(data[i][j]);
+                IVector<Double> cell = IVector.of(data[i][j]);
                 cellMeans[i][j] = cell.mean();
                 grandMean += cell.sum();
                 rowMeans[i] += cell.sum();
@@ -161,6 +188,16 @@ public class ANOVA {
         return new TwoWayANOVAResult(fA, pA, fB, pB, fAB, pAB);
     }
 
+    /**
+     * 执行重复测量方差分析 / Perform Repeated Measures ANOVA
+     * <p>
+     * 用于检验同一被试在不同时间点或条件下的测量差异。
+     * Used to test measurement differences of the same subject at different time points or conditions.
+     * </p>
+     *
+     * @param data 二维数组 [被试数][时间点数] / 2D array [number of subjects][number of time points]
+     * @return RepeatedMeasuresANOVAResult 重复测量方差分析结果 / Repeated measures ANOVA results
+     */
     public RepeatedMeasuresANOVAResult performRepeatedMeasuresANOVA(double[][] data) {
         int n = data.length; // 被试数
         int k = data[0].length; // 时间点数
@@ -230,17 +267,27 @@ public class ANOVA {
         return new RepeatedMeasuresANOVAResult(fTime, pTime, fSubject, pSubject);
     }
 
-    public static boolean testNormality(IDoubleVector group) {
+    /**
+     * 检验数据正态性 / Test Normality of Data
+     * <p>
+     * 使用偏度和峰度进行简化的正态性检验。
+     * Performs simplified normality test using skewness and kurtosis.
+     * </p>
+     *
+     * @param group 待检验的样本数据 / Sample data to test
+     * @return boolean 是否满足正态性假设 / Whether normality assumption is satisfied
+     */
+    public static boolean testNormality(IVector group) {
         log.debug("=== 正态性检验 / Normality Test ===");
 
         // 简化的正态性检验（使用偏度和峰度）
         // IDoubleVector.skewness() - 计算偏度，衡量分布的对称性
         // 偏度 = 0 表示完全对称，|偏度| < 1 表示近似对称
-        double skewness = group.skewness();
+        double skewness = group.skewness().doubleValue();
 
         // IDoubleVector.kurtosis() - 计算峰度，衡量分布的尖锐程度
         // 峰度 = 0 表示正态分布，|峰度| < 1 表示接近正态分布
-        double kurtosis = group.kurtosis();
+        double kurtosis = group.kurtosis().doubleValue();
 
         log.debug("  偏度 / Skewness: " + skewness);
         log.debug("  峰度 / Kurtosis: " + kurtosis);
@@ -250,15 +297,25 @@ public class ANOVA {
         return Math.abs(skewness) < 1.0f && Math.abs(kurtosis) < 1.0f;
     }
 
-    public boolean testHomogeneityOfVariance(IDoubleVector... groups) {
+    /**
+     * 检验方差齐性 / Test Homogeneity of Variance
+     * <p>
+     * 使用Levene检验的简化版本判断各组方差是否相等。
+     * Uses simplified Levene's test to determine if variances across groups are equal.
+     * </p>
+     *
+     * @param groups 可变参数，每个IVector代表一个组的数据 / Variable parameters, each IVector represents a group's data
+     * @return boolean 是否满足方差齐性假设 / Whether homogeneity of variance assumption is satisfied
+     */
+    public boolean testHomogeneityOfVariance(IVector... groups) {
         log.debug("\n=== 方差齐性检验 / Homogeneity of Variance Test ===");
 
         // 计算各组的方差
         double[] variances = new double[groups.length];
         for (int i = 0; i < groups.length; i++) {
-            IDoubleVector group = groups[i];
+            IVector group = groups[i];
             // IDoubleVector.var() - 计算样本方差（使用n-1作为分母）
-            variances[i] = group.var();
+            variances[i] = group.var().doubleValue();
         }
 
         // Levene检验（简化版）
@@ -279,7 +336,16 @@ public class ANOVA {
         return ratio < 4.0f;
     }
 
-    public void performTukeyHSD(IDoubleVector... groups) {
+    /**
+     * 执行Tukey HSD多重比较 / Perform Tukey HSD Multiple Comparisons
+     * <p>
+     * 比较所有组对之间的差异，控制整体错误率。
+     * Compares differences between all pairs of groups while controlling overall error rate.
+     * </p>
+     *
+     * @param groups 可变参数，每个IVector代表一个组的数据 / Variable parameters, each IVector represents a group's data
+     */
+    public void performTukeyHSD(IVector... groups) {
         log.debug("=== Tukey HSD多重比较 / Tukey HSD Multiple Comparisons ===");
 
         // Tukey HSD多重比较的核心计算方法
@@ -292,18 +358,18 @@ public class ANOVA {
         // 计算每个组的样本均值
         double[] means = new double[k];
         for (int i = 0; i < k; i++) {
-            IDoubleVector group = groups[i];
+            IVector group = groups[i];
             // IDoubleVector.mean() - 计算组均值
-            means[i] = group.mean();
+            means[i] = group.mean().doubleValue();
         }
 
         // 计算合并方差
         // 使用所有组的方差计算合并方差，作为误差方差的估计
         double pooledVariance = 0;
         for (int i = 0; i < k; i++) {
-            IDoubleVector group = groups[i];
+            IVector group = groups[i];
             // IDoubleVector.var() - 计算组方差
-            pooledVariance += group.var();
+            pooledVariance += group.var().doubleValue();
         }
         pooledVariance /= k;  // 合并方差 = 各组方差的平均值
 

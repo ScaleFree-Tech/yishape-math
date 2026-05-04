@@ -1,5 +1,7 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.Plots;
+import com.yishape.lab.math.plot.IPlot;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 
@@ -14,7 +16,7 @@ public class RerePlotLabelTest {
         
         // 测试1: 先设置数据再设置标签
         System.out.println("测试1: 先设置数据再设置标签");
-        RerePlot plot1 = Plots.of()
+        IPlot plot1 = Plots.of()
                 .line(x, y)
                 .xlabel("时间 (秒)")
                 .ylabel("幅度");
@@ -25,7 +27,7 @@ public class RerePlotLabelTest {
         
         // 测试2: 先设置标签再设置数据
         System.out.println("测试2: 先设置标签再设置数据");
-        RerePlot plot2 = Plots.of()
+        IPlot plot2 = Plots.of()
                 .xlabel("频率 (Hz)")
                 .ylabel("功率")
                 .line(x, y);
@@ -36,7 +38,7 @@ public class RerePlotLabelTest {
         
         // 测试3: 在显示前修改标签
         System.out.println("测试3: 在显示前修改标签");
-        RerePlot plot3 = Plots.of()
+        IPlot plot3 = Plots.of()
                 .line(x, y)
                 .xlabel("初始X标签")
                 .ylabel("初始Y标签");

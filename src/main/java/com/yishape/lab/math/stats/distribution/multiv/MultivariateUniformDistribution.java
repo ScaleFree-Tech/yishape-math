@@ -366,8 +366,44 @@ public class MultivariateUniformDistribution implements IMultivariateDistributio
     
     @Override
     public IMultivariateDistribution<Double> linearTransform(IMatrix<Double> A, IVector<Double> b) {
-        // 线性变换后的均匀分布一般不再是均匀分布
-        throw new UnsupportedOperationException("均匀分布的线性变换结果一般不再是均匀分布");
+        if (A.rows() != dimension || A.cols() != dimension) {
+            throw new IllegalArgumentException("变换矩阵必须为 " + dimension + "×" + dimension);
+        }
+        if (b.length() != dimension) {
+            throw new IllegalArgumentException("平移向量维度必须为 " + dimension);
+        }
+        if (!isPositiveDiagonal(A)) {
+            throw new UnsupportedOperationException(
+                    "仅支持正对角缩放加平移；一般线性变换不保持超矩形均匀分布 / "
+                            + "Only positive diagonal scaling preserves rectangular uniform family");
+        }
+        double[] nl = new double[dimension];
+        double[] nu = new double[dimension];
+        for (int i = 0; i < dimension; i++) {
+            double di = A.get(i, i);
+            nl[i] = di * lowerBounds.get(i) + b.get(i);
+            nu[i] = di * upperBounds.get(i) + b.get(i);
+            if (nl[i] > nu[i]) {
+                double t = nl[i];
+                nl[i] = nu[i];
+                nu[i] = t;
+            }
+        }
+        return new MultivariateUniformDistribution(Linalg.vector(nl), Linalg.vector(nu), random);
+    }
+
+    private boolean isPositiveDiagonal(IMatrix<Double> A) {
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                if (i != j && Math.abs(A.get(i, j)) > 1e-12) {
+                    return false;
+                }
+            }
+            if (A.get(i, i) <= 0) {
+                return false;
+            }
+        }
+        return true;
     }
     
     @Override
@@ -523,22 +559,14 @@ public class MultivariateUniformDistribution implements IMultivariateDistributio
     
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        if (dimension != 2) {
-            throw new UnsupportedOperationException("置信椭圆只支持二维分布");
+        if (dimension < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
         }
         if (confidence <= 0 || confidence >= 1) {
             throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
         }
-        
-        // 对于二维均匀分布，置信区域是矩形，这里用椭圆近似
-        IVector<Double> mean = getMean();
-        IVector<Double> stdDev = getStandardDeviation();
-        
-        // 使用标准差作为椭圆的半轴长度
-        double majorAxis = stdDev.get(0) * Math.sqrt(-2 * Math.log(1 - confidence));
-        double minorAxis = stdDev.get(1) * Math.sqrt(-2 * Math.log(1 - confidence));
-        
-        return new ConfidenceEllipse(mean, majorAxis, minorAxis, 0.0);
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(
+                getMean(), getCovariance(), 0, 1, confidence);
     }
     
     // ==================== 静态工厂方法 ====================

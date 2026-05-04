@@ -12,7 +12,9 @@ package com.yishape.lab.math.linalg.decomposition;
  *   <li>Division by zero or overflow during computation</li>
  * </ul>
  * </p>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class DecompositionFailedException extends MatrixDecompositionException {

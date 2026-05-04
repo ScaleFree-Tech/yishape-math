@@ -22,27 +22,38 @@ import java.util.ArrayList;
  * 基于音频特征分析音乐的情感特征，包括能量、价值度、唤醒度等。
  * Analyzes emotional characteristics of music based on audio features, including energy, valence, arousal, etc.
  * </p>
+ * <p>
+ * 该分析器提取音频的频谱特征、节拍和调性特征，计算情感维度指标。
+ * This analyzer extracts spectral features, beat and key features from audio to calculate emotion dimension indicators.
+ * </p>
  *
  * @author lteb2
  * @version 1.0
  * @since 1.0
  */
 public class EmotionAnalyzer implements IAdvancedAnalyzer {
-    
+
     // 情感维度 / Emotion dimensions
     public static final String VALENCE = "valence";     // 价值度 (正面/负面) / Valence (positive/negative)
     public static final String AROUSAL = "arousal";     // 唤醒度 (激动/平静) / Arousal (excited/calm)
     public static final String ENERGY = "energy";       // 能量 / Energy
     public static final String DANCEABILITY = "danceability"; // 可舞性 / Danceability
-    
+
     // 默认参数 / Default parameters
     private static final int DEFAULT_WINDOW_SIZE = 4096;
     private static final int DEFAULT_HOP_SIZE = 2048;
-    
+
     private final BeatAnalyzerImpl beatAnalyzer;
     private final KeyAnalyzerImpl keyAnalyzer;
     private final StandardizedConfidenceCalculator confidenceCalculator = new StandardizedConfidenceCalculator();
-    
+
+    /**
+     * 构造情感分析器 / Construct an Emotion Analyzer
+     * <p>
+     * 初始化情感分析器，创建节拍分析器和调性分析器实例。
+     * Initializes the emotion analyzer with beat and key analyzer instances.
+     * </p>
+     */
     public EmotionAnalyzer() {
         this.beatAnalyzer = new BeatAnalyzerImpl();
         this.keyAnalyzer = new KeyAnalyzerImpl();

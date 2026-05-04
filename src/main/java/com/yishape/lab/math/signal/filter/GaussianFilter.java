@@ -168,24 +168,41 @@ public class GaussianFilter extends AbstractSignalProcessor<Double> implements I
     public FilterType getFilterType() {
         return filterType;
     }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() {
         return implementationType;
     }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() {
         return kernelSize - 1; // FIR滤波器的阶数 / Order of FIR filter
     }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() {
         // 高斯滤波器的等效截止频率 / Equivalent cutoff frequency of Gaussian filter
         double cutoffFreq = 1.0 / (2 * Math.PI * sigma);
         return new double[]{cutoffFreq};
     }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         if (frequencies.length != 1) {
@@ -202,18 +219,33 @@ public class GaussianFilter extends AbstractSignalProcessor<Double> implements I
         // 高斯滤波器不直接使用采样率 / Gaussian filter doesn't directly use sampling rate
         return 1.0;
     }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate
+     * @throws SignalProcessingException 采样率设置无效时抛出 / Thrown when sampling rate setting is invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         // 高斯滤波器不直接使用采样率 / Gaussian filter doesn't directly use sampling rate
         // 但可以用于计算截止频率 / But can be used to calculate cutoff frequency
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() {
         return coefficients;
     }
-    
+
+    /**
+     * 计算滤波器的频率响应 / Calculate frequency response of filter
+     * @param frequencies 频率点数组 / Frequency point array
+     * @return 频率响应 / Frequency response
+     * @throws SignalProcessingException 计算过程中发生错误时抛出 / Thrown when errors occur during calculation
+     */
     @Override
     public FrequencyResponse getFrequencyResponse(double[] frequencies) throws SignalProcessingException {
         // 计算高斯滤波器的频率响应 / Calculate frequency response of Gaussian filter
@@ -232,29 +264,35 @@ public class GaussianFilter extends AbstractSignalProcessor<Double> implements I
     
     /**
      * 获取高斯标准差 / Get Gaussian standard deviation
+     * @return 高斯标准差 / Gaussian standard deviation
      */
     public double getSigma() {
         return sigma;
     }
-    
+
     /**
      * 设置高斯标准差 / Set Gaussian standard deviation
+     * @param sigma 高斯标准差 / Gaussian standard deviation
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setSigma(double sigma) throws SignalProcessingException {
         validateParameters(sigma);
         this.sigma = sigma;
         computeCoefficients(); // 重新计算系数 / Recalculate coefficients
     }
-    
+
     /**
      * 获取卷积核大小 / Get convolution kernel size
+     * @return 卷积核大小 / Convolution kernel size
      */
     public int getKernelSize() {
         return kernelSize;
     }
-    
+
     /**
      * 设置卷积核大小 / Set convolution kernel size
+     * @param kernelSize 卷积核大小 / Convolution kernel size
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setKernelSize(int kernelSize) throws SignalProcessingException {
         if (kernelSize <= 0 || kernelSize % 2 == 0) {
@@ -268,7 +306,11 @@ public class GaussianFilter extends AbstractSignalProcessor<Double> implements I
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         return filter(input);
     }
-    
+
+    /**
+     * 克隆高斯滤波器 / Clone Gaussian filter
+     * @return 高斯滤波器副本 / Gaussian filter copy
+     */
     @Override
     public GaussianFilter clone() {
         try {

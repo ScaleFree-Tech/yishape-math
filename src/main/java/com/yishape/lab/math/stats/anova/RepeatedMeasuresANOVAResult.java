@@ -1,23 +1,36 @@
 package com.yishape.lab.math.stats.anova;
 
 /**
- * RepeatedMeasuresANOVAResult - 重复测量方差分析结果类 用于封装重复测量ANOVA分析的所有重要统计量
+ * 重复测量方差分析结果类 / Repeated Measures ANOVA Result Class
+ * <p>
+ * 用于封装重复测量ANOVA分析的所有重要统计量。
+ * Encapsulates all important statistics from repeated measures ANOVA analysis.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class RepeatedMeasuresANOVAResult {
 
-    double timeF;        // 时间效应的F统计量
-    double timeP;        // 时间效应的p值
-    double subjectF;     // 被试效应的F统计量
-    double subjectP;     // 被试效应的p值
+    /** 时间效应的F统计量 / F-statistic for time effect */
+    double timeF;
+    /** 时间效应的p值 / p-value for time effect */
+    double timeP;
+    /** 被试效应的F统计量 / F-statistic for subject effect */
+    double subjectF;
+    /** 被试效应的p值 / p-value for subject effect */
+    double subjectP;
 
-    // 构造函数
-    // 参数说明：
-    //   - timeF: 时间效应的F统计量，用于检验时间因素的主效应
-    //   - timeP: 时间效应的p值，表示时间效应的显著性
-    //   - subjectF: 被试效应的F统计量，用于检验被试间差异
-    //   - subjectP: 被试效应的p值，表示被试间差异的显著性
+    /**
+     * 创建重复测量方差分析结果对象
+     * Create Repeated Measures ANOVA Result Object
+     *
+     * @param timeF 时间效应的F统计量 / F-statistic for time effect
+     * @param timeP 时间效应的p值 / p-value for time effect
+     * @param subjectF 被试效应的F统计量 / F-statistic for subject effect
+     * @param subjectP 被试效应的p值 / p-value for subject effect
+     */
     RepeatedMeasuresANOVAResult(double timeF, double timeP, double subjectF, double subjectP) {
         this.timeF = timeF;
         this.timeP = timeP;

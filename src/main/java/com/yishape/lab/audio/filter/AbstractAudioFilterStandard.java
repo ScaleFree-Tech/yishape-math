@@ -25,18 +25,25 @@ import java.util.Collections;
  * @since 1.0
  */
 public abstract class AbstractAudioFilterStandard implements IBaseAudioFilter {
-    
+
+    /** 滤波器名称 / Filter name */
     protected String name;
+    /** 滤波器描述 / Filter description */
     protected String description;
+    /** 滤波器类型 / Filter type */
     protected FilterType filterType;
+    /** 截止频率 (Hz) / Cutoff frequency (Hz) */
     protected double cutoffFrequency;
+    /** 滤波器阶数 / Filter order */
     protected int order;
+    /** 默认参数映射 / Default parameter map */
     protected Map<String, Object> defaultParameters;
+    /** 支持的参数集合 / Supported parameter set */
     protected Set<String> supportedParameters;
-    
+
     /**
      * 构造函数 / Constructor
-     * 
+     *
      * @param name 滤波器名称 / Filter name
      * @param description 滤波器描述 / Filter description
      */
@@ -95,8 +102,8 @@ public abstract class AbstractAudioFilterStandard implements IBaseAudioFilter {
      * 子类必须实现此方法以提供具体的滤波逻辑。
      * Subclasses must implement this method to provide specific filtering logic.
      * </p>
-     * 
-     * @param input 输入音频 / Input audio
+     *
+     * @param input 输入音频数据 / Input audio data
      * @return 滤波后的音频 / Filtered audio
      * @throws AudioProcessingException 滤波过程中发生错误 / Error occurred during filtering
      */

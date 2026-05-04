@@ -4,8 +4,8 @@ import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioIO;
 import com.yishape.lab.audio.core.AudioUtil;
 import com.yishape.lab.math.linalg.IMatrix;
-import com.yishape.lab.math.viz.IPlot;
-import com.yishape.lab.math.viz.Plots;
+import com.yishape.lab.math.plot.IPlot;
+import com.yishape.lab.math.plot.Plots;
 
 import java.util.Arrays;
 

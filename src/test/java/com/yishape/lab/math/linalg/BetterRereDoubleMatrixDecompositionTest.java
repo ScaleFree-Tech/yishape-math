@@ -1,5 +1,6 @@
 package com.yishape.lab.math.linalg;
 
+import com.yishape.lab.math.linalg.decomposition.NonSquareMatrixException;
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
 import org.junit.jupiter.api.Test;
@@ -104,7 +105,7 @@ public class BetterRereDoubleMatrixDecompositionTest {
             IMatrix<Double> V = svdResult._3;
             
             assertEquals(4, U.getRowNum(), "U matrix should have 4 rows");
-            assertEquals(4, U.getColNum(), "U matrix should have 4 columns");
+            assertEquals(3, U.getColNum(), "U matrix should have min(m,n)=3 columns (thin SVD)");
             assertEquals(3, singularValues.length(), "Should have 3 singular values");
             assertEquals(3, V.getRowNum(), "V matrix should have 3 rows");
             assertEquals(3, V.getColNum(), "V matrix should have 3 columns");
@@ -276,7 +277,7 @@ public class BetterRereDoubleMatrixDecompositionTest {
         System.out.println("Testing Eigen Decomposition with non-square matrix...");
         
         // Attempt eigen decomposition on non-square matrix should throw exception
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(NonSquareMatrixException.class, () -> {
             rectangularMatrix.eigen();
         }, "Eigen decomposition should throw exception for non-square matrix");
         

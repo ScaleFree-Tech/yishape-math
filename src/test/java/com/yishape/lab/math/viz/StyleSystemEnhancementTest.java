@@ -1,5 +1,12 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.PlotStyle;
+import com.yishape.lab.math.plot.StyleExpression;
+import com.yishape.lab.math.plot.ColorPalette;
+import com.yishape.lab.math.plot.echarts.EchartsThemeManager;
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
+import com.yishape.lab.math.plot.echarts.EchartsUniversalStyleApplier;
+import com.yishape.lab.math.plot.echarts.EchartsStyleConverter;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -19,13 +26,13 @@ import java.util.Map;
  */
 public class StyleSystemEnhancementTest {
     
-    private RerePlot plot;
+    private EchartsPlot plot;
     private IVector testData;
     private IMatrix testMatrix;
     
     @BeforeEach
     public void setUp() {
-        plot = new RerePlot(800, 600);
+        plot = new EchartsPlot(800, 600);
         // 创建测试数据
         testData = Linalg.vector(new double[]{1, 4, 2, 8, 5, 7});
         testMatrix = Linalg.matrix(new double[][]{
@@ -48,12 +55,12 @@ public class StyleSystemEnhancementTest {
         assertTrue(ColorPalette.parseColorToRGB("#ff0000") != null);
         
         // 测试颜色验证
-        assertTrue(StyleConverter.isValidColor("#ff0000"));
-        assertTrue(StyleConverter.isValidColor("rgb(255, 0, 0)"));
-        assertFalse(StyleConverter.isValidColor("invalid"));
+        assertTrue(EchartsStyleConverter.isValidColor("#ff0000"));
+        assertTrue(EchartsStyleConverter.isValidColor("rgb(255, 0, 0)"));
+        assertFalse(EchartsStyleConverter.isValidColor("invalid"));
         
         // 测试高级梯度创建
-        Map<String, Object> gradient = StyleConverter.createAdvancedGradientConfig(
+        Map<String, Object> gradient = EchartsStyleConverter.createAdvancedGradientConfig(
             "#ff0000", "#0000ff", 90, "linear");
         
         assertNotNull(gradient);
@@ -76,21 +83,21 @@ public class StyleSystemEnhancementTest {
         org.icepear.echarts.charts.gauge.GaugeSeries gaugeSeries = 
             new org.icepear.echarts.charts.gauge.GaugeSeries();
         
-        UniversalStyleApplier.applyToGaugeSeries(gaugeSeries, style);
+        EchartsUniversalStyleApplier.applyToGaugeSeries(gaugeSeries, style);
         assertNotNull(gaugeSeries.getName());
         
         // 测试箱线图状态样式
         org.icepear.echarts.charts.boxplot.BoxplotSeries boxplotSeries = 
             new org.icepear.echarts.charts.boxplot.BoxplotSeries();
         
-        UniversalStyleApplier.applyToBoxplotSeries(boxplotSeries, style);
+        EchartsUniversalStyleApplier.applyToBoxplotSeries(boxplotSeries, style);
         assertNotNull(boxplotSeries.getName());
         
         // 测试K线图状态样式
         org.icepear.echarts.charts.candlestick.CandlestickSeries candlestickSeries = 
             new org.icepear.echarts.charts.candlestick.CandlestickSeries();
         
-        UniversalStyleApplier.applyToCandlestickSeries(candlestickSeries, style);
+        EchartsUniversalStyleApplier.applyToCandlestickSeries(candlestickSeries, style);
         assertNotNull(candlestickSeries.getName());
         
         System.out.println("✅ Enhanced state styling working correctly");
@@ -106,14 +113,14 @@ public class StyleSystemEnhancementTest {
             .markerSize(8);
         
         // 测试关系图样式转换
-        Map<String, Object> graphStyle = StyleConverter.toEChartsGraphStyle(style);
+        Map<String, Object> graphStyle = EchartsStyleConverter.toEChartsGraphStyle(style);
         assertNotNull(graphStyle);
         assertTrue(graphStyle.containsKey("nodeStyle"));
         assertTrue(graphStyle.containsKey("edgeStyle"));
         assertEquals("force", graphStyle.get("layout"));
         
         // 测试平行坐标图样式转换
-        Map<String, Object> parallelStyle = StyleConverter.toEChartsParallelStyle(style);
+        Map<String, Object> parallelStyle = EchartsStyleConverter.toEChartsParallelStyle(style);
         assertNotNull(parallelStyle);
         assertTrue(parallelStyle.containsKey("lineStyle"));
         assertEquals(true, parallelStyle.get("smooth"));
@@ -126,7 +133,7 @@ public class StyleSystemEnhancementTest {
     public void testEnhancedGradientSystem() {
         // 测试多色梯度
         String[] colors = {"#ff0000", "#00ff00", "#0000ff"};
-        Map<String, Object> multiGradient = StyleConverter.createMultiColorGradient(
+        Map<String, Object> multiGradient = EchartsStyleConverter.createMultiColorGradient(
             colors, null, "linear");
         
         assertNotNull(multiGradient);
@@ -134,7 +141,7 @@ public class StyleSystemEnhancementTest {
         assertTrue(multiGradient.containsKey("colorStops"));
         
         // 测试径向梯度
-        Map<String, Object> radialGradient = StyleConverter.createAdvancedGradientConfig(
+        Map<String, Object> radialGradient = EchartsStyleConverter.createAdvancedGradientConfig(
             "#ff0000", "#0000ff", 0, "radial");
         
         assertNotNull(radialGradient);
@@ -151,30 +158,30 @@ public class StyleSystemEnhancementTest {
         PlotStyle baseStyle = PlotStyle.defaultStyle();
         
         // 测试主题应用到样式
-        PlotStyle academicStyle = ThemeManager.applyThemeToStyle(baseStyle, "academic");
+        PlotStyle academicStyle = EchartsThemeManager.applyThemeToStyle(baseStyle, "academic");
         assertNotNull(academicStyle);
         assertEquals(1.5, academicStyle.getLineWidth());
         assertEquals(4, academicStyle.getMarkerSize());
         assertEquals(800, academicStyle.getAnimationDuration());
         
-        PlotStyle businessStyle = ThemeManager.applyThemeToStyle(baseStyle, "business");
+        PlotStyle businessStyle = EchartsThemeManager.applyThemeToStyle(baseStyle, "business");
         assertNotNull(businessStyle);
         assertEquals(2.5, businessStyle.getLineWidth());
         assertEquals(6, businessStyle.getMarkerSize());
         assertEquals(1200, businessStyle.getAnimationDuration());
         
         // 测试主题调色板推荐
-        String academicPalette = ThemeManager.getThemePreferredPalette("academic");
+        String academicPalette = EchartsThemeManager.getThemePreferredPalette("academic");
         assertEquals("muted", academicPalette);
         
-        String businessPalette = ThemeManager.getThemePreferredPalette("business");
+        String businessPalette = EchartsThemeManager.getThemePreferredPalette("business");
         assertEquals("echarts", businessPalette);
         
         // 测试智能主题推荐
-        String recommendedTheme = ThemeManager.recommendTheme("business", "line", "professional");
+        String recommendedTheme = EchartsThemeManager.recommendTheme("business", "line", "professional");
         assertEquals("business", recommendedTheme);
         
-        String academicTheme = ThemeManager.recommendTheme("scientific", "scatter", "minimal");
+        String academicTheme = EchartsThemeManager.recommendTheme("scientific", "scatter", "minimal");
         assertEquals("academic", academicTheme);
         
         System.out.println("✅ Enhanced theme integration working correctly");
@@ -243,7 +250,7 @@ public class StyleSystemEnhancementTest {
         plot.theme("academic");
         assertTrue(plot.isThemeSystemEnabled());
         
-        PlotStyle themedStyle = ThemeManager.applyThemeToStyle(
+        PlotStyle themedStyle = EchartsThemeManager.applyThemeToStyle(
             PlotStyle.defaultStyle(), plot.getCurrentTheme());
         
         // 创建具有主题样式的图表
@@ -269,8 +276,8 @@ public class StyleSystemEnhancementTest {
         startTime = System.currentTimeMillis();
         for (int i = 0; i < 1000; i++) {
             ColorPalette.parseColorToRGB("#ff0000");
-            StyleConverter.isValidColor("#00ff00");
-            StyleConverter.applyAlpha("#0000ff", 0.5);
+            EchartsStyleConverter.isValidColor("#00ff00");
+            EchartsStyleConverter.applyAlpha("#0000ff", 0.5);
         }
         endTime = System.currentTimeMillis();
         
@@ -294,11 +301,11 @@ public class StyleSystemEnhancementTest {
             .setProperty("shadowColor", "rgba(0, 0, 0, 0.3)");
         
         // 应用学术主题
-        PlotStyle themedAdvancedStyle = ThemeManager.applyThemeToStyle(advancedStyle, "academic");
+        PlotStyle themedAdvancedStyle = EchartsThemeManager.applyThemeToStyle(advancedStyle, "academic");
         
         // 创建多重效果图表
         assertDoesNotThrow(() -> {
-            new RerePlot(900, 700)
+            new EchartsPlot(900, 700)
                 .theme("academic")
                 .enableStyleSystem(true)
                 .line(testData, themedAdvancedStyle)

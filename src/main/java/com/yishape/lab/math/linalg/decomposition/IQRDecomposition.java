@@ -10,7 +10,7 @@ import com.yishape.lab.util.Tuple2;
  * The QR decomposition of a matrix A is a decomposition of the form: A = Q * R
  * where Q is an orthogonal matrix and R is an upper triangular matrix.
  * </p>
- * 
+ *
  * <h3>Key Features</h3>
  * <ul>
  *   <li>Householder reflections for numerical stability</li>
@@ -18,13 +18,15 @@ import com.yishape.lab.util.Tuple2;
  *   <li>Efficient caching of computed results</li>
  *   <li>Unified interface with other decompositions</li>
  * </ul>
- * 
+ *
  * <h3>References</h3>
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
- * 
+ *
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public interface IQRDecomposition extends IMatrixDecomposition<Tuple2<IMatrix<Double>, IMatrix<Double>>> {

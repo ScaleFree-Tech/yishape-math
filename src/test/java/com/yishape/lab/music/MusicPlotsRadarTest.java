@@ -4,7 +4,7 @@ import com.yishape.lab.audio.core.AudioData;
 import com.yishape.lab.audio.core.AudioFormat;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.IPlot;
 import com.yishape.lab.audio.Audios;
 import java.io.IOException;
 import com.yishape.lab.audio.core.UnsupportedAudioFormatException;

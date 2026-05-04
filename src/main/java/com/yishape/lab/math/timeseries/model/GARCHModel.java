@@ -345,6 +345,14 @@ public class GARCHModel {
     
     /**
      * GARCH诊断结果类 / GARCH Diagnostics Result Class
+     * <p>
+     * 存储GARCH模型诊断的结果，包括标准化残差统计量和各种检验统计量。
+     * Stores GARCH model diagnostic results including standardized residual statistics and various test statistics.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class GARCHDiagnostics {
         public final IVector<Double> standardizedResiduals;
@@ -358,7 +366,22 @@ public class GARCHModel {
         public final double ljungBoxPValue;
         public final double shapiroWilkStatistic;
         public final double shapiroWilkPValue;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param standardizedResiduals 标准化残差序列 / Standardized residuals series
+         * @param residualMean 残差均值 / Residual mean
+         * @param residualStd 残差标准差 / Residual standard deviation
+         * @param residualSkewness 残差偏度 / Residual skewness
+         * @param residualKurtosis 残差峰度 / Residual kurtosis
+         * @param archStatistic ARCH效应统计量 / ARCH effect statistic
+         * @param archPValue ARCH效应p值 / ARCH effect p-value
+         * @param ljungBoxStatistic Ljung-Box统计量 / Ljung-Box statistic
+         * @param ljungBoxPValue Ljung-Box p值 / Ljung-Box p-value
+         * @param shapiroWilkStatistic Shapiro-Wilk统计量 / Shapiro-Wilk statistic
+         * @param shapiroWilkPValue Shapiro-Wilk p值 / Shapiro-Wilk p-value
+         */
         public GARCHDiagnostics(IVector<Double> standardizedResiduals, double residualMean, double residualStd,
                               double residualSkewness, double residualKurtosis, double archStatistic,
                               double archPValue, double ljungBoxStatistic, double ljungBoxPValue,
@@ -381,6 +404,16 @@ public class GARCHModel {
     
     /**
      * 计算条件方差 / Calculate conditional variance
+     * <p>
+     * 根据GARCH模型公式递归计算条件方差序列。
+     * Recursively calculate conditional variance series according to GARCH model formula.
+     * </p>
+     *
+     * @param returns 收益率序列 / Returns series
+     * @param omega 常数项 / Constant term
+     * @param alpha ARCH系数向量 / ARCH coefficients vector
+     * @param beta GARCH系数向量 / GARCH coefficients vector
+     * @return 条件方差序列 / Conditional variance series
      */
     private static IVector<Double> calculateConditionalVariance(IVector<Double> returns, double omega,
                                                                IVector<Double> alpha, IVector<Double> beta) {
@@ -420,6 +453,14 @@ public class GARCHModel {
     
     /**
      * 计算对数似然 / Calculate log likelihood
+     * <p>
+     * 计算GARCH模型的对数似然值。
+     * Calculate log likelihood of GARCH model.
+     * </p>
+     *
+     * @param returns 收益率序列 / Returns series
+     * @param variance 条件方差序列 / Conditional variance series
+     * @return 对数似然值 / Log likelihood value
      */
     private static double calculateLogLikelihood(IVector<Double> returns, IVector<Double> variance) {
         int n = returns.length();
@@ -438,6 +479,13 @@ public class GARCHModel {
     
     /**
      * 计算偏度 / Calculate skewness
+     * <p>
+     * 计算时间序列数据的偏度（三阶中心矩标准化）。
+     * Calculate skewness of time series data (standardized third central moment).
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @return 偏度值 / Skewness value
      */
     private static double calculateSkewness(IVector<Double> data) {
         double mean = data.mean();
@@ -453,6 +501,13 @@ public class GARCHModel {
     
     /**
      * 计算峰度 / Calculate kurtosis
+     * <p>
+     * 计算时间序列数据的峰度（四阶中心矩标准化，减去正态分布的峰度）。
+     * Calculate kurtosis of time series data (standardized fourth central moment minus normal distribution kurtosis).
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @return 峰度值 / Kurtosis value
      */
     private static double calculateKurtosis(IVector<Double> data) {
         double mean = data.mean();
@@ -468,6 +523,14 @@ public class GARCHModel {
     
     /**
      * 计算ARCH统计量 / Calculate ARCH statistic
+     * <p>
+     * 计算ARCH效应检验的统计量。
+     * Calculate statistic for ARCH effect test.
+     * </p>
+     *
+     * @param residuals 残差序列 / Residuals series
+     * @param lag 滞后期数 / Lag order
+     * @return ARCH统计量 / ARCH statistic
      */
     private static double calculateARCHStatistic(IVector<Double> residuals, int lag) {
         int n = residuals.length();
@@ -483,6 +546,15 @@ public class GARCHModel {
     
     /**
      * 计算ARCH p值 / Calculate ARCH p-value
+     * <p>
+     * 根据ARCH统计量计算p值。
+     * Calculate p-value based on ARCH statistic.
+     * </p>
+     *
+     * @param statistic ARCH统计量 / ARCH statistic
+     * @param df 自由度 / Degrees of freedom
+     * @param n 样本数量 / Sample size
+     * @return p值 / P-value
      */
     private static double calculateARCHPValue(double statistic, int df, int n) {
         // 简化的p值计算 / Simplified p-value calculation
@@ -494,6 +566,14 @@ public class GARCHModel {
     
     /**
      * 计算自相关函数 / Calculate autocorrelation function
+     * <p>
+     * 计算时间序列指定滞后阶数的自相关系数。
+     * Calculate autocorrelation coefficient at specified lag order for time series.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @param lag 滞后期数 / Lag order
+     * @return 自相关系数 / Autocorrelation coefficient
      */
     private static double autocorrelation(IVector<Double> data, int lag) {
         int n = data.length();
@@ -517,6 +597,14 @@ public class GARCHModel {
     
     /**
      * 计算Ljung-Box统计量 / Calculate Ljung-Box statistic
+     * <p>
+     * 计算Ljung-Box检验的统计量，用于检验残差是否存在自相关。
+     * Calculate Ljung-Box test statistic for testing autocorrelation in residuals.
+     * </p>
+     *
+     * @param residuals 残差序列 / Residuals series
+     * @param lag 滞后期数 / Lag order
+     * @return Ljung-Box统计量 / Ljung-Box statistic
      */
     private static double calculateLjungBoxStatistic(IVector<Double> residuals, int lag) {
         int n = residuals.length();
@@ -532,6 +620,15 @@ public class GARCHModel {
     
     /**
      * 计算Ljung-Box p值 / Calculate Ljung-Box p-value
+     * <p>
+     * 根据Ljung-Box统计量计算p值。
+     * Calculate p-value based on Ljung-Box statistic.
+     * </p>
+     *
+     * @param statistic Ljung-Box统计量 / Ljung-Box statistic
+     * @param df 自由度 / Degrees of freedom
+     * @param n 样本数量 / Sample size
+     * @return p值 / P-value
      */
     private static double calculateLjungBoxPValue(double statistic, int df, int n) {
         // 简化的p值计算 / Simplified p-value calculation
@@ -543,6 +640,13 @@ public class GARCHModel {
     
     /**
      * 计算Shapiro-Wilk统计量 / Calculate Shapiro-Wilk statistic
+     * <p>
+     * 计算Shapiro-Wilk正态性检验的统计量。
+     * Calculate Shapiro-Wilk normality test statistic.
+     * </p>
+     *
+     * @param data 输入数据 / Input data
+     * @return Shapiro-Wilk统计量 / Shapiro-Wilk statistic
      */
     private static double calculateShapiroWilkStatistic(IVector<Double> data) {
         // 简化的Shapiro-Wilk检验实现 / Simplified Shapiro-Wilk test implementation
@@ -568,6 +672,14 @@ public class GARCHModel {
     
     /**
      * 计算Shapiro-Wilk p值 / Calculate Shapiro-Wilk p-value
+     * <p>
+     * 根据Shapiro-Wilk统计量计算p值。
+     * Calculate p-value based on Shapiro-Wilk statistic.
+     * </p>
+     *
+     * @param statistic Shapiro-Wilk统计量 / Shapiro-Wilk statistic
+     * @param n 样本数量 / Sample size
+     * @return p值 / P-value
      */
     private static double calculateShapiroWilkPValue(double statistic, int n) {
         // 简化的p值计算 / Simplified p-value calculation

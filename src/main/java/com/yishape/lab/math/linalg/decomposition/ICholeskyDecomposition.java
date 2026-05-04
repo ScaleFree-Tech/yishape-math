@@ -10,7 +10,7 @@ import com.yishape.lab.math.linalg.IMatrix;
  * decomposition of the form: A = L * L^T where L is a lower triangular matrix
  * with positive diagonal entries.
  * </p>
- * 
+ *
  * <h3>Key Features</h3>
  * <ul>
  *   <li>Enhanced numerical stability with configurable thresholds</li>
@@ -18,13 +18,15 @@ import com.yishape.lab.math.linalg.IMatrix;
  *   <li>Efficient caching of computed results</li>
  *   <li>Unified interface with other decompositions</li>
  * </ul>
- * 
+ *
  * <h3>References</h3>
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
- * 
+ *
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public interface ICholeskyDecomposition extends IMatrixDecomposition<IMatrix<Double>> {

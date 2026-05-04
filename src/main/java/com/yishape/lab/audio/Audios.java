@@ -45,6 +45,12 @@ public class Audios {
         return emb;
     }
     
+    /**
+     * 创建音频嵌入器 / Create audio embedder
+     *
+     * @param dimNum 向量维度 / Vector dimension
+     * @return 音频嵌入器实例 / Audio embedder instance
+     */
     public IVectorEmbedding createAudioEmbedder(int dimNum) {
         IVectorEmbedding emb = new IVectorEmbedding(dimNum);
         return emb;
@@ -68,6 +74,8 @@ public class Audios {
 
     /**
      * 创建音量处理器 / Create volume processor
+     *
+     * @return 音量处理器实例 / Volume processor instance
      */
     public static IAdvancedAudioProcessor createVolumeProcessor() {
         return createProcessor("volume");
@@ -75,6 +83,8 @@ public class Audios {
 
     /**
      * 创建标准化处理器 / Create normalize processor
+     *
+     * @return 标准化处理器实例 / Normalize processor instance
      */
     public static IAdvancedAudioProcessor createNormalizeProcessor() {
         return createProcessor("normalize");
@@ -82,6 +92,8 @@ public class Audios {
 
     /**
      * 创建声道处理器 / Create channel processor
+     *
+     * @return 声道处理器实例 / Channel processor instance
      */
     public static IAdvancedAudioProcessor createChannelProcessor() {
         return createProcessor("channel");
@@ -104,6 +116,8 @@ public class Audios {
 
     /**
      * 创建频谱分析器 / Create spectrum analyzer
+     *
+     * @return 频谱分析器实例 / Spectrum analyzer instance
      */
     public static IAudioAnalyzer createSpectrumAnalyzer() {
         return createAnalyzer("spectrum");
@@ -111,6 +125,8 @@ public class Audios {
 
     /**
      * 创建音高检测器 / Create pitch detector
+     *
+     * @return 音高检测器实例 / Pitch detector instance
      */
     public static IAudioAnalyzer createPitchDetector() {
         return createAnalyzer("pitch");
@@ -118,6 +134,8 @@ public class Audios {
 
     /**
      * 创建STFT分析器 / Create STFT analyzer
+     *
+     * @return STFT分析器实例 / STFT analyzer instance
      */
     public static IAudioAnalyzer createSTFTAnalyzer() {
         return createAnalyzer("stft");
@@ -140,6 +158,8 @@ public class Audios {
 
     /**
      * 创建低通滤波器 / Create low-pass filter
+     *
+     * @return 低通滤波器实例 / Low-pass filter instance
      */
     public static IBaseAudioFilter createLowPassFilter() {
         return createFilter("lowpass");
@@ -147,6 +167,8 @@ public class Audios {
 
     /**
      * 创建高级低通滤波器 / Create advanced low-pass filter
+     *
+     * @return 高级低通滤波器实例 / Advanced low-pass filter instance
      */
     public static IBaseAudioFilter createAdvancedLowPassFilter() {
         return createFilter("advanced_lowpass");
@@ -169,6 +191,8 @@ public class Audios {
 
     /**
      * 创建混响效果器 / Create reverb effect
+     *
+     * @return 混响效果器实例 / Reverb effect instance
      */
     public static IAudioEffect createReverbEffect() {
         return createEffect("reverb");
@@ -191,6 +215,8 @@ public class Audios {
 
     /**
      * 创建降噪增强器 / Create noise reduction enhancer
+     *
+     * @return 降噪增强器实例 / Noise reduction enhancer instance
      */
     public static IAudioEnhancer createNoiseReductionEnhancer() {
         return createEnhancer("noise_reduction");
@@ -198,6 +224,8 @@ public class Audios {
 
     /**
      * 创建均衡器增强器 / Create equalizer enhancer
+     *
+     * @return 均衡器增强器实例 / Equalizer enhancer instance
      */
     public static IAudioEnhancer createEqualizerEnhancer() {
         return createEnhancer("equalizer");
@@ -205,6 +233,8 @@ public class Audios {
 
     /**
      * 创建压缩器增强器 / Create compressor enhancer
+     *
+     * @return 压缩器增强器实例 / Compressor enhancer instance
      */
     public static IAudioEnhancer createCompressorEnhancer() {
         return createEnhancer("compressor");
@@ -242,6 +272,8 @@ public class Audios {
 
     /**
      * 创建标准特征提取器 / Create standard feature extractor
+     *
+     * @return 标准特征提取器实例 / Standard feature extractor instance
      */
     public static IAudioFeatureExtractor createStandardFeatureExtractor() {
         return createFeatureExtractor("standard");
@@ -250,6 +282,10 @@ public class Audios {
     // ========== 音频处理方法 / Audio Processing Methods ==========
     /**
      * 调节音量 / Adjust Volume
+     *
+     * @param audio 音频数据 / Audio data
+     * @param gain 增益值 / Gain value
+     * @return 调节后的音频数据 / Adjusted audio data
      */
     public static AudioData adjustVolume(AudioData audio, double gain) {
         try {
@@ -321,6 +357,9 @@ public class Audios {
     // ========== 音频处理方法 / Audio Processing Methods ==========
     /**
      * 归一化音频 / Normalize Audio
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 归一化后的音频数据 / Normalized audio data
      */
     public static AudioData normalize(AudioData audio) {
         try {
@@ -333,6 +372,10 @@ public class Audios {
 
     /**
      * 转换声道 / Convert Channels
+     *
+     * @param audio 音频数据 / Audio data
+     * @param targetChannels 目标声道数 / Target number of channels
+     * @return 转换后的音频数据 / Converted audio data
      */
     public static AudioData convertChannels(AudioData audio, int targetChannels) {
         try {
@@ -354,6 +397,9 @@ public class Audios {
 
     /**
      * 转换为单声道 / Convert to Mono
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 单声道音频数据 / Mono audio data
      */
     public static AudioData toMono(AudioData audio) {
         return convertChannels(audio, 1);
@@ -361,6 +407,9 @@ public class Audios {
 
     /**
      * 转换为立体声 / Convert to Stereo
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 立体声音频数据 / Stereo audio data
      */
     public static AudioData toStereo(AudioData audio) {
         return convertChannels(audio, 2);
@@ -369,6 +418,9 @@ public class Audios {
     // ========== 音频分析方法 / Audio Analysis Methods ==========
     /**
      * 计算频谱 / Calculate Spectrum
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 频谱结果（元组：频率向量，幅度向量）/ Spectrum result (tuple: frequency vector, magnitude vector)
      */
     public static Tuple2<IVector<Double>, IVector<Double>> spectrum(AudioData audio) {
         try {
@@ -381,6 +433,11 @@ public class Audios {
 
     /**
      * 计算频谱（带参数） / Calculate Spectrum (with parameters)
+     *
+     * @param audio 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @param overlap 重叠大小 / Overlap size
+     * @return 频谱结果（元组：频率向量，幅度向量）/ Spectrum result (tuple: frequency vector, magnitude vector)
      */
     public static Tuple2<IVector<Double>, IVector<Double>> spectrum(AudioData audio, int windowSize, double overlap) {
         try {
@@ -397,6 +454,9 @@ public class Audios {
 
     /**
      * STFT分析 / STFT Analysis
+     *
+     * @param audio 音频数据 / Audio data
+     * @return STFT结果（元组：频率向量，幅度向量）/ STFT result (tuple: frequency vector, magnitude vector)
      */
     public static Tuple2<IVector<Double>, IVector<Double>> stft(AudioData audio) {
         try {
@@ -409,6 +469,9 @@ public class Audios {
 
     /**
      * 音高检测 / Pitch Detection
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 检测到的音高值（Hz）/ Detected pitch value (Hz)
      */
     public static double detectPitch(AudioData audio) {
         try {
@@ -424,6 +487,10 @@ public class Audios {
     // ========== 音频滤波方法 / Audio Filtering Methods ==========
     /**
      * 低通滤波 / Low-pass Filter
+     *
+     * @param audio 音频数据 / Audio data
+     * @param cutoffFreq 截止频率 / Cutoff frequency
+     * @return 滤波后的音频数据 / Filtered audio data
      */
     public static AudioData lowPassFilter(AudioData audio, double cutoffFreq) {
         try {
@@ -438,6 +505,11 @@ public class Audios {
     // ========== 音频效果方法 / Audio Effect Methods ==========
     /**
      * 混响效果 / Reverb Effect
+     *
+     * @param audio 音频数据 / Audio data
+     * @param decay 衰减时间 / Decay time
+     * @param wetMix 混音比例 / Wet mix ratio
+     * @return 添加混响后的音频数据 / Audio data with reverb effect
      */
     public static AudioData reverb(AudioData audio, double decay, double wetMix) {
         try {
@@ -454,6 +526,10 @@ public class Audios {
     // ========== 音频增强方法 / Audio Enhancement Methods ==========
     /**
      * 降噪 / Noise Reduction
+     *
+     * @param audio 音频数据 / Audio data
+     * @param threshold 噪声阈值 / Noise threshold
+     * @return 降噪后的音频数据 / Noise-reduced audio data
      */
     public static AudioData reduceNoise(AudioData audio, double threshold) {
         try {
@@ -468,6 +544,10 @@ public class Audios {
 
     /**
      * 均衡器 / Equalizer
+     *
+     * @param audio 音频数据 / Audio data
+     * @param bandGains 频段增益映射 / Band gains map
+     * @return 均衡后的音频数据 / Equalized audio data
      */
     public static AudioData equalize(AudioData audio, Map<String, Double> bandGains) {
         try {
@@ -492,6 +572,11 @@ public class Audios {
 
     /**
      * 压缩器 / Compressor
+     *
+     * @param audio 音频数据 / Audio data
+     * @param threshold 阈值 / Threshold
+     * @param ratio 压缩比 / Compression ratio
+     * @return 压缩后的音频数据 / Compressed audio data
      */
     public static AudioData compress(AudioData audio, double threshold, double ratio) {
         try {
@@ -508,6 +593,8 @@ public class Audios {
     // ========== 工厂方法 / Factory Methods ==========
     /**
      * 获取音频组件工厂实例 / Get audio component factory instance
+     *
+     * @return 音频组件工厂 / Audio component factory
      */
     public static AudioComponentFactory getFactory() {
         return AudioComponentFactory.getInstance();
@@ -517,6 +604,9 @@ public class Audios {
     
     /**
      * 计算音频的RMS值 / Calculate RMS value of audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return RMS值 / RMS value
      */
     public static double calculateRMS(AudioData audioData) {
         return AudioUtil.calculateRMS(audioData.getSamples());
@@ -524,6 +614,9 @@ public class Audios {
 
     /**
      * 计算音频的零交叉率 / Calculate zero crossing rate of audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 零交叉率 / Zero crossing rate
      */
     public static double calculateZeroCrossingRate(AudioData audioData) {
         return AudioUtil.calculateZeroCrossingRate(audioData.getSamples());
@@ -531,6 +624,9 @@ public class Audios {
 
     /**
      * 计算音频的能量 / Calculate energy of audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 能量值 / Energy value
      */
     public static double calculateEnergy(AudioData audioData) {
         return AudioUtil.calculateEnergy(audioData.getSamples());
@@ -538,6 +634,12 @@ public class Audios {
 
     /**
      * 计算音频的MFCC矩阵 / Calculate MFCC matrix of audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param mfccCount MFCC系数数量 / Number of MFCC coefficients
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @return MFCC矩阵 / MFCC matrix
      */
     public static IMatrix<Double> calculateMFCC(AudioData audioData, int mfccCount, int windowSize, int hopSize) {
         try {
@@ -549,6 +651,9 @@ public class Audios {
 
     /**
      * 计算音频的MFCC矩阵（默认参数） / Calculate MFCC matrix of audio (default parameters)
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return MFCC矩阵 / MFCC matrix
      */
     public static IMatrix<Double> calculateMFCC(AudioData audioData) {
         try {
@@ -560,6 +665,10 @@ public class Audios {
 
     /**
      * 对音频执行FFT处理 / Perform FFT processing on audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return FFT结果复数数组 / FFT result complex array
      */
     public static Complex[] processFFT(AudioData audioData, int windowSize) {
         try {
@@ -571,6 +680,9 @@ public class Audios {
 
     /**
      * 对音频执行FFT处理（默认窗口大小） / Perform FFT processing on audio (default window size)
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return FFT结果复数数组 / FFT result complex array
      */
     public static Complex[] processFFT(AudioData audioData) {
         try {
@@ -582,6 +694,10 @@ public class Audios {
 
     /**
      * 对信号应用窗函数 / Apply window function to signal
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return 加窗后的信号向量 / Windowed signal vector
      */
     public static IVector<Double> applyWindow(AudioData audioData, int windowSize) {
         return AudioUtil.applyWindow(audioData.getSamples(), windowSize);
@@ -589,6 +705,10 @@ public class Audios {
 
     /**
      * 计算频谱重心 / Calculate spectral centroid
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return 频谱重心频率（Hz）/ Spectral centroid frequency (Hz)
      */
     public static double calculateSpectralCentroid(AudioData audioData, int windowSize) {
         try {
@@ -601,6 +721,10 @@ public class Audios {
 
     /**
      * 计算频谱滚降点 / Calculate spectral rolloff
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return 频谱滚降频率（Hz）/ Spectral rolloff frequency (Hz)
      */
     public static double calculateSpectralRolloff(AudioData audioData, int windowSize) {
         try {
@@ -613,6 +737,10 @@ public class Audios {
 
     /**
      * 计算频谱带宽 / Calculate spectral bandwidth
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return 频谱带宽（Hz）/ Spectral bandwidth (Hz)
      */
     public static double calculateSpectralBandwidth(AudioData audioData, int windowSize) {
         try {
@@ -626,6 +754,9 @@ public class Audios {
 
     /**
      * 计算频谱对比度 / Calculate spectral contrast
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 频谱对比度值 / Spectral contrast value
      */
     public static double calculateSpectralContrast(AudioData audioData) {
         try {
@@ -638,6 +769,9 @@ public class Audios {
 
     /**
      * 计算频谱平坦度 / Calculate spectral flatness
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 频谱平坦度值 / Spectral flatness value
      */
     public static double calculateSpectralFlatness(AudioData audioData) {
         try {
@@ -650,6 +784,10 @@ public class Audios {
 
     /**
      * 计算频谱流量 / Calculate spectral flux
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 参数映射 / Parameters map
+     * @return 频谱流量值 / Spectral flux value
      */
     public static double calculateSpectralFlux(AudioData audioData, Map<String, Object> parameters) {
         try {
@@ -661,6 +799,9 @@ public class Audios {
 
     /**
      * 计算粗糙度 / Calculate roughness
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 粗糙度值 / Roughness value
      */
     public static double calculateRoughness(AudioData audioData) {
         return AudioUtil.calculateRoughness(audioData);
@@ -668,6 +809,9 @@ public class Audios {
 
     /**
      * 计算语音频率范围能量 / Calculate speech frequency energy
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 语音频率能量占比 / Speech frequency energy ratio
      */
     public static double calculateSpeechFrequencyEnergy(AudioData audioData) {
         return AudioUtil.calculateSpeechFrequencyEnergy(audioData);
@@ -675,6 +819,9 @@ public class Audios {
 
     /**
      * 计算人声频率范围能量 / Calculate vocal frequency energy
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 人声频率能量占比 / Vocal frequency energy ratio
      */
     public static double calculateVocalFrequencyEnergy(AudioData audioData) {
         return AudioUtil.calculateVocalFrequencyEnergy(audioData);
@@ -682,15 +829,24 @@ public class Audios {
 
     /**
      * 计算背景噪声水平 / Calculate background noise level
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 背景噪声水平 / Background noise level
      */
     public static double calculateBackgroundNoise(AudioData audioData) {
         return AudioUtil.calculateBackgroundNoise(audioData);
     }
 
     // ========== FBank特征提取方法 / FBank Feature Extraction Methods ==========
-    
+
     /**
      * 计算音频的FBank特征矩阵 / Calculate FBank feature matrix of audio
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param fbankCount FBank系数数量 / Number of FBank coefficients
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @return FBank特征矩阵 / FBank feature matrix
      */
     public static IMatrix<Double> calculateFBank(AudioData audioData, int fbankCount, int windowSize, int hopSize) {
         try {
@@ -702,6 +858,9 @@ public class Audios {
 
     /**
      * 计算音频的FBank特征矩阵（默认参数） / Calculate FBank feature matrix of audio (default parameters)
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return FBank特征矩阵 / FBank feature matrix
      */
     public static IMatrix<Double> calculateFBank(AudioData audioData) {
         try {

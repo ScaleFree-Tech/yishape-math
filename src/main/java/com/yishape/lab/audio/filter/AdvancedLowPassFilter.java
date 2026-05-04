@@ -22,6 +22,9 @@ public class AdvancedLowPassFilter extends AbstractAdvancedAudioFilter {
     
     /**
      * 构造函数 / Constructor
+     *
+     * @param name 滤波器名称 / Filter name
+     * @param description 滤波器描述 / Filter description
      */
     public AdvancedLowPassFilter() {
         super("advanced_lowpass", "Advanced Low-pass filter");
@@ -77,6 +80,8 @@ public class AdvancedLowPassFilter extends AbstractAdvancedAudioFilter {
     
     /**
      * 获取采样率（辅助方法） / Get sample rate (helper method)
+     *
+     * @return 采样率 (Hz) / Sample rate (Hz)
      */
     private double getSampleRate() {
         // 在实际实现中，这可能需要通过其他方式获取 / In actual implementation, this may need to be obtained through other means
@@ -103,6 +108,11 @@ public class AdvancedLowPassFilter extends AbstractAdvancedAudioFilter {
         return mergedData;
     }
     
+    /**
+     * 创建此滤波器的克隆 / Create clone of this filter
+     *
+     * @return 高级低通滤波器克隆 / Advanced low-pass filter clone
+     */
     @Override
     public AdvancedLowPassFilter clone() {
         AdvancedLowPassFilter cloned = new AdvancedLowPassFilter();
@@ -113,6 +123,12 @@ public class AdvancedLowPassFilter extends AbstractAdvancedAudioFilter {
         return cloned;
     }
     
+    /**
+     * 获取频率响应 / Get frequency response
+     *
+     * @param frequency 频率 (Hz) / Frequency (Hz)
+     * @return 频率响应值 / Frequency response value
+     */
     @Override
     public double getFrequencyResponse(double frequency) {
         // 简化的频率响应计算 / Simplified frequency response calculation
@@ -120,6 +136,12 @@ public class AdvancedLowPassFilter extends AbstractAdvancedAudioFilter {
         return 1.0 / Math.sqrt(1.0 + Math.pow(normalizedFreq, 2 * getOrder()));
     }
     
+    /**
+     * 获取群延迟 / Get group delay
+     *
+     * @param frequency 频率 (Hz) / Frequency (Hz)
+     * @return 群延迟值 / Group delay value
+     */
     @Override
     public double getGroupDelay(double frequency) {
         // 简化的群延迟计算 / Simplified group delay calculation

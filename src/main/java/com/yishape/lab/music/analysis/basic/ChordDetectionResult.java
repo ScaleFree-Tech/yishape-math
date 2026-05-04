@@ -8,6 +8,10 @@ import com.yishape.lab.music.analysis.MusicDetectionResult;
  * 包含和弦检测的结果信息，包括和弦片段信息。
  * Contains chord detection result information including chord segment information.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class ChordDetectionResult extends MusicDetectionResult {
     private double startTime;

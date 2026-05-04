@@ -28,6 +28,14 @@ public class RereSVDDecompositionTest {
     }
 
     @Test
+    public void testZeroColumnsMatrix() {
+        ISVDDecomposition svd = new RereSVDDecomposition();
+        IMatrix<Double> z = Linalg.matrix(new double[2][0]);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> svd.decompose(z));
+        assertTrue(ex.getMessage().contains("Matrix cannot be empty"));
+    }
+
+    @Test
     public void testBasicSVD() {
         ISVDDecomposition svd = new RereSVDDecomposition();
         

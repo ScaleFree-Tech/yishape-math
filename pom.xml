@@ -5,6 +5,59 @@
     <artifactId>yishape-math</artifactId>
     <version>0.3.8</version>
     <packaging>jar</packaging>
+
+    <name>YiShape Math</name>
+    <description>
+        Java library for numerical computation, statistics, linear algebra, optimization, plotting (JavaFX/ECharts), and related utilities.
+        Requires Java 21+; compile/runtime uses the incubator Vector API module (jdk.incubator.vector).
+    </description>
+    <url>https://github.com/scalefree-tech/yishape-math</url>
+    <inceptionYear>2025</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- Sonatype 后台核准 groupId 后，建议补充 developer id / email / organizationUrl -->
+    <developers>
+        <developer>
+            <id>scale-free-tech</id>
+            <name>Maintainer</name>
+            <organization>Scale-Free Tech</organization>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/scalefree-tech/yishape-math.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:ScaleFree-Tech/yishape-math.git</developerConnection>
+        <url>https://github.com/scalefree-tech/yishape-math</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/scalefree-tech/yishape-math/issues</url>
+    </issueManagement>
+
+    <!-- 部署地址以 Sonatype / Maven Central 注册邮箱中的说明为准（可能是 ossrh 或 s01.oss.sonatype.org） -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
@@ -12,17 +65,8 @@
         <!-- JaCoCo 与 Surefire 共用：prepare-agent 会注入 agent 前缀 -->
         <argLine>${maven.surefire.argLine}</argLine>
     </properties>
-    
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
+
+    <!-- 发布到 Maven Central 的 POM 不应声明额外仓库；依赖须可从 Maven Central 解析 -->
     
     <dependencies>
         <!-- Support for OpenCL GPUs -->
@@ -47,6 +91,17 @@
             <version>1.1.0</version>
         </dependency>
         
+        <!-- JavaFX dependencies for plotting -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>21.0.2</version>
+        </dependency>
         <!-- Support for MP3 decoding -->
         <dependency>
             <groupId>javazoom</groupId>
@@ -134,6 +189,19 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
@@ -170,6 +238,9 @@
                     <archive>
                         <compress>true</compress> <!-- 启用压缩 -->
                         <index>true</index> <!-- 创建索引加快加载 -->
+                        <manifestEntries>
+                            <Automatic-Module-Name>com.yishape.lab.math</Automatic-Module-Name>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -251,6 +322,46 @@
             
         </plugins>
     </build>
-    
-    
+
+    <!-- 中央仓库发布：本地先配置 ~/.m2/settings.xml 中 server id=ossrh 的用户名/密码(Token)；再执行 -Prelease-sign -->
+    <profiles>
+        <profile>
+            <id>github-packages</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <url>https://maven.pkg.github.com/scalefree-tech/yishape-math</url>
+                </repository>
+                <snapshotRepository>
+                    <id>github</id>
+                    <url>https://maven.pkg.github.com/scalefree-tech/yishape-math</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>release-sign</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- CI 无 TTY 时可改用 pinentry-mode loopback + MAVEN_GPG_PASSPHRASE 环境变量 -->
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

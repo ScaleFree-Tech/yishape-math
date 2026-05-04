@@ -37,7 +37,9 @@ public abstract class ClassificationResult implements Serializable{
     /** 训练损失 */
     protected double loss;
     
-    /** 特征重要性分数 */
+    /**
+     * 特征重要性分数（如树模型的分裂增益聚合）；与线性模型的回归系数 {@code getFeatureWeights()} 含义不同。
+     */
     protected IVector featureImportance;
     
     /** 特征数量 */
@@ -160,15 +162,19 @@ public abstract class ClassificationResult implements Serializable{
     }
     
     /**
-     * 获取特征重要性
-     * @return 特征重要性向量
+     * 获取特征重要性（树与集成模型等）；线性可分模型的系数请使用具体模型上的 {@code getFeatureWeights()}，
+     * 例如 {@link com.yishape.lab.math.ml.lr.RereLinearRegression#getFeatureWeights()}、
+     * {@link com.yishape.lab.math.ml.cls.RereLinearSVM#getFeatureWeights()}。
+     *
+     * @return 特征重要性向量，未设置则为 null
      */
     public IVector getFeatureImportance() {
         return featureImportance;
     }
     
     /**
-     * 设置特征重要性
+     * 设置特征重要性（分裂增益等衍生分数，非线性回归式权重）。
+     *
      * @param featureImportance 特征重要性向量
      */
     public void setFeatureImportance(IVector featureImportance) {

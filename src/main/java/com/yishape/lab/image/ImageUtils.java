@@ -45,14 +45,35 @@ public class ImageUtils {
     
     /**
      * 图像质量指标类 / Image Quality Metrics Class
+     * <p>
+     * 用于存储图像质量评估的各种指标，包括均方误差(MSE)、峰值信噪比(PSNR)、
+     * 结构相似性指数(SSIM)、平均绝对误差(MAE)和信噪比(SNR)。
+     * This class stores various metrics for image quality assessment, including
+     * Mean Squared Error (MSE), Peak Signal-to-Noise Ratio (PSNR), Structural
+     * Similarity Index (SSIM), Mean Absolute Error (MAE), and Signal-to-Noise Ratio (SNR).
+     * </p>
      */
     public static class ImageQualityMetrics {
-        private double mse;         // 均方误差 / Mean Squared Error
-        private double psnr;        // 峰值信噪比 / Peak Signal-to-Noise Ratio
-        private double ssim;        // 结构相似性指数 / Structural Similarity Index
-        private double mae;         // 平均绝对误差 / Mean Absolute Error
-        private double snr;         // 信噪比 / Signal-to-Noise Ratio
-        
+        /** 均方误差 / Mean Squared Error */
+        private double mse;
+        /** 峰值信噪比 / Peak Signal-to-Noise Ratio */
+        private double psnr;
+        /** 结构相似性指数 / Structural Similarity Index */
+        private double ssim;
+        /** 平均绝对误差 / Mean Absolute Error */
+        private double mae;
+        /** 信噪比 / Signal-to-Noise Ratio */
+        private double snr;
+
+        /**
+         * 构造图像质量指标 / Construct ImageQualityMetrics
+         *
+         * @param mse 均方误差 / Mean Squared Error
+         * @param psnr 峰值信噪比 / Peak Signal-to-Noise Ratio
+         * @param ssim 结构相似性指数 / Structural Similarity Index
+         * @param mae 平均绝对误差 / Mean Absolute Error
+         * @param snr 信噪比 / Signal-to-Noise Ratio
+         */
         public ImageQualityMetrics(double mse, double psnr, double ssim, double mae, double snr) {
             this.mse = mse;
             this.psnr = psnr;
@@ -60,11 +81,40 @@ public class ImageUtils {
             this.mae = mae;
             this.snr = snr;
         }
-        
+
+        /**
+         * 获取均方误差 / Get mean squared error
+         *
+         * @return MSE值 / MSE value
+         */
         public double getMSE() { return mse; }
+
+        /**
+         * 获取峰值信噪比 / Get peak signal-to-noise ratio
+         *
+         * @return PSNR值(dB) / PSNR value (dB)
+         */
         public double getPSNR() { return psnr; }
+
+        /**
+         * 获取结构相似性指数 / Get structural similarity index
+         *
+         * @return SSIM值 / SSIM value
+         */
         public double getSSIM() { return ssim; }
+
+        /**
+         * 获取平均绝对误差 / Get mean absolute error
+         *
+         * @return MAE值 / MAE value
+         */
         public double getMAE() { return mae; }
+
+        /**
+         * 获取信噪比 / Get signal-to-noise ratio
+         *
+         * @return SNR值(dB) / SNR value (dB)
+         */
         public double getSNR() { return snr; }
     }
     

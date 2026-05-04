@@ -1,5 +1,6 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ public class PerformanceChartTest {
             }
             
             // Create the chart using the proper API for grouped bar charts
-            RerePlot plot = new RerePlot(1000, 600);
+            EchartsPlot plot = new EchartsPlot(1000, 600);
             
             // For grouped bar charts, we need to provide all the data in a specific format
             // Let's try creating a single vector with all the data and corresponding hue labels

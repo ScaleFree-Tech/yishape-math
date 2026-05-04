@@ -233,6 +233,10 @@ public class ChordGenerator {
     
     /**
      * 应用转位 / Apply Inversion
+     *
+     * @param intervals 原始音程序列 / Original interval sequence
+     * @param inversion 转位数量 / Number of inversions
+     * @return 转位后的音程序列 / Inverted interval sequence
      */
     private int[] applyInversion(int[] intervals, int inversion) {
         int[] inverted = new int[intervals.length];
@@ -248,6 +252,10 @@ public class ChordGenerator {
     
     /**
      * 计算频率 / Calculate Frequency
+     *
+     * @param noteNumber 音符编号（0-11）/ Note number (0-11)
+     * @param octave 八度 / Octave
+     * @return 频率（Hz）/ Frequency in Hz
      */
     private double calculateFrequency(int noteNumber, int octave) {
         return NOTE_FREQUENCIES[noteNumber] * Math.pow(2, octave - 4);
@@ -255,6 +263,11 @@ public class ChordGenerator {
     
     /**
      * 生成波形 / Generate Waveform
+     *
+     * @param frequency 频率 / Frequency
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @return 波形样本向量 / Waveform samples vector
      */
     private IVector<Double> generateWaveform(double frequency, double duration, double sampleRate) {
         int numSamples = (int) (duration * sampleRate);
@@ -288,6 +301,10 @@ public class ChordGenerator {
     
     /**
      * 应用包络 / Apply Envelope
+     *
+     * @param samples 样本向量 / Samples vector
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
      */
     private void applyEnvelope(IVector<Double> samples, double duration, double sampleRate) {
         int numSamples = samples.size();
@@ -321,6 +338,12 @@ public class ChordGenerator {
     
     /**
      * 验证参数 / Validate Parameters
+     *
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
+     * @throws AudioProcessingException 参数验证失败时抛出 / Thrown when parameter validation fails
      */
     private void validateParameters(int rootNote, int octave, double duration, double sampleRate) 
             throws AudioProcessingException {

@@ -27,7 +27,9 @@ import com.yishape.lab.math.linalg.Linalg;
  *   <li>Horn, R. A., &amp; Johnson, C. R. (2012). Matrix analysis (2nd ed.). Cambridge University Press.</li>
  *   <li>Watkins, D. S. (2007). The matrix eigenvalue problem: GR and Krylov subspace methods. SIAM.</li>
  * </ul>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class SchurDecompositionSolver implements IDecompositionSolver {

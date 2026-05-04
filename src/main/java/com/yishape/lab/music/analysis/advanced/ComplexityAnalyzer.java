@@ -45,6 +45,13 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
     private final BeatAnalyzerImpl beatAnalyzer;
     private final StandardizedConfidenceCalculator confidenceCalculator = new StandardizedConfidenceCalculator();
     
+    /**
+     * 默认构造函数 / Default constructor
+     * <p>
+     * 初始化复杂度分析器，创建调性分析器和节拍分析器实例。
+     * Initializes the complexity analyzer, creating key analyzer and beat analyzer instances.
+     * </p>
+     */
     public ComplexityAnalyzer() {
         this.keyAnalyzer = new KeyAnalyzerImpl();
         this.beatAnalyzer = new BeatAnalyzerImpl();
@@ -55,11 +62,34 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
         return analyze(audioData, getDefaultParameters());
     }
     
+    /**
+     * 分析音频数据获取复杂度结果 / Analyze audio data to get complexity result
+     * <p>
+     * 使用默认参数分析音频数据的音乐复杂度。
+     * Analyzes audio data for music complexity using default parameters.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 音乐检测结果 / Music detection result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public MusicDetectionResult analyzeAdvancedMusic(AudioData audioData) throws AudioProcessingException {
         return analyzeAdvancedMusic(audioData, getDefaultParameters());
     }
     
+    /**
+     * 分析音频数据获取复杂度特征 / Analyze audio data to get complexity features
+     * <p>
+     * 使用指定参数分析音频数据的音乐复杂度，包括和声、节奏、旋律和频谱复杂度。
+     * Analyzes audio data for music complexity using specified parameters, including harmonic, rhythmic, melodic and spectral complexity.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 复杂度分析结果映射 / Complexity analysis result map
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public Map<String, Object> analyze(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -118,21 +148,41 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
         return complexityResult;
     }
     
+    /**
+     * 获取分析器名称 / Get analyzer name
+     *
+     * @return 分析器名称 / Analyzer name
+     */
     @Override
     public String getAnalyzerName() {
         return "complexity_analyzer";
     }
     
+    /**
+     * 获取分析器名称 / Get analyzer name
+     *
+     * @return 分析器名称 / Analyzer name
+     */
     @Override
     public String getName() {
         return getAnalyzerName();
     }
     
+    /**
+     * 获取支持的参数列表 / Get supported parameters list
+     *
+     * @return 支持的参数名称数组 / Array of supported parameter names
+     */
     @Override
     public String[] getSupportedParameters() {
         return new String[]{"windowSize", "hopSize", "frameSize"};
     }
     
+    /**
+     * 获取默认参数 / Get default parameters
+     *
+     * @return 默认参数映射 / Default parameters map
+     */
     @Override
     public Map<String, Object> getDefaultParameters() {
         Map<String, Object> params = new HashMap<>();
@@ -142,6 +192,16 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
         return params;
     }
     
+    /**
+     * 验证参数 / Validate parameters
+     * <p>
+     * 验证提供的参数是否在支持列表中。
+     * Validates whether the provided parameters are in the supported list.
+     * </p>
+     *
+     * @param parameters 待验证的参数 / Parameters to validate
+     * @return 是否有效 / Whether valid
+     */
     @Override
     public boolean validateParameters(Map<String, Object> parameters) {
         if (parameters == null) {
@@ -158,6 +218,16 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
         return true;
     }
     
+    /**
+     * 设置参数 / Set parameters
+     * <p>
+     * 设置分析器参数。如果参数无效则抛出异常。
+     * Sets analyzer parameters. Throws exception if parameters are invalid.
+     * </p>
+     *
+     * @param parameters 要设置的参数 / Parameters to set
+     * @throws AudioProcessingException 参数无效 / Parameters invalid
+     */
     @Override
     public void setParameters(Map<String, Object> parameters) throws AudioProcessingException {
         if (parameters == null) {
@@ -173,81 +243,171 @@ public class ComplexityAnalyzer implements IAdvancedAnalyzer {
         // so we don't need to store them in instance variables
     }
     
+    /**
+     * 获取当前参数 / Get current parameters
+     *
+     * @return 当前参数映射 / Current parameters map
+     */
     @Override
     public Map<String, Object> getCurrentParameters() {
         return getDefaultParameters(); // In this implementation, we always use defaults
     }
     
+    /**
+     * 重置参数 / Reset parameters
+     * <p>
+     * 重置分析器参数到默认状态。
+     * Resets analyzer parameters to default state.
+     */
     @Override
     public void resetParameters() {
         // Nothing to reset in this implementation
     }
     
+    /**
+     * 获取版本号 / Get version number
+     *
+     * @return 版本号 / Version number
+     */
     @Override
     public String getVersion() {
         return "1.0";
     }
     
+    /**
+     * 获取描述 / Get description
+     *
+     * @return 分析器描述 / Analyzer description
+     */
     @Override
     public String getDescription() {
         return "Analyzes music complexity including harmonic, rhythmic, melodic, and spectral complexity";
     }
     
+    /**
+     * 检查是否支持音频格式 / Check if audio format is supported
+     *
+     * @param sampleRate 采样率 / Sample rate
+     * @param channels 声道数 / Number of channels
+     * @param bitDepth 位深度 / Bit depth
+     * @return 是否支持 / Whether supported
+     */
     @Override
     public boolean supportsAudioFormat(double sampleRate, int channels, int bitDepth) {
         return sampleRate > 0 && channels > 0 && bitDepth > 0;
     }
     
+    /**
+     * 获取最小音频长度 / Get minimum audio length
+     *
+     * @return 最小音频长度（秒）/ Minimum audio length (seconds)
+     */
     @Override
     public double getMinimumAudioLength() {
         return 1.0; // 1 second minimum
     }
     
+    /**
+     * 获取最大音频长度 / Get maximum audio length
+     *
+     * @return 最大音频长度（秒）/ Maximum audio length (seconds)
+     */
     @Override
     public double getMaximumAudioLength() {
         return 3600.0; // 1 hour maximum
     }
     
+    /**
+     * 估算复杂度 / Estimate complexity
+     *
+     * @param audioLength 音频长度（秒）/ Audio length (seconds)
+     * @return 估算的复杂度 / Estimated complexity
+     */
     @Override
     public double getComplexityEstimate(double audioLength) {
         return audioLength * 0.15; // Medium complexity
     }
     
+    /**
+     * 预热分析器 / Warm up analyzer
+     * <p>
+     * 预热分析器以提高首次分析的准确性。
+     * Warms up the analyzer to improve accuracy of first analysis.
+     * </p>
+     *
+     * @throws AudioProcessingException 预热失败 / Warm-up failed
+     */
     @Override
     public void warmUp() throws AudioProcessingException {
         // No warm-up needed for this analyzer
     }
     
+    /**
+     * 清理资源 / Cleanup resources
+     * <p>
+     * 释放分析器占用的资源。
+     * Releases resources occupied by the analyzer.
+     */
     @Override
     public void cleanup() {
         // No resources to clean up
     }
     
+    /**
+     * 获取状态 / Get status
+     *
+     * @return 分析器当前状态 / Current analyzer status
+     */
     @Override
     public String getStatus() {
         return "ready";
     }
     
+    /**
+     * 检查是否就绪 / Check if ready
+     *
+     * @return 是否就绪 / Whether ready
+     */
     @Override
     public boolean isReady() {
         return true;
     }
     
+    /**
+     * 获取上次分析统计 / Get last analysis statistics
+     *
+     * @return 统计信息映射 / Statistics map
+     */
     @Override
     public Map<String, Object> getLastAnalysisStatistics() {
         return new HashMap<>(); // No statistics tracked
     }
     
+    /**
+     * 获取性能指标 / Get performance metrics
+     *
+     * @return 性能指标映射 / Performance metrics map
+     */
     @Override
     public Map<String, Object> getPerformanceMetrics() {
         return new HashMap<>(); // No metrics tracked
     }
     
+    /**
+     * 设置详细日志 / Set verbose logging
+     *
+     * @param enabled 是否启用 / Whether to enable
+     */
     @Override
     public void setVerboseLogging(boolean enabled) {
         // Verbose logging not implemented
     }
     
+    /**
+     * 检查详细日志是否启用 / Check if verbose logging is enabled
+     *
+     * @return 是否启用 / Whether enabled
+     */
     @Override
     public boolean isVerboseLoggingEnabled() {
         return false;

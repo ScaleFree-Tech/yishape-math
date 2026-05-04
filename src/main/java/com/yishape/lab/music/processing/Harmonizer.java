@@ -330,6 +330,15 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 执行和声化操作 / Perform harmonization
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param harmonyType 和声类型 / Harmony type
+     * @param voiceCount 声部数量 / Number of voices
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param parameters 参数映射 / Parameter map
+     * @return 和声化后的音频数据 / Harmonized audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performHarmonization(AudioData audioData, String harmonyType, int voiceCount,
                                           String key, String mode, Map<String, Object> parameters) throws AudioProcessingException {
@@ -346,6 +355,10 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 提取音高信息 / Extract pitch information
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 音高数组 / Array of pitches
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double[] extractPitches(AudioData audioData) throws AudioProcessingException {
         double[] samples = audioData.getSamples().toDoubleArray();
@@ -374,6 +387,12 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 自相关音高检测 / Autocorrelation pitch detection
+     *
+     * @param samples 样本数组 / Sample array
+     * @param start 起始索引 / Start index
+     * @param windowSize 窗口大小 / Window size
+     * @param sampleRate 采样率 / Sample rate
+     * @return 检测到的音高频率 / Detected pitch frequency
      */
     private double detectPitchAutocorrelation(double[] samples, int start, int windowSize, double sampleRate) {
         double[] window = new double[windowSize];
@@ -405,6 +424,15 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 生成和声声部 / Generate harmony voices
+     *
+     * @param pitches 原始音高数组 / Original pitch array
+     * @param harmonyType 和声类型 / Harmony type
+     * @param voiceCount 声部数量 / Number of voices
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param parameters 参数映射 / Parameter map
+     * @return 和声声部数组列表 / List of harmony voice arrays
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private List<double[]> generateHarmonyVoices(double[] pitches, String harmonyType, int voiceCount,
                                                 String key, String mode, Map<String, Object> parameters) throws AudioProcessingException {
@@ -437,6 +465,14 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 计算和声音高 / Calculate harmony pitch
+     *
+     * @param originalPitch 原始音高 / Original pitch
+     * @param voiceIndex 声部索引 / Voice index
+     * @param harmonyType 和声类型 / Harmony type
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @param voicing 声部排列 / Voicing
+     * @return 和声音高频率 / Harmony pitch frequency
      */
     private double calculateHarmonyPitch(double originalPitch, int voiceIndex, String harmonyType,
                                         String key, String mode, String voicing) {
@@ -478,6 +514,12 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 计算自定义间隔 / Calculate custom interval
+     *
+     * @param midiNote MIDI音符号 / MIDI note number
+     * @param voiceIndex 声部索引 / Voice index
+     * @param key 调性 / Key
+     * @param mode 调式 / Mode
+     * @return 音程值 / Interval value
      */
     private int calculateCustomInterval(double midiNote, int voiceIndex, String key, String mode) {
         // 根据调性和调式计算合适的间隔
@@ -497,6 +539,12 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 合成和声音频 / Synthesize harmony audio
+     *
+     * @param originalAudio 原始音频 / Original audio
+     * @param harmonyVoices 和声声部列表 / List of harmony voices
+     * @param parameters 参数映射 / Parameter map
+     * @return 合成的和声音频 / Synthesized harmony audio
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData synthesizeHarmony(AudioData originalAudio, List<double[]> harmonyVoices,
                                        Map<String, Object> parameters) throws AudioProcessingException {
@@ -535,6 +583,11 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 合成单个声部 / Synthesize single voice
+     *
+     * @param pitches 音高数组 / Pitch array
+     * @param outputLength 输出长度 / Output length
+     * @param sampleRate 采样率 / Sample rate
+     * @return 合成的音频样本 / Synthesized audio samples
      */
     private double[] synthesizeVoice(double[] pitches, int outputLength, double sampleRate) {
         double[] samples = new double[outputLength];
@@ -574,6 +627,8 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 归一化音频 / Normalize audio
+     *
+     * @param samples 样本数组 / Sample array
      */
     private void normalizeAudio(double[] samples) {
         double maxValue = 0.0;
@@ -591,6 +646,13 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 流式和声化处理 / Stream harmonization processing
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSamples 窗口样本数 / Window samples
+     * @param hopSamples 跳跃样本数 / Hop samples
+     * @param parameters 参数映射 / Parameter map
+     * @return 处理后的音频数据 / Processed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performStreamHarmonization(AudioData audioData, int windowSamples, int hopSamples,
                                                  Map<String, Object> parameters) throws AudioProcessingException {
@@ -629,6 +691,11 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 提取时间段 / Extract time segment
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 提取的音频段 / Extracted audio segment
      */
     private AudioData extractTimeSegment(AudioData audioData, double startTime, double endTime) {
         double sampleRate = audioData.getSampleRate();
@@ -647,6 +714,12 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 插入处理后的段 / Insert processed segment
+     *
+     * @param originalAudio 原始音频 / Original audio
+     * @param processedSegment 处理后的段 / Processed segment
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 合成后的音频 / Merged audio
      */
     private AudioData insertProcessedSegment(AudioData originalAudio, AudioData processedSegment,
                                            double startTime, double endTime) {
@@ -670,6 +743,9 @@ public class Harmonizer implements IMusicProcessor {
 
     /**
      * 检查和声类型是否有效 / Check if harmony type is valid
+     *
+     * @param harmonyType 和声类型 / Harmony type
+     * @return 是否有效 / Whether it is valid
      */
     private boolean isValidHarmonyType(String harmonyType) {
         return harmonyType.equals("thirds") || harmonyType.equals("fourths") ||

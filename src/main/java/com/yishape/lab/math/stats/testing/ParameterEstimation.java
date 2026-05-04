@@ -5,16 +5,39 @@ import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.math.linalg.IVector;
 
 /**
- * 统计参数估计
+ * 统计参数估计类 / Statistical Parameter Estimation Class
+ * <p>
+ * 提供均值和方差的区间估计功能。
+ * Provides interval estimation functionality for mean and variance.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class ParameterEstimation {
 
+    /**
+     * 使用Z分布估计均值的置信区间（默认置信水平95%）
+     * Estimate mean confidence interval using Z-distribution (default 95% confidence level)
+     *
+     * @param sample 样本数据 / Sample data
+     * @param sigma 已知标准差 / Known standard deviation
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateMeanIntevalWithZ(IVector sample, double sigma) {
         return estimateMeanIntevalWithZ(sample, 0.95f, sigma);
     }
 
+    /**
+     * 使用Z分布估计均值的置信区间
+     * Estimate mean confidence interval using Z-distribution
+     *
+     * @param sample 样本数据 / Sample data
+     * @param confidence 置信水平 / Confidence level
+     * @param sigma 已知标准差 / Known standard deviation
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateMeanIntevalWithZ(IVector sample, double confidence, double sigma) {
         var norm = Stats.norm();
         double left = (1.0 - confidence) / 2.0;
@@ -30,10 +53,25 @@ public class ParameterEstimation {
         return new Tuple2(mLowBound, mUpperBound);
     }
 
+    /**
+     * 使用t分布估计均值的置信区间（默认置信水平95%）
+     * Estimate mean confidence interval using t-distribution (default 95% confidence level)
+     *
+     * @param sample 样本数据 / Sample data
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateMeanIntevalWithT(IVector sample) {
         return estimateMeanIntevalWithT(sample, 0.95f);
     }
 
+    /**
+     * 使用t分布估计均值的置信区间
+     * Estimate mean confidence interval using t-distribution
+     *
+     * @param sample 样本数据 / Sample data
+     * @param confidence 置信水平 / Confidence level
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateMeanIntevalWithT(IVector sample, double confidence) {
         var t = Stats.t(sample.length() - 1);
         double left = (1.0 - confidence) / 2.0;
@@ -50,10 +88,25 @@ public class ParameterEstimation {
         return new Tuple2(mLowBound, mUpperBound);
     }
 
+    /**
+     * 使用卡方分布估计方差的置信区间（默认置信水平95%）
+     * Estimate variance confidence interval using chi-square distribution (default 95% confidence level)
+     *
+     * @param sample 样本数据 / Sample data
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateVarIntevalWithChi2(IVector sample) {
         return estimateVarIntevalWithChi2(sample, 0.95f);
     }
 
+    /**
+     * 使用卡方分布估计方差的置信区间
+     * Estimate variance confidence interval using chi-square distribution
+     *
+     * @param sample 样本数据 / Sample data
+     * @param confidence 置信水平 / Confidence level
+     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     */
     public Tuple2<Double,Double> estimateVarIntevalWithChi2(IVector sample, double confidence) {
         var chi2 = Stats.chi2(sample.length() - 1);
         double left = (float) (1.0f - confidence) / 2.0f;

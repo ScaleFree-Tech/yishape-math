@@ -9,7 +9,7 @@ import com.yishape.lab.math.linalg.IMatrix;
  * This interface provides a common set of methods that all matrix decomposition
  * algorithms should implement to ensure consistency and ease of use.
  * </p>
- * 
+ *
  * <h3>Design Principles</h3>
  * <ul>
  *   <li><strong>Consistency</strong>: All decompositions follow the same interface patterns</li>
@@ -17,8 +17,10 @@ import com.yishape.lab.math.linalg.IMatrix;
  *   <li><strong>Performance</strong>: Efficient caching of computed results</li>
  *   <li><strong>Robustness</strong>: Comprehensive error handling with detailed exceptions</li>
  * </ul>
- * 
+ *
  * @param <T> The type of result returned by the decomposition
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public interface IMatrixDecomposition<T>  {

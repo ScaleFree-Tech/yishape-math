@@ -1,5 +1,6 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ public class DetailedChartTest {
             
             IVector<Double> vector1 = Linalg.vector(data1.stream().mapToDouble(Double::doubleValue).toArray());
             
-            RerePlot plot1 = new RerePlot(800, 600);
+            EchartsPlot plot1 = new EchartsPlot(800, 600);
             plot1.bar(xLabels1, vector1, hue1)
                 .title("Test 1: Simple Grouped Bar Chart")
                 .xlabel("Categories")
@@ -60,7 +61,7 @@ public class DetailedChartTest {
             
             IVector<Double> allTimesVector = Linalg.vector(allTimes.stream().mapToDouble(Double::doubleValue).toArray());
             
-            RerePlot plot2 = new RerePlot(1000, 600);
+            EchartsPlot plot2 = new EchartsPlot(1000, 600);
             plot2.bar(xLabels2, allTimesVector, hueLabels)
                 .title("Test 2: Performance Comparison Style")
                 .xlabel("Data Size")

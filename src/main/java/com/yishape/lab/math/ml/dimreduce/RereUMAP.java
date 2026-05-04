@@ -85,6 +85,9 @@ public class RereUMAP implements IDimReduce, ISerializableModel {
     private int[][] computeKNearestNeighbors(IMatrix data) {
         int n = data.getRowNum();
         int[][] knnIndices = new int[n][nNeighbors];
+        for (int r = 0; r < n; r++) {
+            Arrays.fill(knnIndices[r], -1);
+        }
         
         for (int i = 0; i < n; i++) {
             IVector query = (IVector)data.getRow(i);

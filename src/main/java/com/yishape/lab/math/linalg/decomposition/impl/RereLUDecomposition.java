@@ -9,7 +9,11 @@ import com.yishape.lab.math.linalg.decomposition.solver.LUDecompositionSolver;
 import com.yishape.lab.util.Tuple2;
 
 /**
- * Implementation of LU decomposition with partial pivoting for better numerical stability
+ * Implementation of LU decomposition with partial pivoting for better numerical stability.
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 2.0
  */
 public class RereLUDecomposition implements ILUDecomposition {
     /** Default bound to determine effective singularity in LU decomposition. */

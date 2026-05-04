@@ -432,28 +432,54 @@ public class EllipticFilter extends AbstractSignalProcessor<Double> implements I
     }
     
     // Interface implementations
+    /**
+     * 获取滤波器类型 / Get filter type
+     * @return 滤波器类型 / Filter type
+     */
     @Override
     public FilterType getFilterType() { return filterType; }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() { return implementationType; }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() { return order; }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() { return cutoffFrequencies.clone(); }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         validateParameters(filterType, order, frequencies, samplingRate, passbandRipple, stopbandRipple);
         this.cutoffFrequencies = frequencies.clone();
         computeCoefficients();
     }
-    
+
     @Override
     public double getSamplingRate() { return samplingRate; }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate
+     * @throws SignalProcessingException 采样率设置无效时抛出 / Thrown when sampling rate setting is invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         if (samplingRate <= 0) {
@@ -462,12 +488,26 @@ public class EllipticFilter extends AbstractSignalProcessor<Double> implements I
         this.samplingRate = samplingRate;
         computeCoefficients();
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() { return coefficients; }
-    
+
     // Additional getters and setters
+    /**
+     * 获取通带波纹 / Get passband ripple
+     * @return 通带波纹 (dB) / Passband ripple (dB)
+     */
     public double getPassbandRipple() { return passbandRipple; }
+
+    /**
+     * 设置通带波纹 / Set passband ripple
+     * @param passbandRipple 通带波纹 (dB) / Passband ripple (dB)
+     * @throws SignalProcessingException 波纹参数无效时抛出 / Thrown when ripple parameter is invalid
+     */
     public void setPassbandRipple(double passbandRipple) throws SignalProcessingException {
         if (passbandRipple <= 0) {
             throw new SignalProcessingException("通带波纹必须大于0 / Passband ripple must be greater than 0");
@@ -476,7 +516,17 @@ public class EllipticFilter extends AbstractSignalProcessor<Double> implements I
         computeCoefficients();
     }
     
+    /**
+     * 获取阻带波纹 / Get stopband ripple
+     * @return 阻带波纹 (dB) / Stopband ripple (dB)
+     */
     public double getStopbandRipple() { return stopbandRipple; }
+
+    /**
+     * 设置阻带波纹 / Set stopband ripple
+     * @param stopbandRipple 阻带波纹 (dB) / Stopband ripple (dB)
+     * @throws SignalProcessingException 波纹参数无效时抛出 / Thrown when ripple parameter is invalid
+     */
     public void setStopbandRipple(double stopbandRipple) throws SignalProcessingException {
         if (stopbandRipple <= 0) {
             throw new SignalProcessingException("阻带波纹必须大于0 / Stopband ripple must be greater than 0");

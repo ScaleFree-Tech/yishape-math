@@ -106,6 +106,8 @@ public class SignalProcessorFactory {
     
     /**
      * 获取单例实例 / Get singleton instance
+     *
+     * @return SignalProcessorFactory 单例实例 / Singleton instance
      */
     public static SignalProcessorFactory getInstance() {
         if (instance == null) {
@@ -128,8 +130,8 @@ public class SignalProcessorFactory {
      * @param name 处理器名称 / Processor name
      * @param processorClass 处理器类 / Processor class
      * @param category 处理器分类 / Processor category
-     * @param description 描述 / Description
-     * @param version 版本 / Version
+     * @param description 描述信息 / Description
+     * @param version 版本信息 / Version
      * @param <T> 数据类型 / Data type
      */
     public <T extends Number> void registerProcessor(String name, 
@@ -322,6 +324,8 @@ public class SignalProcessorFactory {
     
     /**
      * 获取已注册的处理器列表 / Get list of registered processors
+     *
+     * @return 已注册处理器名称的集合 / Set of registered processor names
      */
     public Set<String> getRegisteredProcessorNames() {
         return registeredProcessors.keySet();
@@ -329,6 +333,9 @@ public class SignalProcessorFactory {
     
     /**
      * 获取指定分类的处理器列表 / Get list of processors in specified category
+     *
+     * @param category 处理器分类 / Processor category
+     * @return 指定分类的处理器映射 / Map of processors in specified category
      */
     public Map<String, ProcessorInfo<?>> getProcessorsByCategory(ProcessorCategory category) {
         Map<String, ProcessorInfo<?>> result = new HashMap<>();
@@ -342,6 +349,9 @@ public class SignalProcessorFactory {
     
     /**
      * 检查处理器是否已注册 / Check if processor is registered
+     *
+     * @param name 处理器名称 / Processor name
+     * @return 是否已注册 / Whether registered
      */
     public boolean isProcessorRegistered(String name) {
         return registeredProcessors.containsKey(name.toLowerCase());
@@ -349,6 +359,9 @@ public class SignalProcessorFactory {
     
     /**
      * 获取处理器信息 / Get processor information
+     *
+     * @param name 处理器名称 / Processor name
+     * @return 处理器信息 / Processor information
      */
     public ProcessorInfo<?> getProcessorInfo(String name) {
         return registeredProcessors.get(name.toLowerCase());
@@ -356,6 +369,8 @@ public class SignalProcessorFactory {
     
     /**
      * 注销处理器 / Unregister processor
+     *
+     * @param name 处理器名称 / Processor name
      */
     public void unregisterProcessor(String name) {
         registeredProcessors.remove(name.toLowerCase());
@@ -425,6 +440,8 @@ public class SignalProcessorFactory {
     
     /**
      * 获取工厂版本信息 / Get factory version information
+     *
+     * @return 工厂版本 / Factory version
      */
     public String getVersion() {
         return "1.0.0";
@@ -432,6 +449,8 @@ public class SignalProcessorFactory {
     
     /**
      * 获取工厂描述信息 / Get factory description
+     *
+     * @return 工厂描述 / Factory description
      */
     public String getDescription() {
         return "YiShape-Math 信号处理器工厂 / YiShape-Math Signal Processor Factory";

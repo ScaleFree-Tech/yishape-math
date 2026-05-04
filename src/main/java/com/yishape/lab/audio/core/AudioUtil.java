@@ -11,8 +11,16 @@ import com.yishape.lab.math.signal.core.RereFFT;
 import java.util.Map;
 
 /**
+ * 音频工具类 / Audio Utility Class
+ * <p>
+ * 提供音频分析和处理的各种工具方法，包括FFT处理、窗函数、频谱特征计算等。
+ * This class provides various utility methods for audio analysis and processing,
+ * including FFT processing, window functions, spectral feature calculation, etc.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class AudioUtil {
 
@@ -568,18 +576,27 @@ public class AudioUtil {
     }
 
     
+    /**
+     * 计算MFCC特征矩阵 / Calculate MFCC feature matrix
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSize 窗口大小 / Window size
+     * @return MFCC矩阵 / MFCC matrix
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
+     */
     public static IMatrix<Double> calculateMFCCMatrix(AudioData audioData, int windowSize) throws AudioProcessingException {
         double[][] mfccArray = calculateMFCCFrames(audioData, DEFAULT_MFCC_COUNT, windowSize, DEFAULT_HOP_SIZE);
         return Linalg.matrix(mfccArray);
     }
     
     /**
-     * 
-     * @param audioData
-     * @param mfccCount
-     * @param windowSize
-     * @return
-     * @throws AudioProcessingException 
+     * 计算MFCC特征矩阵 / Calculate MFCC feature matrix
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param mfccCount MFCC系数数量 / Number of MFCC coefficients
+     * @param windowSize 窗口大小 / Window size
+     * @return MFCC矩阵 / MFCC matrix
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     public static IMatrix<Double> calculateMFCCMatrix(AudioData audioData, int mfccCount, int windowSize) throws AudioProcessingException {
         double[][] mfccArray = calculateMFCCFrames(audioData, mfccCount, windowSize, DEFAULT_HOP_SIZE);
@@ -587,8 +604,14 @@ public class AudioUtil {
     }
 
     /**
-     * 计算MFCC特征矩阵并返回IMatrix格式 Calculate MFCC feature matrix and return as
-     * IMatrix format
+     * 计算MFCC特征矩阵 / Calculate MFCC feature matrix
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param mfccCount MFCC系数数量 / Number of MFCC coefficients
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @return MFCC矩阵 / MFCC matrix
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     public static IMatrix<Double> calculateMFCCMatrix(AudioData audioData, int mfccCount, int windowSize, int hopSize) throws AudioProcessingException {
         double[][] mfccArray = calculateMFCCFrames(audioData, mfccCount, windowSize, hopSize);
@@ -596,10 +619,11 @@ public class AudioUtil {
     }
 
     /**
+     * 计算MFCC特征矩阵 / Calculate MFCC feature matrix
      *
-     * @param audioData
-     * @return
-     * @throws AudioProcessingException
+     * @param audioData 音频数据 / Audio data
+     * @return MFCC矩阵 / MFCC matrix
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     public static IMatrix<Double> calculateMFCCMatrix(AudioData audioData) throws AudioProcessingException {
         int mfccCount = 13;
@@ -607,11 +631,10 @@ public class AudioUtil {
     }
 
     /**
-     * 计算时间序列的Delta特征 - 正确的Delta计算 Calculate temporal delta features - correct
-     * delta calculation
+     * 计算时间序列的Delta特征 / Calculate temporal delta features
      *
-     * @param mfccFrames MFCC帧矩阵
-     * @return Delta特征矩阵
+     * @param mfccFrames MFCC帧矩阵 / MFCC frames matrix
+     * @return Delta特征矩阵 / Delta features matrix
      */
     public static double[][] calculateTemporalDelta(double[][] mfccFrames) {
         if (mfccFrames.length < 3) {
@@ -641,8 +664,10 @@ public class AudioUtil {
     }
 
     /**
-     * 计算时间序列的Delta特征 - IMatrix版本 Calculate temporal delta features - IMatrix
-     * version
+     * 计算时间序列的Delta特征 / Calculate temporal delta features (IMatrix version)
+     *
+     * @param mfccMatrix MFCC矩阵 / MFCC matrix
+     * @return Delta特征矩阵 / Delta features matrix
      */
     public static IMatrix<Double> calculateTemporalDelta(IMatrix<Double> mfccMatrix) {
         int numFrames = mfccMatrix.rows();
@@ -670,8 +695,10 @@ public class AudioUtil {
     }
 
     /**
-     * 计算矩阵每列的均值 - 用于MFCC特征统计 Calculate mean of each column - for MFCC feature
-     * statistics
+     * 计算矩阵每列的均值 / Calculate mean of each column
+     *
+     * @param matrix 输入矩阵 / Input matrix
+     * @return 每列的均值数组 / Array of column means
      */
     public static double[] calculateColumnMeans(double[][] matrix) {
         if (matrix.length == 0) {
@@ -693,8 +720,10 @@ public class AudioUtil {
     }
 
     /**
-     * 计算矩阵每列的方差 - 用于MFCC特征统计 Calculate variance of each column - for MFCC
-     * feature statistics
+     * 计算矩阵每列的方差 / Calculate variance of each column
+     *
+     * @param matrix 输入矩阵 / Input matrix
+     * @return 每列的方差数组 / Array of column variances
      */
     public static double[] calculateColumnVariances(double[][] matrix) {
         if (matrix.length == 0) {
@@ -795,6 +824,9 @@ public class AudioUtil {
 
     /**
      * 计算幅度包络 / Calculate amplitude envelope
+     *
+     * @param samples 音频样本向量 / Audio samples vector
+     * @return 幅度包络数组 / Amplitude envelope array
      */
     public static double[] calculateAmplitudeEnvelope(IVector<Double> samples) {
         int frameSize = 512;
@@ -1684,8 +1716,7 @@ public class AudioUtil {
     }
 
     /**
-     * 计算FBank特征矩阵并返回IMatrix格式
-     * Calculate FBank feature matrix and return as IMatrix format
+     * 计算FBank特征矩阵 / Calculate FBank feature matrix
      *
      * @param audioData 音频数据 / Audio data
      * @param fbankCount FBank系数数量 / Number of FBank coefficients
@@ -1700,8 +1731,7 @@ public class AudioUtil {
     }
 
     /**
-     * 计算FBank特征矩阵（使用默认参数）
-     * Calculate FBank feature matrix (using default parameters)
+     * 计算FBank特征矩阵（使用默认参数） / Calculate FBank feature matrix (using default parameters)
      *
      * @param audioData 音频数据 / Audio data
      * @return FBank特征矩阵 / FBank feature matrix
@@ -1713,8 +1743,7 @@ public class AudioUtil {
     }
 
     /**
-     * 计算FBank特征矩阵
-     * Calculate FBank feature matrix
+     * 计算FBank特征矩阵 / Calculate FBank feature matrix
      *
      * @param audioData 音频数据 / Audio data
      * @param windowSize 窗口大小 / Window size
@@ -1727,8 +1756,7 @@ public class AudioUtil {
     }
 
     /**
-     * 计算FBank特征矩阵
-     * Calculate FBank feature matrix
+     * 计算FBank特征矩阵 / Calculate FBank feature matrix
      *
      * @param audioData 音频数据 / Audio data
      * @param fbankCount FBank系数数量 / Number of FBank coefficients

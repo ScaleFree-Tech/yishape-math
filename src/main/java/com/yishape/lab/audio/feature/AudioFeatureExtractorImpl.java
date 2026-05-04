@@ -38,6 +38,9 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
     private static final String SPECTRAL_ROLLOFF = "spectral_rolloff";
     private static final String MFCC = "mfcc";
 
+    /**
+     * 默认构造函数 / Default constructor
+     */
     public AudioFeatureExtractorImpl() {
         // 默认构造函数 / Default constructor
     }
@@ -271,6 +274,9 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算能量 / Calculate energy
+     *
+     * @param samples 音频样本 / Audio samples
+     * @return 能量值 / Energy value
      */
     private double calculateEnergy(IVector<Double> samples) {
         double sum = 0.0;
@@ -286,6 +292,10 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算幅度包络 / Calculate amplitude envelope
+     *
+     * @param samples 音频样本 / Audio samples
+     * @param parameters 参数映射 / Parameter map
+     * @return 幅度包络数组 / Amplitude envelope array
      */
     private double[] calculateAmplitudeEnvelope(IVector<Double> samples, Map<String, Object> parameters) {
         int frameSize = getIntValue(parameters, "frameSize", DEFAULT_FRAME_SIZE);
@@ -316,6 +326,9 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算频谱对比度 / Calculate spectral contrast
+     *
+     * @param spectrum 频谱数据 / Spectrum data
+     * @return 频谱对比度数组 / Spectral contrast array
      */
     private double[] calculateSpectralContrast(Complex[] spectrum) {
         // 简化实现：返回固定长度的数组 / Simplified implementation: return fixed-length array
@@ -324,6 +337,9 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算数组均值 / Calculate array mean
+     *
+     * @param array 输入数组 / Input array
+     * @return 均值 / Mean value
      */
     private double calculateMean(double[] array) {
         if (array == null || array.length == 0) {
@@ -338,6 +354,9 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算差分 / Calculate delta
+     *
+     * @param array 输入数组 / Input array
+     * @return 差分数组 / Delta array
      */
     private double[] calculateDelta(double[] array) {
         if (array == null || array.length < 2) {
@@ -358,6 +377,11 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 从参数中获取整数值 / Get integer value from parameters
+     *
+     * @param parameters 参数映射 / Parameter map
+     * @param key 参数键 / Parameter key
+     * @param defaultValue 默认值 / Default value
+     * @return 整数值 / Integer value
      */
     private int getIntValue(Map<String, Object> parameters, String key, int defaultValue) {
         if (parameters != null && parameters.containsKey(key)) {
@@ -371,6 +395,11 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算时域特征置信度 / Calculate time-domain feature confidence
+     *
+     * @param rmsEnergy 均方根能量 / RMS energy
+     * @param zeroCrossingRate 过零率 / Zero crossing rate
+     * @param energy 能量 / Energy
+     * @return 置信度值 / Confidence value
      */
     private double calculateTimeDomainConfidence(double rmsEnergy, double zeroCrossingRate, double energy) {
         // 基于特征值的有效性计算置信度 / Calculate confidence based on validity of feature values
@@ -396,6 +425,11 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算频域特征置信度 / Calculate frequency-domain feature confidence
+     *
+     * @param spectralCentroid 频谱质心 / Spectral centroid
+     * @param spectralBandwidth 频谱带宽 / Spectral bandwidth
+     * @param spectralRolloff 频谱滚降点 / Spectral rolloff
+     * @return 置信度值 / Confidence value
      */
     private double calculateFrequencyDomainConfidence(double spectralCentroid, double spectralBandwidth, double spectralRolloff) {
         // 基于特征值的有效性计算置信度 / Calculate confidence based on validity of feature values
@@ -421,6 +455,10 @@ public class AudioFeatureExtractorImpl implements IAudioFeatureExtractor {
 
     /**
      * 计算谱特征置信度 / Calculate spectral feature confidence
+     *
+     * @param mfcc MFCC特征 / MFCC features
+     * @param chroma 色度特征 / Chroma features
+     * @return 置信度值 / Confidence value
      */
     private double calculateSpectralConfidence(double[] mfcc, double[] chroma) {
         // 基于特征数组的有效性计算置信度 / Calculate confidence based on validity of feature arrays

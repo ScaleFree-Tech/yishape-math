@@ -23,7 +23,7 @@ import com.yishape.lab.audio.analysis.IAudioAnalyzer;
  */
 public class AudioFeatureExtractor extends AbstractAudioAnalyzer {
     
-    // Supported feature types for this analyzer
+    // Supported feature types for this analyzer / 此分析器支持的特征类型
     private static final String[] SUPPORTED_FEATURE_TYPES = {"rms", "zcr", "spectral_centroid"};
 
     /**
@@ -77,6 +77,9 @@ public class AudioFeatureExtractor extends AbstractAudioAnalyzer {
     
     /**
      * 计算均方根能量 / Calculate RMS energy
+     *
+     * @param samples 音频样本 / Audio samples
+     * @return 均方根能量值 / RMS energy value
      */
     private double calculateRMS(IVector<Double> samples) {
         double sum = 0.0;
@@ -92,6 +95,9 @@ public class AudioFeatureExtractor extends AbstractAudioAnalyzer {
     
     /**
      * 计算过零率 / Calculate zero-crossing rate
+     *
+     * @param samples 音频样本 / Audio samples
+     * @return 过零率值 / Zero-crossing rate value
      */
     private double calculateZCR(IVector<Double> samples) {
         int zeroCrossings = 0;
@@ -109,6 +115,10 @@ public class AudioFeatureExtractor extends AbstractAudioAnalyzer {
     
     /**
      * 计算频谱质心 / Calculate spectral centroid
+     *
+     * @param input 音频数据 / Audio data
+     * @return 频谱质心值 / Spectral centroid value
+     * @throws AudioProcessingException 处理失败时抛出 / Thrown when processing fails
      */
     private double calculateSpectralCentroid(AudioData input) throws AudioProcessingException {
         // 简化实现：使用频谱分析器计算频谱 / Simplified implementation: use spectrum analyzer to calculate spectrum
@@ -132,6 +142,11 @@ public class AudioFeatureExtractor extends AbstractAudioAnalyzer {
         return magnitudeSum > 0 ? weightedSum / magnitudeSum : 0.0;
     }
     
+    /**
+     * 创建此分析器的克隆 / Create clone of this analyzer
+     *
+     * @return 音频分析器克隆 / Audio analyzer clone
+     */
     @Override
     public IAudioAnalyzer clone() {
         return new AudioFeatureExtractor();

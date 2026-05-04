@@ -6,6 +6,10 @@ import com.yishape.lab.math.linalg.Linalg;
 
 /**
  * Solver for LU decomposition algorithms with partial pivoting.
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 2.0
  */
 public class LUDecompositionSolver implements IDecompositionSolver {
 

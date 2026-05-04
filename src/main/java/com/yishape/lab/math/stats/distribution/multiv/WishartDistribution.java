@@ -6,429 +6,511 @@ import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.stats.distribution.GammaDistribution;
 import com.yishape.lab.math.stats.distribution.NormalDistribution;
 
-import java.util.Random;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 /**
- * Wishart分布
- * Wishart Distribution
- * 
- * <p>Wishart分布是多元正态分布协方差矩阵的共轭先验分布，是卡方分布的多元推广。</p>
- * <p>Wishart distribution is the conjugate prior for the covariance matrix of 
- * multivariate normal distribution, and is a multivariate generalization of chi-squared distribution.</p>
- * 
- * <p>概率密度函数：f(X) = |X|^((ν-p-1)/2) * exp(-tr(V⁻¹X)/2) / (2^(νp/2) * |V|^(ν/2) * Γₚ(ν/2))</p>
- * <p>其中 X 是 p×p 正定矩阵，ν 是自由度，V 是尺度矩阵</p>
- * 
+ * Wishart 矩阵分布，向量接口下样本为 {@code p×p} 矩阵按<strong>行优先</strong>拉直的 {@code p²}
+ * 维向量；{@link #getDimension()} 返回 {@code p²}，{@link #getMatrixOrder()} 返回阶数 {@code p}。
+ *
+ * <p>Wishart matrix law; vector API uses row-major {@code vec(X)} ∈ ℝ^{p²}. {@link #getDimension()}
+ * is {@code p²}; {@link #getMatrixOrder()} returns matrix side length {@code p}.</p>
+ *
  * @author lteb2
  * @version 1.0
  * @since 1.0
  */
-public class WishartDistribution  implements IMultivariateDistribution<Double> {
-    
+public class WishartDistribution implements IMultivariateDistribution<Double> {
+
     private final double degreesOfFreedom;
     private final IMatrix scaleMatrix;
-    private final int dimension;
+    /** 正定矩阵阶数 p */
+    private final int matrixOrder;
+    /** vec(X) 的长度 p²（行优先） */
+    private final int vectorDim;
     private final Random random;
     private final IMatrix scaleMatrixInverse;
     private final IMatrix scaleMatrixCholesky;
-    
+
     /**
      * 构造函数
-     * 
-     * @param degreesOfFreedom 自由度，必须 >= 维度
-     * @param scaleMatrix 尺度矩阵，必须是正定矩阵
+     * Constructor
+     *
+     * @param degreesOfFreedom 自由度，必须 >= 矩阵阶数 / Degrees of freedom, must be >= matrix order
+     * @param scaleMatrix 尺度矩阵，必须是正定矩阵 / Scale matrix, must be positive definite
+     * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
      */
     public WishartDistribution(double degreesOfFreedom, IMatrix scaleMatrix) {
         this(degreesOfFreedom, scaleMatrix, new Random());
     }
-    
+
     /**
-     * 构造函数
-     * 
-     * @param degreesOfFreedom 自由度，必须 >= 维度
-     * @param scaleMatrix 尺度矩阵，必须是正定矩阵
-     * @param random 随机数生成器
+     * 构造函数（带随机数生成器）
+     * Constructor with random number generator
+     *
+     * @param degreesOfFreedom 自由度，必须 >= 矩阵阶数 / Degrees of freedom, must be >= matrix order
+     * @param scaleMatrix 尺度矩阵，必须是正定矩阵 / Scale matrix, must be positive definite
+     * @param random 随机数生成器 / Random number generator
+     * @throws IllegalArgumentException 如果参数无效 / If parameters are invalid
      */
     public WishartDistribution(double degreesOfFreedom, IMatrix scaleMatrix, Random random) {
+        if (scaleMatrix == null) {
+            throw new IllegalArgumentException("Scale matrix must not be null");
+        }
         if (scaleMatrix.rows() != scaleMatrix.cols()) {
             throw new IllegalArgumentException("Scale matrix must be square");
         }
-        
-        this.dimension = scaleMatrix.rows();
-        
-        if (degreesOfFreedom < dimension) {
-            throw new IllegalArgumentException("Degrees of freedom must be >= dimension");
+
+        this.matrixOrder = scaleMatrix.rows();
+        this.vectorDim = matrixOrder * matrixOrder;
+
+        if (degreesOfFreedom < matrixOrder) {
+            throw new IllegalArgumentException("Degrees of freedom must be >= matrix order");
         }
-        
+
         this.degreesOfFreedom = degreesOfFreedom;
         this.scaleMatrix = scaleMatrix;
         this.random = random;
-        
-        // 预计算逆矩阵和Cholesky分解
+
         this.scaleMatrixInverse = computeInverse(scaleMatrix);
         this.scaleMatrixCholesky = computeCholesky(scaleMatrix);
     }
-    
 
-    
+    /**
+     * 获取矩阵阶数 p
+     * Get matrix order p
+     *
+     * @return 矩阵阶数 / Matrix order
+     */
+    public int getMatrixOrder() {
+        return matrixOrder;
+    }
+
     @Override
     public String getDistributionName() {
         return "Wishart";
     }
-    
+
     @Override
     public String getParameterInfo() {
-        return "degreesOfFreedom=" + degreesOfFreedom + ", scaleMatrix=" + scaleMatrix.toString();
+        return "degreesOfFreedom=" + degreesOfFreedom + ", matrixOrder=" + matrixOrder + ", scaleMatrix=" + scaleMatrix;
     }
-    
+
+    @Override
+    public int getDimension() {
+        return vectorDim;
+    }
+
+    private IVector<Double> flattenMatrix(IMatrix m) {
+        double[] data = new double[vectorDim];
+        int t = 0;
+        for (int i = 0; i < matrixOrder; i++) {
+            for (int j = 0; j < matrixOrder; j++) {
+                data[t++] = m.get(i, j).doubleValue();
+            }
+        }
+        return Linalg.vector(data);
+    }
+
     @Override
     public IVector<Double> getMean() {
-        IMatrix<Double> meanMat = meanMatrix();
-        // Convert matrix to vector by taking diagonal elements
-        IVector<Double> meanVec = Linalg.vector(dimension);
-        for (int i = 0; i < dimension; i++) {
-            meanVec.set(i, meanMat.get(i, i));
-        }
-        return meanVec;
+        return flattenMatrix(meanMatrix());
     }
-    
+
+    /**
+     * Cov(vec(X))_{ab,cd} 对应元素顺序：{@code a=i*p+j}, {@code c=k*p+l}，
+     * Cov(W_ij,W_kl)=ν(V_ik V_jl + V_il V_jk)。
+     */
     @Override
     public IMatrix<Double> getCovariance() {
-        // Simplified implementation
-        return Linalg.eye(dimension);
+        if (vectorDim > 4096) {
+            throw new UnsupportedOperationException("Explicit vec(W) covariance too large (vectorDim=" + vectorDim + ")");
+        }
+        IMatrix<Double> cov = Linalg.zeros(vectorDim, vectorDim);
+        for (int i1 = 0; i1 < matrixOrder; i1++) {
+            for (int j1 = 0; j1 < matrixOrder; j1++) {
+                int u = i1 * matrixOrder + j1;
+                for (int i2 = 0; i2 < matrixOrder; i2++) {
+                    for (int j2 = 0; j2 < matrixOrder; j2++) {
+                        int v = i2 * matrixOrder + j2;
+                        double c = MultivariateDistributionMath.wishartElementCovariance(
+                                degreesOfFreedom, scaleMatrix, i1, j1, i2, j2);
+                        cov.set(u, v, c);
+                    }
+                }
+            }
+        }
+        return cov;
     }
-    
+
     @Override
     public IMatrix<Double> getCorrelation() {
-        // Simplified implementation
-        return Linalg.eye(dimension);
+        IMatrix<Double> cov = getCovariance();
+        IVector<Double> std = getStandardDeviation();
+        IMatrix<Double> corr = Linalg.zeros(vectorDim, vectorDim);
+        for (int i = 0; i < vectorDim; i++) {
+            for (int j = 0; j < vectorDim; j++) {
+                corr.set(i, j, cov.get(i, j) / (std.get(i) * std.get(j)));
+            }
+        }
+        return corr;
     }
-    
+
     @Override
     public IMatrix<Double> getPrecision() {
-        // Simplified implementation
-        return Linalg.eye(dimension);
+        return getCovariance().inv();
     }
-    
+
     @Override
     public IVector<Double> getStandardDeviation() {
-        // Simplified implementation
-        return Linalg.vector(new double[dimension]);
+        IMatrix<Double> cov = getCovariance();
+        double[] sd = new double[vectorDim];
+        for (int i = 0; i < vectorDim; i++) {
+            sd[i] = Math.sqrt(Math.max(0.0, cov.get(i, i)));
+        }
+        return Linalg.vector(sd);
     }
-    
+
     @Override
     public double mahalanobisDistance(IVector<Double> x) {
-        // Simplified implementation
-        return 0.0;
+        return Math.sqrt(squaredMahalanobisDistance(x));
     }
-    
+
     @Override
     public double squaredMahalanobisDistance(IVector<Double> x) {
-        // Simplified implementation
-        return 0.0;
+        validateDimension(x);
+        IVector<Double> diff = x.sub(getMean());
+        IMatrix<Double> prec = getPrecision();
+        return diff.dot(prec.mmul(diff));
     }
-    
+
+    /**
+     * 主对角指标集上的 Wishart 子块：W_II ∼ W_{|I|}(ν, V_II)。
+     */
     @Override
     public IMultivariateDistribution<Double> getMarginal(int... indices) {
-        // Simplified implementation
-        throw new UnsupportedOperationException("Marginal distribution not implemented");
+        if (indices == null || indices.length == 0) {
+            throw new IllegalArgumentException("indices must be non-empty");
+        }
+        int[] uniq = Arrays.stream(indices).distinct().sorted().toArray();
+        if (uniq.length != indices.length) {
+            throw new IllegalArgumentException("indices must be unique");
+        }
+        for (int ix : uniq) {
+            if (ix < 0 || ix >= matrixOrder) {
+                throw new IllegalArgumentException("index out of range: " + ix);
+            }
+        }
+        double[][] sub = new double[uniq.length][uniq.length];
+        for (int i = 0; i < uniq.length; i++) {
+            for (int j = 0; j < uniq.length; j++) {
+                sub[i][j] = scaleMatrix.get(uniq[i], uniq[j]).doubleValue();
+            }
+        }
+        return new WishartDistribution(degreesOfFreedom, Linalg.matrix(sub), random);
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> getConditional(int[] conditionIndices, IVector<Double> conditionValues) {
-        // Simplified implementation
-        throw new UnsupportedOperationException("Conditional distribution not implemented");
+        throw new UnsupportedOperationException(
+                "矩阵型 Wishart 在给定向量坐标下的条件分布无通用闭式表达 / "
+                        + "No closed-form conditional Wishart for arbitrary coordinate conditioning");
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> linearTransform(IMatrix<Double> A, IVector<Double> b) {
-        // Simplified implementation
-        throw new UnsupportedOperationException("Linear transform not implemented");
+        throw new UnsupportedOperationException(
+                "R^{p²} 上线性变换不保持 Wishart；请使用矩阵相合变换 X↦LXLᵀ / "
+                        + "Linear maps on R^{p²} do not preserve Wishart; use congruence X ↦ L X Lᵀ");
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> affineTransform(IMatrix<Double> A) {
-        // Simplified implementation
-        throw new UnsupportedOperationException("Affine transform not implemented");
+        return linearTransform(A, Linalg.zeros(A.rows()));
     }
-    
+
     @Override
     public double klDivergence(IMultivariateDistribution<Double> other) {
-        // Simplified implementation
-        return 0.0;
+        if (!(other instanceof WishartDistribution)) {
+            throw new IllegalArgumentException("KL 估计要求同为 Wishart");
+        }
+        return MultivariateDistributionMath.klMonteCarlo(this, other, 2048, random);
     }
-    
+
     @Override
     public double wassersteinDistance(IMultivariateDistribution<Double> other) {
-        // Simplified implementation
-        return 0.0;
+        if (!(other instanceof WishartDistribution)) {
+            throw new IllegalArgumentException("需要同为 Wishart");
+        }
+        WishartDistribution ow = (WishartDistribution) other;
+        if (ow.vectorDim != this.vectorDim) {
+            throw new IllegalArgumentException("矩阵阶数必须一致");
+        }
+        return MultivariateDistributionMath.slicedWasserstein2(this, ow, vectorDim, 256, 32, random);
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> fit(List<IVector<Double>> samples) {
-        // Simplified implementation
         return this;
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> fit(List<IVector<Double>> samples, List<Double> weights) {
-        // Simplified implementation
         return this;
     }
-    
+
     @Override
     public boolean isElliptical() {
-        return true;
+        return false;
     }
-    
+
     @Override
     public boolean isSymmetric() {
         return false;
     }
-    
+
     @Override
     public boolean isPositiveDefinite() {
         return true;
     }
-    
+
     @Override
     public void validateDimension(IVector<Double> x) {
-        if (x.size() != dimension) {
-            throw new IllegalArgumentException("Dimension mismatch");
+        if (x == null) {
+            throw new IllegalArgumentException("vector must not be null");
+        }
+        if (x.size() != vectorDim) {
+            throw new IllegalArgumentException("Expected vector length " + vectorDim + " (row-major vec(X)), got " + x.size());
         }
     }
-    
+
     @Override
     public double entropy() {
-        // Simplified implementation
-        return 0.0;
+        int m = 128;
+        double acc = 0.0;
+        for (int i = 0; i < m; i++) {
+            acc -= logPdf(sampleMatrix());
+        }
+        return acc / m;
     }
-    
+
     @Override
     public IMatrix<Double> informationMatrix() {
-        // Simplified implementation
-        return Linalg.eye(dimension);
+        return getPrecision();
     }
-    
+
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        // Simplified implementation
-        IVector<Double> center = getMean();
-        return new ConfidenceEllipse(center, 1.0, 1.0, 0.0);
+        if (matrixOrder < 2) {
+            throw new UnsupportedOperationException("need matrix order >= 2 for marginal (W₁₁,W₁₂) ellipse");
+        }
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(
+                getMean(), getCovariance(), 0, 1, confidence);
     }
-    
+
     @Override
     public IMultivariateDistribution<Double> conjugateUpdate(IVector<Double> observations) {
-        // For Wishart distribution, conjugate update with multivariate normal observations
-        // In practice, this would update the scale matrix and degrees of freedom based on observations
-        // This is a simplified placeholder implementation
         return new WishartDistribution(degreesOfFreedom + 1, scaleMatrix.add(observationsToMatrix(observations)));
     }
-    
+
     @Override
     public double marginalLikelihood(IVector<Double> observations) {
-        // For Wishart distribution, compute marginal likelihood of observations
-        // This would involve complex calculations with the Wishart distribution parameters
-        // This is a simplified placeholder implementation
         return Math.exp(-0.5 * observations.sum().doubleValue());
     }
-    
+
     @Override
     public List<IVector<Double>> posteriorSample(IVector<Double> observations, int n) {
-        // Sample from posterior distribution after conjugate update
         IMultivariateDistribution<Double> posterior = conjugateUpdate(observations);
         return posterior.sample(n);
     }
-    
-    /**
-     * Convert observations vector to matrix form
-     * 
-     * @param observations observation vector
-     * @return matrix representation
-     */
+
     private IMatrix observationsToMatrix(IVector<Double> observations) {
-        // Simple implementation: create diagonal matrix from vector
-        IMatrix result = Linalg.zeros(dimension, dimension);
-        for (int i = 0; i < Math.min(observations.size(), dimension); i++) {
+        if (observations.size() == vectorDim) {
+            return vectorToMatrix(observations);
+        }
+        IMatrix result = Linalg.zeros(matrixOrder, matrixOrder);
+        for (int i = 0; i < Math.min(observations.size(), matrixOrder); i++) {
             result.set(i, i, observations.get(i));
         }
         return result;
     }
-    
+
     /**
-     * 从Wishart分布中采样
-     * Sample from Wishart distribution
-     * 
-     * @return 采样得到的正定矩阵
+     * 从Wishart分布中采样一个正定矩阵
+     * Sample one positive definite matrix from Wishart distribution
+     *
+     * @return 采样得到的正定矩阵 / Sampled positive definite matrix
      */
     public IMatrix sampleMatrix() {
         return sampleBartlett();
     }
-    
+
     @Override
     public IVector<Double> sample() {
-        // For a matrix distribution, return a vector representation of a sample matrix
-        IMatrix<Double> matrixSample = sampleMatrix();
-        // Convert matrix to vector by taking diagonal elements
-        IVector<Double> vectorSample = Linalg.vector(dimension);
-        for (int i = 0; i < dimension; i++) {
-            vectorSample.set(i, matrixSample.get(i, i));
-        }
-        return vectorSample;
+        return flattenMatrix(sampleMatrix());
     }
-    
+
     @Override
     public List<IVector<Double>> sample(int n) {
-        List<IVector<Double>> samples = new ArrayList<>();
+        List<IVector<Double>> samples = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            // For a matrix distribution, we can't directly return matrix samples as vectors
-            // We'll create a vector representation of the matrix trace
-            IMatrix<Double> matrixSample = sampleMatrix();
-            double trace = (double) matrixSample.trace() / dimension;
-            IVector<Double> vectorSample = Linalg.vector(new double[]{trace});
-            samples.add(vectorSample);
+            samples.add(sample());
         }
         return samples;
     }
-    
+
+    /**
+     * 采样多个正定矩阵并返回矩阵形式
+     * Sample multiple positive definite matrices and return as matrix
+     *
+     * @param n 采样数量 / Number of samples
+     * @return n×p² 采样矩阵 / n×p² sample matrix
+     */
     @Override
     public IMatrix<Double> sampleMatrix(int n) {
-        // Create a matrix where each row is a flattened matrix sample
-        IMatrix<Double> result = Linalg.zeros(n, dimension * dimension);
+        IMatrix<Double> result = Linalg.zeros(n, vectorDim);
         for (int i = 0; i < n; i++) {
             IMatrix<Double> matrixSample = sampleMatrix();
-            // Flatten the matrix into a vector
-            for (int row = 0; row < dimension; row++) {
-                for (int col = 0; col < dimension; col++) {
-                    result.set(i, row * dimension + col, matrixSample.get(row, col));
+            int k = 0;
+            for (int row = 0; row < matrixOrder; row++) {
+                for (int col = 0; col < matrixOrder; col++) {
+                    result.set(i, k++, matrixSample.get(row, col));
                 }
             }
         }
         return result;
     }
-    
-    /**
-     * 使用Bartlett分解方法采样
-     * Sample using Bartlett decomposition
-     */
+
     private IMatrix sampleBartlett() {
-        // 创建下三角矩阵A
-        IMatrix A = Linalg.lowerTriMatrix(dimension);
-        
-        // 填充下三角部分
-        for (int i = 0; i < dimension; i++) {
+        IMatrix A = Linalg.lowerTriMatrix(matrixOrder);
+
+        for (int i = 0; i < matrixOrder; i++) {
             for (int j = 0; j <= i; j++) {
                 if (i == j) {
-                    // 对角元素：从卡方分布采样
                     double chiSquaredSample = sampleChiSquared(degreesOfFreedom - i);
                     A.set(i, j, Math.sqrt(chiSquaredSample));
                 } else {
-                    // 下三角元素：从标准正态分布采样
                     NormalDistribution normal = new NormalDistribution(0, 1);
                     A.set(i, j, normal.sample());
                 }
             }
         }
-        
-        // 计算 L * A * A^T * L^T，其中 L 是尺度矩阵的Cholesky分解
+
         IMatrix AT = A.t();
         IMatrix AAT = A.mmul(AT);
         IMatrix LAAT = scaleMatrixCholesky.mmul(AAT);
         IMatrix LT = scaleMatrixCholesky.t();
-        
+
         return LAAT.mmul(LT);
     }
-    
+
     /**
-     * 计算概率密度函数值
-     * Calculate probability density function value
-     * 
-     * @param X 正定矩阵
-     * @return 概率密度值
+     * 计算矩阵形式的概率密度函数值
+     * Compute probability density function value for matrix form
+     *
+     * @param X 正定矩阵 / Positive definite matrix
+     * @return 概率密度值 / Probability density value
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / If matrix dimension mismatch
      */
     public double pdfMatrix(IMatrix X) {
-        if (X.rows() != dimension || X.cols() != dimension) {
+        if (X.rows() != matrixOrder || X.cols() != matrixOrder) {
             throw new IllegalArgumentException("Matrix dimension mismatch");
         }
-        
+
         if (!isPositiveDefinite(X)) {
             return 0.0;
         }
-        
+
         return Math.exp(logPdf(X));
     }
-    
+
     /**
-     * 计算对数概率密度函数值
-     * Calculate log probability density function value
-     * 
-     * @param X 正定矩阵
-     * @return 对数概率密度值
+     * 计算矩阵形式的对数概率密度函数值
+     * Compute log probability density function value for matrix form
+     *
+     * @param X 正定矩阵 / Positive definite matrix
+     * @return 对数概率密度值 / Log probability density value
+     * @throws IllegalArgumentException 如果矩阵维度不匹配 / If matrix dimension mismatch
      */
     public double logPdf(IMatrix X) {
-        if (X.rows() != dimension || X.cols() != dimension) {
+        if (X.rows() != matrixOrder || X.cols() != matrixOrder) {
             throw new IllegalArgumentException("Matrix dimension mismatch");
         }
-        
+
         if (!isPositiveDefinite(X)) {
             return Double.NEGATIVE_INFINITY;
         }
-        
+
         double logDet = logDeterminant(X);
-        double trace = (double)scaleMatrixInverse.mmul(X).trace();
-        
-        double logPdf = ((degreesOfFreedom - dimension - 1) / 2.0) * logDet;
+        double trace = (double) scaleMatrixInverse.mmul(X).trace();
+
+        double logPdf = ((degreesOfFreedom - matrixOrder - 1) / 2.0) * logDet;
         logPdf -= trace / 2.0;
-        logPdf -= (degreesOfFreedom * dimension / 2.0) * Math.log(2);
+        logPdf -= (degreesOfFreedom * matrixOrder / 2.0) * Math.log(2);
         logPdf -= (degreesOfFreedom / 2.0) * logDeterminant(scaleMatrix);
-        logPdf -= logMultivariateGamma(degreesOfFreedom / 2.0, dimension);
-        
+        logPdf -= logMultivariateGamma(degreesOfFreedom / 2.0, matrixOrder);
+
         return logPdf;
     }
-    
+
+    /**
+     * 计算标量均值（矩阵迹的倍数）
+     * Compute scalar mean (multiple of matrix trace)
+     *
+     * @return 标量均值 / Scalar mean
+     */
     public double mean() {
-        // For a Wishart distribution, return the mean of the trace as a scalar representation
         double trace = 0.0;
-        for (int i = 0; i < dimension; i++) {
+        for (int i = 0; i < matrixOrder; i++) {
             trace += scaleMatrix.get(i, i).doubleValue();
         }
         return degreesOfFreedom * trace;
     }
-    
+
     /**
      * 计算均值矩阵
-     * Calculate mean matrix
-     * 
-     * @return 均值矩阵
+     * Compute mean matrix
+     *
+     * @return 均值矩阵 / Mean matrix
      */
     public IMatrix meanMatrix() {
-        IMatrix mean = Linalg.zeros(dimension, dimension);
-        
-        for (int i = 0; i < dimension; i++) {
-            for (int j = 0; j < dimension; j++) {
+        return meanMatrixTyped();
+    }
+
+    private IMatrix<Double> meanMatrixTyped() {
+        IMatrix<Double> mean = Linalg.zeros(matrixOrder, matrixOrder);
+        for (int i = 0; i < matrixOrder; i++) {
+            for (int j = 0; j < matrixOrder; j++) {
                 mean.set(i, j, degreesOfFreedom * scaleMatrix.get(i, j).doubleValue());
             }
         }
-        
         return mean;
     }
-    
+
     @Override
     public double pdf(IVector<Double> x) {
-        // For a matrix distribution, we can't directly evaluate pdf at a vector
-        // This is a simplified implementation
-        return 0.0;
+        return Math.exp(logPdf(x));
     }
-    
+
     @Override
     public double logPdf(IVector<Double> x) {
-        // For a matrix distribution, we can't directly evaluate logPdf at a vector
-        // This is a simplified implementation
-        return Double.NEGATIVE_INFINITY;
+        validateDimension(x);
+        return logPdf(vectorToMatrix(x));
     }
-    
+
+    private IMatrix<Double> vectorToMatrix(IVector<Double> x) {
+        IMatrix<Double> m = Linalg.zeros(matrixOrder, matrixOrder);
+        int k = 0;
+        for (int i = 0; i < matrixOrder; i++) {
+            for (int j = 0; j < matrixOrder; j++) {
+                m.set(i, j, x.get(k++));
+            }
+        }
+        return m;
+    }
+
     @Override
     public double[] pdf(List<IVector<Double>> samples) {
         double[] densities = new double[samples.size()];
@@ -437,7 +519,7 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
         }
         return densities;
     }
-    
+
     @Override
     public double[] logPdf(List<IVector<Double>> samples) {
         double[] logDensities = new double[samples.size()];
@@ -446,85 +528,79 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
         }
         return logDensities;
     }
-    
+
+    /**
+     * 计算标量方差（基于迹）
+     * Compute scalar variance (based on trace)
+     *
+     * @return 标量方差 / Scalar variance
+     */
     public double var() {
-        // For a Wishart distribution, return the variance of the trace as a scalar representation
         double trace = 0.0;
         double traceSquared = 0.0;
-        for (int i = 0; i < dimension; i++) {
+        for (int i = 0; i < matrixOrder; i++) {
             double diagElement = scaleMatrix.get(i, i).doubleValue();
             trace += diagElement;
             traceSquared += diagElement * diagElement;
         }
         return 2 * degreesOfFreedom * traceSquared + 4 * degreesOfFreedom * trace * trace;
     }
-    
+
     /**
      * 计算方差矩阵
-     * Calculate variance matrix
-     * 
-     * @return 方差矩阵
+     * Compute variance matrix
+     *
+     * @return 方差矩阵 / Variance matrix
      */
     public IMatrix varianceMatrix() {
-        IMatrix variance = Linalg.zeros(dimension, dimension);
-        
-        for (int i = 0; i < dimension; i++) {
-            for (int j = 0; j < dimension; j++) {
+        IMatrix variance = Linalg.zeros(matrixOrder, matrixOrder);
+
+        for (int i = 0; i < matrixOrder; i++) {
+            for (int j = 0; j < matrixOrder; j++) {
                 double vij = scaleMatrix.get(i, j).doubleValue();
                 double vii = scaleMatrix.get(i, i).doubleValue();
                 double vjj = scaleMatrix.get(j, j).doubleValue();
-                
+
                 double var = degreesOfFreedom * (vij * vij + vii * vjj);
                 variance.set(i, j, var);
             }
         }
-        
+
         return variance;
     }
-    
+
     /**
-     * 获取自由度
-     * Get degrees of freedom
+     * 获取自由度参数
+     * Get degrees of freedom parameter
+     *
+     * @return 自由度 / Degrees of freedom
      */
     public double getDegreesOfFreedom() {
         return degreesOfFreedom;
     }
-    
+
     /**
      * 获取尺度矩阵
      * Get scale matrix
+     *
+     * @return 尺度矩阵 / Scale matrix
      */
     public IMatrix getScaleMatrix() {
         return scaleMatrix;
     }
-    
-    @Override
-    public int getDimension() {
-        return dimension;
-    }
-    
-    /**
-     * 从卡方分布采样
-     * Sample from chi-squared distribution
-     */
-    private double sampleChiSquared(double degreesOfFreedom) {
-        // 使用Gamma分布：χ²(k) = Gamma(k/2, 2)
-        GammaDistribution gamma = new GammaDistribution(degreesOfFreedom / 2.0, 2.0);
+
+    private double sampleChiSquared(double dof) {
+        GammaDistribution gamma = new GammaDistribution(dof / 2.0, 2.0);
         return gamma.sample();
     }
-    
-    /**
-     * 计算矩阵的Cholesky分解
-     * Compute Cholesky decomposition
-     */
+
     private IMatrix computeCholesky(IMatrix matrix) {
         int n = matrix.rows();
         IMatrix L = Linalg.zeros(n, n);
-        
+
         for (int i = 0; i < n; i++) {
             for (int j = 0; j <= i; j++) {
                 if (i == j) {
-                    // 对角元素
                     double sum = 0.0;
                     for (int k = 0; k < j; k++) {
                         double lij = L.get(i, k).doubleValue();
@@ -533,7 +609,6 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
                     double aii = matrix.get(i, i).doubleValue();
                     L.set(i, j, Math.sqrt(aii - sum));
                 } else {
-                    // 下三角元素
                     double sum = 0.0;
                     for (int k = 0; k < j; k++) {
                         double lik = L.get(i, k).doubleValue();
@@ -546,30 +621,20 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
                 }
             }
         }
-        
+
         return L;
     }
-    
-    /**
-     * 计算矩阵逆
-     * Compute matrix inverse
-     */
+
     private IMatrix computeInverse(IMatrix matrix) {
-        // 简化实现：使用Cholesky分解求逆
         IMatrix L = computeCholesky(matrix);
         return choleskyInverse(L);
     }
-    
-    /**
-     * 通过Cholesky分解计算逆矩阵
-     * Compute inverse through Cholesky decomposition
-     */
+
     private IMatrix choleskyInverse(IMatrix L) {
         int n = L.rows();
-        
-        // 计算 L^(-1)
+
         IMatrix LInv = Linalg.zeros(n, n);
-        
+
         for (int i = 0; i < n; i++) {
             for (int j = 0; j <= i; j++) {
                 if (i == j) {
@@ -583,35 +648,22 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
                 }
             }
         }
-        
-        // 计算 (L^(-1))^T * L^(-1)
+
         IMatrix LInvT = LInv.t();
-        return LInvT.mmul(LInvT);
+        return LInvT.mmul(LInv);
     }
-    
 
-    
-
-    
-    /**
-     * 计算对数行列式
-     * Calculate log determinant
-     */
     private double logDeterminant(IMatrix matrix) {
         IMatrix L = computeCholesky(matrix);
         double logDet = 0.0;
-        
+
         for (int i = 0; i < L.rows(); i++) {
             logDet += Math.log(L.get(i, i).doubleValue());
         }
-        
-        return 2.0 * logDet; // 因为 det(A) = det(L)²
+
+        return 2.0 * logDet;
     }
-    
-    /**
-     * 检查矩阵是否正定
-     * Check if matrix is positive definite
-     */
+
     private boolean isPositiveDefinite(IMatrix matrix) {
         try {
             computeCholesky(matrix);
@@ -620,44 +672,29 @@ public class WishartDistribution  implements IMultivariateDistribution<Double> {
             return false;
         }
     }
-    
-    /**
-     * 计算多元Gamma函数的对数值
-     * Calculate log multivariate Gamma function
-     */
+
     private double logMultivariateGamma(double a, int p) {
         double result = (p * (p - 1) / 4.0) * Math.log(Math.PI);
-        
+
         for (int j = 1; j <= p; j++) {
             result += logGamma(a + (1 - j) / 2.0);
         }
-        
+
         return result;
     }
-    
-    /**
-     * 计算Gamma函数的对数值
-     * Calculate log Gamma function
-     */
+
     private double logGamma(double x) {
         if (x <= 0) {
             throw new IllegalArgumentException("Gamma function argument must be positive");
         }
-        
-        // 使用Stirling近似
-        if (x > 12) {
-            return (x - 0.5) * Math.log(x) - x + 0.5 * Math.log(2 * Math.PI);
-        } else {
-            // 对于小值，使用递归关系
-            if (x < 1) {
-                return logGamma(x + 1) - Math.log(x);
-            } else if (x == 1) {
-                return 0;
-            } else if (x == 2) {
-                return 0;
-            } else {
-                return Math.log(x - 1) + logGamma(x - 1);
-            }
+        double shift = 0;
+        double z = x;
+        while (z < 12) {
+            shift -= Math.log(z);
+            z += 1;
         }
+        double inv = 1 / z;
+        return shift + (z - 0.5) * Math.log(z) - z + 0.5 * Math.log(2 * Math.PI)
+                + inv / 12 - inv * inv / 360 + inv * inv * inv / 1260;
     }
 }

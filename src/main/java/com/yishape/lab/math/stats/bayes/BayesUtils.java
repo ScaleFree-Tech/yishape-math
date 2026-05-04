@@ -5,6 +5,10 @@ import com.yishape.lab.math.linalg.IVector;
 /**
  * 贝叶斯分析工具类
  * Utility class for Bayesian analysis
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class BayesUtils {
     

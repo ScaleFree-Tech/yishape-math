@@ -2,15 +2,29 @@
 
 ## 概述 / Overview
 
-数据可视化包提供了强大的图表绘制功能，支持多种图表类型，包括基础图表、极坐标图表、统计图表和特殊图表。该包为数学计算和数据分析提供了直观的可视化支持，能够将复杂的数值数据转换为易于理解的图形表示。
+数据可视化包提供了强大的图表绘制功能，支持多种图表类型，包括基础图表、极坐标图表、统计图表和特殊图表。**二维**绘图可在 **JavaFX**、**ECharts** 与 **矢量 SVG** 三种后端之间按场景选用（详见下文「绘图后端」）。该包为数学计算和数据分析提供了直观的可视化支持，能够将复杂的数值数据转换为易于理解的图形表示。
 
-The data visualization package provides powerful charting capabilities, supporting various chart types including basic charts, polar coordinate charts, statistical charts, and special charts. This package provides intuitive visualization support for mathematical calculations and data analysis, converting complex numerical data into easily understandable graphical representations.
+The data visualization package provides powerful charting capabilities, supporting various chart types including basic charts, polar coordinate charts, statistical charts, and special charts. For **2D** plotting, **JavaFX**, **ECharts**, and **vector SVG** backends are available—see *Plot Backends* below. This package provides intuitive visualization support for mathematical calculations and data analysis, converting complex numerical data into easily understandable graphical representations.
+
+## 文档导航 / Reading Guide
+
+以下按阅读顺序整理了本页内容。**完整签名以源码为准**：[IPlot.java](../src/main/java/com/yishape/lab/math/plot/IPlot.java)、[I3dPlot.java](../src/main/java/com/yishape/lab/math/plot/I3dPlot.java)、[Plots.java](../src/main/java/com/yishape/lab/math/plot/Plots.java)。可运行范例见 **[Visualization-Plotting-Examples.md](./examples/Visualization-Plotting-Examples.md)**。
+
+| 小节 | 内容 |
+|------|------|
+| 快速上手 | 最小示例与 `Plots` 工厂 |
+| 核心类 | 后端（JavaFX / ECharts / SVG）、`IPlot` 方法索引、`AxisTicks`、`PlotException` |
+| 主要实现类〜三维数据可视化 | 四个实现类 + `I3dPlot` 能力与对比 |
+| 基础图表〜完善图表 | 分类型图解与示例 |
+| 图表配置〜输出〜样式系统 | 轴、刻度、导出、`PlotStyle`、调色板、主题 |
+
+
 
 ## 快速上手 / Quick Start
 
 ```java
 // 创建画布（宽800 × 高600）
-RerePlot plt = Plots.of(800, 600);
+IPlot plot = Plots.of(800, 600);
 
 // 线图 / Line chart
 IVector<Double> x = Linalg.arange(0.0, 10.0, 0.1);
@@ -88,10 +102,42 @@ The following showcases various chart types supported by YiShape-Math. Click on 
 | **热力图 / Heatmap** | [![热力图示例](images/heatmap.png)](./Visualization-Plotting.md#热力图--heatmap) | 通过颜色深浅表示二维数据大小 / Represent two-dimensional data magnitude through color intensity | **雷达图 / Radar Chart** | [![雷达图示例](images/radar.png)](./Visualization-Plotting.md#雷达图--radar-chart) | 展示多维数据的分布情况 / Display distribution of multi-dimensional data |
 | **仪表盘 / Gauge Chart** | [![仪表盘示例](images/gauge.png)](./Visualization-Plotting.md#仪表盘--gauge-chart) | 展示单一指标的当前值 / Display current values of single indicators | | | |
 
+##### 扩展二维 / Extended 2D（`IPlot` 扩展）
+
+| API | 含义 |
+|-----|------|
+| `area` | 面积图 |
+| `step` | 阶梯图 |
+| `barh` | 水平柱状图 |
+| `barStacked` | 堆叠柱状图 |
+| `errorbar` | 误差棒 |
+| `scatter(..., sizes)` | 气泡散点 |
+| `regplot` | 回归线（可选置信带） |
+| `kdeplot` | 一维 KDE |
+| `pairplot` | 配对图 |
+| `jointplot` | 联合分布 + 边际 |
+| `qqplot` | Q–Q 图 |
+| `lineWithSecondaryY` | 双 Y 轴曲线 |
+| `subplots` / `subplot` | 子图网格与选定子图 |
 
 
 
 ## 核心类 / Core Classes
+
+### 绘图后端 / Plot Backends
+
+本库**二维**绘图支持三种后端，彼此独立选用（后两者通过全局 Provider 切换；SVG 为专用工厂，不经 Provider）：
+
+| 后端 | 入口 / 类型 | 适合的场景 |
+|------|----------------|------------|
+| **JavaFX** | `Plots.of(...)` 在 `PlotProvider.JavaFx` 下（默认），或 `Plots.ofJavaFx(...)` | 桌面应用、`show()` 弹窗预览、与 JavaFX / Swing 画布集成；默认能力最全。导出 `saveAsSvg` 时常见为**画布快照封装**（与纯矢量 SVG 后端不同）。 |
+| **ECharts** | `Plots.setProvider(PlotProvider.Echarts)` 后 `Plots.of(...)`或 `Plots.ofEcharts(...)` | 浏览器内**交互**（缩放、tooltip、图例联动）、`saveAsHtml` / `toJson` 直接对接前端或内嵌报表；适合 Web 形态交付。 |
+| **SVG** | `Plots.setProvider(PlotProvider.Svg)` 后 `Plots.of(...)`或 `Plots.ofSvg(...)` | **无 JavaFX 图形环境**（如部分 CI、纯批处理）、需要**真矢量** `.svg`（放大不糊、可编辑）、文档/论文插图、对依赖与启动成本敏感的服务端出图。图表子集与 JavaFX 语义对齐，复杂交互弱于 JavaFX / ECharts。 |
+
+English: For **2D**, three backends are available: **JavaFX** (default `Plots.of`, desktop & richest features), **ECharts** (`Plots.ofEcharts)`, web-oriented HTML/JSON and interaction), and **vector SVG** (`Plots.ofSvg`, headless-friendly true SVG output). Pick by deployment target (desktop vs browser vs vector export) and whether you need full interactivity.
+
+- **二维**：`Plots.setProvider(PlotProvider.JavaFx | Echarts)`，默认 JavaFx；**矢量 SVG** 使用 `Plots.ofSvg` / `Plots.svg`，不修改全局 Provider。
+- **三维**：`Plots.setProvider3d(PlotProvider3d.JavaFx | EchartsGL)`，默认 EChartsGL（交互 WebGL）；JavaFx 为桌面 3D。（三维暂无独立「纯 SVG 几何」后端，仍以 JavaFX / ECharts GL 为主。）
 
 ### 1. Plots - 绘图工厂类 / Plotting Factory Class
 
@@ -102,40 +148,19 @@ The `Plots` class provides static factory methods for creating various chart typ
 #### 主要工厂方法 / Main Factory Methods
 
 ```java
-// 基础工厂方法 / Basic factory methods
-RerePlot of();                                      // 创建默认绘图对象 / Create default plot object
-RerePlot of(int width, int height);                 // 创建指定尺寸的绘图对象 / Create plot object with specified size
-RerePlot of(int width, int height, String theme);   // 创建指定尺寸和主题的绘图对象 / Create plot object with specified size and theme
+// 全局后端（可随时切换）
+Plots.setProvider(Plots.PlotProvider.JavaFx);    // 或 Plots.PlotProvider.Echarts
+Plots.setProvider3d(Plots.PlotProvider3d.EchartsGL); // 或 PlotProvider3d.JavaFx
 
-// 图表类型专用工厂方法 / Chart-specific factory methods
-RerePlot line(IVector<Double> x, IVector<Double> y);                // 创建线图 / Create line chart
-RerePlot line(IVector<Double> x);                           // 创建单向量线图 / Create single vector line chart
-RerePlot line(IVector<Double> x, IVector<Double> y, List<String> hue); // 创建多线图 / Create multi-line chart
-RerePlot scatter(IVector<Double> x, IVector<Double> y);             // 创建散点图 / Create scatter plot
-RerePlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue); // 创建多组散点图 / Create multi-group scatter plot
-RerePlot pie(IVector<Double> data);                         // 创建饼图 / Create pie chart
-RerePlot bar(IVector<Double> data);                         // 创建柱状图 / Create bar chart
-RerePlot bar(IVector<Double> data, List<String> hue);       // 创建分组柱状图 / Create grouped bar chart
-RerePlot hist(IVector<Double> data, boolean fittingLine);   // 创建直方图 / Create histogram
-RerePlot boxplot(IVector<Double> data);                     // 创建箱线图 / Create box plot
-RerePlot boxplot(IVector<Double> data, List<String> labels); // 创建带标签的箱线图 / Create labeled box plot
-RerePlot violinplot(IVector<Double> data);                  // 创建小提琴图 / Create violin plot
-RerePlot violinplot(IVector<Double> data, List<String> labels); // 创建带标签的小提琴图 / Create labeled violin plot
-RerePlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels); // 创建热力图 / Create heatmap
-RerePlot radar(IVector<Double> data, List<String> indicators); // 创建雷达图 / Create radar chart
-RerePlot gauge(double value, double max, double min);  // 创建仪表盘 / Create gauge chart
+IPlot plot2d = Plots.of();
+IPlot sized = Plots.of(800, 600);
+IPlot themed = Plots.of(800, 600, "dark");
 
-// 带尺寸的工厂方法 / Factory methods with dimensions
-RerePlot line(IVector<Double> x, IVector<Double> y, int width, int height);
-RerePlot scatter(IVector<Double> x, IVector<Double> y, int width, int height);
-RerePlot bar(IVector<Double> data, int width, int height);
-RerePlot pie(IVector<Double> data, int width, int height);
+I3dPlot plot3d = Plots.of3d();
+I3dPlot sized3 = Plots.of3d(800, 600);
+I3dPlot themed3 = Plots.of3d(800, 600, "dark");
 
-// 带主题的工厂方法 / Factory methods with themes
-RerePlot line(IVector<Double> x, IVector<Double> y, int width, int height, String theme);
-RerePlot scatter(IVector<Double> x, IVector<Double> y, int width, int height, String theme);
-RerePlot bar(IVector<Double> data, int width, int height, String theme);
-RerePlot pie(IVector<Double> data, int width, int height, String theme);
+// 另有大量静态方法如 Plots.line(x,y)，等价于链式调用
 ```
 
 #### 使用示例 / Usage Examples
@@ -165,375 +190,37 @@ Plots.violinplot(data).saveAsHtml("violin_chart.html"); // 小提琴图 / Violin
 
 ### 2. IPlot 接口 / IPlot Interface
 
-`IPlot` 是绘图功能的核心接口，定义了所有图表绘制方法的抽象规范。
+`IPlot` 是**二维**绘图的契约；常见实现为 **`JavaFxPlot`**（默认）、**`EChartsPlot`**（`Plots.ofEcharts(...)`），以及 **`SvgPlot`**（`Plots.ofSvg`）。数据多为 `com.yishape.lab.math.linalg.IVector` / `IMatrix`。同一几何语义通常存在无样式、`PlotStyle` 与样式字符串多套重载。
 
-`IPlot` is the core interface for plotting functionality, defining abstract specifications for all chart drawing methods.
+`IPlot` is the 2D plotting contract; typical implementations are **`JavaFxPlot`** (default), **`EChartsPlot`**(`Plots.ofEcharts`), and **`SvgPlot`** (`Plots.ofSvg`).
+
+下表汇总**代表性方法分组**——完整列表见 [**IPlot.java**](../src/main/java/com/yishape/lab/math/plot/IPlot.java)。
+
+| 分类 | 方法（节选） |
+|------|----------------|
+| 基础 | `line`、`scatter`、`pie`、`bar`、`hist` 及 hue / 样式重载 |
+| 极坐标 | `polarBar`、`polarLine`、`polarScatter` |
+| 统计 | `boxplot`、`violinplot`、`candlestick` |
+| 关系数据 | `funnel`、`sankey`、`sunburst`、`themeRiver`、`tree`、`treemap`、`graph`、`parallel` |
+| 矩阵 / KPI | `heatmap`、`radar`、`gauge` |
+| 扩展二维 | `area`、`step`、`barh`、`barStacked`、`errorbar`、`scatter(x,y,sizes)`、`regplot`、`kdeplot`、`pairplot`、`jointplot`、`qqplot`、`lineWithSecondaryY`、`subplots`、`subplot` |
+| 坐标轴 | `xscale`、`yscale`、`y2label` |
+| 样式主题 | `setDefaultStyle`、`setPalette`、`enableStyleSystem`、`enableThemeSystem`、`applyTheme`、`registerTheme`、`createGradientTheme`、`createMonochromeTheme` |
+| 流式视图 | `title`、`xlabel`、`ylabel`、`size`、`theme`、`show` |
+| 导出 | `saveAsHtml`、`saveAsSvg`、`saveAsPng`、`toBase64Svg`、`toBase64Png`、`toHtml`、`toJson` |
+| 命令式视图 | `setTitle`、`setXlabel`、`setYlabel`、`setXticks`、`setYticks`、`getWidth`、`getHeight`、`getTheme` |
+
+最小链式示例：
 
 ```java
-import com.yishape.lab.math.viz.AxisTicks;
-
-public interface IPlot {
-    // ========== 基础图表方法 / Basic Chart Methods ==========
-
-    /**
-     * 绘制线图 / Draw line chart
-     * @param x X轴数据 / X-axis data
-     * @param y Y轴数据 / Y-axis data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot line(IVector<Double> x, IVector<Double> y);
-
-    /**
-     * 绘制单向量线图 / Draw single vector line chart
-     * @param x 数据向量 / Data vector
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot line(IVector<Double> x);
-
-    /**
-     * 绘制多线图 / Draw multi-line chart
-     * @param x X轴数据 / X-axis data
-     * @param y Y轴数据 / Y-axis data
-     * @param hue 分组标签 / Group labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot line(IVector<Double> x, IVector<Double> y, List<String> hue);
-
-    /**
-     * 绘制散点图 / Draw scatter plot
-     * @param x X轴数据 / X-axis data
-     * @param y Y轴数据 / Y-axis data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot scatter(IVector<Double> x, IVector<Double> y);
-
-    /**
-     * 绘制多组散点图 / Draw multi-group scatter plot
-     * @param x X轴数据 / X-axis data
-     * @param y Y轴数据 / Y-axis data
-     * @param hue 分组标签 / Group labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue);
-
-    /**
-     * 绘制饼图 / Draw pie chart
-     * @param x 数据向量 / Data vector
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot pie(IVector<Double> x);
-
-    /**
-     * 绘制柱状图 / Draw bar chart
-     * @param x 数据向量 / Data vector
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot bar(IVector<Double> x);
-
-    /**
-     * 绘制分组柱状图 / Draw grouped bar chart
-     * @param x 数据向量 / Data vector
-     * @param hue 分组标签 / Group labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot bar(IVector<Double> x, List<String> hue);
-
-    /**
-     * 绘制直方图 / Draw histogram
-     * @param x 数据向量 / Data vector
-     * @param fittingLine 是否显示拟合线 / Whether to show fitting line
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot hist(IVector<Double> x, boolean fittingLine);
-
-    // ========== 极坐标图表方法 / Polar Chart Methods ==========
-
-    /**
-     * 绘制极坐标柱状图 / Draw polar bar chart
-     * @param data 数据向量 / Data vector
-     * @param categories 类别标签 / Category labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot polarBar(IVector<Double> data, List<String> categories);
-
-    /**
-     * 绘制极坐标线图 / Draw polar line chart
-     * @param data 数据向量 / Data vector
-     * @param categories 类别标签 / Category labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot polarLine(IVector<Double> data, List<String> categories);
-
-    /**
-     * 绘制极坐标散点图 / Draw polar scatter chart
-     * @param data 数据向量 / Data vector
-     * @param categories 类别标签 / Category labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot polarScatter(IVector<Double> data, List<String> categories);
-
-    // ========== 统计图表方法 / Statistical Chart Methods ==========
-
-    /**
-     * 绘制箱线图 / Draw box plot
-     * @param data 数据向量 / Data vector
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot boxplot(IVector<Double> data);
-
-    /**
-     * 绘制箱线图 / Draw box plot
-     * @param data 数据向量 / Data vector
-     * @param labels 标签 / Labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot boxplot(IVector<Double> data, List<String> labels);
-
-    /**
-     * 绘制小提琴图 / Draw violin plot
-     * @param data 数据向量 / Data vector
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot violinplot(IVector<Double> data);
-
-    /**
-     * 绘制小提琴图 / Draw violin plot
-     * @param data 数据向量 / Data vector
-     * @param labels 标签 / Labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot violinplot(IVector<Double> data, List<String> labels);
-
-    /**
-     * 绘制K线图 / Draw candlestick chart
-     * @param data 数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价] / Data matrix, each row contains [open, close, low, high]
-     * @param dates 日期标签 / Date labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot candlestick(IMatrix<Double> data, List<String> dates);
-
-    // ========== 特殊图表方法 / Special Chart Methods ==========
-
-    /**
-     * 绘制漏斗图 / Draw funnel chart
-     * @param data 数据向量 / Data vector
-     * @param labels 标签 / Labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot funnel(IVector<Double> data, List<String> labels);
-
-    /**
-     * 绘制桑基图 / Draw sankey diagram
-     * @param nodes 节点数据 / Node data
-     * @param links 连接数据 / Link data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-
-    /**
-     * 绘制旭日图 / Draw sunburst chart
-     * @param data 层次数据 / Hierarchical data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot sunburst(List<Map<String, Object>> data);
-
-    /**
-     * 绘制主题河流图 / Draw theme river chart
-     * @param data 时间序列数据 / Time series data
-     * @param categories 类别 / Categories
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot themeRiver(List<Map<String, Object>> data, List<String> categories);
-
-    /**
-     * 绘制树图 / Draw tree chart
-     * @param data 树形数据 / Tree data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot tree(List<Map<String, Object>> data);
-
-    /**
-     * 绘制矩形树图 / Draw treemap chart
-     * @param data 层次数据 / Hierarchical data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot treemap(List<Map<String, Object>> data);
-
-    /**
-     * 绘制关系图 / Draw graph chart
-     * @param nodes 节点数据 / Node data
-     * @param links 连接数据 / Link data
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-
-    /**
-     * 绘制平行坐标图 / Draw parallel coordinates chart
-     * @param data 数据矩阵 / Data matrix
-     * @param dimensions 维度名称 / Dimension names
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot parallel(IMatrix<Double> data, List<String> dimensions);
-
-    // ========== 完善图表方法 / Chart Completion Methods ==========
-
-    /**
-     * 绘制热力图 / Draw heatmap
-     * @param data 二维数据矩阵 / 2D data matrix
-     * @param xLabels X轴标签 / X-axis labels
-     * @param yLabels Y轴标签 / Y-axis labels
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels);
-
-    /**
-     * 绘制雷达图 / Draw radar chart
-     * @param data 数据向量 / Data vector
-     * @param indicators 指标名称 / Indicator names
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot radar(IVector<Double> data, List<String> indicators);
-
-    /**
-     * 绘制仪表盘 / Draw gauge chart
-     * @param value 数值 / Value
-     * @param max 最大值 / Maximum value
-     * @param min 最小值 / Minimum value
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot gauge(double value, double max, double min);
-
-    // ========== 流式API方法 / Fluent API Methods ==========
-
-    /**
-     * 设置图表标题（流式API） / Set chart title (Fluent API)
-     * @param titleText 标题文本 / Title text
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot title(String titleText);
-
-    /**
-     * 设置图表标题和副标题（流式API） / Set chart title and subtitle (Fluent API)
-     * @param titleText 标题文本 / Title text
-     * @param subtitleText 副标题文本 / Subtitle text
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot title(String titleText, String subtitleText);
-
-    /**
-     * 设置X轴标签（流式API） / Set X-axis label (Fluent API)
-     * @param name X轴标签名称 / X-axis label name
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot xlabel(String name);
-
-    /**
-     * 设置Y轴标签（流式API） / Set Y-axis label (Fluent API)
-     * @param name Y轴标签名称 / Y-axis label name
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot ylabel(String name);
-
-    /**
-     * 设置图表尺寸（流式API） / Set chart size (Fluent API)
-     * @param width 图表宽度 / Chart width
-     * @param height 图表高度 / Chart height
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot size(int width, int height);
-
-    /**
-     * 设置图表主题（流式API） / Set chart theme (Fluent API)
-     * @param theme 主题名称 / Theme name
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot theme(String theme);
-
-    /**
-     * 显示图表（流式API） / Show chart (Fluent API)
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot show();
-
-    /**
-     * 保存图表为HTML文件（流式API） / Save chart as HTML file (Fluent API)
-     * @param filename 文件名 / Filename
-     * @return 当前实例，支持链式调用 / Current instance for method chaining
-     */
-    IPlot saveAsHtml(String filename);
-
-    // ========== 工具方法 / Utility Methods ==========
-
-    /**
-     * 获取图表的HTML内容 / Get chart HTML content
-     * @return HTML字符串 / HTML string
-     */
-    String toHtml();
-
-    /**
-     * 获取图表的JSON配置 / Get chart JSON configuration
-     * @return JSON字符串 / JSON string
-     */
-    String toJson();
-
-    // ========== 配置方法 / Configuration Methods ==========
-
-    /**
-     * 设置图表标题 / Set chart title
-     * @param titleText 标题文本 / Title text
-     */
-    void setTitle(String titleText);
-
-    /**
-     * 设置图表标题和副标题 / Set chart title and subtitle
-     * @param titleText 标题文本 / Title text
-     * @param subtitleText 副标题文本 / Subtitle text
-     */
-    void setTitle(String titleText, String subtitleText);
-
-    /**
-     * 设置X轴标签 / Set X-axis label
-     * @param name X轴标签名称 / X-axis label name
-     */
-    void setXlabel(String name);
-
-    /**
-     * 设置Y轴标签 / Set Y-axis label
-     * @param name Y轴标签名称 / Y-axis label name
-     */
-    void setYlabel(String name);
-
-    /**
-     * 设置X轴刻度 / Set X-axis ticks
-     * @param xticks X轴刻度配置 / X-axis tick configuration
-     */
-    void setXticks(com.yishape.lab.math.viz.AxisTicks xticks);
-
-    /**
-     * 设置Y轴刻度 / Set Y-axis ticks
-     * @param yticks Y轴刻度配置 / Y-axis tick configuration
-     */
-    void setYticks(com.yishape.lab.math.viz.AxisTicks yticks);
-
-    /**
-     * 获取图表宽度 / Get chart width
-     * @return 图表宽度 / Chart width
-     */
-    int getWidth();
-
-    /**
-     * 获取图表高度 / Get chart height
-     * @return 图表高度 / Chart height
-     */
-    int getHeight();
-
-    /**
-     * 获取图表主题 / Get chart theme
-     * @return 主题名称 / Theme name
-     */
-    String getTheme();
-}
+import com.yishape.lab.math.plot.AxisTicks;
+// ...
+Plots.of(800, 600)
+    .line(x, y, "C0-")
+    .title("演示")
+    .saveAsHtml("demo.html");
 ```
+
 
 ### AxisTicks 类 / AxisTicks Class
 
@@ -603,139 +290,233 @@ try {
 
 ## 主要实现类 / Main Implementation Classes
 
-### RerePlot 类 / RerePlot Class
+| 维度 | 类 | 说明 |
+|------|-----|------|
+| 二维 | `JavaFxPlot` | JavaFX 画布；桌面 `show()` |
+| 二维 | `EchartsPlot` | ECharts HTML / JSON |
+| 二维 | `SvgPlot` | 纯矢量 SVG 元素绘制；`Plots.ofSvg`；适合无 JavaFX 与真 SVG 导出 |
+| 三维 | `JavaFx3dPlot` | JavaFX 3D；`saveAsHtml` 为含 **PNG** 快照的页面 |
+| 三维 | `Echarts3dPlot` | 可漫游 WebGL 场景（CDN 载入 ECharts/ECharts GL） |
 
-`RerePlot` 是 `IPlot` 接口的主要实现类，基于ECharts-Java提供完整的图表绘制功能。该类实现了所有图表类型的绘制方法，并提供了丰富的配置选项和流式API。
+旧文档出现的 **`RerePlot` 已不存在**——类型请写 **`IPlot`** / **`I3dPlot`**。
 
-`RerePlot` is the main implementation class of the `IPlot` interface, providing complete charting capabilities based on ECharts-Java. This class implements all chart type drawing methods and provides rich configuration options and fluent API.
 
-#### 核心特性 / Core Features
+## 3D数据可视化 / 3D Data Visualization
 
-- **多图表类型支持** / **Multiple Chart Type Support**: 支持25+种图表类型，包括基础图表、极坐标图表、统计图表和特殊图表 / Supports 25+ chart types including basic charts, polar charts, statistical charts, and special charts
-- **ECharts集成** / **ECharts Integration**: 基于ECharts-Java，提供丰富的交互功能和动画效果 / Based on ECharts-Java, provides rich interactive features and animation effects
-- **灵活配置** / **Flexible Configuration**: 支持标题、图例、工具提示、坐标轴等全面配置 / Supports comprehensive configuration of titles, legends, tooltips, axes, etc.
-- **多种输出格式** / **Multiple Output Formats**: 支持HTML、JSON等输出格式 / Supports HTML, JSON and other output formats
-- **主题支持** / **Theme Support**: 支持多种内置主题和自定义主题 / Supports multiple built-in themes and custom themes
-- **流式API** / **Fluent API**: 支持链式调用，代码简洁易读 / Supports method chaining for concise and readable code
-- **异常处理** / **Exception Handling**: 完善的异常处理机制 / Comprehensive exception handling mechanism
+3D数据可视化包提供了丰富的三维图表绘制功能，支持两种实现后端，满足不同应用场景的需求。
 
-#### 构造函数 / Constructors
+The 3D data visualization package provides rich three-dimensional chart drawing capabilities, supporting two implementation backends to meet different application scenario requirements.
 
-```java
-// 默认构造函数 / Default constructor
-public RerePlot();
-
-// 带尺寸的构造函数 / Constructor with dimensions
-public RerePlot(int width, int height);
-
-// 带主题的构造函数 / Constructor with theme
-public RerePlot(int width, int height, String theme);
-```
-
-#### 主要属性 / Main Properties
+### 3D后端选择 / 3D Backend Selection
 
 ```java
-// 图表配置 / Chart configuration
-private Title title;                    // 标题配置 / Title configuration
-private Legend legend;                  // 图例配置 / Legend configuration
-private Tooltip tooltip;                // 工具提示配置 / Tooltip configuration
-private AxisTicks xticks;               // X轴刻度配置 / X-axis ticks configuration
-private AxisTicks yticks;               // Y轴刻度配置 / Y-axis ticks configuration
-private String xlabel;                  // X轴标签 / X-axis label
-private String ylabel;                  // Y轴标签 / Y-axis label
-private Engine engine;                  // ECharts渲染引擎 / ECharts rendering engine
-private Option option;                  // 图表选项 / Chart options
-private int width;                      // 图表宽度 / Chart width
-private int height;                     // 图表高度 / Chart height
-private String theme;                   // 主题名称 / Theme name
+// 默认后端：ECharts GL（推荐用于Web/交互式）
+// Default backend: ECharts GL (recommended for web/interactive)
+I3dPlot plot = Plots.of3d(800, 600);
+
+// 切换到JavaFX 3D后端（桌面应用）
+// Switch to JavaFX 3D backend (desktop applications)
+Plots.setProvider3d(Plots.PlotProvider3d.JavaFx);
+I3dPlot plot2 = Plots.of3d(800, 600);
+
+// 切换回ECharts GL后端
+// Switch back to ECharts GL backend
+Plots.setProvider3d(Plots.PlotProvider3d.EchartsGL);
 ```
 
-#### 核心方法 / Core Methods
+### 3D核心接口 / 3D Core Interface
+
+#### I3dPlot 接口 / I3dPlot Interface
+
+`I3dPlot` 契约与 **完整重载**（含 `PlotStyle` / 样式字符串、`route3d`、`grouped bar3d`、`radar3d` 系列名等）见源码 [**I3dPlot.java**](../src/main/java/com/yishape/lab/math/plot/I3dPlot.java)。
+
+| 分类 | API（节选） |
+|------|-------------|
+| 关系与分布 | `scatter3d`、`scatterBubble3d`、`line3d`、`route3d`、`density3d` |
+| 统计 | `bar3d`（含 `BarExtrusion3D`、`hue` 分组）、`pie3d`、`hist3d`、`boxplot3d` |
+| 曲面与网格 | `surface3d`、`contour3d`、`wireframe3d`、`heatmap3d`、`waterfall3d`、`terrain3d`、`areaFill3d` |
+| 矢量 | `vectorField3d`、`streamlines3d` |
+| 关系 / 多维 | `graph3d`、`radar3d` |
+| 样式与主题 | 与二维类似的 `setDefaultStyle`、`applyTheme`、`setPalette`、`enableThemeSystem` … |
+| 视图与导出 | `title`、`xlabel`、`ylabel`、`zlabel`、`size`、`theme`、`show`、`saveAsHtml`、`toHtml`、`toJson` |
+
+> **后端差异**：`Echarts3dPlot` 的 `saveAsHtml` / `toHtml` 产出可交互 GL 页面（需网络加载 CDN）；`JavaFx3dPlot` 的 `saveAsHtml` 实为 **快照 PNG** 嵌入 HTML，`show()` 为桌面 Stage；大数据散点可考虑先降采样或使用 `Plots.setProvider3d(EchartsGL)`。
+
+### 3D柱状图柱体形状 / 3D Bar Extrusion Shapes
 
 ```java
-// 基础图表方法 / Basic chart methods
-public RerePlot line(IVector<Double> x, IVector<Double> y);
-public RerePlot line(IVector<Double> x);
-public RerePlot line(IVector<Double> x, IVector<Double> y, List<String> hue);
-public RerePlot scatter(IVector<Double> x, IVector<Double> y);
-public RerePlot scatter(IVector<Double> x, IVector<Double> y, List<String> hue);
-public RerePlot pie(IVector<Double> x);
-public RerePlot bar(IVector<Double> x);
-public RerePlot bar(IVector<Double> x, List<String> hue);
-public RerePlot hist(IVector<Double> x, boolean fittingLine);
-
-// 极坐标图表方法 / Polar coordinate chart methods
-public RerePlot polarBar(IVector<Double> data, List<String> categories);
-public RerePlot polarLine(IVector<Double> data, List<String> categories);
-public RerePlot polarScatter(IVector<Double> data, List<String> categories);
-
-// 统计图表方法 / Statistical chart methods
-public RerePlot boxplot(IVector<Double> data);
-public RerePlot boxplot(IVector<Double> data, List<String> labels);
-public RerePlot violinplot(IVector<Double> data);
-public RerePlot violinplot(IVector<Double> data, List<String> labels);
-public RerePlot candlestick(IMatrix<Double> data, List<String> dates);
-
-// 特殊图表方法 / Special chart methods
-public RerePlot funnel(IVector<Double> data, List<String> labels);
-public RerePlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-public RerePlot sunburst(List<Map<String, Object>> data);
-public RerePlot themeRiver(List<Map<String, Object>> data, List<String> categories);
-public RerePlot tree(List<Map<String, Object>> data);
-public RerePlot treemap(List<Map<String, Object>> data);
-public RerePlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links);
-public RerePlot parallel(IMatrix<Double> data, List<String> dimensions);
-
-// 完善图表方法 / Enhanced chart methods
-public RerePlot heatmap(IMatrix<Double> data, List<String> xLabels, List<String> yLabels);
-public RerePlot radar(IVector<Double> data, List<String> indicators);
-public RerePlot gauge(double value, double max, double min);
-
-// 流式API方法 / Fluent API methods
-public RerePlot title(String titleText);
-public RerePlot title(String titleText, String subtitleText);
-public RerePlot xlabel(String name);
-public RerePlot ylabel(String name);
-public RerePlot size(int width, int height);
-public RerePlot theme(String theme);
-public RerePlot show();
-public RerePlot saveAsHtml(String filename);
-
-// 工具方法 / Utility methods
-public String toHtml();
-public String toJson();
-
-// 配置方法 / Configuration methods
-public void setTitle(String titleText);
-public void setTitle(String titleText, String subtitleText);
-public void setXlabel(String name);
-public void setYlabel(String name);
-public void setXticks(AxisTicks xticks);
-public void setYticks(AxisTicks yticks);
-public void setSize(int width, int height);
-public void setWidth(int width);
-public void setHeight(int height);
-public void setTheme(String theme);
-
-// 属性访问方法 / Property access methods
-public Title getTitle();
-public void setTitle(Title title);
-public Legend getLegend();
-public void setLegend(Legend legend);
-public Tooltip getTooltip();
-public void setTooltip(Tooltip tooltip);
-public AxisTicks getXticks();
-public void setXticks(AxisTicks xticks);
-public AxisTicks getYticks();
-public void setYticks(AxisTicks yticks);
-public String getXlabel();
-public void setXlabel(String xlabel);
-public String getYlabel();
-public void setYlabel(String ylabel);
-public int getWidth();
-public int getHeight();
-public String getTheme();
+public enum BarExtrusion3D {
+    BOX,        // 长方体柱（默认）
+    CYLINDER,   // 圆柱体
+    CONE        // 圆锥体
+}
 ```
+
+### 3D图表使用示例 / 3D Chart Usage Examples
+
+#### 基础3D散点图 / Basic 3D Scatter Plot
+
+```java
+// 生成3D数据
+IVector<Double> x = Linalg.randn(100);
+IVector<Double> y = Linalg.randn(100);
+IVector<Double> z = Linalg.randn(100);
+
+// 创建3D散点图（ECharts GL后端，可交互）
+Plots.of3d(800, 600)
+    .scatter3d(x, y, z)
+    .title("3D Gaussian Cloud")
+    .xlabel("X")
+    .ylabel("Y")
+    .zlabel("Z")
+    .saveAsHtml("scatter3d.html");  // 生成可交互的Web图表
+```
+
+#### 带分组的3D散点图 / 3D Scatter with Hue
+
+```java
+IVector<Double> x = Linalg.vector(IntStream.range(0, 60).mapToDouble(i -> i).toArray());
+IVector<Double> y = Linalg.vector(IntStream.range(0, 60).mapToDouble(i -> Math.sin(i * 0.1)).toArray());
+IVector<Double> z = Linalg.vector(IntStream.range(0, 60).mapToDouble(i -> i * 0.5).toArray());
+List<String> hue = IntStream.range(0, 60).mapToObj(i -> "Group" + (i % 3)).toList();
+
+Plots.of3d(800, 600, "dark")
+    .scatter3d(x, y, z, hue)
+    .title("3D Spiral with Groups")
+    .saveAsHtml("scatter3d_hue.html");
+```
+
+#### 3D曲面图 / 3D Surface Plot
+
+```java
+// 创建网格数据
+int nx = 30, ny = 25;
+IVector<Double> x = Linalg.vector(IntStream.range(0, nx).mapToDouble(i -> i * 0.2).toArray());
+IVector<Double> y = Linalg.vector(IntStream.range(0, ny).mapToDouble(j -> j * 0.2).toArray());
+
+// 计算Z值
+double[][] zd = new double[nx][ny];
+for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+        zd[i][j] = Math.sin(x.get(i) * 2) * Math.cos(y.get(j) * 2);
+    }
+}
+IMatrix<Double> z = Linalg.matrix(zd);
+
+Plots.of3d(900, 700, "dark")
+    .surface3d(x, y, z)
+    .title("3D Surface: z = sin(2x) * cos(2y)")
+    .saveAsHtml("surface3d.html");
+```
+
+#### 3D柱状图 / 3D Bar Chart
+
+```java
+List<String> categories = List.of("Product A", "Product B", "Product C", "Product D");
+IVector<Double> values = Linalg.vector(new double[]{120, 200, 150, 80});
+
+// BOX柱体（默认）
+Plots.of3d(800, 600)
+    .bar3d(categories, values, I3dPlot.BarExtrusion3D.BOX)
+    .title("3D Bar Chart - Box Style")
+    .saveAsHtml("bar3d_box.html");
+
+// CYLINDER柱体
+Plots.of3d(800, 600)
+    .bar3d(categories, values, I3dPlot.BarExtrusion3D.CYLINDER)
+    .title("3D Bar Chart - Cylinder Style")
+    .saveAsHtml("bar3d_cylinder.html");
+
+// CONE柱体
+Plots.of3d(800, 600)
+    .bar3d(categories, values, I3dPlot.BarExtrusion3D.CONE)
+    .title("3D Bar Chart - Cone Style")
+    .saveAsHtml("bar3d_cone.html");
+```
+
+#### 3D向量场 / 3D Vector Field
+
+```java
+// 创建网格采样点
+int g = 5;
+int n = g * g * g;
+double[] x = new double[n];
+double[] y = new double[n];
+double[] z = new double[n];
+double[] u = new double[n];
+double[] v = new double[n];
+double[] w = new double[n];
+
+int idx = 0;
+for (int i = 0; i < g; i++) {
+    for (int j = 0; j < g; j++) {
+        for (int k = 0; k < g; k++) {
+            x[idx] = i * 0.6;
+            y[idx] = j * 0.6;
+            z[idx] = k * 0.5;
+            u[idx] = Math.sin(y[idx]);
+            v[idx] = -Math.cos(x[idx]);
+            w[idx] = 0.15;
+            idx++;
+        }
+    }
+}
+
+Plots.of3d(800, 600, "dark")
+    .vectorField3d(
+        Linalg.vector(x), Linalg.vector(y), Linalg.vector(z),
+        Linalg.vector(u), Linalg.vector(v), Linalg.vector(w)
+    )
+    .title("3D Vector Field")
+    .saveAsHtml("vectorfield3d.html");
+```
+
+### 3D性能优化 / 3D Performance Optimization
+
+```java
+// 大数据量自动降采样
+// 当数据点超过2000时，自动启用降采样
+IVector<Double> x = Linalg.randn(10000);
+IVector<Double> y = Linalg.randn(10000);
+IVector<Double> z = Linalg.randn(10000);
+
+Plots.of3d(800, 600)
+    .scatter3d(x, y, z)  // 自动降采样到约5000点
+    .title("Large Dataset (Auto-sampled)")
+    .saveAsHtml("large_scatter3d.html");
+```
+
+### 3D主题系统 / 3D Theme System
+
+```java
+// 使用预设主题
+Plots.of3d(800, 600, "dark")     // 深色主题
+    .scatter3d(x, y, z)
+    .saveAsHtml("dark_theme.html");
+
+Plots.of3d(800, 600, "futuristic")  // 未来风格主题
+    .scatter3d(x, y, z)
+    .saveAsHtml("futuristic_theme.html");
+
+// JavaFX 3D后端支持自定义材质和光照配置
+// JavaFX 3D backend supports custom material and lighting configuration
+Plots.setProvider3d(Plots.PlotProvider3d.JavaFx);
+JavaFx3dPlot plot = (JavaFx3dPlot) Plots.of3d(800, 600);
+plot.scatter3d(x, y, z).show();
+```
+
+### 3D图表特性对比 / 3D Chart Features Comparison
+
+| 特性 / Feature | JavaFX 3D | ECharts GL |
+|--------------|-----------|------------|
+| **交互方式** / Interaction | 桌面鼠标拖拽 / Desktop mouse drag | Web鼠标+触摸 / Web mouse+touch |
+| **导出格式** / Export Format | PNG快照 / PNG snapshot | 交互式HTML / Interactive HTML |
+| **性能** / Performance | 大数据量需降采样 / Needs sampling for large data | WebGL硬件加速 / WebGL hardware acceleration |
+| **部署方式** / Deployment | 桌面应用 / Desktop app | Web浏览器 / Web browser |
+| **旋转缩放** / Rotate/Zoom | 支持 / Supported | 支持 / Supported |
+| **图例显示** / Legend | 2D叠加层 / 2D overlay | 原生支持 / Native support |
+| **工具提示** / Tooltip | 支持 / Supported | 原生支持 / Native support |
+
 
 ## 基础图表 / Basic Charts
 
@@ -1879,27 +1660,7 @@ try {
 
 ### 4. 高级配置 / Advanced Configuration
 
-```java
-IPlot plot = Plots.of(800, 600);
-
-// 获取并配置标题 / Get and configure title
-Title title = plot.getTitle();
-title.setText("自定义标题"); // Custom title
-title.setSubtext("自定义副标题"); // Custom subtitle
-title.setLeft("center");
-title.setTop("top");
-
-// 获取并配置图例 / Get and configure legend
-Legend legend = plot.getLegend();
-legend.setOrient("horizontal");
-legend.setLeft("center");
-legend.setTop("bottom");
-
-// 获取并配置工具提示 / Get and configure tooltip
-Tooltip tooltip = plot.getTooltip();
-tooltip.setTrigger("axis");
-tooltip.setAxisPointer("cross");
-```
+`IPlot`** 不包含** `getTitle()` / `Legend` / ECharts Java 模型的直接访问——请优先使用 **`title(...)`、`applyTheme`、`toJson`** 等与实现解耦的 API。若在 **EchartsPlot** 中需要深入到 `Option`，应在该实现类的扩展封装内完成（本页不展开）。
 
 ## 输出和保存 / Output and Save
 
@@ -2077,7 +1838,7 @@ plot.line(x, y, hue, lineStyle);   // 同时按颜色和线型分组 / Group by 
 
 ### 调色板系统 / Palette System
 
-[`ColorPalette`](../../src/main/java/com/reremouse/lab/math/viz/ColorPalette.java) 提供丰富的颜色管理功能，支持多种调色板、颜色操作和无障碍访问优化。
+[ColorPalette](../src/main/java/com/yishape/lab/math/plot/ColorPalette.java) 提供丰富的颜色管理功能，支持多种调色板、颜色操作和无障碍访问优化。
 
 #### 内置调色板 / Built-in Palettes
 
@@ -2096,159 +1857,39 @@ plot.line(x, y, hue, lineStyle);   // 同时按颜色和线型分组 / Group by 
 #### 调色板使用示例 / Palette Usage Examples
 
 ```java
-
 import com.yishape.lab.math.linalg.Linalg;
-import com.yishape.lab.math.viz.ColorPalette;
-import com.yishape.lab.math.viz.PlotStyle;
+import com.yishape.lab.math.plot.ColorPalette;
+import com.yishape.lab.math.plot.PlotStyle;
+import java.util.Arrays;
 
 // 1. 基础调色板使用
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
 IVector<Double> y1 = Linalg.vector(new double[]{10, 20, 15, 30, 25});
 IVector<Double> y2 = Linalg.vector(new double[]{5, 15, 10, 25, 20});
 
-// 设置全局调色板
-Plots.
+Plots.of(800, 600)
+    .setPalette("matplotlib")
+    .line(x, y1, "C0-")
+    .line(x, y2, "C1--")
+    .title("matplotlib 调色板")
+    .show();
 
-of(800,600)
-    .
-
-setPalette("matplotlib")
-    .
-
-line(x, y1, "C0-")  // 使用matplotlib第0个颜色
-    .
-
-line(x, y2, "C1--") // 使用matplotlib第1个颜色
-    .
-
-title("matplotlib调色板示例")
-    .
-
-show();
-
-// 2. 获取调色板颜色
-String[] seabornColors = ColorPalette.getPalette("seaborn");
-String specificColor = ColorPalette.getColor("echarts", 2); // 获取第3个颜色
-
-// 3. 创建多系列图表，使用不同调色板
-String[] palettes = {"matplotlib", "seaborn", "echarts", "colorblind"};
-for(
-int i = 0;
-i< 4;i++){
-String color = ColorPalette.getColor(palettes[i], i);
-PlotStyle style = new PlotStyle()
-        .color(color)
-        .lineWidth(2.0 + i * 0.5)
-        .marker(Character.toString((char) ('o' + i)));
-    
-    Plots.
-
-of(400,300)
-        .
-
-line(x, y1, style)
-        .
-
-title("调色板: "+palettes[i])
-        .
-
-show();
-}
-
-// 4. 生成渐变色系列
-String[] gradientColors = ColorPalette.generateAdvancedGradient(
-        "#FF6B6B",    // 起始颜色
-        "#4ECDC4",    // 结束颜色
-        5,            // 步数
-        "ease-in-out" // 算法
-);
-
-// 应用渐变色到多系列图表
-for(
-int i = 0;
-i< 5;i++){
-PlotStyle gradientStyle = new PlotStyle()
-        .color(gradientColors[i])
-        .lineWidth(2.0)
-        .marker("o")
-        .markerSize(6.0);
-    
-    Plots.
-
-of(400,300)
-        .
-
-line(x, y1, gradientStyle)
-        .
-
-title("渐变色系列 "+(i +1))
-        .
-
-show();
-}
-
-// 5. 无障碍访问优化
-String[] originalColors = {"#FF0000", "#00FF00", "#0000FF"};
-if(!ColorPalette.
-
-isColorBlindFriendly(originalColors)){
-String[] adjustedColors = ColorPalette.adjustForColorBlindness(
-        originalColors, "deuteranopia"  // 绿色盲
-);
-
-// 使用调整后的颜色创建图表
-    for(
-int i = 0;
-i<adjustedColors.length;i++){
-PlotStyle accessibleStyle = new PlotStyle()
-        .color(adjustedColors[i])
-        .lineWidth(3.0)
-        .marker("s");
-        
-        Plots.
-
-of(400,300)
-            .
-
-line(x, y1, accessibleStyle)
-            .
-
-title("无障碍优化颜色 "+(i +1))
-        .
-
-show();
-    }
-            }
-
-// 6. 语义化颜色使用
-String successColor = ColorPalette.getSemanticColor("success", 3);
-String warningColor = ColorPalette.getSemanticColor("warning", 4);
-String errorColor = ColorPalette.getSemanticColor("error", 5);
-
-PlotStyle successStyle = new PlotStyle().color(successColor).lineWidth(3.0);
-PlotStyle warningStyle = new PlotStyle().color(warningColor).lineWidth(3.0);
-PlotStyle errorStyle = new PlotStyle().color(errorColor).lineWidth(3.0);
-
-Plots.
-
-of(800,400)
-    .
-
-line(x, y1, successStyle)
-    .
-
-line(x, y2, warningStyle)
-    .
-
-title("语义化颜色示例")
-    .
-
-show();
+String color = ColorPalette.getColor("echarts", 2);
+String[] gradient = ColorPalette.generateAdvancedGradient(
+        "#FF6B6B", "#4ECDC4", 5, "ease-in-out");
+Plots.of(400, 300)
+    .line(x, y1, new PlotStyle().color(gradient[2]).marker("o"))
+    .title("渐变取色示例")
+    .show();
 ```
 
 ### 主题系统 / Theme System
 
-[`ThemeManager`](../../src/main/java/com/reremouse/lab/math/viz/ThemeManager.java) 提供完整的主题管理功能，支持14种内置主题和自定义主题创建。
+二维：`Plots.of(..., "dark")`、`IPlot.theme(String)`、`IPlot.applyTheme(String)`，`registerTheme` / `createGradientTheme` / `createMonochromeTheme` 的参数类型为 **`EchartsThemeManager.CustomTheme`**。
+
+内置/ECharts 侧主题常量见源码 [`EchartsThemeManager`](../src/main/java/com/yishape/lab/math/plot/echarts/EchartsThemeManager.java)；JavaFX 侧见 [`JavaFxThemeManager`](../src/main/java/com/yishape/lab/math/plot/javafx/JavaFxThemeManager.java)。
+
+以下表格为常用 **`theme(String)` 名称**，具体效果以后端实现为准。
 
 #### 内置主题列表 / Built-in Themes
 
@@ -2272,216 +1913,32 @@ show();
 #### 主题使用示例 / Theme Usage Examples
 
 ```java
-
 import com.yishape.lab.math.linalg.Linalg;
-import com.yishape.lab.math.viz.PlotStyle;
-import com.yishape.lab.math.viz.ThemeManager;
+import com.yishape.lab.math.plot.PlotStyle;
 
-// 1. 基础主题应用
 IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 IVector<Double> sales = Linalg.vector(new double[]{100, 120, 110, 140, 130, 160, 150, 180, 170, 200});
 IVector<Double> profit = Linalg.vector(new double[]{20, 25, 22, 30, 28, 35, 32, 40, 38, 45});
 
 // 深色主题
-Plots.
+Plots.of(800, 600, "dark").line(x, sales).title("深色主题").xlabel("月份").ylabel("销售额").show();
+Plots.of(800, 600, "academic").scatter(x, profit).title("学术风格利润分析").show();
 
-of(800,600,"dark")
-    .
+Plots.of()
+        .createGradientTheme("sunset", "#FF6B6B", "#4ECDC4", "#F8F9FA")
+        .theme("sunset")
+        .line(x, sales)
+        .title("渐变注册主题 sunset")
+        .show();
 
-line(x, sales)
-    .
+Plots.of(800, 600, "vintage")
+        .line(x, sales, new PlotStyle().color("#FF6B6B").marker("o").lineWidth(2.5))
+        .title("vintage + PlotStyle")
+        .show();
 
-title("深色主题销售数据")
-    .
-
-xlabel("月份")
-    .
-
-ylabel("销售额")
-    .
-
-show();
-
-// 学术主题
-Plots.
-
-of(800,600,"academic")
-    .
-
-scatter(x, profit)
-    .
-
-title("学术风格利润分析")
-    .
-
-xlabel("月份")
-    .
-
-ylabel("利润")
-    .
-
-show();
-
-// 2. 智能主题推荐
-String recommendedTheme = ThemeManager.recommendTheme(
-        "business",      // 数据类型：business, scientific, creative, academic
-        "line",          // 图表类型
-        "professional"   // 用户偏好：professional, colorful, minimal
-);
-// 推荐结果: "business"
-
-Plots.
-
-of(800,600,recommendedTheme)
-    .
-
-line(x, sales)
-    .
-
-line(x, profit)
-    .
-
-title("智能推荐主题: "+recommendedTheme)
-    .
-
-legend(true)
-    .
-
-show();
-
-// 3. 主题样式融合
-PlotStyle customStyle = new PlotStyle()
-        .color("#FF6B6B")
-        .lineWidth(2.5)
-        .marker("o")
-        .markerSize(6.0);
-
-// 将自定义样式与主题融合
-PlotStyle themedStyle = ThemeManager.applyThemeToStyle(customStyle, "vintage");
-
-Plots.
-
-of(800,600,"vintage")
-    .
-
-line(x, sales, themedStyle)
-    .
-
-title("主题融合示例")
-    .
-
-show();
-
-// 4. 创建季节性主题
-ThemeManager.CustomTheme springTheme = ThemeManager.createSeasonalTheme("spring");
-ThemeManager.
-
-registerCustomTheme("mySpring",springTheme);
-
-Plots.
-
-of(800,600,"mySpring")
-    .
-
-scatter(x, sales)
-    .
-
-title("春季主题")
-    .
-
-show();
-
-// 5. 创建行业主题
-ThemeManager.CustomTheme financeTheme = ThemeManager.createIndustryTheme("finance");
-ThemeManager.
-
-registerCustomTheme("myFinance",financeTheme);
-
-Plots.
-
-of(800,600,"myFinance")
-    .
-
-line(x, sales)
-    .
-
-line(x, profit)
-    .
-
-title("金融行业主题")
-    .
-
-legend(true)
-    .
-
-show();
-
-// 6. 主题对比展示
-String[] themes = {"light", "dark", "academic", "business", "vintage", "futuristic"};
-for(
-String theme :themes){
-        Plots.
-
-of(400,300,theme)
-        .
-
-line(x, sales)
-        .
-
-title("主题: "+theme)
-        .
-
-show();
+for (String t : new String[] {"light", "dark", "academic", "business", "vintage", "futuristic"}) {
+        Plots.of(400, 300, t).line(x, sales).title("主题: " + t).show();
 }
-
-// 7. 渐变主题创建
-ThemeManager.CustomTheme gradientTheme = ThemeManager.createGradientTheme(
-        "sunset",           // 主题名称
-        "#FF6B6B",          // 起始颜色
-        "#4ECDC4",          // 结束颜色
-        "#F8F9FA"           // 背景颜色
-);
-ThemeManager.
-
-registerCustomTheme("sunset",gradientTheme);
-
-Plots.
-
-of(800,600,"sunset")
-    .
-
-line(x, sales)
-    .
-
-title("自定义渐变主题")
-    .
-
-show();
-
-// 8. 无障碍访问主题
-ThemeManager.CustomTheme accessibilityTheme = ThemeManager.createAccessibilityTheme();
-ThemeManager.
-
-registerCustomTheme("accessible",accessibilityTheme);
-
-Plots.
-
-of(800,600,"accessible")
-    .
-
-line(x, sales)
-    .
-
-line(x, profit)
-    .
-
-title("无障碍访问主题")
-    .
-
-legend(true)
-    .
-
-show();
 ```
 
 
@@ -2492,7 +1949,7 @@ show();
 ### 数据处理能力 / Data Processing Capabilities
 - **大规模数据支持** / **Large-scale Data Support**: 支持处理大量数据点 / Supports processing large amounts of data points
 - **内存优化** / **Memory Optimization**: 高效的数据结构设计 / Efficient data structure design
-- **渲染性能** / **Rendering Performance**: 基于ECharts的高性能渲染 / High-performance rendering based on ECharts
+- **渲染性能** / **Rendering Performance**：JavaFX 与 ECharts 路径不同；三维 ECharts GL 走 WebGL
 
 ### 交互功能 / Interactive Features
 - **缩放和平移** / **Zoom and Pan**: 支持图表的缩放和平移操作 / Supports zoom and pan operations on charts
@@ -2578,6 +2035,7 @@ try {
 - **自定义主题** / **Custom Themes**: 支持自定义主题和样式 / Supports custom themes and styles
 - **插件系统** / **Plugin System**: 支持插件扩展功能 / Supports plugin extension functionality
 - **导出格式** / **Export Formats**: 支持更多导出格式（PNG、SVG等） / Supports more export formats (PNG, SVG, etc.)
+
 
 ## 应用场景 / Application Scenarios
 

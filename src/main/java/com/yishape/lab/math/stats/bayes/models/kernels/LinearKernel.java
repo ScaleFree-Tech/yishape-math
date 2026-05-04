@@ -77,6 +77,12 @@ public class LinearKernel implements GaussianProcess.KernelFunction {
         return -1; // 依赖于输入维度
     }
     
+    /**
+     * 获取核函数名称
+     * Get kernel function name
+     *
+     * @return 核函数名称 / Kernel function name
+     */
     @Override
     public String getName() {
         return "Linear";

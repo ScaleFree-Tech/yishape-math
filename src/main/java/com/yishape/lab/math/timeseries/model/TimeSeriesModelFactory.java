@@ -325,6 +325,14 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据配置创建ARIMA模型 / Create ARIMA Model from Configuration
+     * <p>
+     * 从ModelConfig中提取ARIMA参数并创建对应的模型。
+     * Extract ARIMA parameters from ModelConfig and create corresponding model.
+     * </p>
+     *
+     * @param data 时间序列数据 / Time series data
+     * @param config 模型配置，包含p、d、q等参数 / Model configuration containing p, d, q parameters
+     * @return ARIMA模型 / ARIMA model
      */
     private static ITimeSeriesModel createARIMAModelFromConfig(IVector<Double> data, ModelConfig config) {
         Map<String, Object> params = config.getParameters();
@@ -347,6 +355,15 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据配置创建指数平滑模型 / Create Exponential Smoothing Model from Configuration
+     * <p>
+     * 从ModelConfig中提取指数平滑参数并创建对应的模型。
+     * Extract exponential smoothing parameters from ModelConfig and create corresponding model.
+     * </p>
+     *
+     * @param data 时间序列数据 / Time series data
+     * @param config 模型配置，包含alpha等参数 / Model configuration containing alpha parameter
+     * @return 指数平滑模型 / Exponential smoothing model
+     * @throws UnsupportedOperationException 如果模型尚未实现 / If model is not yet implemented
      */
     private static ITimeSeriesModel createExponentialSmoothingModelFromConfig(IVector<Double> data, ModelConfig config) {
         // 这里将在后续实现中完成 / This will be completed in subsequent implementations
@@ -355,6 +372,15 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据配置创建GARCH模型 / Create GARCH Model from Configuration
+     * <p>
+     * 从ModelConfig中提取GARCH参数并创建对应的模型。
+     * Extract GARCH parameters from ModelConfig and create corresponding model.
+     * </p>
+     *
+     * @param data 时间序列数据 / Time series data
+     * @param config 模型配置，包含p、q等参数 / Model configuration containing p, q parameters
+     * @return GARCH模型 / GARCH model
+     * @throws UnsupportedOperationException 如果模型尚未实现 / If model is not yet implemented
      */
     private static ITimeSeriesModel createGARCHModelFromConfig(IVector<Double> data, ModelConfig config) {
         // 这里将在后续实现中完成 / This will be completed in subsequent implementations
@@ -363,6 +389,15 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据配置创建状态空间模型 / Create State Space Model from Configuration
+     * <p>
+     * 从ModelConfig中提取状态空间模型参数并创建对应的模型。
+     * Extract state space model parameters from ModelConfig and create corresponding model.
+     * </p>
+     *
+     * @param data 时间序列数据 / Time series data
+     * @param config 模型配置，包含sigmaEta、sigmaZeta、sigmaEpsilon等参数 / Model configuration containing sigmaEta, sigmaZeta, sigmaEpsilon parameters
+     * @return 状态空间模型 / State space model
+     * @throws UnsupportedOperationException 如果模型尚未实现 / If model is not yet implemented
      */
     private static ITimeSeriesModel createStateSpaceModelFromConfig(IVector<Double> data, ModelConfig config) {
         // 这里将在后续实现中完成 / This will be completed in subsequent implementations
@@ -371,6 +406,15 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据配置创建VAR模型 / Create VAR Model from Configuration
+     * <p>
+     * 从ModelConfig中提取VAR模型参数并创建对应的模型。
+     * Extract VAR model parameters from ModelConfig and create corresponding model.
+     * </p>
+     *
+     * @param data 多变量时间序列数据 / Multivariate time series data
+     * @param config 模型配置，包含p等参数 / Model configuration containing p parameter
+     * @return VAR模型 / VAR model
+     * @throws UnsupportedOperationException 如果模型尚未实现 / If model is not yet implemented
      */
     private static ITimeSeriesModel createVARModelFromConfig(IMatrix<Double> data, ModelConfig config) {
         // 这里将在后续实现中完成 / This will be completed in subsequent implementations
@@ -379,6 +423,14 @@ public class TimeSeriesModelFactory {
     
     /**
      * 根据类型创建模型 / Create Model by Type
+     * <p>
+     * 根据指定的模型类型创建时间序列模型，使用默认参数。
+     * Create time series model according to specified model type with default parameters.
+     * </p>
+     *
+     * @param data 时间序列数据 / Time series data
+     * @param modelType 模型类型 / Model type
+     * @return 时间序列模型，如果类型不支持则返回null / Time series model, returns null if type is not supported
      */
     private static ITimeSeriesModel createModelByType(IVector<Double> data, ITimeSeriesModel.ModelType modelType) {
         switch (modelType) {

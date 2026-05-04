@@ -17,27 +17,56 @@ import java.util.Map;
 public class ExpressivenessFeatureResult {
 
     // 情感维度特征 / Emotional dimension features
-    private final double valence;                  // 效价 (-1.0 ~ 1.0)
-    private final double arousal;                  // 唤醒度 (0.0 ~ 1.0)
-    private final double dominance;                // 支配度 (0.0 ~ 1.0)
+    /** 效价 (-1.0 ~ 1.0) / Valence (-1.0 ~ 1.0) */
+    private final double valence;
+    /** 唤醒度 (0.0 ~ 1.0) / Arousal (0.0 ~ 1.0) */
+    private final double arousal;
+    /** 支配度 (0.0 ~ 1.0) / Dominance (0.0 ~ 1.0) */
+    private final double dominance;
 
     // 音乐风格特征 / Musical style features
-    private final double energy;                   // 音乐能量强度 (0.0 ~ 1.0)
-    private final double danceability;             // 可舞性 (0.0 ~ 1.0)
-    private final double acousticness;             // 原声性 (0.0 ~ 1.0)
-    private final double instrumentalness;         // 器乐性 (0.0 ~ 1.0)
-    private final double liveness;                 // 现场感 (0.0 ~ 1.0)
-    private final double speechiness;              // 语音性 (0.0 ~ 1.0)
+    /** 音乐能量强度 (0.0 ~ 1.0) / Energy (0.0 ~ 1.0) */
+    private final double energy;
+    /** 可舞性 (0.0 ~ 1.0) / Danceability (0.0 ~ 1.0) */
+    private final double danceability;
+    /** 原声性 (0.0 ~ 1.0) / Acousticness (0.0 ~ 1.0) */
+    private final double acousticness;
+    /** 器乐性 (0.0 ~ 1.0) / Instrumentalness (0.0 ~ 1.0) */
+    private final double instrumentalness;
+    /** 现场感 (0.0 ~ 1.0) / Liveness (0.0 ~ 1.0) */
+    private final double liveness;
+    /** 语音性 (0.0 ~ 1.0) / Speechiness (0.0 ~ 1.0) */
+    private final double speechiness;
 
     // 动态特征 / Dynamic features
-    private final double[] dynamicRange;           // 动态范围变化
-    private final double[] spectralCentroidEvolution; // 频谱重心演化
-    private final double emotionalIntensity;       // 情感强度
-    private final String predictedMood;            // 预测情绪标签
-    private final double confidence;              // 置信度 (0.0 ~ 1.0)
+    /** 动态范围变化 / Dynamic range */
+    private final double[] dynamicRange;
+    /** 频谱重心演化 / Spectral centroid evolution */
+    private final double[] spectralCentroidEvolution;
+    /** 情感强度 / Emotional intensity */
+    private final double emotionalIntensity;
+    /** 预测情绪标签 / Predicted mood label */
+    private final String predictedMood;
+    /** 置信度 (0.0 ~ 1.0) / Confidence (0.0 ~ 1.0) */
+    private final double confidence;
 
     /**
      * 构造函数 / Constructor
+     *
+     * @param valence 效价 / Valence
+     * @param arousal 唤醒度 / Arousal
+     * @param dominance 支配度 / Dominance
+     * @param energy 音乐能量强度 / Energy
+     * @param danceability 可舞性 / Danceability
+     * @param acousticness 原声性 / Acousticness
+     * @param instrumentalness 器乐性 / Instrumentalness
+     * @param liveness 现场感 / Liveness
+     * @param speechiness 语音性 / Speechiness
+     * @param dynamicRange 动态范围变化 / Dynamic range
+     * @param spectralCentroidEvolution 频谱重心演化 / Spectral centroid evolution
+     * @param emotionalIntensity 情感强度 / Emotional intensity
+     * @param predictedMood 预测情绪标签 / Predicted mood label
+     * @param confidence 置信度 / Confidence
      */
     public ExpressivenessFeatureResult(double valence, double arousal, double dominance,
                                      double energy, double danceability, double acousticness,
@@ -161,6 +190,8 @@ public class ExpressivenessFeatureResult {
 
     /**
      * 判断是否为正面情感 / Check if positive emotion
+     *
+     * @return 效价大于0时返回true / True if valence > 0
      */
     public boolean isPositiveEmotion() {
         return valence > 0.0;
@@ -168,6 +199,8 @@ public class ExpressivenessFeatureResult {
 
     /**
      * 判断是否为高能量音乐 / Check if high energy music
+     *
+     * @return 能量大于0.7时返回true / True if energy > 0.7
      */
     public boolean isHighEnergy() {
         return energy > 0.7;
@@ -175,6 +208,8 @@ public class ExpressivenessFeatureResult {
 
     /**
      * 判断是否适合跳舞 / Check if suitable for dancing
+     *
+     * @return 可舞性大于0.6时返回true / True if danceability > 0.6
      */
     public boolean isSuitableForDancing() {
         return danceability > 0.6;
@@ -182,6 +217,8 @@ public class ExpressivenessFeatureResult {
 
     /**
      * 判断是否为原声音乐 / Check if acoustic music
+     *
+     * @return 原声性大于0.5时返回true / True if acousticness > 0.5
      */
     public boolean isAcousticMusic() {
         return acousticness > 0.5;
@@ -189,6 +226,8 @@ public class ExpressivenessFeatureResult {
 
     /**
      * 判断是否为器乐音乐 / Check if instrumental music
+     *
+     * @return 器乐性大于0.5时返回true / True if instrumentalness > 0.5
      */
     public boolean isInstrumentalMusic() {
         return instrumentalness > 0.5;
@@ -209,6 +248,11 @@ public class ExpressivenessFeatureResult {
         }
     }
 
+    /**
+     * 获取置信度 / Get confidence
+     *
+     * @return 置信度 / Confidence
+     */
     public double getConfidence() {
         return confidence;
     }
@@ -275,6 +319,8 @@ public class ExpressivenessFeatureResult {
     
     /**
      * 获取附加特征 / Get additional features
+     *
+     * @return 附加特征映射 / Map of additional features
      */
     public Map<String, Double> getAdditionalFeatures() {
         Map<String, Double> additionalFeatures = new HashMap<>();
@@ -287,6 +333,9 @@ public class ExpressivenessFeatureResult {
     
     /**
      * 获取特定附加特征 / Get specific additional feature
+     *
+     * @param name 特征名称 / Feature name
+     * @return 特征值，如果不存在则返回null / Feature value, or null if not found
      */
     public Double getAdditionalFeature(String name) {
         Map<String, Double> additionalFeatures = getAdditionalFeatures();

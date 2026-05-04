@@ -94,6 +94,13 @@ public class ChordAnalyzerImpl implements IChordAnalyzer {
 
     private final KeyAnalyzerImpl keyAnalyzer;
 
+    /**
+     * 构造和弦分析器 / Construct a Chord Analyzer
+     * <p>
+     * 初始化和弦分析器，创建调性分析器实例用于色度特征分析。
+     * Initializes the chord analyzer with a key analyzer instance for chroma feature analysis.
+     * </p>
+     */
     public ChordAnalyzerImpl() {
         this.keyAnalyzer = new KeyAnalyzerImpl();
     }

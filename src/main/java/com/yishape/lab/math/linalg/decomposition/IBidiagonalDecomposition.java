@@ -9,8 +9,10 @@ import com.yishape.lab.util.Tuple3;
  * <p>
  * Bidiagonal decomposition transforms a matrix A into the form A = U * B * V^T,
  * where B is a bidiagonal matrix, and U and V are orthogonal matrices.
+ * For A with shape {@code m × n}, the bundled decomposition returns {@code B} as
+ * <b>square</b> {@code min(m,n) × min(m,n)} (the compact bidiagonal core), not {@code m × n}.
  * </p>
- * 
+ *
  * <h3>Key Features</h3>
  * <ul>
  *   <li>Householder reflections for numerical stability</li>
@@ -18,13 +20,15 @@ import com.yishape.lab.util.Tuple3;
  *   <li>Efficient caching of computed results</li>
  *   <li>Unified interface with other decompositions</li>
  * </ul>
- * 
+ *
  * <h3>References</h3>
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
- * 
+ *
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  */
 public interface IBidiagonalDecomposition extends IMatrixDecomposition<Tuple3<IMatrix<Double>, IMatrix<Double>, IMatrix<Double>>> {

@@ -3,11 +3,13 @@ package com.yishape.lab.math.linalg.decomposition;
 /**
  * Exception thrown when attempting to decompose a singular matrix.
  * <p>
- * A singular matrix is a square matrix that does not have an inverse, 
+ * A singular matrix is a square matrix that does not have an inverse,
  * meaning its determinant is zero. Many matrix decomposition algorithms
  * require non-singular matrices to produce meaningful results.
  * </p>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class SingularMatrixException extends MatrixDecompositionException {

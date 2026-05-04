@@ -29,6 +29,13 @@ public class WishartDistributionTest {
     }
     
     @Test
+    void testVectorApiMatchesMatrixOrder() {
+        assertEquals(scaleMatrix.rows() * scaleMatrix.cols(), wishart.getDimension());
+        assertEquals(scaleMatrix.rows(), wishart.getMatrixOrder());
+        assertEquals(wishart.getDimension(), wishart.sample().size());
+    }
+
+    @Test
     void testConstructorValidation() {
         // 测试有效构造函数
         assertDoesNotThrow(() -> new WishartDistribution(3.0, scaleMatrix));

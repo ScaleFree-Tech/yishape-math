@@ -7,15 +7,35 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
+ * 快速傅里叶变换工具类 / Fast Fourier Transform Utility Class
+ * <p>
+ * 提供离散傅里叶变换（DFT）的快速算法实现，支持复数信号和实数信号的
+ * 正向和逆向变换，以及幅度谱、相位谱、功率谱的计算。
+ * </p>
+ * <p>
+ * Provides efficient implementations of Fast Fourier Transform (FFT) algorithms,
+ * supporting forward and inverse transforms for both complex and real signals,
+ * as well as magnitude, phase, and power spectrum calculations.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class RereFFT {
 
     private static final Logger log = LoggerFactory.getLogger(RereFFT.class);
 
-    
-    // 快速傅里叶变换
+    /**
+     * 快速傅里叶变换（递归实现）/ Fast Fourier Transform (Recursive Implementation)
+     * <p>
+     * 对输入的复数数组进行离散傅里叶变换，数组长度必须是2的幂。
+     * Performs discrete Fourier transform on input complex array with length that must be a power of 2.
+     * </p>
+     *
+     * @param x 输入的复数数组 / Input complex array
+     * @return 变换后的复数数组 / Transformed complex array
+     */
     public static Complex[] fft(Complex[] x) {
         int n = x.length;
         
@@ -55,7 +75,17 @@ public class RereFFT {
         return y;
     }
     
-    // 快速傅里叶逆变换
+    // 快速傅里叶逆变换 / Inverse Fast Fourier Transform
+    /**
+     * 快速傅里叶逆变换 / Inverse Fast Fourier Transform
+     * <p>
+     * 对输入的复数频谱进行逆变换，恢复时域信号。通过取共轭、FFT、再取共轭并缩放实现。
+     * Performs inverse FFT by conjugating, computing FFT, then conjugating and scaling.
+     * </p>
+     *
+     * @param x 输入的复数频谱 / Input complex frequency spectrum
+     * @return 逆变换后的时域复数信号 / Inverse transformed time-domain complex signal
+     */
     public static Complex[] ifft(Complex[] x) {
         int n = x.length;
         Complex[] conjugated = new Complex[n];
@@ -223,6 +253,9 @@ public class RereFFT {
 
     /**
      * 计算大于等于n的最小2的幂 / Calculate smallest power of 2 >= n
+     *
+     * @param n 输入的正整数 / Input positive integer
+     * @return 大于等于n的最小2的幂 / Smallest power of 2 >= n
      */
     private static int nextPowerOfTwo(int n) {
         if (n <= 0) return 1;
@@ -235,7 +268,16 @@ public class RereFFT {
         return power;
     }
     
-    // 测试方法
+    // 测试方法 / Test method
+    /**
+     * 主测试方法 / Main test method
+     * <p>
+     * 测试FFT和IFFT的正确性，创建测试信号并进行变换。
+     * Tests FFT and IFFT correctness by creating test signals and performing transforms.
+     * </p>
+     *
+     * @param args 命令行参数 / Command line arguments
+     */
     public static void main(String[] args) {
         // 创建测试信号：2个正弦波的叠加
         int N = 8; // 必须是2的幂

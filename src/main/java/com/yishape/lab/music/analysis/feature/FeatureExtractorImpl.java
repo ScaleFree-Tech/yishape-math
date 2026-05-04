@@ -111,6 +111,13 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     private final Map<String, Object> featureCache;
     private String cachedAudioKey; // Store a key instead of the entire AudioData object
 
+    /**
+     * 默认构造函数 / Default constructor
+     * <p>
+     * 初始化特征提取器，创建所有必要的分析器实例并设置默认参数。
+     * Initializes the feature extractor, creating all necessary analyzer instances and setting default parameters.
+     * </p>
+     */
     public FeatureExtractorImpl() {
         this.beatAnalyzer = new BeatAnalyzerImpl();
         this.keyAnalyzer = new KeyAnalyzerImpl();
@@ -126,6 +133,18 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
         return extractMusicFeatures(audioData, getDefaultParameters());
     }
 
+    /**
+     * 提取音乐特征 / Extract music features
+     * <p>
+     * 从音频数据中提取完整的音乐特征集，包括节奏、调性、结构和表现力特征。
+     * Extracts a complete set of music features from audio data, including rhythm, tonal, structure, and expressiveness features.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 音乐特征结果 / Music feature result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public MusicFeatureResult extractMusicFeatures(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -163,6 +182,18 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
         return extractRhythmFeatures(audioData, getDefaultParameters());
     }
 
+    /**
+     * 提取节奏特征 / Extract rhythm features
+     * <p>
+     * 从音频数据中提取节奏特征，包括节拍、力度、节奏模式和稳定性。
+     * Extracts rhythm features from audio data, including tempo, strength, rhythm pattern, and stability.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 节奏特征结果 / Rhythm feature result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public RhythmFeatureResult extractRhythmFeatures(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -216,6 +247,18 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
         return extractTonalFeatures(audioData, getDefaultParameters());
     }
 
+    /**
+     * 提取调性特征 / Extract tonal features
+     * <p>
+     * 从音频数据中提取调性特征，包括调式、和弦、色度向量和调性稳定性。
+     * Extracts tonal features from audio data, including mode, chords, chroma vector, and tonal stability.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 调性特征结果 / Tonal feature result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public TonalFeatureResult extractTonalFeatures(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -293,6 +336,18 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
         return extractStructureFeatures(audioData, getDefaultParameters());
     }
 
+    /**
+     * 提取结构特征 / Extract structure features
+     * <p>
+     * 从音频数据中提取音乐结构特征，包括段落、重复性和结构复杂度。
+     * Extracts music structure features from audio data, including segments, repetitiveness, and structural complexity.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 结构特征结果 / Structure feature result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public StructureFeatureResult extractStructureFeatures(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         if (audioData == null) {
@@ -446,6 +501,18 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
         return extractExpressivenessFeatures(audioData, getDefaultParameters());
     }
 
+    /**
+     * 提取表现力特征 / Extract expressiveness features
+     * <p>
+     * 从音频数据中提取表现力特征，包括情感效价、唤醒度、能量、舞蹈性等。
+     * Extracts expressiveness features from audio data, including valence, arousal, energy, danceability, etc.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 表现力特征结果 / Expressiveness feature result
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     @Override
     public ExpressivenessFeatureResult extractExpressivenessFeatures(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         // 检查参�?/ Check parameters
@@ -623,11 +690,14 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
 
     // 缓存辅助方法 / Cache helper methods
     /**
-     * 检查缓存是否有�?/ Check if cache is valid
+     * 检查缓存有效性 / Check cache validity
      * <p>
-     * 使用音频数据的指纹而不是整个对象进行比较，提高性能和可靠�? Use audio fingerprint instead of entire
-     * object for comparison, improving performance and reliability
+     * 使用音频数据的指纹而不是整个对象进行比较，提高性能和可靠性。
+     * Uses audio fingerprint instead of entire object for comparison, improving performance and reliability.
      * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 缓存是否有效 / Whether cache is valid
      */
     private boolean isCacheValid(AudioData audioData) {
         if (cachedAudioKey == null || audioData == null) {
@@ -639,11 +709,13 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 更新缓存状�?/ Update cache status
+     * 更新缓存状态 / Update cache status
      * <p>
-     * 存储音频数据的指纹而不是整个对象，减少内存占用 Store audio fingerprint instead of entire object,
-     * reducing memory footprint
+     * 存储音频数据的指纹而不是整个对象，减少内存占用。
+     * Stores audio fingerprint instead of entire object, reducing memory footprint.
      * </p>
+     *
+     * @param audioData 音频数据 / Audio data
      */
     private void updateCache(AudioData audioData) {
         if (audioData != null) {
@@ -678,11 +750,15 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 获取缓存键/ Get cache key
+     * 获取缓存键 / Get cache key
      * <p>
-     * 生成包含音频指纹和特征类型的缓存键 Generate cache key including audio fingerprint and
-     * feature type
+     * 生成包含音频指纹和特征类型的缓存键。
+     * Generates cache key including audio fingerprint and feature type.
      * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param featureType 特征类型 / Feature type
+     * @return 缓存键 / Cache key
      */
     private String getCacheKey(AudioData audioData, String featureType) {
         String audioFingerprint = generateAudioFingerprint(audioData);
@@ -753,6 +829,15 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
 
     /**
      * 计算亮度 / Calculate brightness
+     * <p>
+     * 使用频谱质心作为亮度的代理指标。
+     * Uses spectral centroid as a proxy for brightness.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 亮度值(0.0-1.0) / Brightness value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateBrightness(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         String brightnessKey = getCacheKey(audioData, "brightness");
@@ -776,7 +861,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算舞蹈�?/ Calculate danceability
+     * 计算舞蹈性 / Calculate danceability
+     * <p>
+     * 结合节拍强度和稳定性计算舞蹈性指标。
+     * Calculates danceability by combining beat strength and stability.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 舞蹈性值(0.0-1.0) / Danceability value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateDanceability(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         String danceabilityKey = getCacheKey(audioData, "danceability");
@@ -800,7 +894,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算原声�?/ Calculate acousticness
+     * 计算原声度 / Calculate acousticness
+     * <p>
+     * 基于频谱特征计算原声度指标。原声音乐通常有较低的频谱质心和频谱滚降点。
+     * Calculates acousticness based on spectral features. Acoustic music typically has lower spectral centroid and rolloff.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 原声度值(0.0-1.0) / Acousticness value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateAcousticness(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         String acousticnessKey = getCacheKey(audioData, "acousticness");
@@ -892,7 +995,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算现场�?/ Calculate liveness
+     * 计算现场感 / Calculate liveness
+     * <p>
+     * 基于动态范围和频谱变化计算现场感指标。现场录音通常有更大的动态范围和更多的频谱变化。
+     * Calculates liveness based on dynamic range and spectral variation. Live recordings typically have greater dynamic range and more spectral variation.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 现场感值(0.0-1.0) / Liveness value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateLiveness(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         String livenessKey = getCacheKey(audioData, "liveness");
@@ -994,7 +1106,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算效价 (情感正负�? / Calculate valence (emotional positivity/negativity)
+     * 计算效价（情感正负性）/ Calculate valence (emotional positivity/negativity)
+     * <p>
+     * 使用多帧分析计算情感效价，基于频谱特征和RMS能量。
+     * Calculates emotional valence using multi-frame analysis, based on spectral features and RMS energy.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 效价值(-1.0到1.0) / Valence value (-1.0 to 1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateValence(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         try {
@@ -1077,7 +1198,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算唤醒�?(情感激动程�? / Calculate arousal (emotional excitement level)
+     * 计算唤醒度（情感激动程度）/ Calculate arousal (emotional excitement level)
+     * <p>
+     * 使用RMS能量和零交叉率的组合作为唤醒度指标。
+     * Uses combination of RMS energy and zero crossing rate as arousal indicator.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 唤醒度值(0.0-1.0) / Arousal value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateArousal(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         try {
@@ -1096,7 +1226,16 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算支配�?(情感控制�? / Calculate dominance (emotional control sense)
+     * 计算支配度（情感控制感）/ Calculate dominance (emotional control sense)
+     * <p>
+     * 使用动态范围作为支配度的指标。
+     * Uses dynamic range as indicator for dominance.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 支配度值(0.0-1.0) / Dominance value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateDominance(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         try {
@@ -1116,6 +1255,15 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
 
     /**
      * 计算能量 / Calculate energy
+     * <p>
+     * 使用RMS作为能量指标，结合频谱滚降进行加权组合。
+     * Uses RMS as energy indicator, combined with spectral rolloff using weighted combination.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 能量值(0.0-1.0) / Energy value (0.0-1.0)
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private double calculateEnergy(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         try {
@@ -1257,7 +1405,14 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 估算结构复杂度
+     * 估算结构复杂度 / Estimate structural complexity
+     * <p>
+     * 基于动态范围和频谱通量估算音乐的结构复杂度。
+     * Estimates music structural complexity based on dynamic range and spectral flux.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return 结构复杂度值(0.0-1.0) / Structural complexity value (0.0-1.0)
      */
     private double estimateStructuralComplexity(AudioData audioData) {
         try {
@@ -1275,7 +1430,15 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算节拍强度 - 基于节拍位置的能量峰值
+     * 计算节拍强度 / Calculate beat strength
+     * <p>
+     * 基于节拍位置的能量峰值计算节拍强度。
+     * Calculates beat strength based on energy peaks at beat positions.
+     * </p>
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param beatTimes 节拍时间数组 / Beat times array
+     * @return 节拍强度值 / Beat strength value
      */
     private double calculateBeatStrength(AudioData audioData, double[] beatTimes) {
         if (beatTimes == null || beatTimes.length == 0) {
@@ -1310,7 +1473,14 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算节奏模式 - 基于实际节拍间隔
+     * 计算节奏模式 / Calculate rhythm pattern
+     * <p>
+     * 基于实际节拍间隔计算节奏模式。
+     * Calculates rhythm pattern based on actual beat intervals.
+     * </p>
+     *
+     * @param beatTimes 节拍时间数组 / Beat times array
+     * @return 节奏模式数组 / Rhythm pattern array
      */
     private double[] calculateRhythmPattern(double[] beatTimes) {
         if (beatTimes == null || beatTimes.length < 2) {
@@ -1338,7 +1508,15 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 验证并修正节拍时间数组
+     * 验证并修正节拍时间数组 / Validate and correct beat times array
+     * <p>
+     * 过滤并修正超出音频持续时间的节拍时间。
+     * Filters and corrects beat times that exceed audio duration.
+     * </p>
+     *
+     * @param beatTimes 节拍时间数组 / Beat times array
+     * @param audioDuration 音频持续时间 / Audio duration
+     * @return 修正后的节拍时间数组 / Corrected beat times array
      */
     private double[] validateBeatTimes(double[] beatTimes, double audioDuration) {
         if (beatTimes == null || beatTimes.length == 0) {
@@ -1366,7 +1544,14 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算调性重心
+     * 计算调性重心 / Calculate tonal centroid
+     * <p>
+     * 基于色度向量计算调性重心位置。
+     * Calculates tonal centroid position based on chroma vector.
+     * </p>
+     *
+     * @param chromaVector 色度向量 / Chroma vector
+     * @return 调性重心值 / Tonal centroid value
      */
     private double calculateTonalCentroid(double[] chromaVector) {
         if (chromaVector == null || chromaVector.length == 0) {
@@ -1385,7 +1570,14 @@ public class FeatureExtractorImpl implements IFeatureExtractor {
     }
 
     /**
-     * 计算和声复杂度
+     * 计算和声复杂度 / Calculate harmonic complexity
+     * <p>
+     * 基于和弦数量和变化频率计算和声复杂度。
+     * Calculates harmonic complexity based on chord count and change frequency.
+     * </p>
+     *
+     * @param chordResults 和弦检测结果列表 / Chord detection result list
+     * @return 和声复杂度值(0.0-1.0) / Harmonic complexity value (0.0-1.0)
      */
     private double calculateHarmonicComplexity(List<ChordDetectionResult> chordResults) {
         if (chordResults == null || chordResults.isEmpty()) {

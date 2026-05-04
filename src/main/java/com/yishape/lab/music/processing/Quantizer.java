@@ -341,6 +341,14 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 执行量化操作 / Perform quantization
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param gridResolution 网格分辨率 / Grid resolution
+     * @param strength 量化强度 / Quantization strength
+     * @param swing 摇摆量 / Swing amount
+     * @param parameters 参数映射 / Parameter map
+     * @return 量化后的音频数据 / Quantized audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performQuantization(AudioData audioData, String gridResolution, int strength,
                                         int swing, Map<String, Object> parameters) throws AudioProcessingException {
@@ -363,6 +371,11 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 检测音符起始点 / Detect note onsets
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param parameters 参数映射 / Parameter map
+     * @return 起始点事件列表 / List of onset events
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private List<OnsetEvent> detectOnsets(AudioData audioData, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -419,6 +432,11 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 计算频谱 / Compute spectrum
+     *
+     * @param samples 样本数组 / Sample array
+     * @param start 起始索引 / Start index
+     * @param windowSize 窗口大小 / Window size
+     * @return 频谱数组 / Spectrum array
      */
     private double[] computeSpectrum(double[] samples, int start, int windowSize) {
         double[] window = new double[windowSize];
@@ -451,6 +469,12 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 估计速度 / Estimate tempo
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param onsets 起始点列表 / List of onsets
+     * @param parameters 参数映射 / Parameter map
+     * @return 速度信息 / Tempo information
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private TempoInfo estimateTempo(AudioData audioData, List<OnsetEvent> onsets, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -467,6 +491,9 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 从起始点估计速度 / Estimate tempo from onsets
+     *
+     * @param onsets 起始点列表 / List of onsets
+     * @return 速度信息 / Tempo information
      */
     private TempoInfo estimateTempoFromOnsets(List<OnsetEvent> onsets) {
         if (onsets.size() < 4) {
@@ -501,6 +528,11 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 创建量化网格 / Create quantization grid
+     *
+     * @param tempoInfo 速度信息 / Tempo information
+     * @param gridResolution 网格分辨率 / Grid resolution
+     * @param swing 摇摆量 / Swing amount
+     * @return 量化网格 / Quantization grid
      */
     private QuantizationGrid createQuantizationGrid(TempoInfo tempoInfo, String gridResolution, int swing) {
         
@@ -512,6 +544,10 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 计算网格间隔 / Calculate grid interval
+     *
+     * @param beatDuration 拍时长 / Beat duration
+     * @param gridResolution 网格分辨率 / Grid resolution
+     * @return 网格间隔（秒）/ Grid interval in seconds
      */
     private double calculateGridInterval(double beatDuration, String gridResolution) {
         switch (gridResolution) {
@@ -527,6 +563,13 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 量化起始点 / Quantize onsets
+     *
+     * @param onsets 原始起始点列表 / Original onset list
+     * @param grid 量化网格 / Quantization grid
+     * @param strength 量化强度 / Quantization strength
+     * @param parameters 参数映射 / Parameter map
+     * @return 量化后的起始点列表 / Quantized onset list
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private List<OnsetEvent> quantizeOnsets(List<OnsetEvent> onsets, QuantizationGrid grid,
                                           int strength, Map<String, Object> parameters) throws AudioProcessingException {
@@ -576,6 +619,10 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 找到最近的网格点 / Find nearest grid point
+     *
+     * @param time 时间戳 / Timestamp
+     * @param grid 量化网格 / Quantization grid
+     * @return 最近的网格时间 / Nearest grid time
      */
     private double findNearestGridPoint(double time, QuantizationGrid grid) {
         double gridIndex = time / grid.interval;
@@ -594,6 +641,13 @@ public class Quantizer implements IMusicProcessor {
     
     /**
      * 重建音频 / Reconstruct audio
+     *
+     * @param originalAudio 原始音频 / Original audio
+     * @param originalOnsets 原始起始点列表 / Original onset list
+     * @param quantizedOnsets 量化后的起始点列表 / Quantized onset list
+     * @param parameters 参数映射 / Parameter map
+     * @return 重建的音频数据 / Reconstructed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData reconstructAudio(AudioData originalAudio, List<OnsetEvent> originalOnsets,
                                      List<OnsetEvent> quantizedOnsets, Map<String, Object> parameters) throws AudioProcessingException {
@@ -853,12 +907,21 @@ public class Quantizer implements IMusicProcessor {
     }
     
     // 实用方法实现
+    /**
+     * 初始化性能指标 / Initialize performance metrics
+     */
     private void initializePerformanceMetrics() {
         performanceMetrics.put("processingTime", 0.0);
         performanceMetrics.put("memoryUsage", 0.0);
         performanceMetrics.put("cpuUsage", 0.0);
     }
     
+    /**
+     * 更新统计信息 / Update statistics
+     *
+     * @param input 输入音频 / Input audio
+     * @param output 输出音频 / Output audio
+     */
     private void updateStatistics(AudioData input, AudioData output) {
         lastStatistics.put("inputLength", input.getSamples().size());
         lastStatistics.put("outputLength", output.getSamples().size());
@@ -866,6 +929,15 @@ public class Quantizer implements IMusicProcessor {
         lastStatistics.put("channels", input.getChannels());
     }
     
+    /**
+     * 提取时间段 / Extract time segment
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 提取的音频段 / Extracted audio segment
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     private AudioData extractTimeSegment(AudioData audioData, double startTime, double endTime) throws AudioProcessingException {
         double sampleRate = audioData.getSampleRate();
         int startSample = (int) (startTime * sampleRate);
@@ -881,6 +953,16 @@ public class Quantizer implements IMusicProcessor {
                             segmentLength, audioData.getFormat());
     }
     
+    /**
+     * 插入处理后的段 / Insert processed segment
+     *
+     * @param originalAudio 原始音频 / Original audio
+     * @param processedSegment 处理后的段 / Processed segment
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 合成后的音频 / Merged audio
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     private AudioData insertProcessedSegment(AudioData originalAudio, AudioData processedSegment,
                                            double startTime, double endTime) throws AudioProcessingException {
         double sampleRate = originalAudio.getSampleRate();
@@ -901,6 +983,16 @@ public class Quantizer implements IMusicProcessor {
                             outputSamples.length, originalAudio.getFormat());
     }
     
+    /**
+     * 流式量化处理 / Stream quantization processing
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSamples 窗口样本数 / Window samples
+     * @param hopSamples 跳跃样本数 / Hop samples
+     * @param parameters 参数映射 / Parameter map
+     * @return 处理后的音频数据 / Processed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
+     */
     private AudioData performStreamQuantization(AudioData audioData, int windowSamples, int hopSamples, Map<String, Object> parameters) throws AudioProcessingException {
         double[] inputSamples = audioData.getSamples().toDoubleArray();
         double[] outputSamples = new double[inputSamples.length];

@@ -8,7 +8,9 @@ package com.yishape.lab.math.linalg.decomposition;
  * require the input matrix to be positive definite. This exception is thrown
  * when that requirement is not met.
  * </p>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class NonPositiveDefiniteMatrixException extends MatrixDecompositionException {

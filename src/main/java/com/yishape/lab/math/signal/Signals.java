@@ -10,7 +10,7 @@ import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.IPlot;
 import com.yishape.lab.math.signal.analysis.ISignalAnalyzer;
 import com.yishape.lab.math.signal.filter.ISignalFilter;
 import com.yishape.lab.math.signal.filter.ButterworthFilter;
@@ -44,8 +44,19 @@ public class Signals {
     
     /**
      * 生成正弦波信号 / Generate Sine Wave Signal
+     * <p>
+     * 产生指定参数的正弦波信号。
+     * Generate sine wave signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param frequency 频率 (Hz) / Frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @param phase 初相位 (弧度) / Initial phase in radians
+     * @return 生成的正弦波信号向量 / Generated sine wave signal vector
      */
-    public static IVector<Double> sineWave(int length, double frequency, double samplingRate, 
+    public static IVector<Double> sineWave(int length, double frequency, double samplingRate,
                                          double amplitude, double phase) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("sine");
@@ -62,8 +73,19 @@ public class Signals {
     
     /**
      * 生成余弦波信号 / Generate Cosine Wave Signal
+     * <p>
+     * 产生指定参数的余弦波信号。
+     * Generate cosine wave signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param frequency 频率 (Hz) / Frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @param phase 初相位 (弧度) / Initial phase in radians
+     * @return 生成的余弦波信号向量 / Generated cosine wave signal vector
      */
-    public static IVector<Double> cosineWave(int length, double frequency, double samplingRate, 
+    public static IVector<Double> cosineWave(int length, double frequency, double samplingRate,
                                            double amplitude, double phase) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("cosine");
@@ -80,8 +102,19 @@ public class Signals {
     
     /**
      * 生成方波信号 / Generate Square Wave Signal
+     * <p>
+     * 产生指定参数的方波信号。
+     * Generate square wave signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param frequency 频率 (Hz) / Frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @param dutyCycle 占空比 / Duty cycle
+     * @return 生成的方波信号向量 / Generated square wave signal vector
      */
-    public static IVector<Double> squareWave(int length, double frequency, double samplingRate, 
+    public static IVector<Double> squareWave(int length, double frequency, double samplingRate,
                                            double amplitude, double dutyCycle) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("square");
@@ -98,8 +131,19 @@ public class Signals {
     
     /**
      * 生成三角波信号 / Generate Triangular Wave Signal
+     * <p>
+     * 产生指定参数的三角波信号。
+     * Generate triangular wave signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param frequency 频率 (Hz) / Frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @param symmetry 对称性 (0-1) / Symmetry (0-1)
+     * @return 生成的三角波信号向量 / Generated triangular wave signal vector
      */
-    public static IVector<Double> triangularWave(int length, double frequency, double samplingRate, 
+    public static IVector<Double> triangularWave(int length, double frequency, double samplingRate,
                                                double amplitude, double symmetry) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("triangle");
@@ -116,6 +160,16 @@ public class Signals {
     
     /**
      * 生成锯齿波信号 / Generate Sawtooth Wave Signal
+     * <p>
+     * 产生指定参数的锯齿波信号。
+     * Generate sawtooth wave signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param frequency 频率 (Hz) / Frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @return 生成的锯齿波信号向量 / Generated sawtooth wave signal vector
      */
     public static IVector<Double> sawtoothWave(int length, double frequency, double samplingRate, double amplitude) {
         try {
@@ -132,6 +186,14 @@ public class Signals {
     
     /**
      * 生成白噪声信号 / Generate White Noise Signal
+     * <p>
+     * 产生指定功率的白噪声信号。
+     * Generate white noise signal with specified power.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param power 噪声功率 / Noise power
+     * @return 生成的白噪声信号向量 / Generated white noise signal vector
      */
     public static IVector<Double> whiteNoise(int length, double power) {
         try {
@@ -267,6 +329,16 @@ public class Signals {
     
     /**
      * 生成阶跃信号 / Generate Step Signal
+     * <p>
+     * 产生指定参数的阶跃信号。
+     * Generate step signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param amplitude 振幅 / Amplitude
+     * @param stepTime 阶跃时间 (秒) / Step time in seconds
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 生成的阶跃信号向量 / Generated step signal vector
      */
     public static IVector<Double> stepSignal(int length, double amplitude, double stepTime, double samplingRate) {
         try {
@@ -283,6 +355,15 @@ public class Signals {
     
     /**
      * 生成单位阶跃信号 / Generate Unit Step Signal
+     * <p>
+     * 产生单位振幅的阶跃信号。
+     * Generate unit step signal with unit amplitude.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param stepTime 阶跃时间 (秒) / Step time in seconds
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 生成的单位阶跃信号向量 / Generated unit step signal vector
      */
     public static IVector<Double> unitStep(int length, double stepTime, double samplingRate) {
         return stepSignal(length, 1.0, stepTime, samplingRate);
@@ -290,6 +371,15 @@ public class Signals {
     
     /**
      * 生成狄拉克δ函数（连续时间脉冲） / Generate Dirac Delta Function (Continuous-time impulse)
+     * <p>
+     * 产生指定参数的狄拉克δ函数。
+     * Generate Dirac delta function with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param impulseIndex 脉冲位置索引 / Impulse position index
+     * @param amplitude 脉冲幅度 / Impulse amplitude
+     * @return 生成的狄拉克δ函数信号向量 / Generated Dirac delta signal vector
      */
     public static IVector<Double> diracDelta(int length, int impulseIndex, double amplitude) {
         try {
@@ -310,6 +400,14 @@ public class Signals {
     
     /**
      * 生成单位脉冲信号（克罗内克δ函数） / Generate Unit Impulse Signal (Kronecker Delta Function)
+     * <p>
+     * 产生单位幅度的克罗内克δ函数。
+     * Generate Kronecker delta function with unit amplitude.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param impulseIndex 脉冲位置索引 / Impulse position index
+     * @return 生成的单位脉冲信号向量 / Generated unit impulse signal vector
      */
     public static IVector<Double> unitImpulse(int length, int impulseIndex) {
         return diracDelta(length, impulseIndex, 1.0);
@@ -317,8 +415,19 @@ public class Signals {
     
     /**
      * 生成线性调频信号（Chirp） / Generate Linear Chirp Signal
+     * <p>
+     * 产生频率随时间线性变化的调频信号。
+     * Generate chirp signal with frequency changing linearly over time.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param startFreq 起始频率 (Hz) / Start frequency in Hz
+     * @param endFreq 结束频率 (Hz) / End frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param amplitude 振幅 / Amplitude
+     * @return 生成的线性调频信号向量 / Generated chirp signal vector
      */
-    public static IVector<Double> chirpSignal(int length, double startFreq, double endFreq, 
+    public static IVector<Double> chirpSignal(int length, double startFreq, double endFreq,
                                             double samplingRate, double amplitude) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("signal");
@@ -335,8 +444,19 @@ public class Signals {
     
     /**
      * 生成脉冲信号 / Generate Pulse Signal
+     * <p>
+     * 产生指定参数的脉冲信号。
+     * Generate pulse signal with specified parameters.
+     * </p>
+     *
+     * @param length 信号长度 / Signal length
+     * @param amplitude 脉冲幅度 / Pulse amplitude
+     * @param pulseWidth 脉冲宽度（采样点数）/ Pulse width in samples
+     * @param frequency 脉冲频率 (Hz) / Pulse frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 生成的脉冲信号向量 / Generated pulse signal vector
      */
-    public static IVector<Double> pulseSignal(int length, double amplitude, int pulseWidth, 
+    public static IVector<Double> pulseSignal(int length, double amplitude, int pulseWidth,
                                             double frequency, double samplingRate) {
         try {
             ISignalGenerator<Double> generator = SignalProcessorFactory.getInstance().createGenerator("signal");
@@ -355,6 +475,14 @@ public class Signals {
     
     /**
      * 移动平均滤波器 / Moving Average Filter
+     * <p>
+     * 对输入信号应用移动平均滤波。
+     * Apply moving average filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param windowSize 窗口大小 / Window size
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> movingAverage(IVector<Double> signal, int windowSize) {
         try {
@@ -368,6 +496,14 @@ public class Signals {
     
     /**
      * 中值滤波器 / Median Filter
+     * <p>
+     * 对输入信号应用中值滤波。
+     * Apply median filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param windowSize 窗口大小 / Window size
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> medianFilter(IVector<Double> signal, int windowSize) {
         try {
@@ -380,7 +516,15 @@ public class Signals {
     }
     
     /**
-     * 高斯滤波器 / Gaussian Filter
+     * 高斯滤波器（单参数版本）/ Gaussian Filter (Single Parameter Version)
+     * <p>
+     * 使用默认核大小的高斯滤波器。
+     * Apply Gaussian filter with default kernel size.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param sigma 高斯核标准差 / Gaussian kernel standard deviation
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> gaussianFilter(IVector<Double> signal, double sigma) {
         int defaultKernelSize = (int) Math.ceil(6 * sigma);
@@ -391,7 +535,16 @@ public class Signals {
     }
 
     /**
-     * 高斯滤波器 / Gaussian Filter
+     * 高斯滤波器（双参数版本）/ Gaussian Filter (Dual Parameter Version)
+     * <p>
+     * 使用指定核大小的高斯滤波器。
+     * Apply Gaussian filter with specified kernel size.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param sigma 高斯核标准差 / Gaussian kernel standard deviation
+     * @param kernelSize 核大小（奇数）/ Kernel size (odd number)
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> gaussianFilter(IVector<Double> signal, double sigma, int kernelSize) {
         try {
@@ -404,6 +557,16 @@ public class Signals {
     
     /**
      * 巴特沃斯低通滤波器 / Butterworth Low-pass Filter
+     * <p>
+     * 对输入信号应用巴特沃斯低通滤波。
+     * Apply Butterworth low-pass filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param cutoffFreq 截止频率 (Hz) / Cutoff frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param order 滤波器阶数 / Filter order
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> butterworthLowPass(IVector<Double> signal, double cutoffFreq, double samplingRate, int order) {
         try {
@@ -443,6 +606,17 @@ public class Signals {
     
     /**
      * 巴特沃斯带通滤波器 / Butterworth Band-pass Filter
+     * <p>
+     * 对输入信号应用巴特沃斯带通滤波。
+     * Apply Butterworth band-pass filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param lowFreq 低截止频率 (Hz) / Low cutoff frequency in Hz
+     * @param highFreq 高截止频率 (Hz) / High cutoff frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param order 滤波器阶数 / Filter order
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> bandPass(IVector<Double> signal, double lowFreq, double highFreq, double samplingRate, int order) {
         try {
@@ -456,6 +630,15 @@ public class Signals {
 
     /**
      * 卡尔曼滤波器 / Kalman Filter
+     * <p>
+     * 对输入信号应用卡尔曼滤波。
+     * Apply Kalman filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param processNoiseVariance 过程噪声方差 / Process noise variance
+     * @param measurementNoiseVariance 测量噪声方差 / Measurement noise variance
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> kalmanFilter(IVector<Double> signal, double processNoiseVariance, double measurementNoiseVariance) {
         try {
@@ -469,6 +652,16 @@ public class Signals {
 
     /**
      * 维纳滤波器 / Wiener Filter
+     * <p>
+     * 对输入信号应用维纳滤波。
+     * Apply Wiener filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param signalPower 信号功率 / Signal power
+     * @param noisePower 噪声功率 / Noise power
+     * @param filterLength 滤波器长度 / Filter length
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> wienerFilter(IVector<Double> signal, double signalPower, double noisePower, int filterLength) {
         try {
@@ -482,6 +675,17 @@ public class Signals {
 
     /**
      * 带阻滤波器 / Band-stop Filter
+     * <p>
+     * 对输入信号应用带阻（陷波）滤波。
+     * Apply band-stop (notch) filter to input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param lowFreq 低截止频率 (Hz) / Low cutoff frequency in Hz
+     * @param highFreq 高截止频率 (Hz) / High cutoff frequency in Hz
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param order 滤波器阶数 / Filter order
+     * @return 滤波后的信号 / Filtered signal
      */
     public static IVector<Double> bandStop(IVector<Double> signal, double lowFreq, double highFreq, double samplingRate, int order) {
         try {
@@ -497,6 +701,16 @@ public class Signals {
     
     /**
      * 计算信号的功率谱密度 (PSD) / Calculate Power Spectral Density (PSD)
+     * <p>
+     * 计算信号的功率谱密度。
+     * Calculate power spectral density of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param windowSize 窗口大小 / Window size
+     * @param overlap 重叠率 / Overlap ratio
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 包含频率和功率谱密度的元组 / Tuple containing frequencies and PSD
      */
     public static Tuple2<IVector<Double>, IVector<Double>> powerSpectralDensity(
             IVector<Double> signal, int windowSize, double overlap, double samplingRate) {
@@ -516,6 +730,13 @@ public class Signals {
     
     /**
      * 计算信号的自相关函数 / Calculate Autocorrelation Function
+     * <p>
+     * 计算输入信号的自相关函数。
+     * Calculate autocorrelation function of input signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return 自相关函数向量 / Autocorrelation function vector
      */
     public static IVector<Double> autocorrelation(IVector<Double> signal) {
         try {
@@ -530,6 +751,14 @@ public class Signals {
     
     /**
      * 计算两个信号的互相关函数 / Calculate Cross-correlation Function
+     * <p>
+     * 计算两个信号的全互相关函数。
+     * Calculate full cross-correlation function of two signals.
+     * </p>
+     *
+     * @param signal1 第一个信号 / First signal
+     * @param signal2 第二个信号 / Second signal
+     * @return 互相关函数向量 / Cross-correlation function vector
      */
     public static IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2) {
         try {
@@ -544,6 +773,15 @@ public class Signals {
 
     /**
      * 计算两个信号的互相关函数（带最大滞后限制）/ Calculate Cross-correlation Function with max lag
+     * <p>
+     * 计算两个信号的互相关函数，并限制最大滞后点数。
+     * Calculate cross-correlation function with maximum lag limitation.
+     * </p>
+     *
+     * @param signal1 第一个信号 / First signal
+     * @param signal2 第二个信号 / Second signal
+     * @param maxLag 最大滞后点数 / Maximum lag in points
+     * @return 截断后的互相关函数向量 / Truncated cross-correlation vector
      */
     public static IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2, int maxLag) {
         // First get the full cross-correlation from the analyzer
@@ -574,6 +812,14 @@ public class Signals {
     
     /**
      * 计算信号的频谱 / Calculate Signal Spectrum
+     * <p>
+     * 计算信号的频谱，包含频率、幅度和相位信息。
+     * Calculate signal spectrum including frequency, magnitude, and phase information.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 包含频率、幅度、相位的元组 / Tuple containing frequency, magnitude, phase
      */
     public static Tuple3<IVector<Double>, IVector<Double>, IVector<Double>> spectrum(
             IVector<Double> signal, double samplingRate) {
@@ -599,6 +845,16 @@ public class Signals {
     
     /**
      * 计算信号的短时傅里叶变换 (STFT) / Calculate Short-Time Fourier Transform (STFT)
+     * <p>
+     * 计算信号的短时傅里叶变换。
+     * Calculate short-time Fourier transform of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return STFT结果矩阵（实部虚部交替）/ STFT result matrix (real and imaginary alternating)
      */
     public static IMatrix<Double> shortTimeFourierTransform(
             IVector<Double> signal, int windowSize, int hopSize, double samplingRate) {
@@ -666,6 +922,14 @@ public class Signals {
     
     /**
      * 计算信号的信噪比 (SNR) / Calculate Signal-to-Noise Ratio (SNR)
+     * <p>
+     * 计算信号的信噪比（分贝）。
+     * Calculate signal-to-noise ratio in decibels.
+     * </p>
+     *
+     * @param signal 有用信号 / Signal
+     * @param noise 噪声信号 / Noise signal
+     * @return 信噪比 (dB) / SNR in dB
      */
     public static double signalToNoiseRatio(IVector<Double> signal, IVector<Double> noise) {
         try {
@@ -681,6 +945,14 @@ public class Signals {
     
     /**
      * 计算信号的峰值信噪比 (PSNR) / Calculate Peak Signal-to-Noise Ratio (PSNR)
+     * <p>
+     * 计算原始信号与重构信号之间的峰值信噪比。
+     * Calculate PSNR between original and reconstructed signals.
+     * </p>
+     *
+     * @param original 原始信号 / Original signal
+     * @param reconstructed 重构信号 / Reconstructed signal
+     * @return 峰值信噪比 (dB) / PSNR in dB
      */
     public static double peakSignalToNoiseRatio(IVector<Double> original, IVector<Double> reconstructed) {
         // Calculate MSE
@@ -701,6 +973,13 @@ public class Signals {
     
     /**
      * 快速傅里叶变换 / Fast Fourier Transform
+     * <p>
+     * 对复数输入进行快速傅里叶变换。
+     * Perform FFT on complex input.
+     * </p>
+     *
+     * @param x 输入复数数组 / Input complex array
+     * @return 变换后的复数数组 / Transformed complex array
      */
     public static Complex[] fft(Complex[] x) {
         // This is a low-level method that doesn't use the factory pattern
@@ -709,6 +988,13 @@ public class Signals {
     
     /**
      * 快速傅里叶逆变换 / Inverse Fast Fourier Transform
+     * <p>
+     * 对复数频谱进行快速傅里叶逆变换。
+     * Perform inverse FFT on complex frequency spectrum.
+     * </p>
+     *
+     * @param x 输入的复数频谱 / Input complex frequency spectrum
+     * @return 逆变换后的时域复数信号 / Inverse transformed time-domain signal
      */
     public static Complex[] ifft(Complex[] x) {
         // This is a low-level method that doesn't use the factory pattern
@@ -717,6 +1003,13 @@ public class Signals {
     
     /**
      * 计算信号的幅度谱 / Calculate Magnitude Spectrum
+     * <p>
+     * 计算FFT结果的幅度谱。
+     * Calculate magnitude spectrum from FFT result.
+     * </p>
+     *
+     * @param fftResult FFT结果 / FFT result
+     * @return 幅度谱数组 / Magnitude spectrum array
      */
     public static double[] magnitudeSpectrum(Complex[] fftResult) {
         // This is a low-level method that doesn't use the factory pattern
@@ -725,6 +1018,13 @@ public class Signals {
     
     /**
      * 计算信号的相位谱 / Calculate Phase Spectrum
+     * <p>
+     * 计算FFT结果的相位谱。
+     * Calculate phase spectrum from FFT result.
+     * </p>
+     *
+     * @param fftResult FFT结果 / FFT result
+     * @return 相位谱数组（弧度）/ Phase spectrum array in radians
      */
     public static double[] phaseSpectrum(Complex[] fftResult) {
         // This is a low-level method that doesn't use the factory pattern
@@ -733,6 +1033,13 @@ public class Signals {
     
     /**
      * 计算信号的功率谱 / Calculate Power Spectrum
+     * <p>
+     * 计算FFT结果的功率谱。
+     * Calculate power spectrum from FFT result.
+     * </p>
+     *
+     * @param fftResult FFT结果 / FFT result
+     * @return 功率谱数组 / Power spectrum array
      */
     public static double[] powerSpectrum(Complex[] fftResult) {
         // This is a low-level method that doesn't use the factory pattern
@@ -741,6 +1048,13 @@ public class Signals {
     
     /**
      * DCT-II变换 / DCT-II Transform
+     * <p>
+     * 对信号进行离散余弦变换II。
+     * Perform DCT-II on signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return DCT变换结果 / DCT transform result
      */
     public static IVector<Double> dct2(IVector<Double> signal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -749,6 +1063,13 @@ public class Signals {
     
     /**
      * DCT-II逆变换 / DCT-II Inverse Transform
+     * <p>
+     * 对DCT系数进行逆变换以重建信号。
+     * Perform inverse DCT to reconstruct signal.
+     * </p>
+     *
+     * @param dctSignal DCT变换结果 / DCT transform result
+     * @return 重建的原始信号 / Reconstructed original signal
      */
     public static IVector<Double> idct2(IVector<Double> dctSignal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -757,8 +1078,13 @@ public class Signals {
     
     /**
      * 希尔伯特变换 / Hilbert Transform
-     * @param signal
-     * @return 
+     * <p>
+     * 计算信号的希尔伯特变换。
+     * Perform Hilbert transform on signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return 希尔伯特变换结果 / Hilbert transform result
      */
     public static IVector<Double> hilbertTransform(IVector<Double> signal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -767,6 +1093,13 @@ public class Signals {
     
     /**
      * 计算解析信号 / Calculate Analytic Signal
+     * <p>
+     * 计算信号的解析信号。
+     * Calculate analytic signal of input.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return 解析信号（复数数组）/ Analytic signal (complex array)
      */
     public static Complex[] analyticSignal(IVector<Double> signal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -775,6 +1108,13 @@ public class Signals {
     
     /**
      * 计算瞬时幅度 / Calculate Instantaneous Amplitude
+     * <p>
+     * 计算信号的瞬时幅度（包络）。
+     * Calculate instantaneous amplitude (envelope) of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return 瞬时幅度向量 / Instantaneous amplitude vector
      */
     public static IVector<Double> instantaneousAmplitude(IVector<Double> signal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -783,6 +1123,13 @@ public class Signals {
     
     /**
      * 计算瞬时相位 / Calculate Instantaneous Phase
+     * <p>
+     * 计算信号的瞬时相位。
+     * Calculate instantaneous phase of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @return 瞬时相位向量（弧度）/ Instantaneous phase vector in radians
      */
     public static IVector<Double> instantaneousPhase(IVector<Double> signal) {
         // This is a low-level method that doesn't use the factory pattern
@@ -791,6 +1138,14 @@ public class Signals {
     
     /**
      * 计算瞬时频率 / Calculate Instantaneous Frequency
+     * <p>
+     * 通过相位差分计算瞬时频率。
+     * Calculate instantaneous frequency by phase differentiation.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @return 瞬时频率向量 / Instantaneous frequency vector
      */
     public static IVector<Double> instantaneousFrequency(IVector<Double> signal, double samplingRate) {
         // This is a low-level method that doesn't use the factory pattern
@@ -799,6 +1154,16 @@ public class Signals {
     
     /**
      * 离散小波变换 (DWT) / Discrete Wavelet Transform (DWT)
+     * <p>
+     * 对信号进行离散小波变换。
+     * Perform discrete wavelet transform on signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param waveletType 小波类型 / Wavelet type
+     * @param levels 分解层数 / Decomposition levels
+     * @param param 小波参数 / Wavelet parameter
+     * @return 小波系数 / Wavelet coefficients
      */
     public static WaveletCoefficients discreteWaveletTransform(IVector<Double> signal,
                                                                WaveletAnalysis.WaveletType waveletType, int levels, double param) {
@@ -808,24 +1173,51 @@ public class Signals {
     
     /**
      * 小波逆变换 (IDWT) / Inverse Discrete Wavelet Transform (IDWT)
+     * <p>
+     * 对小波系数进行逆变换以重建信号。
+     * Perform inverse DWT to reconstruct signal from wavelet coefficients.
+     * </p>
+     *
+     * @param coefficients 小波系数 / Wavelet coefficients
+     * @param waveletType 小波类型 / Wavelet type
+     * @param param 小波参数 / Wavelet parameter
+     * @return 重建的原始信号 / Reconstructed original signal
      */
-    public static IVector<Double> inverseDiscreteWaveletTransform(WaveletCoefficients coefficients, 
+    public static IVector<Double> inverseDiscreteWaveletTransform(WaveletCoefficients coefficients,
             WaveletAnalysis.WaveletType waveletType, double param) {
         // This is a low-level method that doesn't use the factory pattern
         return WaveletAnalysis.inverseDiscreteWaveletTransform(coefficients, waveletType, param);
     }
     
     // ========== 可视化方法 / Visualization Methods ==========
-    
+
     /**
-     * 绘制信号波形图 / Plot signal waveform
+     * 绘制信号波形图 / Plot Signal Waveform
+     * <p>
+     * 绘制信号的时域波形图。
+     * Plot time-domain waveform of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
     public static IPlot plotWaveform(IVector<Double> signal, double samplingRate, String title) {
         return SignalPlots.plotWaveform(signal, samplingRate, title);
     }
     
     /**
-     * 绘制信号频谱图 / Plot signal spectrum
+     * 绘制信号频谱图 / Plot Signal Spectrum
+     * <p>
+     * 绘制信号的频谱图。
+     * Plot frequency spectrum of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
     public static IPlot plotSpectrum(IVector<Double> signal, double samplingRate, String title) {
         return SignalPlots.plotSpectrum(signal, samplingRate, title);
@@ -833,39 +1225,89 @@ public class Signals {
     
     /**
      * 绘制功率谱密度图 / Plot Power Spectral Density
+     * <p>
+     * 绘制信号的功率谱密度图。
+     * Plot power spectral density of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param samplingRate 采样率 (Hz) / Sampling rate in Hz
+     * @param windowSize 窗口大小 / Window size
+     * @param overlap 重叠率 / Overlap ratio
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
-    public static IPlot plotPowerSpectralDensity(IVector<Double> signal, double samplingRate, 
+    public static IPlot plotPowerSpectralDensity(IVector<Double> signal, double samplingRate,
                                                int windowSize, double overlap, String title) {
         return SignalPlots.plotPowerSpectralDensity(signal, samplingRate, windowSize, overlap, title);
     }
     
     /**
-     * 绘制自相关图 / Plot autocorrelation
+     * 绘制自相关图 / Plot Autocorrelation
+     * <p>
+     * 绘制信号的自相关函数图。
+     * Plot autocorrelation function of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param maxLag 最大滞后点数 / Maximum lag in points
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
     public static IPlot plotAutocorrelation(IVector<Double> signal, int maxLag, String title) {
         return SignalPlots.plotAutocorrelation(signal, maxLag, title);
     }
     
     /**
-     * 绘制互相关图 / Plot cross-correlation
+     * 绘制互相关图 / Plot Cross-correlation
+     * <p>
+     * 绘制两个信号的互相关函数图。
+     * Plot cross-correlation function of two signals.
+     * </p>
+     *
+     * @param signal1 第一个信号 / First signal
+     * @param signal2 第二个信号 / Second signal
+     * @param maxLag 最大滞后点数 / Maximum lag in points
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
-    public static IPlot plotCrossCorrelation(IVector<Double> signal1, IVector<Double> signal2, 
+    public static IPlot plotCrossCorrelation(IVector<Double> signal1, IVector<Double> signal2,
                                            int maxLag, String title) {
         return SignalPlots.plotCrossCorrelation(signal1, signal2, maxLag, title);
     }
     
     /**
-     * 绘制小波系数图 / Plot wavelet coefficients
+     * 绘制小波系数图 / Plot Wavelet Coefficients
+     * <p>
+     * 绘制信号的小波系数图。
+     * Plot wavelet coefficients of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param waveletType 小波类型 / Wavelet type
+     * @param levels 分解层数 / Decomposition levels
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
-    public static IPlot plotWaveletCoefficients(IVector<Double> signal, String waveletType, 
+    public static IPlot plotWaveletCoefficients(IVector<Double> signal, String waveletType,
                                               int levels, String title) {
         return WaveletPlots.plotWaveletCoefficients(signal, waveletType, levels, title);
     }
     
     /**
-     * 绘制小波能量分布图 / Plot wavelet energy distribution
+     * 绘制小波能量分布图 / Plot Wavelet Energy Distribution
+     * <p>
+     * 绘制信号的小波能量分布图。
+     * Plot wavelet energy distribution of signal.
+     * </p>
+     *
+     * @param signal 输入信号 / Input signal
+     * @param waveletType 小波类型 / Wavelet type
+     * @param levels 分解层数 / Decomposition levels
+     * @param title 图表标题 / Chart title
+     * @return 绘制的图表实例 / Plot instance
      */
-    public static IPlot plotWaveletEnergyDistribution(IVector<Double> signal, String waveletType, 
+    public static IPlot plotWaveletEnergyDistribution(IVector<Double> signal, String waveletType,
                                                     int levels, String title) {
         return WaveletPlots.plotWaveletEnergyDistribution(signal, waveletType, levels, title);
     }
@@ -873,8 +1315,13 @@ public class Signals {
     // ========== 工厂方法 / Factory Methods ==========
     
     /**
-     * 获取信号处理器工厂实例 / Get signal processor factory instance
-     * @return 
+     * 获取信号处理器工厂实例 / Get Signal Processor Factory Instance
+     * <p>
+     * 获取信号处理器工厂的单例实例。
+     * Get singleton instance of signal processor factory.
+     * </p>
+     *
+     * @return 信号处理器工厂实例 / Signal processor factory instance
      * @see SignalProcessorFactory#getInstance()
      */
     public static SignalProcessorFactory getFactory() {
@@ -1004,7 +1451,13 @@ public class Signals {
     }
     
     /**
-     * 测试方法 / Test method
+     * 测试方法 / Test Method
+     * <p>
+     * 测试信号生成、滤波和分析功能。
+     * Test signal generation, filtering and analysis functionality.
+     * </p>
+     *
+     * @param args 命令行参数 / Command line arguments
      */
     public static void main(String[] args) {
         try {

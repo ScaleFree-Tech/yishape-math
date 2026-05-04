@@ -194,6 +194,9 @@ public class WienerFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 设置信号功率 / Set signal power
+     *
+     * @param signalPower 信号功率 / Signal power
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setSignalPower(double signalPower) throws SignalProcessingException {
         validateParameters(signalPower, noisePower, filterLength);
@@ -209,6 +212,9 @@ public class WienerFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 设置噪声功率 / Set noise power
+     *
+     * @param noisePower 噪声功率 / Noise power
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setNoisePower(double noisePower) throws SignalProcessingException {
         validateParameters(signalPower, noisePower, filterLength);
@@ -224,6 +230,9 @@ public class WienerFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 设置滤波器长度 / Set filter length
+     *
+     * @param filterLength 滤波器长度 / Filter length
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setFilterLength(int filterLength) throws SignalProcessingException {
         validateParameters(signalPower, noisePower, filterLength);

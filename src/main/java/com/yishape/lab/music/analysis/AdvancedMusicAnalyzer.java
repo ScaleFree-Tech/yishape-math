@@ -72,6 +72,13 @@ public class AdvancedMusicAnalyzer implements IAdvancedAnalyzer {
     private static final double DEFAULT_GENRE_THRESHOLD = 0.7;
     private static final double DEFAULT_COMPLEXITY_THRESHOLD = 0.5;
 
+    /**
+     * 构造高级音乐分析器 / Construct an Advanced Music Analyzer
+     * <p>
+     * 初始化高级音乐分析器，创建所有子分析器实例和执行器服务。
+     * Initializes the advanced music analyzer with all sub-analyzer instances and executor service.
+     * </p>
+     */
     public AdvancedMusicAnalyzer() {
         this.emotionAnalyzer = new EmotionAnalyzer();
         this.genreAnalyzer = new GenreAnalyzer();

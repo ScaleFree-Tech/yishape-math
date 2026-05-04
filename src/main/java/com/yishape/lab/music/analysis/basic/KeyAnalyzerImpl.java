@@ -52,6 +52,17 @@ public class KeyAnalyzerImpl implements IKeyAnalyzer {
     // 修改布鲁斯模板，降低其匹配权重 / Modified blues template with reduced matching weight
     private static final double[] BLUES_TEMPLATE = {1.0, 0.0, 0.0, 0.6, 0.0, 0.7, 0.5, 1.0, 0.0, 0.0, 0.4, 0.0};
 
+    /**
+     * 构造调性分析器 / Construct a Key Analyzer
+     * <p>
+     * 初始化调性分析器，使用默认参数。
+     * Initializes the key analyzer with default parameters.
+     * </p>
+     */
+    public KeyAnalyzerImpl() {
+        // Default constructor
+    }
+
     @Override
     public KeyDetectionResult detectKey(AudioData audioData) throws AudioProcessingException {
         return detectKey(audioData, getDefaultParameters());

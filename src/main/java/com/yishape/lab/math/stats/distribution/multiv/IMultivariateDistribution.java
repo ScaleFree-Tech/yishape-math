@@ -222,12 +222,11 @@ public interface IMultivariateDistribution<T extends Number> extends Serializabl
     // ==================== 边际分布和条件分布 / Marginal and Conditional Distributions ====================
     
     /**
-     * 获取指定维度的边际分布
-     * Get marginal distribution for specified dimensions
-     * 
-     * @param indices 维度索引数组 / Array of dimension indices
-     * @return 边际分布 / Marginal distribution
-     * @throws IllegalArgumentException 如果索引无效 / If indices are invalid
+     * 指定坐标上的<strong>边际分布</strong>。具体族依实现而定：多元正态/t 为坐标边际；
+     * Wishart/逆 Wishart 为<strong>主子阵</strong>指标（行列索引）；单纯形上的 Dirichlet（及 MultivariateBeta）
+     * 使用 {@link DirichletDistribution#getMarginal(int...)} 文档所述语义（单子 Beta、多半集扩展 Dirichlet）。
+     *
+     * @param indices 坐标或主子阵行列索引 / Coordinate indices or principal-submatrix row-column indices
      */
     IMultivariateDistribution<T> getMarginal(int... indices);
     

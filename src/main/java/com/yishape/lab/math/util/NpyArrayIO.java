@@ -19,6 +19,10 @@ import java.util.regex.Pattern;
 /**
  * 读写 {@code .npy} 单文件格式（版本 1.0），支持 C 序、{@code &lt;f8} / {@code &lt;f4} 与 1D/2D。
  * <p>矩阵/向量优先使用 {@link IMatrix}{@code <Double>} / {@link IVector}{@code <Double>} 重载，与 {@link Linalg} 一致。</p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public final class NpyArrayIO {
 

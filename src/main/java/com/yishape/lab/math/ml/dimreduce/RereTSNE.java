@@ -31,8 +31,14 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
     private final int maxIter = 1000;          // 最大迭代次数 / Maximum iterations
     private final double learningRate = 200.0; // 学习率 / Learning rate
     private final double momentum = 0.8;       // 动量 / Momentum
-    private final double tolerance = 1e-4;     // 收敛阈值 / Convergence tolerance
-    
+    private final double tolerance = 1e-4;     // 收敛阈值 / Convergence threshold
+
+    /**
+     * 与 {@link com.yishape.lab.math.linalg.RereDoubleMatrix#divideByScalar(Double)} 一致：
+     * 除数绝对值 ≤1e-12 会抛异常，故归一化前概率质量须显著大于该门限（极小 sigma 等会导致 underflow）。
+     */
+    private static final double MIN_PROB_MASS_FOR_NORMALIZE = 1e-10;
+
     /**
      * 用t-SNE方法降维
      * @param originalData 原数据，每行为一个样本
@@ -86,12 +92,12 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
             IMatrix scaledDistances = (IMatrix)squaredDistances.multiplyScalar(-1.0 / (2 * sigma * sigma));
             IMatrix probs = (IMatrix)scaledDistances.exp();
             
-            // 将对角线元素设为0（自己到自己的概率为0）
-            probs.put(i, 0, 0.0);
+            // 将对角线元素设为0（自己到自己的概率为0）；distances 为 1×n，坐标为 (0, j)
+            probs.put(0, i, 0.0);
             
             // 归一化
             double sum = (double)probs.sum();
-            if (sum > 0) {
+            if (sum > MIN_PROB_MASS_FOR_NORMALIZE) {
                 // 使用正确的API方法
                 IVector row = (IVector)probs.getRow(0);
                 IVector normalizedRow = (IVector)row.divideByScalar(sum);
@@ -167,13 +173,13 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
         // 计算概率: exp(-distance^2 / (2 * sigma^2))
         IMatrix probs = (IMatrix)distances.pow(2.0).multiplyScalar(-1.0 / (2 * sigma * sigma)).exp();
         
-        // 将对角线元素设为0（自己到自己的概率为0）
-        probs.put(i, 0, 0.0);
+        // 将对角线元素设为0；distances 为 1×n
+        probs.put(0, i, 0.0);
         
         double sum = (double)probs.sum();
         double entropy = 0.0;
         
-        if (sum > 0) {
+        if (sum > MIN_PROB_MASS_FOR_NORMALIZE) {
             // 归一化概率
             IMatrix normalizedProbs = (IMatrix)probs.divideByScalar(sum);
             
@@ -269,7 +275,7 @@ public class RereTSNE implements IDimReduce, ISerializableModel {
         
         // 归一化
         double sum = (double)Q.sum();
-        if (sum > 0) {
+        if (sum > MIN_PROB_MASS_FOR_NORMALIZE) {
             Q = (IMatrix)Q.divideByScalar(sum);
         }
         

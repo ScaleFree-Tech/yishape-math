@@ -61,6 +61,12 @@ public class LinearMeanFunction implements GaussianProcess.MeanFunction {
     public int getNumParameters() {
         return -1; // 依赖于输入维度
     }
+    /**
+     * 获取均值函数名称
+     * Get mean function name
+     *
+     * @return 均值函数名称 / Mean function name
+     */
     public String getName() {
         return "Linear";
     }

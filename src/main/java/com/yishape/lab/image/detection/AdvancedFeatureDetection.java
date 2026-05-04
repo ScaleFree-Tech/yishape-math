@@ -32,12 +32,28 @@ public class AdvancedFeatureDetection {
      * 特征点类 / Keypoint Class
      */
     public static class Keypoint {
-        private double x, y;           // 坐标 / Coordinates
-        private double scale;          // 尺度 / Scale
-        private double angle;          // 方向角 / Orientation angle
-        private double response;       // 响应强度 / Response strength
-        private IVector<Double> descriptor; // 特征描述符 / Feature descriptor
-        
+        /** X坐标 / X coordinate */
+        private double x;
+        /** Y坐标 / Y coordinate */
+        private double y;
+        /** 尺度 / Scale */
+        private double scale;
+        /** 方向角 / Orientation angle */
+        private double angle;
+        /** 响应强度 / Response strength */
+        private double response;
+        /** 特征描述符 / Feature descriptor */
+        private IVector<Double> descriptor;
+
+        /**
+         * 构造特征点 / Construct Keypoint
+         *
+         * @param x X坐标 / X coordinate
+         * @param y Y坐标 / Y coordinate
+         * @param scale 尺度 / Scale
+         * @param angle 方向角 / Orientation angle
+         * @param response 响应强度 / Response strength
+         */
         public Keypoint(double x, double y, double scale, double angle, double response) {
             this.x = x;
             this.y = y;
@@ -76,10 +92,20 @@ public class AdvancedFeatureDetection {
          * Harris角点检测结果 / Harris Corner Detection Result
          */
         public static class HarrisResult implements AnalysisResult {
+            /** 角点列表 / List of corners */
             private List<Keypoint> corners;
+            /** 响应图 / Response map */
             private IMatrix<Double> responseMap;
+            /** 统计信息 / Statistics */
             private Map<String, Double> statistics;
-            
+
+            /**
+             * 构造Harris结果 / Construct HarrisResult
+             *
+             * @param corners 角点列表 / List of corners
+             * @param responseMap 响应图 / Response map
+             * @param statistics 统计信息 / Statistics
+             */
             public HarrisResult(List<Keypoint> corners, IMatrix<Double> responseMap, Map<String, Double> statistics) {
                 this.corners = corners;
                 this.responseMap = responseMap;
@@ -122,6 +148,7 @@ public class AdvancedFeatureDetection {
             }
             
             public List<Keypoint> getCorners() { return corners; }
+            /** 获取响应图 / Get response map */
             public IMatrix<Double> getResponseMap() { return responseMap; }
         }
         

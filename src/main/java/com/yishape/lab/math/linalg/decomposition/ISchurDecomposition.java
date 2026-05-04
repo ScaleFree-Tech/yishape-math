@@ -14,7 +14,7 @@ import com.yishape.lab.util.Tuple2;
  *   <li>T is a quasi-upper triangular matrix (block upper triangular with 1x1 and 2x2 blocks)</li>
  * </ul>
  * </p>
- * 
+ *
  * <p>
  * For a complex square matrix, the Schur decomposition is:
  * A = U T U^H where:
@@ -24,20 +24,22 @@ import com.yishape.lab.util.Tuple2;
  *   <li>U^H is the conjugate transpose of U</li>
  * </ul>
  * </p>
- * 
+ *
  * <p>
  * The Schur decomposition always exists for any square matrix and is numerically stable.
  * It is particularly useful for computing eigenvalues and eigenvectors, as the eigenvalues
  * of A are the diagonal elements of T.
  * </p>
- * 
+ *
  * <h3>References</h3>
  * <ul>
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Horn, R. A., &amp; Johnson, C. R. (2012). Matrix analysis (2nd ed.). Cambridge University Press.</li>
  *   <li>Watkins, D. S. (2007). The matrix eigenvalue problem: GR and Krylov subspace methods. SIAM.</li>
  * </ul>
- * 
+ *
+ * @author lteb2
+ * @version 1.0
  * @since 2.0
  * @see <a href="http://mathworld.wolfram.com/SchurDecomposition.html">Schur Decomposition - MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/Schur_decomposition">Schur Decomposition - Wikipedia</a>

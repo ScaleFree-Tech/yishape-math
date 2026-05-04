@@ -17,20 +17,29 @@ import java.util.Map;
  * @since 1.0
  */
 public abstract class AbstractAdvancedAudioFilter implements IAdvancedAudioFilter {
-    
+
+    /** 滤波器名称 / Filter name */
     protected String name;
+    /** 滤波器描述 / Filter description */
     protected String description;
+    /** 滤波器类型 / Filter type */
     protected FilterType filterType;
+    /** 截止频率 (Hz) / Cutoff frequency (Hz) */
     protected double cutoffFrequency;
+    /** 滤波器阶数 / Filter order */
     protected int order;
+    /** 品质因子 / Quality factor */
     protected double qualityFactor;
+    /** 带宽 (Hz) / Bandwidth (Hz) */
     protected double bandwidth;
+    /** 默认参数映射 / Default parameter map */
     protected Map<String, Object> defaultParameters;
+    /** 支持的参数集合 / Supported parameter set */
     protected java.util.Set<String> supportedParameters;
-    
+
     /**
      * 构造函数 / Constructor
-     * 
+     *
      * @param name 滤波器名称 / Filter name
      * @param description 滤波器描述 / Filter description
      */

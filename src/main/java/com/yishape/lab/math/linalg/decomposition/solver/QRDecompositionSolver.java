@@ -6,6 +6,10 @@ import com.yishape.lab.math.linalg.Linalg;
 
 /**
  * Solver for QR decomposition algorithms.
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 2.0
  */
 public class QRDecompositionSolver implements IDecompositionSolver {
     /** A packed TRANSPOSED representation of the QR decomposition. */

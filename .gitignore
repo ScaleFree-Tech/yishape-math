@@ -1,4 +1,6 @@
 target/
+images_javafx/
+images_javafx_svg/
 ECharts-Java-1.1.0/
 weka/
 promotion/

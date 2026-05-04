@@ -198,22 +198,39 @@ public class BandpassFilter extends AbstractSignalProcessor<Double> implements I
     public FilterType getFilterType() {
         return filterType;
     }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() {
         return implementationType;
     }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() {
         return order;
     }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() {
         return cutoffFrequencies.clone();
     }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         validateParameters(order, frequencies, samplingRate);
@@ -225,19 +242,34 @@ public class BandpassFilter extends AbstractSignalProcessor<Double> implements I
     public double getSamplingRate() {
         return samplingRate;
     }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate
+     * @throws SignalProcessingException 采样率设置无效时抛出 / Thrown when sampling rate setting is invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         validateParameters(order, cutoffFrequencies, samplingRate);
         this.samplingRate = samplingRate;
         computeCoefficients(); // 重新计算系数 / Recalculate coefficients
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() {
         return coefficients;
     }
-    
+
+    /**
+     * 计算滤波器的频率响应 / Calculate frequency response of filter
+     * @param frequencies 频率点数组 / Frequency point array
+     * @return 频率响应 / Frequency response
+     * @throws SignalProcessingException 计算过程中发生错误时抛出 / Thrown when errors occur during calculation
+     */
     @Override
     public FrequencyResponse getFrequencyResponse(double[] frequencies) throws SignalProcessingException {
         // 简化的频率响应计算 / Simplified frequency response calculation
@@ -264,7 +296,11 @@ public class BandpassFilter extends AbstractSignalProcessor<Double> implements I
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         return filter(input);
     }
-    
+
+    /**
+     * 克隆带通滤波器 / Clone Bandpass filter
+     * @return 带通滤波器副本 / Bandpass filter copy
+     */
     @Override
     public BandpassFilter clone() {
         try {

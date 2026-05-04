@@ -4,6 +4,9 @@ import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 
+import com.yishape.lab.math.stats.distribution.BetaDistribution;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -120,6 +123,42 @@ public class MultivariateBetaDistribution implements IMultivariateDistribution<D
             sum += alpha.get(i);
         }
         return sum;
+    }
+
+    /**
+     * 给定单纯形上一部分坐标固定时，剩余分量（归一化到单位单纯形）服从 Dirichlet，
+     * 其浓度参数为未固定分量上的 α 子向量。
+     */
+    static IVector<Double> reducedAlphaForConditional(IVector<Double> alpha,
+                                                      int[] conditionIndices,
+                                                      IVector<Double> conditionValues) {
+        if (conditionIndices == null || conditionValues == null) {
+            throw new IllegalArgumentException("条件索引与条件值不能为null");
+        }
+        if (conditionIndices.length != conditionValues.length()) {
+            throw new IllegalArgumentException("条件索引与条件值长度必须相同");
+        }
+        int k = alpha.length();
+        double[] sortedVals = new double[conditionIndices.length];
+        int[] bIdx = MultivariateDistributionMath.sortConditionIndicesWithValues(
+                conditionIndices, conditionValues, sortedVals);
+        double sumFix = 0.0;
+        for (int i = 0; i < bIdx.length; i++) {
+            double v = sortedVals[i];
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("条件分量必须在[0,1]内");
+            }
+            sumFix += v;
+        }
+        if (sumFix >= 1.0 - 1e-10) {
+            throw new IllegalArgumentException("固定分量之和不可达到或超过 1");
+        }
+        int[] rem = MultivariateDistributionMath.complementIndices(k, bIdx);
+        double[] na = new double[rem.length];
+        for (int i = 0; i < rem.length; i++) {
+            na[i] = alpha.get(rem[i]);
+        }
+        return Linalg.vector(na);
     }
     
     /**
@@ -402,33 +441,45 @@ public class MultivariateBetaDistribution implements IMultivariateDistribution<D
         return Linalg.matrix(sampleArray);
     }
     
+    /**
+     * 边际语义与 {@link DirichletDistribution#getMarginal(int...)} 一致（单子 Beta；多半集为扩展 Dirichlet）。
+     */
     @Override
     public IMultivariateDistribution<Double> getMarginal(int... indices) {
         if (indices == null || indices.length == 0) {
             throw new IllegalArgumentException("索引不能为空");
         }
-        
-        // 验证索引有效性
-        for (int index : indices) {
+        int[] uniq = Arrays.stream(indices).distinct().sorted().toArray();
+        if (uniq.length != indices.length) {
+            throw new IllegalArgumentException("索引必须唯一");
+        }
+        for (int index : uniq) {
             if (index < 0 || index >= dimension) {
                 throw new IllegalArgumentException("索引超出范围: " + index);
             }
         }
-        
-        // Dirichlet分布的边际分布仍是Dirichlet分布
-        double[] marginalAlphaArray = new double[indices.length];
-        for (int i = 0; i < indices.length; i++) {
-            marginalAlphaArray[i] = alpha.get(indices[i]);
+        if (uniq.length == dimension) {
+            return new MultivariateBetaDistribution(alpha.copy(), random);
         }
-        
-        IVector<Double> marginalAlpha = Linalg.vector(marginalAlphaArray);
-        return new MultivariateBetaDistribution(marginalAlpha, random);
+        if (uniq.length == 1) {
+            double ai = alpha.get(uniq[0]).doubleValue();
+            return new BetaMultivariateAdapter(new BetaDistribution(ai, alphaSum - ai));
+        }
+        double sumSel = 0.0;
+        double[] conc = new double[uniq.length + 1];
+        for (int i = 0; i < uniq.length; i++) {
+            double ai = alpha.get(uniq[i]).doubleValue();
+            conc[i] = ai;
+            sumSel += ai;
+        }
+        conc[uniq.length] = alphaSum - sumSel;
+        return new MultivariateBetaDistribution(Linalg.vector(conc), random);
     }
     
     @Override
     public IMultivariateDistribution<Double> getConditional(int[] conditionIndices, IVector<Double> conditionValues) {
-        // Dirichlet分布的条件分布比较复杂，这里提供简化实现
-        throw new UnsupportedOperationException("Dirichlet分布的条件分布计算较为复杂，暂不支持");
+        IVector<Double> na = reducedAlphaForConditional(alpha, conditionIndices, conditionValues);
+        return new MultivariateBetaDistribution(na, random);
     }
     
     @Override
@@ -485,7 +536,14 @@ public class MultivariateBetaDistribution implements IMultivariateDistribution<D
     
     @Override
     public double wassersteinDistance(IMultivariateDistribution<Double> other) {
-        throw new UnsupportedOperationException("Dirichlet分布的Wasserstein距离计算较为复杂，暂不支持");
+        if (!(other instanceof MultivariateBetaDistribution)) {
+            throw new IllegalArgumentException("只支持与其他多元Beta(Dirichlet)分布比较");
+        }
+        MultivariateBetaDistribution ob = (MultivariateBetaDistribution) other;
+        if (ob.dimension != this.dimension) {
+            throw new IllegalArgumentException("分布维度必须相同");
+        }
+        return MultivariateDistributionMath.slicedWasserstein2(this, ob, dimension, 256, 48, random);
     }
     
     @Override
@@ -594,23 +652,14 @@ public class MultivariateBetaDistribution implements IMultivariateDistribution<D
     
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        if (dimension != 2) {
-            throw new UnsupportedOperationException("置信椭圆只支持二维分布");
+        if (dimension < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
         }
         if (confidence <= 0 || confidence >= 1) {
             throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
         }
-        
-        // 对于二维Dirichlet分布，置信区域不是椭圆，这里用椭圆近似
-        IVector<Double> mean = getMean();
-        IVector<Double> stdDev = getStandardDeviation();
-        
-        // 使用卡方分位数
-        double chiSquareQuantile = 2.0 * Math.log(1.0 / (1.0 - confidence));
-        double majorAxis = stdDev.get(0) * Math.sqrt(chiSquareQuantile);
-        double minorAxis = stdDev.get(1) * Math.sqrt(chiSquareQuantile);
-        
-        return new ConfidenceEllipse(mean, majorAxis, minorAxis, 0.0);
+        IMatrix<Double> cov = getCovariance();
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlane(getMean(), cov, 0, 1, confidence);
     }
     
     // ==================== 静态工厂方法 ====================

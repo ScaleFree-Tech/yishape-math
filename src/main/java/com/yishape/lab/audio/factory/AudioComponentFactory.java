@@ -42,19 +42,30 @@ import com.yishape.lab.audio.feature.AudioFeatureExtractorImpl;
  * @since 1.0
  */
 public class AudioComponentFactory {
-    
+
+    /**
+     * 组件类型枚举 / Component type enumeration
+     */
     public enum ComponentType {
+        /** 音频处理器 / Audio processor */
         PROCESSOR,
+        /** 音频分析器 / Audio analyzer */
         ANALYZER,
+        /** 音频滤波器 / Audio filter */
         FILTER,
+        /** 音频效果器 / Audio effect */
         EFFECT,
+        /** 音频编解码器 / Audio codec */
         CODEC,
+        /** 音频特征提取器 / Audio feature extractor */
         FEATURE_EXTRACTOR,
+        /** 音频增强器 / Audio enhancer */
         ENHANCER
     }
-    
+
+    /** 工厂实例（单例模式）/ Factory instance (singleton pattern) */
     private static AudioComponentFactory instance;
-    
+
     // 组件注册表 / Component registries
     private final Map<String, Class<? extends IAdvancedAudioProcessor>> processorRegistry = new HashMap<>();
     private final Map<String, Class<? extends IAudioAnalyzer>> analyzerRegistry = new HashMap<>();

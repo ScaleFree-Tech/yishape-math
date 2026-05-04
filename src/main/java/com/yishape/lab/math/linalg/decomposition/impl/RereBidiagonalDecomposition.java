@@ -29,6 +29,10 @@ import com.yishape.lab.math.util.RerePrecision;
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 2.0
  */
 public class RereBidiagonalDecomposition implements IBidiagonalDecomposition {
     
@@ -111,7 +115,7 @@ public class RereBidiagonalDecomposition implements IBidiagonalDecomposition {
             V[i][i] = 1.0;
         }
 
-        // Bidiagonalization process
+        // Bidiagonalization (Householder). Extracted block B is min(m,n) x min(m,n), see below.
         for (int k = 0; k < minDim; k++) {
             // Left transformation (Householder transformation on column k)
             if (k < m - 1) {
@@ -326,7 +330,7 @@ public class RereBidiagonalDecomposition implements IBidiagonalDecomposition {
         if (cachedU == null || cachedB == null || cachedV == null) {
             throw new IllegalStateException("Decomposition not yet performed");
         }
-        // Return the standalone solver
+        // Solver expects this square B (and matching U/V) from the decomposition above.
         return new BidiagonalDecompositionSolver(cachedB, cachedU, cachedV, epsilon);
     }
     

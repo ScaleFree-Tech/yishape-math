@@ -30,7 +30,7 @@ public interface IAudioEmbedding {
      * @return 嵌入向量 / Embedding vector
      */
     public IVector<Double> embed(IMatrix<Double> mfcc);
-    
+
     /**
      * 基于音频数据生成嵌入向量 / Generate embedding vector based on audio data
      *
@@ -38,16 +38,16 @@ public interface IAudioEmbedding {
      * @return 嵌入向量 / Embedding vector
      */
     public IVector<Double> embed(AudioData audioData);
-    
+
     /**
      * 基于原始音频样本生成嵌入向量 / Generate embedding vector based on raw audio samples
      *
      * @param samples 音频样本 / Audio samples
-     * @param sampleRate 采样率 / Sample rate
+     * @param sampleRate 采样率 (Hz) / Sample rate (Hz)
      * @return 嵌入向量 / Embedding vector
      */
     public IVector<Double> embed(IVector<Double> samples, int sampleRate);
-    
+
     /**
      * 批量生成嵌入向量 / Batch generate embedding vectors
      *
@@ -55,11 +55,12 @@ public interface IAudioEmbedding {
      * @return 嵌入向量批次 / Batch of embedding vectors
      */
     public IMatrix<Double> embedBatch(IMatrix<Double>[] mfccBatch);
-    
+
     /**
-     * 保存模型
-     * @param path
-     * @return 
+     * 保存模型 / Save model
+     *
+     * @param path 模型文件路径 / Model file path
+     * @return 保存后的音频嵌入模型 / Saved audio embedding model
      */
     public IAudioEmbedding save(String path);
     
@@ -119,9 +120,10 @@ public interface IAudioEmbedding {
     public double calculateDistance(IVector<Double> embedding1, IVector<Double> embedding2, DistanceType distanceType);
     
     /**
-     * 从本地加载模型
-     * @param path 模型文件路径
-     * @return 加载的音频嵌入模型
+     * 从本地加载模型 / Load model from local storage
+     *
+     * @param path 模型文件路径 / Model file path
+     * @return 加载的音频嵌入模型 / Loaded audio embedding model
      */
     public static IAudioEmbedding load(String path) {
         try {

@@ -1,27 +1,41 @@
 package com.yishape.lab.math.stats.anova;
 
 /**
- * TwoWayANOVAResult - 两因素方差分析结果类 用于封装两因素ANOVA分析的所有重要统计量
+ * 两因素方差分析结果类 / Two-Way ANOVA Result Class
+ * <p>
+ * 用于封装两因素ANOVA分析的所有重要统计量。
+ * Encapsulates all important statistics from two-way ANOVA analysis.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class TwoWayANOVAResult {
 
-    double factorAF;        // 因素A的F统计量
-    double factorAP;        // 因素A的p值
-    double factorBF;        // 因素B的F统计量
-    double factorBP;        // 因素B的p值
-    double interactionF;    // 交互效应的F统计量
-    double interactionP;    // 交互效应的p值
+    /** 因素A的F统计量 / F-statistic for factor A */
+    double factorAF;
+    /** 因素A的p值 / p-value for factor A */
+    double factorAP;
+    /** 因素B的F统计量 / F-statistic for factor B */
+    double factorBF;
+    /** 因素B的p值 / p-value for factor B */
+    double factorBP;
+    /** 交互效应的F统计量 / F-statistic for interaction effect */
+    double interactionF;
+    /** 交互效应的p值 / p-value for interaction effect */
+    double interactionP;
 
-    // 构造函数
-    // 参数说明：
-    //   - factorAF: 因素A的F统计量，用于检验因素A的主效应
-    //   - factorAP: 因素A的p值，表示因素A主效应的显著性
-    //   - factorBF: 因素B的F统计量，用于检验因素B的主效应
-    //   - factorBP: 因素B的p值，表示因素B主效应的显著性
-    //   - interactionF: 交互效应的F统计量，用于检验A×B交互效应
-    //   - interactionP: 交互效应的p值，表示交互效应的显著性
+    /**
+     * 创建两因素方差分析结果对象 / Create Two-Way ANOVA Result Object
+     *
+     * @param factorAF 因素A的F统计量 / F-statistic for factor A
+     * @param factorAP 因素A的p值 / p-value for factor A
+     * @param factorBF 因素B的F统计量 / F-statistic for factor B
+     * @param factorBP 因素B的p值 / p-value for factor B
+     * @param interactionF 交互效应的F统计量 / F-statistic for interaction effect
+     * @param interactionP 交互效应的p值 / p-value for interaction effect
+     */
     TwoWayANOVAResult(double factorAF, double factorAP, double factorBF, double factorBP,
             double interactionF, double interactionP) {
         this.factorAF = factorAF;

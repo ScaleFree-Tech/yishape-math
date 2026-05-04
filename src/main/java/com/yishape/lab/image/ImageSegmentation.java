@@ -48,6 +48,11 @@ public class ImageSegmentation {
     
     /**
      * 分割结果类 / Segmentation Result Class
+     * <p>
+     * 用于存储图像分割的结果，包含分割后的图像、区域数量、区域标签和使用的阈值。
+     * This class stores the results of image segmentation, including the segmented
+     * image, number of regions, region labels, and the threshold used.
+     * </p>
      */
     public static class SegmentationResult {
         private ImageData segmentedImage;    // 分割后的图像 / Segmented image
@@ -61,10 +66,33 @@ public class ImageSegmentation {
             this.regionLabels = regionLabels;
             this.threshold = threshold;
         }
-        
+
+        /**
+         * 获取分割后的图像 / Get segmented image
+         *
+         * @return 分割后的图像 / Segmented image
+         */
         public ImageData getSegmentedImage() { return segmentedImage; }
+
+        /**
+         * 获取区域数量 / Get number of regions
+         *
+         * @return 区域数量 / Number of regions
+         */
         public int getNumRegions() { return numRegions; }
+
+        /**
+         * 获取区域标签 / Get region labels
+         *
+         * @return 区域标签数组 / Region labels array
+         */
         public double[] getRegionLabels() { return regionLabels; }
+
+        /**
+         * 获取使用的阈值 / Get used threshold
+         *
+         * @return 阈值 / Threshold
+         */
         public double getThreshold() { return threshold; }
     }
     

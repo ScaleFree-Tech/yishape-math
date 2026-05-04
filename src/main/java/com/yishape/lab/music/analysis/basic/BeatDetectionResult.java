@@ -8,6 +8,10 @@ import com.yishape.lab.music.analysis.MusicDetectionResult;
  * 包含节拍检测的结果信息，包括节拍时间点和BPM。
  * Contains beat detection result information including beat time points and BPM.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class BeatDetectionResult extends MusicDetectionResult {
     private double[] beatTimes;

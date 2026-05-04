@@ -48,15 +48,30 @@ public class ImageComponentFactory {
      * 组件配置类 / Component Configuration Class
      */
     public static class ComponentConfig {
+        /** 组件名称 / Component name */
         private String name;
+        /** 组件描述 / Component description */
         private String description;
+        /** 版本号 / Version */
         private String version;
+        /** 组件类型 / Component type */
         private ComponentType type;
+        /** 默认参数 / Default parameters */
         private Map<String, Object> defaultParameters;
+        /** 是否单例 / Whether singleton */
         private boolean singleton;
+        /** 实现类 / Implementation class */
         private Class<?> implementationClass;
+        /** 工厂函数 / Factory function */
         private Supplier<?> factory;
-        
+
+        /**
+         * 构造组件配置 / Construct ComponentConfig
+         *
+         * @param name 组件名称 / Component name
+         * @param type 组件类型 / Component type
+         * @param implementationClass 实现类 / Implementation class
+         */
         public ComponentConfig(String name, ComponentType type, Class<?> implementationClass) {
             this.name = name;
             this.type = type;
@@ -64,7 +79,14 @@ public class ImageComponentFactory {
             this.defaultParameters = new java.util.HashMap<>();
             this.singleton = false;
         }
-        
+
+        /**
+         * 构造组件配置 / Construct ComponentConfig
+         *
+         * @param name 组件名称 / Component name
+         * @param type 组件类型 / Component type
+         * @param factory 工厂函数 / Factory function
+         */
         public ComponentConfig(String name, ComponentType type, Supplier<?> factory) {
             this.name = name;
             this.type = type;
@@ -72,34 +94,50 @@ public class ImageComponentFactory {
             this.defaultParameters = new java.util.HashMap<>();
             this.singleton = false;
         }
-        
+
         // Getters and Setters
+        /** 获取组件名称 / Get component name */
         public String getName() { return name; }
+        /** 设置组件名称 / Set component name */
         public ComponentConfig setName(String name) { this.name = name; return this; }
-        
+
+        /** 获取组件描述 / Get component description */
         public String getDescription() { return description; }
+        /** 设置组件描述 / Set component description */
         public ComponentConfig setDescription(String description) { this.description = description; return this; }
-        
+
+        /** 获取版本号 / Get version */
         public String getVersion() { return version; }
+        /** 设置版本号 / Set version */
         public ComponentConfig setVersion(String version) { this.version = version; return this; }
-        
+
+        /** 获取组件类型 / Get component type */
         public ComponentType getType() { return type; }
+        /** 设置组件类型 / Set component type */
         public ComponentConfig setType(ComponentType type) { this.type = type; return this; }
-        
+
+        /** 获取默认参数 / Get default parameters */
         public Map<String, Object> getDefaultParameters() { return defaultParameters; }
-        public ComponentConfig setDefaultParameters(Map<String, Object> parameters) { 
-            this.defaultParameters = parameters; return this; 
+        /** 设置默认参数 / Set default parameters */
+        public ComponentConfig setDefaultParameters(Map<String, Object> parameters) {
+            this.defaultParameters = parameters; return this;
         }
-        
+
+        /** 获取是否单例 / Get whether singleton */
         public boolean isSingleton() { return singleton; }
+        /** 设置是否单例 / Set whether singleton */
         public ComponentConfig setSingleton(boolean singleton) { this.singleton = singleton; return this; }
-        
+
+        /** 获取实现类 / Get implementation class */
         public Class<?> getImplementationClass() { return implementationClass; }
-        public ComponentConfig setImplementationClass(Class<?> clazz) { 
-            this.implementationClass = clazz; return this; 
+        /** 设置实现类 / Set implementation class */
+        public ComponentConfig setImplementationClass(Class<?> clazz) {
+            this.implementationClass = clazz; return this;
         }
-        
+
+        /** 获取工厂函数 / Get factory function */
         public Supplier<?> getFactory() { return factory; }
+        /** 设置工厂函数 / Set factory function */
         public ComponentConfig setFactory(Supplier<?> factory) { this.factory = factory; return this; }
     }
     

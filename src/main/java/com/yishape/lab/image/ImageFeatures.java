@@ -15,9 +15,9 @@ import com.yishape.lab.math.linalg.Linalg;
  * texture features, shape features, etc. Fully utilizes existing statistical and linear algebra functionality.
  * </p>
  *
- * @author lteb2
- * @version 1.0
- * @since 1.0
+ * @author RereMouse
+ * @version 2.0
+ * @since 2.0
  */
 public class ImageFeatures {
     
@@ -39,15 +39,35 @@ public class ImageFeatures {
      * 纹理特征结果类 / Texture Feature Result Class
      */
     public static class TextureFeatures {
-        public double energy;           // 能量 / Energy
-        public double contrast;         // 对比度 / Contrast
-        public double correlation;      // 相关性 / Correlation
-        public double homogeneity;      // 同质性 / Homogeneity
-        public double entropy;          // 熵 / Entropy
-        public double variance;         // 方差 / Variance
-        public double mean;             // 均值 / Mean
-        public double standardDeviation; // 标准差 / Standard deviation
-        
+        /** 能量 / Energy */
+        public double energy;
+        /** 对比度 / Contrast */
+        public double contrast;
+        /** 相关性 / Correlation */
+        public double correlation;
+        /** 同质性 / Homogeneity */
+        public double homogeneity;
+        /** 熵 / Entropy */
+        public double entropy;
+        /** 方差 / Variance */
+        public double variance;
+        /** 均值 / Mean */
+        public double mean;
+        /** 标准差 / Standard deviation */
+        public double standardDeviation;
+
+        /**
+         * 构造纹理特征 / Construct TextureFeatures
+         *
+         * @param energy 能量 / Energy
+         * @param contrast 对比度 / Contrast
+         * @param correlation 相关性 / Correlation
+         * @param homogeneity 同质性 / Homogeneity
+         * @param entropy 熵 / Entropy
+         * @param variance 方差 / Variance
+         * @param mean 均值 / Mean
+         * @param standardDeviation 标准差 / Standard deviation
+         */
         public TextureFeatures(double energy, double contrast, double correlation, double homogeneity,
                               double entropy, double variance, double mean, double standardDeviation) {
             this.energy = energy;
@@ -71,15 +91,35 @@ public class ImageFeatures {
      * 形状特征结果类 / Shape Feature Result Class
      */
     public static class ShapeFeatures {
-        public double area;             // 面积 / Area
-        public double perimeter;        // 周长 / Perimeter
-        public double compactness;      // 紧致度 / Compactness
-        public double aspectRatio;      // 长宽比 / Aspect ratio
-        public double circularity;      // 圆形度 / Circularity
-        public double eccentricity;     // 偏心率 / Eccentricity
-        public double solidity;         // 实心度 / Solidity
-        public double extent;           // 范围 / Extent
-        
+        /** 面积 / Area */
+        public double area;
+        /** 周长 / Perimeter */
+        public double perimeter;
+        /** 紧致度 / Compactness */
+        public double compactness;
+        /** 长宽比 / Aspect ratio */
+        public double aspectRatio;
+        /** 圆形度 / Circularity */
+        public double circularity;
+        /** 偏心率 / Eccentricity */
+        public double eccentricity;
+        /** 实心度 / Solidity */
+        public double solidity;
+        /** 范围 / Extent */
+        public double extent;
+
+        /**
+         * 构造形状特征 / Construct ShapeFeatures
+         *
+         * @param area 面积 / Area
+         * @param perimeter 周长 / Perimeter
+         * @param compactness 紧致度 / Compactness
+         * @param aspectRatio 长宽比 / Aspect ratio
+         * @param circularity 圆形度 / Circularity
+         * @param eccentricity 偏心率 / Eccentricity
+         * @param solidity 实心度 / Solidity
+         * @param extent 范围 / Extent
+         */
         public ShapeFeatures(double area, double perimeter, double compactness, double aspectRatio,
                            double circularity, double eccentricity, double solidity, double extent) {
             this.area = area;
@@ -103,15 +143,35 @@ public class ImageFeatures {
      * 颜色特征结果类 / Color Feature Result Class
      */
     public static class ColorFeatures {
-        public double[] meanRGB;        // RGB均值 / RGB mean
-        public double[] stdRGB;         // RGB标准差 / RGB standard deviation
-        public double[] skewnessRGB;    // RGB偏度 / RGB skewness
-        public double[] kurtosisRGB;    // RGB峰度 / RGB kurtosis
-        public double meanHue;          // 色调均值 / Hue mean
-        public double meanSaturation;   // 饱和度均值 / Saturation mean
-        public double meanValue;        // 明度均值 / Value mean
-        public double colorVariance;    // 颜色方差 / Color variance
-        
+        /** RGB均值 / RGB mean */
+        public double[] meanRGB;
+        /** RGB标准差 / RGB standard deviation */
+        public double[] stdRGB;
+        /** RGB偏度 / RGB skewness */
+        public double[] skewnessRGB;
+        /** RGB峰度 / RGB kurtosis */
+        public double[] kurtosisRGB;
+        /** 色调均值 / Hue mean */
+        public double meanHue;
+        /** 饱和度均值 / Saturation mean */
+        public double meanSaturation;
+        /** 明度均值 / Value mean */
+        public double meanValue;
+        /** 颜色方差 / Color variance */
+        public double colorVariance;
+
+        /**
+         * 构造颜色特征 / Construct ColorFeatures
+         *
+         * @param meanRGB RGB均值 / RGB mean
+         * @param stdRGB RGB标准差 / RGB standard deviation
+         * @param skewnessRGB RGB偏度 / RGB skewness
+         * @param kurtosisRGB RGB峰度 / RGB kurtosis
+         * @param meanHue 色调均值 / Hue mean
+         * @param meanSaturation 饱和度均值 / Saturation mean
+         * @param meanValue 明度均值 / Value mean
+         * @param colorVariance 颜色方差 / Color variance
+         */
         public ColorFeatures(double[] meanRGB, double[] stdRGB, double[] skewnessRGB, double[] kurtosisRGB,
                            double meanHue, double meanSaturation, double meanValue, double colorVariance) {
             this.meanRGB = meanRGB;

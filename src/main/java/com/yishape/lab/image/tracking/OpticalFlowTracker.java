@@ -29,12 +29,29 @@ public class OpticalFlowTracker {
      * 光流向量类 / Optical Flow Vector Class
      */
     public static class FlowVector {
-        private double x, y;     // 位置 / Position
-        private double dx, dy;   // 光流向量 / Flow vector
-        private double magnitude; // 幅值 / Magnitude
-        private double angle;    // 角度 / Angle
-        private double confidence; // 置信度 / Confidence
-        
+        /** X位置 / X position */
+        private double x;
+        /** Y位置 / Y position */
+        private double y;
+        /** X方向光流 / X-direction flow */
+        private double dx;
+        /** Y方向光流 / Y-direction flow */
+        private double dy;
+        /** 幅值 / Magnitude */
+        private double magnitude;
+        /** 角度 / Angle */
+        private double angle;
+        /** 置信度 / Confidence */
+        private double confidence;
+
+        /**
+         * 构造光流向量 / Construct FlowVector
+         *
+         * @param x X位置 / X position
+         * @param y Y位置 / Y position
+         * @param dx X方向光流 / X-direction flow
+         * @param dy Y方向光流 / Y-direction flow
+         */
         public FlowVector(double x, double y, double dx, double dy) {
             this.x = x;
             this.y = y;
@@ -66,14 +83,27 @@ public class OpticalFlowTracker {
      * 光流结果类 / Optical Flow Result Class
      */
     public static class OpticalFlowResult {
-        private IMatrix<Double> flowX;        // X方向光流 / X-direction flow
-        private IMatrix<Double> flowY;        // Y方向光流 / Y-direction flow
-        private IMatrix<Double> magnitude;    // 光流幅值 / Flow magnitude
-        private IMatrix<Double> angle;        // 光流角度 / Flow angle
-        private double avgMagnitude;          // 平均幅值 / Average magnitude
-        private double maxMagnitude;          // 最大幅值 / Maximum magnitude
-        private Map<String, Double> statistics; // 统计信息 / Statistics
-        
+        /** X方向光流 / X-direction flow */
+        private IMatrix<Double> flowX;
+        /** Y方向光流 / Y-direction flow */
+        private IMatrix<Double> flowY;
+        /** 光流幅值 / Flow magnitude */
+        private IMatrix<Double> magnitude;
+        /** 光流角度 / Flow angle */
+        private IMatrix<Double> angle;
+        /** 平均幅值 / Average magnitude */
+        private double avgMagnitude;
+        /** 最大幅值 / Maximum magnitude */
+        private double maxMagnitude;
+        /** 统计信息 / Statistics */
+        private Map<String, Double> statistics;
+
+        /**
+         * 构造光流结果 / Construct OpticalFlowResult
+         *
+         * @param flowX X方向光流 / X-direction flow
+         * @param flowY Y方向光流 / Y-direction flow
+         */
         public OpticalFlowResult(IMatrix<Double> flowX, IMatrix<Double> flowY) {
             this.flowX = flowX;
             this.flowY = flowY;

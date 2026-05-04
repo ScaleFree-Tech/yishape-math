@@ -19,9 +19,13 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * 期望最大化(EM)算法实现
  * Expectation-Maximization (EM) Algorithm Implementation
- * 
+ *
  * 用于高斯混合模型的参数估计
  * Used for parameter estimation in Gaussian Mixture Models
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class EMAlgorithm {
 
@@ -61,13 +65,14 @@ public class EMAlgorithm {
     /** 收敛历史记录 / Convergence history for early stopping */
     private final List<Double> convergenceHistory;
     
-    /** 最小改进阈值，用于检测收敛停滞 */
+    /**
+     * 最小改进阈值，用于检测收敛停滞 / Minimum improvement threshold for detecting convergence stagnation */
     private static final double MIN_IMPROVEMENT_THRESHOLD = 1e-8;
-    
+
     /** 随机数生成器 / Random number generator */
     private final Random random;
-    
-    /** 连续下降次数阈值 */
+
+    /** 连续下降次数阈值 / Threshold for consecutive decreases */
     private static final int MAX_CONSECUTIVE_DECREASES = 5; // K-means++初始化的连续下降次数
     private static final int MAX_CONSECUTIVE_DECREASES_RANDOM = 10; // 随机初始化的连续下降次数
     
@@ -100,14 +105,30 @@ public class EMAlgorithm {
         /** 最终的后验概率矩阵 / Final posterior probability matrix */
         public final IMatrix<Double> posteriors;
         
-        public EMResult(double logLikelihood, int iterations, boolean converged, IMatrix<Double> posteriors) {
+        /**
+     * 创建EM算法结果对象 / Create EM Algorithm Result Object
+     *
+     * @param logLikelihood 对数似然值 / Log-likelihood value
+     * @param iterations 实际迭代次数 / Actual number of iterations
+     * @param converged 是否收敛 / Whether converged
+     * @param posteriors 最终的后验概率矩阵 / Final posterior probability matrix
+     */
+    public EMResult(double logLikelihood, int iterations, boolean converged, IMatrix<Double> posteriors) {
             this.logLikelihood = logLikelihood;
             this.iterations = iterations;
             this.converged = converged;
             this.posteriors = posteriors;
         }
         
-        public EMResult(double logLikelihood, int iterations, boolean converged, String errorMessage) {
+        /**
+     * 创建EM算法结果对象（失败情况）/ Create EM Algorithm Result Object (failure case)
+     *
+     * @param logLikelihood 对数似然值 / Log-likelihood value
+     * @param iterations 实际迭代次数 / Actual number of iterations
+     * @param converged 是否收敛 / Whether converged
+     * @param errorMessage 错误信息 / Error message
+     */
+    public EMResult(double logLikelihood, int iterations, boolean converged, String errorMessage) {
             this.logLikelihood = logLikelihood;
             this.iterations = iterations;
             this.converged = converged;
@@ -116,12 +137,14 @@ public class EMAlgorithm {
     }
     
     /**
-     * 构造函数
-     * @param maxIterations 最大迭代次数
-     * @param tolerance 收敛阈值
-     * @param verbose 是否输出详细信息
-     * @param enableParallel 是否启用并行计算
-     * @param threadPoolSize 线程池大小
+     * 创建EM算法实例（完整参数）
+     * Create EM Algorithm Instance (full parameters)
+     *
+     * @param maxIterations 最大迭代次数 / Maximum number of iterations
+     * @param tolerance 收敛阈值 / Convergence threshold
+     * @param verbose 是否输出详细信息 / Whether to output verbose information
+     * @param enableParallel 是否启用并行计算 / Whether to enable parallel computation
+     * @param threadPoolSize 线程池大小 / Thread pool size
      */
     public EMAlgorithm(int maxIterations, double tolerance, boolean verbose, boolean enableParallel, int threadPoolSize) {
         this.maxIterations = maxIterations;
@@ -136,17 +159,20 @@ public class EMAlgorithm {
     }
     
     /**
-     * 构造函数
-     * @param maxIterations 最大迭代次数
-     * @param tolerance 收敛阈值
-     * @param verbose 是否输出详细信息
+     * 创建EM算法实例（不带线程池参数）
+     * Create EM Algorithm Instance (without thread pool parameter)
+     *
+     * @param maxIterations 最大迭代次数 / Maximum number of iterations
+     * @param tolerance 收敛阈值 / Convergence threshold
+     * @param verbose 是否输出详细信息 / Whether to output verbose information
      */
     public EMAlgorithm(int maxIterations, double tolerance, boolean verbose) {
         this(maxIterations, tolerance, verbose, true, Runtime.getRuntime().availableProcessors());
     }
     
     /**
-     * 默认构造函数
+     * 创建EM算法实例（默认参数）
+     * Create EM Algorithm Instance (default parameters)
      */
     public EMAlgorithm() {
         this(100, 1e-6, false, true, Runtime.getRuntime().availableProcessors());
@@ -326,6 +352,16 @@ public class EMAlgorithm {
      * @param useKMeansPlusPlus 是否使用K-means++初始化
      * @return 最佳EM算法结果
      */
+    /**
+     * 使用多次随机初始化训练高斯混合模型，选择最佳结果
+     * Train Gaussian Mixture Model with Multiple Random Initializations, Select Best Result
+     *
+     * @param data 训练数据 / Training data
+     * @param numComponents 分量数量 / Number of components
+     * @param numInitializations 初始化次数 / Number of initializations
+     * @param useKMeansPlusPlus 是否使用K-means++初始化 / Whether to use K-means++ initialization
+     * @return EMResult 最佳EM算法结果 / Best EM algorithm result
+     */
     public EMResult fitWithMultipleInitializations(List<IVector<Double>> data, int numComponents, 
                                                   int numInitializations, boolean useKMeansPlusPlus) {
         if (data.isEmpty()) {
@@ -413,6 +449,16 @@ public class EMAlgorithm {
      * @param numRestarts 重启次数
      * @param useKMeansPlusPlus 是否使用K-means++初始化
      * @return 最佳的EM算法结果
+     */
+    /**
+     * 使用多重启动策略的EM算法拟合
+     * EM Algorithm Fitting with Multiple Restart Strategy
+     *
+     * @param data 训练数据 / Training data
+     * @param numComponents 混合分量数量 / Number of mixture components
+     * @param numRestarts 重启次数 / Number of restarts
+     * @param useKMeansPlusPlus 是否使用K-means++初始化 / Whether to use K-means++ initialization
+     * @return EMResult 最佳的EM算法结果 / Best EM algorithm result
      */
     public EMResult fitWithMultipleRestarts(List<IVector<Double>> data, int numComponents, 
                                           int numRestarts, boolean useKMeansPlusPlus) {
@@ -553,6 +599,14 @@ public class EMAlgorithm {
       * @param gmm 初始化的高斯混合模型
       * @return EM算法结果
       */
+    /**
+     * 训练高斯混合模型
+     * Train Gaussian Mixture Model
+     *
+     * @param data 训练数据 / Training data
+     * @param gmm 初始化的高斯混合模型 / Initialized Gaussian Mixture Model
+     * @return EMResult EM算法结果 / EM algorithm result
+     */
     public EMResult fit(List<IVector<Double>> data, GaussianMixtureModel gmm) {
         if (data.isEmpty()) {
             throw new IllegalArgumentException("训练数据不能为空");
@@ -1267,6 +1321,13 @@ public class EMAlgorithm {
      * @param gmm 高斯混合模型
      * @return BIC值
      */
+    /**
+     * 计算贝叶斯信息准则(BIC) / Compute Bayesian Information Criterion (BIC)
+     *
+     * @param data 训练数据 / Training data
+     * @param gmm 高斯混合模型 / Gaussian Mixture Model
+     * @return double BIC值 / BIC value
+     */
     public double computeBIC(List<IVector<Double>> data, GaussianMixtureModel gmm) {
         double logLikelihood = computeLogLikelihood(data, gmm);
         int numSamples = data.size();
@@ -1284,6 +1345,13 @@ public class EMAlgorithm {
      * @param data 训练数据
      * @param gmm 高斯混合模型
      * @return AIC值
+     */
+    /**
+     * 计算阿卡信息准则(AIC) / Compute Akaike Information Criterion (AIC)
+     *
+     * @param data 训练数据 / Training data
+     * @param gmm 高斯混合模型 / Gaussian Mixture Model
+     * @return double AIC值 / AIC value
      */
     public double computeAIC(List<IVector<Double>> data, GaussianMixtureModel gmm) {
         double logLikelihood = computeLogLikelihood(data, gmm);
@@ -1613,14 +1681,29 @@ public class EMAlgorithm {
     }
     
     // Getters
+    /**
+     * 获取最大迭代次数 / Get maximum number of iterations
+     *
+     * @return int 最大迭代次数 / Maximum number of iterations
+     */
     public int getMaxIterations() {
         return maxIterations;
     }
     
+    /**
+     * 获取收敛阈值 / Get convergence threshold
+     *
+     * @return double 收敛阈值 / Convergence threshold
+     */
     public double getTolerance() {
         return tolerance;
     }
     
+    /**
+     * 是否输出详细信息 / Whether to output verbose information
+     *
+     * @return boolean 是否详细输出 / Whether to output verbose information
+     */
     public boolean isVerbose() {
         return verbose;
     }

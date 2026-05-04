@@ -61,7 +61,13 @@ public class Musics {
 
     // ========== 音乐分析器创建方法 / Music Analyzer Creation Methods ==========
     /**
-     * 创建基础音乐分析器 / Create basic music analyzer
+     * 创建基础音乐分析器 / Create Basic Music Analyzer
+     * <p>
+     * 创建并返回基础音乐分析器实例。
+     * Create and return basic music analyzer instance.
+     * </p>
+     *
+     * @return 基础音乐分析器实例 / Basic music analyzer instance
      */
     public static BasicMusicAnalyzer createBasicMusicAnalyzer() {
         try {
@@ -72,7 +78,13 @@ public class Musics {
     }
 
     /**
-     * 创建综合音乐分析器 / Create comprehensive music analyzer
+     * 创建综合音乐分析器 / Create Comprehensive Music Analyzer
+     * <p>
+     * 创建并返回综合音乐分析器实例。
+     * Create and return comprehensive music analyzer instance.
+     * </p>
+     *
+     * @return 综合音乐分析器实例 / Comprehensive music analyzer instance
      */
     public static ComprehensiveMusicAnalyzer createComprehensiveMusicAnalyzer() {
         try {
@@ -83,7 +95,13 @@ public class Musics {
     }
 
     /**
-     * 创建高级音乐分析器 / Create advanced music analyzer
+     * 创建高级音乐分析器 / Create Advanced Music Analyzer
+     * <p>
+     * 创建并返回高级音乐分析器实例。
+     * Create and return advanced music analyzer instance.
+     * </p>
+     *
+     * @return 高级音乐分析器实例 / Advanced music analyzer instance
      */
     public static AdvancedMusicAnalyzer createAdvancedMusicAnalyzer() {
         try {
@@ -94,7 +112,13 @@ public class Musics {
     }
 
     /**
-     * 创建节拍分析器 / Create beat analyzer
+     * 创建节拍分析器 / Create Beat Analyzer
+     * <p>
+     * 创建并返回节拍分析器实例。
+     * Create and return beat analyzer instance.
+     * </p>
+     *
+     * @return 节拍分析器实例 / Beat analyzer instance
      */
     public static IBeatAnalyzer createBeatAnalyzer() {
         try {
@@ -105,7 +129,13 @@ public class Musics {
     }
 
     /**
-     * 创建调性分析器 / Create key analyzer
+     * 创建调性分析器 / Create Key Analyzer
+     * <p>
+     * 创建并返回调性分析器实例。
+     * Create and return key analyzer instance.
+     * </p>
+     *
+     * @return 调性分析器实例 / Key analyzer instance
      */
     public static IKeyAnalyzer createKeyAnalyzer() {
         try {
@@ -116,7 +146,13 @@ public class Musics {
     }
 
     /**
-     * 创建和弦分析器 / Create chord analyzer
+     * 创建和弦分析器 / Create Chord Analyzer
+     * <p>
+     * 创建并返回和弦分析器实例。
+     * Create and return chord analyzer instance.
+     * </p>
+     *
+     * @return 和弦分析器实例 / Chord analyzer instance
      */
     public static IChordAnalyzer createChordAnalyzer() {
         try {
@@ -127,7 +163,13 @@ public class Musics {
     }
 
     /**
-     * 创建情感分析器 / Create emotion analyzer
+     * 创建情感分析器 / Create Emotion Analyzer
+     * <p>
+     * 创建并返回情感分析器实例。
+     * Create and return emotion analyzer instance.
+     * </p>
+     *
+     * @return 情感分析器实例 / Emotion analyzer instance
      */
     public static IAdvancedAnalyzer createEmotionAnalyzer() {
         try {
@@ -138,7 +180,13 @@ public class Musics {
     }
 
     /**
-     * 创建风格分析器 / Create genre analyzer
+     * 创建风格分析器 / Create Genre Analyzer
+     * <p>
+     * 创建并返回风格分析器实例。
+     * Create and return genre analyzer instance.
+     * </p>
+     *
+     * @return 风格分析器实例 / Genre analyzer instance
      */
     public static IAdvancedAnalyzer createGenreAnalyzer() {
         try {
@@ -149,7 +197,13 @@ public class Musics {
     }
 
     /**
-     * 创建复杂度分析器 / Create complexity analyzer
+     * 创建复杂度分析器 / Create Complexity Analyzer
+     * <p>
+     * 创建并返回复杂度分析器实例。
+     * Create and return complexity analyzer instance.
+     * </p>
+     *
+     * @return 复杂度分析器实例 / Complexity analyzer instance
      */
     public static IAdvancedAnalyzer createComplexityAnalyzer() {
         try {
@@ -160,7 +214,13 @@ public class Musics {
     }
 
     /**
-     * 创建特征提取器 / Create feature extractor
+     * 创建特征提取器 / Create Feature Extractor
+     * <p>
+     * 创建并返回音乐特征提取器实例。
+     * Create and return music feature extractor instance.
+     * </p>
+     *
+     * @return 特征提取器实例 / Feature extractor instance
      */
     public static IFeatureExtractor createFeatureExtractor() {
         try {
@@ -186,28 +246,52 @@ public class Musics {
     }
 
     /**
-     * 创建和声化处理器 / Create harmonizer processor
+     * 创建和声化处理器 / Create Harmonizer Processor
+     * <p>
+     * 创建并返回和声化处理器实例。
+     * Create and return harmonizer processor instance.
+     * </p>
+     *
+     * @return 和声化处理器实例 / Harmonizer processor instance
      */
     public static IMusicProcessor createHarmonizer() {
         return createProcessor("harmonizer");
     }
 
     /**
-     * 创建量化处理器 / Create quantizer processor
+     * 创建量化处理器 / Create Quantizer Processor
+     * <p>
+     * 创建并返回量化处理器实例。
+     * Create and return quantizer processor instance.
+     * </p>
+     *
+     * @return 量化处理器实例 / Quantizer processor instance
      */
     public static IMusicProcessor createQuantizer() {
         return createProcessor("quantizer");
     }
 
     /**
-     * 创建转调处理器 / Create transposer processor
+     * 创建转调处理器 / Create Transposer Processor
+     * <p>
+     * 创建并返回转调处理器实例。
+     * Create and return transposer processor instance.
+     * </p>
+     *
+     * @return 转调处理器实例 / Transposer processor instance
      */
     public static IMusicProcessor createTransposer() {
         return createProcessor("transposer");
     }
 
     /**
-     * 创建音乐理论处理器 / Create music theory processor
+     * 创建音乐理论处理器 / Create Music Theory Processor
+     * <p>
+     * 创建并返回音乐理论处理器实例。
+     * Create and return music theory processor instance.
+     * </p>
+     *
+     * @return 音乐理论处理器实例 / Music theory processor instance
      */
     public static IMusicProcessor createMusicTheoryProcessor() {
         return createProcessor("theory_processor");
@@ -244,29 +328,55 @@ public class Musics {
     }
 
     /**
-     * 创建和弦生成器 / Create chord generator
+     * 创建和弦生成器 / Create Chord Generator
+     * <p>
+     * 创建并返回和弦生成器实例。
+     * Create and return chord generator instance.
+     * </p>
+     *
+     * @return 和弦生成器实例 / Chord generator instance
      */
     public static ChordGenerator createChordGenerator() {
         return (ChordGenerator) createGenerator("chord_generator");
     }
 
     /**
-     * 创建音程生成器 / Create interval generator
+     * 创建音程生成器 / Create Interval Generator
+     * <p>
+     * 创建并返回音程生成器实例。
+     * Create and return interval generator instance.
+     * </p>
+     *
+     * @return 音程生成器实例 / Interval generator instance
      */
     public static IntervalGenerator createIntervalGenerator() {
         return (IntervalGenerator) createGenerator("interval_generator");
     }
 
     /**
-     * 创建音阶生成器 / Create scale generator
+     * 创建音阶生成器 / Create Scale Generator
+     * <p>
+     * 创建并返回音阶生成器实例。
+     * Create and return scale generator instance.
+     * </p>
+     *
+     * @return 音阶生成器实例 / Scale generator instance
      */
     public static ScaleGenerator createScaleGenerator() {
         return (ScaleGenerator) createGenerator("scale_generator");
     }
 
     // ========== 音乐分析方法 / Music Analysis Methods ==========
+
     /**
      * 基础音乐分析 / Basic Music Analysis
+     * <p>
+     * 对音频数据进行基础音乐分析。
+     * Perform basic music analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult basicAnalysis(AudioData audio) {
         try {
@@ -279,6 +389,14 @@ public class Musics {
 
     /**
      * 基础音乐分析（带参数） / Basic Music Analysis (with parameters)
+     * <p>
+     * 对音频数据进行带参数的基础音乐分析。
+     * Perform basic music analysis with parameters on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult basicAnalysis(AudioData audio, Map<String, Object> parameters) {
         try {
@@ -290,9 +408,14 @@ public class Musics {
     }
 
     /**
-     * 获取音乐特征的原始封装
-     * @param audio MusicFeatureResult类型对象，封装了四种类型的音乐独特特征
-     * @return 
+     * 提取音乐特征 / Extract Music Features
+     * <p>
+     * 从音频数据中提取音乐特征，包括节奏、调性、结构和表现力特征。
+     * Extract music features from audio data, including rhythm, tonal, structure and expressiveness features.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 音乐特征结果 / Music feature result
      */
     public static MusicFeatureResult extractMusicFeatures(AudioData audio) {
         try {
@@ -674,6 +797,13 @@ public class Musics {
 
     /**
      * 综合音乐分析 / Comprehensive Music Analysis
+     * <p>
+     * 对音频数据进行综合音乐分析。
+     * Perform comprehensive music analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult comprehensiveAnalysis(AudioData audio) {
         try {
@@ -686,6 +816,14 @@ public class Musics {
 
     /**
      * 综合音乐分析（带参数） / Comprehensive Music Analysis (with parameters)
+     * <p>
+     * 对音频数据进行带参数的综合音乐分析。
+     * Perform comprehensive music analysis with parameters on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult comprehensiveAnalysis(AudioData audio, Map<String, Object> parameters) {
         try {
@@ -698,6 +836,13 @@ public class Musics {
 
     /**
      * 高级音乐分析 / Advanced Music Analysis
+     * <p>
+     * 对音频数据进行高级音乐分析。
+     * Perform advanced music analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult advancedAnalysis(AudioData audio) {
         try {
@@ -710,6 +855,14 @@ public class Musics {
 
     /**
      * 高级音乐分析（带参数） / Advanced Music Analysis (with parameters)
+     * <p>
+     * 对音频数据进行带参数的高级音乐分析。
+     * Perform advanced music analysis with parameters on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param parameters 分析参数 / Analysis parameters
+     * @return 统一音乐分析结果 / Unified music analysis result
      */
     public static UnifiedMusicAnalysisResult advancedAnalysis(AudioData audio, Map<String, Object> parameters) {
         try {
@@ -722,6 +875,13 @@ public class Musics {
 
     /**
      * 情感分析 / Emotion Analysis
+     * <p>
+     * 对音频数据进行情感分析。
+     * Perform emotion analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 音乐检测结果 / Music detection result
      */
     public static MusicDetectionResult analyzeEmotion(AudioData audio) {
         try {
@@ -734,6 +894,13 @@ public class Musics {
 
     /**
      * 风格分析 / Genre Analysis
+     * <p>
+     * 对音频数据进行风格分析。
+     * Perform genre analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 音乐检测结果 / Music detection result
      */
     public static MusicDetectionResult analyzeGenre(AudioData audio) {
         try {
@@ -746,6 +913,13 @@ public class Musics {
 
     /**
      * 复杂度分析 / Complexity Analysis
+     * <p>
+     * 对音频数据进行复杂度分析。
+     * Perform complexity analysis on audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 音乐检测结果 / Music detection result
      */
     public static MusicDetectionResult analyzeComplexity(AudioData audio) {
         try {
@@ -758,6 +932,16 @@ public class Musics {
 
     /**
      * 生成和弦 / Generate Chords
+     * <p>
+     * 根据给定的和弦进行生成音频数据。
+     * Generate audio data from given chord progression.
+     * </p>
+     *
+     * @param chordProgression 和弦进行 / Chord progression
+     * @param key 调性 / Key
+     * @param octave 八度 / Octave
+     * @param duration 时长（秒）/ Duration in seconds
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateChords(String[] chordProgression, int key, int octave,
             double duration) {
@@ -787,6 +971,16 @@ public class Musics {
 
     /**
      * 生成音程 / Generate Intervals
+     * <p>
+     * 根据给定的音程序列生成音频数据。
+     * Generate audio data from given interval sequence.
+     * </p>
+     *
+     * @param intervals 音程序列 / Interval sequence
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param duration 时长（秒）/ Duration in seconds
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateIntervals(String[] intervals, int rootNote, int octave,
             double duration) {
@@ -817,6 +1011,16 @@ public class Musics {
 
     /**
      * 生成音阶 / Generate Scales
+     * <p>
+     * 根据给定的音阶序列生成音频数据。
+     * Generate audio data from given scale sequence.
+     * </p>
+     *
+     * @param scales 音阶序列 / Scale sequence
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param duration 时长（秒）/ Duration in seconds
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateScales(String[] scales, int rootNote, int octave,
             double duration) {
@@ -847,6 +1051,17 @@ public class Musics {
 
     /**
      * 生成和弦进行 / Generate Chord Progression
+     * <p>
+     * 根据给定的和弦进行生成音频数据。
+     * Generate audio data from given chord progression.
+     * </p>
+     *
+     * @param chordProgression 和弦进行 / Chord progression
+     * @param key 调性 / Key
+     * @param octave 八度 / Octave
+     * @param chordDuration 和弦时长（秒）/ Chord duration in seconds
+     * @param sampleRate 采样率 (Hz) / Sample rate in Hz
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateChordProgression(String[] chordProgression, int key, int octave,
             double chordDuration, double sampleRate) {
@@ -865,6 +1080,17 @@ public class Musics {
 
     /**
      * 生成音程序列 / Generate Interval Sequence
+     * <p>
+     * 根据给定的音程序列生成音频数据。
+     * Generate audio data from given interval sequence.
+     * </p>
+     *
+     * @param intervals 音程序列 / Interval sequence
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param noteDuration 音符时长（秒）/ Note duration in seconds
+     * @param sampleRate 采样率 (Hz) / Sample rate in Hz
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateIntervalSequence(String[] intervals, int rootNote, int octave,
             double noteDuration, double sampleRate) {
@@ -884,6 +1110,17 @@ public class Musics {
 
     /**
      * 生成音阶 / Generate Scale
+     * <p>
+     * 根据给定的音阶类型生成音频数据。
+     * Generate audio data from given scale type.
+     * </p>
+     *
+     * @param scaleType 音阶类型 / Scale type
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param noteDuration 音符时长（秒）/ Note duration in seconds
+     * @param sampleRate 采样率 (Hz) / Sample rate in Hz
+     * @return 生成的音频数据 / Generated audio data
      */
     public static AudioData generateScale(String scaleType, int rootNote, int octave,
             double noteDuration, double sampleRate) {
@@ -899,6 +1136,13 @@ public class Musics {
 
     /**
      * 处理音乐理论 / Process Music Theory
+     * <p>
+     * 对音频数据进行处理以提取音乐理论信息。
+     * Process audio data to extract music theory information.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 音乐检测结果 / Music detection result
      */
     public static MusicDetectionResult processMusicTheory(AudioData audio) {
         try {
@@ -917,6 +1161,15 @@ public class Musics {
 
     /**
      * 和声化处理 / Harmonize Processing
+     * <p>
+     * 对音频数据进行和声化处理。
+     * Apply harmonization processing to audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param chordProgression 和弦进行 / Chord progression
+     * @param timing 时间信息 / Timing information
+     * @return 处理后的音频数据 / Processed audio data
      */
     public static AudioData harmonize(AudioData audio, int[] chordProgression, double[] timing) {
         try {
@@ -933,6 +1186,14 @@ public class Musics {
 
     /**
      * 量化处理 / Quantize Processing
+     * <p>
+     * 对音频数据进行量化处理。
+     * Apply quantization processing to audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param gridResolution 网格分辨率 / Grid resolution
+     * @return 处理后的音频数据 / Processed audio data
      */
     public static AudioData quantize(AudioData audio, double gridResolution) {
         try {
@@ -945,6 +1206,14 @@ public class Musics {
 
     /**
      * 转调处理 / Transpose Processing
+     * <p>
+     * 对音频数据进行转调处理。
+     * Apply transposition processing to audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param semitones 半音数 / Number of semitones
+     * @return 处理后的音频数据 / Processed audio data
      */
     public static AudioData transpose(AudioData audio, int semitones) {
         try {
@@ -957,6 +1226,14 @@ public class Musics {
 
     /**
      * 音乐理论处理 / Music Theory Processing
+     * <p>
+     * 对音频数据应用音乐理论处理。
+     * Apply music theory processing to audio data.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @param parameters 处理参数 / Processing parameters
+     * @return 处理后的音频数据 / Processed audio data
      */
     public static AudioData applyMusicTheory(AudioData audio, Map<String, Object> parameters) {
         try {
@@ -968,7 +1245,14 @@ public class Musics {
     }
 
     /**
-     * 检测音频中的节拍 / Detect beats in audio
+     * 检测音频中的节拍 / Detect Beats in Audio
+     * <p>
+     * 检测音频信号中的节拍。
+     * Detect beats in audio signal.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 节拍检测结果 / Beat detection result
      */
     public static BeatDetectionResult detectBeats(AudioData audio) {
         try {
@@ -981,7 +1265,14 @@ public class Musics {
     }
 
     /**
-     * 检测音频中的调性 / Detect key in audio
+     * 检测音频中的调性 / Detect Key in Audio
+     * <p>
+     * 检测音频信号中的调性。
+     * Detect key in audio signal.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 调性检测结果 / Key detection result
      */
     public static KeyDetectionResult detectKey(AudioData audio) {
         try {
@@ -994,7 +1285,14 @@ public class Musics {
     }
 
     /**
-     * 检测音频中的和弦 / Detect chords in audio
+     * 检测音频中的和弦 / Detect Chords in Audio
+     * <p>
+     * 检测音频信号中的和弦。
+     * Detect chords in audio signal.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 和弦检测结果 / Chord detection result
      */
     public static ChordDetectionResult detectChords(AudioData audio) {
         try {
@@ -1008,7 +1306,14 @@ public class Musics {
     }
 
     /**
-     * 检测音频中的调性名称 / Detect key name in audio
+     * 检测音频中的调性名称 / Detect Key Name in Audio
+     * <p>
+     * 检测音频信号中的调性名称。
+     * Detect key name in audio signal.
+     * </p>
+     *
+     * @param audio 音频数据 / Audio data
+     * @return 调性名称 / Key name
      */
     public static String detectKeyName(AudioData audio) {
         try {
@@ -1185,7 +1490,11 @@ public class Musics {
 
     // ========== 音乐滤波器创建方法 / Music Filter Creation Methods ==========
     /**
-     * 创建音乐滤波器 / Create music filter
+     * 创建音乐滤波器 / Create Music Filter
+     * <p>
+     * 创建指定类型的音乐滤波器实例。
+     * Create music filter instance of specified type.
+     * </p>
      *
      * @param filterType 滤波器类型 / Filter type
      * @return 音乐滤波器实例 / Music filter instance

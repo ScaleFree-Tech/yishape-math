@@ -38,11 +38,28 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
         private final String englishName;
         
         FilterType(String chineseName, String englishName) {
+            /**
+             * 获取中文名称 / Get Chinese name
+             * @return 中文名称 / Chinese name
+             */
             this.chineseName = chineseName;
+            /**
+             * 获取英文名称 / Get English name
+             * @return 英文名称 / English name
+             */
             this.englishName = englishName;
         }
-        
+
+        /**
+         * 获取中文名称 / Get Chinese name
+         * @return 中文名称 / Chinese name
+         */
         public String getChineseName() { return chineseName; }
+
+        /**
+         * 获取英文名称 / Get English name
+         * @return 英文名称 / English name
+         */
         public String getEnglishName() { return englishName; }
     }
     
@@ -65,11 +82,28 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
         private final String englishName;
         
         FilterImplementation(String chineseName, String englishName) {
+            /**
+             * 获取中文名称 / Get Chinese name
+             * @return 中文名称 / Chinese name
+             */
             this.chineseName = chineseName;
+            /**
+             * 获取英文名称 / Get English name
+             * @return 英文名称 / English name
+             */
             this.englishName = englishName;
         }
-        
+
+        /**
+         * 获取中文名称 / Get Chinese name
+         * @return 中文名称 / Chinese name
+         */
         public String getChineseName() { return chineseName; }
+
+        /**
+         * 获取英文名称 / Get English name
+         * @return 英文名称 / English name
+         */
         public String getEnglishName() { return englishName; }
     }
     
@@ -207,6 +241,7 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
         
         /**
          * FIR滤波器系数构造函数 / FIR filter coefficients constructor
+         * @param coefficients FIR滤波器系数 / FIR filter coefficients
          */
         public FilterCoefficients(double[] coefficients) {
             this.numerator = coefficients.clone();
@@ -216,6 +251,8 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
         
         /**
          * IIR滤波器系数构造函数 / IIR filter coefficients constructor
+         * @param numerator 分子系数 / Numerator coefficients
+         * @param denominator 分母系数 / Denominator coefficients
          */
         public FilterCoefficients(double[] numerator, double[] denominator) {
             this.numerator = numerator.clone();
@@ -223,9 +260,28 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
             this.isFIR = false;
         }
         
+        /**
+         * 获取分子系数 / Get numerator coefficients
+         * @return 分子系数数组 / Numerator coefficients array
+         */
         public double[] getNumerator() { return numerator.clone(); }
+
+        /**
+         * 获取分母系数 / Get denominator coefficients
+         * @return 分母系数数组 / Denominator coefficients array
+         */
         public double[] getDenominator() { return denominator.clone(); }
+
+        /**
+         * 判断是否为FIR滤波器 / Check if FIR filter
+         * @return 是否为FIR滤波器 / Whether it is FIR filter
+         */
         public boolean isFIR() { return isFIR; }
+
+        /**
+         * 判断是否为IIR滤波器 / Check if IIR filter
+         * @return 是否为IIR滤波器 / Whether it is IIR filter
+         */
         public boolean isIIR() { return !isFIR; }
     }
     
@@ -237,15 +293,40 @@ public interface ISignalFilter<T extends Number> extends ISignalProcessor<T> {
         private final double[] magnitude;
         private final double[] phase;
         
+        /**
+         * 频率响应构造函数 / Frequency response constructor
+         * @param frequencies 频率数组 / Frequency array
+         * @param magnitude 幅度数组 / Magnitude array
+         * @param phase 相位数组 / Phase array
+         */
         public FrequencyResponse(double[] frequencies, double[] magnitude, double[] phase) {
             this.frequencies = frequencies.clone();
             this.magnitude = magnitude.clone();
             this.phase = phase.clone();
         }
         
+        /**
+         * 获取频率数组 / Get frequency array
+         * @return 频率数组 / Frequency array
+         */
         public double[] getFrequencies() { return frequencies.clone(); }
+
+        /**
+         * 获取幅度数组 / Get magnitude array
+         * @return 幅度数组 / Magnitude array
+         */
         public double[] getMagnitude() { return magnitude.clone(); }
+
+        /**
+         * 获取相位数组 / Get phase array
+         * @return 相位数组 / Phase array
+         */
         public double[] getPhase() { return phase.clone(); }
+
+        /**
+         * 获取分贝为单位的幅度 / Get magnitude in decibels
+         * @return 分贝幅度数组 / Magnitude in dB array
+         */
         public double[] getMagnitudeDB() {
             double[] magnitudeDB = new double[magnitude.length];
             for (int i = 0; i < magnitude.length; i++) {

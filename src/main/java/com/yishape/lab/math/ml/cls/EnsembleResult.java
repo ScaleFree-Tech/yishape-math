@@ -6,11 +6,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 集成分类结果类 / Ensemble Classification Result
+ * <p>
+ * 实现IClassification接口所需的返回类型，封装集成分类器的结果。
+ * Implements IClassification interface return type, encapsulating ensemble classifier results.
+ * </p>
  *
  * @author lteb2
- */
-/**
- * 集成分类结果类 - 实现IClassification接口所需的返回类型
+ * @version 1.0
+ * @since 1.0
  */
 public class EnsembleResult extends ClassificationResult {
 
@@ -19,6 +23,19 @@ public class EnsembleResult extends ClassificationResult {
     private final Map<String, Double> classifierAccuracies;
     private final boolean trained;
 
+    /**
+     * 构造函数 / Constructor
+     * <p>
+     * 创建集成分类结果。
+     * Create ensemble classification result.
+     * </p>
+     *
+     * @param strategy 集成策略 / Ensemble strategy
+     * @param classifierWeights 分类器权重 / Classifier weights
+     * @param classLabels 类别标签 / Class labels
+     * @param accuracy 准确率 / Accuracy
+     * @param classifierAccuracies 各分类器准确率 / Individual classifier accuracies
+     */
     public EnsembleResult(EnsembleClassifier.EnsembleStrategy strategy,
             IVector classifierWeights,
             String[] classLabels,
@@ -45,14 +62,29 @@ public class EnsembleResult extends ClassificationResult {
         this.setReverseLabelMapping(reverseLabelMapping);
     }
 
+    /**
+     * 获取集成策略 / Get ensemble strategy
+     *
+     * @return 集成策略 / Ensemble strategy
+     */
     public EnsembleClassifier.EnsembleStrategy getStrategy() {
         return strategy;
     }
 
+    /**
+     * 获取分类器权重 / Get classifier weights
+     *
+     * @return 分类器权重向量 / Classifier weights vector
+     */
     public IVector getClassifierWeights() {
         return classifierWeights;
     }
 
+    /**
+     * 获取各分类器准确率 / Get classifier accuracies
+     *
+     * @return 分类器准确率映射 / Classifier accuracies map
+     */
     public Map<String, Double> getClassifierAccuracies() {
         return classifierAccuracies;
     }

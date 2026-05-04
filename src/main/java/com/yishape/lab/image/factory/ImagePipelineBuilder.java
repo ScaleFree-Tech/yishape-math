@@ -47,39 +47,85 @@ public class ImagePipelineBuilder {
      */
     public static class PipelineContext {
         private static final Logger LOGGER = LoggerFactory.getLogger(PipelineContext.class);
+        /** 参数映射 / Parameter mapping */
         private final Map<String, Object> parameters = new java.util.concurrent.ConcurrentHashMap<>();
+        /** 中间结果 / Intermediate results */
         private final Map<String, ImageData> intermediateResults = new java.util.concurrent.ConcurrentHashMap<>();
+        /** 执行日志 / Execution log */
         private final java.util.List<String> executionLog = new java.util.concurrent.CopyOnWriteArrayList<>();
+        /** 调试模式 / Debug mode */
         private boolean debugMode = false;
+        /** 开始时间 / Start time */
         private long startTime;
-        
+
+        /**
+         * 构造流水线上下文 / Construct PipelineContext
+         */
         public PipelineContext() {
             this.startTime = System.currentTimeMillis();
         }
         
+        /**
+         * 设置参数 / Set parameter
+         *
+         * @param key 参数键 / Parameter key
+         * @param value 参数值 / Parameter value
+         */
         public void setParameter(String key, Object value) {
             parameters.put(key, value);
         }
-        
+
+        /**
+         * 获取参数 / Get parameter
+         *
+         * @param <T> 参数类型 / Parameter type
+         * @param key 参数键 / Parameter key
+         * @return 参数值 / Parameter value
+         */
         @SuppressWarnings("unchecked")
         public <T> T getParameter(String key) {
             return (T) parameters.get(key);
         }
-        
+
+        /**
+         * 获取参数（带默认值）/ Get parameter with default value
+         *
+         * @param <T> 参数类型 / Parameter type
+         * @param key 参数键 / Parameter key
+         * @param defaultValue 默认值 / Default value
+         * @return 参数值 / Parameter value
+         */
         public <T> T getParameter(String key, T defaultValue) {
             @SuppressWarnings("unchecked")
             T value = (T) parameters.get(key);
             return value != null ? value : defaultValue;
         }
-        
+
+        /**
+         * 存储中间结果 / Store intermediate result
+         *
+         * @param stepName 步骤名称 / Step name
+         * @param result 结果图像 / Result image
+         */
         public void storeIntermediateResult(String stepName, ImageData result) {
             intermediateResults.put(stepName, result);
         }
-        
+
+        /**
+         * 获取中间结果 / Get intermediate result
+         *
+         * @param stepName 步骤名称 / Step name
+         * @return 结果图像 / Result image
+         */
         public ImageData getIntermediateResult(String stepName) {
             return intermediateResults.get(stepName);
         }
-        
+
+        /**
+         * 记录日志 / Log message
+         *
+         * @param message 日志消息 / Log message
+         */
         public void log(String message) {
             String logEntry = String.format("[%d] %s", System.currentTimeMillis() - startTime, message);
             executionLog.add(logEntry);
@@ -87,19 +133,39 @@ public class ImagePipelineBuilder {
                 LOGGER.debug(logEntry);
             }
         }
-        
+
+        /**
+         * 获取执行日志 / Get execution log
+         *
+         * @return 日志列表 / Log list
+         */
         public java.util.List<String> getExecutionLog() {
             return new java.util.ArrayList<>(executionLog);
         }
-        
+
+        /**
+         * 获取是否调试模式 / Get whether debug mode
+         *
+         * @return 是否调试模式 / Whether debug mode
+         */
         public boolean isDebugMode() {
             return debugMode;
         }
-        
+
+        /**
+         * 设置调试模式 / Set debug mode
+         *
+         * @param debugMode 是否调试模式 / Whether debug mode
+         */
         public void setDebugMode(boolean debugMode) {
             this.debugMode = debugMode;
         }
-        
+
+        /**
+         * 获取已用时间 / Get elapsed time
+         *
+         * @return 已用时间（毫秒）/ Elapsed time (ms)
+         */
         public long getElapsedTime() {
             return System.currentTimeMillis() - startTime;
         }
@@ -109,13 +175,25 @@ public class ImagePipelineBuilder {
      * 可执行流水线类 / Executable Pipeline Class
      */
     public static class ImagePipeline {
+        /** 流水线步骤列表 / Pipeline step list */
         private final java.util.List<PipelineStep> steps;
+        /** 流水线名称 / Pipeline name */
         private final String name;
+        /** 流水线描述 / Pipeline description */
         private final String description;
+        /** 是否并行 / Whether parallel */
         private boolean parallel;
+        /** 最大线程数 / Maximum threads */
         private int maxThreads;
+        /** 超时时间（毫秒）/ Timeout (ms) */
         private long timeoutMs;
-        
+
+        /**
+         * 构造可执行流水线 / Construct ImagePipeline
+         *
+         * @param name 流水线名称 / Pipeline name
+         * @param steps 步骤列表 / Step list
+         */
         public ImagePipeline(String name, java.util.List<PipelineStep> steps) {
             this.name = name;
             this.steps = new java.util.ArrayList<>(steps);
@@ -124,10 +202,10 @@ public class ImagePipelineBuilder {
             this.maxThreads = Runtime.getRuntime().availableProcessors();
             this.timeoutMs = 30000; // 30 seconds default
         }
-        
+
         /**
          * 执行流水线 / Execute Pipeline
-         * 
+         *
          * @param input 输入图像 / Input image
          * @return 输出图像 / Output image
          * @throws ImageProcessingException 处理异常 / Processing exception
@@ -135,10 +213,10 @@ public class ImagePipelineBuilder {
         public ImageData execute(ImageData input) throws ImageProcessingException {
             return execute(input, new PipelineContext());
         }
-        
+
         /**
          * 执行流水线 / Execute Pipeline
-         * 
+         *
          * @param input 输入图像 / Input image
          * @param context 执行上下文 / Execution context
          * @return 输出图像 / Output image
@@ -147,38 +225,45 @@ public class ImagePipelineBuilder {
         public ImageData execute(ImageData input, PipelineContext context) throws ImageProcessingException {
             context.log("Starting pipeline: " + name);
             ImageData current = input;
-            
+
             for (int i = 0; i < steps.size(); i++) {
                 PipelineStep step = steps.get(i);
                 String stepName = "Step" + (i + 1);
-                
+
                 try {
                     context.log("Executing " + stepName);
                     long stepStart = System.currentTimeMillis();
-                    
+
                     current = step.execute(current, context);
-                    
+
                     long stepTime = System.currentTimeMillis() - stepStart;
                     context.log(stepName + " completed in " + stepTime + " ms");
                     context.storeIntermediateResult(stepName, current);
-                    
+
                 } catch (Exception e) {
                     context.log("Error in " + stepName + ": " + e.getMessage());
-                    throw ImageProcessingException.processingFailed("Pipeline", 
+                    throw ImageProcessingException.processingFailed("Pipeline",
                         "Step " + (i + 1) + " failed in pipeline " + name, e);
                 }
             }
-            
+
             context.log("Pipeline completed in " + context.getElapsedTime() + " ms");
             return current;
         }
-        
+
+        /** 获取流水线名称 / Get pipeline name */
         public String getName() { return name; }
+        /** 获取流水线描述 / Get pipeline description */
         public String getDescription() { return description; }
+        /** 获取步骤数量 / Get step count */
         public int getStepCount() { return steps.size(); }
+        /** 获取是否并行 / Get whether parallel */
         public boolean isParallel() { return parallel; }
+        /** 设置是否并行 / Set whether parallel */
         public void setParallel(boolean parallel) { this.parallel = parallel; }
+        /** 设置最大线程数 / Set maximum threads */
         public void setMaxThreads(int maxThreads) { this.maxThreads = maxThreads; }
+        /** 设置超时时间 / Set timeout */
         public void setTimeoutMs(long timeoutMs) { this.timeoutMs = timeoutMs; }
     }
     

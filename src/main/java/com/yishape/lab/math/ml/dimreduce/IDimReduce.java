@@ -4,17 +4,24 @@ import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.ml.ISerializableModel;
 
 /**
- * 降维类的接口
+ * 降维接口 / Dimensionality Reduction Interface
+ * <p>
+ * 定义降维算法的标准接口，所有降维算法实现都应遵循此接口。
+ * Defines the standard interface for dimensionality reduction algorithms.
+ * </p>
+ *
  * @author lteb2
- * @param <T>
+ * @version 1.0
+ * @since 1.0
  */
-public interface IDimReduce<T extends Number> extends ISerializableModel{
-    
+public interface IDimReduce extends ISerializableModel {
+
     /**
-     * 
-     * @param originalData 原始数据
-     * @param dim 目标维度
-     * @return 降维后的数据
+     * 执行降维 / Perform Dimensionality Reduction
+     *
+     * @param originalData 原始数据 / Original data
+     * @param dim 目标维度 / Target dimension
+     * @return 降维后的数据 / Reduced dimension data
      */
-    public IMatrix<T> dimensionReduction(IMatrix<T> originalData, int dim);
+    public IMatrix dimensionReduction(IMatrix originalData, int dim);
 }

@@ -72,6 +72,7 @@ public class RerePCA implements IDimReduce, ISerializableModel{
      * @throws IllegalArgumentException 如果dim大于原始数据的列数或小于等于0
      *                                  if dim is greater than the number of columns in original data or less than or equal to 0
      */
+    @Override
     public IMatrix dimensionReduction(IMatrix originalData, int dim){
         
         // 参数验证 / Parameter validation
@@ -88,6 +89,12 @@ public class RerePCA implements IDimReduce, ISerializableModel{
         
         if (dim > originalCols) {
             throw new IllegalArgumentException("目标维度不能大于原始数据的列数 / Target dimension cannot be greater than original column count");
+        }
+        
+        if (dim < originalCols && originalRows < 2) {
+            throw new IllegalArgumentException(
+                    "PCA 协方差估计至少需要 2 个样本（矩阵行数≥2），当前行数=" + originalRows
+                            + " / PCA requires at least 2 samples (rows), got " + originalRows);
         }
         
         // 如果目标维度等于原始维度，直接返回原数据的副本

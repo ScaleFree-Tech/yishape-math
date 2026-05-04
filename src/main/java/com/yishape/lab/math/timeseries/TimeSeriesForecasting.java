@@ -504,6 +504,14 @@ public class TimeSeriesForecasting {
     // ========== 私有辅助方法 / Private Helper Methods ==========
     /**
      * 计算移动平均 / Calculate moving average
+     * <p>
+     * 使用滑动窗口计算时间序列的移动平均值。
+     * Calculate moving average of time series using sliding window.
+     * </p>
+     *
+     * @param data 输入时间序列 / Input time series
+     * @param windowSize 窗口大小 / Window size
+     * @return 移动平均值序列 / Moving average series
      */
     private static IVector<Double> calculateMovingAverage(IVector<Double> data, int windowSize) {
         int length = data.length();
@@ -522,6 +530,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 指数平滑实现 / Exponential smoothing implementation
+     * <p>
+     * 使用指定的平滑参数对时间序列进行指数平滑。
+     * Apply exponential smoothing to time series with specified smoothing parameter.
+     * </p>
+     *
+     * @param data 输入时间序列 / Input time series
+     * @param alpha 平滑参数 / Smoothing parameter
+     * @return 平滑后的序列 / Smoothed series
      */
     private static IVector<Double> exponentialSmoothing(IVector<Double> data, double alpha) {
         return TimeSeriesUtils.exponentialSmoothing(data, alpha);
@@ -529,6 +545,13 @@ public class TimeSeriesForecasting {
 
     /**
      * 线性回归 / Linear regression
+     * <p>
+     * 使用最小二乘法对时间序列进行线性回归拟合。
+     * Fit linear regression to time series using least squares method.
+     * </p>
+     *
+     * @param data 输入时间序列 / Input time series
+     * @return 包含斜率和截距的元组 / Tuple containing slope and intercept
      */
     private static Tuple2<Double, Double> linearRegression(IVector<Double> data) {
         int length = data.length();
@@ -547,6 +570,13 @@ public class TimeSeriesForecasting {
 
     /**
      * 差分 / Differencing
+     * <p>
+     * 对时间序列进行一阶差分。
+     * Apply first-order differencing to time series.
+     * </p>
+     *
+     * @param data 输入时间序列 / Input time series
+     * @return 差分后的序列 / Differenced series
      */
     private static IVector<Double> difference(IVector<Double> data) {
         return TimeSeriesUtils.difference(data);
@@ -554,6 +584,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 逆差分 / Inverse differencing
+     * <p>
+     * 将差分后的序列还原为原始序列。
+     * Restore differenced series to original series.
+     * </p>
+     *
+     * @param diff 差分序列 / Differenced series
+     * @param original 原始序列 / Original series
+     * @return 还原后的序列 / Restored series
      */
     private static IVector<Double> inverseDifference(IVector<Double> diff, IVector<Double> original) {
         return TimeSeriesUtils.inverseDifference(original, diff, 1);
@@ -561,6 +599,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算季节性成分 / Calculate seasonal component
+     * <p>
+     * 计算时间序列的季节性成分（每个季节位置的均值）。
+     * Calculate seasonal component of time series (mean value at each seasonal position).
+     * </p>
+     *
+     * @param data 输入时间序列 / Input time series
+     * @param period 季节周期 / Seasonal period
+     * @return 季节性成分序列 / Seasonal component series
      */
     private static IVector<Double> calculateSeasonalComponent(IVector<Double> data, int period) {
         return TimeSeriesUtils.calculateSeasonalComponent(data, period);
@@ -568,6 +614,15 @@ public class TimeSeriesForecasting {
 
     /**
      * 扩展季节性成分 / Extend seasonal component
+     * <p>
+     * 将季节性成分扩展到指定的预测步数。
+     * Extend seasonal component to specified forecast steps.
+     * </p>
+     *
+     * @param seasonal 季节性成分 / Seasonal component
+     * @param period 季节周期 / Seasonal period
+     * @param steps 扩展步数 / Extension steps
+     * @return 扩展后的季节性成分 / Extended seasonal component
      */
     private static IVector<Double> extendSeasonal(IVector<Double> seasonal, int period, int steps) {
         IVector<Double> extended = Linalg.zeros(steps);
@@ -582,6 +637,15 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算预测标准差 / Calculate forecast standard deviation
+     * <p>
+     * 根据指数平滑模型计算预测的标准差。
+     * Calculate forecast standard deviation based on exponential smoothing model.
+     * </p>
+     *
+     * @param data 原始数据 / Original data
+     * @param fitted 拟合值 / Fitted values
+     * @param alpha 平滑参数 / Smoothing parameter
+     * @return 预测标准差 / Forecast standard deviation
      */
     private static double calculateForecastStd(IVector<Double> data, IVector<Double> fitted, double alpha) {
         IVector<Double> residuals = data.sub(fitted);
@@ -590,6 +654,15 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算回归标准差 / Calculate regression standard deviation
+     * <p>
+     * 计算线性回归预测的标准差。
+     * Calculate standard deviation of linear regression forecast.
+     * </p>
+     *
+     * @param data 原始数据 / Original data
+     * @param slope 斜率 / Slope
+     * @param intercept 截距 / Intercept
+     * @return 回归标准差 / Regression standard deviation
      */
     private static double calculateRegressionStd(IVector<Double> data, double slope, double intercept) {
         int length = data.length();
@@ -601,6 +674,13 @@ public class TimeSeriesForecasting {
 
     /**
      * 获取Z分数 / Get Z-score
+     * <p>
+     * 根据置信水平返回对应的Z分数。
+     * Return Z-score corresponding to confidence level.
+     * </p>
+     *
+     * @param confidenceLevel 置信水平 / Confidence level
+     * @return Z分数 / Z-score
      */
     private static double getZScore(double confidenceLevel) {
         if (confidenceLevel == 0.95) {
@@ -617,6 +697,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算均方误差 / Calculate Mean Squared Error
+     * <p>
+     * 计算实际值与预测值之间的均方误差。
+     * Calculate mean squared error between actual and predicted values.
+     * </p>
+     *
+     * @param actual 实际值 / Actual values
+     * @param predicted 预测值 / Predicted values
+     * @return 均方误差 / Mean squared error
      */
     private static double calculateMSE(IVector<Double> actual, IVector<Double> predicted) {
         IVector<Double> errors = actual.sub(predicted);
@@ -625,6 +713,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算平均绝对误差 / Calculate Mean Absolute Error
+     * <p>
+     * 计算实际值与预测值之间的平均绝对误差。
+     * Calculate mean absolute error between actual and predicted values.
+     * </p>
+     *
+     * @param actual 实际值 / Actual values
+     * @param predicted 预测值 / Predicted values
+     * @return 平均绝对误差 / Mean absolute error
      */
     private static double calculateMAE(IVector<Double> actual, IVector<Double> predicted) {
         IVector<Double> errors = actual.sub(predicted).apply(Math::abs);
@@ -633,6 +729,14 @@ public class TimeSeriesForecasting {
 
     /**
      * 计算平均绝对百分比误差 / Calculate Mean Absolute Percentage Error
+     * <p>
+     * 计算实际值与预测值之间的平均绝对百分比误差。
+     * Calculate mean absolute percentage error between actual and predicted values.
+     * </p>
+     *
+     * @param actual 实际值 / Actual values
+     * @param predicted 预测值 / Predicted values
+     * @return 平均绝对百分比误差（百分比形式）/ Mean absolute percentage error (as percentage)
      */
     private static double calculateMAPE(IVector<Double> actual, IVector<Double> predicted) {
         IVector<Double> errors = actual.sub(predicted).divide(actual).apply(Math::abs);

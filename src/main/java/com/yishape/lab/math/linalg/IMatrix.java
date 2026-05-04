@@ -2186,7 +2186,7 @@ public interface IMatrix<T extends Number> {
      * <p>
      * 将矩阵A分解为A = UΣV^T的形式，其中U和V是正交矩阵，Σ是对角奇异值矩阵 Decomposes matrix A into A =
      * UΣV^T form, where U and V are orthogonal matrices and Σ is the diagonal
-     * singular values matrix
+     * singular values matrix. 对于 m×n 矩阵，实现通常返回<strong>瘦型</strong> U（m×min(m,n)），奇异值向量长度 min(m,n)，以及 n×n 的 V^T（与具体实现一致，见 {@link com.yishape.lab.math.linalg.decomposition.ISVDDecomposition}）。
      * </p>
      * <p>
      * 奇异值按降序排列，U的列是左奇异向量，V^T的行是右奇异向量 Singular values are ordered in descending
@@ -3424,8 +3424,20 @@ public interface IMatrix<T extends Number> {
      * @throws ArithmeticException 如果矩阵对角线元素为零 / if diagonal elements are zero
      */
     public default IMatrix<T> forwardSolve(IMatrix<T> B) {
-        // This is a placeholder implementation - actual implementation would depend on the specific matrix type
-        throw new UnsupportedOperationException("forwardSolve not implemented for this matrix type");
+        if (B == null) {
+            throw new IllegalArgumentException("Right-hand side matrix cannot be null");
+        }
+        int n = this.rows();
+        if (this.cols() != n) {
+            throw new IllegalArgumentException("forwardSolve requires a square lower-triangular coefficient matrix");
+        }
+        if (B.rows() != n) {
+            throw new IllegalArgumentException("Matrix dimensions don't match: L is " + n + "x" + n
+                    + ", B is " + B.rows() + "x" + B.cols());
+        }
+        IDoubleMatrix Ld = IDoubleMatrix.of(this.toDoubleArray());
+        IDoubleMatrix Bd = IDoubleMatrix.of(B.toDoubleArray());
+        return castMatrixToSameElementType(this, Ld.forwardSolve(Bd).toDoubleArray());
     }
 
     /**
@@ -3442,8 +3454,39 @@ public interface IMatrix<T extends Number> {
      * @throws ArithmeticException 如果矩阵对角线元素为零 / if diagonal elements are zero
      */
     public default IMatrix<T> backwardSolve(IMatrix<T> B) {
-        // This is a placeholder implementation - actual implementation would depend on the specific matrix type
-        throw new UnsupportedOperationException("backwardSolve not implemented for this matrix type");
+        if (B == null) {
+            throw new IllegalArgumentException("Right-hand side matrix cannot be null");
+        }
+        int n = this.rows();
+        if (this.cols() != n) {
+            throw new IllegalArgumentException("backwardSolve requires a square upper-triangular coefficient matrix");
+        }
+        if (B.rows() != n) {
+            throw new IllegalArgumentException("Matrix dimensions don't match: U is " + n + "x" + n
+                    + ", B is " + B.rows() + "x" + B.cols());
+        }
+        IDoubleMatrix Ud = IDoubleMatrix.of(this.toDoubleArray());
+        IDoubleMatrix Bd = IDoubleMatrix.of(B.toDoubleArray());
+        return castMatrixToSameElementType(this, Ud.backwardSolve(Bd).toDoubleArray());
+    }
+
+    /**
+     * 将 double[][] 结果转为与 {@code typeHint} 元素类型一致的矩阵（与 permuteRows/permuteColumns 策略一致）。
+     */
+    private static <T extends Number> IMatrix<T> castMatrixToSameElementType(IMatrix<T> typeHint, double[][] data) {
+        int m = data.length;
+        int k = m == 0 ? 0 : data[0].length;
+        if (typeHint instanceof IFloatMatrix
+                || (m > 0 && k > 0 && typeHint.get(0, 0) instanceof Float)) {
+            float[][] floatResult = new float[m][k];
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < k; j++) {
+                    floatResult[i][j] = (float) data[i][j];
+                }
+            }
+            return (IMatrix<T>) IMatrix.of(floatResult);
+        }
+        return (IMatrix<T>) IMatrix.of(data);
     }
 
     /**

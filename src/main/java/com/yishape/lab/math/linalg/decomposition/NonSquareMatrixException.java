@@ -5,10 +5,12 @@ package com.yishape.lab.math.linalg.decomposition;
  * with an algorithm that requires a square matrix.
  * <p>
  * Some matrix decomposition algorithms (such as Cholesky, LU, and QR decompositions)
- * require the input matrix to be square. This exception is thrown when that 
+ * require the input matrix to be square. This exception is thrown when that
  * requirement is not met.
  * </p>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class NonSquareMatrixException extends MatrixDecompositionException {

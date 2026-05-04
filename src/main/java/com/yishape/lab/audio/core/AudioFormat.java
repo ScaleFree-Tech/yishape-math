@@ -3,8 +3,13 @@ package com.yishape.lab.audio.core;
 /**
  * Audio Format Enum
  * <p>
+ * 定义支持的音频格式类型及其特性和功能。提供格式检测、验证和分类的方法。
+ * 支持WAV、MP3、FLAC、OGG、M4A、AAC、AIFF、AU、RAW、WMA、OPUS、APE、DSD、PCM等格式。
+ * </p>
+ * <p>
  * Defines supported audio format types with their characteristics and capabilities.
  * Provides methods for format detection, validation, and classification.
+ * Supports WAV, MP3, FLAC, OGG, M4A, AAC, AIFF, AU, RAW, WMA, OPUS, APE, DSD, PCM formats.
  * </p>
  *
  * @author lteb2
@@ -13,46 +18,46 @@ package com.yishape.lab.audio.core;
  */
 public enum AudioFormat {
     
-    /** WAV format - Uncompressed audio format */
+    /** WAV格式 - 未压缩音频格式 / WAV format - Uncompressed audio format */
     WAV("wav", "Waveform Audio File Format", true, false, "audio/wav"),
-    
-    /** MP3 format - Compressed audio format */
+
+    /** MP3格式 - 压缩音频格式 / MP3 format - Compressed audio format */
     MP3("mp3", "MPEG Audio Layer III", false, true, "audio/mpeg"),
-    
-    /** FLAC format - Lossless compressed audio format */
+
+    /** FLAC格式 - 无损压缩音频格式 / FLAC format - Lossless compressed audio format */
     FLAC("flac", "Free Lossless Audio Codec", true, false, "audio/flac"),
-    
-    /** OGG format - Open source compressed audio format */
+
+    /** OGG格式 - 开源压缩音频格式 / OGG format - Open source compressed audio format */
     OGG("ogg", "Ogg Vorbis", false, true, "audio/ogg"),
-    
-    /** M4A format - MPEG-4 audio format */
+
+    /** M4A格式 - MPEG-4音频格式 / M4A format - MPEG-4 audio format */
     M4A("m4a", "MPEG-4 Audio", false, true, "audio/mp4"),
-    
-    /** AAC format - Advanced Audio Coding */
+
+    /** AAC格式 - 高级音频编码 / AAC format - Advanced Audio Coding */
     AAC("aac", "Advanced Audio Coding", false, true, "audio/aac"),
-    
-    /** AIFF format - Audio Interchange File Format */
+
+    /** AIFF格式 - 音频交换文件格式 / AIFF format - Audio Interchange File Format */
     AIFF("aiff", "Audio Interchange File Format", true, false, "audio/aiff"),
-    
-    /** AU format - Audio File Format */
+
+    /** AU格式 - 音频文件格式 / AU format - Audio File Format */
     AU("au", "Audio File Format", true, false, "audio/basic"),
-    
-    /** RAW format - Raw audio data */
+
+    /** RAW格式 - 原始音频数据 / RAW format - Raw audio data */
     RAW("raw", "Raw Audio Data", true, false, "audio/raw"),
-    
-    /** WMA format - Windows Media Audio */
+
+    /** WMA格式 - Windows Media Audio / WMA format - Windows Media Audio */
     WMA("wma", "Windows Media Audio", false, true, "audio/x-ms-wma"),
-    
-    /** OPUS format - Modern audio codec */
+
+    /** OPUS格式 - 现代音频编解码器 / OPUS format - Modern audio codec */
     OPUS("opus", "Opus Audio Codec", false, true, "audio/opus"),
-    
-    /** APE format - Monkey's Audio */
+
+    /** APE格式 - 猴子音频 / APE format - Monkey's Audio */
     APE("ape", "Monkey's Audio", true, false, "audio/ape"),
-    
-    /** DSD format - Direct Stream Digital */
+
+    /** DSD格式 - 直接流数字 / DSD format - Direct Stream Digital */
     DSD("dsd", "Direct Stream Digital", true, false, "audio/dsd"),
-    
-    /** PCM format - Pulse Code Modulation */
+
+    /** PCM格式 - 脉冲编码调制 / PCM format - Pulse Code Modulation */
     PCM("pcm", "Pulse Code Modulation", true, false, "audio/pcm");
     
     private final String extension;
@@ -62,13 +67,13 @@ public enum AudioFormat {
     private final String mimeType;
     
     /**
-     * Constructor
+     * 构造函数 / Constructor
      *
-     * @param extension File extension
-     * @param description Format description
-     * @param lossless Whether the format is lossless
-     * @param compressed Whether the format uses compression
-     * @param mimeType MIME type for the format
+     * @param extension 文件扩展名 / File extension
+     * @param description 格式描述 / Format description
+     * @param lossless 是否为无损格式 / Whether the format is lossless
+     * @param compressed 是否使用压缩 / Whether the format uses compression
+     * @param mimeType 格式的MIME类型 / MIME type for the format
      */
     AudioFormat(String extension, String description, boolean lossless, boolean compressed, String mimeType) {
         this.extension = extension;
@@ -79,73 +84,73 @@ public enum AudioFormat {
     }
     
     /**
-     * Get file extension
+     * 获取文件扩展名 / Get file extension
      *
-     * @return File extension
+     * @return 文件扩展名 / File extension
      */
     public String getExtension() {
         return extension;
     }
     
     /**
-     * Get format description
+     * 获取格式描述 / Get format description
      *
-     * @return Format description
+     * @return 格式描述 / Format description
      */
     public String getDescription() {
         return description;
     }
     
     /**
-     * Get MIME type
+     * 获取MIME类型 / Get MIME type
      *
-     * @return MIME type
+     * @return MIME类型 / MIME type
      */
     public String getMimeType() {
         return mimeType;
     }
     
     /**
-     * Check if lossless format
+     * 检查是否为无损格式 / Check if lossless format
      *
-     * @return True if lossless format
+     * @return 如果是无损格式则返回true / True if lossless format
      */
     public boolean isLossless() {
         return lossless;
     }
     
     /**
-     * Check if lossy format
+     * 检查是否为有损格式 / Check if lossy format
      *
-     * @return True if lossy format
+     * @return 如果是有损格式则返回true / True if lossy format
      */
     public boolean isLossy() {
         return !lossless;
     }
     
     /**
-     * Check if compressed format
+     * 检查是否为压缩格式 / Check if compressed format
      *
-     * @return True if compressed format
+     * @return 如果是压缩格式则返回true / True if compressed format
      */
     public boolean isCompressed() {
         return compressed;
     }
     
     /**
-     * Check if uncompressed format
+     * 检查是否为非压缩格式 / Check if uncompressed format
      *
-     * @return True if uncompressed format
+     * @return 如果是非压缩格式则返回true / True if uncompressed format
      */
     public boolean isUncompressed() {
         return !compressed;
     }
     
     /**
-     * Get audio format by file extension
+     * 根据文件扩展名获取音频格式 / Get audio format by file extension
      *
-     * @param extension File extension
-     * @return Corresponding audio format, null if not found
+     * @param extension 文件扩展名 / File extension
+     * @return 对应的音频格式，如果未找到则返回null / Corresponding audio format, null if not found
      */
     public static AudioFormat fromExtension(String extension) {
         if (extension == null || extension.trim().isEmpty()) {
@@ -162,10 +167,10 @@ public enum AudioFormat {
     }
     
     /**
-     * Get audio format by MIME type
+     * 根据MIME类型获取音频格式 / Get audio format by MIME type
      *
-     * @param mimeType MIME type
-     * @return Corresponding audio format, null if not found
+     * @param mimeType MIME类型 / MIME type
+     * @return 对应的音频格式，如果未找到则返回null / Corresponding audio format, null if not found
      */
     public static AudioFormat fromMimeType(String mimeType) {
         if (mimeType == null || mimeType.trim().isEmpty()) {
@@ -182,10 +187,10 @@ public enum AudioFormat {
     }
     
     /**
-     * Get audio format by filename
+     * 根据文件名获取音频格式 / Get audio format by filename
      *
-     * @param filename Filename with extension
-     * @return Corresponding audio format, null if not found
+     * @param filename 带扩展名的文件名 / Filename with extension
+     * @return 对应的音频格式，如果未找到则返回null / Corresponding audio format, null if not found
      */
     public static AudioFormat fromFilename(String filename) {
         if (filename == null || filename.trim().isEmpty()) {
@@ -202,45 +207,45 @@ public enum AudioFormat {
     }
     
     /**
-     * Check if format supports metadata
+     * 检查格式是否支持元数据 / Check if format supports metadata
      *
-     * @return True if format supports metadata
+     * @return 如果支持元数据则返回true / True if format supports metadata
      */
     public boolean supportsMetadata() {
         return this != RAW && this != PCM && this != AU;
     }
     
     /**
-     * Check if format supports streaming
+     * 检查格式是否支持流媒体 / Check if format supports streaming
      *
-     * @return True if format supports streaming
+     * @return 如果支持流媒体则返回true / True if format supports streaming
      */
     public boolean supportsStreaming() {
         return this == MP3 || this == OGG || this == AAC || this == OPUS;
     }
     
     /**
-     * Check if format is suitable for high-quality audio
+     * 检查格式是否适合高质量音频 / Check if format is suitable for high-quality audio
      *
-     * @return True if suitable for high-quality audio
+     * @return 如果适合高质量音频则返回true / True if suitable for high-quality audio
      */
     public boolean isHighQuality() {
         return isLossless() || this == OPUS;
     }
     
     /**
-     * Check if format is suitable for web streaming
+     * 检查格式是否适合网络流媒体 / Check if format is suitable for web streaming
      *
-     * @return True if suitable for web streaming
+     * @return 如果适合网络流媒体则返回true / True if suitable for web streaming
      */
     public boolean isWebCompatible() {
         return this == MP3 || this == OGG || this == AAC || this == OPUS || this == WAV;
     }
     
     /**
-     * Get typical compression ratio compared to WAV
+     * 获取与WAV相比的典型压缩比 / Get typical compression ratio compared to WAV
      *
-     * @return Compression ratio (1.0 = no compression, 0.1 = 10x compression)
+     * @return 压缩比（1.0表示无压缩，0.1表示10倍压缩）/ Compression ratio (1.0 = no compression, 0.1 = 10x compression)
      */
     public double getTypicalCompressionRatio() {
         switch (this) {
@@ -270,9 +275,9 @@ public enum AudioFormat {
     }
     
     /**
-     * Get maximum supported sample rate for this format
+     * 获取此格式支持的最大采样率 / Get maximum supported sample rate for this format
      *
-     * @return Maximum sample rate in Hz
+     * @return 最大采样率（Hz）/ Maximum sample rate in Hz
      */
     public int getMaxSampleRate() {
         switch (this) {
@@ -306,9 +311,9 @@ public enum AudioFormat {
     }
     
     /**
-     * Get maximum supported bit depth for this format
+     * 获取此格式支持的最大位深度 / Get maximum supported bit depth for this format
      *
-     * @return Maximum bit depth
+     * @return 最大位深度 / Maximum bit depth
      */
     public int getMaxBitDepth() {
         switch (this) {
@@ -330,36 +335,36 @@ public enum AudioFormat {
     }
     
     /**
-     * Check if format supports multiple channels
+     * 检查格式是否支持多通道 / Check if format supports multiple channels
      *
-     * @return True if supports multiple channels
+     * @return 如果支持多通道则返回true / True if supports multiple channels
      */
     public boolean supportsMultiChannel() {
         return this != AU; // AU typically supports only mono/stereo
     }
     
     /**
-     * Get all lossless formats
+     * 获取所有无损格式 / Get all lossless formats
      *
-     * @return Array of lossless formats
+     * @return 无损格式数组 / Array of lossless formats
      */
     public static AudioFormat[] getLosslessFormats() {
         return new AudioFormat[]{WAV, FLAC, AIFF, AU, RAW, APE, DSD, PCM};
     }
     
     /**
-     * Get all lossy formats
+     * 获取所有有损格式 / Get all lossy formats
      *
-     * @return Array of lossy formats
+     * @return 有损格式数组 / Array of lossy formats
      */
     public static AudioFormat[] getLossyFormats() {
         return new AudioFormat[]{MP3, OGG, M4A, AAC, WMA, OPUS};
     }
     
     /**
-     * Get all web-compatible formats
+     * 获取所有网络兼容格式 / Get all web-compatible formats
      *
-     * @return Array of web-compatible formats
+     * @return 网络兼容格式数组 / Array of web-compatible formats
      */
     public static AudioFormat[] getWebCompatibleFormats() {
         return new AudioFormat[]{MP3, OGG, AAC, OPUS, WAV};
@@ -374,9 +379,9 @@ public enum AudioFormat {
     }
     
     /**
-     * Get detailed format information
+     * 获取详细的格式信息 / Get detailed format information
      *
-     * @return Detailed format information string
+     * @return 详细的格式信息字符串 / Detailed format information string
      */
     public String getDetailedInfo() {
         return String.format("%s\n" +

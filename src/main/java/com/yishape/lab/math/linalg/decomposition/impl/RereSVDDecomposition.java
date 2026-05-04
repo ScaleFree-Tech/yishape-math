@@ -13,6 +13,7 @@ import com.yishape.lab.math.linalg.decomposition.ISVDDecomposition;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.SVDDecompositionSolver;
 import com.yishape.lab.math.util.RerePrecision;
+import com.yishape.lab.math.linalg.decomposition.impl.support.DiagonalPlusRankOneSymmetricEigenSolver;
 import com.yishape.lab.util.Tuple3;
 
 /**
@@ -22,11 +23,22 @@ import com.yishape.lab.util.Tuple3;
  * such that A = U * S * V^T where U and V are orthogonal matrices and S is a diagonal
  * matrix of singular values.
  * </p>
+ * <p><b>返回形状约定（与 {@link ISVDDecomposition} 一致）：</b>设 A 为 m×n，k = min(m,n)。</p>
+ * <ul>
+ *   <li>{@code U}：m×k，列正交（瘦型左因子；非“满 m×m”）</li>
+ *   <li>{@code S}：长度为 k 的向量，非负且降序（经后处理）</li>
+ *   <li>{@code V^T}：n×n（与双对角化路径中右因子存储一致；重构时使用前 k 个奇异值与 {@code U}、{@code V^T} 的相应部分）</li>
+ * </ul>
+ * <p>若行数或列数为 0，{@link #decompose(IMatrix, double, int)} 抛出 {@link IllegalArgumentException}。</p>
  * 
  * <h3>Algorithm Improvements</h3>
  * <ul>
  *   <li>Bidiagonalization preprocessing using Householder reflections</li>
  *   <li>QR algorithm with shifts for bidiagonal SVD</li>
+ *   <li>Divide-and-conquer path (large matrices): 子块奇异值与正交阵在块对角基下拼成中间矩阵 {@code K}（对角块为子奇异值、连接处为秩一拐角），
+ *       对 {@code K} 双对角化后再做双对角 QR-SVD；理想 O(n²) 合并依赖 LAPACK DLASD2 Givens 链规约到箭式
+ *       {@code diag(σ)^2 + ρ zz^T} 后调用 {@link DiagonalPlusRankOneSymmetricEigenSolver}（替代 DLASD4 循环）及 DLASD3 式 GEMM
+ *       更新向量。当前生产路径仍以稠密 {@code K}（由 {@link IMatrix} 累加构造）+ 双对角 QR-SVD 保证与对父双对角直接 QR-SVD 一致</li>
  *   <li>Better numerical stability with precision-aware comparisons</li>
  *   <li>Comprehensive error reporting with context information</li>
  *   <li>Efficient caching of computed results</li>
@@ -38,6 +50,10 @@ import com.yishape.lab.util.Tuple3;
  *   <li>Golub, G. H., &amp; Van Loan, C. F. (2013). Matrix computations (4th ed.). Johns Hopkins University Press.</li>
  *   <li>Press, W. H., Teukolsky, S. A., Vetterling, W. T., &amp; Flannery, B. P. (2007). Numerical recipes: The art of scientific computing (3rd ed.). Cambridge University Press.</li>
  * </ul>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 2.0
  */
 public class RereSVDDecomposition implements ISVDDecomposition {
 
@@ -209,7 +225,10 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         double[][] data = doubleMatrix.getData();
         
         int m = data.length;    // Matrix rows
-        int n = data[0].length; // Matrix columns
+        int n = (m > 0) ? data[0].length : 0; // Matrix columns
+        if (m == 0 || n == 0) {
+            throw new IllegalArgumentException("Matrix cannot be empty");
+        }
         
         // Store matrix for later use
         this.matrix = matrix;
@@ -337,8 +356,8 @@ public class RereSVDDecomposition implements ISVDDecomposition {
     }
     
     /**
-     * 分治算法求解双对角矩阵的SVD
-     * 实现基于Cuppen算法的分治策略
+     * 分治算法求解双对角矩阵的 SVD。
+     * 超对角连接元非零时仍递归子块；合并时在块对角子 SVD 基下构造 {@code K}，双对角化后再 QR-SVD。
      */
     private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> divideAndConquerBidiagonalSVD(
             IMatrix<Double> B) {
@@ -351,23 +370,18 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         
         // 分割点
         int mid = n / 2;
-        
+        double connectingElement = (mid > 0 && mid < n) ? B.get(mid - 1, mid) : 0.0;
+
         try {
-            // 分割双对角矩阵为两个子问题
             IMatrix<Double> B1 = extractSubmatrix(B, 0, mid, 0, mid);
             IMatrix<Double> B2 = extractSubmatrix(B, mid, n, mid, n);
-            
-            // 处理连接元素
-            double connectingElement = (mid > 0 && mid < n) ? B.get(mid - 1, mid) : 0.0;
-            
-            // 递归求解子问题
-            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1 = 
+
+            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1 =
                 divideAndConquerBidiagonalSVD(B1);
-            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result2 = 
+            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result2 =
                 divideAndConquerBidiagonalSVD(B2);
-            
-            // 合并结果
-            return mergeSubproblems(result1, result2, connectingElement, mid);
+
+            return mergeSubproblems(result1, result2, connectingElement, B, mid);
             
         } catch (Exception e) {
             // 如果分治失败，回退到QR算法
@@ -395,178 +409,167 @@ public class RereSVDDecomposition implements ISVDDecomposition {
     }
     
     /**
-     * 合并两个子问题的结果
-     * 基于Cuppen的分治合并算法
+     * 合并两个子问题的 SVD 结果。
+     * <p>
+     * 若双对角块之间超对角耦合在容差内为零，则为块双对角直和再按奇异值排序。
+     * 若耦合非零，在块对角子 SVD 基下令 {@code K = U_blk^T B V_blk}（{@code B} 为父上双对角），
+     * 对 {@code K} 双对角化并 QR-SVD，再将左右正交阵与块对角的 U₁,V₁,U₂,V₂ 相乘。失败时回退对父双对角 QR-SVD。
+     * LAPACK 式 O(n²) 合并可将对称秩一特征子问题换为 {@link DiagonalPlusRankOneSymmetricEigenSolver}。
+     * </p>
      */
     private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> mergeSubproblems(
             Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1,
             Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result2,
-            double connectingElement, int mid) {
-        
+            double connectingElement,
+            IMatrix<Double> parentB,
+            int mid) {
+
+        int nParent = parentB.rows();
+        if (!RerePrecision.equalsZero(connectingElement, epsilon)) {
+            try {
+                return mergeRankOneCoupling(result1, result2, mid, nParent, parentB);
+            } catch (Exception ex) {
+                log.warn("rank-one merge failed, using QR bidiagonal SVD: {}", ex.getMessage());
+                return qrAlgorithmForBidiagonalWithIMatrix(parentB, nParent, nParent);
+            }
+        }
+
         IVector<Double> s1 = result1.getFirst();
         IMatrix<Double> u1 = result1.getSecond();
         IMatrix<Double> v1 = result1.getThird();
-        
         IVector<Double> s2 = result2.getFirst();
         IMatrix<Double> u2 = result2.getSecond();
         IMatrix<Double> v2 = result2.getThird();
-        
+
         int n1 = s1.length();
         int n2 = s2.length();
         int totalSize = n1 + n2;
-        
-        try {
-            // 构造合并矩阵 D + rho * u * v^T
-            // 其中 D 是块对角矩阵，包含两个子问题的奇异值
-            IVector<Double> mergedSingularValues = Linalg.zeros(totalSize);
-            
-            // 合并奇异值
-            for (int i = 0; i < n1; i++) {
-                mergedSingularValues.set(i, s1.get(i));
-            }
-            for (int i = 0; i < n2; i++) {
-                mergedSingularValues.set(n1 + i, s2.get(i));
-            }
-            
-            // 构造合并的U和V矩阵
-            IMatrix<Double> mergedU = Linalg.zeros(totalSize, totalSize);
-            IMatrix<Double> mergedV = Linalg.zeros(totalSize, totalSize);
-            
-            // 填充U矩阵的块对角结构
-            for (int i = 0; i < n1; i++) {
-                for (int j = 0; j < n1; j++) {
-                    mergedU.set(i, j, u1.get(i, j));
-                }
-            }
-            for (int i = 0; i < n2; i++) {
-                for (int j = 0; j < n2; j++) {
-                    mergedU.set(n1 + i, n1 + j, u2.get(i, j));
-                }
-            }
-            
-            // 填充V矩阵的块对角结构
-            for (int i = 0; i < n1; i++) {
-                for (int j = 0; j < n1; j++) {
-                    mergedV.set(i, j, v1.get(i, j));
-                }
-            }
-            for (int i = 0; i < n2; i++) {
-                for (int j = 0; j < n2; j++) {
-                    mergedV.set(n1 + i, n1 + j, v2.get(i, j));
-                }
-            }
-            
-            // 如果连接元素不为零，需要处理秩1更新
-            if (!RerePrecision.equalsZero(connectingElement, epsilon)) {
-                // 构造更新向量
-                IVector<Double> updateVector = Linalg.zeros(totalSize);
-                if (n1 > 0) updateVector.set(n1 - 1, 1.0);
-                if (n2 > 0) updateVector.set(n1, 1.0);
-                
-                // 应用秩1更新求解器
-                Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> updatedResult = 
-                    solveRankOneUpdate(mergedSingularValues, mergedU, mergedV, 
-                                     updateVector, connectingElement);
-                
-                if (updatedResult != null) {
-                    return updatedResult;
-                }
-            }
-            
-            // 如果秩1更新失败或连接元素为零，返回块对角结果
-            return new Tuple3<>(mergedSingularValues, mergedU, mergedV);
-            
-        } catch (Exception e) {
-            // 合并失败时的简单处理：直接组合结果
-            log.warn("Merge failed, using simple combination: " + e.getMessage());
-            return combineResults(result1, result2);
+        if (totalSize != nParent) {
+            return qrAlgorithmForBidiagonalWithIMatrix(parentB, nParent, nParent);
         }
-    }
-    
-    /**
-     * 求解秩1更新问题：D + rho * u * v^T 的SVD
-     * 基于分治算法中的关键步骤
-     */
-    private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> solveRankOneUpdate(
-            IVector<Double> diagonalValues, IMatrix<Double> U, IMatrix<Double> V,
-            IVector<Double> updateVector, double rho) {
-        
-        int n = diagonalValues.length();
-        
-        try {
-            // 构造修改后的对角矩阵：D + rho * u * u^T
-            // 这是一个对称三对角特征值问题的简化版本
-            
-            // 创建工作向量和矩阵
-            IVector<Double> newSingularValues = Linalg.zeros(n);
-            IMatrix<Double> newU = Linalg.zeros(n, n);
-            IMatrix<Double> newV = Linalg.zeros(n, n);
-            
-            // 使用Gu-Eisenstat秩1更新算法
-            for (int i = 0; i < n; i++) {
-                double originalValue = diagonalValues.get(i);
-                double perturbation = rho * updateVector.get(i) * updateVector.get(i);
-                
-                // 计算扰动后的奇异值（改进的一阶近似）
-                newSingularValues.set(i, Math.max(0, originalValue + perturbation));
-                
-                // 复制并稍作修正的奇异向量
-                for (int j = 0; j < n; j++) {
-                    double uValue = U.get(j, i);
-                    double vValue = V.get(j, i);
-                    
-                    // 应用小的修正
-                    double correction = Math.abs(perturbation) > 1e-12 ? 
-                        (rho * updateVector.get(i) / (originalValue + 1e-12)) : 0.0;
-                    
-                    newU.set(j, i, uValue * (1.0 + 0.01 * correction));
-                    newV.set(j, i, vValue * (1.0 + 0.01 * correction));
-                }
-            }
-            
-            // 重新正交化
-            orthogonalizeMatrixWithIMatrix(newU);
-            orthogonalizeMatrixWithIMatrix(newV);
-            
-            // 排序奇异值
-            sortSingularValuesWithMatrices(newSingularValues, newU, newV);
-            
-            return new Tuple3<>(newSingularValues, newU, newV);
-            
-        } catch (Exception e) {
-            log.warn("Rank-1 update failed: " + e.getMessage());
-            return null;
-        }
-    }
-    
-    /**
-     * 简单组合两个结果（当合并失败时使用）
-     */
-    private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> combineResults(
-            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1,
-            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result2) {
-        
-        IVector<Double> s1 = result1.getFirst();
-        IVector<Double> s2 = result2.getFirst();
-        
-        int n1 = s1.length();
-        int n2 = s2.length();
-        int totalSize = n1 + n2;
-        
-        // 简单合并奇异值
-        IVector<Double> combinedS = Linalg.zeros(totalSize);
+
+        IVector<Double> mergedSingularValues = Linalg.zeros(totalSize);
         for (int i = 0; i < n1; i++) {
-            combinedS.set(i, s1.get(i));
+            mergedSingularValues.set(i, s1.get(i));
         }
         for (int i = 0; i < n2; i++) {
-            combinedS.set(n1 + i, s2.get(i));
+            mergedSingularValues.set(n1 + i, s2.get(i));
         }
-        
-        // 创建块对角U和V矩阵
-        IMatrix<Double> combinedU = Linalg.eye(totalSize);
-        IMatrix<Double> combinedV = Linalg.eye(totalSize);
-        
-        return new Tuple3<>(combinedS, combinedU, combinedV);
+        IMatrix<Double> mergedU = Linalg.zeros(totalSize, totalSize);
+        IMatrix<Double> mergedV = Linalg.zeros(totalSize, totalSize);
+        for (int i = 0; i < n1; i++) {
+            for (int j = 0; j < n1; j++) {
+                mergedU.set(i, j, u1.get(i, j));
+                mergedV.set(i, j, v1.get(i, j));
+            }
+        }
+        for (int i = 0; i < n2; i++) {
+            for (int j = 0; j < n2; j++) {
+                mergedU.set(n1 + i, n1 + j, u2.get(i, j));
+                mergedV.set(n1 + i, n1 + j, v2.get(i, j));
+            }
+        }
+        sortSingularValuesWithMatrices(mergedSingularValues, mergedU, mergedV);
+        for (int i = 0; i < totalSize; i++) {
+            if (mergedSingularValues.get(i) < 0) {
+                mergedSingularValues.set(i, -mergedSingularValues.get(i));
+                for (int k = 0; k < mergedU.rows(); k++) {
+                    mergedU.set(k, i, -mergedU.get(k, i));
+                }
+            }
+        }
+        return new Tuple3<>(mergedSingularValues, mergedU, mergedV);
+    }
+
+    /**
+     * 在 blkdiag(U₁,U₂)、blkdiag(V₁,V₂) 正交基下合并：{@code B = U_blk K V_blk^T}，故
+     * {@code K = U_blk^T B V_blk}（与 dlasd2 的 (α,β) 秩一分解一致，不再用仅超对角启发式秩一项）。
+     * 对 {@code K} 双对角化 + QR-SVD，最后左乘/右乘块对角嵌入阵。
+     */
+    private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> mergeRankOneCoupling(
+            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result1,
+            Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> result2,
+            int mid,
+            int nParent,
+            IMatrix<Double> parentB) {
+        IVector<Double> s1 = result1.getFirst();
+        IMatrix<Double> u1 = result1.getSecond();
+        IMatrix<Double> v1 = result1.getThird();
+        IVector<Double> s2 = result2.getFirst();
+        IMatrix<Double> u2 = result2.getSecond();
+        IMatrix<Double> v2 = result2.getThird();
+        int n1 = s1.length();
+        int n2 = s2.length();
+        if (n1 + n2 != nParent || n1 != mid) {
+            throw new IllegalStateException("merge rank-one: dimension mismatch n1=" + n1 + " n2=" + n2 + " mid=" + mid);
+        }
+        if (u1.rows() != n1 || u1.cols() != n1 || v1.rows() != n1 || v1.cols() != n1
+                || u2.rows() != n2 || u2.cols() != n2 || v2.rows() != n2 || v2.cols() != n2) {
+            throw new IllegalStateException("merge rank-one: child U/V not square orthogonal-sized");
+        }
+
+        IMatrix<Double> uBlk = Linalg.zeros(nParent, nParent);
+        IMatrix<Double> vBlk = Linalg.zeros(nParent, nParent);
+        for (int i = 0; i < n1; i++) {
+            for (int j = 0; j < n1; j++) {
+                uBlk.set(i, j, u1.get(i, j));
+                vBlk.set(i, j, v1.get(i, j));
+            }
+        }
+        for (int i = 0; i < n2; i++) {
+            for (int j = 0; j < n2; j++) {
+                uBlk.set(n1 + i, n1 + j, u2.get(i, j));
+                vBlk.set(n1 + i, n1 + j, v2.get(i, j));
+            }
+        }
+
+        IMatrix<Double> kMat = uBlk.transposeNew().mmul(parentB).mmul(vBlk);
+
+        IMatrix<Double> recon = uBlk.mmul(kMat).mmul(vBlk.transposeNew());
+        double reconErr = 0.0;
+        for (int i = 0; i < nParent; i++) {
+            for (int j = 0; j < nParent; j++) {
+                reconErr = Math.max(reconErr, Math.abs(recon.get(i, j) - parentB.get(i, j)));
+            }
+        }
+        double scale = 0.0;
+        for (int i = 0; i < nParent; i++) {
+            scale = Math.max(scale, Math.abs(parentB.get(i, i)));
+        }
+        if (!(reconErr <= Math.max(1e-10, 1e-8 * scale) * nParent)) {
+            throw new IllegalStateException("K merge reconstruction max error " + reconErr);
+        }
+
+        Tuple3<IMatrix<Double>, IMatrix<Double>, IMatrix<Double>> bi = bidiagonalizationWithIMatrix(kMat);
+        IMatrix<Double> ub = bi.getFirst();
+        IMatrix<Double> bbd = bi.getSecond();
+        IMatrix<Double> vb = bi.getThird();
+        Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> inner =
+                qrAlgorithmForBidiagonalWithIMatrix(bbd, nParent, nParent);
+        IVector<Double> sigma = inner.getFirst();
+        IMatrix<Double> ql = inner.getSecond();
+        IMatrix<Double> qrMat = inner.getThird();
+        IMatrix<Double> uK = ub.mmul(ql);
+        IMatrix<Double> vK = vb.mmul(qrMat);
+
+        IMatrix<Double> uOut = uBlk.mmul(uK);
+        IMatrix<Double> vOut = vBlk.mmul(vK);
+        sortSingularValuesWithIMatrix(sigma, uOut, vOut);
+
+        double fullErr = 0.0;
+        for (int i = 0; i < nParent; i++) {
+            for (int j = 0; j < nParent; j++) {
+                double sum = 0.0;
+                for (int t = 0; t < nParent; t++) {
+                    sum += uOut.get(i, t) * sigma.get(t) * vOut.get(j, t);
+                }
+                fullErr = Math.max(fullErr, Math.abs(parentB.get(i, j) - sum));
+            }
+        }
+        if (!(fullErr <= Math.max(1e-10, 1e-8 * scale) * nParent)) {
+            throw new IllegalStateException("merged parent SVD reconstruction max " + fullErr);
+        }
+        return new Tuple3<>(sigma, uOut, vOut);
     }
     
     /**
@@ -648,226 +651,17 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         
         return i + 1;
     }
-    private void bidiagonalSVD(IDoubleMatrix matrix) {
-        int m = matrix.getRowNum();
-        int n = matrix.getColNum();
-        
-        // 检查空矩阵情况
-        if (m == 0 || n == 0) {
-            throw new IllegalArgumentException("Matrix cannot be empty");
-        }
-        
-        int minDim = Math.min(m, n);
-        
-        // For the traditional SVD, we'll implement the full algorithm directly
-        // similar to the Commons Math 4 approach but using our IMatrix API
-        
-        // Create a copy of the matrix data for manipulation
-        double[][] A = new double[m][n];
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                A[i][j] = matrix.get(i, j);
-            }
-        }
-        
-        // Initialize U and V matrices
-        IMatrix<Double> U = Linalg.eye(m);  // Start with m x m identity
-        // For non-square matrices, we'll need to extract the first minDim columns later
-        if (m > minDim) {
-            // Extract first minDim columns for U
-            double[][] uData = new double[m][minDim];
-            for (int i = 0; i < m; i++) {
-                for (int j = 0; j < minDim; j++) {
-                    uData[i][j] = (i == j) ? 1.0 : 0.0;
-                }
-            }
-            U = Linalg.matrix(uData);
-        } else if (m < minDim) {
-            // This shouldn't happen as minDim = min(m, n) and m >= minDim
-            U = Linalg.eye(m);
-        }
-        IMatrix<Double> V = Linalg.eye(n);          // n x n
-        
-        // Initialize singular values array
-        double[] singularValues = new double[minDim];
-        double[] e = new double[n];  // e needs to be size n for super-diagonal elements
-        double[] work = new double[m];
-        
-        // Reduce A to bidiagonal form, storing the diagonal elements
-        // in singularValues and the super-diagonal elements in e.
-        int nct = Math.min(m - 1, n);
-        int nrt = Math.max(0, n - 2);
-        
-        for (int k = 0; k < Math.max(nct, nrt); k++) {
-            if (k < nct) {
-                // Compute the transformation for the k-th column and
-                // place the k-th diagonal in singularValues[k].
-                // Compute 2-norm of k-th column without under/overflow.
-                singularValues[k] = 0;
-                for (int i = k; i < m; i++) {
-                    singularValues[k] = Math.hypot(singularValues[k], A[i][k]);
-                }
-                if (singularValues[k] != 0) {
-                    if (A[k][k] < 0) {
-                        singularValues[k] = -singularValues[k];
-                    }
-                    for (int i = k; i < m; i++) {
-                        A[i][k] /= singularValues[k];
-                    }
-                    A[k][k] += 1;
-                }
-                singularValues[k] = -singularValues[k];
-            }
-            
-            for (int j = k + 1; j < n; j++) {
-                if (k < nct && singularValues[k] != 0) {
-                    // Apply the transformation.
-                    double t = 0;
-                    for (int i = k; i < m; i++) {
-                        t += A[i][k] * A[i][j];
-                    }
-                    t = -t / A[k][k];
-                    for (int i = k; i < m; i++) {
-                        A[i][j] += t * A[i][k];
-                    }
-                }
-                // Place the k-th row of A into e for the
-                // subsequent calculation of the row transformation.
-                e[j] = A[k][j];
-            }
-            
-            if (k < nct) {
-                // Place the transformation in U for subsequent back
-                // multiplication.
-                for (int i = k; i < m; i++) {
-                    U.set(i, k, A[i][k]);
-                }
-            }
-            
-            if (k < nrt) {
-                // Compute the k-th row transformation and place the
-                // k-th super-diagonal in e[k].
-                // Compute 2-norm without under/overflow.
-                e[k] = 0;
-                for (int i = k + 1; i < n; i++) {
-                    e[k] = Math.hypot(e[k], e[i]);
-                }
-                if (e[k] != 0) {
-                    if (e[k + 1] < 0) {
-                        e[k] = -e[k];
-                    }
-                    for (int i = k + 1; i < n; i++) {
-                        e[i] /= e[k];
-                    }
-                    e[k + 1] += 1;
-                }
-                e[k] = -e[k];
-                
-                if (k + 1 < m && e[k] != 0) {
-                    // Apply the transformation.
-                    for (int i = k + 1; i < m; i++) {
-                        work[i] = 0;
-                    }
-                    for (int j = k + 1; j < n; j++) {
-                        for (int i = k + 1; i < m; i++) {
-                            work[i] += e[j] * A[i][j];
-                        }
-                    }
-                    for (int j = k + 1; j < n; j++) {
-                        double t = -e[j] / e[k + 1];
-                        for (int i = k + 1; i < m; i++) {
-                            A[i][j] += t * work[i];
-                        }
-                    }
-                }
-                
-                // Place the transformation in V for subsequent
-                // back multiplication.
-                for (int i = k + 1; i < n; i++) {
-                    V.set(i, k, e[i]);
-                }
-            }
-        }
-        
-        // Set up the final bidiagonal matrix or order p.
-        int p = minDim;
-        if (nct < n && nct < minDim) {
-            singularValues[nct] = A[nct][nct];
-        }
-        if (m < p) {
-            singularValues[p - 1] = 0;
-        }
-        if (nrt + 1 < p) {
-            e[nrt] = A[nrt][p - 1];
-        }
-        e[p - 1] = 0;
-        
-        // Generate U.
-        for (int j = nct; j < minDim; j++) {
-            for (int i = 0; i < m; i++) {
-                U.set(i, j, 0.0);
-            }
-            U.set(j, j, 1.0);
-        }
-        
-        for (int k = nct - 1; k >= 0; k--) {
-            if (singularValues[k] != 0) {
-                for (int j = k + 1; j < minDim; j++) {
-                    double t = 0;
-                    for (int i = k; i < m; i++) {
-                        t += U.get(i, k) * U.get(i, j);
-                    }
-                    if (Math.abs(U.get(k, k)) > epsilon) {
-                        t = -t / U.get(k, k);
-                        for (int i = k; i < m; i++) {
-                            U.set(i, j, U.get(i, j) + t * U.get(i, k));
-                        }
-                    }
-                }
-                for (int i = k; i < m; i++) {
-                    U.set(i, k, -U.get(i, k));
-                }
-                U.set(k, k, 1 + U.get(k, k));
-                for (int i = 0; i < k; i++) {
-                    U.set(i, k, 0.0);
-                }
-            } else {
-                for (int i = 0; i < m; i++) {
-                    U.set(i, k, 0.0);
-                }
-                U.set(k, k, 1.0);
-            }
-        }
-        
-        // Generate V.
-        for (int k = n - 1; k >= 0; k--) {
-            if (k < nrt && e[k] != 0) {
-                for (int j = k + 1; j < n; j++) {
-                    double t = 0;
-                    for (int i = k + 1; i < n; i++) {
-                        t += V.get(i, k) * V.get(i, j);
-                    }
-                    if (Math.abs(V.get(k + 1, k)) > epsilon) {
-                        t = -t / V.get(k + 1, k);
-                        for (int i = k + 1; i < n; i++) {
-                            V.set(i, j, V.get(i, j) + t * V.get(i, k));
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < n; i++) {
-                V.set(i, k, 0.0);
-            }
-            V.set(k, k, 1.0);
-        }
-        
-        // Main iteration loop for the singular values.
-        final int pp = p - 1;
+    /**
+     * BD-SQR 主迭代（与 {@link #bidiagonalSVD} 中 reduction 后阶段相同）。
+     */
+    private void bdsqrMainLoop(double[] singularValues, double[] e, IMatrix<Double> U, IMatrix<Double> V,
+                               int m, int n, int pInitial) {
+        int p = pInitial;
         int iterCount = 0;
-        
-        // Maximum number of iterations before considering non-convergence
+        // Jama/LINPACK：pp 在第一次进入主循环前固定为 pInitial-1，收敛分支中 bubble 排序与 V 列翻符号均用此上界；
+        // 若随 deflate 每轮改用 p-1，已收敛的 σ 无法交换到全局正确位置，重构误差可达 O(1e-3)。
+        final int ppFixed = pInitial - 1;
         final int maxIter = Math.max(30, Math.min(m, n));
-        
         while (p > 0 && iterCount < maxIterations) {
             int k;
             int kase;
@@ -1043,13 +837,13 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                     if (singularValues[k] <= 0) {
                         singularValues[k] = singularValues[k] < 0 ? -singularValues[k] : 0;
                         
-                        for (int i = 0; i <= pp; i++) {
+                        for (int i = 0; i <= ppFixed; i++) {
                             V.set(i, k, -V.get(i, k));
                         }
                     }
                     
                     // Order the singular values.
-                    while (k < pp) {
+                    while (k < ppFixed) {
                         if (singularValues[k] >= singularValues[k + 1]) {
                             break;
                         }
@@ -1074,6 +868,7 @@ public class RereSVDDecomposition implements ISVDDecomposition {
                         }
                         k++;
                     }
+                    iterCount = 0;
                     p--;
                 }
             }
@@ -1083,6 +878,222 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             // Convergence.
             iterCount++;
         }
+    }
+
+    private void bidiagonalSVD(IDoubleMatrix matrix) {
+        int m = matrix.getRowNum();
+        int n = matrix.getColNum();
+        
+        // 检查空矩阵情况
+        if (m == 0 || n == 0) {
+            throw new IllegalArgumentException("Matrix cannot be empty");
+        }
+        
+        int minDim = Math.min(m, n);
+        
+        // For the traditional SVD, we'll implement the full algorithm directly
+        // similar to the Commons Math 4 approach but using our IMatrix API
+        
+        // Create a copy of the matrix data for manipulation
+        double[][] A = new double[m][n];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                A[i][j] = matrix.get(i, j);
+            }
+        }
+        
+        // Initialize U and V matrices
+        IMatrix<Double> U = Linalg.eye(m);  // Start with m x m identity
+        // For non-square matrices, we'll need to extract the first minDim columns later
+        if (m > minDim) {
+            // Extract first minDim columns for U
+            double[][] uData = new double[m][minDim];
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < minDim; j++) {
+                    uData[i][j] = (i == j) ? 1.0 : 0.0;
+                }
+            }
+            U = Linalg.matrix(uData);
+        } else if (m < minDim) {
+            // This shouldn't happen as minDim = min(m, n) and m >= minDim
+            U = Linalg.eye(m);
+        }
+        IMatrix<Double> V = Linalg.eye(n);          // n x n
+        
+        // Initialize singular values array
+        double[] singularValues = new double[minDim];
+        double[] e = new double[n];  // e needs to be size n for super-diagonal elements
+        double[] work = new double[m];
+        
+        // Reduce A to bidiagonal form, storing the diagonal elements
+        // in singularValues and the super-diagonal elements in e.
+        int nct = Math.min(m - 1, n);
+        int nrt = Math.max(0, Math.min(n - 2, m));
+        
+        for (int k = 0; k < Math.max(nct, nrt); k++) {
+            if (k < nct) {
+                // Compute the transformation for the k-th column and
+                // place the k-th diagonal in singularValues[k].
+                // Compute 2-norm of k-th column without under/overflow.
+                singularValues[k] = 0;
+                for (int i = k; i < m; i++) {
+                    singularValues[k] = Math.hypot(singularValues[k], A[i][k]);
+                }
+                if (singularValues[k] != 0) {
+                    if (A[k][k] < 0) {
+                        singularValues[k] = -singularValues[k];
+                    }
+                    for (int i = k; i < m; i++) {
+                        A[i][k] /= singularValues[k];
+                    }
+                    A[k][k] += 1;
+                }
+                singularValues[k] = -singularValues[k];
+            }
+            
+            for (int j = k + 1; j < n; j++) {
+                if (k < nct && singularValues[k] != 0) {
+                    // Apply the transformation.
+                    double t = 0;
+                    for (int i = k; i < m; i++) {
+                        t += A[i][k] * A[i][j];
+                    }
+                    t = -t / A[k][k];
+                    for (int i = k; i < m; i++) {
+                        A[i][j] += t * A[i][k];
+                    }
+                }
+                // Place the k-th row of A into e for the
+                // subsequent calculation of the row transformation.
+                e[j] = A[k][j];
+            }
+            
+            if (k < nct) {
+                // Place the transformation in U for subsequent back
+                // multiplication.
+                for (int i = k; i < m; i++) {
+                    U.set(i, k, A[i][k]);
+                }
+            }
+            
+            if (k < nrt) {
+                // Compute the k-th row transformation and place the
+                // k-th super-diagonal in e[k].
+                // Compute 2-norm without under/overflow.
+                e[k] = 0;
+                for (int i = k + 1; i < n; i++) {
+                    e[k] = Math.hypot(e[k], e[i]);
+                }
+                if (e[k] != 0) {
+                    if (e[k + 1] < 0) {
+                        e[k] = -e[k];
+                    }
+                    for (int i = k + 1; i < n; i++) {
+                        e[i] /= e[k];
+                    }
+                    e[k + 1] += 1;
+                }
+                e[k] = -e[k];
+                
+                if (k + 1 < m && e[k] != 0) {
+                    // Apply the transformation.
+                    for (int i = k + 1; i < m; i++) {
+                        work[i] = 0;
+                    }
+                    for (int j = k + 1; j < n; j++) {
+                        for (int i = k + 1; i < m; i++) {
+                            work[i] += e[j] * A[i][j];
+                        }
+                    }
+                    for (int j = k + 1; j < n; j++) {
+                        double t = -e[j] / e[k + 1];
+                        for (int i = k + 1; i < m; i++) {
+                            A[i][j] += t * work[i];
+                        }
+                    }
+                }
+                
+                // Place the transformation in V for subsequent
+                // back multiplication.
+                for (int i = k + 1; i < n; i++) {
+                    V.set(i, k, e[i]);
+                }
+            }
+        }
+        
+        // Set up the final bidiagonal matrix or order p.
+        int p = minDim;
+        if (nct < n && nct < minDim) {
+            singularValues[nct] = A[nct][nct];
+        }
+        if (m < p) {
+            singularValues[p - 1] = 0;
+        }
+        if (nrt + 1 < p) {
+            e[nrt] = A[nrt][p - 1];
+        }
+        e[p - 1] = 0;
+        
+        // Generate U.
+        for (int j = nct; j < minDim; j++) {
+            for (int i = 0; i < m; i++) {
+                U.set(i, j, 0.0);
+            }
+            U.set(j, j, 1.0);
+        }
+        
+        for (int k = nct - 1; k >= 0; k--) {
+            if (singularValues[k] != 0) {
+                for (int j = k + 1; j < minDim; j++) {
+                    double t = 0;
+                    for (int i = k; i < m; i++) {
+                        t += U.get(i, k) * U.get(i, j);
+                    }
+                    if (Math.abs(U.get(k, k)) > epsilon) {
+                        t = -t / U.get(k, k);
+                        for (int i = k; i < m; i++) {
+                            U.set(i, j, U.get(i, j) + t * U.get(i, k));
+                        }
+                    }
+                }
+                for (int i = k; i < m; i++) {
+                    U.set(i, k, -U.get(i, k));
+                }
+                U.set(k, k, 1 + U.get(k, k));
+                for (int i = 0; i < k; i++) {
+                    U.set(i, k, 0.0);
+                }
+            } else {
+                for (int i = 0; i < m; i++) {
+                    U.set(i, k, 0.0);
+                }
+                U.set(k, k, 1.0);
+            }
+        }
+        
+        // Generate V.
+        for (int k = n - 1; k >= 0; k--) {
+            if (k < nrt && e[k] != 0) {
+                for (int j = k + 1; j < n; j++) {
+                    double t = 0;
+                    for (int i = k + 1; i < n; i++) {
+                        t += V.get(i, k) * V.get(i, j);
+                    }
+                    if (Math.abs(V.get(k + 1, k)) > epsilon) {
+                        t = -t / V.get(k + 1, k);
+                        for (int i = k + 1; i < n; i++) {
+                            V.set(i, j, V.get(i, j) + t * V.get(i, k));
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < n; i++) {
+                V.set(i, k, 0.0);
+            }
+            V.set(k, k, 1.0);
+        }
+        
+        bdsqrMainLoop(singularValues, e, U, V, m, n, p);
         
         // Create IVector for singular values
         IVector<Double> singularValuesVector = Linalg.zeros(minDim);
@@ -1216,54 +1227,6 @@ public class RereSVDDecomposition implements ISVDDecomposition {
         
         return Linalg.matrix(data);
     }
-    
-    /**
-     * 计算双对角矩阵的Wilkinson位移
-     * 对于双对角矩阵B，我们需要计算B^T*B的右下角2x2子矩阵的特征值
-     */
-    private double computeWilkinsonShiftForBidiagonal(IVector<Double> alpha, IVector<Double> beta) {
-        int n = alpha.length();
-        if (n < 2) return 0.0;
-        
-        // 对于双对角矩阵B，B^T*B的右下角2x2子矩阵为：
-        // [alpha[n-2]^2 + beta[n-3]^2,  alpha[n-2]*beta[n-2]]
-        // [alpha[n-2]*beta[n-2],        alpha[n-1]^2         ]
-        
-        double a11, a12, a22;
-        
-        if (n == 2) {
-            // 对于2x2情况
-            a11 = alpha.get(0) * alpha.get(0);
-            a12 = (beta.length() > 0) ? alpha.get(0) * beta.get(0) : 0.0;
-            a22 = alpha.get(1) * alpha.get(1) + ((beta.length() > 0) ? beta.get(0) * beta.get(0) : 0.0);
-        } else {
-            // 对于n>2的情况
-            a11 = alpha.get(n - 2) * alpha.get(n - 2);
-            if (n > 2 && beta.length() > n - 3) {
-                a11 += beta.get(n - 3) * beta.get(n - 3);
-            }
-            a12 = (beta.length() > n - 2) ? alpha.get(n - 2) * beta.get(n - 2) : 0.0;
-            a22 = alpha.get(n - 1) * alpha.get(n - 1) + ((beta.length() > n - 2) ? beta.get(n - 2) * beta.get(n - 2) : 0.0);
-        }
-        
-        // 计算2x2矩阵的特征值
-        double trace = a11 + a22;
-        double det = a11 * a22 - a12 * a12;
-        double discriminant = trace * trace - 4 * det;
-        
-        if (discriminant < 0) {
-            // 复特征值情况，返回实部
-            return trace / 2.0;
-        }
-        
-        double sqrtDisc = Math.sqrt(discriminant);
-        double lambda1 = (trace + sqrtDisc) / 2.0;
-        double lambda2 = (trace - sqrtDisc) / 2.0;
-        
-        // 选择更接近a22的特征值（Wilkinson位移策略）
-        return Math.abs(lambda1 - a22) < Math.abs(lambda2 - a22) ? lambda1 : lambda2;
-    }
-    
     /**
      * 双对角化，使用IMatrix API
      */
@@ -1273,173 +1236,47 @@ public class RereSVDDecomposition implements ISVDDecomposition {
     }
     
     /**
-     * QR算法用于双对角矩阵，使用IMatrix API
-     * 返回 (奇异值, 左旋转矩阵, 右旋转矩阵)
+     * 双对角矩阵 SVD：由主对角 / 超对角初始化 {@code s}/{@code e}，调用 {@link #bdsqrMainLoop}，返回
+     * {@code B = Q_left Σ Q_right^T}。不再对结果调用 {@link #sortSingularValuesWithIMatrix}，以免与
+     * {@link #ensureValidSingularValues} 对 VT 行的处理不一致；合并端可对最终 {@code U,V} 再排序。
      */
     private Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> qrAlgorithmForBidiagonalWithIMatrix(
             IMatrix<Double> B, int originalM, int originalN) {
         int m = B.rows();
         int n = B.cols();
         int minDim = Math.min(m, n);
-        
-        // 提取对角线和超对角线元素
-        IVector<Double> alpha = Linalg.zeros(minDim);  // 主对角线
-        IVector<Double> beta = Linalg.zeros(Math.max(0, minDim - 1));  // 超对角线
-        
-        // 从双对角矩阵B中提取元素
-        for (int i = 0; i < minDim; i++) {
-            alpha.set(i, B.get(i, i));
-            if (i < minDim - 1) {
-                beta.set(i, B.get(i, i + 1));
-            }
-        }
-        
-        // 初始化左右旋转矩阵为单位矩阵
-        IMatrix<Double> Q_left = Linalg.eye(minDim);
-        IMatrix<Double> Q_right = Linalg.eye(minDim);
-        
-        // QR迭代
-        int iterCount = 0;
-        final int maxIterationsForBidiagonal = Math.min(maxIterations, 50 * minDim);
-        
-        while (iterCount < maxIterationsForBidiagonal) {
-            boolean converged = true;
-            
-            // 检查收敛性：使用相对误差判断超对角线元素是否足够小
-            for (int i = 0; i < beta.length(); i++) {
-                // 计算相邻对角线元素的最大值作为参考
-                double alpha_norm = Math.max(Math.abs(alpha.get(i)), Math.abs(alpha.get(i + 1)));
-                // 使用Precision工具进行更好的数值比较
-                double threshold = Math.max(epsilon * alpha_norm, RerePrecision.getSafeMin());
-                
-                if (!RerePrecision.equalsZero(beta.get(i), threshold)) {
-                    converged = false;
-                    break;
-                }
-            }
-            
-            if (converged) {
-                break;
-            }
-            
-            // 执行QR步骤，更新左右旋转矩阵
-            performQRStepForBidiagonalWithIMatrix(alpha, beta, Q_left, Q_right);
-            iterCount++;
-        }
-        
-        // 对奇异值进行排序并相应更新旋转矩阵
-        sortSingularValuesWithIMatrix(alpha, Q_left, Q_right);
-        
-        return new Tuple3<>(alpha, Q_left, Q_right);
-    }
 
-    /**
-     * 执行双对角矩阵的QR步骤，使用IMatrix API
-     * 同时更新左右旋转矩阵
-     */
-    private void performQRStepForBidiagonalWithIMatrix(
-            IVector<Double> alpha, IVector<Double> beta,
-            IMatrix<Double> Q_left, IMatrix<Double> Q_right) {
-        int n = alpha.length();
-        
-        // 计算Wilkinson位移
-        double shift = computeWilkinsonShiftForBidiagonal(alpha, beta);
-        
-        // 构造B^T*B - shift*I的第一列的前两个元素
-        double x = alpha.get(0) * alpha.get(0) - shift;
-        double y = (beta.length() > 0) ? alpha.get(0) * beta.get(0) : 0.0;
-        
-        // 对每个位置应用Givens旋转对
-        for (int k = 0; k < n - 1; k++) {
-            // 第一步：右Givens旋转，消除y分量
-            double r = Math.sqrt(x * x + y * y);
-            double c = (r > epsilon) ? x / r : 1.0;
-            double s = (r > epsilon) ? y / r : 0.0;
-            
-            // 应用右Givens旋转到双对角矩阵的列k和k+1
-            double alpha_k = alpha.get(k);
-            double beta_k = (k < beta.length()) ? beta.get(k) : 0.0;
-            
-            // 更新第k行
-            double new_alpha_k = c * alpha_k + s * beta_k;
-            double new_beta_k = -s * alpha_k + c * beta_k;
-            
-            alpha.set(k, new_alpha_k);
-            if (k < beta.length()) {
-                beta.set(k, new_beta_k);
-            }
-            
-            // 更新第k+1行（如果存在）
-            if (k + 1 < n) {
-                double alpha_k1 = alpha.get(k + 1);
-                alpha.set(k + 1, c * alpha_k1);
-                
-                // 如果k+1不是最后一行，还需要更新beta[k+1]
-                if (k + 1 < n - 1 && k + 1 < beta.length()) {
-                    double beta_k1 = beta.get(k + 1);
-                    beta.set(k + 1, s * beta_k1);
-                }
-            }
-            
-            // 更新右旋转矩阵Q_right
-            for (int i = 0; i < Q_right.rows(); i++) {
-                double temp_i = Q_right.get(i, k);
-                double temp_i1 = (k + 1 < Q_right.cols()) ? Q_right.get(i, k + 1) : 0.0;
-                Q_right.set(i, k, c * temp_i + s * temp_i1);
-                if (k + 1 < Q_right.cols()) {
-                    Q_right.set(i, k + 1, -s * temp_i + c * temp_i1);
-                }
-            }
-            
-            // 第二步：左Givens旋转，消除刚才产生的填充元素
-            x = alpha.get(k);
-            y = (k < beta.length()) ? beta.get(k) : 0.0;
-            
-            if (Math.abs(y) > epsilon) {
-                r = Math.sqrt(x * x + y * y);
-                c = (r > epsilon) ? x / r : 1.0;
-                s = (r > epsilon) ? y / r : 0.0;
-                
-                // 应用左Givens旋转到双对角矩阵的行k和k+1
-                alpha.set(k, r);
-                if (k < beta.length()) {
-                    beta.set(k, 0.0);
-                }
-                
-                // 更新下一个对角线和超对角线元素
-                if (k + 1 < n) {
-                    double alpha_k1 = alpha.get(k + 1);
-                    double new_alpha_k1 = c * alpha_k1;
-                    alpha.set(k + 1, new_alpha_k1);
-                    
-                    if (k + 1 < n - 1 && k + 1 < beta.length()) {
-                        double beta_k1 = beta.get(k + 1);
-                        double new_beta_k1 = -s * alpha_k1 + c * beta_k1;
-                        beta.set(k + 1, new_beta_k1);
-                        
-                        // 准备下一次迭代的x, y
-                        x = new_alpha_k1;
-                        y = new_beta_k1;
-                    }
-                }
-                
-                // 更新左旋转矩阵Q_left
-                for (int i = 0; i < Q_left.rows(); i++) {
-                    double temp_i = Q_left.get(i, k);
-                    double temp_i1 = (k + 1 < Q_left.cols()) ? Q_left.get(i, k + 1) : 0.0;
-                    Q_left.set(i, k, c * temp_i + s * temp_i1);
-                    if (k + 1 < Q_left.cols()) {
-                        Q_left.set(i, k + 1, -s * temp_i + c * temp_i1);
-                    }
-                }
-            } else {
-                // 如果没有填充元素需要消除，准备下一次迭代
-                if (k + 1 < n - 1 && k + 1 < beta.length()) {
-                    x = alpha.get(k + 1);
-                    y = beta.get(k + 1);
-                }
-            }
+        double[] singularValues = new double[minDim];
+        double[] e = new double[n];
+        java.util.Arrays.fill(e, 0.0);
+        for (int i = 0; i < minDim; i++) {
+            singularValues[i] = B.get(i, i);
         }
+        for (int i = 0; i < minDim - 1; i++) {
+            e[i] = B.get(i, i + 1);
+        }
+
+        IMatrix<Double> qLeft;
+        if (m > minDim) {
+            double[][] uData = new double[m][minDim];
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < minDim; j++) {
+                    uData[i][j] = (i == j) ? 1.0 : 0.0;
+                }
+            }
+            qLeft = Linalg.matrix(uData);
+        } else {
+            qLeft = Linalg.eye(m);
+        }
+        IMatrix<Double> qRight = Linalg.eye(n);
+
+        bdsqrMainLoop(singularValues, e, qLeft, qRight, m, n, minDim);
+
+        IVector<Double> alpha = Linalg.zeros(minDim);
+        for (int i = 0; i < minDim; i++) {
+            alpha.set(i, singularValues[i]);
+        }
+        return new Tuple3<>(alpha, extractFirstColumns(qLeft, minDim), extractFirstColumns(qRight, minDim));
     }
 
     /**
@@ -1655,6 +1492,15 @@ public class RereSVDDecomposition implements ISVDDecomposition {
             }
         }
     }
-    
-    
+
+    /** 同包测试用：分治双对角 SVD。 */
+    Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> divideAndConquerBidiagonalSVDForTesting(IMatrix<Double> b) {
+        return divideAndConquerBidiagonalSVD(b);
+    }
+
+    /** 同包测试用：双对角 QR-SVD 基线。 */
+    Tuple3<IVector<Double>, IMatrix<Double>, IMatrix<Double>> qrBidiagonalForTesting(IMatrix<Double> b) {
+        return qrAlgorithmForBidiagonalWithIMatrix(b, b.rows(), b.cols());
+    }
+
 }

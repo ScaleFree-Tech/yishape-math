@@ -29,6 +29,28 @@ public class InverseWishartDistributionTest {
     }
     
     @Test
+    void testVectorApiMatchesMatrixOrder() {
+        assertEquals(scaleMatrix.rows() * scaleMatrix.cols(), invWishart.getDimension());
+        assertEquals(scaleMatrix.rows(), invWishart.getMatrixOrder());
+        assertEquals(invWishart.getDimension(), invWishart.sample().size());
+    }
+
+    @Test
+    void testVecCovarianceDiagonalMatchesVarianceMatrix() {
+        InverseWishartDistribution iw = new InverseWishartDistribution(8.0, scaleMatrix);
+        IMatrix<Double> varMat = iw.variance();
+        IMatrix<Double> covVec = iw.getCovariance();
+        int p = scaleMatrix.rows();
+        for (int i = 0; i < p; i++) {
+            for (int j = 0; j < p; j++) {
+                int u = i * p + j;
+                assertEquals(varMat.get(i, j).doubleValue(), covVec.get(u, u).doubleValue(), 1e-9,
+                        "Var(X_(" + i + "," + j + ")) vs Cov(vec_" + u + ",vec_" + u + ")");
+            }
+        }
+    }
+
+    @Test
     void testConstructorValidation() {
         // 测试有效构造函数
         assertDoesNotThrow(() -> new InverseWishartDistribution(4.0, scaleMatrix));

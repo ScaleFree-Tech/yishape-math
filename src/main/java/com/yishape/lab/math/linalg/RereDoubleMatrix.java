@@ -630,16 +630,17 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * 奇异值分解（Singular Value Decomposition, SVD）
      *
      * <p>
-     * 奇异值分解是线性代数中的核心分解技术，将任意m×n矩阵A分解为A = UΣV^T的形式，
-     * 其中U是m×m正交矩阵，Σ是m×n对角矩阵（奇异值在对角线上），V^T是n×n正交矩阵。</p>
+     * 将 m×n 矩阵 A 分解为 A = U Σ V^T：Σ 的非负对角元为奇异值（本实现中 Σ 以长度为 k=min(m,n) 的向量返回），
+     * U 的列、V 的列为左/右奇异向量。实现采用瘦型左因子：U 为 m×k 且列正交（U^T U = I_k），
+     * 而非满 m×m。</p>
      *
      * <p>
      * 数学原理：</p>
      * <ul>
-     * <li>对于任意m×n矩阵A，存在分解A = UΣV^T</li>
-     * <li>U的列向量称为左奇异向量，V的列向量称为右奇异向量</li>
-     * <li>Σ的对角线元素σ₁ ≥ σ₂ ≥ ... ≥ σᵣ ≥ 0称为奇异值（r = min(m,n)）</li>
-     * <li>U和V都是正交矩阵：U^T U = I, V^T V = I</li>
+     * <li>对于任意 m×n 矩阵 A，存在上述分解；r = min(m,n)</li>
+     * <li>U：m×r，列正交；本库返回的 V^T：n×n（与 {@link com.yishape.lab.math.linalg.decomposition.ISVDDecomposition} 一致）</li>
+     * <li>奇异值 σ₁ ≥ σ₂ ≥ … ≥ σᵣ ≥ 0，在 {@link com.yishape.lab.math.linalg.decomposition.impl.RereSVDDecomposition} 中经后处理保证降序与非负</li>
+     * <li>V 为正交矩阵时 V^T V = I_n</li>
      * </ul>
      *
      *
@@ -651,9 +652,8 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * <li>数值精度：使用双对角化技术提高计算精度</li>
      * </ul>
      *
-     * @return 返回SVD分解结果的元组，包含： - U：m×m左奇异向量矩阵（正交矩阵） - S：奇异值向量（按降序排列） -
-     * V^T：n×n右奇异向量矩阵的转置（正交矩阵）
-     * @throws IllegalArgumentException 当矩阵为空或维度无效时抛出异常
+     * @return 元组 (U, S, V^T)：U 为 m×min(m,n)，S 为奇异值向量长度 min(m,n)，V^T 为 n×n
+     * @throws IllegalArgumentException 当矩阵为空（行数或列数为 0）时抛出异常
      */
     @Override
     public Tuple3<IMatrix<Double>, IVector<Double>, IMatrix<Double>> svd() {
@@ -705,6 +705,21 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
     @Override
     public IMatrix<Double> kron(IMatrix<Double> other) {
+        /**
+     * 矩阵Kronecker积 / Matrix Kronecker product
+     * <p>
+     * 计算当前矩阵与另一个矩阵的Kronecker积（张量积）。对于m×n矩阵A和p×q矩阵B，
+     * 结果为mp×nq矩阵，每个元素为A[i,j] * B。
+     * </p>
+     * <p>
+     * Computes the Kronecker product (tensor product) of the current matrix with another matrix.
+     * For m×n matrix A and p×q matrix B, the result is an mp×nq matrix where each element is A[i,j] * B.
+     * </p>
+     *
+     * @param other 另一个矩阵 / The other matrix
+     * @return Kronecker积结果矩阵 / Kronecker product result matrix
+     * @throws NullPointerException 如果other为null / if other is null
+     */
         if (other == null) {
             throw new NullPointerException("other不能为null / other cannot be null");
         }
@@ -993,6 +1008,11 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
     @Override
     public IMatrix<Double> covarianceFromCentered() {
         int n = data.length; // 样本数
+        if (n < 2) {
+            throw new IllegalArgumentException(
+                    "covarianceFromCentered 至少需要 2 个样本（行数≥2），当前 n=" + n
+                            + " / At least 2 samples (rows) required, got n=" + n);
+        }
 
         // 计算 X^T * X
         IMatrix<Double> transposed = this.transposeNew();
@@ -1941,6 +1961,18 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
     }
 
     // set() method is now a default method in IMatrix<Double> that delegates to put()
+    /**
+     * 获取矩阵对角线元素 / Get matrix diagonal elements
+     * <p>
+     * 返回矩阵主对角线上的元素作为向量。对于n×m矩阵，返回min(n,m)个元素。
+     * </p>
+     * <p>
+     * Returns the elements on the main diagonal of the matrix as a vector.
+     * For an n×m matrix, returns min(n,m) elements.
+     * </p>
+     *
+     * @return 对角线元素向量 / Diagonal elements vector
+     */
     @Override
     public IVector<Double> diag() {
         int minDim = Math.min(data.length, data[0].length);
@@ -1951,6 +1983,24 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         return IDoubleVector.of(diagonal);
     }
 
+    /**
+     * 获取矩阵子矩阵 / Get matrix submatrix
+     * <p>
+     * 提取矩阵指定范围的子矩阵，支持负数索引（负数表示从末尾开始计算）。
+     * </p>
+     * <p>
+     * Extracts a submatrix from the specified range of the matrix, supporting negative indexing
+     * (negative numbers indicate counting from the end).
+     * </p>
+     *
+     * @param startRow 起始行索引（包含）/ Start row index (inclusive)
+     * @param endRow 结束行索引（不包含）/ End row index (exclusive)
+     * @param startCol 起始列索引（包含）/ Start column index (inclusive)
+     * @param endCol 结束列索引（不包含）/ End column index (exclusive)
+     * @return 子矩阵 / Submatrix
+     * @throws IndexOutOfBoundsException 如果索引超出范围 / if index is out of bounds
+     * @throws IllegalArgumentException 如果起始索引大于等于结束索引 / if start index is greater than or equal to end index
+     */
     @Override
     public IMatrix<Double> subMatrix(int startRow, int endRow, int startCol, int endCol) {
         // 支持负数索引：负数表示从末尾开始计算
@@ -1977,6 +2027,24 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         return IDoubleMatrix.of(subData);
     }
 
+    /**
+     * 设置矩阵子矩阵 / Set matrix submatrix
+     * <p>
+     * 将指定子矩阵设置到矩阵的指定位置，支持负数索引（负数表示从末尾开始计算）。
+     * </p>
+     * <p>
+     * Sets a submatrix at the specified position of the matrix, supporting negative indexing
+     * (negative numbers indicate counting from the end).
+     * </p>
+     *
+     * @param startRow 起始行索引（包含）/ Start row index (inclusive)
+     * @param endRow 结束行索引（不包含）/ End row index (exclusive)
+     * @param startCol 起始列索引（包含）/ Start column index (inclusive)
+     * @param endCol 结束列索引（不包含）/ End column index (exclusive)
+     * @param subMatrix 要设置的子矩阵 / Submatrix to set
+     * @throws IndexOutOfBoundsException 如果索引超出范围 / if index is out of bounds
+     * @throws IllegalArgumentException 如果子矩阵尺寸不匹配 / if submatrix dimensions don't match
+     */
     @Override
     public void setSubMatrix(int startRow, int endRow, int startCol, int endCol, IMatrix<Double> subMatrix) {
         // 支持负数索引：负数表示从末尾开始计算
@@ -2250,6 +2318,18 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         }
     }
 
+    /**
+     * 将矩阵展平为向量 / Flatten matrix to vector
+     * <p>
+     * 将矩阵转换为一维向量。对于列向量，返回该列的数据；对于普通矩阵，按行优先顺序展开。
+     * </p>
+     * <p>
+     * Converts the matrix to a 1D vector. For column vectors, returns the column data;
+     * for regular matrices, flattens in row-major order.
+     * </p>
+     *
+     * @return 展平后的向量 / Flattened vector
+     */
     @Override
     public IVector<Double> flatten() {
         var as = this.toFlattenArray();

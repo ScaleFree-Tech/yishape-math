@@ -1,6 +1,6 @@
 package com.yishape.lab.math.test;
 
-import com.yishape.lab.math.viz.Plots;
+import com.yishape.lab.math.plot.Plots;
 
 import java.util.Random;
 import com.yishape.lab.math.linalg.IFloatVector;

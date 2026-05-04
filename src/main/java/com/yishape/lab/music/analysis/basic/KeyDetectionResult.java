@@ -8,6 +8,10 @@ import com.yishape.lab.music.analysis.MusicDetectionResult;
  * 包含调性检测的结果信息，包括调性名称和置信度。
  * Contains key detection result information including key name and confidence.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class KeyDetectionResult extends MusicDetectionResult {
     private String keyName;

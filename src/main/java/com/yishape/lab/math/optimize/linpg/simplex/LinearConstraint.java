@@ -3,8 +3,15 @@ package com.yishape.lab.math.optimize.linpg.simplex;
 import com.yishape.lab.math.linalg.IVector;
 
 /**
- * Linear constraint for simplex method
- * Based on commons-math4 LinearConstraint
+ * 线性约束类 / Linear Constraint Class
+ * <p>
+ * 表示单纯形法中的线性约束。
+ * Based on commons-math4 LinearConstraint.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class LinearConstraint {
     

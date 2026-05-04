@@ -7,21 +7,33 @@ import com.yishape.lab.math.linalg.Linalg;
 /**
  * 贝叶斯线性回归实现
  * Bayesian Linear Regression Implementation
+ * <p>
+ * 提供贝叶斯方法的线性回归分析。
+ * Provides linear regression analysis using Bayesian methods.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class BayesianLinearRegression {
-    
-    // 先验参数
-    private IMatrix priorMean;         // 先验均值
-    private IMatrix priorPrecision;    // 先验精度矩阵（协方差矩阵的逆）
-    
-    // 后验参数
-    private IMatrix posteriorMean;     // 后验均值
-    private IMatrix posteriorPrecision; // 后验精度矩阵
-    
-    // 噪声方差
+
+    /** 先验均值 / Prior mean */
+    private IMatrix priorMean;
+
+    /** 先验精度矩阵（协方差矩阵的逆） / Prior precision matrix (inverse of covariance matrix) */
+    private IMatrix priorPrecision;
+
+    /** 后验均值 / Posterior mean */
+    private IMatrix posteriorMean;
+
+    /** 后验精度矩阵 / Posterior precision matrix */
+    private IMatrix posteriorPrecision;
+
+    /** 噪声方差 / Noise variance */
     private double noiseVariance;
-    
-    // 是否已训练
+
+    /** 是否已训练 / Whether the model has been trained */
     private boolean trained = false;
     
     /**
@@ -146,28 +158,68 @@ public class BayesianLinearRegression {
     /**
      * 预测结果类
      * Prediction result class
+     * <p>
+     * 包含预测均值和方差信息。
+     * Contains prediction mean and variance information.
+     * </p>
      */
     public static class PredictionResult {
+        /** 预测均值矩阵 / Prediction means matrix */
         private final IMatrix means;
+
+        /** 预测方差数组 / Prediction variances array */
         private final double[] variances;
-        
+
+        /**
+         * 构造函数
+         * Constructor
+         *
+         * @param means 预测均值矩阵 / Prediction means matrix
+         * @param variances 预测方差数组 / Prediction variances array
+         */
         public PredictionResult(IMatrix means, double[] variances) {
             this.means = means;
             this.variances = variances;
         }
-        
+
+        /**
+         * 获取所有预测均值
+         * Get all prediction means
+         *
+         * @return 预测均值矩阵 / Prediction means matrix
+         */
         public IMatrix getMeans() {
             return means;
         }
-        
+
+        /**
+         * 获取所有预测方差
+         * Get all prediction variances
+         *
+         * @return 预测方差数组 / Prediction variances array
+         */
         public double[] getVariances() {
             return variances;
         }
-        
+
+        /**
+         * 获取指定索引的预测均值
+         * Get prediction mean at specified index
+         *
+         * @param index 样本索引 / Sample index
+         * @return 指定索引的预测均值 / Prediction mean at specified index
+         */
         public double getMean(int index) {
             return means.get(index, 0).doubleValue();
         }
-        
+
+        /**
+         * 获取指定索引的预测方差
+         * Get prediction variance at specified index
+         *
+         * @param index 样本索引 / Sample index
+         * @return 指定索引的预测方差 / Prediction variance at specified index
+         */
         public double getVariance(int index) {
             return variances[index];
         }

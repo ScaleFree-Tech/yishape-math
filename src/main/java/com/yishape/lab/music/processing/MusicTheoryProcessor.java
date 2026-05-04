@@ -78,6 +78,9 @@ public class MusicTheoryProcessor implements IMusicProcessor {
     
     /**
      * 构造函数 / Constructor
+     *
+     * 创建一个新的音乐理论处理器，使用默认参数。
+     * Creates a new music theory processor with default parameters.
      */
     public MusicTheoryProcessor() {
         initializeDefaultParameters();

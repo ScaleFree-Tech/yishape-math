@@ -20,6 +20,8 @@ class RereLinearRegressionR2Test {
         RegressionResult result = lr.fit(features, labels);
         assertTrue(result.getR2Score() > 0.999, "training R² should be ~1 for collinear labels");
         assertTrue(Math.abs(result.getR2Score() - lr.r2ScoreOn(features, labels)) < 1e-12);
+        assertTrue(Math.abs(result.getRmse() - lr.rmseOn(features, labels)) < 1e-12,
+                "RegressionResult RMSE must match rmseOn on training data");
     }
 
     @Test
@@ -28,5 +30,6 @@ class RereLinearRegressionR2Test {
         IMatrix<Double> f = Linalg.matrix(new double[][]{{1, 2}});
         IVector<Double> lab = Linalg.vector(new double[]{3});
         assertThrows(IllegalStateException.class, () -> lr.r2ScoreOn(f, lab));
+        assertThrows(IllegalStateException.class, () -> lr.rmseOn(f, lab));
     }
 }

@@ -181,6 +181,9 @@ public class KalmanFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 设置过程噪声方差 / Set process noise variance
+     *
+     * @param processNoiseVariance 过程噪声方差 / Process noise variance
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setProcessNoiseVariance(double processNoiseVariance) throws SignalProcessingException {
         validateParameters(processNoiseVariance, measurementNoiseVariance);
@@ -196,6 +199,9 @@ public class KalmanFilter extends AbstractSignalProcessor<Double> implements ISi
     
     /**
      * 设置测量噪声方差 / Set measurement noise variance
+     *
+     * @param measurementNoiseVariance 测量噪声方差 / Measurement noise variance
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setMeasurementNoiseVariance(double measurementNoiseVariance) throws SignalProcessingException {
         validateParameters(processNoiseVariance, measurementNoiseVariance);

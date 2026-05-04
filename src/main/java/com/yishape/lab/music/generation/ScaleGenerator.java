@@ -152,6 +152,14 @@ public class ScaleGenerator {
     
     /**
      * 生成上行音阶 / Generate Ascending Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 上行音阶音频数据 / Ascending scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateAscendingScale(int rootNote, ScaleType scaleType, int octave, 
                                            double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -163,6 +171,14 @@ public class ScaleGenerator {
     
     /**
      * 生成下行音阶 / Generate Descending Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 下行音阶音频数据 / Descending scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateDescendingScale(int rootNote, ScaleType scaleType, int octave, 
                                             double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -179,6 +195,14 @@ public class ScaleGenerator {
     
     /**
      * 生成上行下行音阶 / Generate Ascending-Descending Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 上行下行音阶音频数据 / Ascending-descending scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateAscendingDescendingScale(int rootNote, ScaleType scaleType, int octave, 
                                                      double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -216,6 +240,14 @@ public class ScaleGenerator {
     
     /**
      * 生成琶音音阶 / Generate Arpeggio Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 琶音音阶音频数据 / Arpeggio scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateArpeggioScale(int rootNote, ScaleType scaleType, int octave, 
                                           double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -246,6 +278,14 @@ public class ScaleGenerator {
     
     /**
      * 生成和声音阶 / Generate Harmonic Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 和声音阶音频数据 / Harmonic scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateHarmonicScale(int rootNote, ScaleType scaleType, int octave, 
                                           double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -276,6 +316,14 @@ public class ScaleGenerator {
     
     /**
      * 生成随机音阶 / Generate Random Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param scaleType 音阶类型 / Scale type
+     * @param octave 八度 / Octave
+     * @param totalDuration 总持续时间 / Total duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 随机音阶音频数据 / Random scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateRandomScale(int rootNote, ScaleType scaleType, int octave, 
                                         double totalDuration, double sampleRate) throws AudioProcessingException {
@@ -374,6 +422,15 @@ public class ScaleGenerator {
     
     /**
      * 生成顺序音阶 / Generate Sequential Scale
+     *
+     * @param rootNote 根音 / Root note
+     * @param intervals 音程序列 / Interval sequence
+     * @param octave 八度 / Octave
+     * @param noteDuration 每个音符的持续时间 / Duration of each note
+     * @param sampleRate 采样率 / Sample rate
+     * @param descending 是否下行 / Whether descending
+     * @return 顺序音阶音频数据 / Sequential scale audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateSequentialScale(int rootNote, int[] intervals, int octave, 
                                             double noteDuration, double sampleRate, boolean descending) 
@@ -397,6 +454,13 @@ public class ScaleGenerator {
     
     /**
      * 生成单个音符 / Generate Single Note
+     *
+     * @param noteNumber 音符编号 / Note number
+     * @param octave 八度 / Octave
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 单个音符音频数据 / Single note audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateSingleNote(int noteNumber, int octave, double duration, double sampleRate) 
             throws AudioProcessingException {
@@ -411,6 +475,10 @@ public class ScaleGenerator {
     
     /**
      * 添加样本到主向量 / Add samples to main vector
+     *
+     * @param mainSamples 主样本向量 / Main samples vector
+     * @param addSamples 要添加的样本向量 / Samples to add
+     * @param startIndex 起始索引 / Start index
      */
     private void addToSamples(IVector<Double> mainSamples, IVector<Double> addSamples, int startIndex) {
         int endIndex = Math.min(startIndex + addSamples.size(), mainSamples.size());
@@ -421,6 +489,11 @@ public class ScaleGenerator {
     
     /**
      * 连接音频数据 / Concatenate Audio Data
+     *
+     * @param audioList 音频数据列表 / Audio data list
+     * @param sampleRate 采样率 / Sample rate
+     * @return 连接后的音频数据 / Concatenated audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData concatenateAudioData(List<AudioData> audioList, double sampleRate) throws AudioProcessingException {
         if (audioList == null || audioList.isEmpty()) {
@@ -451,6 +524,10 @@ public class ScaleGenerator {
     
     /**
      * 生成静音 / Generate Silence
+     *
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 静音音频数据 / Silence audio data
      */
     private AudioData generateSilence(double duration, double sampleRate) {
         int numSamples = (int) (duration * sampleRate);
@@ -460,6 +537,11 @@ public class ScaleGenerator {
     
     /**
      * 生成波形 / Generate Waveform
+     *
+     * @param frequency 频率 / Frequency
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
+     * @return 波形样本向量 / Waveform samples vector
      */
     private IVector<Double> generateWaveform(double frequency, double duration, double sampleRate) {
         int numSamples = (int) (duration * sampleRate);
@@ -493,6 +575,10 @@ public class ScaleGenerator {
     
     /**
      * 计算频率 / Calculate Frequency
+     *
+     * @param noteNumber 音符编号（0-11）/ Note number (0-11)
+     * @param octave 八度 / Octave
+     * @return 频率（Hz）/ Frequency in Hz
      */
     private double calculateFrequency(int noteNumber, int octave) {
         return NOTE_FREQUENCIES[noteNumber] * Math.pow(2, octave - 4);
@@ -500,6 +586,10 @@ public class ScaleGenerator {
     
     /**
      * 应用包络 / Apply Envelope
+     *
+     * @param samples 样本向量 / Samples vector
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
      */
     private void applyEnvelope(IVector<Double> samples, double duration, double sampleRate) {
         int numSamples = samples.size();

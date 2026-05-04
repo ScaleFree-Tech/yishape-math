@@ -421,12 +421,27 @@ public class VARModel {
     
     /**
      * VAR预测结果类 / VAR Forecast Result Class
+     * <p>
+     * 存储VAR模型预测结果，包括预测值、预测方差和变量名。
+     * Stores VAR model forecast results including forecast values, forecast variance, and variable names.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class VARForecastResult {
         public final IMatrix<Double> forecast;
         public final IMatrix<Double> forecastVariance;
         public final String[] variableNames;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param forecast 预测值矩阵 / Forecast matrix
+         * @param forecastVariance 预测方差矩阵 / Forecast variance matrix
+         * @param variableNames 变量名数组 / Variable names array
+         */
         public VARForecastResult(IMatrix<Double> forecast, IMatrix<Double> forecastVariance, String[] variableNames) {
             this.forecast = forecast;
             this.forecastVariance = forecastVariance;
@@ -436,11 +451,25 @@ public class VARModel {
     
     /**
      * 脉冲响应结果类 / Impulse Response Result Class
+     * <p>
+     * 存储VAR模型脉冲响应分析结果，包括响应矩阵序列和变量名。
+     * Stores VAR model impulse response analysis results including response matrix sequence and variable names.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class ImpulseResponseResult {
         public final List<IMatrix<Double>> responseMatrices;
         public final String[] variableNames;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param responseMatrices 脉冲响应矩阵列表 / Impulse response matrices list
+         * @param variableNames 变量名数组 / Variable names array
+         */
         public ImpulseResponseResult(List<IMatrix<Double>> responseMatrices, String[] variableNames) {
             this.responseMatrices = responseMatrices;
             this.variableNames = variableNames;
@@ -449,11 +478,25 @@ public class VARModel {
     
     /**
      * 方差分解结果类 / Variance Decomposition Result Class
+     * <p>
+     * 存储VAR模型方差分解结果，包括分解矩阵和变量名。
+     * Stores VAR model variance decomposition results including decomposition matrix and variable names.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class VarianceDecompositionResult {
         public final IMatrix<Double> decomposition;
         public final String[] variableNames;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param decomposition 方差分解矩阵 / Variance decomposition matrix
+         * @param variableNames 变量名数组 / Variable names array
+         */
         public VarianceDecompositionResult(IMatrix<Double> decomposition, String[] variableNames) {
             this.decomposition = decomposition;
             this.variableNames = variableNames;
@@ -462,6 +505,14 @@ public class VARModel {
     
     /**
      * Granger因果检验结果类 / Granger Causality Test Result Class
+     * <p>
+     * 存储Granger因果检验的结果，包括原因变量、结果变量、F统计量和p值。
+     * Stores Granger causality test results including cause variable, effect variable, F statistic, and p-value.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class GrangerCausalityResult {
         public final int causeVar;
@@ -469,7 +520,16 @@ public class VARModel {
         public final double fStatistic;
         public final double pValue;
         public final boolean isSignificant;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param causeVar 原因变量索引 / Cause variable index
+         * @param effectVar 结果变量索引 / Effect variable index
+         * @param fStatistic F统计量 / F statistic
+         * @param pValue p值 / P-value
+         * @param isSignificant 是否显著 / Whether significant
+         */
         public GrangerCausalityResult(int causeVar, int effectVar, double fStatistic, 
                                     double pValue, boolean isSignificant) {
             this.causeVar = causeVar;
@@ -484,6 +544,15 @@ public class VARModel {
     
     /**
      * 计算对数似然 / Calculate log likelihood
+     * <p>
+     * 计算VAR模型的对数似然值。
+     * Calculate log likelihood of VAR model.
+     * </p>
+     *
+     * @param residuals 残差矩阵 / Residuals matrix
+     * @param covariance 残差协方差矩阵 / Residual covariance matrix
+     * @param n 样本数量 / Sample size
+     * @return 对数似然值 / Log likelihood value
      */
     private static double calculateLogLikelihood(IMatrix<Double> residuals, IMatrix<Double> covariance, int n) {
         try {
@@ -510,6 +579,16 @@ public class VARModel {
     
     /**
      * 计算F统计量 / Calculate F statistic
+     * <p>
+     * 计算Granger因果检验的F统计量。
+     * Calculate F statistic for Granger causality test.
+     * </p>
+     *
+     * @param X 回归矩阵 / Regression matrix
+     * @param Y 因变量向量 / Dependent variable vector
+     * @param causeVar 原因变量索引 / Cause variable index
+     * @param effectVar 结果变量索引 / Effect variable index
+     * @return F统计量 / F statistic
      */
     private static double calculateFStatistic(IMatrix<Double> X, IVector<Double> Y, int causeVar, int effectVar) {
         // 简化的F统计量计算 / Simplified F statistic calculation

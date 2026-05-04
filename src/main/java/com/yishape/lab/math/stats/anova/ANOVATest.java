@@ -8,14 +8,28 @@ import com.yishape.lab.math.stats.distribution.NormalDistribution;
 import com.yishape.lab.math.linalg.IDoubleVector;
 
 /**
+ * 方差分析测试类 / ANOVA Test Class
+ * <p>
+ * 提供ANOVA功能的演示和测试方法。
+ * Provides demonstration and testing methods for ANOVA functionality.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class ANOVATest {
 
     private static final Logger log = LoggerFactory.getLogger(ANOVATest.class);
 
 
+    /**
+     * 演示单因素方差分析 / Demonstrate One-Way ANOVA
+     * <p>
+     * 生成三组正态分布数据，执行单因素方差分析并输出结果。
+     * Generates three groups of normally distributed data, performs one-way ANOVA, and outputs results.
+     * </p>
+     */
     public static void demonstrateOneWayANOVA() {
         log.debug("=== 单因素方差分析 / One-way ANOVA ===");
 
@@ -69,6 +83,13 @@ public class ANOVATest {
         log.debug("  结论 / Conclusion: " + (result.p < 0.05f ? "拒绝等均值假设 / Reject equal means hypothesis" : "接受等均值假设 / Accept equal means hypothesis"));
     }
 
+    /**
+     * 演示两因素方差分析 / Demonstrate Two-Way ANOVA
+     * <p>
+     * 模拟2x3设计的数据，执行两因素方差分析并输出结果。
+     * Simulates data for a 2x3 design, performs two-way ANOVA, and outputs results.
+     * </p>
+     */
     public static void demonstrateTwoWayANOVA() {
         log.debug("\n=== 两因素方差分析 / Two-way ANOVA ===");
 
@@ -96,6 +117,13 @@ public class ANOVATest {
         log.debug("  交互效应p值 / Interaction effect p-value: " + result.interactionP);
     }
 
+    /**
+     * 演示重复测量方差分析 / Demonstrate Repeated Measures ANOVA
+     * <p>
+     * 模拟重复测量数据（3个时间点，10个被试），执行重复测量方差分析并输出结果。
+     * Simulates repeated measures data (3 time points, 10 subjects), performs repeated measures ANOVA, and outputs results.
+     * </p>
+     */
     public static void demonstrateRepeatedMeasuresANOVA() {
         log.debug("\n=== 重复测量ANOVA / Repeated Measures ANOVA ===");
 

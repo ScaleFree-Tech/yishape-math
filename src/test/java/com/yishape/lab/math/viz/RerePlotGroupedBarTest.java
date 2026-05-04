@@ -1,5 +1,6 @@
 package com.yishape.lab.math.viz;
 
+import com.yishape.lab.math.plot.echarts.EchartsPlot;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import org.junit.jupiter.api.Test;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Test for grouped bar chart functionality in RerePlot
+ * Test for grouped bar chart functionality in EchartsPlot
  */
 public class RerePlotGroupedBarTest {
     
@@ -45,7 +46,7 @@ public class RerePlotGroupedBarTest {
             IVector<Double> allTimesVector = Linalg.vector(allTimes.stream().mapToDouble(Double::doubleValue).toArray());
             
             // Create the chart
-            RerePlot plot = new RerePlot(800, 600);
+            EchartsPlot plot = new EchartsPlot(800, 600);
             plot.bar(xLabels, allTimesVector, hueLabels)
                 .title("Performance Comparison Test")
                 .xlabel("Data Size")

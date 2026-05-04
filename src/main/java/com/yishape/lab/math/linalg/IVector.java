@@ -95,8 +95,8 @@ public interface IVector<T extends Number> {
      * @see Linalg#vector(double[]) 推荐的工厂方法 / Recommended factory method
      * @see IDoubleVector#of(double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> of(double[] data) {
-        return (IVector<T>) IDoubleVector.of(data);
+    public static IVector<Double> of(double[] data) {
+        return IDoubleVector.of(data);
     }
 
     /**
@@ -119,8 +119,17 @@ public interface IVector<T extends Number> {
      * @see Linalg#vector(Double[]) 推荐的工厂方法 / Recommended factory method
      * @see IDoubleVector#of(Double[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> of(Double[] data) {
-        return (IVector<T>) IDoubleVector.of(data);
+    public static IVector<Double> of(Double[] data) {
+        return IDoubleVector.of(data);
+    }
+    
+    /**
+     * 从Double List创建向量
+     * @param data
+     * @return 
+     */
+    public static IVector<Double> of(List<Double> data) {
+        return IVector.of(data.toArray(Double[]::new));
     }
 
     /**
@@ -142,8 +151,8 @@ public interface IVector<T extends Number> {
      * @see Linalg#vector(float[]) 推荐的工厂方法 / Recommended factory method
      * @see IFloatVector#of(float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> of(float[] data) {
-        return (IVector<T>) IFloatVector.of(data);
+    public static IVector<Float> of(float[] data) {
+        return IFloatVector.of(data);
     }
 
     /**
@@ -166,8 +175,17 @@ public interface IVector<T extends Number> {
      * @see Linalg#vector(Float[]) 推荐的工厂方法 / Recommended factory method
      * @see IFloatVector#of(Float[]) 实际实现方法 / Actual implementation method
      */
-    public static <T extends Number> IVector<T> of(Float[] data) {
-        return (IVector<T>) IFloatVector.of(data);
+    public static IVector<Float> of(Float[] data) {
+        return IFloatVector.of(data);
+    }
+    
+    /**
+     * 
+     * @param data
+     * @return 
+     */
+    public static IVector<Float> ofFloatList(List<Float> data) {
+        return IVector.of(data.toArray(Float[]::new));
     }
 
     /**
@@ -725,11 +743,11 @@ public interface IVector<T extends Number> {
     }
 
     // ========== 一维样本工具（实现见 {@link RereDoubleVector}；float 经 double 再转回）==========
-
     /**
      * 一维等宽直方图结果（计数与分箱边界；边界为 double[]）。
      */
     final class HistogramResult {
+
         public final long[] counts;
         public final double[] binEdges;
 
@@ -748,7 +766,8 @@ public interface IVector<T extends Number> {
     }
 
     /**
-     * 样本来自向量（与 {@link IDoubleVector}/{@link IFloatVector} 兼容；避免与 float/double 重载产生相同擦除疑符而合并为一）。
+     * 样本来自向量（与 {@link IDoubleVector}/{@link IFloatVector} 兼容；避免与 float/double
+     * 重载产生相同擦除疑符而合并为一）。
      */
     static HistogramResult histogram(IVector<? extends Number> x, int bins) {
         Objects.requireNonNull(x, "x");
@@ -1687,9 +1706,11 @@ public interface IVector<T extends Number> {
     IVector<T> cross(IVector<T> other);
 
     /**
-     * 升序向量中查找插入位置（左边界，等价 {@code numpy.searchsorted(..., side='left')}）/ Sorted search index
+     * 升序向量中查找插入位置（左边界，等价 {@code numpy.searchsorted(..., side='left')}）/ Sorted
+     * search index
      *
-     * @throws IllegalArgumentException 若向量未按非降序排列 / if not sorted non-decreasing
+     * @throws IllegalArgumentException 若向量未按非降序排列 / if not sorted
+     * non-decreasing
      */
     int searchSorted(T value);
 
@@ -1698,8 +1719,9 @@ public interface IVector<T extends Number> {
     // Note: Most methods are now defined in IVector, keeping type-specific methods here
     /**
      * <p>
-     * 行向量与矩阵相乘（与 NumPy {@code np.dot(v, M)}、{@link #mmul(IMatrix)} 一致）
-     * / Row vector times matrix, aligned with NumPy {@code np.dot(v, M)} and {@link #mmul(IMatrix)}
+     * 行向量与矩阵相乘（与 NumPy {@code np.dot(v, M)}、{@link #mmul(IMatrix)} 一致） / Row
+     * vector times matrix, aligned with NumPy {@code np.dot(v, M)} and
+     * {@link #mmul(IMatrix)}
      * </p>
      * <p>
      * <strong>使用示例 / Usage Example:</strong>
@@ -1711,7 +1733,8 @@ public interface IVector<T extends Number> {
      * </p>
      *
      * @param m 矩阵 / Matrix
-     * @return 长度为矩阵列数的行向量结果 / Row-shaped result vector (length = matrix columns)
+     * @return 长度为矩阵列数的行向量结果 / Row-shaped result vector (length = matrix
+     * columns)
      * @throws IllegalArgumentException 如果矩阵为null或维度不匹配 / if matrix is null or
      * dimensions don't match
      */
@@ -1784,9 +1807,9 @@ public interface IVector<T extends Number> {
      * lengths don't match
      */
     public boolean[] gt(IVector<T> other);
-    
+
     public boolean[] ge(IVector<T> other);
-    
+
     public boolean[] le(IVector<T> other);
 
     // Note: 基本数学函数、三角函数、双曲函数、舝入函数、切片操作等
@@ -2272,7 +2295,8 @@ public interface IVector<T extends Number> {
      * <ul>
      * <li>kurtosis = 0: 正态分布峰度 / Normal distribution kurtosis</li>
      * <li>kurtosis > 0: 尖峰分布（重尾） / Leptokurtic distribution (heavy tails)</li>
-     * <li>kurtosis &lt; 0: 平峰分布（轻尾） / Platykurtic distribution (light tails)</li>
+     * <li>kurtosis &lt; 0: 平峰分布（轻尾） / Platykurtic distribution (light
+     * tails)</li>
      * </ul>
      *
      * @return 峰度值 / Kurtosis value
@@ -2525,21 +2549,20 @@ public interface IVector<T extends Number> {
      */
     public IMatrix<T> reshape(int rows, int cols);
 
-
-        /**
+    /**
      * 计算向量的Hessian矩阵 / Compute the Hessian matrix of the vector
      * <p>
      * 该方法是针对逻辑回归等机器学习场景的特殊实现，其中向量元素被视为逻辑函数的输入（logits）。
-     * 计算得到的Hessian矩阵是一个对角矩阵，其对角线元素为：H[i,i] = sigmoid(f[i]) * (1 - sigmoid(f[i]))
+     * 计算得到的Hessian矩阵是一个对角矩阵，其对角线元素为：H[i,i] = sigmoid(f[i]) * (1 -
+     * sigmoid(f[i]))
      * </p>
-     * 
+     *
      * <h3>数学原理 / Mathematical Principle:</h3>
      * <p>
-     * 在逻辑回归中，对数似然函数的二阶导数（Hessian）具有特殊形式：
-     * H = X^T * W * X，其中W是对角权重矩阵，W[i,i] = p[i] * (1 - p[i])
-     * 这里p[i] = sigmoid(f[i])是预测概率。
+     * 在逻辑回归中，对数似然函数的二阶导数（Hessian）具有特殊形式： H = X^T * W * X，其中W是对角权重矩阵，W[i,i] =
+     * p[i] * (1 - p[i]) 这里p[i] = sigmoid(f[i])是预测概率。
      * </p>
-     * 
+     *
      * <h3>实现特点 / Implementation Features:</h3>
      * <ul>
      * <li><strong>输入验证</strong>：检查向量中是否包含NaN或无穷大值</li>
@@ -2547,15 +2570,18 @@ public interface IVector<T extends Number> {
      * <li><strong>性能优化</strong>：根据向量大小采用不同的计算策略</li>
      * <li><strong>内存效率</strong>：只计算对角线元素，其余默认为0</li>
      * </ul>
-     * 
+     *
      * <h3>使用场景 / Usage Scenarios:</h3>
      * <ul>
-     * <li>逻辑回归的牛顿-拉夫逊优化 / Newton-Raphson optimization for logistic regression</li>
-     * <li>神经网络反向传播中的曲率信息 / Curvature information in neural network backpropagation</li>
-     * <li>统计学习中的Fisher信息矩阵 / Fisher information matrix in statistical learning</li>
+     * <li>逻辑回归的牛顿-拉夫逊优化 / Newton-Raphson optimization for logistic
+     * regression</li>
+     * <li>神经网络反向传播中的曲率信息 / Curvature information in neural network
+     * backpropagation</li>
+     * <li>统计学习中的Fisher信息矩阵 / Fisher information matrix in statistical
+     * learning</li>
      * </ul>
-     * 
-     * 
+     *
+     *
      * @return 对角Hessian矩阵，类型为IMatrix<Float>
      * @throws IllegalArgumentException 如果向量包含NaN或无穷大值
      * @see com.yishape.lab.math.RereMathUtil#sigmoid(double)
@@ -2600,7 +2626,7 @@ public interface IVector<T extends Number> {
      * <p>
      * 如果向量已经是Double类型，直接返回当前向量；否则创建新的Double类型向量
      * </p>
-     * 
+     *
      * @return Double类型的向量
      */
     public default IVector<Double> toDoubleVector() {
@@ -2610,25 +2636,25 @@ public interface IVector<T extends Number> {
             IVector<Double> doubleVector = (IVector<Double>) this;
             return doubleVector;
         }
-        
+
         int length = this.length();
         double[] doubleData = new double[length];
-        
+
         // 复制数据并转换为double类型
         for (int i = 0; i < length; i++) {
             doubleData[i] = this.get(i).doubleValue();
         }
-        
+
         // 创建并返回新的Double向量
         return IVector.of(doubleData);
     }
-    
+
     /**
      * 将向量转换为Float类型
      * <p>
      * 如果向量已经是Float类型，直接返回当前向量；否则创建新的Float类型向量
      * </p>
-     * 
+     *
      * @return Float类型的向量
      */
     public default IVector<Float> toFloatVector() {
@@ -2638,15 +2664,15 @@ public interface IVector<T extends Number> {
             IVector<Float> floatVector = (IVector<Float>) this;
             return floatVector;
         }
-        
+
         int length = this.length();
         float[] floatData = new float[length];
-        
+
         // 复制数据并转换为float类型
         for (int i = 0; i < length; i++) {
             floatData[i] = this.get(i).floatValue();
         }
-        
+
         // 创建并返回新的Float向量
         return IVector.of(floatData);
     }

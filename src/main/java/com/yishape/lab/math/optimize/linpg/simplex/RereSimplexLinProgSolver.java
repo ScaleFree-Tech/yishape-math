@@ -11,17 +11,23 @@ import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.util.RerePrecision;
 
 /**
- * Industrial-strength linear programming solver using the Simplex method
- * Designed for large-scale problems with thousands of constraints
- * 
- * Key features:
- * - Advanced numerical stability with IEEE 754 coefficient scaling
- * - Multiple pivot selection strategies (Dantzig, Bland, Steepest Edge)
- * - Two-phase method with efficient artificial variable handling
- * - Comprehensive degeneracy prevention and cycling detection
- * - Performance optimizations for large problems
- * - Memory-efficient operations using GPU-accelerated IMatrix/IVector
- * 
+ * 工业级单纯形法线性规划求解器 / Industrial-Strength Simplex Linear Programming Solver
+ * <p>
+ * 设计用于大规模问题的工业级线性规划求解器。
+ * Designed for large-scale problems with thousands of constraints.
+ * </p>
+ *
+ * <h3>主要特性 / Key Features</h3>
+ * <ul>
+ *   <li>高级数值稳定性，使用IEEE 754系数缩放</li>
+ *   <li>多种枢轴选择策略（Dantzig, Bland, Steepest Edge）</li>
+ *   <li>两阶段方法，高效处理人工变量</li>
+ *   <li>全面的退化预防和循环检测</li>
+ * </ul>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class RereSimplexLinProgSolver implements ISimplexLinProgSolver {
 

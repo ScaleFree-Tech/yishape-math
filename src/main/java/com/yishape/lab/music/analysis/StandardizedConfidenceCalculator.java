@@ -12,6 +12,10 @@ import java.util.HashMap;
  * 提供统一的置信度计算方法，确保不同分析器之间的一致性。
  * Provides unified confidence calculation methods to ensure consistency across different analyzers.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class StandardizedConfidenceCalculator implements ConfidenceCalculator {
     

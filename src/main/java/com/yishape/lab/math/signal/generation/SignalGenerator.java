@@ -19,12 +19,24 @@ import com.yishape.lab.math.signal.core.SignalProcessingException;
 public class SignalGenerator extends AbstractSignalProcessor<Double> implements ISignalGenerator<Double> {
     
     /**
-     * 构造函数 / Constructor
+     * 默认构造函数 / Default constructor
+     *
+     * 创建一个新的信号生成器实例，使用默认名称和版本。
+     * Create a new signal generator instance with default name and version.
      */
     public SignalGenerator() {
         super("Signal Generator", "1.0.0");
     }
-    
+
+    /**
+     * 生成信号 / Generate signal
+     *
+     * @param signalType 信号类型 / Signal type
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
+     * @throws SignalProcessingException 生成过程中发生错误时抛出 / Thrown when errors occur during generation
+     */
     @Override
     public IVector<Double> generate(SignalType signalType, int length, SignalParameters parameters) throws SignalProcessingException {
         switch (signalType) {
@@ -56,6 +68,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成正弦波 / Generate sine wave
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateSine(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -75,6 +91,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成余弦波 / Generate cosine wave
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateCosine(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -94,6 +114,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成方波 / Generate square wave
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateSquare(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -116,6 +140,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成三角波 / Generate triangle wave
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateTriangle(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -144,6 +172,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成锯齿波 / Generate sawtooth wave
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateSawtooth(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -165,6 +197,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成白噪声 / Generate white noise
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateWhiteNoise(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -178,6 +214,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成阶跃信号 / Generate step signal
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateStep(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -197,6 +237,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成线性调频信号 / Generate chirp signal
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateChirp(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -220,6 +264,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成脉冲信号 / Generate pulse signal
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generatePulse(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -242,6 +290,10 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
     
     /**
      * 生成脉冲/冲激信号 / Generate impulse signal
+     *
+     * @param length 信号长度 / Signal length
+     * @param parameters 信号参数 / Signal parameters
+     * @return 生成的信号向量 / Generated signal vector
      */
     private IVector<Double> generateImpulse(int length, SignalParameters parameters) {
         double amplitude = parameters.getAmplitude();
@@ -315,6 +367,11 @@ public class SignalGenerator extends AbstractSignalProcessor<Double> implements 
         };
     }
     
+    /**
+     * 获取生成器名称 / Get generator name
+     *
+     * @return 生成器名称 / Generator name
+     */
     @Override
     public String getName() {
         return "SignalGenerator";

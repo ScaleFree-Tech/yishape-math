@@ -44,6 +44,13 @@ import java.util.ServiceLoader;
  */
 public class MusicComponentFactory {
     
+    /**
+     * 组件类型枚举 / Component Type Enumeration
+     * <p>
+     * 定义音乐组件的主要分类类型。
+     * Defines the main category types of music components.
+     * </p>
+     */
     public enum ComponentType {
         ANALYZER,
         PROCESSOR,
@@ -268,7 +275,7 @@ public class MusicComponentFactory {
     /**
      * 注册音乐处理器 / Register music processor
      *
-     * @param name 处理器名称 / Processor name
+     * @param name 处理器名称（不区分大小写） / Processor name (case-insensitive)
      * @param processorClass 处理器类 / Processor class
      */
     public void registerProcessor(String name, Class<? extends IMusicProcessor> processorClass) {
@@ -278,7 +285,7 @@ public class MusicComponentFactory {
     /**
      * 注册音乐生成器 / Register music generator
      *
-     * @param name 生成器名称 / Generator name
+     * @param name 生成器名称（不区分大小写） / Generator name (case-insensitive)
      * @param generatorClass 生成器类 / Generator class
      */
     public void registerGenerator(String name, Class<?> generatorClass) {
@@ -290,7 +297,7 @@ public class MusicComponentFactory {
     /**
      * 注册音乐滤波器 / Register music filter
      *
-     * @param name 滤波器名称 / Filter name
+     * @param name 滤波器名称（不区分大小写） / Filter name (case-insensitive)
      * @param filterClass 滤波器类 / Filter class
      */
     public void registerFilter(String name, Class<? extends IMusicFilter> filterClass) {
@@ -299,6 +306,8 @@ public class MusicComponentFactory {
     
     /**
      * 获取已注册的分析器列表 / Get list of registered analyzers
+     *
+     * @return 已注册分析器名称的集合 / Set of registered analyzer names
      */
     public Set<String> getRegisteredAnalyzerNames() {
         return registeredAnalyzers.keySet();
@@ -306,6 +315,9 @@ public class MusicComponentFactory {
     
     /**
      * 获取指定分类的分析器列表 / Get list of analyzers in specified category
+     *
+     * @param category 分析器分类 / Analyzer category
+     * @return 指定分类的分析器信息映射 / Map of analyzer info for specified category
      */
     public Map<String, AnalyzerInfo<?>> getAnalyzersByCategory(AnalyzerCategory category) {
         Map<String, AnalyzerInfo<?>> result = new HashMap<>();
@@ -319,6 +331,9 @@ public class MusicComponentFactory {
     
     /**
      * 检查分析器是否已注册 / Check if analyzer is registered
+     *
+     * @param name 分析器名称 / Analyzer name
+     * @return 是否已注册 / Whether registered
      */
     public boolean isAnalyzerRegistered(String name) {
         return registeredAnalyzers.containsKey(name.toLowerCase());
@@ -326,6 +341,9 @@ public class MusicComponentFactory {
     
     /**
      * 获取分析器信息 / Get analyzer information
+     *
+     * @param name 分析器名称 / Analyzer name
+     * @return 分析器信息对象，如果未注册则返回null / Analyzer info object, or null if not registered
      */
     public AnalyzerInfo<?> getAnalyzerInfo(String name) {
         return registeredAnalyzers.get(name.toLowerCase());
@@ -333,6 +351,8 @@ public class MusicComponentFactory {
     
     /**
      * 注销分析器 / Unregister analyzer
+     *
+     * @param name 分析器名称 / Analyzer name
      */
     public void unregisterAnalyzer(String name) {
         registeredAnalyzers.remove(name.toLowerCase());
@@ -340,6 +360,13 @@ public class MusicComponentFactory {
     
     /**
      * 注册分析器 / Register analyzer
+     *
+     * @param name 分析器名称 / Analyzer name
+     * @param analyzerClass 分析器类 / Analyzer class
+     * @param category 分析器分类 / Analyzer category
+     * @param description 分析器描述 / Analyzer description
+     * @param version 分析器版本 / Analyzer version
+     * @param <T> 分析器类型 / Analyzer type
      */
     private <T> void registerAnalyzer(String name, Class<T> analyzerClass,
                                      AnalyzerCategory category, String description, String version) {
@@ -348,6 +375,11 @@ public class MusicComponentFactory {
     
     /**
      * 创建分析器实例 / Create analyzer instance
+     *
+     * @param name 分析器名称 / Analyzer name
+     * @return 分析器实例 / Analyzer instance
+     * @throws AudioProcessingException 创建失败时抛出 / Thrown when creation fails
+     * @param <T> 分析器类型 / Analyzer type
      */
     @SuppressWarnings("unchecked")
     private <T> T createAnalyzer(String name) throws AudioProcessingException {
@@ -442,6 +474,10 @@ public class MusicComponentFactory {
     
     /**
      * 清空所有注册的分析器 / Clear all registered analyzers
+     * <p>
+     * 清除所有已注册的分析器实例，请谨慎使用。
+     * Clear all registered analyzer instances. Use with caution.
+     * </p>
      */
     public void clearAllAnalyzers() {
         registeredAnalyzers.clear();
@@ -449,6 +485,8 @@ public class MusicComponentFactory {
     
     /**
      * 获取工厂版本信息 / Get factory version information
+     *
+     * @return 工厂版本号 / Factory version
      */
     public String getVersion() {
         return "1.1.0";
@@ -456,6 +494,8 @@ public class MusicComponentFactory {
     
     /**
      * 获取工厂描述信息 / Get factory description
+     *
+     * @return 工厂描述 / Factory description
      */
     public String getDescription() {
         return "YiShape-Math 音乐组件工厂 / YiShape-Math Music Component Factory";
@@ -463,6 +503,12 @@ public class MusicComponentFactory {
     
     /**
      * 分析器信息类 / Analyzer Information Class
+     * <p>
+     * 存储分析器的元信息，包括类、分类、描述和版本。
+     * Stores metadata for analyzers including class, category, description, and version.
+     * </p>
+     *
+     * @param <T> 分析器类型 / Analyzer type
      */
     private static class AnalyzerInfo<T> {
         private final Class<T> analyzerClass;
@@ -478,9 +524,32 @@ public class MusicComponentFactory {
             this.version = version;
         }
         
+        /**
+         * 获取分析器类 / Get analyzer class
+         *
+         * @return 分析器类 / Analyzer class
+         */
         public Class<T> getAnalyzerClass() { return analyzerClass; }
+
+        /**
+         * 获取分析器分类 / Get analyzer category
+         *
+         * @return 分析器分类 / Analyzer category
+         */
         public AnalyzerCategory getCategory() { return category; }
+
+        /**
+         * 获取分析器描述 / Get analyzer description
+         *
+         * @return 分析器描述 / Analyzer description
+         */
         public String getDescription() { return description; }
+
+        /**
+         * 获取分析器版本 / Get analyzer version
+         *
+         * @return 分析器版本 / Analyzer version
+         */
         public String getVersion() { return version; }
     }
     

@@ -2,7 +2,7 @@ package com.yishape.lab.math.timeseries;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IMatrix;
-import com.yishape.lab.math.viz.Plots;
+import com.yishape.lab.math.plot.Plots;
 
 import java.util.Arrays;
 import java.util.List;

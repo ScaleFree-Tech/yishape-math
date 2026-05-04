@@ -35,11 +35,16 @@ public class AdvancedImageEnhancement {
      * 多尺度Retinex增强器 / Multi-Scale Retinex Enhancer
      */
     public static class MultiScaleRetinexProcessor implements IImageProcessor {
-        
+
+        /** 尺度数组 / Scale array */
         private double[] scales = {15.0, 80.0, 250.0};
+        /** 权重数组 / Weight array */
         private double[] weights = {1.0/3.0, 1.0/3.0, 1.0/3.0};
+        /** 增益 / Gain */
         private double gain = 1.0;
+        /** 偏移 / Offset */
         private double offset = 0.0;
+        /** 是否使用GPU / Whether to use GPU */
         private boolean useGPU = false;
         
         @Override
@@ -136,6 +141,13 @@ public class AdvancedImageEnhancement {
             return true;
         }
         
+        /**
+         * 应用多尺度Retinex / Apply Multi-Scale Retinex
+         *
+         * @param channel 输入通道 / Input channel
+         * @return 增强后的通道 / Enhanced channel
+         * @throws ImageProcessingException 处理异常 / Processing exception
+         */
         private IMatrix<Double> applyMultiScaleRetinex(IMatrix<Double> channel) throws ImageProcessingException {
             int height = channel.getRowNum();
             int width = channel.getColNum();
@@ -157,6 +169,12 @@ public class AdvancedImageEnhancement {
             }
         }
         
+        /**
+         * CPU实现的多尺度Retinex / CPU implementation of Multi-Scale Retinex
+         *
+         * @param channel 输入通道 / Input channel
+         * @return 增强后的通道 / Enhanced channel
+         */
         private IMatrix<Double> applyMultiScaleRetinexCPU(IMatrix<Double> channel) {
             int height = channel.getRowNum();
             int width = channel.getColNum();
@@ -210,6 +228,13 @@ public class AdvancedImageEnhancement {
             return result;
         }
         
+        /**
+         * GPU实现的多尺度Retinex / GPU implementation of Multi-Scale Retinex
+         *
+         * @param channel 输入通道 / Input channel
+         * @return 增强后的通道 / Enhanced channel
+         * @throws ImageProcessingException 处理异常 / Processing exception
+         */
         private IMatrix<Double> applyMultiScaleRetinexGPU(IMatrix<Double> channel) throws ImageProcessingException {
             try {
                 // GPU实现的多尺度Retinex - 由于没有专门的GPU方法，直接使用CPU实现 / GPU implementation of Multi-Scale Retinex - use CPU implementation directly since no dedicated GPU method
@@ -289,9 +314,12 @@ public class AdvancedImageEnhancement {
      * CLAHE (对比度限制自适应直方图均衡化) 处理器 / CLAHE Processor
      */
     public static class CLAHEProcessor implements IImageProcessor {
-        
+
+        /** 瓦片大小 / Tile size */
         private int tileSize = 8;
+        /** 对比度限制 / Clip limit */
         private double clipLimit = 2.0;
+        /** 直方图bin数量 / Number of histogram bins */
         private int numBins = 256;
         
         @Override
@@ -368,6 +396,12 @@ public class AdvancedImageEnhancement {
             return cloned;
         }
         
+        /**
+         * 应用CLAHE / Apply CLAHE
+         *
+         * @param image 输入图像 / Input image
+         * @return 增强后的图像 / Enhanced image
+         */
         private IMatrix<Double> applyCLAHE(IMatrix<Double> image) {
             int height = image.getRowNum();
             int width = image.getColNum();

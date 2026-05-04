@@ -24,96 +24,106 @@ import java.io.Serializable;
 /**
  * 基于i-vector模型的在线增量训练实现
  * Online incremental training implementation based on i-vector model
- * 
+ *
  * 支持流式音频数据的增量训练，适用于处理大规模音频数据集
  * 支持小批量MFCC样本的增量训练，提供更灵活的训练控制
  * Supports incremental training with streaming audio data, suitable for processing large-scale audio datasets
  * Supports incremental training with small batches of MFCC samples, providing more flexible training control
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(OnlineIVectorEmbedding.class);
 
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     /** i-vector的维度 / Dimension of i-vector */
     private final int len;
-    
+
     /** UBM的高斯分量数 / Number of Gaussian components in UBM */
     private final int numComponents;
-    
+
     /** MFCC特征维度 / MFCC feature dimension */
     private final int mfccDim;
-    
+
     /** 通用背景模型 (UBM) / Universal Background Model */
     private GaussianMixtureModel ubm;
-    
+
     /** 全变异性矩阵 T (mfccDim*numComponents x len) / Total variability matrix T */
     private IMatrix<Double> tMatrix;
-    
+
     /** UBM协方差矩阵的逆 / Inverse of UBM covariance matrices */
     private List<IMatrix<Double>> ubmInvCovariances;
-    
+
     /** 是否已训练 / Whether the model is trained */
     private boolean isTrained = false;
-    
+
     /** 随机数生成器 / Random number generator */
     private final Random random;
-    
+
     /** 训练参数 / Training parameters */
     private final int maxIterations = 100;
     private final double convergenceThreshold = 1e-6;
     private double previousLogLikelihood = Double.NEGATIVE_INFINITY;
-    
+
     /** 模型参数 / Model parameters */
     private Map<String, Object> parameters;
-    
-    // i-vector相关参数
+
+    /** 超向量维度 / Supervector dimension */
     private final int supervectorDim;
+    /** 相关性因子 / Relevance factor */
     private final double relevanceFactor = 16.0;
-    
-    // 在线训练相关参数
+
+    /** UBM在线优化器 / UBM online optimizer */
     private IOnlineOptimizer ubmOptimizer;
+    /** T矩阵在线优化器 / T-matrix online optimizer */
     private IOnlineOptimizer tMatrixOptimizer;
+    /** 是否使用Adam优化器 / Whether to use Adam optimizer */
     private boolean useAdamOptimizer = true;
+    /** 学习率 / Learning rate */
     private double learningRate = 0.001;
-    
-    // 足够统计信息用于增量更新
+
+    /** 累积的特征用于增量更新 / Accumulated features for incremental update */
     private List<IVector<Double>> accumulatedFeatures;
+    /** 批次大小 / Batch size */
     private int batchSize = 100;
+    /** 已处理的样本数 / Number of processed samples */
     private int processedSamples = 0;
 
     /**
-     * 构造函数
-     * 支持小批量MFCC样本的增量训练
+     * 构造函数 / Constructor
+     *
      * @param len i-vector维度 / i-vector dimension
      */
     public OnlineIVectorEmbedding(int len) {
         this(len, 512, 13, true, 0.001); // 默认512个高斯分量，13维MFCC
     }
-    
+
     /**
-     * 构造函数
-     * 支持小批量MFCC样本的增量训练
+     * 构造函数 / Constructor
+     *
      * @param len i-vector维度 / i-vector dimension
      * @param numComponents UBM高斯分量数 / Number of UBM Gaussian components
      * @param mfccDim MFCC特征维度 / MFCC feature dimension
      */
     public OnlineIVectorEmbedding(int len, int numComponents, int mfccDim) {
-        this(len, numComponents, mfccDim, true, 0.001); 
+        this(len, numComponents, mfccDim, true, 0.001);
     }
-    
+
     /**
-     * 构造函数
-     * 支持小批量MFCC样本的增量训练，可配置优化器和学习率
+     * 构造函数 / Constructor
+     *
      * @param len i-vector维度 / i-vector dimension
      * @param numComponents UBM高斯分量数 / Number of UBM Gaussian components
      * @param mfccDim MFCC特征维度 / MFCC feature dimension
      * @param useAdam 是否使用Adam优化器 / Whether to use Adam optimizer
      * @param learningRate 学习率 / Learning rate
      */
-    public OnlineIVectorEmbedding(int len, int numComponents, int mfccDim, 
+    public OnlineIVectorEmbedding(int len, int numComponents, int mfccDim,
                              boolean useAdam, double learningRate) {
         this.len = len;
         this.numComponents = numComponents;
@@ -668,6 +678,14 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         return Linalg.vector(diffData);
     }
 
+    /**
+     * 基于MFCC特征矩阵提取嵌入向量 / Extract embedding vector from MFCC feature matrix
+     *
+     * @param mfcc MFCC特征矩阵 / MFCC feature matrix
+     * @return i-vector嵌入向量 / i-vector embedding vector
+     * @throws IllegalStateException 如果模型尚未训练 / If model is not trained
+     * @throws IllegalArgumentException 如果MFCC特征无效或维度不匹配 / If MFCC features are invalid or dimension mismatch
+     */
     @Override
     public IVector<Double> embed(IMatrix<Double> mfcc) {
         if (!isTrained) {
@@ -720,6 +738,13 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         return ivector;
     }
     
+    /**
+     * 基于音频数据提取嵌入向量 / Extract embedding vector from audio data
+     *
+     * @param audioData 音频数据 / Audio data
+     * @return i-vector嵌入向量 / i-vector embedding vector
+     * @throws UnsupportedOperationException 方法尚未实现 / Method not yet implemented
+     */
     @Override
     public IVector<Double> embed(AudioData audioData) {
         // This is a simplified implementation
@@ -727,6 +752,14 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         throw new UnsupportedOperationException("Method not yet implemented");
     }
     
+    /**
+     * 基于原始音频样本提取嵌入向量 / Extract embedding vector from raw audio samples
+     *
+     * @param samples 音频样本 / Audio samples
+     * @param sampleRate 采样率 (Hz) / Sample rate (Hz)
+     * @return i-vector嵌入向量 / i-vector embedding vector
+     * @throws UnsupportedOperationException 方法尚未实现 / Method not yet implemented
+     */
     @Override
     public IVector<Double> embed(IVector<Double> samples, int sampleRate) {
         // This is a simplified implementation
@@ -734,6 +767,13 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         throw new UnsupportedOperationException("Method not yet implemented");
     }
     
+    /**
+     * 批量提取嵌入向量 / Batch extract embedding vectors
+     *
+     * @param mfccBatch MFCC特征矩阵批次 / Batch of MFCC feature matrices
+     * @return 嵌入向量矩阵 / Embedding vector matrix
+     * @throws IllegalArgumentException 如果MFCC批次为空 / If MFCC batch is empty
+     */
     @Override
     public IMatrix<Double> embedBatch(IMatrix<Double>[] mfccBatch) {
         if (mfccBatch == null || mfccBatch.length == 0) {
@@ -752,31 +792,65 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         return Linalg.matrix(result);
     }
     
+    /**
+     * 获取嵌入向量维度 / Get embedding vector dimension
+     *
+     * @return i-vector维度 / i-vector dimension
+     */
     @Override
     public int getEmbeddingDimension() {
         return len;
     }
     
+    /**
+     * 获取支持的特征类型 / Get supported feature types
+     *
+     * @return 支持的特征类型数组 / Array of supported feature types
+     */
     @Override
     public FeatureType[] getSupportedFeatureTypes() {
         return new FeatureType[] { FeatureType.MFCC };
     }
     
+    /**
+     * 检查是否支持指定的特征类型 / Check if specified feature type is supported
+     *
+     * @param featureType 特征类型 / Feature type
+     * @return 如果支持返回true / True if supported
+     */
     @Override
     public boolean supportsFeatureType(FeatureType featureType) {
         return featureType == FeatureType.MFCC;
     }
     
+    /**
+     * 设置嵌入参数 / Set embedding parameters
+     *
+     * @param parameters 参数映射 / Parameter map
+     */
     @Override
     public void setParameters(Map<String, Object> parameters) {
         this.parameters = parameters;
     }
     
+    /**
+     * 获取嵌入参数 / Get embedding parameters
+     *
+     * @return 参数映射 / Parameter map
+     */
     @Override
     public Map<String, Object> getParameters() {
         return parameters;
     }
     
+    /**
+     * 计算两个嵌入向量之间的相似度 / Calculate similarity between two embedding vectors
+     *
+     * @param embedding1 第一个嵌入向量 / First embedding vector
+     * @param embedding2 第二个嵌入向量 / Second embedding vector
+     * @return 相似度分数 (0-1) / Similarity score (0-1)
+     * @throws IllegalArgumentException 如果嵌入向量为空或维度不匹配 / If embedding vectors are null or dimension mismatch
+     */
     @Override
     public double calculateSimilarity(IVector<Double> embedding1, IVector<Double> embedding2) {
         if (embedding1 == null || embedding2 == null) {
@@ -799,6 +873,16 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         return dotProduct / (norm1 * norm2);
     }
     
+    /**
+     * 计算嵌入向量之间的距离 / Calculate distance between embedding vectors
+     *
+     * @param embedding1 第一个嵌入向量 / First embedding vector
+     * @param embedding2 第二个嵌入向量 / Second embedding vector
+     * @param distanceType 距离类型 / Distance type
+     * @return 距离值 / Distance value
+     * @throws IllegalArgumentException 如果嵌入向量为空或维度不匹配 / If embedding vectors are null or dimension mismatch
+     * @throws UnsupportedOperationException 如果距离类型不支持 / If distance type is not supported
+     */
     @Override
     public double calculateDistance(IVector<Double> embedding1, IVector<Double> embedding2, DistanceType distanceType) {
         if (embedding1 == null || embedding2 == null) {
@@ -821,6 +905,13 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
         }
     }
     
+    /**
+     * 对嵌入向量进行归一化 / Normalize embedding vector
+     *
+     * @param embedding 嵌入向量 / Embedding vector
+     * @return 归一化后的嵌入向量 / Normalized embedding vector
+     * @throws IllegalArgumentException 如果嵌入向量为空 / If embedding vector is null
+     */
     @Override
     public IVector<Double> normalize(IVector<Double> embedding) {
         if (embedding == null) {
@@ -836,114 +927,257 @@ public class OnlineIVectorEmbedding implements IAudioEmbedding, Serializable {
     }
     
     // Getter and setter methods for serialization
+
+    /**
+     * 检查模型是否已训练 / Check if model is trained
+     *
+     * @return 是否已训练 / Whether trained
+     */
     public boolean isTrained() {
         return isTrained;
     }
-    
+
+    /**
+     * 设置模型训练状态 / Set model training status
+     *
+     * @param trained 训练状态 / Training status
+     */
     public void setTrained(boolean trained) {
         isTrained = trained;
     }
-    
+
+    /**
+     * 获取通用背景模型 / Get Universal Background Model
+     *
+     * @return UBM模型 / UBM model
+     */
     public GaussianMixtureModel getUbm() {
         return ubm;
     }
-    
+
+    /**
+     * 设置通用背景模型 / Set Universal Background Model
+     *
+     * @param ubm UBM模型 / UBM model
+     */
     public void setUbm(GaussianMixtureModel ubm) {
         this.ubm = ubm;
     }
-    
+
+    /**
+     * 获取全变异性矩阵 / Get Total Variability matrix
+     *
+     * @return T矩阵 / T matrix
+     */
     public IMatrix<Double> getTMatrix() {
         return tMatrix;
     }
-    
+
+    /**
+     * 设置全变异性矩阵 / Set Total Variability matrix
+     *
+     * @param tMatrix T矩阵 / T matrix
+     */
     public void setTMatrix(IMatrix<Double> tMatrix) {
         this.tMatrix = tMatrix;
     }
-    
+
+    /**
+     * 获取UBM协方差矩阵的逆列表 / Get list of UBM covariance matrix inverses
+     *
+     * @return 协方差矩阵逆列表 / List of covariance matrix inverses
+     */
     public List<IMatrix<Double>> getUbmInvCovariances() {
         return ubmInvCovariances;
     }
-    
+
+    /**
+     * 设置UBM协方差矩阵的逆列表 / Set list of UBM covariance matrix inverses
+     *
+     * @param ubmInvCovariances 协方差矩阵逆列表 / List of covariance matrix inverses
+     */
     public void setUbmInvCovariances(List<IMatrix<Double>> ubmInvCovariances) {
         this.ubmInvCovariances = ubmInvCovariances;
     }
-    
+
+    /**
+     * 获取i-vector维度 / Get i-vector dimension
+     *
+     * @return i-vector维度 / i-vector dimension
+     */
     public int getLen() {
         return len;
     }
-    
+
+    /**
+     * 获取UBM高斯分量数 / Get number of UBM Gaussian components
+     *
+     * @return 高斯分量数 / Number of Gaussian components
+     */
     public int getNumComponents() {
         return numComponents;
     }
-    
+
+    /**
+     * 获取MFCC特征维度 / Get MFCC feature dimension
+     *
+     * @return MFCC特征维度 / MFCC feature dimension
+     */
     public int getMfccDim() {
         return mfccDim;
     }
-    
+
+    /**
+     * 获取超向量维度 / Get supervector dimension
+     *
+     * @return 超向量维度 / Supervector dimension
+     */
     public int getSupervectorDim() {
         return supervectorDim;
     }
-    
+
+    /**
+     * 获取相关性因子 / Get relevance factor
+     *
+     * @return 相关性因子 / Relevance factor
+     */
     public double getRelevanceFactor() {
         return relevanceFactor;
     }
-    
+
+    /**
+     * 检查是否使用Adam优化器 / Check if using Adam optimizer
+     *
+     * @return 是否使用Adam优化器 / Whether using Adam optimizer
+     */
     public boolean isUseAdamOptimizer() {
         return useAdamOptimizer;
     }
-    
+
+    /**
+     * 设置是否使用Adam优化器 / Set whether to use Adam optimizer
+     *
+     * @param useAdamOptimizer 是否使用Adam优化器 / Whether to use Adam optimizer
+     */
     public void setUseAdamOptimizer(boolean useAdamOptimizer) {
         this.useAdamOptimizer = useAdamOptimizer;
     }
     
+    /**
+     * 获取学习率 / Get learning rate
+     *
+     * @return 学习率 / Learning rate
+     */
     public double getLearningRate() {
         return learningRate;
     }
-    
+
+    /**
+     * 设置学习率 / Set learning rate
+     *
+     * @param learningRate 学习率 / Learning rate
+     */
     public void setLearningRate(double learningRate) {
         this.learningRate = learningRate;
     }
-    
+
+    /**
+     * 获取批次大小 / Get batch size
+     *
+     * @return 批次大小 / Batch size
+     */
     public int getBatchSize() {
         return batchSize;
     }
-    
+
+    /**
+     * 设置批次大小 / Set batch size
+     *
+     * @param batchSize 批次大小 / Batch size
+     */
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
-    
+
+    /**
+     * 获取已处理的样本数 / Get number of processed samples
+     *
+     * @return 已处理的样本数 / Number of processed samples
+     */
     public int getProcessedSamples() {
         return processedSamples;
     }
-    
+
+    /**
+     * 设置已处理的样本数 / Set number of processed samples
+     *
+     * @param processedSamples 已处理的样本数 / Number of processed samples
+     */
     public void setProcessedSamples(int processedSamples) {
         this.processedSamples = processedSamples;
     }
-    
+
+    /**
+     * 获取累积的特征列表 / Get list of accumulated features
+     *
+     * @return 累积的特征列表 / List of accumulated features
+     */
     public List<IVector<Double>> getAccumulatedFeatures() {
         return accumulatedFeatures;
     }
-    
+
+    /**
+     * 设置累积的特征列表 / Set list of accumulated features
+     *
+     * @param accumulatedFeatures 累积的特征列表 / List of accumulated features
+     */
     public void setAccumulatedFeatures(List<IVector<Double>> accumulatedFeatures) {
         this.accumulatedFeatures = accumulatedFeatures;
     }
-    
+
+    /**
+     * 获取UBM优化器 / Get UBM optimizer
+     *
+     * @return UBM优化器 / UBM optimizer
+     */
     public IOnlineOptimizer getUbmOptimizer() {
         return ubmOptimizer;
     }
-    
+
+    /**
+     * 设置UBM优化器 / Set UBM optimizer
+     *
+     * @param ubmOptimizer UBM优化器 / UBM optimizer
+     */
     public void setUbmOptimizer(IOnlineOptimizer ubmOptimizer) {
         this.ubmOptimizer = ubmOptimizer;
     }
-    
+
+    /**
+     * 获取T矩阵优化器 / Get T-matrix optimizer
+     *
+     * @return T矩阵优化器 / T-matrix optimizer
+     */
     public IOnlineOptimizer getTMatrixOptimizer() {
         return tMatrixOptimizer;
     }
-    
+
+    /**
+     * 设置T矩阵优化器 / Set T-matrix optimizer
+     *
+     * @param tMatrixOptimizer T矩阵优化器 / T-matrix optimizer
+     */
     public void setTMatrixOptimizer(IOnlineOptimizer tMatrixOptimizer) {
         this.tMatrixOptimizer = tMatrixOptimizer;
     }
-    
+
+    /**
+     * 保存模型到本地文件 / Save model to local file
+     *
+     * @param path 模型文件路径 / Model file path
+     * @return 保存后的嵌入模型 / Saved embedding model
+     * @throws RuntimeException 如果保存失败 / If saving fails
+     */
     @Override
     public IAudioEmbedding save(String path) {
         try {

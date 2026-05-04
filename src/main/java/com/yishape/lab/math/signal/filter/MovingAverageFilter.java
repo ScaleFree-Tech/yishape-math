@@ -123,17 +123,29 @@ public class MovingAverageFilter extends AbstractSignalProcessor<Double> impleme
     public FilterType getFilterType() {
         return filterType;
     }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() {
         return implementationType;
     }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() {
         return windowSize - 1; // FIR滤波器的阶数 / Order of FIR filter
     }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() {
         // 移动平均滤波器的等效截止频率 / Equivalent cutoff frequency of moving average filter
@@ -141,7 +153,12 @@ public class MovingAverageFilter extends AbstractSignalProcessor<Double> impleme
         double cutoffFreq = 0.44 * Math.PI / windowSize;
         return new double[]{cutoffFreq};
     }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         if (frequencies.length != 1) {
@@ -159,17 +176,32 @@ public class MovingAverageFilter extends AbstractSignalProcessor<Double> impleme
         // 移动平均滤波器不直接使用采样率 / Moving average filter doesn't directly use sampling rate
         return 1.0;
     }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate (未使用 / Not used)
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         // 移动平均滤波器不直接使用采样率 / Moving average filter doesn't directly use sampling rate
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() {
         return coefficients;
     }
-    
+
+    /**
+     * 计算滤波器的频率响应 / Calculate frequency response of filter
+     * @param frequencies 频率点数组 / Frequency point array
+     * @return 频率响应 / Frequency response
+     * @throws SignalProcessingException 计算过程中发生错误时抛出 / Thrown when errors occur during calculation
+     */
     @Override
     public FrequencyResponse getFrequencyResponse(double[] frequencies) throws SignalProcessingException {
         // 计算移动平均滤波器的频率响应 / Calculate frequency response of moving average filter
@@ -192,13 +224,16 @@ public class MovingAverageFilter extends AbstractSignalProcessor<Double> impleme
     
     /**
      * 获取窗口大小 / Get window size
+     * @return 窗口大小 / Window size
      */
     public int getWindowSize() {
         return windowSize;
     }
-    
+
     /**
      * 设置窗口大小 / Set window size
+     * @param windowSize 窗口大小 / Window size
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setWindowSize(int windowSize) throws SignalProcessingException {
         validateParameters(windowSize);
@@ -210,7 +245,11 @@ public class MovingAverageFilter extends AbstractSignalProcessor<Double> impleme
     protected IVector<Double> doProcess(IVector<Double> input) throws SignalProcessingException {
         return filter(input);
     }
-    
+
+    /**
+     * 克隆移动平均滤波器 / Clone Moving Average filter
+     * @return 移动平均滤波器副本 / Moving Average filter copy
+     */
     @Override
     public MovingAverageFilter clone() {
         try {

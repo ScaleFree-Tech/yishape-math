@@ -6,6 +6,21 @@
 
 This document systematically organizes detailed usage examples for the data visualization package in order from simple to complex. Each level includes corresponding theoretical background, practical examples, and advanced guidance.
 
+## 文档目录 / Table of Contents
+
+| 章节 | 内容 |
+|------|------|
+| 第一〜三部分 | 入门、基础、中级 |
+| 第四〜五部分 | 极坐标/H 图小提琴等；漏斗、桑基、关系图等专业图 |
+| 第六〜七部分 | 样式系统、高级应用场景 |
+| **第八部分** | **`IPlot` 扩展二维** |
+| **第九部分** | **`I3dPlot` 三维与双后端** |
+| 总结与学习路径 | 回顾 |
+
+> 附录性的 **扩展二维 / 三维** 小节曾误标为第四、五部分，已改名为第八、第九部分以免与正文重复。
+
+
+
 ---
 
 ## 第一部分：入门基础 (Part 1 - Getting Started)
@@ -134,7 +149,7 @@ public class PaletteExample {
         IVector<Double> y2 = Linalg.vector(new double[]{15, 25, 20, 35, 30});
         
         // 设置调色板
-        RerePlot plot = Plots.of(800, 600);
+        IPlot plot = Plots.of(800, 600);
         plot.setPalette("matplotlib");
         
         // 使用 C0-C9 颜色
@@ -240,7 +255,7 @@ public class IntelligentColorExample {
         }
         
         // 创建多系列图表
-        RerePlot plot = Plots.of(800, 600);
+        IPlot plot = Plots.of(800, 600);
         for (int i = 0; i < dataSeries.size(); i++) {
             PlotStyle seriesStyle = new PlotStyle()
                 .color(colorSeries.get(i))
@@ -1194,7 +1209,7 @@ public class StyleConverterExample {
         
         // 应用到多系列数据
         IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-        RerePlot plot = Plots.of(800, 600);
+        IPlot plot = Plots.of(800, 600);
         
         for (int i = 0; i < gradient.size(); i++) {
             IVector<Double> y = Linalg.vector(new double[]{
@@ -1231,7 +1246,7 @@ public class SeabornStyleMapperExample {
         PlotStyle styleB = mapper.getStyleForGroup("GroupB", "hue");
         
         // 创建分组图表
-        RerePlot plot = Plots.of(800, 600);
+        IPlot plot = Plots.of(800, 600);
         
         // 按组分别绘制
         IVector<Double> xA = Linalg.vector(new double[]{1, 2, 3, 4, 5});
@@ -1344,7 +1359,7 @@ public class HSLColorOperationsExample {
         
         // 应用到多系列数据
         IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
-        RerePlot plot = Plots.of(800, 600);
+        IPlot plot = Plots.of(800, 600);
         
         for (int i = 0; i < gradient.size(); i++) {
             IVector<Double> y = Linalg.vector(new double[]{
@@ -1452,7 +1467,7 @@ public class ScientificDataVisualizationExample {
         IVector<Double> concVec = Linalg.vector(concentration);
         
         // 创建多子图布局
-        RerePlot plot = Plots.of(1200, 800);
+        IPlot plot = Plots.of(1200, 800);
         
         // 温度曲线
         plot.line(timeVec, tempVec, "r-")
@@ -1570,7 +1585,7 @@ public class MachineLearningVisualizationExample {
         IVector<Double> accuracyVec = Linalg.vector(accuracy);
         
         // 创建训练过程图
-        RerePlot plot = Plots.of(1000, 600);
+        IPlot plot = Plots.of(1000, 600);
         plot.line(epochsVec, trainLossVec, "r-")
             .title("模型训练过程", "损失函数和准确率变化")
             .xlabel("训练轮次")
@@ -1588,6 +1603,883 @@ public class MachineLearningVisualizationExample {
 ```
 
 ---
+
+## 第八部分：扩展二维图表 (Part 8 - Extended 2D Charts)
+
+本节 API 均来自 `IPlot`；小节标题中的 **4.x** 为历史编号，可忽略，仅表示本部分内部顺序。
+
+### 4.1 面积图与阶梯图 / Area & Step Charts
+
+#### 面积图 / Area Chart
+
+```java
+public class AreaChartExample {
+    public static void main(String[] args) {
+        // 生成时间序列数据
+        IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        IVector<Double> y = Linalg.vector(new double[]{10, 25, 18, 35, 28, 42, 38, 55, 48, 62});
+        
+        // 面积图 - 折线下方填充
+        Plots.of(800, 600)
+            .area(x, y)
+            .title("Cumulative Sales Trend")
+            .xlabel("Month")
+            .ylabel("Sales")
+            .saveAsHtml("area_chart.html");
+    }
+}
+```
+
+#### 阶梯图 / Step Chart
+
+```java
+public class StepChartExample {
+    public static void main(String[] args) {
+        // 阶梯数据（如价格变动、状态切换）
+        IVector<Double> x = Linalg.vector(new double[]{0, 1, 2, 3, 4, 5});
+        IVector<Double> y = Linalg.vector(new double[]{10, 10, 15, 15, 12, 12});
+        
+        // 阶梯图 - 先水平后垂直变化
+        Plots.of(800, 600)
+            .step(x, y)
+            .title("Step Changes (Post-step)")
+            .saveAsHtml("step_chart.html");
+    }
+}
+```
+
+### 4.2 高级柱状图 / Advanced Bar Charts
+
+#### 水平柱状图 / Horizontal Bar Chart
+
+```java
+public class HorizontalBarExample {
+    public static void main(String[] args) {
+        List<String> categories = List.of("Product A", "Product B", "Product C", "Product D", "Product E");
+        IVector<Double> values = Linalg.vector(new double[]{450, 380, 320, 290, 210});
+        
+        // 水平柱状图 - 类别在Y轴
+        Plots.of(800, 600)
+            .barh(categories, values)
+            .title("Sales by Product (Horizontal)")
+            .saveAsHtml("barh_chart.html");
+    }
+}
+```
+
+#### 堆叠柱状图 / Stacked Bar Chart
+
+```java
+public class StackedBarExample {
+    public static void main(String[] args) {
+        List<String> quarters = List.of("Q1", "Q2", "Q3", "Q4");
+        
+        // 每个季度的多层数据
+        double[][] data = {
+            {120, 150, 180, 200},  // 线上销售
+            {80, 90, 100, 110}     // 线下销售
+        };
+        IMatrix<Double> values = Linalg.matrix(data);
+        List<String> layers = List.of("Online", "Offline");
+        
+        Plots.of(800, 600)
+            .barStacked(quarters, values, layers)
+            .title("Quarterly Sales by Channel (Stacked)")
+            .saveAsHtml("stacked_bar.html");
+    }
+}
+```
+
+### 4.3 高级散点图 / Advanced Scatter Plots
+
+#### 气泡散点图 / Bubble Scatter Chart
+
+```java
+public class BubbleScatterExample {
+    public static void main(String[] args) {
+        IVector<Double> x = Linalg.vector(new double[]{10, 20, 30, 40, 50});
+        IVector<Double> y = Linalg.vector(new double[]{15, 25, 35, 45, 55});
+        
+        // 第三维度：气泡大小
+        IVector<Double> sizes = Linalg.vector(new double[]{100, 200, 300, 400, 500});
+        
+        Plots.of(800, 600)
+            .scatter(x, y, sizes)
+            .title("Bubble Chart (Size = Market Share)")
+            .saveAsHtml("bubble_scatter.html");
+    }
+}
+```
+
+#### 带回归线的散点图 / Regression Plot
+
+```java
+public class RegressionPlotExample {
+    public static void main(String[] args) {
+        // 生成相关数据
+        java.util.Random rand = new java.util.Random(42);
+        int n = 50;
+        double[] xData = new double[n];
+        double[] yData = new double[n];
+        
+        for (int i = 0; i < n; i++) {
+            xData[i] = i;
+            yData[i] = 2 * i + 10 + rand.nextGaussian() * 5;
+        }
+        
+        // 散点 + 回归线（无置信带）
+        Plots.of(800, 600)
+            .regplot(Linalg.vector(xData), Linalg.vector(yData))
+            .title("Linear Regression (y = 2x + 10)")
+            .saveAsHtml("regplot_basic.html");
+            
+        // 带置信带的回归图
+        Plots.of(800, 600)
+            .regplot(Linalg.vector(xData), Linalg.vector(yData), true)  // true = 显示置信带
+            .title("Linear Regression with Confidence Band")
+            .saveAsHtml("regplot_confidence.html");
+    }
+}
+```
+
+#### 误差棒图 / Error Bar Chart
+
+```java
+public class ErrorBarExample {
+    public static void main(String[] args) {
+        IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5});
+        IVector<Double> y = Linalg.vector(new double[]{10, 15, 13, 18, 16});
+        
+        // 误差值
+        IVector<Double> errors = Linalg.vector(new double[]{1.5, 2.0, 1.8, 2.2, 1.6});
+        
+        Plots.of(800, 600)
+            .errorbar(x, y, errors)
+            .title("Measurements with Error Bars")
+            .saveAsHtml("errorbar_chart.html");
+    }
+}
+```
+
+### 4.4 统计分布图表 / Statistical Distribution Charts
+
+#### 核密度估计图 / KDE Plot
+
+```java
+public class KdePlotExample {
+    public static void main(String[] args) {
+        // 生成双峰分布数据
+        java.util.Random rand = new java.util.Random(42);
+        double[] data = new double[1000];
+        for (int i = 0; i < 1000; i++) {
+            data[i] = rand.nextBoolean() ? rand.nextGaussian() * 2 + 5 : rand.nextGaussian() * 2 + 10;
+        }
+        
+        Plots.of(800, 600)
+            .kdeplot(Linalg.vector(data))  // 默认256网格点，自动带宽
+            .title("KDE: Bimodal Distribution")
+            .saveAsHtml("kde_chart.html");
+            
+        // 自定义参数
+        Plots.of(800, 600)
+            .kdeplot(Linalg.vector(data), 512, 0.5)  // 512网格点，带宽0.5
+            .title("KDE: Custom Parameters")
+            .saveAsHtml("kde_custom.html");
+    }
+}
+```
+
+#### QQ图 / QQ Plot
+
+```java
+public class QqPlotExample {
+    public static void main(String[] args) {
+        // 生成正态分布数据
+        IVector<Double> normalData = Linalg.randn(200);
+        
+        // QQ图 - 验证数据是否符合正态分布
+        Plots.of(800, 600)
+            .qqplot(normalData)
+            .title("QQ Plot: Normal Distribution Check")
+            .saveAsHtml("qqplot_normal.html");
+    }
+}
+```
+
+### 4.5 多变量分析图表 / Multi-variable Analysis
+
+#### 成对关系图 / Pair Plot
+
+```java
+public class PairPlotExample {
+    public static void main(String[] args) {
+        // 生成多变量数据（模拟鸢尾花数据集风格）
+        java.util.Random rand = new java.util.Random(42);
+        int n = 150;
+        double[][] data = new double[n][4];
+        
+        for (int i = 0; i < n; i++) {
+            data[i][0] = 5 + rand.nextGaussian();   // Sepal Length
+            data[i][1] = 3 + rand.nextGaussian() * 0.5;   // Sepal Width
+            data[i][2] = 4 + rand.nextGaussian() * 0.7;   // Petal Length
+            data[i][3] = 1.5 + rand.nextGaussian() * 0.3;   // Petal Width
+        }
+        IMatrix<Double> matrix = Linalg.matrix(data);
+        List<String> columns = List.of("Sepal L", "Sepal W", "Petal L", "Petal W");
+        
+        // 成对关系图 - 对角线使用KDE
+        Plots.of(1000, 1000)
+            .pairplot(matrix, columns, PairplotDiagonal.KDE)
+            .title("Pair Plot: Iris-like Data")
+            .saveAsHtml("pairplot_kde.html");
+            
+        // 对角线使用直方图
+        Plots.of(1000, 1000)
+            .pairplot(matrix, columns, PairplotDiagonal.HIST)
+            .title("Pair Plot: Diagonal Histograms")
+            .saveAsHtml("pairplot_hist.html");
+    }
+}
+```
+
+#### 联合分布图 / Joint Plot
+
+```java
+public class JointPlotExample {
+    public static void main(String[] args) {
+        // 生成相关数据
+        java.util.Random rand = new java.util.Random(42);
+        int n = 300;
+        double[] x = new double[n];
+        double[] y = new double[n];
+        
+        for (int i = 0; i < n; i++) {
+            x[i] = rand.nextGaussian();
+            y[i] = x[i] * 0.8 + rand.nextGaussian() * 0.5;
+        }
+        
+        // 联合分布图 - 边缘使用KDE
+        Plots.of(800, 800)
+            .jointplot(Linalg.vector(x), Linalg.vector(y), JointplotMarginal.KDE)
+            .title("Joint Plot: X vs Y (KDE Marginals)")
+            .saveAsHtml("jointplot_kde.html");
+            
+        // 边缘使用直方图
+        Plots.of(800, 800)
+            .jointplot(Linalg.vector(x), Linalg.vector(y), JointplotMarginal.HIST)
+            .title("Joint Plot: X vs Y (Histogram Marginals)")
+            .saveAsHtml("jointplot_hist.html");
+    }
+}
+```
+
+### 4.6 组合图表 / Combined Charts
+
+#### 双Y轴图 / Dual Y-Axis Chart
+
+```java
+public class DualYAxisExample {
+    public static void main(String[] args) {
+        IVector<Double> x = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        
+        // 左Y轴数据（温度）
+        IVector<Double> temperature = Linalg.vector(new double[]{22, 24, 26, 28, 30, 32, 31, 29, 27, 25});
+        
+        // 右Y轴数据（湿度）- 不同数量级
+        IVector<Double> humidity = Linalg.vector(new double[]{45, 50, 55, 60, 65, 70, 68, 62, 58, 52});
+        
+        Plots.of(900, 600)
+            .lineWithSecondaryY(x, temperature, humidity)
+            .ylabel("Temperature (°C)")      // 左Y轴标签
+            .y2label("Humidity (%)")          // 右Y轴标签
+            .title("Temperature vs Humidity (Dual Y-Axis)")
+            .saveAsHtml("dual_y_axis.html");
+    }
+}
+```
+
+#### 子图网格 / Subplots
+
+```java
+public class SubplotsExample {
+    public static void main(String[] args) {
+        IVector<Double> x = Linalg.arange(0, 10, 0.1);
+        IVector<Double> y1 = x.map(v -> Math.sin(v));
+        IVector<Double> y2 = x.map(v -> Math.cos(v));
+        IVector<Double> y3 = x.map(v -> Math.sin(v) * Math.cos(v));
+        IVector<Double> y4 = x.map(v -> Math.sin(v) + Math.cos(v));
+        
+        // 创建2x2子图网格
+        Plots.subplots(2, 2)
+            .title("2x2 Subplot Grid")
+            // 第一个子图 (0,0)
+            .subplot(0, 0)
+            .line(x, y1)
+            .title("sin(x)")
+            // 第二个子图 (0,1)
+            .subplot(0, 1)
+            .line(x, y2)
+            .title("cos(x)")
+            // 第三个子图 (1,0)
+            .subplot(1, 0)
+            .line(x, y3)
+            .title("sin(x)*cos(x)")
+            // 第四个子图 (1,1)
+            .subplot(1, 1)
+            .line(x, y4)
+            .title("sin(x)+cos(x)")
+            .saveAsHtml("subplots_2x2.html");
+    }
+}
+```
+
+---
+
+## 第九部分：三维数据可视化 (Part 9 - 3D Data Visualization)
+
+本节 API 均来自 `I3dPlot`。小节标题中的 **5.x** 为历史编号。
+
+### 4.1 3D图表基础入门 / 3D Chart Basics
+
+#### 3D后端选择与切换 / 3D Backend Selection
+
+```java
+public class BackendSelectionExample {
+    public static void main(String[] args) {
+        // 默认使用ECharts GL后端（推荐用于Web导出）
+        // Default uses ECharts GL backend (recommended for web export)
+        
+        // 切换到JavaFX 3D后端（桌面应用）
+        // Switch to JavaFX 3D backend (desktop applications)
+        Plots.setProvider3d(Plots.PlotProvider3d.JavaFx);
+        I3dPlot desktopPlot = Plots.of3d(800, 600);
+        
+        // 切换回ECharts GL后端
+        // Switch back to ECharts GL backend
+        Plots.setProvider3d(Plots.PlotProvider3d.EchartsGL);
+        I3dPlot webPlot = Plots.of3d(800, 600);
+    }
+}
+```
+
+#### 基础3D散点图 / Basic 3D Scatter Plot
+
+```java
+public class Basic3DScatterExample {
+    public static void main(String[] args) {
+        // 生成3D高斯分布数据
+        // Generate 3D Gaussian distribution data
+        IVector<Double> x = Linalg.randn(200);
+        IVector<Double> y = Linalg.randn(200);
+        IVector<Double> z = Linalg.randn(200);
+        
+        // ECharts GL后端：生成可交互的Web图表
+        // ECharts GL backend: generate interactive web chart
+        Plots.of3d(800, 600, "dark")
+            .scatter3d(x, y, z)
+            .title("3D Gaussian Cloud")
+            .xlabel("X Axis")
+            .ylabel("Y Axis")
+            .zlabel("Z Axis")
+            .saveAsHtml("3d_scatter.html");
+            
+        System.out.println("已生成可交互3D图表: 3d_scatter.html");
+        System.out.println("Generated interactive 3D chart: 3d_scatter.html");
+    }
+}
+```
+
+#### 带分组的3D散点图 / 3D Scatter with Groups
+
+```java
+public class Grouped3DScatterExample {
+    public static void main(String[] args) {
+        // 生成螺旋数据
+        // Generate spiral data
+        int n = 150;
+        IVector<Double> t = Linalg.vector(IntStream.range(0, n)
+            .mapToDouble(i -> i * 0.1).toArray());
+        IVector<Double> x = t.map(v -> v * Math.cos(v));
+        IVector<Double> y = t.map(v -> v * Math.sin(v));
+        IVector<Double> z = t.map(v -> v);
+        
+        // 创建分组标签
+        // Create group labels
+        List<String> hue = IntStream.range(0, n)
+            .mapToObj(i -> "Section" + (i / 50))
+            .toList();
+        
+        Plots.of3d(900, 700)
+            .scatter3d(x, y, z, hue)
+            .title("3D Spiral with Groups")
+            .subtitle("Colored by section")
+            .saveAsHtml("3d_spiral.html");
+    }
+}
+```
+
+#### 3D气泡图 / 3D Bubble Chart
+
+```java
+public class Bubble3DExample {
+    public static void main(String[] args) {
+        int n = 80;
+        IVector<Double> x = Linalg.vector(IntStream.range(0, n)
+            .mapToDouble(i -> i * 0.2).toArray());
+        IVector<Double> y = Linalg.vector(IntStream.range(0, n)
+            .mapToDouble(i -> Math.sin(i * 0.2)).toArray());
+        IVector<Double> z = Linalg.vector(IntStream.range(0, n)
+            .mapToDouble(i -> Math.cos(i * 0.18)).toArray());
+        
+        // 第四维度：气泡大小
+        // Fourth dimension: bubble size
+        IVector<Double> sizes = Linalg.vector(IntStream.range(0, n)
+            .mapToDouble(i -> 20 + i * 2).toArray());
+        
+        Plots.of3d(800, 600)
+            .scatterBubble3d(x, y, z, sizes)
+            .title("3D Bubble Chart")
+            .saveAsHtml("3d_bubble.html");
+    }
+}
+```
+
+### 4.2 3D曲面与地形 / 3D Surfaces & Terrain
+
+#### 3D曲面图 / 3D Surface Plot
+
+```java
+public class Surface3DExample {
+    public static void main(String[] args) {
+        // 创建网格数据
+        // Create grid data
+        int nx = 30, ny = 25;
+        IVector<Double> x = Linalg.vector(IntStream.range(0, nx)
+            .mapToDouble(i -> i * 0.2).toArray());
+        IVector<Double> y = Linalg.vector(IntStream.range(0, ny)
+            .mapToDouble(j -> j * 0.2).toArray());
+        
+        // 计算Z值：z = sin(2x) * cos(2y)
+        double[][] zd = new double[nx][ny];
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                zd[i][j] = Math.sin(x.get(i) * 2) * Math.cos(y.get(j) * 2);
+            }
+        }
+        IMatrix<Double> z = Linalg.matrix(zd);
+        
+        // 基础曲面图
+        // Basic surface plot
+        Plots.of3d(900, 700, "dark")
+            .surface3d(x, y, z)
+            .title("3D Surface: z = sin(2x) * cos(2y)")
+            .saveAsHtml("surface_basic.html");
+            
+        // 带底部等高线的曲面图
+        // Surface with bottom contour projection
+        Plots.of3d(900, 700, "dark")
+            .surface3d(x, y, z, true)  // true = 显示底部等高线
+            .title("3D Surface with Contour")
+            .saveAsHtml("surface_contour.html");
+    }
+}
+```
+
+#### 3D等高线图 / 3D Contour Plot
+
+```java
+public class Contour3DExample {
+    public static void main(String[] args) {
+        int nx = 25, ny = 20;
+        IVector<Double> x = Linalg.vector(IntStream.range(0, nx)
+            .mapToDouble(i -> i * 0.3).toArray());
+        IVector<Double> y = Linalg.vector(IntStream.range(0, ny)
+            .mapToDouble(j -> j * 0.3).toArray());
+        
+        // 创建山峰数据
+        // Create peak data
+        double[][] zd = new double[nx][ny];
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                double dx = x.get(i) - 3;
+                double dy = y.get(j) - 3;
+                zd[i][j] = 10 * Math.exp(-(dx*dx + dy*dy) / 4);
+            }
+        }
+        IMatrix<Double> z = Linalg.matrix(zd);
+        
+        Plots.of3d(800, 600)
+            .contour3d(x, y, z)
+            .title("3D Contour Lines")
+            .saveAsHtml("contour3d.html");
+    }
+}
+```
+
+#### 3D地形图 / 3D Terrain Plot
+
+```java
+public class Terrain3DExample {
+    public static void main(String[] args) {
+        // 创建DEM-like地形数据
+        // Create DEM-like terrain data
+        int nx = 40, ny = 35;
+        IVector<Double> x = Linalg.vector(IntStream.range(0, nx)
+            .mapToDouble(i -> i * 0.5).toArray());
+        IVector<Double> y = Linalg.vector(IntStream.range(0, ny)
+            .mapToDouble(j -> j * 0.5).toArray());
+        
+        double[][] elevation = new double[nx][ny];
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                // 复合噪声模拟地形
+                // Composite noise to simulate terrain
+                double e = Math.sin(i * 0.3) * Math.cos(j * 0.2) * 5
+                    + Math.sin(i * 0.1 + j * 0.1) * 10
+                    + Math.random() * 2;
+                elevation[i][j] = e;
+            }
+        }
+        IMatrix<Double> z = Linalg.matrix(elevation);
+        
+        Plots.of3d(1000, 800, "dark")
+            .terrain3d(x, y, z)
+            .title("3D Terrain / DEM Visualization")
+            .saveAsHtml("terrain3d.html");
+    }
+}
+```
+
+### 4.3 3D柱状图与统计图表 / 3D Bar & Statistical Charts
+
+#### 3D柱状图（多种柱体形状） / 3D Bar Chart with Various Shapes
+
+```java
+public class Bar3DShapesExample {
+    public static void main(String[] args) {
+        List<String> categories = List.of("Q1", "Q2", "Q3", "Q4");
+        IVector<Double> values = Linalg.vector(new double[]{120, 200, 150, 180});
+        
+        // BOX柱体（长方体，默认）
+        // BOX extrusion (rectangular prism, default)
+        Plots.of3d(800, 600)
+            .bar3d(categories, values, I3dPlot.BarExtrusion3D.BOX)
+            .title("3D Bar Chart - BOX Style")
+            .saveAsHtml("bar3d_box.html");
+            
+        // CYLINDER柱体（圆柱体）
+        // CYLINDER extrusion
+        Plots.of3d(800, 600)
+            .bar3d(categories, values, I3dPlot.BarExtrusion3D.CYLINDER)
+            .title("3D Bar Chart - CYLINDER Style")
+            .saveAsHtml("bar3d_cylinder.html");
+            
+        // CONE柱体（圆锥体）
+        // CONE extrusion
+        Plots.of3d(800, 600)
+            .bar3d(categories, values, I3dPlot.BarExtrusion3D.CONE)
+            .title("3D Bar Chart - CONE Style")
+            .saveAsHtml("bar3d_cone.html");
+    }
+}
+```
+
+#### 分组3D柱状图 / Grouped 3D Bar Chart
+
+```java
+public class GroupedBar3DExample {
+    public static void main(String[] args) {
+        // 创建分组数据
+        // Create grouped data
+        List<String> quarters = List.of("Q1", "Q1", "Q2", "Q2", "Q3", "Q3", "Q4", "Q4");
+        IVector<Double> sales = Linalg.vector(new double[]{
+            100, 120,  // Q1: East, West
+            110, 140,  // Q2: East, West
+            130, 150,  // Q3: East, West
+            160, 180   // Q4: East, West
+        });
+        List<String> regions = List.of("East", "West", "East", "West", 
+                                        "East", "West", "East", "West");
+        
+        Plots.of3d(900, 700)
+            .bar3d(quarters, sales, regions, I3dPlot.BarExtrusion3D.BOX)
+            .title("Quarterly Sales by Region (3D)")
+            .saveAsHtml("bar3d_grouped.html");
+    }
+}
+```
+
+#### 3D直方图 / 3D Histogram
+
+```java
+public class Histogram3DExample {
+    public static void main(String[] args) {
+        // 生成二维相关数据
+        // Generate 2D correlated data
+        java.util.Random rand = new java.util.Random(42);
+        int n = 2000;
+        double[] xData = new double[n];
+        double[] yData = new double[n];
+        
+        for (int i = 0; i < n; i++) {
+            double x = rand.nextGaussian();
+            xData[i] = x;
+            yData[i] = 0.6 * x + 0.4 * rand.nextGaussian();  // 相关性
+        }
+        
+        IVector<Double> x = Linalg.vector(xData);
+        IVector<Double> y = Linalg.vector(yData);
+        
+        Plots.of3d(800, 600)
+            .hist3d(x, y, 15, 12)  // 15x12 bins
+            .title("3D Joint Histogram")
+            .saveAsHtml("hist3d.html");
+    }
+}
+```
+
+### 4.4 3D场数据可视化 / 3D Field Data Visualization
+
+#### 3D向量场 / 3D Vector Field
+
+```java
+public class VectorField3DExample {
+    public static void main(String[] args) {
+        // 创建网格采样点
+        // Create grid sampling points
+        int g = 5;
+        int n = g * g * g;
+        double[] x = new double[n];
+        double[] y = new double[n];
+        double[] z = new double[n];
+        double[] u = new double[n];
+        double[] v = new double[n];
+        double[] w = new double[n];
+        
+        int idx = 0;
+        for (int i = 0; i < g; i++) {
+            for (int j = 0; j < g; j++) {
+                for (int k = 0; k < g; k++) {
+                    x[idx] = i * 0.6;
+                    y[idx] = j * 0.6;
+                    z[idx] = k * 0.5;
+                    // 定义向量场：v = [sin(y), -cos(x), 0.15]
+                    u[idx] = Math.sin(y[idx]);
+                    v[idx] = -Math.cos(x[idx]);
+                    w[idx] = 0.15;
+                    idx++;
+                }
+            }
+        }
+        
+        Plots.of3d(800, 600, "dark")
+            .vectorField3d(
+                Linalg.vector(x), Linalg.vector(y), Linalg.vector(z),
+                Linalg.vector(u), Linalg.vector(v), Linalg.vector(w)
+            )
+            .title("3D Vector Field")
+            .saveAsHtml("vectorfield3d.html");
+    }
+}
+```
+
+#### 3D流线图 / 3D Streamlines
+
+```java
+public class Streamlines3DExample {
+    public static void main(String[] args) {
+        // 使用与向量场相同的网格
+        int g = 4;
+        int n = g * g * g;
+        double[] x = new double[n];
+        double[] y = new double[n];
+        double[] z = new double[n];
+        double[] u = new double[n];
+        double[] v = new double[n];
+        double[] w = new double[n];
+        
+        int idx = 0;
+        for (int i = 0; i < g; i++) {
+            for (int j = 0; j < g; j++) {
+                for (int k = 0; k < g; k++) {
+                    x[idx] = i;
+                    y[idx] = j;
+                    z[idx] = k;
+                    // 旋转向量场
+                    u[idx] = y[idx] - 1.5;
+                    v[idx] = -(x[idx] - 1.5);
+                    w[idx] = 0.1;
+                    idx++;
+                }
+            }
+        }
+        
+        Plots.of3d(900, 700, "dark")
+            .streamlines3d(
+                Linalg.vector(x), Linalg.vector(y), Linalg.vector(z),
+                Linalg.vector(u), Linalg.vector(v), Linalg.vector(w)
+            )
+            .title("3D Streamlines")
+            .saveAsHtml("streamlines3d.html");
+    }
+}
+```
+
+### 4.5 3D高级图表 / Advanced 3D Charts
+
+#### 3D关系图（网络图） / 3D Graph
+
+```java
+public class Graph3DExample {
+    public static void main(String[] args) {
+        // 定义节点
+        // Define nodes
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            Map<String, Object> node = new HashMap<>();
+            node.put("x", (i % 4) * 2.0);  // X坐标
+            node.put("y", (i / 4) * 2.0);  // Y坐标
+            node.put("z", (i % 2) * 1.0);  // Z坐标
+            node.put("name", "Node" + i);
+            nodes.add(node);
+        }
+        
+        // 定义连接
+        // Define links
+        List<Map<String, Object>> links = new ArrayList<>();
+        links.add(Map.of("source", 0, "target", 1));
+        links.add(Map.of("source", 1, "target", 2));
+        links.add(Map.of("source", 2, "target", 3));
+        links.add(Map.of("source", 0, "target", 4));
+        links.add(Map.of("source", 4, "target", 5));
+        links.add(Map.of("source", 5, "target", 6));
+        links.add(Map.of("source", 6, "target", 7));
+        links.add(Map.of("source", 3, "target", 7));
+        
+        Plots.of3d(800, 600)
+            .graph3d(nodes, links)
+            .title("3D Network Graph")
+            .saveAsHtml("graph3d.html");
+    }
+}
+```
+
+#### 3D雷达图 / 3D Radar Chart
+
+```java
+public class Radar3DExample {
+    public static void main(String[] args) {
+        // 两组产品的多维指标对比
+        // Multi-dimensional indicator comparison for two products
+        double[][] data = {
+            {0.8, 0.6, 0.9, 0.7},  // Product A
+            {0.5, 0.8, 0.4, 0.85}  // Product B
+        };
+        IMatrix<Double> matrix = Linalg.matrix(data);
+        List<String> indicators = List.of("Performance", "Price", "Quality", "UX");
+        List<String> products = List.of("Product A", "Product B");
+        
+        Plots.of3d(800, 600)
+            .radar3d(matrix, indicators, products)
+            .title("Product Comparison (3D Radar)")
+            .saveAsHtml("radar3d.html");
+    }
+}
+```
+
+### 4.6 3D性能优化与大数据 / 3D Performance & Large Data
+
+#### 大数据量自动降采样 / Automatic Sampling for Large Datasets
+
+```java
+public class LargeData3DExample {
+    public static void main(String[] args) {
+        // 生成10000个数据点
+        // Generate 10,000 data points
+        IVector<Double> x = Linalg.randn(10000);
+        IVector<Double> y = Linalg.randn(10000);
+        IVector<Double> z = Linalg.randn(10000);
+        
+        // 当数据量超过2000时，自动启用降采样
+        // When data exceeds 2000 points, auto-sampling is enabled
+        Plots.of3d(800, 600)
+            .scatter3d(x, y, z)
+            .title("Large Dataset: 10,000 points (Auto-sampled to ~5,000)")
+            .saveAsHtml("large_data_3d.html");
+            
+        // 查看降采样提示
+        // Check the subtitle for sampling information
+    }
+}
+```
+
+#### 使用LOD级别控制细节 / Controlling Detail with LOD Levels
+
+```java
+public class LOD3DExample {
+    public static void main(String[] args) {
+        // 准备数据
+        double[][] data = new double[5000][3];
+        for (int i = 0; i < 5000; i++) {
+            data[i] = new double[]{
+                Math.random() * 100,
+                Math.random() * 100,
+                Math.random() * 100
+            };
+        }
+        
+        // 手动应用LOD采样
+        // Apply LOD sampling manually
+        var sampled = DataSamplingUtils.lodSample(data, DataSamplingUtils.LodLevel.MEDIUM);
+        System.out.println("Original: " + data.length + " points");
+        System.out.println("Sampled: " + sampled.length + " points");
+        
+        // 在图表中使用采样后的数据
+        // Use sampled data in chart (implementation-specific)
+    }
+}
+```
+
+### 4.7 3D图表主题与样式 / 3D Chart Themes & Styles
+
+#### 3D主题应用 / Applying 3D Themes
+
+```java
+public class Theme3DExample {
+    public static void main(String[] args) {
+        IVector<Double> x = Linalg.randn(100);
+        IVector<Double> y = Linalg.randn(100);
+        IVector<Double> z = Linalg.randn(100);
+        
+        // 深色主题
+        // Dark theme
+        Plots.of3d(800, 600, "dark")
+            .scatter3d(x, y, z)
+            .title("Dark Theme 3D")
+            .saveAsHtml("3d_dark.html");
+            
+        // 未来风格主题
+        // Futuristic theme
+        Plots.of3d(800, 600, "futuristic")
+            .scatter3d(x, y, z)
+            .title("Futuristic Theme 3D")
+            .saveAsHtml("3d_futuristic.html");
+            
+        // 学术风格主题
+        // Academic theme
+        Plots.of3d(800, 600, "academic")
+            .scatter3d(x, y, z)
+            .title("Academic Theme 3D")
+            .saveAsHtml("3d_academic.html");
+    }
+}
+```
+
+---
+
+**数据可视化示例** - 让数据可视化更简单！
+
+**Data Visualization Examples** - Make data visualization simpler!
 
 ## 总结 / Summary
 
@@ -1641,8 +2533,3 @@ This document systematically introduces various functions of the data visualizat
 
 ---
 
----
-
-**数据可视化示例** - 让数据可视化更简单！
-
-**Data Visualization Examples** - Make data visualization simpler!

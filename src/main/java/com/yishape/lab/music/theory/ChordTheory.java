@@ -6,6 +6,10 @@ package com.yishape.lab.music.theory;
  * 提供和弦相关的音乐理论功能
  * Provides music theory functionality related to chords.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class ChordTheory {
 

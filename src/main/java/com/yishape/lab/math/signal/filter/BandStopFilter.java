@@ -274,6 +274,9 @@ public class BandStopFilter extends AbstractSignalProcessor<Double> implements I
     
     /**
      * 设置低截止频率 / Set low cutoff frequency
+     *
+     * @param lowCutoffFrequency 低截止频率 / Low cutoff frequency
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setLowCutoffFrequency(double lowCutoffFrequency) throws SignalProcessingException {
         validateParameters(order, lowCutoffFrequency, highCutoffFrequency, samplingRate);
@@ -289,14 +292,21 @@ public class BandStopFilter extends AbstractSignalProcessor<Double> implements I
     
     /**
      * 设置高截止频率 / Set high cutoff frequency
+     *
+     * @param highCutoffFrequency 高截止频率 / High cutoff frequency
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setHighCutoffFrequency(double highCutoffFrequency) throws SignalProcessingException {
         validateParameters(order, lowCutoffFrequency, highCutoffFrequency, samplingRate);
         this.highCutoffFrequency = highCutoffFrequency;
     }
     
+  
     /**
-     * 获取滤波器阶数 / Get filter order
+     * 设置滤波器阶数 / Set filter order
+     *
+     * @param order 滤波器阶数 / Filter order
+     * @throws SignalProcessingException 参数无效时抛出 / Thrown when parameters are invalid
      */
     public void setOrder(int order) throws SignalProcessingException {
         validateParameters(order, lowCutoffFrequency, highCutoffFrequency, samplingRate);

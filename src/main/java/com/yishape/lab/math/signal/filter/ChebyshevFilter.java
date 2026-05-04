@@ -496,18 +496,39 @@ public class ChebyshevFilter extends AbstractSignalProcessor<Double> implements 
     }
     
     // Interface implementations
+    /**
+     * 获取滤波器类型 / Get filter type
+     * @return 滤波器类型 / Filter type
+     */
     @Override
     public FilterType getFilterType() { return filterType; }
-    
+
+    /**
+     * 获取滤波器实现类型 / Get filter implementation type
+     * @return 滤波器实现类型 / Filter implementation type
+     */
     @Override
     public FilterImplementation getImplementationType() { return implementationType; }
-    
+
+    /**
+     * 获取滤波器阶数 / Get filter order
+     * @return 滤波器阶数 / Filter order
+     */
     @Override
     public int getOrder() { return order; }
-    
+
+    /**
+     * 获取截止频率 / Get cutoff frequencies
+     * @return 截止频率数组 / Cutoff frequency array
+     */
     @Override
     public double[] getCutoffFrequencies() { return cutoffFrequencies.clone(); }
-    
+
+    /**
+     * 设置截止频率 / Set cutoff frequencies
+     * @param frequencies 截止频率数组 / Cutoff frequency array
+     * @throws SignalProcessingException 频率设置无效时抛出 / Thrown when frequency setting is invalid
+     */
     @Override
     public void setCutoffFrequencies(double... frequencies) throws SignalProcessingException {
         validateParameters(order, frequencies, samplingRate, ripple);
@@ -515,10 +536,15 @@ public class ChebyshevFilter extends AbstractSignalProcessor<Double> implements 
         this.cutoffFrequencies = frequencies.clone();
         computeCoefficients();
     }
-    
+
     @Override
     public double getSamplingRate() { return samplingRate; }
-    
+
+    /**
+     * 设置采样率 / Set sampling rate
+     * @param samplingRate 采样率 / Sampling rate
+     * @throws SignalProcessingException 采样率设置无效时抛出 / Thrown when sampling rate setting is invalid
+     */
     @Override
     public void setSamplingRate(double samplingRate) throws SignalProcessingException {
         if (samplingRate <= 0) {
@@ -527,14 +553,32 @@ public class ChebyshevFilter extends AbstractSignalProcessor<Double> implements 
         this.samplingRate = samplingRate;
         computeCoefficients();
     }
-    
+
+    /**
+     * 获取滤波器系数 / Get filter coefficients
+     * @return 滤波器系数 / Filter coefficients
+     */
     @Override
     public FilterCoefficients getCoefficients() { return coefficients; }
-    
+
     // Additional getters and setters
+    /**
+     * 获取切比雪夫类型 / Get Chebyshev type
+     * @return 切比雪夫类型 / Chebyshev type
+     */
     public ChebyshevType getChebyshevType() { return chebyshevType; }
-    
+
+    /**
+     * 获取波纹大小 / Get ripple magnitude
+     * @return 波纹大小 (dB) / Ripple magnitude (dB)
+     */
     public double getRipple() { return ripple; }
+
+    /**
+     * 设置波纹大小 / Set ripple magnitude
+     * @param ripple 波纹大小 (dB) / Ripple magnitude (dB)
+     * @throws SignalProcessingException 波纹参数无效时抛出 / Thrown when ripple parameter is invalid
+     */
     public void setRipple(double ripple) throws SignalProcessingException {
         if (ripple <= 0) {
             throw new SignalProcessingException("波纹参数必须大于0 / Ripple parameter must be greater than 0");

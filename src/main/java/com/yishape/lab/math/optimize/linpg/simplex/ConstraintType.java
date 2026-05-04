@@ -1,7 +1,15 @@
 package com.yishape.lab.math.optimize.linpg.simplex;
 
 /**
- * Types of relationships between constraint coefficients and values
+ * 约束类型枚举 / Constraint Type Enumeration
+ * <p>
+ * 表示线性约束中系数与值之间的关系类型。
+ * Types of relationships between constraint coefficients and values.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public enum ConstraintType {
     /** Equality relationship: ax = b */

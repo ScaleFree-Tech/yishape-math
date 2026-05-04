@@ -18,8 +18,9 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
- * Music Transposer
+ * 音乐转调器 / Music Transposer
  * <p>
+ * 实现音乐转调功能，支持将音乐转换为不同的调性。
  * Implements music transposition functionality to convert music to different keys.
  * Supports various transposition algorithms including pitch shifting, time stretching,
  * granular synthesis, and phase vocoder methods.
@@ -65,7 +66,7 @@ public class Transposer implements IMusicProcessor {
     private boolean isReady = true;
     
     /**
-     * Constructor
+     * 构造函数 / Constructor
      */
     public Transposer() {
         this.currentParameters = new HashMap<>(DEFAULT_PARAMETERS);
@@ -345,7 +346,15 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Perform transposition operation
+     * 执行转调操作 / Perform transposition operation
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param semitones 半音数量 / Number of semitones
+     * @param preserveFormants 是否保持共振峰 / Whether to preserve formants
+     * @param algorithm 算法类型 / Algorithm type
+     * @param parameters 参数映射 / Parameter map
+     * @return 转调后的音频数据 / Transposed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performTransposition(AudioData audioData, int semitones, boolean preserveFormants,
                                          String algorithm, Map<String, Object> parameters) throws AudioProcessingException {
@@ -369,7 +378,14 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Pitch shift transposition
+     * 音高移位转调 / Pitch shift transposition
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param semitones 半音数量 / Number of semitones
+     * @param preserveFormants 是否保持共振峰 / Whether to preserve formants
+     * @param parameters 参数映射 / Parameter map
+     * @return 转调后的音频数据 / Transposed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performPitchShift(AudioData audioData, int semitones, boolean preserveFormants,
                                        Map<String, Object> parameters) throws AudioProcessingException {
@@ -389,7 +405,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Time stretch transposition
+     * 时间拉伸转调 / Time stretch transposition
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param semitones 半音数量 / Number of semitones
+     * @param parameters 参数映射 / Parameter map
+     * @return 转调后的音频数据 / Transposed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performTimeStretch(AudioData audioData, int semitones, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -409,7 +431,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Granular synthesis transposition
+     * 粒状合成转调 / Granular synthesis transposition
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param semitones 半音数量 / Number of semitones
+     * @param parameters 参数映射 / Parameter map
+     * @return 转调后的音频数据 / Transposed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performGranularTransposition(AudioData audioData, int semitones, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -428,7 +456,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Phase vocoder transposition
+     * 相位声码器转调 / Phase vocoder transposition
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param semitones 半音数量 / Number of semitones
+     * @param parameters 参数映射 / Parameter map
+     * @return 转调后的音频数据 / Transposed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performPhaseVocoderTransposition(AudioData audioData, int semitones, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -447,7 +481,14 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * PSOLA algorithm implementation
+     * PSOLA算法实现 / PSOLA algorithm implementation
+     *
+     * @param input 输入样本 / Input samples
+     * @param output 输出样本 / Output samples
+     * @param pitchRatio 音高比率 / Pitch ratio
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
+     * @param preserveFormants 是否保持共振峰 / Whether to preserve formants
      */
     private void performPSOLA(double[] input, double[] output, double pitchRatio, int windowSize, int hopSize, boolean preserveFormants) {
         // Simplified PSOLA implementation
@@ -472,7 +513,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Phase vocoder implementation
+     * 相位声码器实现 / Phase vocoder implementation
+     *
+     * @param input 输入样本 / Input samples
+     * @param output 输出样本 / Output samples
+     * @param timeRatio 时间比率 / Time ratio
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
      */
     private void performPhaseVocoder(double[] input, double[] output, double timeRatio, int windowSize, int hopSize) {
         // Simplified phase vocoder implementation
@@ -495,7 +542,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Granular synthesis implementation
+     * 粒状合成实现 / Granular synthesis implementation
+     *
+     * @param input 输入样本 / Input samples
+     * @param output 输出样本 / Output samples
+     * @param pitchRatio 音高比率 / Pitch ratio
+     * @param grainSize 颗粒大小 / Grain size
+     * @param overlap 重叠大小 / Overlap size
      */
     private void performGranularSynthesis(double[] input, double[] output, double pitchRatio, int grainSize, int overlap) {
         // Simplified granular synthesis implementation
@@ -522,7 +575,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Phase vocoder pitch shift implementation
+     * 相位声码器音高移位实现 / Phase vocoder pitch shift implementation
+     *
+     * @param input 输入样本 / Input samples
+     * @param output 输出样本 / Output samples
+     * @param pitchRatio 音高比率 / Pitch ratio
+     * @param windowSize 窗口大小 / Window size
+     * @param hopSize 跳跃大小 / Hop size
      */
     private void performPhaseVocoderPitchShift(double[] input, double[] output, double pitchRatio, int windowSize, int hopSize) {
         // Simplified phase vocoder pitch shift implementation
@@ -545,7 +604,14 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Stream transposition processing
+     * 流式转调处理 / Stream transposition processing
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param windowSamples 窗口样本数 / Window samples
+     * @param hopSamples 跳跃样本数 / Hop samples
+     * @param parameters 参数映射 / Parameter map
+     * @return 处理后的音频数据 / Processed audio data
+     * @throws AudioProcessingException 处理异常 / Processing exception
      */
     private AudioData performStreamTransposition(AudioData audioData, int windowSamples, int hopSamples, Map<String, Object> parameters) throws AudioProcessingException {
         
@@ -580,7 +646,12 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Extract time segment
+     * 提取时间段 / Extract time segment
+     *
+     * @param audioData 音频数据 / Audio data
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 提取的音频段 / Extracted audio segment
      */
     private AudioData extractTimeSegment(AudioData audioData, double startTime, double endTime) {
         double sampleRate = audioData.getSampleRate();
@@ -597,7 +668,13 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Insert processed segment
+     * 插入处理后的段 / Insert processed segment
+     *
+     * @param originalAudio 原始音频 / Original audio
+     * @param processedSegment 处理后的段 / Processed segment
+     * @param startTime 起始时间 / Start time
+     * @param endTime 结束时间 / End time
+     * @return 合成后的音频 / Merged audio
      */
     private AudioData insertProcessedSegment(AudioData originalAudio, AudioData processedSegment, double startTime, double endTime) {
         double sampleRate = originalAudio.getSampleRate();
@@ -617,7 +694,10 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Update statistics
+     * 更新统计信息 / Update statistics
+     *
+     * @param input 输入音频 / Input audio
+     * @param output 输出音频 / Output audio
      */
     private void updateStatistics(AudioData input, AudioData output) {
         lastStatistics.clear();
@@ -632,7 +712,7 @@ public class Transposer implements IMusicProcessor {
     }
     
     /**
-     * Initialize performance metrics
+     * 初始化性能指标 / Initialize performance metrics
      */
     private void initializePerformanceMetrics() {
         performanceMetrics.put("totalProcessingTime", 0L);

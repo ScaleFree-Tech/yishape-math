@@ -17,9 +17,13 @@ import java.io.Serializable;
 /**
  * 高斯混合模型(GMM)实现
  * Gaussian Mixture Model (GMM) Implementation
- * 
+ *
  * 支持多个高斯分量的混合模型，用于聚类和密度估计
  * Supports mixture of multiple Gaussian components for clustering and density estimation
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class GaussianMixtureModel implements Serializable {
     
@@ -71,9 +75,10 @@ public class GaussianMixtureModel implements Serializable {
     }
     
     /**
-     * 从已有的分量和权重构造GMM
-     * @param components 高斯分量列表
-     * @param weights 权重列表
+     * 从已有的分量和权重构造GMM / Construct GMM from existing components and weights
+     *
+     * @param components 高斯分量列表 / List of Gaussian components
+     * @param weights 权重列表 / List of mixture weights
      */
     public GaussianMixtureModel(List<MultivariateNormalDistribution> components, List<Double> weights) {
         if (components.isEmpty() || weights.isEmpty() || components.size() != weights.size()) {
@@ -442,6 +447,12 @@ public class GaussianMixtureModel implements Serializable {
      * @param x 输入向量
      * @return 概率密度值
      */
+    /**
+     * 计算样本的概率密度 / Compute probability density of a sample
+     *
+     * @param x 输入向量 / Input vector
+     * @return double 概率密度值 / Probability density value
+     */
     public double pdf(IVector<Double> x) {
         if (x.size() != dimension) {
             throw new IllegalArgumentException("输入向量维度不匹配");
@@ -458,6 +469,12 @@ public class GaussianMixtureModel implements Serializable {
      * 计算样本的对数概率密度（数值稳定版本）
      * @param x 输入向量
      * @return 对数概率密度值
+     */
+    /**
+     * 计算样本的对数概率密度（数值稳定版本）/ Compute log probability density of a sample (numerically stable version)
+     *
+     * @param x 输入向量 / Input vector
+     * @return double 对数概率密度值 / Log probability density value
      */
     public double logPdf(IVector<Double> x) {
         if (x.size() != dimension) {
@@ -488,6 +505,12 @@ public class GaussianMixtureModel implements Serializable {
      * 计算样本属于各个分量的后验概率
      * @param x 输入向量
      * @return 后验概率向量
+     */
+    /**
+     * 计算样本属于各个分量的后验概率 / Compute posterior probabilities of a sample belonging to each component
+     *
+     * @param x 输入向量 / Input vector
+     * @return IVector<Double> 后验概率向量 / Posterior probability vector
      */
     public IVector<Double> computePosteriors(IVector<Double> x) {
         if (x.size() != dimension) {
@@ -523,6 +546,12 @@ public class GaussianMixtureModel implements Serializable {
      * @param x 输入向量
      * @return 后验概率向量
      */
+    /**
+     * 预测样本属于各个分量的后验概率 / Predict posterior probabilities of a sample
+     *
+     * @param x 输入向量 / Input vector
+     * @return IVector<Double> 后验概率向量 / Posterior probability vector
+     */
     public IVector<Double> predict(IVector<Double> x) {
         return computePosteriors(x);
     }
@@ -531,6 +560,12 @@ public class GaussianMixtureModel implements Serializable {
      * 计算样本的概率密度（不归一化的后验概率）
      * @param x 输入向量
      * @return 未归一化的后验概率向量
+     */
+    /**
+     * 计算未归一化的后验概率 / Compute unnormalized posterior probabilities
+     *
+     * @param x 输入向量 / Input vector
+     * @return IVector<Double> 未归一化的后验概率向量 / Unnormalized posterior probability vector
      */
     public IVector<Double> computeUnnormalizedPosteriors(IVector<Double> x) {
         if (x.size() != dimension) {
@@ -553,6 +588,12 @@ public class GaussianMixtureModel implements Serializable {
      * @param x 输入向量
      * @return 分量索引
      */
+    /**
+     * 预测样本最可能属于的分量 / Predict the most likely component for a sample
+     *
+     * @param x 输入向量 / Input vector
+     * @return int 分量索引 / Component index
+     */
     public int predictComponent(IVector<Double> x) {
         IVector<Double> posteriors = predict(x);
         int maxIndex = 0;
@@ -572,6 +613,12 @@ public class GaussianMixtureModel implements Serializable {
      * 从模型中采样
      * @param numSamples 采样数量
      * @return 采样结果列表
+     */
+    /**
+     * 从模型中采样 / Sample from the model
+     *
+     * @param numSamples 采样数量 / Number of samples
+     * @return List<IVector<Double>> 采样结果列表 / List of sampled vectors
      */
     public List<IVector<Double>> sample(int numSamples) {
         List<IVector<Double>> samples = new ArrayList<>();
@@ -802,14 +849,30 @@ public class GaussianMixtureModel implements Serializable {
     }
     
     // Getters and Setters
+    /**
+     * 获取分量数量 / Get number of components
+     *
+     * @return int 分量数量 / Number of components
+     */
     public int getNumComponents() {
         return numComponents;
     }
     
+    /**
+     * 获取数据维度 / Get data dimensionality
+     *
+     * @return int 数据维度 / Data dimensionality
+     */
     public int getDimension() {
         return dimension;
     }
     
+    /**
+     * 获取指定索引的分量 / Get component at specified index
+     *
+     * @param index 分量索引 / Component index
+     * @return MultivariateNormalDistribution 高斯分量 / Gaussian component
+     */
     public MultivariateNormalDistribution getComponent(int index) {
         if (index < 0 || index >= numComponents) {
             throw new IndexOutOfBoundsException("分量索引超出范围");
@@ -817,6 +880,12 @@ public class GaussianMixtureModel implements Serializable {
         return components.get(index);
     }
     
+    /**
+     * 获取指定索引的权重 / Get weight at specified index
+     *
+     * @param index 权重索引 / Weight index
+     * @return double 权重值 / Weight value
+     */
     public double getWeight(int index) {
         if (index < 0 || index >= numComponents) {
             throw new IndexOutOfBoundsException("权重索引超出范围");
@@ -824,6 +893,12 @@ public class GaussianMixtureModel implements Serializable {
         return weights.get(index);
     }
     
+    /**
+     * 设置指定索引的权重 / Set weight at specified index
+     *
+     * @param index 权重索引 / Weight index
+     * @param weight 权重值 / Weight value
+     */
     public void setWeight(int index, double weight) {
         if (index < 0 || index >= numComponents) {
             throw new IndexOutOfBoundsException("权重索引超出范围");
@@ -834,10 +909,20 @@ public class GaussianMixtureModel implements Serializable {
         weights.set(index, weight);
     }
     
+    /**
+     * 获取所有权重 / Get all weights
+     *
+     * @return List<Double> 权重列表 / List of weights
+     */
     public List<Double> getWeights() {
         return new ArrayList<>(weights);
     }
     
+    /**
+     * 获取所有高斯分量 / Get all Gaussian components
+     *
+     * @return List<MultivariateNormalDistribution> 分量列表 / List of components
+     */
     public List<MultivariateNormalDistribution> getComponents() {
         return new ArrayList<>(components);
     }
@@ -846,6 +931,12 @@ public class GaussianMixtureModel implements Serializable {
      * 设置指定索引的分量
      * @param index 分量索引
      * @param component 新的分量
+     */
+    /**
+     * 设置指定索引的分量 / Set component at specified index
+     *
+     * @param index 分量索引 / Component index
+     * @param component 新的高斯分量 / New Gaussian component
      */
     public void setComponent(int index, MultivariateNormalDistribution component) {
         if (index < 0 || index >= numComponents) {
@@ -861,6 +952,11 @@ public class GaussianMixtureModel implements Serializable {
      * 获取所有分量的均值
      * @return 均值矩阵，每行是一个分量的均值
      */
+    /**
+     * 获取所有分量的均值矩阵 / Get mean matrix of all components
+     *
+     * @return IMatrix<Double> 均值矩阵，每行是一个分量的均值 / Mean matrix, each row is a component's mean
+     */
     public IMatrix<Double> getMeans() {
         IMatrix<Double> means = Linalg.zeros(numComponents, dimension);
         for (int k = 0; k < numComponents; k++) {
@@ -875,6 +971,11 @@ public class GaussianMixtureModel implements Serializable {
     /**
      * 获取所有分量的协方差矩阵
      * @return 协方差矩阵列表
+     */
+    /**
+     * 获取所有分量的协方差矩阵列表 / Get list of covariance matrices for all components
+     *
+     * @return List<IMatrix<Double>> 协方差矩阵列表 / List of covariance matrices
      */
     public List<IMatrix<Double>> getCovariances() {
         List<IMatrix<Double>> covariances = new ArrayList<>();

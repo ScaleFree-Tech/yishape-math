@@ -6,6 +6,10 @@ package com.yishape.lab.music.analysis;
  * 所有音乐检测结果类的基类，提供通用的属性和方法
  * Base class for all music detection result classes, providing common properties and methods.
  * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public abstract class MusicDetectionResult {
     protected double confidence;

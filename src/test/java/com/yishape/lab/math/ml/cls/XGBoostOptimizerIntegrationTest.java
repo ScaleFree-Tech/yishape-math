@@ -34,8 +34,9 @@ public class XGBoostOptimizerIntegrationTest {
         features = Linalg.matrix(data);
         labels = new String[]{"A", "A", "A", "A", "B", "B", "B", "B"};
         
-        // 初始化XGBoost分类器
+        // 初始化XGBoost分类器（启用实验性「自适应 boosting 学习率」，覆盖默认关闭行为）
         xgboost = new RereXGboost();
+        xgboost.setAdaptiveBoostingLearningRate(true);
         xgboost.setLearningRate(0.1);
         xgboost.setNumEstimators(20);
         xgboost.setMaxDepth(3);

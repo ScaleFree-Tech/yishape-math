@@ -428,7 +428,50 @@ public class MultivariateTDistribution implements IMultivariateDistribution<Doub
     
     @Override
     public IMultivariateDistribution<Double> getConditional(int[] conditionIndices, IVector<Double> conditionValues) {
-        throw new UnsupportedOperationException("条件分布计算尚未实现");
+        if (conditionIndices == null || conditionValues == null) {
+            throw new IllegalArgumentException("条件索引与条件值不能为null");
+        }
+        if (conditionIndices.length != conditionValues.length()) {
+            throw new IllegalArgumentException("条件索引与条件值长度必须相同");
+        }
+        if (conditionIndices.length == 0) {
+            return new MultivariateTDistribution(location, scale, degreesOfFreedom, random);
+        }
+        if (conditionIndices.length >= dimension) {
+            throw new IllegalArgumentException("条件维度必须小于整体维度");
+        }
+
+        double[] sortedVals = new double[conditionIndices.length];
+        int[] bIdx = MultivariateDistributionMath.sortConditionIndicesWithValues(
+                conditionIndices, conditionValues, sortedVals);
+        int[] rIdx = MultivariateDistributionMath.complementIndices(dimension, bIdx);
+
+        double[][] sBB = MultivariateDistributionMath.extractSubmatrix(scale, bIdx, bIdx);
+        double[][] sRB = MultivariateDistributionMath.extractSubmatrix(scale, rIdx, bIdx);
+        double[][] sBR = MultivariateDistributionMath.extractSubmatrix(scale, bIdx, rIdx);
+        double[][] sRR = MultivariateDistributionMath.extractSubmatrix(scale, rIdx, rIdx);
+
+        IMatrix<Double> SigmaBB = Linalg.matrix(sBB);
+        IMatrix<Double> SigmaRB = Linalg.matrix(sRB);
+        IMatrix<Double> SigmaBR = Linalg.matrix(sBR);
+        IMatrix<Double> SigmaRR = Linalg.matrix(sRR);
+
+        double[] muBarr = MultivariateDistributionMath.extractMean(location, bIdx);
+        double[] muRarr = MultivariateDistributionMath.extractMean(location, rIdx);
+        IVector<Double> muB = Linalg.vector(muBarr);
+        IVector<Double> muR = Linalg.vector(muRarr);
+        IVector<Double> xB = Linalg.vector(sortedVals);
+
+        IMatrix<Double> invBB = SigmaBB.inv();
+        IVector<Double> diffB = xB.sub(muB);
+        double delta = diffB.dot(invBB.mmul(diffB));
+        int bdim = bIdx.length;
+        double nuStar = degreesOfFreedom + bdim;
+        IMatrix<Double> schur = SigmaRR.sub(SigmaRB.mmul(invBB).mmul(SigmaBR));
+        double factor = (degreesOfFreedom + delta) / nuStar;
+        IMatrix<Double> scaleCond = schur.multiplyScalar(factor);
+        IVector<Double> locCond = muR.add(SigmaRB.mmul(invBB).mmul(diffB));
+        return new MultivariateTDistribution(locCond, scaleCond, nuStar, random);
     }
     
     @Override
@@ -456,12 +499,29 @@ public class MultivariateTDistribution implements IMultivariateDistribution<Doub
     
     @Override
     public double klDivergence(IMultivariateDistribution<Double> other) {
-        throw new UnsupportedOperationException("多元t分布的KL散度计算较为复杂，尚未实现");
+        if (!(other instanceof MultivariateTDistribution)) {
+            throw new IllegalArgumentException("只支持与其他多元t分布计算KL散度");
+        }
+        MultivariateTDistribution q = (MultivariateTDistribution) other;
+        if (q.dimension != this.dimension) {
+            throw new IllegalArgumentException("分布维度必须相同");
+        }
+        return MultivariateDistributionMath.klMonteCarlo(this, q, 4096, random);
     }
-    
+
     @Override
     public double wassersteinDistance(IMultivariateDistribution<Double> other) {
-        throw new UnsupportedOperationException("多元t分布的Wasserstein距离计算较为复杂，尚未实现");
+        if (!(other instanceof MultivariateTDistribution)) {
+            throw new IllegalArgumentException("只支持与其他多元t分布计算Wasserstein距离");
+        }
+        MultivariateTDistribution ot = (MultivariateTDistribution) other;
+        if (ot.dimension != this.dimension) {
+            throw new IllegalArgumentException("分布维度必须相同");
+        }
+        if (degreesOfFreedom <= 2 || ot.degreesOfFreedom <= 2) {
+            throw new UnsupportedOperationException("Wasserstein 近似需要两边自由度均大于 2（有限协方差）");
+        }
+        return MultivariateDistributionMath.slicedWasserstein2(this, ot, dimension, 512, 48, random);
     }
     
     @Override
@@ -471,7 +531,8 @@ public class MultivariateTDistribution implements IMultivariateDistribution<Doub
     
     @Override
     public IMultivariateDistribution<Double> fit(List<IVector<Double>> samples, List<Double> weights) {
-        throw new UnsupportedOperationException("加权拟合尚未实现");
+        MultivariateNormalDistribution mn = MultivariateNormalDistribution.fitFromWeightedSamples(samples, weights);
+        return new MultivariateTDistribution(mn.getMean(), mn.getCovariance(), degreesOfFreedom, random);
     }
     
     @Override
@@ -564,47 +625,20 @@ public class MultivariateTDistribution implements IMultivariateDistribution<Doub
     
     @Override
     public ConfidenceEllipse getConfidenceEllipse(double confidence) {
-        if (dimension != 2) {
-            throw new UnsupportedOperationException("置信椭圆只支持二维分布");
+        if (dimension < 2) {
+            throw new UnsupportedOperationException("置信椭圆需要维度至少为 2");
         }
         if (confidence <= 0 || confidence >= 1) {
             throw new IllegalArgumentException("置信水平必须在(0,1)范围内");
         }
-        
-        // 对于t分布，使用F分布的分位数
-        double fQuantile = getFQuantile(confidence, dimension, degreesOfFreedom);
-        double scaleFactor = dimension * (degreesOfFreedom - 2) / degreesOfFreedom * fQuantile;
-        
-        // 计算尺度矩阵的特征值和特征向量（简化版本）
-        double a = scale.get(0, 0);
-        double b = scale.get(0, 1);
-        double c = scale.get(1, 1);
-        
-        double trace = a + c;
-        double det = a * c - b * b;
-        double discriminant = Math.sqrt(trace * trace - 4 * det);
-        
-        double eigenvalue1 = 0.5 * (trace + discriminant);
-        double eigenvalue2 = 0.5 * (trace - discriminant);
-        
-        double majorAxis = Math.sqrt(scaleFactor * eigenvalue1);
-        double minorAxis = Math.sqrt(scaleFactor * eigenvalue2);
-        
-        double angle = 0.5 * Math.atan2(2 * b, a - c);
-        
-        return new ConfidenceEllipse(location.copy(), majorAxis, minorAxis, angle);
+        if (degreesOfFreedom <= 2) {
+            throw new UnsupportedOperationException("自由度≤2时协方差不存在，无法构造边际椭圆近似");
+        }
+        // 二元边际：(x-μ)ᵀΣ_cov⁻¹(x-μ)/2 ~ F_{2,ν-2}（Σ_cov 为本类 getCovariance），非 χ²₂。
+        return MultivariateDistributionMath.confidenceEllipseMarginalPlaneMultivariateT(
+                location, getCovariance(), 0, 1, confidence, degreesOfFreedom);
     }
-    
-    /**
-     * 获取F分布分位数（简化实现）
-     * Get F-distribution quantile (simplified implementation)
-     */
-    private double getFQuantile(double confidence, int df1, double df2) {
-        // 简化的F分布分位数计算
-        // 实际应用中应使用更精确的算法
-        return 2.0 + confidence * 3.0; // 占位符实现
-    }
-    
+
     // ==================== 静态工厂方法 ====================
     
     /**

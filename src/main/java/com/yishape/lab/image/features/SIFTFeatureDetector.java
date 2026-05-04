@@ -12,33 +12,55 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * SIFT (Scale-Invariant Feature Transform) feature detector implementation
- * 尺度不变特征变换（SIFT）特征检测器实现
- * 
- * This class implements the SIFT algorithm for detecting and describing local features
- * in images that are invariant to scale, rotation, and partially invariant to
- * changes in illumination and 3D viewpoint.
- * 
- * 本类实现了SIFT算法，用于检测和描述图像中的局部特征，
+ * SIFT (Scale-Invariant Feature Transform) 特征检测器实现 / SIFT Feature Detector Implementation
+ * <p>
+ * 实现SIFT算法，用于检测和描述图像中的局部特征。
  * 这些特征对尺度、旋转具有不变性，对光照变化和3D视角变化具有部分不变性。
- * 
+ * </p>
+ * <p>
+ * Implements SIFT algorithm for detecting and describing local features in images
+ * that are invariant to scale, rotation, and partially invariant to changes in
+ * illumination and 3D viewpoint.
+ * </p>
+ *
  * @author RereMouse
  * @version 1.0
+ * @since 1.0
  */
 public class SIFTFeatureDetector implements IImageProcessor {
-    
+
     /**
-     * SIFT keypoint representation
-     * SIFT关键点表示
+     * SIFT关键点表示 / SIFT Keypoint Representation
+     * <p>
+     * 表示检测到的SIFT特征关键点。
+     * Represents a detected SIFT feature keypoint.
+     * </p>
      */
     public static class SIFTKeypoint {
-        public final double x, y;
+        /** X坐标 / X coordinate */
+        public final double x;
+        /** Y坐标 / Y coordinate */
+        public final double y;
+        /** 尺度 / Scale */
         public final double scale;
+        /** 方向 / Orientation */
         public final double orientation;
+        /** 响应值 / Response value */
         public final double response;
+        /** 描述子向量 / Descriptor vector */
         public final double[] descriptor;
-        
-        public SIFTKeypoint(double x, double y, double scale, double orientation, 
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param x X坐标 / X coordinate
+         * @param y Y坐标 / Y coordinate
+         * @param scale 尺度 / Scale
+         * @param orientation 方向 / Orientation
+         * @param response 响应值 / Response value
+         * @param descriptor 描述子向量 / Descriptor vector
+         */
+        public SIFTKeypoint(double x, double y, double scale, double orientation,
                            double response, double[] descriptor) {
             this.x = x;
             this.y = y;
@@ -48,34 +70,45 @@ public class SIFTFeatureDetector implements IImageProcessor {
             this.descriptor = descriptor.clone();
         }
     }
-    
+
     /**
-     * SIFT parameters configuration
-     * SIFT参数配置
+     * SIFT参数配置 / SIFT Parameters Configuration
+     * <p>
+     * 存储SIFT特征检测器的配置参数。
+     * Stores configuration parameters for SIFT feature detector.
+     * </p>
      */
     public static class SIFTParameters {
-        public int nOctaves = 4;           // Number of octaves 金字塔层数
-        public int nScales = 3;            // Number of scales per octave 每层尺度数
-        public double sigma = 1.6;         // Initial sigma 初始sigma值
-        public double contrastThreshold = 0.04;  // Contrast threshold 对比度阈值
-        public double edgeThreshold = 10.0;      // Edge response threshold 边缘响应阈值
-        public int descriptorSize = 128;   // Descriptor vector size 描述符向量大小
-        public boolean useGPU = false;     // Enable GPU acceleration GPU加速开关
+        /** 八度数量 / Number of octaves */
+        public int nOctaves = 4;
+        /** 每八度尺度数 / Number of scales per octave */
+        public int nScales = 3;
+        /** 初始sigma值 / Initial sigma value */
+        public double sigma = 1.6;
+        /** 对比度阈值 / Contrast threshold */
+        public double contrastThreshold = 0.04;
+        /** 边缘响应阈值 / Edge response threshold */
+        public double edgeThreshold = 10.0;
+        /** 描述子向量大小 / Descriptor vector size */
+        public int descriptorSize = 128;
+        /** GPU加速开关 / Enable GPU acceleration */
+        public boolean useGPU = false;
     }
-    
+
+    /** 参数 / Parameters */
     private SIFTParameters parameters;
-    
+
     /**
-     * Constructor with default parameters
-     * 使用默认参数的构造函数
+     * 默认构造函数 / Default Constructor
      */
     public SIFTFeatureDetector() {
         this.parameters = new SIFTParameters();
     }
-    
+
     /**
-     * Constructor with custom parameters
-     * 使用自定义参数的构造函数
+     * 带参数的构造函数 / Constructor with Parameters
+     *
+     * @param parameters SIFT参数 / SIFT parameters
      */
     public SIFTFeatureDetector(SIFTParameters parameters) {
         this.parameters = parameters;

@@ -336,7 +336,8 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
         
         result.setLoss(finalLoss);
         result.setR2Score(computeR2Score(feature, labels));
-        
+        result.setRmse(computeRmse(feature, labels));
+
         return result;
     }
 
@@ -378,7 +379,7 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
     /**
      * 决定系数 R²（{@code 1 - SS_res/SS_tot}），在给定特征与标签上计算。
      * <p>
-     * 训练集 R² 已在 {@link RegressionResult#getR2Score()} 中给出，无需再传训练数据。
+     * 训练集 R²、RMSE 已在 {@link RegressionResult#getR2Score()}、{@link RegressionResult#getRmse()} 中给出。
      * 本方法用于<strong>验证集、测试集</strong>等另一组 (X, y) 的 R²。
      * </p>
      *
@@ -389,6 +390,20 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
      */
     public double r2ScoreOn(IMatrix features, IVector labels) {
         return computeR2Score(features, labels);
+    }
+
+    /**
+     * 均方根误差 RMSE（{@code sqrt( (1/n) * Σ(y - ŷ)² )}），在给定特征与标签上计算。
+     * <p>
+     * 训练集 RMSE 见 {@link RegressionResult#getRmse()}；本方法用于验证集、测试集等。
+     * </p>
+     *
+     * @param features 特征矩阵（列数须与训练时一致）
+     * @param labels     真实标签
+     * @return RMSE；{@code n == 0} 时不在此返回（由校验抛出）
+     */
+    public double rmseOn(IMatrix features, IVector labels) {
+        return computeRmse(features, labels);
     }
 
     private double computeR2Score(IMatrix features, IVector labels) {
@@ -431,6 +446,34 @@ public class RereLinearRegression implements IRegression, IGradientFunction, IOb
             return ssRes < eps ? 1.0 : 0.0;
         }
         return 1.0 - ssRes / ssTot;
+    }
+
+    private double computeRmse(IMatrix features, IVector labels) {
+        if (this.trainedWeights == null) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+        if (features == null || labels == null) {
+            throw new IllegalArgumentException("特征矩阵和标签向量不能为null");
+        }
+        int n = features.getRowNum();
+        if (n != labels.length()) {
+            throw new IllegalArgumentException("样本数量不匹配：特征矩阵行数(" + n
+                    + ") != 标签向量长度(" + labels.length() + ")");
+        }
+        if (n == 0) {
+            throw new IllegalArgumentException("样本数量不能为0");
+        }
+        if (features.getColNum() != this.featureCount) {
+            throw new IllegalArgumentException("特征维度不匹配：输入列数(" + features.getColNum()
+                    + ") != 训练时特征数(" + this.featureCount + ")");
+        }
+        double ssRes = 0.0;
+        for (int i = 0; i < n; i++) {
+            double yHat = predict(features.getRow(i));
+            double e = labels.get(i).doubleValue() - yHat;
+            ssRes += e * e;
+        }
+        return Math.sqrt(ssRes / n);
     }
 
     @Override

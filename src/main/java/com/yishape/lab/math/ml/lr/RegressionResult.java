@@ -18,6 +18,11 @@ public class RegressionResult {
     /** 训练集决定系数 R²，由 {@link RereLinearRegression#fit} 写入 */
     private double r2Score;
 
+    /**
+     * 训练集 RMSE（均方根误差，{@code sqrt( (1/n) * Σ(y - ŷ)² )}），由 {@link RereLinearRegression#fit} 写入
+     */
+    private double rmse;
+
     public IVector getWeights() {
         return weights;
     }
@@ -51,5 +56,16 @@ public class RegressionResult {
 
     void setR2Score(double r2Score) {
         this.r2Score = r2Score;
+    }
+
+    /**
+     * 训练集上的 RMSE（与 {@link #getR2Score()} 同一批数据），在 {@link RereLinearRegression#fit} 完成后可用。
+     */
+    public double getRmse() {
+        return rmse;
+    }
+
+    void setRmse(double rmse) {
+        this.rmse = rmse;
     }
 }

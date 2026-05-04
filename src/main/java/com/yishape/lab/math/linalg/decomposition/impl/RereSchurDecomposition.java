@@ -34,7 +34,9 @@ import com.yishape.lab.util.Tuple2;
  *   <li>Francis, J. G. F. (1961). The QR Transformation A Unitary Analogue to the LR Transformation—Part 1.</li>
  *   <li>Watkins, D. S. (2007). The matrix eigenvalue problem: GR and Krylov subspace methods. SIAM.</li>
  * </ul>
- * 
+ *
+ * @author RereMouse
+ * @version 1.0
  * @since 2.0
  */
 public class RereSchurDecomposition implements ISchurDecomposition {

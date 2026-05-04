@@ -2,8 +2,13 @@ package com.yishape.lab.audio.exception;
 
 /**
  * 音频分析异常 / Audio Analysis Exception
+ * <p>
+ * 当音频分析过程中发生错误时抛出此异常。
+ * Thrown when an error occurs during audio analysis.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
  * @since 1.0
  */
 public class AudioAnalysisException extends Exception {

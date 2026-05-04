@@ -4,8 +4,8 @@ import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.signal.core.Complex;
 import com.yishape.lab.math.signal.core.RereFFT;
-import com.yishape.lab.math.viz.Plots;
-import com.yishape.lab.math.viz.IPlot;
+import com.yishape.lab.math.plot.Plots;
+import com.yishape.lab.math.plot.IPlot;
 import com.yishape.lab.util.Tuple2;
 
 import java.util.ArrayList;

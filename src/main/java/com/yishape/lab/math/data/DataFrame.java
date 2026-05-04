@@ -75,10 +75,10 @@ public class DataFrame implements Serializable {
     /**
      * 从CSV文件读取数据创建DataFrame / Create DataFrame by reading data from CSV file
      * <p>
-     * 读取CSV文件并创建DataFrame，数值型数据自动转换为Float类型列</p>
+     * 读取CSV文件并创建DataFrame，数值型数据自动转换为 Double 装箱类型列</p>
      * <p>
      * Reads CSV file and creates DataFrame, automatically converts numeric data
-     * to Float type columns</p>
+     * to Double-valued numeric columns</p>
      *
      * @param filePath 文件路径 / File path
      * @return 创建的DataFrame对象 / Created DataFrame object
@@ -93,10 +93,10 @@ public class DataFrame implements Serializable {
     /**
      * 从CSV文件读取数据创建DataFrame / Create DataFrame by reading data from CSV file
      * <p>
-     * 读取CSV文件并创建DataFrame，数值型数据自动转换为Float类型列</p>
+     * 读取CSV文件并创建DataFrame，数值型数据自动转换为 Double 装箱类型列</p>
      * <p>
      * Reads CSV file and creates DataFrame, automatically converts numeric data
-     * to Float type columns</p>
+     * to Double-valued numeric columns</p>
      *
      * @param filePath 文件路径 / File path
      * @param separator 分隔符 / Separator
@@ -157,7 +157,7 @@ public class DataFrame implements Serializable {
                 }
             }
 
-            // 尝试将数值型数据转换为Float类型 / Try to convert numeric data to Double type
+            // 尝试将数值型数据转换为 Double / Try to convert numeric data to Double
             for (Column column : df.columns) {
                 boolean isNumeric = true;
                 List<Object> doubleData = new ArrayList<>();
@@ -191,8 +191,8 @@ public class DataFrame implements Serializable {
 
         try (FileWriter writer = new FileWriter(filePath); CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
 
-            // 打印列名作为表头 / Print column names as header
-            printer.printRecord(columns.stream().map(Column::getName).toArray(String[]::new));
+            // 打印列名作为表头（Object[] 与 printRecord(Object...) 的 varargs 语义一致）
+            printer.printRecord(columns.stream().map(Column::getName).toArray());
 
             // 按行打印数据 / Print data row by row
             if (rowCount > 0) {

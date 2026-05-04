@@ -58,6 +58,10 @@ public interface ISignalGenerator<T extends Number> {
     
     /**
      * 信号参数类 / Signal Parameters Class
+     * <p>
+     * 用于配置信号生成的各种参数。
+     * Used to configure various parameters for signal generation.
+     * </p>
      */
     class SignalParameters {
         private double amplitude = 1.0;           // 幅度 / Amplitude
@@ -72,33 +76,187 @@ public interface ISignalGenerator<T extends Number> {
         private double endFrequency = 10.0;       // 结束频率 (调频信号) / End frequency (for chirp)
         private int pulseWidth = 1;               // 脉冲宽度 / Pulse width
         private double stepTime = 0.0;            // 阶跃时间 / Step time
-        
-        // Builder pattern methods
+
+        /**
+         * 设置幅度 / Set amplitude
+         *
+         * @param amplitude 信号幅度 / Signal amplitude
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters amplitude(double amplitude) { this.amplitude = amplitude; return this; }
+
+        /**
+         * 设置频率 / Set frequency
+         *
+         * @param frequency 信号频率 / Signal frequency
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters frequency(double frequency) { this.frequency = frequency; return this; }
+
+        /**
+         * 设置相位 / Set phase
+         *
+         * @param phase 信号相位 / Signal phase
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters phase(double phase) { this.phase = phase; return this; }
+
+        /**
+         * 设置占空比 / Set duty cycle
+         *
+         * @param dutyCycle 占空比 / Duty cycle
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters dutyCycle(double dutyCycle) { this.dutyCycle = dutyCycle; return this; }
+
+        /**
+         * 设置直流偏置 / Set DC offset
+         *
+         * @param offset 直流偏置 / DC offset
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters offset(double offset) { this.offset = offset; return this; }
+
+        /**
+         * 设置采样率 / Set sampling rate
+         *
+         * @param samplingRate 采样率 / Sampling rate
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters samplingRate(double samplingRate) { this.samplingRate = samplingRate; return this; }
+
+        /**
+         * 设置噪声方差 / Set noise variance
+         *
+         * @param noiseVariance 噪声方差 / Noise variance
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters noiseVariance(double noiseVariance) { this.noiseVariance = noiseVariance; return this; }
+
+        /**
+         * 设置衰减系数 / Set decay coefficient
+         *
+         * @param decay 衰减系数 / Decay coefficient
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters decay(double decay) { this.decay = decay; return this; }
+
+        /**
+         * 设置起始频率 / Set start frequency
+         *
+         * @param startFrequency 起始频率（调频信号）/ Start frequency (for chirp)
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters startFrequency(double startFrequency) { this.startFrequency = startFrequency; return this; }
+
+        /**
+         * 设置结束频率 / Set end frequency
+         *
+         * @param endFrequency 结束频率（调频信号）/ End frequency (for chirp)
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters endFrequency(double endFrequency) { this.endFrequency = endFrequency; return this; }
+
+        /**
+         * 设置脉冲宽度 / Set pulse width
+         *
+         * @param pulseWidth 脉冲宽度 / Pulse width
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters pulseWidth(int pulseWidth) { this.pulseWidth = pulseWidth; return this; }
+
+        /**
+         * 设置阶跃时间 / Set step time
+         *
+         * @param stepTime 阶跃时间 / Step time
+         * @return 当前实例（用于链式调用）/ Current instance (for method chaining)
+         */
         public SignalParameters stepTime(double stepTime) { this.stepTime = stepTime; return this; }
-        
+
         // Getters
+
+        /**
+         * 获取幅度 / Get amplitude
+         *
+         * @return 信号幅度 / Signal amplitude
+         */
         public double getAmplitude() { return amplitude; }
+
+        /**
+         * 获取频率 / Get frequency
+         *
+         * @return 信号频率 / Signal frequency
+         */
         public double getFrequency() { return frequency; }
+
+        /**
+         * 获取相位 / Get phase
+         *
+         * @return 信号相位 / Signal phase
+         */
         public double getPhase() { return phase; }
+
+        /**
+         * 获取占空比 / Get duty cycle
+         *
+         * @return 占空比 / Duty cycle
+         */
         public double getDutyCycle() { return dutyCycle; }
+
+        /**
+         * 获取直流偏置 / Get DC offset
+         *
+         * @return 直流偏置 / DC offset
+         */
         public double getOffset() { return offset; }
+
+        /**
+         * 获取采样率 / Get sampling rate
+         *
+         * @return 采样率 / Sampling rate
+         */
         public double getSamplingRate() { return samplingRate; }
+
+        /**
+         * 获取噪声方差 / Get noise variance
+         *
+         * @return 噪声方差 / Noise variance
+         */
         public double getNoiseVariance() { return noiseVariance; }
+
+        /**
+         * 获取衰减系数 / Get decay coefficient
+         *
+         * @return 衰减系数 / Decay coefficient
+         */
         public double getDecay() { return decay; }
+
+        /**
+         * 获取起始频率 / Get start frequency
+         *
+         * @return 起始频率 / Start frequency
+         */
         public double getStartFrequency() { return startFrequency; }
+
+        /**
+         * 获取结束频率 / Get end frequency
+         *
+         * @return 结束频率 / End frequency
+         */
         public double getEndFrequency() { return endFrequency; }
+
+        /**
+         * 获取脉冲宽度 / Get pulse width
+         *
+         * @return 脉冲宽度 / Pulse width
+         */
         public int getPulseWidth() { return pulseWidth; }
+
+        /**
+         * 获取阶跃时间 / Get step time
+         *
+         * @return 阶跃时间 / Step time
+         */
         public double getStepTime() { return stepTime; }
     }
     

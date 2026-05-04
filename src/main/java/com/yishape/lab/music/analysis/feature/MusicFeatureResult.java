@@ -21,15 +21,25 @@ import java.util.ArrayList;
  * @since 2.0
  */
 public class MusicFeatureResult {
-    
+
+    /** 节拍特征结果 / Rhythm feature result */
     private final RhythmFeatureResult rhythmFeatures;
+    /** 调性特征结果 / Tonal feature result */
     private final TonalFeatureResult tonalFeatures;
+    /** 结构特征结果 / Structure feature result */
     private final StructureFeatureResult structureFeatures;
+    /** 表现力特征结果 / Expressiveness feature result */
     private final ExpressivenessFeatureResult expressivenessFeatures;
+    /** 元数据 / Metadata */
     private final Map<String, Object> metadata;
     
     /**
      * 构造函数 / Constructor
+     *
+     * @param rhythmFeatures 节拍特征结果 / Rhythm feature result
+     * @param tonalFeatures 调性特征结果 / Tonal feature result
+     * @param structureFeatures 结构特征结果 / Structure feature result
+     * @param expressivenessFeatures 表现力特征结果 / Expressiveness feature result
      */
     public MusicFeatureResult(RhythmFeatureResult rhythmFeatures,
                              TonalFeatureResult tonalFeatures,
@@ -79,6 +89,9 @@ public class MusicFeatureResult {
     
     /**
      * 添加元数据 / Add metadata
+     *
+     * @param key 元数据键 / Metadata key
+     * @param value 元数据值 / Metadata value
      */
     public void addMetadata(String key, Object value) {
         metadata.put(key, value);
@@ -167,7 +180,9 @@ public class MusicFeatureResult {
     
     /**
      * 将提取的特征全部转换为数值特征，其中List<String>中记录了特征名称，IVector<Double>中记录了特征的值。
-     * @return
+     * Converts all extracted features to numerical features.
+     *
+     * @return 特征名称和特征值的元组 / Tuple of feature names and feature values
      */
     public Tuple2<List<String>, IVector<Double>> toNumericalFeatures() {
         // 创建特征名称列表

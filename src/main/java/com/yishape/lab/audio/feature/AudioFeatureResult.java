@@ -94,7 +94,7 @@ public class AudioFeatureResult {
      * @param zeroCrossingRate 零交叉率 / Zero crossing rate
      * @param mfccMeans MFCC特征（均值） / MFCC features (means)
      * @param spectralContrast 频谱对比度 / Spectral contrast
-     * @param sampleRate 采样率 / Sample rate
+     * @param sampleRate 采样率 (Hz) / Sample rate (Hz)
      */
     public AudioFeatureResult(double spectralCentroid, double spectralBandwidth, double spectralRolloff,
             double zeroCrossingRate, double[] mfccMeans, double[] spectralContrast, double sampleRate) {
@@ -222,6 +222,8 @@ public class AudioFeatureResult {
 
     /**
      * 获取元数据 / Get metadata
+     *
+     * @return 元数据映射 / Metadata map
      */
     public Map<String, Object> getMetadata() {
         return metadata;
@@ -229,6 +231,9 @@ public class AudioFeatureResult {
 
     /**
      * 添加元数据 / Add metadata
+     *
+     * @param key 元数据键 / Metadata key
+     * @param value 元数据值 / Metadata value
      */
     public void addMetadata(String key, Object value) {
         metadata.put(key, value);
@@ -336,8 +341,11 @@ public class AudioFeatureResult {
     }
 
     /**
-     * 将提取的特征全部转换为数值特征，其中List<String>中记录了特征名称，IVector<Double>中记录了特征的值。
-     * @return
+     * 将提取的特征全部转换为数值特征，其中List&lt;String&gt;中记录了特征名称，IVector&lt;Double&gt;中记录了特征的值。
+     * Convert all extracted features to numerical features. List&lt;String&gt; contains feature names,
+     * IVector&lt;Double&gt; contains feature values.
+     *
+     * @return 特征名称和特征值组成的元组 / Tuple of feature names and feature values
      */
     public Tuple2<List<String>, IVector<Double>> toNumericalFeatures() {
         // 创建特征名称列表

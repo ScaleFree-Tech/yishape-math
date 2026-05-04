@@ -5,7 +5,15 @@ import com.yishape.lab.math.util.RerePrecision;
 import java.util.*;
 
 /**
- * Advanced pivot selection strategies for simplex method
+ * 单纯形法枢轴选择策略 / Pivot Selection Strategy for Simplex Method
+ * <p>
+ * 提供单纯形法中入基变量和出基变量的选择策略。
+ * Advanced pivot selection strategies for simplex method.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class PivotSelectionStrategy {
 

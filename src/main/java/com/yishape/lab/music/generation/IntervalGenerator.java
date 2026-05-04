@@ -155,6 +155,15 @@ public class IntervalGenerator {
     
     /**
      * 生成和声音程 / Generate Harmonic Interval
+     *
+     * @param lowerNote 低音符编号 / Lower note number
+     * @param upperNote 高音符编号 / Upper note number
+     * @param lowerOctave 低音八度 / Lower octave
+     * @param upperOctave 高音八度 / Upper octave
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @return 和声音程音频数据 / Harmonic interval audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateHarmonicInterval(int lowerNote, int upperNote, int lowerOctave, int upperOctave,
                                              double duration, double sampleRate) throws AudioProcessingException {
@@ -181,6 +190,16 @@ public class IntervalGenerator {
     
     /**
      * 生成旋律音程 / Generate Melodic Interval
+     *
+     * @param firstNote 第一个音符编号 / First note number
+     * @param secondNote 第二个音符编号 / Second note number
+     * @param firstOctave 第一个音符八度 / First note octave
+     * @param secondOctave 第二个音符八度 / Second note octave
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @param ascending 是否上行 / Whether ascending
+     * @return 旋律音程音频数据 / Melodic interval audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateMelodicInterval(int firstNote, int secondNote, int firstOctave, int secondOctave,
                                             double duration, double sampleRate, boolean ascending) 
@@ -214,6 +233,15 @@ public class IntervalGenerator {
     
     /**
      * 生成双向旋律音程 / Generate Melodic Both Interval
+     *
+     * @param lowerNote 低音符编号 / Lower note number
+     * @param upperNote 高音符编号 / Upper note number
+     * @param lowerOctave 低音八度 / Lower octave
+     * @param upperOctave 高音八度 / Upper octave
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @return 双向旋律音程音频数据 / Melodic both interval audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData generateMelodicBothInterval(int lowerNote, int upperNote, int lowerOctave, int upperOctave,
                                                 double duration, double sampleRate) throws AudioProcessingException {
@@ -318,6 +346,10 @@ public class IntervalGenerator {
     
     /**
      * 计算频率 / Calculate Frequency
+     *
+     * @param noteNumber 音符编号（0-11）/ Note number (0-11)
+     * @param octave 八度 / Octave
+     * @return 频率（Hz）/ Frequency in Hz
      */
     private double calculateFrequency(int noteNumber, int octave) {
         return NOTE_FREQUENCIES[noteNumber] * Math.pow(2, octave - 4);
@@ -325,6 +357,11 @@ public class IntervalGenerator {
     
     /**
      * 生成波形 / Generate Waveform
+     *
+     * @param frequency 频率 / Frequency
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @return 波形样本向量 / Waveform samples vector
      */
     private IVector<Double> generateWaveform(double frequency, double duration, double sampleRate) {
         int numSamples = (int) (duration * sampleRate);
@@ -358,6 +395,10 @@ public class IntervalGenerator {
     
     /**
      * 应用包络 / Apply Envelope
+     *
+     * @param samples 样本向量 / Samples vector
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
      */
     private void applyEnvelope(IVector<Double> samples, double duration, double sampleRate) {
         int numSamples = samples.size();
@@ -391,6 +432,11 @@ public class IntervalGenerator {
     
     /**
      * 连接音频数据 / Concatenate Audio Data
+     *
+     * @param audioList 音频数据列表 / Audio data list
+     * @param sampleRate 采样率 / Sample rate
+     * @return 连接后的音频数据 / Concatenated audio data
+     * @throws AudioProcessingException 音频处理异常 / Audio processing exception
      */
     private AudioData concatenateAudioData(List<AudioData> audioList, double sampleRate) throws AudioProcessingException {
         if (audioList == null || audioList.isEmpty()) {
@@ -421,6 +467,10 @@ public class IntervalGenerator {
     
     /**
      * 生成静音 / Generate Silence
+     *
+     * @param duration 持续时间（秒）/ Duration in seconds
+     * @param sampleRate 采样率 / Sample rate
+     * @return 静音音频数据 / Silence audio data
      */
     private AudioData generateSilence(double duration, double sampleRate) {
         int numSamples = (int) (duration * sampleRate);
@@ -430,6 +480,12 @@ public class IntervalGenerator {
     
     /**
      * 验证参数 / Validate Parameters
+     *
+     * @param rootNote 根音 / Root note
+     * @param octave 八度 / Octave
+     * @param duration 持续时间 / Duration
+     * @param sampleRate 采样率 / Sample rate
+     * @throws AudioProcessingException 参数验证失败时抛出 / Thrown when parameter validation fails
      */
     private void validateParameters(int rootNote, int octave, double duration, double sampleRate) 
             throws AudioProcessingException {

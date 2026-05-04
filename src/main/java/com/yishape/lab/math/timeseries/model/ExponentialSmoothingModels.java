@@ -25,13 +25,29 @@ public class ExponentialSmoothingModels {
     
     /**
      * 简单指数平滑模型 / Simple Exponential Smoothing Model
+     * <p>
+     * 适用于无趋势和季节性的平稳时间序列，使用单一平滑参数alpha。
+     * Suitable for stationary time series without trend and seasonality, using single smoothing parameter alpha.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class SimpleExponentialSmoothing {
         private final double alpha; // 平滑参数 / Smoothing parameter
         private final IVector<Double> level; // 水平分量 / Level component
         private final double mse; // 均方误差 / Mean squared error
         private final double mae; // 平均绝对误差 / Mean absolute error
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param alpha 平滑参数 / Smoothing parameter
+         * @param level 水平分量 / Level component
+         * @param mse 均方误差 / Mean squared error
+         * @param mae 平均绝对误差 / Mean absolute error
+         */
         public SimpleExponentialSmoothing(double alpha, IVector<Double> level, double mse, double mae) {
             this.alpha = alpha;
             this.level = level;
@@ -94,6 +110,14 @@ public class ExponentialSmoothingModels {
     
     /**
      * 双指数平滑模型（Holt方法） / Double Exponential Smoothing Model (Holt's Method)
+     * <p>
+     * 适用于有趋势但无季节性的时间序列，使用水平和趋势两个平滑参数。
+     * Suitable for time series with trend but no seasonality, using two smoothing parameters for level and trend.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class DoubleExponentialSmoothing {
         private final double alpha; // 水平平滑参数 / Level smoothing parameter
@@ -102,8 +126,18 @@ public class ExponentialSmoothingModels {
         private final IVector<Double> trend; // 趋势分量 / Trend component
         private final double mse; // 均方误差 / Mean squared error
         private final double mae; // 平均绝对误差 / Mean absolute error
-        
-        public DoubleExponentialSmoothing(double alpha, double beta, IVector<Double> level, 
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param alpha 水平平滑参数 / Level smoothing parameter
+         * @param beta 趋势平滑参数 / Trend smoothing parameter
+         * @param level 水平分量 / Level component
+         * @param trend 趋势分量 / Trend component
+         * @param mse 均方误差 / Mean squared error
+         * @param mae 平均绝对误差 / Mean absolute error
+         */
+        public DoubleExponentialSmoothing(double alpha, double beta, IVector<Double> level,
                                         IVector<Double> trend, double mse, double mae) {
             this.alpha = alpha;
             this.beta = beta;
@@ -182,6 +216,14 @@ public class ExponentialSmoothingModels {
     
     /**
      * Holt-Winters三参数指数平滑模型 / Holt-Winters Triple Exponential Smoothing Model
+     * <p>
+     * 适用于有趋势和季节性的时间序列，使用水平、趋势和季节性三个平滑参数。
+     * Suitable for time series with trend and seasonality, using three smoothing parameters for level, trend, and seasonal components.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class HoltWintersSmoothing {
         private final double alpha; // 水平平滑参数 / Level smoothing parameter
@@ -193,7 +235,20 @@ public class ExponentialSmoothingModels {
         private final IVector<Double> seasonal;  // 季节性分量 / Seasonal component
         private final double mse; // 均方误差 / Mean squared error
         private final double mae; // 平均绝对误差 / Mean absolute error
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param alpha 水平平滑参数 / Level smoothing parameter
+         * @param beta 趋势平滑参数 / Trend smoothing parameter
+         * @param gamma 季节性平滑参数 / Seasonal smoothing parameter
+         * @param period 季节周期 / Seasonal period
+         * @param level 水平分量 / Level component
+         * @param trend 趋势分量 / Trend component
+         * @param seasonal 季节性分量 / Seasonal component
+         * @param mse 均方误差 / Mean squared error
+         * @param mae 平均绝对误差 / Mean absolute error
+         */
         public HoltWintersSmoothing(double alpha, double beta, double gamma, int period,
                                   IVector<Double> level, IVector<Double> trend, IVector<Double> seasonal,
                                   double mse, double mae) {
@@ -306,6 +361,14 @@ public class ExponentialSmoothingModels {
     
     /**
      * 自适应指数平滑模型 / Adaptive Exponential Smoothing Model
+     * <p>
+     * 平滑参数随时间自适应调整，适用于非平稳时间序列。
+     * Smoothing parameter adjusts adaptively over time, suitable for non-stationary time series.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class AdaptiveExponentialSmoothing {
         private final double initialAlpha; // 初始平滑参数 / Initial smoothing parameter
@@ -313,7 +376,16 @@ public class ExponentialSmoothingModels {
         private final IVector<Double> level; // 水平分量 / Level component
         private final double mse; // 均方误差 / Mean squared error
         private final double mae; // 平均绝对误差 / Mean absolute error
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param initialAlpha 初始平滑参数 / Initial smoothing parameter
+         * @param alpha 自适应平滑参数序列 / Adaptive smoothing parameter sequence
+         * @param level 水平分量 / Level component
+         * @param mse 均方误差 / Mean squared error
+         * @param mae 平均绝对误差 / Mean absolute error
+         */
         public AdaptiveExponentialSmoothing(double initialAlpha, IVector<Double> alpha, 
                                           IVector<Double> level, double mse, double mae) {
             this.initialAlpha = initialAlpha;
@@ -392,6 +464,14 @@ public class ExponentialSmoothingModels {
     
     /**
      * 指数平滑模型选择器 / Exponential Smoothing Model Selector
+     * <p>
+     * 自动搜索并选择最优的指数平滑模型，包括简单、双和Holt-Winters模型。
+     * Automatically searches and selects optimal exponential smoothing model including simple, double, and Holt-Winters models.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class ModelSelector {
         
@@ -460,6 +540,14 @@ public class ExponentialSmoothingModels {
     
     /**
      * 模型候选类 / Model Candidate Class
+     * <p>
+     * 存储指数平滑模型的候选信息，包括模型类型和误差指标。
+     * Stores candidate information for exponential smoothing models including model type and error metrics.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class ModelCandidate {
         public final String type;
@@ -469,7 +557,18 @@ public class ExponentialSmoothingModels {
         public final int period;
         public final double mse;
         public final double mae;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param type 模型类型 / Model type
+         * @param alpha 水平平滑参数 / Level smoothing parameter
+         * @param beta 趋势平滑参数 / Trend smoothing parameter
+         * @param gamma 季节性平滑参数 / Seasonal smoothing parameter
+         * @param period 季节周期 / Seasonal period
+         * @param mse 均方误差 / Mean squared error
+         * @param mae 平均绝对误差 / Mean absolute error
+         */
         public ModelCandidate(String type, double alpha, double beta, double gamma, int period, double mse, double mae) {
             this.type = type;
             this.alpha = alpha;
@@ -483,11 +582,25 @@ public class ExponentialSmoothingModels {
     
     /**
      * 模型选择结果类 / Model Selection Result Class
+     * <p>
+     * 存储模型选择的结果，包括最优模型和所有候选模型。
+     * Stores model selection result including optimal model and all candidates.
+     * </p>
+     *
+     * @author lteb2
+     * @version 1.0
+     * @since 1.0
      */
     public static class ModelSelectionResult {
         public final ModelCandidate bestModel;
         public final List<ModelCandidate> allCandidates;
-        
+
+        /**
+         * 构造函数 / Constructor
+         *
+         * @param bestModel 最优模型 / Best model
+         * @param allCandidates 所有候选模型列表 / List of all candidate models
+         */
         public ModelSelectionResult(ModelCandidate bestModel, List<ModelCandidate> allCandidates) {
             this.bestModel = bestModel;
             this.allCandidates = allCandidates;

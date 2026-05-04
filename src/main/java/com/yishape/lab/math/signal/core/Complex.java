@@ -1,26 +1,57 @@
 package com.yishape.lab.math.signal.core;
 
 /**
+ * 复数类 / Complex Number Class
+ * <p>
+ * 提供复数的常用数学运算。
+ * Provides common mathematical operations for complex numbers.
+ * </p>
  *
  * @author lteb2
+ * @version 1.0
+ * @since 1.0
  */
 public class Complex {
     public double real;
     public double imag;
 
+    /**
+     * 创建复数对象 / Create Complex Number Object
+     *
+     * @param real 实部 / Real part
+     * @param imag 虚部 / Imaginary part
+     */
     public Complex(double real, double imag) {
         this.real = real;
         this.imag = imag;
     }
 
+    /**
+     * 复数加法 / Add Complex Numbers
+     *
+     * @param other 另一个复数 / Another complex number
+     * @return 和 / Sum
+     */
     public Complex add(Complex other) {
         return new Complex(this.real + other.real, this.imag + other.imag);
     }
 
+    /**
+     * 复数减法 / Subtract Complex Numbers
+     *
+     * @param other 另一个复数 / Another complex number
+     * @return 差 / Difference
+     */
     public Complex subtract(Complex other) {
         return new Complex(this.real - other.real, this.imag - other.imag);
     }
 
+    /**
+     * 复数乘法 / Multiply Complex Numbers
+     *
+     * @param other 另一个复数 / Another complex number
+     * @return 积 / Product
+     */
     public Complex multiply(Complex other) {
         return new Complex(
             this.real * other.real - this.imag * other.imag,
@@ -28,14 +59,30 @@ public class Complex {
         );
     }
 
+    /**
+     * 复数标量乘法 / Scale Complex Number
+     *
+     * @param scalar 标量 / Scalar
+     * @return 缩放后的复数 / Scaled complex number
+     */
     public Complex scale(double scalar) {
         return new Complex(this.real * scalar, this.imag * scalar);
     }
 
+    /**
+     * 复数共轭 / Complex Conjugate
+     *
+     * @return 共轭复数 / Conjugate
+     */
     public Complex conjugate() {
         return new Complex(this.real, -this.imag);
     }
 
+    /**
+     * 复数幅度 / Magnitude of Complex Number
+     *
+     * @return 幅度 / Magnitude
+     */
     public double magnitude() {
         return Math.sqrt(real * real + imag * imag);
     }

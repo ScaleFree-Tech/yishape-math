@@ -8,13 +8,15 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 聚类评估指标类
- * Clustering evaluation metrics class
- * 
- * 提供多种聚类质量评估指标的计算
- * Provides computation of various clustering quality evaluation metrics
- * 
- * @author reremouse
+ * 聚类评估指标类 / Clustering Evaluation Metrics Class
+ * <p>
+ * 提供多种聚类质量评估指标的计算。
+ * Provides computation of various clustering quality evaluation metrics.
+ * </p>
+ *
+ * @author RereMouse
+ * @version 1.0
+ * @since 1.0
  */
 public class ClusteringMetrics {
     
