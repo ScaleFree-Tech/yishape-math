@@ -126,6 +126,28 @@ When you need SIMD, run tests, or align with Surefire in `pom.xml`, add:
 
 Put these in your launch script, `JAVA_TOOL_OPTIONS`, or IDE Run Configuration. If you omit `--add-modules` and see `NoClassDefFoundError` for `jdk.incubator.vector` (e.g. when reflecting into SIMD classes), add the module flags or stay on the default scalar path.
 
+**JavaFX 绘图 / JavaFX plotting (`Plots.of` + `show()` 等)**
+
+在 **JDK 22+**（及部分 JDK 21 更新）上，若 JavaFX 通过 **classpath**（例如将 `javafx-*-win.jar` 放进 `lib/` 与依赖一起 `-cp`）加载，Glass 会调用 `System::load` 加载本地库，从而出现：
+
+`WARNING: A restricted method in java.lang.System has been called` / `Use --enable-native-access=ALL-UNNAMED`
+
+**处理：** 在运行带 JavaFX 的 `main`、IDE Run Configuration、`java -jar` 或 `exec:java` 的 JVM 参数中加入（与上文 SIMD 列表中的第一项相同即可）：
+
+**Fix:** add to the JVM that runs your app (IDE, `java`, `exec:java`), at minimum:
+
+```
+--enable-native-access=ALL-UNNAMED
+```
+
+建议与 SIMD 段一并使用 `--add-opens java.base/java.lang=ALL-UNNAMED`。**仅**执行 `mvn test` 时，本仓库 `pom.xml` 里 Surefire 已包含上述参数；**自行运行应用**时仍需在 IDE/脚本中配置，否则仍会看到警告。
+
+Maven `mvn test` in this repo already sets these via Surefire; **your own app** must set VM options in the IDE or launch script.
+
+另可能出现：`Unsupported JavaFX configuration: classes were loaded from 'unnamed module …'`。这表示 JavaFX 在 **unnamed module（classpath）** 上运行——官方推荐用 **`--module-path`** 指向各 `javafx-*.jar` 并 `--add-modules javafx.controls,javafx.graphics,...`；classpath 方式在多数桌面场景仍可用，该条多为**提示**。若无需 JavaFX（仅导出图），可使用 **`Plots.ofSvg`** 等纯矢量后端，避免加载 JavaFX 本地库。
+
+You may also see *Unsupported JavaFX configuration: classes were loaded from 'unnamed module'*: JavaFX is on the **classpath** instead of the **module path**. For a fully supported setup, use OpenJFX’s **module path** layout; classpath mode often still works and the message is informational. To avoid JavaFX natives entirely, use **`Plots.ofSvg`** for headless vector output.
+
 **日志 / Logging**
 
 库使用 **SLF4J** 门面记录日志；请在应用中提供绑定实现（如 `logback-classic`、`slf4j-simple` 等）。未配置绑定时，默认无输出（SLF4J NOP），不会产生控制台刷屏。
