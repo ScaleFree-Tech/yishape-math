@@ -20,19 +20,13 @@ import com.yishape.lab.math.plot.javafx.renderers.*;
 
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Label;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import javax.imageio.ImageIO;
@@ -2043,19 +2037,14 @@ public class JavaFxPlot implements IPlot {
             if (stage == null) {
                 stage = new Stage();
             }
-            stage.setTitle(chartConfig.title.isEmpty() ? "JavaFX Chart" : chartConfig.title);
+            stage.setTitle(JavaFxChartUtils.APP_PLOT_STAGE_TITLE);
 
             rootPane = new BorderPane();
-
-            if (!chartConfig.title.isEmpty()) {
-                VBox titleBox = createTitleBox();
-                rootPane.setTop(titleBox);
-            }
+            // 标题与副标题由各 Renderer 在 Canvas 上绘制（JavaFxChartUtils.drawTitle），勿再在 BorderPane 重复放置 Label。
 
             rootPane.setCenter(canvas);
 
-            scene = new Scene(rootPane, chartConfig.width,
-                chartConfig.height + (chartConfig.title.isEmpty() ? 0 : 80));
+            scene = new Scene(rootPane, chartConfig.width, chartConfig.height);
 
             setupInteractionHandler();
 
@@ -2157,26 +2146,6 @@ public class JavaFxPlot implements IPlot {
     }
     
     // ========== 私有辅助方法 ==========
-    
-    private VBox createTitleBox() {
-        VBox titleBox = new VBox(5);
-        titleBox.setAlignment(Pos.CENTER);
-        titleBox.setPadding(new Insets(15, 0, 10, 0));
-        
-        Label titleLabel = new Label(chartConfig.title);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        titleLabel.setStyle("-fx-text-fill: #333;");
-        titleBox.getChildren().add(titleLabel);
-        
-        if (!chartConfig.subtitle.isEmpty()) {
-            Label subtitleLabel = new Label(chartConfig.subtitle);
-            subtitleLabel.setFont(Font.font("Arial", 12));
-            subtitleLabel.setStyle("-fx-text-fill: #666;");
-            titleBox.getChildren().add(subtitleLabel);
-        }
-        
-        return titleBox;
-    }
     
     private IPlot createGroupedSeries(IVector x, IVector y, List<String> hue,
                                      ChartType type, String seriesType) {

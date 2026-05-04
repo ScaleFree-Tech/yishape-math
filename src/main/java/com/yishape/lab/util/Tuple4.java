@@ -23,7 +23,6 @@ public class Tuple4<E1, E2, E3,E4> extends Tuple3<E1, E2,E3> implements Serializ
      * @param b 第二个元素 / Second element
      * @param c 第三个元素 / Third element
      * @param d 第四个元素 / Fourth element
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public Tuple4(E1 a, E2 b, E3 c,E4 d) {
         super(a, b,c);

@@ -2,13 +2,11 @@ package com.yishape.lab.math.linalg;
 
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.util.StringUtils;
 import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.IntStream;
 import java.util.concurrent.*;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -1438,21 +1436,12 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
         return dotProduct / (norm1 * norm2);
     }
 
+    /**
+     * 方括号逗号分隔列表（与常见数组打印习惯一致）；过长时省略中段并标注 {@code (length=n)}。
+     */
     @Override
     public String toString() {
-        var ls = IntStream.range(0, this.data.length)
-                .mapToObj(i -> {
-                    double value = this.data[i];
-                    // 如果四舍五入到2位小数后为0.00，不显示负号
-                    double rounded = Math.round(value * 100.0) / 100.0;
-                    if (rounded == 0.0) {
-                        return String.format("Value: %.2f", 0.0);
-                    } else {
-                        return String.format("Value: %.2f", value);
-                    }
-                })
-                .toArray(String[]::new);
-        return StringUtils.join(ls, ", ");
+        return VectorStringFormatter.formatDoubles(this.data);
     }
 
     // ========== 三角函数操作实现 / Trigonometric Functions Implementation ==========

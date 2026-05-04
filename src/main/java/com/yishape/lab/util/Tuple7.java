@@ -30,7 +30,6 @@ public class Tuple7<E1, E2, E3, E4, E5, E6,E7> extends Tuple6<E1, E2, E3, E4, E5
      * @param e 第五个元素 / Fifth element
      * @param f 第六个元素 / Sixth element
      * @param g 第七个元素 / Seventh element
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public Tuple7(E1 a, E2 b, E3 c, E4 d, E5 e, E6 f, E7 g) {
         super(a, b, c, d, e,f);

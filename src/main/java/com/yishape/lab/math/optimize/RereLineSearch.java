@@ -43,8 +43,8 @@ public class RereLineSearch implements Serializable{
      * 完整参数构造函数
      * Full parameter constructor
      *
-     * @param c1 Armijo条件参数，必须满足 0 < c1 < c2 < 1 / Armijo condition parameter, must satisfy 0 < c1 < c2 < 1
-     * @param c2 Wolfe条件参数，必须满足 c1 < c2 < 1 / Wolfe condition parameter, must satisfy c1 < c2 < 1
+     * @param c1 Armijo 条件参数，须满足 {@literal 0 < c1 < c2 < 1} / Armijo parameter, must satisfy {@literal 0 < c1 < c2 < 1}
+     * @param c2 Wolfe 条件参数，须满足 {@literal c1 < c2 < 1} / Wolfe parameter, must satisfy {@literal c1 < c2 < 1}
      * @param initialStepSize 初始步长，必须大于0 / Initial step size, must be greater than 0
      */
     public RereLineSearch(double c1, double c2, double initialStepSize) {
@@ -213,7 +213,7 @@ public class RereLineSearch implements Serializable{
      * 设置Armijo条件参数 c1
      * Set Armijo condition parameter c1
      *
-     * @param c1 Armijo条件参数，必须满足 0 < c1 < 1 / Armijo condition parameter, must satisfy 0 < c1 < 1
+     * @param c1 Armijo 条件参数，须满足 {@literal 0 < c1 < 1} / Armijo parameter, must satisfy {@literal 0 < c1 < 1}
      * @throws IllegalArgumentException 如果 c1 不在有效范围内 / If c1 is not in valid range
      */
     public void setC1(double c1) {
@@ -234,7 +234,7 @@ public class RereLineSearch implements Serializable{
      * 设置Wolfe条件参数 c2
      * Set Wolfe condition parameter c2
      *
-     * @param c2 Wolfe条件参数，必须满足 0 < c2 < 1 / Wolfe condition parameter, must satisfy 0 < c2 < 1
+     * @param c2 Wolfe 条件参数，须满足 {@literal 0 < c2 < 1} / Wolfe parameter, must satisfy {@literal 0 < c2 < 1}
      * @throws IllegalArgumentException 如果 c2 不在有效范围内 / If c2 is not in valid range
      */
     public void setC2(double c2) {

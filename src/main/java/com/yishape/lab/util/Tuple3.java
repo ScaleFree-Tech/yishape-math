@@ -22,7 +22,6 @@ public class Tuple3<E1, E2, E3> extends Tuple2<E1, E2> implements Serializable {
      * @param a 第一个元素 / First element
      * @param b 第二个元素 / Second element
      * @param c 第三个元素 / Third element
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public Tuple3(E1 a, E2 b, E3 c) {
         super(a, b);

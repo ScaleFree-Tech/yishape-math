@@ -252,7 +252,7 @@ public class StructureFeatureResult {
     /**
      * 判断是否为简单结构 / Check if has simple structure
      *
-     * @return 结构复杂度小于0.3时返回true / True if structural complexity < 0.3
+     * @return 结构复杂度小于 0.3 时返回 true / True if structural complexity is below 0.3
      */
     public boolean isSimpleStructure() {
         return structuralComplexity < 0.3;
@@ -270,7 +270,7 @@ public class StructureFeatureResult {
     /**
      * 判断是否低重复性 / Check if has low repetitiveness
      *
-     * @return 重复性小于0.4时返回true / True if repetitiveness < 0.4
+     * @return 重复性小于 0.4 时返回 true / True if repetitiveness is below 0.4
      */
     public boolean isLowRepetitive() {
         return repetitiveness < 0.4;

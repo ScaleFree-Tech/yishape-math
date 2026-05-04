@@ -20,6 +20,11 @@ import java.util.Locale;
  */
 public class JavaFxChartUtils {
 
+    /**
+     * 桌面预览 {@link javafx.stage.Stage} 窗口标题（与图表内 {@code title(...)} 文案分离）。
+     */
+    public static final String APP_PLOT_STAGE_TITLE = "YiShape Math Plots";
+
     private static double clampPositive(double v, double floor) {
         if (v <= 0.0 || Double.isNaN(v)) {
             return floor;

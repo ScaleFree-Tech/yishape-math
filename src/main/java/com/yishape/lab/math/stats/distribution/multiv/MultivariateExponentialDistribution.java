@@ -641,7 +641,7 @@ public class MultivariateExponentialDistribution implements IMultivariateDistrib
      *
      * @param dimension 维度 / Dimensionality
      * @return 标准多元指数分布 / Standard multivariate exponential distribution
-     * @throws IllegalArgumentException 如果维度小于等于0 / If dimension <= 0
+     * @throws IllegalArgumentException 若维度非正 / If dimension is not positive
      */
     public static MultivariateExponentialDistribution standard(int dimension) {
         if (dimension <= 0) {

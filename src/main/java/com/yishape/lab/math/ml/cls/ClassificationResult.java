@@ -164,7 +164,7 @@ public abstract class ClassificationResult implements Serializable{
     /**
      * 获取特征重要性（树与集成模型等）；线性可分模型的系数请使用具体模型上的 {@code getFeatureWeights()}，
      * 例如 {@link com.yishape.lab.math.ml.lr.RereLinearRegression#getFeatureWeights()}、
-     * {@link com.yishape.lab.math.ml.cls.RereLinearSVM#getFeatureWeights()}。
+     * {@link com.yishape.lab.math.ml.cls.svm.RereLinearSVM#getFeatureWeights()}。
      *
      * @return 特征重要性向量，未设置则为 null
      */

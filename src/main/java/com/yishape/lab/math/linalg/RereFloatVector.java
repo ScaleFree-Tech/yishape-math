@@ -2,12 +2,10 @@ package com.yishape.lab.math.linalg;
 
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.FloatVectorComputer;
-import com.yishape.lab.util.StringUtils;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
 import java.io.Serializable;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 import java.util.concurrent.*;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -1440,12 +1438,12 @@ public class RereFloatVector implements IFloatVector,Serializable {
         return dotProduct / (norm1 * norm2);
     }
 
+    /**
+     * 方括号逗号分隔列表；过长时省略中段并标注 {@code (length=n)}。
+     */
     @Override
     public String toString() {
-        var ls = IntStream.range(0, this.data.length)
-                .mapToObj(i -> String.format("Value: %.6f", this.data[i]))
-                .toArray(String[]::new);
-        return StringUtils.join(ls, ", ");
+        return VectorStringFormatter.formatFloats(this.data);
     }
 
     // ========== 三角函数操作实现 / Trigonometric Functions Implementation ==========

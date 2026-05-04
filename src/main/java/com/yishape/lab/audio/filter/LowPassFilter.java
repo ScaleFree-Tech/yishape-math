@@ -20,10 +20,7 @@ import com.yishape.lab.math.signal.Signals;
 public class LowPassFilter extends AbstractAudioFilterStandard {
     
     /**
-     * 构造函数 / Constructor
-     *
-     * @param name 滤波器名称 / Filter name
-     * @param description 滤波器描述 / Filter description
+     * 构造函数 / Constructor（名称与描述由父类 {@code super} 固定为 lowpass / Low-pass filter）
      */
     public LowPassFilter() {
         super("lowpass", "Low-pass filter");

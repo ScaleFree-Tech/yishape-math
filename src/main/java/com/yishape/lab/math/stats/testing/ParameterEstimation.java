@@ -23,7 +23,7 @@ public class ParameterEstimation {
      *
      * @param sample 样本数据 / Sample data
      * @param sigma 已知标准差 / Known standard deviation
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateMeanIntevalWithZ(IVector sample, double sigma) {
         return estimateMeanIntevalWithZ(sample, 0.95f, sigma);
@@ -36,7 +36,7 @@ public class ParameterEstimation {
      * @param sample 样本数据 / Sample data
      * @param confidence 置信水平 / Confidence level
      * @param sigma 已知标准差 / Known standard deviation
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateMeanIntevalWithZ(IVector sample, double confidence, double sigma) {
         var norm = Stats.norm();
@@ -58,7 +58,7 @@ public class ParameterEstimation {
      * Estimate mean confidence interval using t-distribution (default 95% confidence level)
      *
      * @param sample 样本数据 / Sample data
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateMeanIntevalWithT(IVector sample) {
         return estimateMeanIntevalWithT(sample, 0.95f);
@@ -70,7 +70,7 @@ public class ParameterEstimation {
      *
      * @param sample 样本数据 / Sample data
      * @param confidence 置信水平 / Confidence level
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateMeanIntevalWithT(IVector sample, double confidence) {
         var t = Stats.t(sample.length() - 1);
@@ -93,7 +93,7 @@ public class ParameterEstimation {
      * Estimate variance confidence interval using chi-square distribution (default 95% confidence level)
      *
      * @param sample 样本数据 / Sample data
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateVarIntevalWithChi2(IVector sample) {
         return estimateVarIntevalWithChi2(sample, 0.95f);
@@ -105,7 +105,7 @@ public class ParameterEstimation {
      *
      * @param sample 样本数据 / Sample data
      * @param confidence 置信水平 / Confidence level
-     * @return Tuple2<Double,Double> 置信区间 / Confidence interval
+     * @return 置信区间 (下界, 上界)，类型为 {@link Tuple2} / Confidence interval as Tuple2
      */
     public Tuple2<Double,Double> estimateVarIntevalWithChi2(IVector sample, double confidence) {
         var chi2 = Stats.chi2(sample.length() - 1);

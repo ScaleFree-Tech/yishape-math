@@ -5,7 +5,7 @@ import com.yishape.lab.math.plot.javafx.JavaFxChartRenderer.SeriesData;
 import com.yishape.lab.math.plot.javafx.JavaFxThemeManager;
 
 /**
- * 极坐标图表 SVG（柱/线/散点）：按 {@link SeriesData#x} 为角位置（度或弧度）、{@link #y} 为径向值；
+ * 极坐标图表 SVG（柱/线/散点）：按 {@link SeriesData#x} 为角位置（度或弧度）、{@link SeriesData#y} 为径向值；
  * 绘制同心圆与角度射线，并标注径向刻度与角度刻度。
  */
 public class SvgPolarRenderer extends AbstractSvgChartRenderer {

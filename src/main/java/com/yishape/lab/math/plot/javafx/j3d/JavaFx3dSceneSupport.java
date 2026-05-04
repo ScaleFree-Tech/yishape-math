@@ -1,6 +1,7 @@
 package com.yishape.lab.math.plot.javafx.j3d;
 
 import com.yishape.lab.math.plot.PlotException;
+import com.yishape.lab.math.plot.javafx.JavaFxChartUtils;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
@@ -103,7 +104,7 @@ final class JavaFx3dSceneSupport {
 
             plot.scene = new Scene(plot.rootPane, plot.width, plot.height + (plot.titleText.isEmpty() ? 0 : 70));
             plot.stage.setScene(plot.scene);
-            plot.stage.setTitle(plot.titleText.isEmpty() ? "JavaFX 3D" : plot.titleText);
+            plot.stage.setTitle(JavaFxChartUtils.APP_PLOT_STAGE_TITLE);
             plot.stage.show();
         });
     }

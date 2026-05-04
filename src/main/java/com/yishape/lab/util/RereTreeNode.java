@@ -25,7 +25,6 @@ public class RereTreeNode<T> {
      * 创建树节点 / Create tree node
      *
      * @param id 节点ID / Node ID
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public RereTreeNode(String id) {
         this.id = id;

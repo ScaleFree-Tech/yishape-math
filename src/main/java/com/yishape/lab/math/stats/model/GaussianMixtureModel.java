@@ -610,15 +610,10 @@ public class GaussianMixtureModel implements Serializable {
     }
     
     /**
-     * 从模型中采样
-     * @param numSamples 采样数量
-     * @return 采样结果列表
-     */
-    /**
      * 从模型中采样 / Sample from the model
      *
      * @param numSamples 采样数量 / Number of samples
-     * @return List<IVector<Double>> 采样结果列表 / List of sampled vectors
+     * @return 采样向量列表，元素为双精度向量 / List of sampled vectors ({@link IVector} of {@link Double})
      */
     public List<IVector<Double>> sample(int numSamples) {
         List<IVector<Double>> samples = new ArrayList<>();
@@ -969,13 +964,9 @@ public class GaussianMixtureModel implements Serializable {
     }
     
     /**
-     * 获取所有分量的协方差矩阵
-     * @return 协方差矩阵列表
-     */
-    /**
      * 获取所有分量的协方差矩阵列表 / Get list of covariance matrices for all components
      *
-     * @return List<IMatrix<Double>> 协方差矩阵列表 / List of covariance matrices
+     * @return 各分量协方差矩阵列表 / List of covariance matrices ({@link IMatrix} of {@link Double})
      */
     public List<IMatrix<Double>> getCovariances() {
         List<IMatrix<Double>> covariances = new ArrayList<>();

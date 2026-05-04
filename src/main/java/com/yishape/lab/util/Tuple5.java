@@ -25,7 +25,6 @@ public class Tuple5<E1, E2, E3,E4,E5> extends Tuple4<E1, E2,E3,E4> implements Se
      * @param c 第三个元素 / Third element
      * @param d 第四个元素 / Fourth element
      * @param e 第五个元素 / Fifth element
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public Tuple5(E1 a, E2 b, E3 c,E4 d,E5 e) {
         super(a, b,c,d);

@@ -26,7 +26,6 @@ public class Tuple2<E1, E2> implements Serializable{
      *
      * @param a 第一个元素 / First element
      * @param b 第二个元素 / Second element
-     * @param bilingual 双语标记 / Bilingual marker
      */
     public Tuple2(E1 a, E2 b) {
         this._1 = a;

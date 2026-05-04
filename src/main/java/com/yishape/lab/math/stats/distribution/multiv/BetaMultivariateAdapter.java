@@ -213,7 +213,7 @@ public final class BetaMultivariateAdapter implements IMultivariateDistribution<
      *
      * @param n 采样数量 / Number of samples
      * @return 采样结果列表 / List of sampled results
-     * @throws IllegalArgumentException 如果 n <= 0 / If n <= 0
+     * @throws IllegalArgumentException 若 {@code n} 非正 / If {@code n} is not positive
      */
     @Override
     public List<IVector<Double>> sample(int n) {
@@ -233,7 +233,7 @@ public final class BetaMultivariateAdapter implements IMultivariateDistribution<
      *
      * @param n 采样数量 / Number of samples
      * @return n×1 采样矩阵 / n×1 sample matrix
-     * @throws IllegalArgumentException 如果 n <= 0 / If n <= 0
+     * @throws IllegalArgumentException 若 {@code n} 非正 / If {@code n} is not positive
      */
     @Override
     public IMatrix<Double> sampleMatrix(int n) {
