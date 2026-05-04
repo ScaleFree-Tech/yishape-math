@@ -275,14 +275,14 @@ Plots.ofSvg().scatter(x, y)
 IVector<Double> data = Linalg.vector(new double[]{30, 25, 20, 15, 10});
 Plots.pie(data)
     .title("市场份额分布")
-    .saveAsHtml("pie_chart.html");
+    .saveAsPng("pie_chart.png");
 
 // 柱状图 / Bar chart
 Plots.bar(data)
     .title("销售业绩对比")
     .xlabel("季度")
     .ylabel("销售额（万元）")
-    .saveAsHtml("bar_chart.html");
+    .saveAsPng("bar_chart.png");
 
 // 直方图 / Histogram
 var histData = Linalg.vector(new double[]{1.2, 2.3, 1.8, 3.1, 2.7, 1.5, 2.9, 3.2, 2.1, 2.8});
@@ -290,7 +290,7 @@ Plots.hist(histData, true)  // true表示显示拟合线
     .title("数据分布直方图")
     .xlabel("数值区间")
     .ylabel("频次")
-    .saveAsHtml("histogram_chart.html");
+    .saveAsPng("histogram_chart.png");
 
 // 箱线图 / Box plot
 var boxData = Linalg.vector(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
@@ -299,13 +299,13 @@ Plots.boxplot(boxData, labels)
     .title("数据分布箱线图")
     .xlabel("指标")
     .ylabel("数值")
-    .saveAsHtml("boxplot_chart.html");
+    .saveAsPng("boxplot_chart.png");
 
 // K线图 / Candlestick chart
 double[][] candlestickArray = {{100, 110, 95, 115}, {110, 120, 105, 125}, {120, 115, 110, 130}};
 var candlestickData = Linalg.matrix(candlestickArray);
 var dates = Arrays.asList("2024-01-01", "2024-01-02", "2024-01-03");
-Plots.candlestick(candlestickData, dates)
+Plots.ofEcharts().candlestick(candlestickData, dates)
     .title("股票价格K线图")
     .xlabel("日期")
     .ylabel("价格（元）")
@@ -317,7 +317,7 @@ Plots.violinplot(violinData, labels)
     .title("数据分布小提琴图")
     .xlabel("指标")
     .ylabel("数值")
-    .saveAsHtml("violin_chart.html");
+    .saveAsPng("violin_chart.png");
 
 ```
 
@@ -400,16 +400,16 @@ var grdFun = new IGradientFunction() {
 };
 
 // 执行优化 / Execute optimization
-var initX = Linalg.vector(new double[]{-1.0, -1.0});
+var initX = Linalg.ones(2);
 var result = optimizer.optimize(initX, objFun, grdFun);
 ```
 
 ```java
 // 在线Adam优化器示例 / Online Adam Optimizer Example
-RereOnlineAdam adamOptimizer = new RereOnlineAdam();
+var adamOptimizer = Opts.onlineAdam();
 
 // 初始化优化器 / Initialize optimizer
-IVector initialParams = Linalg.vector(new double[]{0.0, 0.0});
+var initialParams = Linalg.zeros(2);
 adamOptimizer.initialize(initialParams);
 
 // 在线学习循环 / Online learning loop
@@ -507,8 +507,8 @@ try {
     // 读取数据集 / Read dataset
     var df = DataFrame.readCsv(path);
     // 提取特征和标签 / Extract features and labels
-    var feature = df.sliceColumn(0, -1).toMatrix();
-    var labels = df.getColumn(-1).toStringArray();
+    var feature = df.sliceColumn(0, -1).toMatrix(); // get all the columns except the last one
+    var labels = df.getColumn(-1).toStringArray(); // get the last column of the dataframe
     // 创建逻辑回归分类器（两个参数分别是L1和L2正则化系数） / Create logistic regression classifier (the two parameters are L1 and L2 regularization coefficients)
     var lr = ML.logisticRegression(0.0,0.0);
     // 训练模型 / Train model
@@ -530,15 +530,15 @@ try {
 #### 信号处理 / Signal Processing
 ```java
 // 生成信号 / Generate signals
-IVector<Double> time = Signals.linspace(0, 1, 1000);
-IVector<Double> signal = Signals.sin(2 * Math.PI * 5 * time);  // 5Hz正弦波 / 5Hz sine wave
+var time = Signals.linspace(0, 1, 1000);
+var signal = Signals.sin(2 * Math.PI * 5 * time);  // 5Hz正弦波 / 5Hz sine wave
 
 // 添加噪声 / Add noise
-IVector<Double> noise = Signals.randn(1000).mul(0.1);
-IVector<Double> noisySignal = signal.add(noise);
+var noise = Signals.randn(1000).mul(0.1);
+var noisySignal = signal.add(noise);
 
 // 卡尔曼滤波 / Signal filtering
-IVector<Double> filteredSignal = Signals.kalmanFilter(noisySignal, 0.1);
+var filteredSignal = Signals.kalmanFilter(noisySignal, 0.1);
 
 // 信号可视化 / Signal visualization
 Plots.of(800, 400)
