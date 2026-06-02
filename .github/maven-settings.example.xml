@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  复制为 ~/.m2/settings.xml 的 <servers> 片段，或合并进现有 settings.xml。
+  PAT 需权限：read:packages（拉取）、write:packages（发布）；私有仓库时通常还需 read:org。
+  GitHub → Settings → Developer settings → Personal access tokens (classic)。
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+    <servers>
+        <!-- 发布 yishape-math（mvn deploy -Pgithub-packages） -->
+        <server>
+            <id>github</id>
+            <username>YOUR_GITHUB_USERNAME</username>
+            <password>ghp_YOUR_TOKEN_WITH_write_packages</password>
+        </server>
+        <!-- 业务项目拉取 yishape-math（repository id=github-math） -->
+        <server>
+            <id>github-math</id>
+            <username>YOUR_GITHUB_USERNAME</username>
+            <password>ghp_YOUR_TOKEN_WITH_read_packages</password>
+        </server>
+        <!-- 业务项目 / profile with-hpc-from-github 拉取 yishape-math-hpc -->
+        <server>
+            <id>github-hpc</id>
+            <username>YOUR_GITHUB_USERNAME</username>
+            <password>ghp_YOUR_TOKEN_WITH_read_packages</password>
+        </server>
+    </servers>
+</settings>

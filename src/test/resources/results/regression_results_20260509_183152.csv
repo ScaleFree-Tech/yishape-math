@@ -1,0 +1,13 @@
+module|testName|subTest|status|error|relError|javaResult|message|timeMs
+regression|regression|hessenberg_reconstruction_newdata|PASS|0.000000e+00|0.000000e+00||hessenberg reconstruction OK; diff=2.4424906541753444E-15|0
+regression|regression|eigen_decomposition_newdata|PASS|0.000000e+00|0.000000e+00||eigen decomposition OK; diff=4.440892098500626E-16|0
+regression|regression|logistic_regression_default_newdata|PASS|0.000000e+00|0.000000e+00||accuracy OK: 1.0000|0
+regression|regression|svd_reconstruction_newdata|PASS|0.000000e+00|0.000000e+00||reconstruction OK; diff=1.0658141036401503E-14|0
+regression|regression|singular_matrix_detection_newdata|PASS|0.000000e+00|0.000000e+00||singular matrix correctly detected: Failed to compute matrix inverse using any decomposition method (Decomposition: MatrixInversionSolver) (Matrix: All decomposition methods failed)|0
+regression|regression|standardization_newdata|PASS|0.000000e+00|0.000000e+00||standardization OK: mean=0.0; std=0.9999999999999999|0
+regression|regression|svd_singular_values_newdata|PASS|0.000000e+00|0.000000e+00||singular values OK: non-negative and descending|0
+regression|regression|exponential_smoothing_alpha1_newdata|PASS|0.000000e+00|0.000000e+00||exponential smoothing OK; diff=0.0|0
+regression|regression|poisson_cdf_newdata|PASS|0.000000e+00|0.000000e+00||Poisson CDF OK: inRange=true; monotonic=true; maxErr=0.001499287340409168|0
+regression|regression|arima000_prediction_newdata|PASS|0.000000e+00|0.000000e+00||ARIMA(0;0;0) prediction OK; diff=0.0|0
+regression|regression|ma_prediction_newdata|PASS|0.000000e+00|0.000000e+00||MA prediction OK; diff=0.0|0
+regression|regression|timeseries_dimensions_newdata|FAIL|0.000000e+00|0.000000e+00||dimension check FAIL: ok1=true; ok2=true; ok3=false; ok4=true|0

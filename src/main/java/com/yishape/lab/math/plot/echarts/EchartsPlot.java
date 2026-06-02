@@ -1,0 +1,4781 @@
+package com.yishape.lab.math.plot.echarts;
+
+import com.yishape.lab.math.plot.SeabornStyleMapper;
+import com.yishape.lab.util.YishapeLogger;
+
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.plot.AxisTicks;
+import com.yishape.lab.math.plot.ColorPalette;
+import com.yishape.lab.math.plot.IPlot;
+import com.yishape.lab.math.plot.JointplotMarginal;
+import com.yishape.lab.math.plot.LegendPositions;
+import com.yishape.lab.math.plot.PairplotDiagonal;
+import com.yishape.lab.math.plot.PlotAxisScale;
+import com.yishape.lab.math.plot.PlotException;
+import com.yishape.lab.math.plot.PlotHostBridge;
+import com.yishape.lab.math.plot.PlotKde;
+import com.yishape.lab.math.plot.PlotStats;
+import org.icepear.echarts.origin.coord.cartesian.AxisOption;
+import com.yishape.lab.math.plot.PlotStyle;
+import com.yishape.lab.math.plot.StyleExpression;
+import java.awt.Desktop;
+import java.io.Serializable;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.icepear.echarts.Bar;
+import org.icepear.echarts.Boxplot;
+import org.icepear.echarts.Candlestick;
+import org.icepear.echarts.Funnel;
+import org.icepear.echarts.Gauge;
+import org.icepear.echarts.Graph;
+import org.icepear.echarts.Heatmap;
+import org.icepear.echarts.Line;
+import org.icepear.echarts.Option;
+import org.icepear.echarts.Parallel;
+import org.icepear.echarts.Pie;
+import org.icepear.echarts.PolarBar;
+import org.icepear.echarts.PolarLine;
+import org.icepear.echarts.PolarScatter;
+import org.icepear.echarts.Radar;
+import org.icepear.echarts.Sankey;
+import org.icepear.echarts.Scatter;
+import org.icepear.echarts.Sunburst;
+import org.icepear.echarts.ThemeRiver;
+import org.icepear.echarts.Tree;
+import org.icepear.echarts.Treemap;
+import org.icepear.echarts.charts.bar.BarSeries;
+import org.icepear.echarts.charts.line.LineAreaStyle;
+import org.icepear.echarts.charts.line.LineSeries;
+import org.icepear.echarts.charts.scatter.ScatterSeries;
+import org.icepear.echarts.components.series.LineStyle;
+import org.icepear.echarts.components.coord.cartesian.CategoryAxis;
+import org.icepear.echarts.components.coord.cartesian.LogAxis;
+import org.icepear.echarts.components.coord.cartesian.ValueAxis;
+import org.icepear.echarts.components.grid.Grid;
+import org.icepear.echarts.components.legend.Legend;
+import org.icepear.echarts.components.title.Title;
+import org.icepear.echarts.components.tooltip.Tooltip;
+import org.icepear.echarts.render.Engine;
+
+/**
+ * 结合ECharts-Java实现基本的画图功能 ECharts-Java的所有类文件都在org.icepear包下面
+ * ECharts-Java文档地址：https://echarts.icepear.org/#/quick-start
+ *
+ * @author lteb2
+ */
+public class EchartsPlot implements IPlot {
+
+    private static final YishapeLogger log = YishapeLogger.getLogger(EchartsPlot.class);
+
+
+    private Title title;
+    private Legend legend;
+    private Tooltip tooltip;
+    private AxisTicks xticks;
+    private AxisTicks yticks;
+    private String xlabel;
+    private String ylabel;
+    private Engine engine;
+    private Option option;
+    private int width;
+    private int height;
+    private String theme;
+
+    /** Legend position string (see {@link LegendPositions}). */
+    private String legendPosition = LegendPositions.TOP_RIGHT;
+
+    // ========== 样式系统 ==========
+    private PlotStyle defaultStyle; // 默认样式
+    private String currentPalette; // 当前调色板
+    private boolean useStyleSystem; // 是否启用新样式系统
+    private SeabornStyleMapper styleMapper; // seaborn风格样式映射器
+
+    // ========== 主题系统 ==========
+    private String currentTheme; // 当前主题
+    private boolean useThemeSystem; // 是否启用主题系统
+
+    // ========== Cartesian scale (seaborn-style) ==========
+    private PlotAxisScale plotXScale = PlotAxisScale.LINEAR;
+    private PlotAxisScale plotYScale = PlotAxisScale.LINEAR;
+    private String plotY2Label = "";
+
+    /** Accumulate line/scatter for {@link #subplots(int, int)} until show/save. */
+    private boolean echartsFacetMode;
+    private int eFacetRows = 1;
+    private int eFacetCols = 1;
+    private int eFacetCursor;
+    private final List<org.icepear.echarts.origin.util.SeriesOption> eFacetSeries = new ArrayList<>();
+
+    /**
+     * 默认构造函数
+     */
+    public EchartsPlot() {
+        this.title = new Title();
+        this.legend = new Legend();
+        this.tooltip = new Tooltip();
+        this.xticks = new AxisTicks();
+        this.yticks = new AxisTicks();
+        this.xlabel = "";
+        this.ylabel = "";
+        try {
+            this.engine = new Engine();
+        } catch (Exception e) {
+            this.engine = null;
+            log.warn("警告：无法初始化 ECharts Engine，图表渲染功能将不可用", e);
+        }
+        this.option = new Option();
+        this.width = 800;
+        this.height = 600;
+        this.theme = "default";
+
+        // 初始化样式系统
+        this.defaultStyle = PlotStyle.defaultStyle();
+        this.currentPalette = "echarts";
+        this.useStyleSystem = true;
+        this.styleMapper = new SeabornStyleMapper();
+
+        // 初始化主题系统
+        this.currentTheme = EchartsThemeManager.THEME_DEFAULT;
+        this.useThemeSystem = true;
+    }
+
+    /**
+     * 带尺寸的构造函数
+     *
+     * @param width  图表宽度
+     * @param height 图表高度
+     */
+    public EchartsPlot(int width, int height) {
+        this();
+        this.width = width;
+        this.height = height;
+    }
+
+    /**
+     * 带主题的构造函数
+     *
+     * @param width  图表宽度
+     * @param height 图表高度
+     * @param theme  主题名称
+     */
+    public EchartsPlot(int width, int height, String theme) {
+        this(width, height);
+        this.theme = theme;
+    }
+
+    // ========== 统一的线图方法 ==========
+
+    private void rejectIfFacetBuilding(String op) {
+        if (echartsFacetMode) {
+            throw new PlotException("子图累积模式下调用了 " + op + "；请先 show/saveAsHtml 或改用 new EchartsPlot()。");
+        }
+    }
+
+    /**
+     * 创建线图（基础版本）
+     *
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector x, IVector y) {
+        return lineInternal(x, y, null, null, null);
+    }
+
+    /**
+     * 创建线图（支持样式字符串）
+     *
+     * @param x           X轴数据
+     * @param y           Y轴数据
+     * @param styleString 样式字符串（如 "r-", "b--o", "g:^"）
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector x, IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return lineInternal(x, y, style, null, null);
+    }
+
+    /**
+     * 创建线图（支持PlotStyle样式）
+     *
+     * @param x     X轴数据
+     * @param y     Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector x, IVector y, PlotStyle style) {
+        return lineInternal(x, y, style, null, null);
+    }
+
+    /**
+     * 创建单向量线图（使用索引作为X轴）
+     *
+     * @param y Y轴数据
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector y) {
+        return lineInternal(null, y, null, null, null);
+    }
+
+    /**
+     * 创建单向量线图（支持样式）
+     *
+     * @param y           Y轴数据
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return lineInternal(null, y, style, null, null);
+    }
+
+    /**
+     * 创建单向量线图（支持PlotStyle）
+     *
+     * @param y     Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector y, PlotStyle style) {
+        return lineInternal(null, y, style, null, null);
+    }
+
+    /**
+     * 创建分组线图（seaborn风格）
+     *
+     * @param x   X轴数据
+     * @param y   Y轴数据
+     * @param hue 颜色分组
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector x, IVector y, List<String> hue) {
+        return lineInternal(x, y, null, hue, null);
+    }
+
+    /**
+     * 创建分组线图（seaborn风格，支持样式和标记分组）
+     *
+     * @param x     X轴数据
+     * @param y     Y轴数据
+     * @param hue   颜色分组
+     * @param style 线条样式分组
+     * @return 当前实例
+     */
+    public EchartsPlot line(IVector x, IVector y, List<String> hue, List<String> style) {
+        return lineInternal(x, y, null, hue, style);
+    }
+
+    /**
+     * 统一的线图内部实现
+     *
+     * @param x          X轴数据（如果为null，使用索引）
+     * @param y          Y轴数据
+     * @param style      个体样式（优先级最高）
+     * @param hue        颜色分组
+     * @param styleGroup 样式分组
+     * @return 当前实例
+     */
+    private EchartsPlot lineInternal(IVector x, IVector y, PlotStyle style,
+            List<String> hue, List<String> styleGroup) {
+        if (echartsFacetMode) {
+            if (hue != null || styleGroup != null) {
+                throw new PlotException("子图模式不支持 hue / styleGroup 线图");
+            }
+            IVector xData = x;
+            if (x == null) {
+                double[] indices = new double[y.length()];
+                for (int i = 0; i < y.length(); i++) {
+                    indices[i] = i;
+                }
+                xData = Linalg.vector(indices);
+            }
+            return facetLine(xData, y, style);
+        }
+        try {
+            Line lineChart = new Line();
+
+            // 处理单向量情况（使用索引作X轴）
+            IVector xData = x;
+            if (x == null) {
+                double[] indices = new double[y.length()];
+                for (int i = 0; i < y.length(); i++) {
+                    indices[i] = i;
+                }
+                xData = Linalg.vector(indices);
+            }
+
+            // 处理分组情况
+            if (hue != null || styleGroup != null) {
+                return createGroupedLineChart(lineChart, xData, y, style, hue, styleGroup);
+            } else {
+                return createSingleLineChart(lineChart, xData, y, style);
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("创建线图失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 创建单条线图
+     */
+    private EchartsPlot createSingleLineChart(Line lineChart, IVector x, IVector y, PlotStyle style) {
+        Object[] data = vectorToNumber(x, y);
+        LineSeries lineSeries = new LineSeries();
+        lineSeries.setData(data);
+
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style
+                : (useStyleSystem ? defaultStyle : null);
+
+        if (effectiveStyle != null && useStyleSystem) {
+            applyStyleToLineSeries(lineSeries, effectiveStyle);
+        } else {
+            lineSeries.setName("数据线");
+        }
+
+        lineChart.addSeries(lineSeries);
+
+        // 配置图表
+        setupChartOptions(lineChart);
+        return this;
+    }
+
+    /**
+     * 创建分组线图（seaborn风格）
+     */
+    private EchartsPlot createGroupedLineChart(Line lineChart, IVector x, IVector y,
+            PlotStyle baseStyle, List<String> hue,
+            List<String> styleGroup) {
+        if (x.length() != y.length()
+                || (hue != null && x.length() != hue.size())
+                || (styleGroup != null && x.length() != styleGroup.size())) {
+            throw new PlotException("数据和分组标签长度不一致");
+        }
+
+        // 创建样式映射
+        SeabornStyleMapper.GroupStyleMapping mapping = styleMapper.createMapping(
+                hue, styleGroup, null, null);
+
+        // 分组数据
+        Map<String, SeabornStyleMapper.GroupedData> groups = styleMapper.groupData(x, y, hue, mapping);
+
+        // 为每个组创建系列
+        for (SeabornStyleMapper.GroupedData group : groups.values()) {
+            LineSeries lineSeries = new LineSeries();
+            lineSeries.setData(group.getData());
+
+            // 应用组样式
+            PlotStyle groupStyle = group.getStyle();
+            if (baseStyle != null) {
+                // 如果有基础样式，合并样式
+                groupStyle = mergeStyles(baseStyle, groupStyle);
+            }
+
+            if (useStyleSystem) {
+                applyStyleToLineSeries(lineSeries, groupStyle);
+            } else {
+                lineSeries.setName(group.getGroupName());
+            }
+
+            lineChart.addSeries(lineSeries);
+        }
+
+        setupChartOptions(lineChart);
+        return this;
+    }
+
+    // ========== 辅助方法 ==========
+    /**
+     * 设置图表通用选项
+     */
+    private void setupChartOptions(Line lineChart) {
+        this.option = lineChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(buildLinearOrLogX());
+        this.option.setYAxis(buildLinearOrLogY());
+    }
+
+    /**
+     * 合并两个样式对象
+     *
+     * @param base    基础样式
+     * @param overlay 覆盖样式
+     * @return 合并后的样式
+     */
+    private PlotStyle mergeStyles(PlotStyle base, PlotStyle overlay) {
+        PlotStyle merged = new PlotStyle(base);
+
+        // 覆盖非空属性
+        if (overlay.getColor() != null && !overlay.getColor().equals(base.getColor())) {
+            merged.setColor(overlay.getColor());
+        }
+        if (overlay.getLineStyle() != null && !overlay.getLineStyle().equals(base.getLineStyle())) {
+            merged.setLineStyle(overlay.getLineStyle());
+        }
+        if (overlay.getMarker() != null && !overlay.getMarker().equals(base.getMarker())) {
+            merged.setMarker(overlay.getMarker());
+        }
+        if (overlay.getLabel() != null && !overlay.getLabel().isEmpty()) {
+            merged.setLabel(overlay.getLabel());
+        }
+
+        return merged;
+    }
+
+    /**
+     * 创建散点图（支持样式字符串）
+     *
+     * @param x           X轴数据
+     * @param y           Y轴数据
+     * @param styleString 样式字符串
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot scatter(IVector x, IVector y, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return scatterWithStyle(x, y, style);
+    }
+
+    /**
+     * 创建散点图（支持PlotStyle样式）
+     *
+     * @param x     X轴数据
+     * @param y     Y轴数据
+     * @param style 绘图样式
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot scatter(IVector x, IVector y, PlotStyle style) {
+        return scatterWithStyle(x, y, style);
+    }
+
+    /**
+     * 创建散点图的内部实现
+     */
+    private EchartsPlot scatterWithStyle(IVector x, IVector y, PlotStyle style) {
+        if (echartsFacetMode) {
+            return facetScatter(x, y, style);
+        }
+        try {
+            // 创建散点图
+            Scatter scatterChart = new Scatter();
+
+            // 设置数据
+            Object[] data = vectorToNumber(x, y);
+            ScatterSeries scatterSeries = new ScatterSeries();
+            scatterSeries.setData(data);
+
+            // 应用样式
+            if (style != null && useStyleSystem) {
+                applyStyleToScatterSeries(scatterSeries, style);
+            } else {
+                scatterSeries.setName("散点数据");
+            }
+
+            scatterChart.addSeries(scatterSeries);
+
+            this.option = scatterChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+
+        } catch (Exception e) {
+            throw new PlotException("创建散点图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    /**
+     * 创建散点图（原有方法，保持向后兼容）
+     */
+    public EchartsPlot scatter(IVector x, IVector y) {
+        return scatterWithStyle(x, y, null);
+    }
+
+    public EchartsPlot scatter(IVector x, IVector y, List<String> hue) {
+        if (echartsFacetMode) {
+            throw new PlotException("子图模式不支持 hue 分组散点");
+        }
+        try {
+            // 创建多组散点图
+            Scatter scatterChart = new Scatter();
+
+            if (x.length() != y.length() || x.length() != hue.size()) {
+                throw new PlotException("X、Y向量和hue列表长度必须相等");
+            }
+
+            // 按hue分组数据
+            Map<String, List<Object[]>> groupedData = new HashMap<>();
+            for (int i = 0; i < x.length(); i++) {
+                String groupName = hue.get(i);
+                if (!groupedData.containsKey(groupName)) {
+                    groupedData.put(groupName, new ArrayList<>());
+                }
+                groupedData.get(groupName).add(new Number[] { x.get(i), y.get(i) });
+            }
+
+            // 为每个组创建散点系列
+            for (Map.Entry<String, List<Object[]>> entry : groupedData.entrySet()) {
+                ScatterSeries scatterSeries = new ScatterSeries();
+                scatterSeries.setData(entry.getValue().toArray(new Object[0]));
+                scatterSeries.setName(entry.getKey());
+                scatterChart.addSeries(scatterSeries);
+            }
+
+            this.option = scatterChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+
+        } catch (Exception e) {
+            throw new PlotException("创建多组散点图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot pie(IVector x) {
+        return pieInternal(x, null, null);
+    }
+
+    /**
+     * 创建饼图（支持样式字符串）
+     *
+     * @param x           数据向量
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot pie(IVector x, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return pieInternal(x, style, null);
+    }
+
+    /**
+     * 创建饼图（支持PlotStyle样式）
+     *
+     * @param x     数据向量
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot pie(IVector x, PlotStyle style) {
+        return pieInternal(x, style, null);
+    }
+
+    /**
+     * 创建饼图（支持标签）
+     *
+     * @param x      数据向量
+     * @param labels 标签列表
+     * @param style  绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot pie(IVector x, List<String> labels, PlotStyle style) {
+        return pieInternal(x, style, labels);
+    }
+
+    /**
+     * 创建饼图（支持标签和样式字符串）
+     *
+     * @param x           数据向量
+     * @param labels      标签列表
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot pie(IVector x, List<String> labels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return pieInternal(x, style, labels);
+    }
+
+    /**
+     * 统一的饼图内部实现
+     *
+     * @param x      数据向量
+     * @param style  绘图样式
+     * @param labels 标签列表
+     * @return 当前实例
+     */
+    private EchartsPlot pieInternal(IVector x, PlotStyle style, List<String> labels) {
+        try {
+            rejectIfFacetBuilding("pie");
+            Pie pieChart = new Pie();
+
+            // 转换数据格式 - 饼图需要对象数组格式 {name, value}
+            org.icepear.echarts.charts.pie.PieDataItem[] pieData = new org.icepear.echarts.charts.pie.PieDataItem[x
+                    .length()];
+            for (int i = 0; i < x.length(); i++) {
+                String name = (labels != null && i < labels.size()) ? labels.get(i) : "数据" + (i + 1);
+                pieData[i] = new org.icepear.echarts.charts.pie.PieDataItem()
+                        .setName(name)
+                        .setValue(x.get(i));
+            }
+
+            // 创建PieSeries并正确设置data
+            org.icepear.echarts.charts.pie.PieSeries series = new org.icepear.echarts.charts.pie.PieSeries()
+                    .setType("pie")
+                    .setData(pieData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToPieSeries(series, effectiveStyle);
+            } else {
+                series.setName("饼图数据");
+            }
+
+            this.option = pieChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setSeries(new org.icepear.echarts.charts.pie.PieSeries[] { series });
+
+        } catch (Exception e) {
+            throw new PlotException("创建饼图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot bar(IVector y) {
+        return barInternal(y, null, null, null);
+    }
+
+    @Override
+    public IPlot bar(List<String> xticks, IVector y) {
+        return barInternalWithLabels(y, null, xticks, null);
+    }
+
+    @Override
+    public IPlot bar(List<String> xticks, IVector y, List<String> hue) {
+        return barInternalWithLabels(y, null, xticks, hue);
+    }
+
+    /**
+     * 创建柱状图（支持样式字符串）
+     *
+     * @param x           数据向量
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot bar(IVector x, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return barInternal(x, style, null, null);
+    }
+
+    /**
+     * 创建柱状图（支持PlotStyle样式）
+     *
+     * @param x     数据向量
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot bar(IVector x, PlotStyle style) {
+        return barInternal(x, style, null, null);
+    }
+
+    /**
+     * 创建分组柱状图（支持样式）
+     *
+     * @param x     数据向量
+     * @param hue   分组标签
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot bar(IVector x, List<String> hue, PlotStyle style) {
+        return barInternal(x, style, hue, null);
+    }
+
+    /**
+     * 创建分组柱状图（支持样式字符串）
+     *
+     * @param x           数据向量
+     * @param hue         分组标签
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot bar(IVector x, List<String> hue, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return barInternal(x, style, hue, null);
+    }
+
+    /**
+     * 统一的带标签柱状图内部实现
+     *
+     * @param y      数据向量
+     * @param style  个体样式
+     * @param xticks X轴标签
+     * @param hue    颜色分组
+     * @return 当前实例
+     */
+    private EchartsPlot barInternalWithLabels(IVector y, PlotStyle style, List<String> xticks, List<String> hue) {
+        try {
+            rejectIfFacetBuilding("bar");
+            // 创建柱状图
+            Bar barChart = new Bar();
+
+            // 处理分组情况
+            if (hue != null) {
+                return createGroupedBarChartWithLabels(barChart, y, style, xticks, hue, null);
+            } else {
+                return createSingleBarChartWithLabels(barChart, y, style, xticks);
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("创建柱状图失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 统一的柱状图内部实现
+     *
+     * @param x          数据向量
+     * @param style      个体样式
+     * @param hue        颜色分组
+     * @param styleGroup 样式分组
+     * @return 当前实例
+     */
+    private EchartsPlot barInternal(IVector x, PlotStyle style, List<String> hue, List<String> styleGroup) {
+        try {
+            rejectIfFacetBuilding("bar");
+            // 创建柱状图
+            Bar barChart = new Bar();
+
+            // 处理分组情况
+            if (hue != null) {
+                return createGroupedBarChart(barChart, x, style, hue, styleGroup);
+            } else {
+                return createSingleBarChart(barChart, x, style);
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("创建柱状图失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 创建单组柱状图
+     */
+    private EchartsPlot createSingleBarChart(Bar barChart, IVector x, PlotStyle style) {
+        // 设置数据 - 只包含Y值
+        Object[] data = new Object[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            data[i] = x.get(i);
+        }
+
+        BarSeries barSeries = new BarSeries();
+        barSeries.setData(data);
+
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style
+                : (useStyleSystem ? defaultStyle : null);
+
+        if (effectiveStyle != null && useStyleSystem) {
+            EchartsUniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+        } else {
+            barSeries.setName("柱状图数据");
+        }
+
+        barChart.addSeries(barSeries);
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size())
+                    ? xticks.getTickLabels().get(i)
+                    : "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+
+        AxisOption yAxis = createBarYAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    /**
+     * 创建分组柱状图
+     */
+    private EchartsPlot createGroupedBarChart(Bar barChart, IVector x, PlotStyle baseStyle,
+            List<String> hue, List<String> styleGroup) {
+        if (x.length() != hue.size()) {
+            throw new PlotException("X向量和hue列表长度必须相等");
+        }
+
+        // 创建样式映射
+        SeabornStyleMapper.GroupStyleMapping mapping = styleMapper.createMapping(
+                hue, styleGroup, null, null);
+
+        // 分组数据
+        Map<String, SeabornStyleMapper.GroupedData> groups = styleMapper.groupData(x, null, hue, mapping);
+
+        // 为每个组创建系列
+        for (SeabornStyleMapper.GroupedData group : groups.values()) {
+            BarSeries barSeries = new BarSeries();
+
+            // 转换数据格式 - 只包含Y值
+            Object[] data = new Object[group.getData().length];
+            for (int i = 0; i < group.getData().length; i++) {
+                data[i] = group.getData()[i];
+            }
+            barSeries.setData(data);
+
+            // 应用组样式
+            PlotStyle groupStyle = group.getStyle();
+            if (baseStyle != null) {
+                // 如果有基础样式，合并样式
+                groupStyle = mergeStyles(baseStyle, groupStyle);
+            }
+
+            if (useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToBarSeries(barSeries, groupStyle);
+            } else {
+                barSeries.setName(group.getGroupName());
+            }
+
+            barChart.addSeries(barSeries);
+        }
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = (xticks.hasTickLabels() && i < xticks.getTickLabels().size())
+                    ? xticks.getTickLabels().get(i)
+                    : "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+
+        AxisOption yAxis = createBarYAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    /**
+     * 创建带标签的单组柱状图
+     */
+    private EchartsPlot createSingleBarChartWithLabels(Bar barChart, IVector x, PlotStyle style, List<String> xticks) {
+        // 设置数据 - 只包含Y值
+        Object[] data = new Object[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            data[i] = x.get(i);
+        }
+
+        BarSeries barSeries = new BarSeries();
+        barSeries.setData(data);
+
+        // 应用样式
+        PlotStyle effectiveStyle = style != null ? style
+                : (useStyleSystem ? defaultStyle : null);
+
+        if (effectiveStyle != null && useStyleSystem) {
+            EchartsUniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+        } else {
+            barSeries.setName("柱状图数据");
+        }
+
+        barChart.addSeries(barSeries);
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        String[] categories = new String[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            categories[i] = (xticks != null && i < xticks.size()) ? xticks.get(i) : "类别" + (i + 1);
+        }
+        xAxis.setData(categories);
+
+        AxisOption yAxis = createBarYAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    /**
+     * 创建带标签的分组柱状图
+     */
+    private EchartsPlot createGroupedBarChartWithLabels(Bar barChart, IVector y, PlotStyle baseStyle,
+            List<String> xticks, List<String> hue, List<String> styleGroup) {
+        if (y.length() != hue.size()) {
+            throw new PlotException("数据向量和hue列表长度必须相等");
+        }
+
+        // 获取所有唯一的hue值（组名）- 保持插入顺序
+        // 创建可变副本以避免修改不可变集合的问题
+        List<String> uniqueHues = new ArrayList<>(new LinkedHashSet<>(hue));
+
+        // X轴标签就是xticks参数
+        // 创建可变副本以避免修改不可变集合的问题
+        List<String> xAxisLabels = xticks != null ? new ArrayList<>(xticks) : new ArrayList<>();
+
+        // 计算每个x轴标签应该有多少个数据点
+        int pointsPerXLabel = uniqueHues.size();
+        int expectedXLabels = y.length() / pointsPerXLabel;
+
+        // 如果xticks为空或长度不匹配，创建默认标签
+        if (xAxisLabels.isEmpty() || xAxisLabels.size() != expectedXLabels) {
+            xAxisLabels.clear();
+            for (int i = 0; i < expectedXLabels; i++) {
+                xAxisLabels.add("Group " + (i + 1));
+            }
+        }
+
+        // 为每个唯一的hue值创建一个系列
+        Map<String, List<Object>> seriesDataMap = new LinkedHashMap<>();
+        for (String hueValue : uniqueHues) {
+            seriesDataMap.put(hueValue, new ArrayList<>());
+        }
+
+        // 按照正确的顺序填充数据
+        // 数据是按 [xticks1_hue1, xticks1_hue2, xticks1_hue3, xticks2_hue1, xticks2_hue2,
+        // xticks2_hue3, ...] 排列的
+        for (int i = 0; i < y.length(); i++) {
+            int xIndex = i / pointsPerXLabel; // 当前属于第几个x轴标签
+            int hueIndex = i % pointsPerXLabel; // 当前属于该x轴标签下的第几个hue
+
+            if (xIndex < xAxisLabels.size() && hueIndex < uniqueHues.size()) {
+                String hueValue = uniqueHues.get(hueIndex);
+                Double value = (Double) y.get(i);
+                seriesDataMap.get(hueValue).add(value);
+            }
+        }
+
+        // 创建系列
+        for (Map.Entry<String, List<Object>> entry : seriesDataMap.entrySet()) {
+            String seriesName = entry.getKey();
+            List<Object> data = entry.getValue();
+
+            BarSeries barSeries = new BarSeries();
+            barSeries.setName(seriesName);
+            barSeries.setData(data.toArray(new Object[0]));
+
+            // 应用样式
+            if (baseStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToBarSeries(barSeries, baseStyle);
+            }
+
+            barChart.addSeries(barSeries);
+        }
+
+        // 配置坐标轴
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setData(xAxisLabels.toArray(new String[0]));
+
+        AxisOption yAxis = createBarYAxis();
+        configureCategoryAxes(xAxis, yAxis);
+
+        this.option = barChart.getOption();
+        setCommonOptions(this.option);
+        this.option.setXAxis(xAxis);
+        this.option.setYAxis(yAxis);
+
+        return this;
+    }
+
+    public EchartsPlot bar(IVector x, List<String> hue) {
+        return barInternal(x, null, hue, null);
+    }
+
+    public EchartsPlot hist(IVector x, boolean fittingLine) {
+        return histInternal(x, fittingLine, null, null);
+    }
+
+    /**
+     * 创建直方图（支持样式字符串）
+     *
+     * @param x           数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot hist(IVector x, boolean fittingLine, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return histInternal(x, fittingLine, style, null);
+    }
+
+    /**
+     * 创建直方图（支持PlotStyle样式）
+     *
+     * @param x           数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style       绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot hist(IVector x, boolean fittingLine, PlotStyle style) {
+        return histInternal(x, fittingLine, style, null);
+    }
+
+    /**
+     * 创建直方图（支持样式和bins参数）
+     *
+     * @param x           数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style       绘图样式
+     * @param bins        bin数量
+     * @return 当前实例
+     */
+    public EchartsPlot hist(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
+        return histInternal(x, fittingLine, style, bins);
+    }
+
+    /**
+     * 统一的直方图内部实现
+     *
+     * @param x           数据向量
+     * @param fittingLine 是否显示拟合线
+     * @param style       绘图样式
+     * @param bins        bin数量
+     * @return 当前实例
+     */
+    private EchartsPlot histInternal(IVector x, boolean fittingLine, PlotStyle style, Integer bins) {
+        try {
+            rejectIfFacetBuilding("hist");
+            // 计算直方图数据
+            int binCount = (bins != null) ? bins : Math.min(20, (int) Math.sqrt(x.length()));
+            double min = x.minValue();
+            double max = x.maxValue();
+
+            // 确保bin宽度不为0
+            if (max == min) {
+                max = min + 1.0f;
+            }
+
+            double binWidth = (max - min) / binCount;
+
+            // 创建直方图数据
+            int[] counts = new int[binCount];
+            double[] binCenters = new double[binCount];
+
+            for (int i = 0; i < binCount; i++) {
+                binCenters[i] = min + (i + 0.5) * binWidth;
+            }
+
+            // 统计每个bin的数据点数量
+            for (int i = 0; i < x.length(); i++) {
+                double value = (double) x.get(i);
+                int binIndex = Math.min((int) ((value - min) / binWidth), binCount - 1);
+                if (binIndex >= 0 && binIndex < binCount) {
+                    counts[binIndex]++;
+                }
+            }
+
+            // 创建柱状图
+            Bar barChart = new Bar();
+
+            // 设置数据
+            Object[] data = new Object[binCount];
+            for (int i = 0; i < binCount; i++) {
+                data[i] = new Object[] { String.format("%.2f", binCenters[i]), counts[i] };
+            }
+
+            BarSeries barSeries = new BarSeries();
+            barSeries.setData(data);
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToBarSeries(barSeries, effectiveStyle);
+            } else {
+                barSeries.setName("直方图");
+                // 设置默认颜色
+                barSeries.setColor("#91cc75"); // 清新的绿色
+            }
+
+            barChart.addSeries(barSeries);
+
+            // 配置坐标轴 - 使用ValueAxis而不是CategoryAxis以支持拟合线
+            ValueAxis xAxis = new ValueAxis();
+            xAxis.setName(xlabel.isEmpty() ? "数值区间" : xlabel);
+            xAxis.setType("value");
+
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "频次" : ylabel);
+            yAxis.setType("value");
+
+            this.option = barChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+            // 如果需要拟合线，添加核密度估计曲线
+            if (fittingLine) {
+                addKernelDensityFit(x, min, max, binCount, binCenters, counts);
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("创建直方图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    /**
+     * 添加核密度估计拟合线
+     *
+     * @param x          原始数据
+     * @param min        最小值
+     * @param max        最大值
+     * @param bins       bin数量
+     * @param binCenters bin中心点
+     * @param counts     bin计数
+     */
+    private void addKernelDensityFit(IVector x, double min, double max, int bins, double[] binCenters, int[] counts) {
+        try {
+            // 使用核密度估计计算密度曲线
+            List<double[]> kdeData = kernelDensityEstimation(x, 2.5);
+
+            // 计算最大频次，用于缩放密度曲线
+            int maxCount = 0;
+            for (int count : counts) {
+                maxCount = Math.max(maxCount, count);
+            }
+
+            // 计算密度曲线的最大密度值
+            double maxDensity = 0;
+            for (double[] point : kdeData) {
+                maxDensity = Math.max(maxDensity, point[1]);
+            }
+
+            // 缩放因子：将密度值转换为频次
+            double scaleFactor = maxCount / maxDensity;
+
+            // 创建拟合线数据
+            Object[] fitData = new Object[kdeData.size()];
+            for (int i = 0; i < kdeData.size(); i++) {
+                double[] point = kdeData.get(i);
+                double xVal = point[0];
+                double density = point[1] * scaleFactor; // 缩放到频次范围
+                fitData[i] = new Number[] { xVal, density };
+            }
+
+            LineSeries fitSeries = new LineSeries();
+            fitSeries.setData(fitData);
+            fitSeries.setName("核密度拟合");
+            fitSeries.setType("line");
+            fitSeries.setYAxisIndex(0);
+            fitSeries.setXAxisIndex(0);
+            fitSeries.setShowSymbol(false); // 不显示圆圈点
+
+            // 添加透明填充效果，与条形图形成协调的同色系配色
+            fitSeries.setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                    .setColor("#3ba272") // 深绿色线条，与条形图形成同色系渐变
+                    .setWidth(3) // 稍粗的线条更突出
+                    .setType("solid")); // 实线
+            fitSeries.setAreaStyle(new org.icepear.echarts.charts.line.LineAreaStyle()
+                    .setColor("#73c0de") // 浅蓝色填充，形成清新的对比
+                    .setOpacity(0.3)); // 适中的透明度
+
+            // 获取现有的系列数组并添加拟合线
+            Object existingSeriesObj = this.option.getSeries();
+            if (existingSeriesObj instanceof org.icepear.echarts.origin.util.SeriesOption[]) {
+                org.icepear.echarts.origin.util.SeriesOption[] existingSeries = (org.icepear.echarts.origin.util.SeriesOption[]) existingSeriesObj;
+                org.icepear.echarts.origin.util.SeriesOption[] newSeries = new org.icepear.echarts.origin.util.SeriesOption[existingSeries.length
+                        + 1];
+
+                // 复制现有系列
+                System.arraycopy(existingSeries, 0, newSeries, 0, existingSeries.length);
+                // 添加拟合线系列
+                newSeries[existingSeries.length] = fitSeries;
+
+                // 设置新的系列数组
+                this.option.setSeries(newSeries);
+            } else {
+                // 如果没有现有系列，直接设置拟合线系列
+                this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { fitSeries });
+            }
+
+        } catch (Exception e) {
+            throw new PlotException("添加核密度拟合失败: " + e.getMessage(), e);
+        }
+    }
+
+    public Title getTitle() {
+        return title;
+    }
+
+    public void setTitle(Title title) {
+        this.title = title;
+    }
+
+    public Legend getLegend() {
+        return legend;
+    }
+
+    public void setLegend(Legend legend) {
+        this.legend = legend;
+    }
+
+    public Tooltip getTooltip() {
+        return tooltip;
+    }
+
+    public void setTooltip(Tooltip tooltip) {
+        this.tooltip = tooltip;
+    }
+
+    public AxisTicks getXticks() {
+        return xticks;
+    }
+
+    public void setXticks(AxisTicks xticks) {
+        this.xticks = xticks;
+    }
+
+    public AxisTicks getYticks() {
+        return yticks;
+    }
+
+    public void setYticks(AxisTicks yticks) {
+        this.yticks = yticks;
+    }
+
+    public String getXlabel() {
+        return xlabel;
+    }
+
+    public void setXlabel(String xlabel) {
+        this.xlabel = xlabel;
+    }
+
+    public String getYlabel() {
+        return ylabel;
+    }
+
+    public void setYlabel(String ylabel) {
+        this.ylabel = ylabel;
+    }
+
+    /**
+     * 获取图表宽度
+     *
+     * @return 图表宽度
+     */
+    public int getWidth() {
+        return width;
+    }
+
+    /**
+     * 设置图表宽度
+     *
+     * @param width 图表宽度
+     */
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    /**
+     * 获取图表高度
+     *
+     * @return 图表高度
+     */
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * 设置图表高度
+     *
+     * @param height 图表高度
+     */
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    /**
+     * 获取主题
+     *
+     * @return 主题名称
+     */
+    public String getTheme() {
+        return theme;
+    }
+
+    /**
+     * 设置图表标题
+     *
+     * @param titleText 标题文本
+     */
+    public void setTitle(String titleText) {
+        this.title.setText(titleText);
+    }
+
+    /**
+     * 设置图表标题和副标题
+     *
+     * @param titleText    标题文本
+     * @param subtitleText 副标题文本
+     */
+    public void setTitle(String titleText, String subtitleText) {
+        this.title.setText(titleText);
+        this.title.setSubtext(subtitleText);
+    }
+
+    // ========== 公共工具方法 ==========
+    /**
+     * 配置坐标轴
+     *
+     * @param xAxis X轴
+     * @param yAxis Y轴
+     */
+    private void configureAxes(ValueAxis xAxis, ValueAxis yAxis) {
+        xAxis.setName(xlabel.isEmpty() ? "X轴" : xlabel);
+        if (xticks.hasTickValues()) {
+            xAxis.setData(vectorToStringArray(xticks.getTickValues()));
+        }
+
+        yAxis.setName(ylabel.isEmpty() ? "Y轴" : ylabel);
+        if (yticks.hasTickValues()) {
+            yAxis.setData(vectorToStringArray(yticks.getTickValues()));
+        }
+    }
+
+    private AxisOption buildLinearOrLogX() {
+        if (plotXScale == PlotAxisScale.LOG) {
+            LogAxis xAxis = new LogAxis();
+            xAxis.setName(xlabel.isEmpty() ? "X轴" : xlabel);
+            xAxis.setLogBase(10);
+            return xAxis;
+        }
+        ValueAxis xAxis = new ValueAxis();
+        xAxis.setName(xlabel.isEmpty() ? "X轴" : xlabel);
+        if (xticks.hasTickValues()) {
+            xAxis.setData(vectorToStringArray(xticks.getTickValues()));
+        }
+        return xAxis;
+    }
+
+    private AxisOption buildLinearOrLogY() {
+        if (plotYScale == PlotAxisScale.LOG) {
+            LogAxis yAxis = new LogAxis();
+            yAxis.setName(ylabel.isEmpty() ? "Y轴" : ylabel);
+            yAxis.setLogBase(10);
+            return yAxis;
+        }
+        ValueAxis yAxis = new ValueAxis();
+        yAxis.setName(ylabel.isEmpty() ? "Y轴" : ylabel);
+        if (yticks.hasTickValues()) {
+            yAxis.setData(vectorToStringArray(yticks.getTickValues()));
+        }
+        return yAxis;
+    }
+
+    private AxisOption createBarYAxis() {
+        if (plotYScale == PlotAxisScale.LOG) {
+            LogAxis yAxis = new LogAxis();
+            yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
+            yAxis.setLogBase(10);
+            return yAxis;
+        }
+        ValueAxis yAxis = new ValueAxis();
+        yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
+        if (yticks.hasTickValues()) {
+            yAxis.setData(vectorToStringArray(yticks.getTickValues()));
+        }
+        return yAxis;
+    }
+
+    /**
+     * 配置分类坐标轴
+     *
+     * @param xAxis X轴
+     * @param yAxis Y轴
+     */
+    private void configureCategoryAxes(CategoryAxis xAxis, AxisOption yAxis) {
+        xAxis.setName(xlabel.isEmpty() ? "类别" : xlabel);
+        String yn = ylabel.isEmpty() ? "数值" : ylabel;
+        if (yAxis instanceof ValueAxis) {
+            ValueAxis vy = (ValueAxis) yAxis;
+            vy.setName(yn);
+            if (yticks.hasTickValues()) {
+                vy.setData(vectorToStringArray(yticks.getTickValues()));
+            }
+        } else if (yAxis instanceof LogAxis) {
+            LogAxis ly = (LogAxis) yAxis;
+            ly.setName(yn);
+            ly.setLogBase(10);
+        }
+    }
+
+    /**
+     * 设置通用选项
+     *
+     * @param option 图表选项
+     */
+    private void setCommonOptions(Option option) {
+        option.setTitle(title);
+        option.setLegend(legend);
+        option.setTooltip(tooltip);
+    }
+
+    /**
+     * 将向量数据转换为Number数组（单向量）
+     *
+     * @param y Y轴数据
+     * @return Number数组
+     */
+    private Object[] vectorToNumber(IVector y) {
+        if (y == null) {
+            throw new PlotException("向量数据不能为null");
+        }
+        Object[] data = new Object[y.length()];
+        for (int i = 0; i < y.length(); i++) {
+            data[i] = y.get(i);
+        }
+        return data;
+    }
+
+    /**
+     * 将两个向量数据转换为Number数组（双向量）
+     *
+     * @param x X轴数据
+     * @param y Y轴数据
+     * @return Number数组
+     */
+    private Object[] vectorToNumber(IVector x, IVector y) {
+        if (x == null || y == null) {
+            throw new PlotException("向量数据不能为null");
+        }
+        if (x.length() != y.length()) {
+            throw new PlotException("X和Y向量长度必须相等");
+        }
+        Object[] data = new Object[x.length()];
+        for (int i = 0; i < x.length(); i++) {
+            data[i] = new Number[] { x.get(i), y.get(i) };
+        }
+        return data;
+    }
+
+    /**
+     * 将向量数据转换为字符串数组
+     *
+     * @param vector 向量数据
+     * @return 字符串数组
+     */
+    private String[] vectorToStringArray(IVector vector) {
+        if (vector == null) {
+            throw new PlotException("向量数据不能为null");
+        }
+        String[] result = new String[vector.length()];
+        for (int i = 0; i < vector.length(); i++) {
+            result[i] = String.valueOf(vector.get(i));
+        }
+        return result;
+    }
+
+    // ========== 流式API方法实现 ==========
+    /**
+     * 设置图表标题（流式API）
+     *
+     * @param titleText 标题文本
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot title(String titleText) {
+        this.title.setText(titleText);
+        return this;
+    }
+
+    /**
+     * 设置图表标题和副标题（流式API）
+     *
+     * @param titleText    标题文本
+     * @param subtitleText 副标题文本
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot title(String titleText, String subtitleText) {
+        this.title.setText(titleText);
+        this.title.setSubtext(subtitleText);
+        return this;
+    }
+
+    /**
+     * 设置X轴标签（流式API）
+     *
+     * @param name X轴标签名称
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot xlabel(String name) {
+        this.xlabel = name;
+        // 更新已经设置的X轴名称
+        updateXAxisName();
+        return this;
+    }
+
+    /**
+     * 设置Y轴标签（流式API）
+     *
+     * @param name Y轴标签名称
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot ylabel(String name) {
+        this.ylabel = name;
+        // 更新已经设置的Y轴名称
+        updateYAxisName();
+        return this;
+    }
+
+    /**
+     * 设置图表尺寸（流式API）
+     *
+     * @param width  图表宽度
+     * @param height 图表高度
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot size(int width, int height) {
+        this.width = width;
+        this.height = height;
+        return this;
+    }
+
+    // ========== Legend fluent API ==========
+
+    @Override
+    public IPlot legend() {
+        return legend(LegendPositions.BEST);
+    }
+
+    @Override
+    public IPlot legend(String position) {
+        this.legendPosition = LegendPositions.sanitize(position);
+        applyLegendPosition();
+        return this;
+    }
+
+    @Override
+    public IPlot legend(boolean show) {
+        this.legend.setShow(show);
+        return this;
+    }
+
+    /** Map position string to ECharts Legend properties. */
+    private void applyLegendPosition() {
+        String pos = this.legendPosition;
+        if (LegendPositions.BEST.equals(pos)) {
+            pos = LegendPositions.TOP_RIGHT;
+        }
+        legend.setShow(true);
+        switch (pos) {
+            case LegendPositions.TOP_RIGHT -> {
+                legend.setOrient("vertical").setRight(10).setTop(60);
+            }
+            case LegendPositions.TOP_LEFT -> {
+                legend.setOrient("vertical").setLeft(10).setTop(60);
+            }
+            case LegendPositions.BOTTOM_RIGHT -> {
+                legend.setOrient("horizontal").setRight(10).setBottom(10);
+            }
+            case LegendPositions.BOTTOM_LEFT -> {
+                legend.setOrient("horizontal").setLeft(10).setBottom(10);
+            }
+            case LegendPositions.RIGHT -> {
+                legend.setOrient("vertical").setRight(10).setTop("center");
+            }
+            case LegendPositions.LEFT -> {
+                legend.setOrient("vertical").setLeft(10).setTop("center");
+            }
+            case LegendPositions.TOP -> {
+                legend.setOrient("horizontal").setTop(10).setLeft("center");
+            }
+            case LegendPositions.BOTTOM -> {
+                legend.setOrient("horizontal").setBottom(10).setLeft("center");
+            }
+        }
+    }
+
+    /**
+     * 设置图表主题（流式API，已废弃）
+     *
+     * @param theme 主题名称
+     * @return 当前实例，支持链式调用
+     * @deprecated 请使用新的主题系统 theme(String) 方法
+     */
+    @Deprecated
+    public EchartsPlot setTheme(String theme) {
+        this.theme = theme;
+        return this;
+    }
+
+    private void openBrowseWith(URI uri) {
+        try {
+            // 1. 检查当前平台是否支持Desktop
+            if (!Desktop.isDesktopSupported()) {
+                log.debug("当前环境不支持 Desktop.");
+                return;
+            }
+
+            Desktop desktop = Desktop.getDesktop();
+
+            // 2. 检查是否支持BROWSE动作
+            if (!desktop.isSupported(Desktop.Action.BROWSE)) {
+                log.debug("当前环境不支持打开浏览器.");
+                return;
+            }
+
+            // 4. 调用默认浏览器打开
+            desktop.browse(uri);
+
+        } catch (Exception e) {
+            log.error("Failed to open chart in browser", e);
+        }
+    }
+
+    /**
+     * 显示图表（流式API）
+     *
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot show() {
+        if (PlotHostBridge.trySendToIde(this)) {
+            return this;
+        }
+        try {
+            // 在显示前确保坐标轴标签是最新的
+            updateXAxisName();
+            updateYAxisName();
+
+            if (engine == null) {
+                throw new PlotException("无法显示图表：ECharts Engine 未初始化");
+            }
+            echartsFlushFacetIfNeeded();
+            String html = engine.renderHtml(option, height + "px", width + "px");
+            // String html = engine.renderHtml(option);
+            // 保存为临时文件并在浏览器中打开
+            String tempFile = "temp_chart_" + System.currentTimeMillis() + ".html";
+            var path = java.nio.file.Paths.get(tempFile);
+            java.nio.file.Files.write(path, html.getBytes());
+            this.openBrowseWith(path.toUri());
+            // engine.render(tempFile, option, width + "px", height + "px", true);
+            log.debug("图表已生成并在浏览器中打开: " + tempFile);
+        } catch (Exception e) {
+            throw new PlotException("显示图表失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    /**
+     * 保存图表为HTML文件（流式API）
+     *
+     * @param filename 文件名
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot saveAsHtml(String filename) {
+        if (filename == null || filename.isBlank()) {
+            throw new PlotException("saveAsHtml: filename 不能为空");
+        }
+        try {
+            String resolved = java.nio.file.Paths.get(filename).toAbsolutePath().normalize().toString();
+            if (engine == null) {
+                throw new PlotException("无法保存图表：ECharts Engine 未初始化");
+            }
+            echartsFlushFacetIfNeeded();
+            String html = engine.renderHtml(option, height + "px", width + "px");
+            // String html = engine.renderHtml(option);
+            java.nio.file.Files.write(java.nio.file.Paths.get(resolved), html.getBytes());
+            log.debug("图表已保存到: " + resolved);
+        } catch (Exception e) {
+            throw new PlotException("保存图表失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    /**
+     * 获取图表的HTML内容
+     *
+     * @return HTML字符串
+     */
+    public String toHtml() {
+        try {
+            if (engine == null) {
+                throw new PlotException("ECharts Engine 未初始化，无法生成HTML");
+            }
+            echartsFlushFacetIfNeeded();
+            return engine.renderHtml(option, width + "px", height + "px");
+        } catch (Exception e) {
+            throw new PlotException("生成HTML失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取图表的JSON配置
+     *
+     * @return JSON字符串
+     */
+    public String toJson() {
+        try {
+            if (engine == null) {
+                throw new PlotException("ECharts Engine 未初始化，无法生成JSON");
+            }
+            echartsFlushFacetIfNeeded();
+            return engine.renderJsonOption(option);
+        } catch (Exception e) {
+            throw new PlotException("生成JSON失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 设置图表尺寸
+     *
+     * @param width  宽度
+     * @param height 高度
+     */
+    public void setSize(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    /**
+     * 更新已设置的X轴名称
+     */
+    private void updateXAxisName() {
+        if (this.option != null) {
+            Object xAxisObj = this.option.getXAxis();
+            if (xAxisObj != null) {
+                if (xAxisObj instanceof ValueAxis) {
+                    ValueAxis xAxis = (ValueAxis) xAxisObj;
+                    xAxis.setName(this.xlabel.isEmpty() ? "X轴" : this.xlabel);
+                } else if (xAxisObj instanceof CategoryAxis) {
+                    CategoryAxis xAxis = (CategoryAxis) xAxisObj;
+                    xAxis.setName(this.xlabel.isEmpty() ? "类别" : this.xlabel);
+                } else if (xAxisObj instanceof Object[]) {
+                    Object[] xAxisArray = (Object[]) xAxisObj;
+                    if (xAxisArray.length > 0 && xAxisArray[0] != null) {
+                        if (xAxisArray[0] instanceof ValueAxis) {
+                            ValueAxis xAxis = (ValueAxis) xAxisArray[0];
+                            xAxis.setName(this.xlabel.isEmpty() ? "X轴" : this.xlabel);
+                        } else if (xAxisArray[0] instanceof CategoryAxis) {
+                            CategoryAxis xAxis = (CategoryAxis) xAxisArray[0];
+                            xAxis.setName(this.xlabel.isEmpty() ? "类别" : this.xlabel);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新已设置的Y轴名称
+     */
+    private void updateYAxisName() {
+        if (this.option != null) {
+            Object yAxisObj = this.option.getYAxis();
+            if (yAxisObj != null) {
+                if (yAxisObj instanceof ValueAxis) {
+                    ValueAxis yAxis = (ValueAxis) yAxisObj;
+                    yAxis.setName(this.ylabel.isEmpty() ? "Y轴" : this.ylabel);
+                } else if (yAxisObj instanceof CategoryAxis) {
+                    CategoryAxis yAxis = (CategoryAxis) yAxisObj;
+                    yAxis.setName(this.ylabel.isEmpty() ? "类别" : this.ylabel);
+                } else if (yAxisObj instanceof Object[]) {
+                    Object[] yAxisArray = (Object[]) yAxisObj;
+                    if (yAxisArray.length > 0 && yAxisArray[0] != null) {
+                        if (yAxisArray[0] instanceof ValueAxis) {
+                            ValueAxis yAxis = (ValueAxis) yAxisArray[0];
+                            yAxis.setName(this.ylabel.isEmpty() ? "Y轴" : this.ylabel);
+                        } else if (yAxisArray[0] instanceof CategoryAxis) {
+                            CategoryAxis yAxis = (CategoryAxis) yAxisArray[0];
+                            yAxis.setName(this.ylabel.isEmpty() ? "类别" : this.ylabel);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 热力图
+     *
+     * @param data 二维数据矩阵
+     */
+    public EchartsPlot heatmap(IMatrix data) {
+        return heatmapInternal(data, List.of(), List.of(), null);
+    }
+
+    /**
+     * 热力图
+     *
+     * @param data    二维数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     */
+    public EchartsPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels) {
+        return heatmapInternal(data, xLabels, yLabels, null);
+    }
+
+    /**
+     * 创建热力图（支持样式字符串）
+     *
+     * @param data        数据矩阵
+     * @param xLabels     X轴标签
+     * @param yLabels     Y轴标签
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return heatmapInternal(data, xLabels, yLabels, style);
+    }
+
+    /**
+     * 创建热力图（支持PlotStyle样式）
+     *
+     * @param data    数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     * @param style   绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot heatmap(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
+        return heatmapInternal(data, xLabels, yLabels, style);
+    }
+
+    /**
+     * 统一的热力图内部实现
+     *
+     * @param data    数据矩阵
+     * @param xLabels X轴标签
+     * @param yLabels Y轴标签
+     * @param style   绘图样式
+     * @return 当前实例
+     */
+    private EchartsPlot heatmapInternal(IMatrix data, List<String> xLabels, List<String> yLabels, PlotStyle style) {
+        try {
+            rejectIfFacetBuilding("heatmap");
+            Heatmap heatmapChart = new Heatmap();
+
+            // 转换数据格式 - 热力图需要一维数组格式
+            Object[] heatmapData = new Object[data.getRowNum() * data.getColNum()];
+            int index = 0;
+            for (int i = 0; i < data.getRowNum(); i++) {
+                for (int j = 0; j < data.getColNum(); j++) {
+                    heatmapData[index++] = new Object[] { j, i, data.get(i, j) };
+                }
+            }
+
+            // 创建热力图系列
+            org.icepear.echarts.charts.heatmap.HeatmapSeries series = new org.icepear.echarts.charts.heatmap.HeatmapSeries()
+                    .setType("heatmap")
+                    .setData(heatmapData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToHeatmapSeries(series, effectiveStyle);
+            } else {
+                series.setName("热力图");
+            }
+
+            heatmapChart.addSeries(series);
+
+            // 配置坐标轴
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setName(xlabel.isEmpty() ? "X轴" : xlabel);
+            xAxis.setData(xLabels.toArray(new String[0]));
+
+            CategoryAxis yAxis = new CategoryAxis();
+            yAxis.setName(ylabel.isEmpty() ? "Y轴" : ylabel);
+            yAxis.setData(yLabels.toArray(new String[0]));
+
+            this.option = heatmapChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+            // 添加视觉映射配置，增强颜色区分度
+            org.icepear.echarts.components.visualMap.ContinousVisualMap visualMap = new org.icepear.echarts.components.visualMap.ContinousVisualMap();
+            visualMap.setMin(data.min());
+            visualMap.setMax(data.max());
+            visualMap.setCalculable(true);
+
+            // 确保颜色映射方向正确：白色小值，红色大值
+            visualMap.setInverse(false);
+
+            // 设置颜色映射范围，从白色到红色的渐变
+            // 反转颜色数组顺序以确保正确的颜色映射方向
+            // String[] colorRange = {"#ff0000", "#ff3333", "#ff6666", "#ff9999", "#ffcccc",
+            // "#ffffff"};
+            String[] colorRange = {
+                    "#440154", // 深紫色
+                    "#482475", // 暗紫色
+                    "#414487", // 靛蓝色
+                    "#355f8d", // 深蓝色
+                    "#2a788e", // 蓝灰色
+                    "#21918c", // 深青绿色
+                    "#22a884", // 青绿色
+                    "#44bf70", // 碧绿色
+                    "#7ad151", // 浅绿色
+                    "#bddf26", // 柠檬绿
+                    "#fde725" // 亮黄色
+            };
+            visualMap.setColor(colorRange);
+
+            // 设置映射类型为'continuous'以增强颜色区分度
+            visualMap.setType("continuous");
+
+            this.option.setVisualMap(visualMap);
+
+        } catch (Exception e) {
+            log.warn("创建热力图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 雷达图
+     *
+     * @param data       数据向量
+     * @param indicators 指标名称
+     */
+    public EchartsPlot radar(IVector data, List<String> indicators) {
+        return radarInternal(data, indicators, null);
+    }
+
+    /**
+     * 创建雷达图（支持样式字符串）
+     *
+     * @param data        数据向量
+     * @param indicators  指标名称
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot radar(IVector data, List<String> indicators, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return radarInternal(data, indicators, style);
+    }
+
+    /**
+     * 创建雷达图（支持PlotStyle样式）
+     *
+     * @param data       数据向量
+     * @param indicators 指标名称
+     * @param style      绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot radar(IVector data, List<String> indicators, PlotStyle style) {
+        return radarInternal(data, indicators, style);
+    }
+
+    /**
+     * 统一的雷达图内部实现
+     *
+     * @param data       数据向量
+     * @param indicators 指标名称
+     * @param style      绘图样式
+     * @return 当前实例
+     */
+    private EchartsPlot radarInternal(IVector data, List<String> indicators, PlotStyle style) {
+        try {
+            Radar radarChart = new Radar();
+
+            // 转换数据格式 - 雷达图需要对象格式
+            Object[] radarData = new Object[1];
+            Object[] values = new Object[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                values[i] = data.get(i);
+            }
+            radarData[0] = values;
+
+            // 创建雷达图系列
+            org.icepear.echarts.charts.radar.RadarSeries series = new org.icepear.echarts.charts.radar.RadarSeries()
+                    .setType("radar")
+                    .setData(radarData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToRadarSeries(series, effectiveStyle);
+            } else {
+                series.setName("雷达图");
+            }
+
+            radarChart.addSeries(series);
+
+            // 设置雷达图指标配置
+            org.icepear.echarts.components.coord.radar.RadarIndicator[] indicatorsArray = new org.icepear.echarts.components.coord.radar.RadarIndicator[indicators
+                    .size()];
+            for (int i = 0; i < indicators.size(); i++) {
+                indicatorsArray[i] = new org.icepear.echarts.components.coord.radar.RadarIndicator()
+                        .setName(indicators.get(i))
+                        .setMax(100);
+            }
+            radarChart.setRadarAxis(indicatorsArray);
+
+            this.option = radarChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建雷达图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 仪表盘
+     *
+     * @param value 数值
+     * @param max   最大值
+     * @param min   最小值
+     */
+    public EchartsPlot gauge(double value, double max, double min) {
+        return gaugeInternal(value, max, min, null);
+    }
+
+    /**
+     * 创建仪表盘（支持样式字符串）
+     *
+     * @param value       数值
+     * @param max         最大值
+     * @param min         最小值
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot gauge(double value, double max, double min, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return gaugeInternal(value, max, min, style);
+    }
+
+    /**
+     * 创建仪表盘（支持PlotStyle样式）
+     *
+     * @param value 数值
+     * @param max   最大值
+     * @param min   最小值
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot gauge(double value, double max, double min, PlotStyle style) {
+        return gaugeInternal(value, max, min, style);
+    }
+
+    /**
+     * 统一的仪表盘内部实现
+     *
+     * @param value 数值
+     * @param max   最大值
+     * @param min   最小值
+     * @param style 绘图样式
+     * @return 当前实例
+     */
+    private EchartsPlot gaugeInternal(double value, double max, double min, PlotStyle style) {
+        try {
+            Gauge gaugeChart = new Gauge();
+
+            // 创建仪表盘系列
+            org.icepear.echarts.charts.gauge.GaugeSeries series = new org.icepear.echarts.charts.gauge.GaugeSeries()
+                    .setType("gauge")
+                    .setData(new Object[] { value });
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToGaugeSeries(series, effectiveStyle);
+            } else {
+                series.setName("仪表盘");
+            }
+
+            gaugeChart.addSeries(series);
+
+            this.option = gaugeChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建仪表盘时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot xscale(PlotAxisScale scale) {
+        this.plotXScale = scale != null ? scale : PlotAxisScale.LINEAR;
+        return this;
+    }
+
+    @Override
+    public EchartsPlot yscale(PlotAxisScale scale) {
+        this.plotYScale = scale != null ? scale : PlotAxisScale.LINEAR;
+        return this;
+    }
+
+    @Override
+    public EchartsPlot y2label(String label) {
+        this.plotY2Label = label != null ? label : "";
+        return this;
+    }
+
+    @Override
+    public EchartsPlot area(IVector x, IVector y) {
+        try {
+            Line lineChart = new Line();
+            LineSeries s = new LineSeries();
+            s.setData(vectorToNumber(x, y));
+            s.setAreaStyle(new LineAreaStyle().setOpacity(0.35));
+            s.setName("Area");
+            lineChart.addSeries(s);
+            setupChartOptions(lineChart);
+        } catch (Exception e) {
+            throw new PlotException("创建面积图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot step(IVector x, IVector y) {
+        try {
+            Line lineChart = new Line();
+            LineSeries s = new LineSeries();
+            s.setData(vectorToNumber(x, y));
+            s.setStep("end");
+            s.setName("Step");
+            lineChart.addSeries(s);
+            setupChartOptions(lineChart);
+        } catch (Exception e) {
+            throw new PlotException("创建阶梯图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot barh(List<String> categories, IVector values) {
+        try {
+            Bar barChart = new Bar();
+            Object[] data = new Object[values.length()];
+            for (int i = 0; i < values.length(); i++) {
+                data[i] = values.get(i);
+            }
+            BarSeries barSeries = new BarSeries();
+            barSeries.setData(data);
+            barSeries.setName("BarH");
+            barChart.addSeries(barSeries);
+
+            ValueAxis xAxis = new ValueAxis();
+            xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
+            CategoryAxis yAxis = new CategoryAxis();
+            yAxis.setName(ylabel.isEmpty() ? "类别" : ylabel);
+            yAxis.setData(categories != null ? categories.toArray(new String[0]) : new String[0]);
+
+            this.option = barChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+        } catch (Exception e) {
+            throw new PlotException("创建条形图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot barStacked(List<String> categories, IMatrix values, List<String> layerNames) {
+        try {
+            if (categories == null || values == null) {
+                throw new PlotException("barStacked: 参数不能为 null");
+            }
+            int rows = values.getRowNum();
+            int cols = values.getColNum();
+            if (cols != categories.size()) {
+                throw new PlotException("列数须与类别数一致");
+            }
+            Bar barChart = new Bar();
+            String[] palette = ColorPalette.getPalette("default");
+            for (int r = 0; r < rows; r++) {
+                Object[] row = new Object[cols];
+                for (int c = 0; c < cols; c++) {
+                    row[c] = values.get(r, c);
+                }
+                String nm = layerNames != null && r < layerNames.size() ? layerNames.get(r) : ("L" + (r + 1));
+                BarSeries bs = new BarSeries();
+                bs.setName(nm);
+                bs.setData(row);
+                bs.setStack("stack");
+                bs.setItemStyle(new org.icepear.echarts.charts.bar.BarItemStyle()
+                    .setColor(palette[r % palette.length]));
+                barChart.addSeries(bs);
+            }
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setData(categories.toArray(new String[0]));
+            AxisOption yAxis = createBarYAxis();
+            configureCategoryAxes(xAxis, yAxis);
+            this.option = barChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+        } catch (Exception e) {
+            throw new PlotException("创建堆叠柱状图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot errorbar(IVector x, IVector y, IVector yerr) {
+        if (x.length() != y.length() || x.length() != yerr.length()) {
+            throw new PlotException("errorbar: 向量长度须相同");
+        }
+        try {
+            ScatterSeries pts = new ScatterSeries();
+            pts.setName("数据");
+            pts.setData(vectorToNumber(x, y));
+
+            java.util.List<Object> seg = new java.util.ArrayList<>();
+            int n = x.length();
+            for (int i = 0; i < n; i++) {
+                double xi = x.get(i);
+                double yi = y.get(i);
+                double e = yerr.get(i);
+                seg.add(new Number[] { xi, yi - e });
+                seg.add(new Number[] { xi, yi + e });
+                if (i < n - 1) {
+                    seg.add(null);
+                }
+            }
+            LineSeries err = new LineSeries();
+            err.setName("±误差");
+            err.setData(seg.toArray());
+            err.setShowSymbol(false);
+            err.setConnectNulls(false);
+            err.setLineStyle(new LineStyle().setWidth(1.5));
+
+            this.option = new Option();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+            this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { pts, err });
+        } catch (Exception e) {
+            throw new PlotException("创建误差棒图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot scatter(IVector x, IVector y, IVector sizes) {
+        if (x.length() != y.length() || x.length() != sizes.length()) {
+            throw new PlotException("bubble scatter: 向量长度须相同");
+        }
+        try {
+            Scatter scatterChart = new Scatter();
+            ScatterSeries scatterSeries = new ScatterSeries();
+            double maxS = 1;
+            for (int i = 0; i < sizes.length(); i++) {
+                maxS = Math.max(maxS, Math.abs(sizes.get(i)));
+            }
+            Object[] bubble = new Object[x.length()];
+            for (int i = 0; i < x.length(); i++) {
+                java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("value", new Number[] { x.get(i), y.get(i) });
+                int sym = (int) (8 + 28 * Math.sqrt(Math.max(0, sizes.get(i)) / Math.sqrt(maxS)));
+                item.put("symbolSize", sym);
+                bubble[i] = item;
+            }
+            scatterSeries.setData(bubble);
+            scatterSeries.setName("Bubble");
+            scatterChart.addSeries(scatterSeries);
+            this.option = scatterChart.getOption();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+        } catch (Exception e) {
+            throw new PlotException("创建气泡图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot regplot(IVector x, IVector y) {
+        return regplot(x, y, false);
+    }
+
+    @Override
+    public EchartsPlot regplot(IVector x, IVector y, boolean confidenceBand) {
+        if (echartsFacetMode) {
+            throw new PlotException("子图累积模式下请用 line/scatter 分别绘制回归");
+        }
+        if (x.length() != y.length()) {
+            throw new PlotException("regplot: 长度须一致");
+        }
+        try {
+            double[] xa = new double[x.length()];
+            double[] ya = new double[y.length()];
+            for (int i = 0; i < x.length(); i++) {
+                xa[i] = x.get(i);
+                ya[i] = y.get(i);
+            }
+            IVector<Double> xv = Linalg.vector(xa);
+            IVector<Double> yv = Linalg.vector(ya);
+            double[] coef = PlotStats.ols(xv, yv);
+            ScatterSeries pts = new ScatterSeries();
+            pts.setName("样本");
+            pts.setData(vectorToNumber(x, y));
+            Object[] lineData = new Object[x.length()];
+            for (int i = 0; i < x.length(); i++) {
+                double xv0 = x.get(i);
+                lineData[i] = new Number[] { xv0, coef[0] * xv0 + coef[1] };
+            }
+            LineSeries ln = new LineSeries();
+            ln.setName("OLS");
+            ln.setData(lineData);
+            ln.setShowSymbol(false);
+            ln.setLineStyle(new LineStyle().setType("dashed").setWidth(2));
+
+            List<org.icepear.echarts.origin.util.SeriesOption> series = new ArrayList<>();
+            series.add(pts);
+            if (confidenceBand && x.length() >= 3) {
+                PlotStats.OlsMeanBand band = PlotStats.olsMeanResponseBand95(xv, yv);
+                LineSeries low = new LineSeries();
+                low.setName("ciLo");
+                low.setStack("meanBand");
+                low.setSymbol("none");
+                low.setLineStyle(new LineStyle().setWidth(0));
+                Object[] d0 = new Object[x.length()];
+                for (int i = 0; i < x.length(); i++) {
+                    d0[i] = new Number[] { x.get(i), band.yLow.get(i) };
+                }
+                low.setData(d0);
+                LineSeries delta = new LineSeries();
+                delta.setName("ci");
+                delta.setStack("meanBand");
+                delta.setSymbol("none");
+                delta.setLineStyle(new LineStyle().setWidth(0));
+                delta.setAreaStyle(new LineAreaStyle().setOpacity(0.22));
+                Object[] d1 = new Object[x.length()];
+                for (int i = 0; i < x.length(); i++) {
+                    double span = band.yHigh.get(i) - band.yLow.get(i);
+                    d1[i] = new Number[] { x.get(i), Math.max(0, span) };
+                }
+                delta.setData(d1);
+                series.add(low);
+                series.add(delta);
+            }
+            series.add(ln);
+
+            this.option = new Option();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+            this.option.setSeries(series.toArray(new org.icepear.echarts.origin.util.SeriesOption[0]));
+        } catch (Exception e) {
+            throw new PlotException("创建 regplot 失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot subplots(int rows, int cols) {
+        if (rows < 1 || cols < 1) {
+            throw new PlotException("subplots: 行列须为正");
+        }
+        echartsFacetMode = true;
+        eFacetRows = rows;
+        eFacetCols = cols;
+        eFacetCursor = 0;
+        eFacetSeries.clear();
+        return this;
+    }
+
+    @Override
+    public EchartsPlot subplot(int row, int col) {
+        if (!echartsFacetMode) {
+            throw new PlotException("请先调用 subplots(rows, cols)");
+        }
+        if (row < 0 || col < 0 || row >= eFacetRows || col >= eFacetCols) {
+            throw new PlotException("subplot 越界");
+        }
+        eFacetCursor = row * eFacetCols + col;
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public EchartsPlot kdeplot(IVector data, int gridPoints, double bandwidth) {
+        if (echartsFacetMode) {
+            throw new PlotException("子图模式下请先在该格用 line 绘制 KDE，或结束子图后再 kdeplot");
+        }
+        IVector<Double> d = (IVector<Double>) data;
+        double bw = bandwidth <= 0 ? PlotKde.scottBandwidth(d) : bandwidth;
+        IVector<Double>[] xy = PlotKde.toVectors(PlotKde.evaluate(d, bw, gridPoints));
+        LineSeries ln = new LineSeries();
+        ln.setName("KDE");
+        ln.setData(vectorToNumber(xy[0], xy[1]));
+        ln.setShowSymbol(false);
+        this.option = new Option();
+        setCommonOptions(this.option);
+        this.option.setXAxis(buildLinearOrLogX());
+        this.option.setYAxis(buildLinearOrLogY());
+        this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { ln });
+        return this;
+    }
+
+    @Override
+    public EchartsPlot pairplot(IMatrix data, List<String> columnNames, PairplotDiagonal diagonal) {
+        if (data == null || data.getColNum() < 1 || data.getRowNum() < 1) {
+            throw new PlotException("pairplot: 数据无效");
+        }
+        echartsFacetMode = false;
+        eFacetSeries.clear();
+        int p = data.getColNum();
+        int n = p * p;
+        Grid[] grids = echartsFacetGrids(p, p, 10.0);
+        AxisOption[] xAxes = new AxisOption[n];
+        AxisOption[] yAxes = new AxisOption[n];
+        for (int k = 0; k < n; k++) {
+            ValueAxis xa = new ValueAxis();
+            xa.setGridIndex(k);
+            xAxes[k] = xa;
+            ValueAxis ya = new ValueAxis();
+            ya.setGridIndex(k);
+            yAxes[k] = ya;
+        }
+        List<String> names = new ArrayList<>();
+        for (int j = 0; j < p; j++) {
+            names.add(columnNames != null && j < columnNames.size()
+                ? columnNames.get(j) : ("x" + j));
+        }
+        List<org.icepear.echarts.origin.util.SeriesOption> all = new ArrayList<>();
+        for (int i = 0; i < p; i++) {
+            for (int j = 0; j < p; j++) {
+                int idx = i * p + j;
+                if (i == j) {
+                    if (diagonal == PairplotDiagonal.NONE) {
+                        continue;
+                    }
+                    IVector<Double> col = echartsMatrixColumn(data, i);
+                    if (diagonal == PairplotDiagonal.KDE) {
+                        IVector<Double>[] xy = PlotKde.toVectors(
+                            PlotKde.evaluate(col, PlotKde.scottBandwidth(col), 96));
+                        LineSeries ls = new LineSeries();
+                        ls.setXAxisIndex(idx);
+                        ls.setYAxisIndex(idx);
+                        ls.setName(names.get(i));
+                        ls.setData(vectorToNumber(xy[0], xy[1]));
+                        ls.setShowSymbol(false);
+                        all.add(ls);
+                    } else {
+                        LineSeries ls = echartsDiagonalHistLine(col, idx, names.get(i));
+                        all.add(ls);
+                    }
+                } else {
+                    IVector<Double> xv = echartsMatrixColumn(data, j);
+                    IVector<Double> yv = echartsMatrixColumn(data, i);
+                    ScatterSeries ss = new ScatterSeries();
+                    ss.setXAxisIndex(idx);
+                    ss.setYAxisIndex(idx);
+                    ss.setName(names.get(j) + " vs " + names.get(i));
+                    ss.setData(vectorToNumber(xv, yv));
+                    ss.setSymbolSize(5);
+                    all.add(ss);
+                }
+            }
+        }
+        this.option = new Option();
+        setCommonOptions(this.option);
+        this.option.setGrid(grids);
+        this.option.setXAxis(xAxes);
+        this.option.setYAxis(yAxes);
+        this.option.setSeries(all.toArray(new org.icepear.echarts.origin.util.SeriesOption[0]));
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public EchartsPlot jointplot(IVector x, IVector y, JointplotMarginal marginal) {
+        if (x.length() != y.length()) {
+            throw new PlotException("jointplot: 长度须一致");
+        }
+        echartsFacetMode = false;
+        eFacetSeries.clear();
+        Grid[] grids = new Grid[] {
+            new Grid().setLeft("10%").setTop("10%").setWidth("62%").setHeight("18%"),
+            new Grid().setLeft("10%").setTop("32%").setWidth("62%").setHeight("55%"),
+            new Grid().setLeft("74%").setTop("32%").setWidth("22%").setHeight("55%"),
+        };
+        AxisOption[] xa = new AxisOption[3];
+        AxisOption[] ya = new AxisOption[3];
+        for (int k = 0; k < 3; k++) {
+            ValueAxis vx = new ValueAxis();
+            vx.setGridIndex(k);
+            xa[k] = vx;
+            ValueAxis vy = new ValueAxis();
+            vy.setGridIndex(k);
+            ya[k] = vy;
+        }
+        List<org.icepear.echarts.origin.util.SeriesOption> ser = new ArrayList<>();
+        ScatterSeries main = new ScatterSeries();
+        main.setXAxisIndex(1);
+        main.setYAxisIndex(1);
+        main.setData(vectorToNumber(x, y));
+        main.setName("joint");
+        ser.add(main);
+        IVector<Double> xd = (IVector<Double>) x;
+        IVector<Double> yd = (IVector<Double>) y;
+        if (marginal == JointplotMarginal.KDE) {
+            IVector<Double>[] kx = PlotKde.toVectors(
+                PlotKde.evaluate(xd, PlotKde.scottBandwidth(xd), 120));
+            LineSeries tx = new LineSeries();
+            tx.setXAxisIndex(0);
+            tx.setYAxisIndex(0);
+            tx.setData(vectorToNumber(kx[0], kx[1]));
+            tx.setShowSymbol(false);
+            ser.add(tx);
+            IVector<Double>[] ky = PlotKde.toVectors(
+                PlotKde.evaluate(yd, PlotKde.scottBandwidth(yd), 120));
+            LineSeries ry = new LineSeries();
+            ry.setXAxisIndex(2);
+            ry.setYAxisIndex(2);
+            ry.setData(vectorToNumber(ky[1], ky[0]));
+            ry.setShowSymbol(false);
+            ser.add(ry);
+        } else {
+            ser.add(echartsDiagonalHistLine(xd, 0, "x"));
+            ser.add(echartsMarginalHistRight(yd, 2));
+        }
+        this.option = new Option();
+        setCommonOptions(this.option);
+        this.option.setGrid(grids);
+        this.option.setXAxis(xa);
+        this.option.setYAxis(ya);
+        this.option.setSeries(ser.toArray(new org.icepear.echarts.origin.util.SeriesOption[0]));
+        return this;
+    }
+
+    private EchartsPlot facetLine(IVector x, IVector y, PlotStyle style) {
+        LineSeries ls = new LineSeries();
+        ls.setData(vectorToNumber(x, y));
+        ls.setXAxisIndex(eFacetCursor);
+        ls.setYAxisIndex(eFacetCursor);
+        PlotStyle effectiveStyle = style != null ? style : (useStyleSystem ? defaultStyle : null);
+        if (effectiveStyle != null && useStyleSystem) {
+            applyStyleToLineSeries(ls, effectiveStyle);
+        } else {
+            ls.setName("L" + eFacetCursor);
+        }
+        eFacetSeries.add(ls);
+        return this;
+    }
+
+    private EchartsPlot facetScatter(IVector x, IVector y, PlotStyle style) {
+        ScatterSeries ss = new ScatterSeries();
+        ss.setData(vectorToNumber(x, y));
+        ss.setXAxisIndex(eFacetCursor);
+        ss.setYAxisIndex(eFacetCursor);
+        if (style != null && useStyleSystem) {
+            applyStyleToScatterSeries(ss, style);
+        } else {
+            ss.setName("S" + eFacetCursor);
+        }
+        eFacetSeries.add(ss);
+        return this;
+    }
+
+    private void echartsFlushFacetIfNeeded() {
+        if (!echartsFacetMode) {
+            return;
+        }
+        if (eFacetSeries.isEmpty()) {
+            echartsFacetMode = false;
+            return;
+        }
+        int n = eFacetRows * eFacetCols;
+        Grid[] grids = echartsFacetGrids(eFacetRows, eFacetCols, 10.0);
+        AxisOption[] xAxes = new AxisOption[n];
+        AxisOption[] yAxes = new AxisOption[n];
+        for (int k = 0; k < n; k++) {
+            if (plotXScale == PlotAxisScale.LOG) {
+                LogAxis xa = new LogAxis();
+                xa.setGridIndex(k);
+                xAxes[k] = xa;
+            } else {
+                ValueAxis xa = new ValueAxis();
+                xa.setGridIndex(k);
+                xAxes[k] = xa;
+            }
+            if (plotYScale == PlotAxisScale.LOG) {
+                LogAxis ya = new LogAxis();
+                ya.setGridIndex(k);
+                yAxes[k] = ya;
+            } else {
+                ValueAxis ya = new ValueAxis();
+                ya.setGridIndex(k);
+                yAxes[k] = ya;
+            }
+        }
+        this.option = new Option();
+        setCommonOptions(this.option);
+        this.option.setGrid(grids);
+        this.option.setXAxis(xAxes);
+        this.option.setYAxis(yAxes);
+        this.option.setSeries(eFacetSeries.toArray(new org.icepear.echarts.origin.util.SeriesOption[0]));
+        echartsFacetMode = false;
+        eFacetSeries.clear();
+    }
+
+    private static Grid[] echartsFacetGrids(int rows, int cols, double topReserve) {
+        int n = rows * cols;
+        double hgap = 2.5;
+        double vgap = 3.0;
+        double cellW = (100.0 - hgap * (cols + 1)) / cols;
+        double cellH = (100.0 - vgap * (rows + 1) - topReserve) / rows;
+        Grid[] grids = new Grid[n];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                int idx = i * cols + j;
+                Grid g = new Grid();
+                g.setLeft(String.format(java.util.Locale.ROOT, "%.3f%%", hgap + j * (cellW + hgap)));
+                g.setTop(String.format(java.util.Locale.ROOT, "%.3f%%", topReserve + vgap + i * (cellH + vgap)));
+                g.setWidth(String.format(java.util.Locale.ROOT, "%.3f%%", cellW));
+                g.setHeight(String.format(java.util.Locale.ROOT, "%.3f%%", cellH));
+                grids[idx] = g;
+            }
+        }
+        return grids;
+    }
+
+    private static IVector<Double> echartsMatrixColumn(IMatrix<?> m, int col) {
+        int r = m.getRowNum();
+        double[] b = new double[r];
+        for (int i = 0; i < r; i++) {
+            b[i] = m.get(i, col);
+        }
+        return Linalg.vector(b);
+    }
+
+    private static LineSeries echartsDiagonalHistLine(IVector<Double> col, int gridIdx, String name) {
+        int bins = Math.min(16, Math.max(4, (int) Math.sqrt(col.length())));
+        double mn = col.minValue();
+        double mx = col.maxValue();
+        double bw = (mx - mn) / bins;
+        if (bw <= 0) {
+            bw = 1;
+        }
+        int[] cts = new int[bins];
+        for (int t = 0; t < col.length(); t++) {
+            int bi = (int) Math.floor((col.get(t) - mn) / bw);
+            if (bi < 0) {
+                bi = 0;
+            }
+            if (bi >= bins) {
+                bi = bins - 1;
+            }
+            cts[bi]++;
+        }
+        Object[] ld = new Object[bins];
+        for (int b = 0; b < bins; b++) {
+            double cx = mn + (b + 0.5) * bw;
+            ld[b] = new Number[] { cx, cts[b] };
+        }
+        LineSeries ls = new LineSeries();
+        ls.setXAxisIndex(gridIdx);
+        ls.setYAxisIndex(gridIdx);
+        ls.setStep("middle");
+        ls.setName(name);
+        ls.setShowSymbol(false);
+        ls.setData(ld);
+        return ls;
+    }
+
+    private static LineSeries echartsMarginalHistRight(IVector<Double> col, int gridIdx) {
+        int bins = Math.min(16, Math.max(4, (int) Math.sqrt(col.length())));
+        double mn = col.minValue();
+        double mx = col.maxValue();
+        double bw = (mx - mn) / bins;
+        if (bw <= 0) {
+            bw = 1;
+        }
+        int[] cts = new int[bins];
+        for (int t = 0; t < col.length(); t++) {
+            int bi = (int) Math.floor((col.get(t) - mn) / bw);
+            if (bi < 0) {
+                bi = 0;
+            }
+            if (bi >= bins) {
+                bi = bins - 1;
+            }
+            cts[bi]++;
+        }
+        Object[] ld = new Object[bins];
+        for (int b = 0; b < bins; b++) {
+            double cy = mn + (b + 0.5) * bw;
+            ld[b] = new Number[] { cts[b], cy };
+        }
+        LineSeries ls = new LineSeries();
+        ls.setXAxisIndex(gridIdx);
+        ls.setYAxisIndex(gridIdx);
+        ls.setStep("middle");
+        ls.setName("y hist");
+        ls.setShowSymbol(false);
+        ls.setData(ld);
+        return ls;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public EchartsPlot qqplot(IVector data) {
+        try {
+            IVector<Double> sorted = ((IVector<Double>) data).sort();
+            int n = sorted.length();
+            if (n < 2) {
+                throw new PlotException("qqplot 至少需要 2 个点");
+            }
+            double[] theo = new double[n];
+            for (int i = 0; i < n; i++) {
+                theo[i] = PlotStats.normalPpf((i + 0.5) / n);
+            }
+            IVector<Double> xt = Linalg.vector(theo);
+            ScatterSeries pts = new ScatterSeries();
+            pts.setName("有序样本");
+            pts.setData(vectorToNumber(xt, sorted));
+
+            double lo = Math.min(theo[0], sorted.get(0));
+            double hi = Math.max(theo[n - 1], sorted.get(n - 1));
+            LineSeries ref = new LineSeries();
+            ref.setName("y = x");
+            ref.setData(new Object[] { new Number[] { lo, lo }, new Number[] { hi, hi } });
+            ref.setShowSymbol(false);
+            ref.setLineStyle(new LineStyle().setType("dotted").setWidth(1.5));
+
+            this.option = new Option();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(buildLinearOrLogY());
+            this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { pts, ref });
+        } catch (Exception e) {
+            throw new PlotException("创建 Q-Q 图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public EchartsPlot lineWithSecondaryY(IVector x, IVector yLeft, IVector yRight) {
+        if (x.length() != yLeft.length() || x.length() != yRight.length()) {
+            throw new PlotException("lineWithSecondaryY: 长度须一致");
+        }
+        try {
+            ValueAxis y0 = new ValueAxis();
+            y0.setName(ylabel.isEmpty() ? "Y1" : ylabel);
+            ValueAxis y1 = new ValueAxis();
+            y1.setName(plotY2Label.isEmpty() ? "Y2" : plotY2Label);
+            y1.setPosition("right");
+            LineSeries s0 = new LineSeries();
+            s0.setName("Y1");
+            s0.setData(vectorToNumber(x, yLeft));
+            s0.setYAxisIndex(0);
+            LineSeries s1 = new LineSeries();
+            s1.setName("Y2");
+            s1.setData(vectorToNumber(x, yRight));
+            s1.setYAxisIndex(1);
+
+            this.option = new Option();
+            setCommonOptions(this.option);
+            this.option.setXAxis(buildLinearOrLogX());
+            this.option.setYAxis(new Object[] { y0, y1 });
+            this.option.setSeries(new org.icepear.echarts.origin.util.SeriesOption[] { s0, s1 });
+        } catch (Exception e) {
+            throw new PlotException("创建双 Y 轴线图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    // ========== 极坐标图表 ==========
+    /**
+     * 极坐标柱状图
+     *
+     * @param data       数据向量
+     * @param categories 类别标签
+     */
+    public EchartsPlot polarBar(IVector data, List<String> categories) {
+        return polarBarInternal(data, categories, null);
+    }
+
+    public EchartsPlot polarBar(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarBarInternal(data, categories, style);
+    }
+
+    public EchartsPlot polarBar(IVector data, List<String> categories, PlotStyle style) {
+        return polarBarInternal(data, categories, style);
+    }
+
+    private EchartsPlot polarBarInternal(IVector data, List<String> categories, PlotStyle style) {
+        try {
+            PolarBar polarBarChart = new PolarBar();
+
+            // 设置极坐标配置
+            polarBarChart.setPolarAxis(new String[] { "30%", "80%" });
+            polarBarChart.setAngleAxis(categories.toArray(new String[0]));
+            polarBarChart.setRadiusAxis();
+
+            // 设置数据 - 极坐标柱状图使用简单的数值数组
+            Object[] dataArray = new Object[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                dataArray[i] = data.get(i);
+            }
+
+            // 直接创建series并设置数据
+            org.icepear.echarts.charts.bar.BarSeries series = new org.icepear.echarts.charts.bar.BarSeries()
+                    .setType("bar")
+                    .setName("极坐标柱状图")
+                    .setData(dataArray)
+                    .setCoordinateSystem("polar");
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToBarSeries(series, effectiveStyle);
+            }
+
+            this.option = polarBarChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setSeries(new org.icepear.echarts.charts.bar.BarSeries[] { series });
+
+        } catch (Exception e) {
+            log.warn("创建极坐标柱状图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 极坐标线图
+     *
+     * @param data       数据向量
+     * @param categories 类别标签
+     */
+    public EchartsPlot polarLine(IVector data, List<String> categories) {
+        return polarLineInternal(data, categories, null);
+    }
+
+    public EchartsPlot polarLine(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarLineInternal(data, categories, style);
+    }
+
+    public EchartsPlot polarLine(IVector data, List<String> categories, PlotStyle style) {
+        return polarLineInternal(data, categories, style);
+    }
+
+    private EchartsPlot polarLineInternal(IVector data, List<String> categories, PlotStyle style) {
+        try {
+            PolarLine polarLineChart = new PolarLine();
+
+            // 设置极坐标配置
+            polarLineChart.setPolarAxis(new String[] { "30%", "80%" });
+            polarLineChart.setAngleAxis(categories.toArray(new String[0]));
+            polarLineChart.setRadiusAxis();
+
+            // 设置数据
+            Object[] dataArray = new Object[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                dataArray[i] = data.get(i);
+            }
+
+            // 创建线图系列
+            org.icepear.echarts.charts.line.LineSeries series = new org.icepear.echarts.charts.line.LineSeries()
+                    .setType("line")
+                    .setName("极坐标线图")
+                    .setData(dataArray)
+                    .setCoordinateSystem("polar");
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToLineSeries(series, effectiveStyle);
+            }
+
+            polarLineChart.addSeries("极坐标线图", dataArray);
+
+            this.option = polarLineChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建极坐标线图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 极坐标散点图
+     *
+     * @param data       数据向量
+     * @param categories 类别标签
+     */
+    public EchartsPlot polarScatter(IVector data, List<String> categories) {
+        return polarScatterInternal(data, categories, null);
+    }
+
+    public EchartsPlot polarScatter(IVector data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return polarScatterInternal(data, categories, style);
+    }
+
+    public EchartsPlot polarScatter(IVector data, List<String> categories, PlotStyle style) {
+        return polarScatterInternal(data, categories, style);
+    }
+
+    private EchartsPlot polarScatterInternal(IVector data, List<String> categories, PlotStyle style) {
+        try {
+            PolarScatter polarScatterChart = new PolarScatter();
+
+            // 设置极坐标配置
+            polarScatterChart.setPolarAxis(new String[] { "30%", "80%" });
+            polarScatterChart.setAngleAxis(categories.toArray(new String[0]));
+            polarScatterChart.setRadiusAxis();
+
+            // 设置数据
+            Object[] dataArray = new Object[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                dataArray[i] = data.get(i);
+            }
+
+            // 创建散点图系列
+            org.icepear.echarts.charts.scatter.ScatterSeries series = new org.icepear.echarts.charts.scatter.ScatterSeries()
+                    .setType("scatter")
+                    .setName("极坐标散点图")
+                    .setData(dataArray)
+                    .setCoordinateSystem("polar");
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToScatterSeries(series, effectiveStyle);
+            }
+
+            polarScatterChart.addSeries("极坐标散点图", dataArray);
+
+            this.option = polarScatterChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建极坐标散点图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    // ========== 统计图表 ==========
+    /**
+     * 箱线图（使用ECharts原生Boxplot）
+     *
+     * @param data   数据向量
+     * @param labels 标签
+     */
+    public EchartsPlot boxplot(IVector data, List<String> labels) {
+        return boxplotInternal(data, labels, null);
+    }
+
+    /**
+     * 创建箱线图（支持样式字符串）
+     *
+     * @param data        数据向量
+     * @param labels      标签列表
+     * @param styleString 样式字符串
+     * @return 当前实例
+     */
+    public EchartsPlot boxplot(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = (styleString != null && useStyleSystem)
+                ? StyleExpression.parse(styleString)
+                : null;
+        return boxplotInternal(data, labels, style);
+    }
+
+    /**
+     * 创建箱线图（支持PlotStyle样式）
+     *
+     * @param data   数据向量
+     * @param labels 标签列表
+     * @param style  绘图样式
+     * @return 当前实例
+     */
+    public EchartsPlot boxplot(IVector data, List<String> labels, PlotStyle style) {
+        return boxplotInternal(data, labels, style);
+    }
+
+    /**
+     * 统一的箱线图内部实现
+     *
+     * @param data   数据向量
+     * @param labels 标签列表
+     * @param style  绘图样式
+     * @return 当前实例
+     */
+    private EchartsPlot boxplotInternal(IVector data, List<String> labels, PlotStyle style) {
+        try {
+            if (data.length() != labels.size()) {
+                throw new PlotException("数据向量和标签列表长度必须相等");
+            }
+
+            Boxplot boxplotChart = new Boxplot();
+
+            // 按标签分组数据
+            Map<String, List<Double>> groupedData = new HashMap<>();
+            for (int i = 0; i < data.length(); i++) {
+                String label = labels.get(i);
+                if (!groupedData.containsKey(label)) {
+                    groupedData.put(label, new ArrayList<>());
+                }
+                groupedData.get(label).add((double) data.get(i));
+            }
+
+            // 获取所有唯一的标签，保持顺序
+            List<String> uniqueLabels = new ArrayList<>();
+            for (String label : labels) {
+                if (!uniqueLabels.contains(label)) {
+                    uniqueLabels.add(label);
+                }
+            }
+
+            // 为每个组计算箱线图统计量
+            Object[][] boxData = new Object[uniqueLabels.size()][];
+            for (int i = 0; i < uniqueLabels.size(); i++) {
+                String label = uniqueLabels.get(i);
+                List<Double> groupData = groupedData.get(label);
+
+                // 转换为数组并排序
+                double[] groupArray = new double[groupData.size()];
+                for (int j = 0; j < groupData.size(); j++) {
+                    groupArray[j] = groupData.get(j);
+                }
+                java.util.Arrays.sort(groupArray);
+
+                // 计算统计量 - 使用更准确的分位数计算
+                int n = groupArray.length;
+                if (n == 0) {
+                    // 空数据组，使用默认值
+                    boxData[i] = new Object[] { 0, 0, 0, 0, 0 };
+                    continue;
+                }
+
+                double min = groupArray[0];
+                double max = groupArray[n - 1];
+
+                // 计算Q1 (25%分位数)
+                int q1Index = (int) Math.ceil(n * 0.25) - 1;
+                q1Index = Math.max(0, Math.min(q1Index, n - 1));
+                double q1 = groupArray[q1Index];
+
+                // 计算中位数 (50%分位数)
+                int q2Index = (int) Math.ceil(n * 0.5) - 1;
+                q2Index = Math.max(0, Math.min(q2Index, n - 1));
+                double q2 = groupArray[q2Index];
+
+                // 计算Q3 (75%分位数)
+                int q3Index = (int) Math.ceil(n * 0.75) - 1;
+                q3Index = Math.max(0, Math.min(q3Index, n - 1));
+                double q3 = groupArray[q3Index];
+
+                // 创建箱线图数据 [min, Q1, median, Q3, max]
+                boxData[i] = new Object[] { min, q1, q2, q3, max };
+            }
+
+            // 创建箱线图系列
+            org.icepear.echarts.charts.boxplot.BoxplotSeries series = new org.icepear.echarts.charts.boxplot.BoxplotSeries()
+                    .setType("boxplot")
+                    .setData(boxData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = style != null ? style
+                    : (useStyleSystem ? defaultStyle : null);
+
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToBoxplotSeries(series, effectiveStyle);
+            } else {
+                series.setName("箱线图");
+            }
+
+            boxplotChart.addSeries(series);
+
+            // 配置坐标轴
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setName(xlabel.isEmpty() ? "类别" : xlabel);
+            xAxis.setData(uniqueLabels.toArray(new String[0]));
+
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
+
+            this.option = boxplotChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+        } catch (Exception e) {
+            throw new PlotException("创建箱线图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public IPlot boxplot(IVector data) {
+        try {
+            Boxplot boxplotChart = new Boxplot();
+
+            // 计算箱线图统计量
+            double[] sortedData = new double[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                sortedData[i] = (double) data.get(i);
+            }
+            java.util.Arrays.sort(sortedData);
+
+            int n = sortedData.length;
+            if (n == 0) {
+                throw new PlotException("数据向量不能为空");
+            }
+
+            double min = sortedData[0];
+            double max = sortedData[n - 1];
+
+            // 计算Q1 (25%分位数)
+            int q1Index = (int) Math.ceil(n * 0.25) - 1;
+            q1Index = Math.max(0, Math.min(q1Index, n - 1));
+            double q1 = sortedData[q1Index];
+
+            // 计算中位数 (50%分位数)
+            int q2Index = (int) Math.ceil(n * 0.5) - 1;
+            q2Index = Math.max(0, Math.min(q2Index, n - 1));
+            double q2 = sortedData[q2Index];
+
+            // 计算Q3 (75%分位数)
+            int q3Index = (int) Math.ceil(n * 0.75) - 1;
+            q3Index = Math.max(0, Math.min(q3Index, n - 1));
+            double q3 = sortedData[q3Index];
+
+            // 创建箱线图数据 [min, Q1, median, Q3, max]
+            Object[] boxData = new Object[1];
+            boxData[0] = new Object[] { min, q1, q2, q3, max };
+
+            boxplotChart.addSeries("箱线图", boxData);
+
+            // 配置坐标轴
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setName(xlabel.isEmpty() ? "数据" : xlabel);
+            xAxis.setData(new String[] { "数据集" });
+
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "数值" : ylabel);
+
+            this.option = boxplotChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+        } catch (Exception e) {
+            throw new PlotException("创建箱线图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    @Override
+    public IPlot violinplot(IVector data) {
+        return violinplotInternal(data, null, null);
+    }
+
+    public IPlot violinplot(IVector data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return violinplotInternal(data, style, null);
+    }
+
+    public IPlot violinplot(IVector data, PlotStyle style) {
+        return violinplotInternal(data, style, null);
+    }
+
+    @Override
+    public IPlot violinplot(IVector data, List<String> labels) {
+        return violinplotInternal(data, null, labels);
+    }
+
+    public IPlot violinplot(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return violinplotInternal(data, style, labels);
+    }
+
+    public IPlot violinplot(IVector data, List<String> labels, PlotStyle style) {
+        return violinplotInternal(data, style, labels);
+    }
+
+    private IPlot violinplotInternal(IVector data, PlotStyle style, List<String> labels) {
+        try {
+            // Handle single group case (no labels provided)
+            if (labels == null || labels.isEmpty()) {
+                // Create a single group with all data
+                labels = new ArrayList<>();
+                for (int i = 0; i < data.length(); i++) {
+                    labels.add("数据集");
+                }
+            }
+
+            if (data.length() != labels.size()) {
+                throw new PlotException("数据向量和标签列表长度必须相等");
+            }
+
+            // Use Line chart to simulate violin plot
+            Line lineChart = new Line();
+
+            // Group data by labels
+            Map<String, List<Double>> groupedData = new HashMap<>();
+            for (int i = 0; i < data.length(); i++) {
+                String label = labels.get(i);
+                if (!groupedData.containsKey(label)) {
+                    groupedData.put(label, new ArrayList<>());
+                }
+                groupedData.get(label).add((double) data.get(i));
+            }
+
+            // Create density curves for each group
+            String[] colors = { "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4",
+                    "#ea7ccc" };
+            int colorIndex = 0;
+
+            for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
+                String groupName = entry.getKey();
+                List<Double> groupData = entry.getValue();
+
+                // Convert to IVector format for calculation
+                double[] groupArray = new double[groupData.size()];
+                for (int i = 0; i < groupData.size(); i++) {
+                    groupArray[i] = groupData.get(i);
+                }
+                IVector groupVector = Linalg.vector(groupArray);
+
+                // Calculate kernel density estimation
+                List<double[]> kdeData = kernelDensityEstimation(groupVector, 2.5);
+
+                // Add violin density curves (left and right symmetric)
+                String color = colors[colorIndex % colors.length];
+                addViolinDensitySeries(lineChart, kdeData, groupName, color);
+
+                // Add boxplot data (multi-group mode)
+                addBoxplotToViolin(lineChart, groupVector, groupName + "_箱线", color, true);
+                colorIndex++;
+            }
+
+            // Configure axes - show axes as borders
+            ValueAxis xAxis = new ValueAxis();
+            xAxis.setName(xlabel.isEmpty() ? "数值" : xlabel);
+            xAxis.setType("value");
+            xAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+            xAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+            xAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "密度" : ylabel);
+            yAxis.setType("value");
+            yAxis.setAxisLine(new org.icepear.echarts.components.coord.AxisLine().setShow(true));
+            yAxis.setAxisTick(new org.icepear.echarts.components.coord.CategoryAxisTick().setShow(true));
+            yAxis.setSplitLine(new org.icepear.echarts.components.coord.SplitLine().setShow(false));
+
+            this.option = lineChart.getOption();
+            this.option.setTitle(title);
+            // Set legend to only show main series, filter out detailed boxplot parts
+            Legend filteredLegend = new Legend();
+            // Only show main series names for each group
+            Set<String> groupNames = new HashSet<>();
+            for (Map.Entry<String, List<Double>> entry : groupedData.entrySet()) {
+                groupNames.add(entry.getKey());
+            }
+            filteredLegend.setData(groupNames.toArray(new String[0]));
+            this.option.setLegend(filteredLegend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+        } catch (Exception e) {
+            throw new PlotException("创建小提琴图失败: " + e.getMessage(), e);
+        }
+        return this;
+    }
+
+    /**
+     * K线图（蜡烛图）
+     *
+     * @param data  数据矩阵，每行包含[开盘价, 收盘价, 最低价, 最高价]
+     * @param dates 日期标签
+     */
+    public EchartsPlot candlestick(IMatrix data, List<String> dates) {
+        return candlestickInternal(data, dates, null);
+    }
+
+    public EchartsPlot candlestick(IMatrix data, List<String> dates, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return candlestickInternal(data, dates, style);
+    }
+
+    public EchartsPlot candlestick(IMatrix data, List<String> dates, PlotStyle style) {
+        return candlestickInternal(data, dates, style);
+    }
+
+    private EchartsPlot candlestickInternal(IMatrix data, List<String> dates, PlotStyle style) {
+        try {
+            Candlestick candlestickChart = new Candlestick();
+
+            // 转换数据格式
+            Object[] candlestickData = new Object[data.getRowNum()];
+            for (int i = 0; i < data.getRowNum(); i++) {
+                if (data.getColNum() >= 4) {
+                    candlestickData[i] = new Object[] {
+                            data.get(i, 0), // 开盘价
+                            data.get(i, 1), // 收盘价
+                            data.get(i, 2), // 最低价
+                            data.get(i, 3) // 最高价
+                    };
+                }
+            }
+
+            // 创建K线图系列
+            org.icepear.echarts.charts.candlestick.CandlestickSeries series = new org.icepear.echarts.charts.candlestick.CandlestickSeries()
+                    .setType("candlestick")
+                    .setName("K线图")
+                    .setData(candlestickData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToCandlestickSeries(series, effectiveStyle);
+            }
+
+            candlestickChart.addSeries("K线图", candlestickData);
+
+            // 配置坐标轴
+            CategoryAxis xAxis = new CategoryAxis();
+            xAxis.setName(xlabel.isEmpty() ? "日期" : xlabel);
+            xAxis.setData(dates.toArray(new String[0]));
+
+            ValueAxis yAxis = new ValueAxis();
+            yAxis.setName(ylabel.isEmpty() ? "价格" : ylabel);
+
+            this.option = candlestickChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setXAxis(xAxis);
+            this.option.setYAxis(yAxis);
+
+        } catch (Exception e) {
+            log.warn("创建K线图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    // ========== 特殊图表 ==========
+    /**
+     * 漏斗图
+     *
+     * @param data   数据向量
+     * @param labels 标签
+     */
+    public EchartsPlot funnel(IVector data, List<String> labels) {
+        return funnelInternal(data, labels, null);
+    }
+
+    public EchartsPlot funnel(IVector data, List<String> labels, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return funnelInternal(data, labels, style);
+    }
+
+    public EchartsPlot funnel(IVector data, List<String> labels, PlotStyle style) {
+        return funnelInternal(data, labels, style);
+    }
+
+    private EchartsPlot funnelInternal(IVector data, List<String> labels, PlotStyle style) {
+        try {
+            Funnel funnelChart = new Funnel();
+
+            // 设置数据 - 漏斗图需要对象格式
+            Object[] funnelData = new Object[data.length()];
+            for (int i = 0; i < data.length(); i++) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", labels.get(i));
+                item.put("value", data.get(i));
+                funnelData[i] = item;
+            }
+
+            // 创建漏斗图系列
+            org.icepear.echarts.charts.funnel.FunnelSeries series = new org.icepear.echarts.charts.funnel.FunnelSeries()
+                    .setType("funnel")
+                    .setName("漏斗图")
+                    .setData(funnelData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToFunnelSeries(series, effectiveStyle);
+            }
+
+            funnelChart.addSeries("漏斗图", funnelData);
+
+            this.option = funnelChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建漏斗图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 桑基图
+     *
+     * @param nodes 节点数据
+     * @param links 连接数据
+     */
+    public EchartsPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+        return sankeyInternal(nodes, links, null);
+    }
+
+    public EchartsPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return sankeyInternal(nodes, links, style);
+    }
+
+    public EchartsPlot sankey(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        return sankeyInternal(nodes, links, style);
+    }
+
+    private EchartsPlot sankeyInternal(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        try {
+            Sankey sankeyChart = new Sankey();
+
+            // 创建SankeyEdgeItem数组
+            org.icepear.echarts.charts.sankey.SankeyEdgeItem[] sankeyLinks = new org.icepear.echarts.charts.sankey.SankeyEdgeItem[links
+                    .size()];
+            for (int i = 0; i < links.size(); i++) {
+                Map<String, Object> link = links.get(i);
+                org.icepear.echarts.charts.sankey.SankeyEdgeItem edgeItem = new org.icepear.echarts.charts.sankey.SankeyEdgeItem();
+
+                // 设置source和target，支持String和Number类型
+                Object source = link.get("source");
+                if (source instanceof String) {
+                    edgeItem.setSource((String) source);
+                } else if (source instanceof Number) {
+                    edgeItem.setSource((Number) source);
+                }
+
+                Object target = link.get("target");
+                if (target instanceof String) {
+                    edgeItem.setTarget((String) target);
+                } else if (target instanceof Number) {
+                    edgeItem.setTarget((Number) target);
+                }
+
+                // 设置value
+                Object value = link.get("value");
+                if (value instanceof Number) {
+                    edgeItem.setValue((Number) value);
+                } else if (value instanceof String) {
+                    edgeItem.setValue((String) value);
+                }
+
+                sankeyLinks[i] = edgeItem;
+            }
+
+            // 创建SankeySeries并正确设置data和links
+            org.icepear.echarts.charts.sankey.SankeySeries series = new org.icepear.echarts.charts.sankey.SankeySeries()
+                    .setType("sankey")
+                    .setName("桑基图")
+                    .setData(nodes.toArray(new Object[0]))
+                    .setLinks(sankeyLinks);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToSankeySeries(series, effectiveStyle);
+            }
+
+            this.option = sankeyChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setSeries(new org.icepear.echarts.charts.sankey.SankeySeries[] { series });
+
+        } catch (Exception e) {
+            log.warn("创建桑基图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 旭日图
+     *
+     * @param data 层次数据，每个Map应包含id、name、value字段，可选parent字段
+     */
+    public EchartsPlot sunburst(List<Map<String, Object>> data) {
+        return sunburstInternal(data, null);
+    }
+
+    public EchartsPlot sunburst(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return sunburstInternal(data, style);
+    }
+
+    public EchartsPlot sunburst(List<Map<String, Object>> data, PlotStyle style) {
+        return sunburstInternal(data, style);
+    }
+
+    private EchartsPlot sunburstInternal(List<Map<String, Object>> data, PlotStyle style) {
+        try {
+            Sunburst sunburstChart = new Sunburst();
+
+            // 将平级数据转换为层次结构
+            Object[] sunburstData = buildSunburstHierarchy(data);
+
+            // 创建旭日图系列
+            org.icepear.echarts.charts.sunburst.SunburstSeries series = new org.icepear.echarts.charts.sunburst.SunburstSeries()
+                    .setType("sunburst")
+                    .setName("旭日图")
+                    .setData(sunburstData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToSunburstSeries(series, effectiveStyle);
+            }
+
+            // 设置数据
+            sunburstChart.addSeries(sunburstData);
+
+            this.option = sunburstChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建旭日图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 构建旭日图的层次结构
+     *
+     * @param data 平级数据列表
+     * @return 层次结构数据
+     */
+    private Object[] buildSunburstHierarchy(List<Map<String, Object>> data) {
+        if (data == null || data.isEmpty()) {
+            return new Object[0];
+        }
+
+        // 检查是否已经包含parent字段
+        boolean hasParentField = data.stream().anyMatch(item -> item.containsKey("parent"));
+
+        if (hasParentField) {
+            // 使用parent字段构建层次结构
+            return buildHierarchyFromParent(data);
+        } else {
+            // 如果没有parent字段，检查是否有children字段
+            boolean hasChildrenField = data.stream().anyMatch(item -> item.containsKey("children"));
+            if (hasChildrenField) {
+                // 直接使用现有的层次结构
+                return data.toArray(new Object[0]);
+            } else {
+                // 创建默认的根节点包含所有子节点
+                Map<String, Object> rootNode = new HashMap<>();
+                rootNode.put("name", "根节点");
+                rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
+                rootNode.put("children", data);
+                return new Object[] { rootNode };
+            }
+        }
+    }
+
+    /**
+     * 根据parent字段构建层次结构
+     *
+     * @param data 包含parent字段的数据
+     * @return 层次结构数据
+     */
+    private Object[] buildHierarchyFromParent(List<Map<String, Object>> data) {
+        Map<String, Map<String, Object>> nodeMap = new HashMap<>();
+        Map<String, Object> rootNode = null;
+
+        // 首先创建所有节点
+        for (Map<String, Object> item : data) {
+            String id = (String) item.get("id");
+            String name = (String) item.get("name");
+            if (id != null && name != null) {
+                Map<String, Object> node = new HashMap<>();
+                node.put("name", name);
+                if (item.containsKey("value")) {
+                    node.put("value", item.get("value"));
+                }
+                nodeMap.put(id, node);
+            }
+        }
+
+        // 然后建立父子关系
+        for (Map<String, Object> item : data) {
+            String id = (String) item.get("id");
+            String parent = (String) item.get("parent");
+
+            if (id != null && nodeMap.containsKey(id)) {
+                Map<String, Object> node = nodeMap.get(id);
+
+                if (parent == null || parent.isEmpty()) {
+                    // 这是根节点
+                    rootNode = node;
+                } else if (nodeMap.containsKey(parent)) {
+                    // 这是子节点，添加到父节点的children中
+                    Map<String, Object> parentNode = nodeMap.get(parent);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode.get("children");
+                    if (children == null) {
+                        children = new ArrayList<>();
+                        parentNode.put("children", children);
+                    }
+                    children.add(node);
+                }
+            }
+        }
+
+        if (rootNode != null) {
+            return new Object[] { rootNode };
+        } else {
+            // 如果没有找到根节点，创建一个默认的根节点
+            Map<String, Object> defaultRoot = new HashMap<>();
+            defaultRoot.put("name", "根节点");
+            List<Map<String, Object>> children = new ArrayList<>();
+            for (Map<String, Object> node : nodeMap.values()) {
+                children.add(node);
+            }
+            defaultRoot.put("children", children);
+            return new Object[] { defaultRoot };
+        }
+    }
+
+    /**
+     * 主题河流图
+     *
+     * @param data       时间序列数据，格式为 [时间, 数值, 类别] 的数组
+     * @param categories 类别
+     */
+    public EchartsPlot themeRiver(List<Map<String, Object>> data, List<String> categories) {
+        return themeRiverInternal(data, categories, null);
+    }
+
+    public EchartsPlot themeRiver(List<Map<String, Object>> data, List<String> categories, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return themeRiverInternal(data, categories, style);
+    }
+
+    public EchartsPlot themeRiver(List<Map<String, Object>> data, List<String> categories, PlotStyle style) {
+        return themeRiverInternal(data, categories, style);
+    }
+
+    private EchartsPlot themeRiverInternal(List<Map<String, Object>> data, List<String> categories, PlotStyle style) {
+        try {
+            ThemeRiver themeRiverChart = new ThemeRiver();
+
+            // 转换数据格式 - 主题河流图需要 [时间, 数值, 类别] 格式
+            Object[][] themeRiverData = new Object[data.size()][];
+            for (int i = 0; i < data.size(); i++) {
+                Map<String, Object> item = data.get(i);
+                // 确保时间字段不为null，使用当前时间作为默认值
+                Object time = item.get("time");
+                if (time == null) {
+                    time = "2023-01-0" + (i % 9 + 1); // 生成默认时间
+                }
+                themeRiverData[i] = new Object[] {
+                        time,
+                        item.get("value"),
+                        item.get("category")
+                };
+            }
+
+            // 创建ThemeRiverSeries并正确设置data
+            org.icepear.echarts.charts.themeRiver.ThemeRiverSeries series = new org.icepear.echarts.charts.themeRiver.ThemeRiverSeries()
+                    .setType("themeRiver")
+                    .setName("主题河流图")
+                    .setData(themeRiverData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToThemeRiverSeries(series, effectiveStyle);
+            }
+
+            this.option = themeRiverChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setSeries(new org.icepear.echarts.charts.themeRiver.ThemeRiverSeries[] { series });
+
+            // 添加TimeSingleAxis配置 - 主题河流图必需
+            org.icepear.echarts.components.coord.single.TimeSingleAxis singleAxis = new org.icepear.echarts.components.coord.single.TimeSingleAxis()
+                    .setType("time");
+            themeRiverChart.setSingleAxis(singleAxis);
+
+        } catch (Exception e) {
+            log.warn("创建主题河流图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 树图
+     *
+     * @param data 树形数据，应该包含name和children字段
+     */
+    public EchartsPlot tree(List<Map<String, Object>> data) {
+        return treeInternal(data, null);
+    }
+
+    public EchartsPlot tree(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return treeInternal(data, style);
+    }
+
+    public EchartsPlot tree(List<Map<String, Object>> data, PlotStyle style) {
+        return treeInternal(data, style);
+    }
+
+    private EchartsPlot treeInternal(List<Map<String, Object>> data, PlotStyle style) {
+        try {
+            Tree treeChart = new Tree();
+
+            // 转换数据格式 - 树图需要嵌套的children结构
+            // 如果输入数据是平级的，创建一个根节点包含所有子节点
+            Object[] treeData;
+            if (data.size() == 1 && data.get(0).containsKey("children")) {
+                // 如果已经是树结构，直接使用
+                treeData = new Object[data.size()];
+                for (int i = 0; i < data.size(); i++) {
+                    treeData[i] = convertToTreeStructure(data.get(i));
+                }
+            } else {
+                // 检查是否包含parent字段，如果有则构建正确的树结构
+                boolean hasParentField = data.stream().anyMatch(item -> item.containsKey("parent"));
+
+                if (hasParentField) {
+                    // 根据parent字段构建树结构
+                    Map<String, Map<String, Object>> nodeMap = new HashMap<>();
+                    Map<String, Object> rootNode = null;
+
+                    // 首先创建所有节点
+                    for (Map<String, Object> item : data) {
+                        String id = (String) item.get("id");
+                        String name = (String) item.get("name");
+                        if (id != null && name != null) {
+                            Map<String, Object> node = new HashMap<>();
+                            node.put("name", name);
+                            if (item.containsKey("value")) {
+                                node.put("value", item.get("value"));
+                            }
+                            nodeMap.put(id, node);
+                        }
+                    }
+
+                    // 然后建立父子关系
+                    for (Map<String, Object> item : data) {
+                        String id = (String) item.get("id");
+                        String parent = (String) item.get("parent");
+
+                        if (id != null && nodeMap.containsKey(id)) {
+                            Map<String, Object> node = nodeMap.get(id);
+
+                            if (parent == null || parent.isEmpty()) {
+                                // 这是根节点
+                                rootNode = node;
+                            } else if (nodeMap.containsKey(parent)) {
+                                // 这是子节点，添加到父节点的children中
+                                Map<String, Object> parentNode = nodeMap.get(parent);
+                                @SuppressWarnings("unchecked")
+                                List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode
+                                        .get("children");
+                                if (children == null) {
+                                    children = new ArrayList<>();
+                                    parentNode.put("children", children);
+                                }
+                                children.add(node);
+                            }
+                        }
+                    }
+
+                    if (rootNode != null) {
+                        treeData = new Object[] { convertToTreeStructure(rootNode) };
+                    } else {
+                        // 如果没有找到根节点，创建一个默认的根节点
+                        Map<String, Object> defaultRoot = new HashMap<>();
+                        defaultRoot.put("name", "根节点");
+                        List<Map<String, Object>> children = new ArrayList<>();
+                        for (Map<String, Object> node : nodeMap.values()) {
+                            children.add(node);
+                        }
+                        defaultRoot.put("children", children);
+                        treeData = new Object[] { convertToTreeStructure(defaultRoot) };
+                    }
+                } else {
+                    // 如果输入是平级数据且没有parent字段，创建根节点包含所有子节点
+                    Map<String, Object> rootNode = new HashMap<>();
+                    rootNode.put("name", "根节点");
+                    List<Map<String, Object>> children = new ArrayList<>();
+                    Set<String> usedNames = new HashSet<>();
+
+                    for (Map<String, Object> item : data) {
+                        // 确保子节点名称唯一，避免重复
+                        Map<String, Object> childNode = new HashMap<>(item);
+                        String originalName = (String) childNode.get("name");
+                        String uniqueName = originalName;
+
+                        // 如果名称已存在，添加数字后缀
+                        int counter = 1;
+                        while (usedNames.contains(uniqueName)) {
+                            uniqueName = originalName + "_" + counter;
+                            counter++;
+                        }
+
+                        childNode.put("name", uniqueName);
+                        usedNames.add(uniqueName);
+                        children.add(childNode);
+                    }
+
+                    rootNode.put("children", children);
+                    treeData = new Object[] { convertToTreeStructure(rootNode) };
+                }
+            }
+
+            // 创建TreeSeries并正确设置data
+            org.icepear.echarts.charts.tree.TreeSeries series = new org.icepear.echarts.charts.tree.TreeSeries()
+                    .setType("tree")
+                    .setName("树图")
+                    .setData(treeData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToTreeSeries(series, effectiveStyle);
+            }
+
+            this.option = treeChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setSeries(new org.icepear.echarts.charts.tree.TreeSeries[] { series });
+
+        } catch (Exception e) {
+            log.warn("创建树图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 将Map数据转换为树结构
+     */
+    private Object convertToTreeStructure(Map<String, Object> data) {
+        Map<String, Object> node = new HashMap<>();
+        node.put("name", data.get("name"));
+        if (data.containsKey("value")) {
+            node.put("value", data.get("value"));
+        }
+        if (data.containsKey("children")) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> children = (List<Map<String, Object>>) data.get("children");
+            if (children != null && !children.isEmpty()) {
+                Object[] childrenArray = new Object[children.size()];
+                for (int i = 0; i < children.size(); i++) {
+                    childrenArray[i] = convertToTreeStructure(children.get(i));
+                }
+                node.put("children", childrenArray);
+            }
+        }
+        return node;
+    }
+
+    /**
+     * 矩形树图
+     *
+     * @param data 层次数据，每个Map应包含id、name、value字段，可选parent字段
+     */
+    public EchartsPlot treemap(List<Map<String, Object>> data) {
+        return treemapInternal(data, null);
+    }
+
+    public EchartsPlot treemap(List<Map<String, Object>> data, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return treemapInternal(data, style);
+    }
+
+    public EchartsPlot treemap(List<Map<String, Object>> data, PlotStyle style) {
+        return treemapInternal(data, style);
+    }
+
+    private EchartsPlot treemapInternal(List<Map<String, Object>> data, PlotStyle style) {
+        try {
+            Treemap treemapChart = new Treemap();
+
+            // 将平级数据转换为层次结构
+            Object[] treemapData = buildTreemapHierarchy(data);
+
+            // 创建矩形树图系列
+            org.icepear.echarts.charts.treemap.TreemapSeries series = new org.icepear.echarts.charts.treemap.TreemapSeries()
+                    .setType("treemap")
+                    .setName("矩形树图")
+                    .setData(treemapData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToTreemapSeries(series, effectiveStyle);
+            }
+
+            // 设置数据
+            treemapChart.addSeries(treemapData);
+
+            this.option = treemapChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建矩形树图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 构建矩形树图的层次结构
+     *
+     * @param data 平级数据列表
+     * @return 层次结构数据
+     */
+    private Object[] buildTreemapHierarchy(List<Map<String, Object>> data) {
+        if (data == null || data.isEmpty()) {
+            return new Object[0];
+        }
+
+        // 检查是否已经包含parent字段
+        boolean hasParentField = data.stream().anyMatch(item -> item.containsKey("parent"));
+
+        if (hasParentField) {
+            // 使用parent字段构建层次结构
+            return buildHierarchyFromParent(data);
+        } else {
+            // 如果没有parent字段，检查是否有children字段
+            boolean hasChildrenField = data.stream().anyMatch(item -> item.containsKey("children"));
+            if (hasChildrenField) {
+                // 直接使用现有的层次结构
+                return data.toArray(new Object[0]);
+            } else {
+                // 创建默认的根节点包含所有子节点
+                Map<String, Object> rootNode = new HashMap<>();
+                rootNode.put("name", "根节点");
+                rootNode.put("value", 0); // 根节点值设为0，让子节点自动计算
+                rootNode.put("children", data);
+                return new Object[] { rootNode };
+            }
+        }
+    }
+
+    /**
+     * 关系图
+     *
+     * @param nodes 节点数据
+     * @param links 连接数据
+     */
+    public EchartsPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links) {
+        return graphInternal(nodes, links, null);
+    }
+
+    public EchartsPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return graphInternal(nodes, links, style);
+    }
+
+    public EchartsPlot graph(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        return graphInternal(nodes, links, style);
+    }
+
+    private EchartsPlot graphInternal(List<Map<String, Object>> nodes, List<Map<String, Object>> links, PlotStyle style) {
+        try {
+            Graph graphChart = new Graph();
+
+            // 创建GraphNodeItem数组，添加坐标信息
+            org.icepear.echarts.charts.graph.GraphNodeItem[] graphNodes = new org.icepear.echarts.charts.graph.GraphNodeItem[nodes
+                    .size()];
+            for (int i = 0; i < nodes.size(); i++) {
+                Map<String, Object> node = nodes.get(i);
+                org.icepear.echarts.charts.graph.GraphNodeItem nodeItem = new org.icepear.echarts.charts.graph.GraphNodeItem();
+
+                // 设置基本属性
+                nodeItem.setName((String) node.get("name"));
+                if (node.containsKey("id")) {
+                    Object id = node.get("id");
+                    if (id instanceof String) {
+                        nodeItem.setId((String) id);
+                    } else if (id instanceof Number) {
+                        nodeItem.setId(((Number) id).toString());
+                    }
+                }
+
+                // 添加坐标信息，避免节点重叠
+                double angle = 2 * Math.PI * i / nodes.size();
+                double radius = 200;
+                nodeItem.setX(400 + radius * Math.cos(angle));
+                nodeItem.setY(300 + radius * Math.sin(angle));
+
+                graphNodes[i] = nodeItem;
+            }
+
+            // 创建GraphEdgeItem数组
+            org.icepear.echarts.charts.graph.GraphEdgeItem[] graphLinks = new org.icepear.echarts.charts.graph.GraphEdgeItem[links
+                    .size()];
+            for (int i = 0; i < links.size(); i++) {
+                Map<String, Object> link = links.get(i);
+                org.icepear.echarts.charts.graph.GraphEdgeItem edgeItem = new org.icepear.echarts.charts.graph.GraphEdgeItem();
+
+                // 设置source和target，支持String和Number类型
+                Object source = link.get("source");
+                if (source instanceof String) {
+                    edgeItem.setSource((String) source);
+                } else if (source instanceof Number) {
+                    edgeItem.setSource((Number) source);
+                }
+
+                Object target = link.get("target");
+                if (target instanceof String) {
+                    edgeItem.setTarget((String) target);
+                } else if (target instanceof Number) {
+                    edgeItem.setTarget((Number) target);
+                }
+
+                // 设置value
+                Object value = link.get("value");
+                if (value instanceof Number) {
+                    edgeItem.setValue((Number) value);
+                } else if (value instanceof String) {
+                    edgeItem.setValue((String) value);
+                }
+
+                graphLinks[i] = edgeItem;
+            }
+
+            // 创建GraphSeries并正确设置data和links
+            // 关系图应该使用data属性而不是nodes属性
+            org.icepear.echarts.charts.graph.GraphSeries series = new org.icepear.echarts.charts.graph.GraphSeries()
+                    .setType("graph")
+                    .setName("关系图")
+                    .setData(graphNodes)
+                    .setLinks(graphLinks);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToGraphSeries(series, effectiveStyle);
+            }
+
+            this.option = graphChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+            this.option.setSeries(new org.icepear.echarts.charts.graph.GraphSeries[] { series });
+
+        } catch (Exception e) {
+            log.warn("创建关系图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    /**
+     * 平行坐标图
+     *
+     * @param data       数据矩阵
+     * @param dimensions 维度名称
+     */
+    public EchartsPlot parallel(IMatrix data, List<String> dimensions) {
+        return parallelInternal(data, dimensions, null);
+    }
+
+    public EchartsPlot parallel(IMatrix data, List<String> dimensions, String styleString) {
+        PlotStyle style = StyleExpression.parse(styleString);
+        return parallelInternal(data, dimensions, style);
+    }
+
+    public EchartsPlot parallel(IMatrix data, List<String> dimensions, PlotStyle style) {
+        return parallelInternal(data, dimensions, style);
+    }
+
+    private EchartsPlot parallelInternal(IMatrix data, List<String> dimensions, PlotStyle style) {
+        try {
+            Parallel parallelChart = new Parallel();
+
+            // 转换数据格式
+            Object[] parallelData = new Object[data.getRowNum()];
+            for (int i = 0; i < data.getRowNum(); i++) {
+                Object[] rowData = new Object[data.getColNum()];
+                for (int j = 0; j < data.getColNum(); j++) {
+                    rowData[j] = data.get(i, j);
+                }
+                parallelData[i] = rowData;
+            }
+
+            // 添加平行坐标轴 - 这是必需的
+            for (int i = 0; i < dimensions.size(); i++) {
+                parallelChart.addParallelAxis(dimensions.get(i), i);
+            }
+
+            // 创建平行坐标图系列
+            org.icepear.echarts.charts.parallel.ParallelSeries series = new org.icepear.echarts.charts.parallel.ParallelSeries()
+                    .setType("parallel")
+                    .setName("平行坐标图")
+                    .setData(parallelData);
+
+            // 应用样式
+            PlotStyle effectiveStyle = (style != null) ? style : defaultStyle;
+            if (effectiveStyle != null && useStyleSystem) {
+                EchartsUniversalStyleApplier.applyToParallelSeries(series, effectiveStyle);
+            }
+
+            parallelChart.addSeries("平行坐标图", parallelData);
+
+            this.option = parallelChart.getOption();
+            this.option.setTitle(title);
+            this.option.setLegend(legend);
+            this.option.setTooltip(tooltip);
+
+        } catch (Exception e) {
+            log.warn("创建平行坐标图时出错: " + e.getMessage());
+        }
+        return this;
+    }
+
+    // ========== 小提琴图辅助方法 ==========
+    /**
+     * 核密度估计
+     *
+     * @param data      数据向量
+     * @param bandwidth 带宽参数
+     * @return 密度估计点列表
+     */
+    private List<double[]> kernelDensityEstimation(IVector data, double bandwidth) {
+        List<double[]> points = new ArrayList<>();
+        double min = data.minValue();
+        double max = data.maxValue();
+        double range = max - min;
+
+        // Handle edge case where all values are the same
+        if (range == 0) {
+            points.add(new double[] { min, 1.0 });
+            return points;
+        }
+
+        double step = range / 100.0;
+
+        for (double x = min - range * 0.2; x <= max + range * 0.2; x += step) {
+            double density = 0;
+            for (int i = 0; i < data.length(); i++) {
+                double u = (x - (double) data.get(i)) / bandwidth;
+                density += Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+            }
+            density /= (data.length() * bandwidth);
+            points.add(new double[] { x, density });
+        }
+
+        return points;
+    }
+
+    /**
+     * 添加小提琴密度曲线系列（左右对称）
+     *
+     * @param chart   图表对象
+     * @param kdeData 核密度估计数据
+     * @param name    系列名称
+     * @param color   颜色
+     */
+    private void addViolinDensitySeries(Line chart, List<double[]> kdeData, String name, String color) {
+        // 创建小提琴形状的数据：先左半边（从右到左），再右半边（从左到右）
+        List<Number[]> violinData = new ArrayList<>();
+
+        // 添加左半边数据（从右到左，负密度值）
+        for (int i = kdeData.size() - 1; i >= 0; i--) {
+            double[] point = kdeData.get(i);
+            double x = point[0];
+            double density = point[1] * 100; // 放大密度值以便更好显示
+            violinData.add(new Number[] { x, -density });
+        }
+
+        // 添加右半边数据（从左到右，正密度值）
+        for (double[] point : kdeData) {
+            double x = point[0];
+            double density = point[1] * 100; // 放大密度值以便更好显示
+            violinData.add(new Number[] { x, density });
+        }
+
+        // 创建小提琴系列，使用面积填充
+        org.icepear.echarts.charts.line.LineSeries violinSeries = new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name)
+                .setData(violinData.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2))
+                .setAreaStyle(new org.icepear.echarts.charts.line.LineAreaStyle()
+                        .setColor(color)
+                        .setOpacity(0.3));
+
+        chart.addSeries(violinSeries);
+    }
+
+    /**
+     * 添加箱线图到小提琴图中
+     *
+     * @param chart 图表对象
+     * @param data  数据向量
+     * @param name  系列名称
+     * @param color 箱线图颜色
+     */
+    private void addBoxplotToViolin(Line chart, IVector data, String name, String color) {
+        addBoxplotToViolin(chart, data, name, color, false);
+    }
+
+    /**
+     * 添加箱线图到小提琴图中（支持多组模式）
+     *
+     * @param chart        图表对象
+     * @param data         数据向量
+     * @param name         系列名称
+     * @param color        箱线图颜色
+     * @param isMultiGroup 是否为多组模式
+     */
+    private void addBoxplotToViolin(Line chart, IVector data, String name, String color, boolean isMultiGroup) {
+        // 计算箱线图统计量
+        double[] sortedData = new double[data.length()];
+        for (int i = 0; i < data.length(); i++) {
+            sortedData[i] = (double) data.get(i);
+        }
+        java.util.Arrays.sort(sortedData);
+
+        int n = sortedData.length;
+        double q1 = sortedData[n / 4];
+        double q2 = sortedData[n / 2];
+        double q3 = sortedData[3 * n / 4];
+        double min = data.minValue();
+        double max = data.maxValue();
+
+        // 计算密度曲线的实际高度范围，用于调整箱线图高度
+        List<double[]> kdeData = kernelDensityEstimation(data, 2.5);
+        double maxDensity = 0;
+        for (double[] point : kdeData) {
+            maxDensity = Math.max(maxDensity, point[1]);
+        }
+        // 将密度值放大100倍（与密度曲线保持一致）
+        double densityHeight = (float) (maxDensity * 100);
+
+        // 根据密度曲线高度自动调整箱线图高度
+        double boxHeight;
+
+        if (isMultiGroup) {
+            // 多组模式：概率密度大的组应该有更高的箱线图
+            if (densityHeight > 30) {
+                // 高密度：使用较高比例，箱线图更高
+                boxHeight = Math.max(2.0f, densityHeight * 0.20f);
+            } else if (densityHeight > 15) {
+                // 中高密度：使用中等比例
+                boxHeight = Math.max(1.5f, densityHeight * 0.15f);
+            } else if (densityHeight > 8) {
+                // 中等密度：使用标准比例
+                boxHeight = Math.max(1.2f, densityHeight * 0.12f);
+            } else if (densityHeight > 3) {
+                // 中低密度：使用较低比例
+                boxHeight = Math.max(1.0f, densityHeight * 0.10f);
+            } else {
+                // 低密度：使用最低比例，箱线图最低
+                boxHeight = Math.max(0.8f, densityHeight * 0.08f);
+            }
+            // 多组模式：允许更大的高度范围以突出差异
+            boxHeight = Math.min(boxHeight, 4.0f);
+        } else {
+            // 单组模式：使用更保守的比例计算
+            if (densityHeight > 20) {
+                boxHeight = Math.max(0.8f, densityHeight * 0.08f);
+            } else if (densityHeight > 10) {
+                boxHeight = Math.max(0.6f, densityHeight * 0.06f);
+            } else if (densityHeight > 5) {
+                boxHeight = Math.max(0.5f, densityHeight * 0.05f);
+            } else {
+                boxHeight = Math.max(0.4f, densityHeight * 0.04f);
+            }
+            // 单组模式：严格限制高度
+            boxHeight = Math.min(boxHeight, 1.2f);
+        }
+
+        // 1. 左须线
+        List<Number[]> leftWhisker = new ArrayList<>();
+        leftWhisker.add(new Number[] { min, 0 });
+        leftWhisker.add(new Number[] { q1, 0 });
+
+        // 2. 右须线
+        List<Number[]> rightWhisker = new ArrayList<>();
+        rightWhisker.add(new Number[] { q3, 0 });
+        rightWhisker.add(new Number[] { max, 0 });
+
+        // 3. 箱体（矩形）- 分别绘制四条边，确保每条线都清晰可见
+        // 底部线
+        List<Number[]> bottomLine = new ArrayList<>();
+        bottomLine.add(new Number[] { q1, -boxHeight });
+        bottomLine.add(new Number[] { q3, -boxHeight });
+
+        // 顶部线
+        List<Number[]> topLine = new ArrayList<>();
+        topLine.add(new Number[] { q1, boxHeight });
+        topLine.add(new Number[] { q3, boxHeight });
+
+        // 左侧竖线
+        List<Number[]> leftLine = new ArrayList<>();
+        leftLine.add(new Number[] { q1, -boxHeight });
+        leftLine.add(new Number[] { q1, boxHeight });
+
+        // 右侧竖线
+        List<Number[]> rightLine = new ArrayList<>();
+        rightLine.add(new Number[] { q3, -boxHeight });
+        rightLine.add(new Number[] { q3, boxHeight });
+
+        // 4. 中位数线
+        List<Number[]> median = new ArrayList<>();
+        median.add(new Number[] { q2, -boxHeight });
+        median.add(new Number[] { q2, boxHeight });
+
+        // 添加各个部分到图表，隐藏详细部分避免legend过多
+        // 左须线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_左须")
+                .setData(leftWhisker.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 右须线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_右须")
+                .setData(rightWhisker.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 箱体底部线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱底")
+                .setData(bottomLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 箱体顶部线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱顶")
+                .setData(topLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 箱体左侧竖线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱左")
+                .setData(leftLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 箱体右侧竖线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_箱右")
+                .setData(rightLine.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(2)));
+
+        // 中位数线
+        chart.addSeries(new org.icepear.echarts.charts.line.LineSeries()
+                .setName(name + "_中位数")
+                .setData(median.toArray(new Number[0][]))
+                .setShowSymbol(false)
+                .setLegendHoverLink(false)
+                .setLineStyle(new org.icepear.echarts.components.series.LineStyle()
+                        .setColor(color)
+                        .setWidth(3)));
+    }
+
+    // ========== 样式系统辅助方法 ==========
+    /**
+     * 应用样式到LineSeries
+     *
+     * @param lineSeries 线条系列
+     * @param style      样式对象
+     */
+    private void applyStyleToLineSeries(LineSeries lineSeries, PlotStyle style) {
+        if (style == null) {
+            lineSeries.setName("数据线");
+            return;
+        }
+
+        // 设置名称/标签
+        String label = style.getLabel();
+        lineSeries.setName(label.isEmpty() ? "数据线" : label);
+
+        // 设置线条样式
+        org.icepear.echarts.components.series.LineStyle lineStyle = EchartsStyleConverter.toEChartsLineStyle(style);
+        lineSeries.setLineStyle(lineStyle);
+
+        // 设置标记符号
+        if (style.getMarker() != null && !style.getMarker().isEmpty()) {
+            String symbol = EchartsStyleConverter.convertMarkerToSymbol(style.getMarker());
+            lineSeries.setSymbol(symbol);
+            lineSeries.setSymbolSize((int) style.getMarkerSize());
+            lineSeries.setShowSymbol(true);
+        }
+
+        // 设置透明度和填充
+        if (style.getAlpha() < 1.0f) {
+            org.icepear.echarts.charts.line.LineAreaStyle areaStyle = EchartsStyleConverter.toEChartsAreaStyle(style);
+            lineSeries.setAreaStyle(areaStyle);
+        }
+    }
+
+    /**
+     * 应用样式到ScatterSeries
+     *
+     * @param scatterSeries 散点系列
+     * @param style         样式对象
+     */
+    private void applyStyleToScatterSeries(ScatterSeries scatterSeries, PlotStyle style) {
+        if (style == null) {
+            scatterSeries.setName("散点数据");
+            return;
+        }
+
+        // 设置名称/标签
+        String label = style.getLabel();
+        scatterSeries.setName(label.isEmpty() ? "散点数据" : label);
+
+        // 设置标记符号和颜色
+        if (style.getMarker() != null && !style.getMarker().isEmpty()) {
+            String symbol = EchartsStyleConverter.convertMarkerToSymbol(style.getMarker());
+            scatterSeries.setSymbol(symbol);
+        }
+
+        scatterSeries.setSymbolSize((int) style.getMarkerSize());
+
+        // 设置颜色（散点图主要通过itemStyle设置颜色）
+        if (style.getColor() != null) {
+            // 这里需要设置itemStyle，但ECharts-Java可能需要特殊处理
+            // 暂时通过系列级别设置
+        }
+    }
+
+    /**
+     * 设置默认样式
+     *
+     * @param style 默认样式
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot setDefaultStyle(PlotStyle style) {
+        this.defaultStyle = style != null ? style : PlotStyle.defaultStyle();
+        return this;
+    }
+
+    /**
+     * 获取默认样式
+     *
+     * @return 默认样式
+     */
+    public PlotStyle getDefaultStyle() {
+        return this.defaultStyle;
+    }
+
+    /**
+     * 设置调色板
+     *
+     * @param paletteName 调色板名称
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot setPalette(String paletteName) {
+        if (ColorPalette.hasPalette(paletteName)) {
+            this.currentPalette = paletteName;
+        }
+        return this;
+    }
+
+    /**
+     * 获取当前调色板名称
+     *
+     * @return 调色板名称
+     */
+    public String getPalette() {
+        return this.currentPalette;
+    }
+
+    /**
+     * 启用或禁用样式系统
+     *
+     * @param enabled 是否启用
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot enableStyleSystem(boolean enabled) {
+        this.useStyleSystem = enabled;
+        return this;
+    }
+
+    /**
+     * 检查样式系统是否启用
+     *
+     * @return 是否启用
+     */
+    public boolean isStyleSystemEnabled() {
+        return this.useStyleSystem;
+    }
+
+    /**
+     * 应用样式字符串到图表元素
+     *
+     * @param styleString 样式字符串
+     * @return 解析后的样式对象
+     */
+    public PlotStyle parseStyle(String styleString) {
+        return StyleExpression.parse(styleString);
+    }
+
+    /**
+     * 创建自定义样式
+     *
+     * @param color     颜色
+     * @param lineStyle 线条样式
+     * @param marker    标记
+     * @return 样式对象
+     */
+    public static PlotStyle createStyle(String color, String lineStyle, String marker) {
+        return new PlotStyle()
+                .color(color)
+                .lineStyle(lineStyle)
+                .marker(marker);
+    }
+
+    // ========== 主题系统方法 ==========
+    /**
+     * 设置当前主题
+     *
+     * @param themeName 主题名称
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot theme(String themeName) {
+        this.currentTheme = themeName;
+        if (this.option != null && this.useThemeSystem) {
+            EchartsThemeManager.applyTheme(this.option, themeName);
+        }
+        return this;
+    }
+
+    /**
+     * 获取当前主题
+     *
+     * @return 当前主题名称
+     */
+    public String getCurrentTheme() {
+        return this.currentTheme;
+    }
+
+    /**
+     * 启用或禁用主题系统
+     *
+     * @param enabled 是否启用
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot enableThemeSystem(boolean enabled) {
+        this.useThemeSystem = enabled;
+        return this;
+    }
+
+    /**
+     * 检查主题系统是否启用
+     *
+     * @return 是否启用
+     */
+    public boolean isThemeSystemEnabled() {
+        return this.useThemeSystem;
+    }
+
+    /**
+     * 应用主题到当前图表
+     *
+     * @param themeName 主题名称
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot applyTheme(String themeName) {
+        if (this.option != null && this.useThemeSystem) {
+            EchartsThemeManager.applyTheme(this.option, themeName);
+            this.currentTheme = themeName;
+        }
+        return this;
+    }
+
+    /**
+     * 注册自定义主题
+     *
+     * @param themeName 主题名称
+     * @param theme     自定义主题对象
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot registerTheme(String themeName, EchartsThemeManager.CustomTheme theme) {
+        EchartsThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+
+    /**
+     * 创建渐变主题
+     *
+     * @param themeName       主题名称
+     * @param startColor      起始颜色
+     * @param endColor        结束颜色
+     * @param backgroundColor 背景颜色
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot createGradientTheme(String themeName, String startColor, String endColor, String backgroundColor) {
+        EchartsThemeManager.CustomTheme theme = EchartsThemeManager.createGradientTheme(themeName, startColor, endColor,
+                backgroundColor);
+        EchartsThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+
+    /**
+     * 创建单色主题
+     *
+     * @param themeName       主题名称
+     * @param baseColor       基础颜色
+     * @param backgroundColor 背景颜色
+     * @return 当前实例，支持链式调用
+     */
+    public EchartsPlot createMonochromeTheme(String themeName, String baseColor, String backgroundColor) {
+        EchartsThemeManager.CustomTheme theme = EchartsThemeManager.createMonochromeTheme(themeName, baseColor, backgroundColor);
+        EchartsThemeManager.registerCustomTheme(themeName, theme);
+        return this;
+    }
+
+    /**
+     * 获取所有可用的主题名称
+     *
+     * @return 主题名称列表
+     */
+    public static List<String> getAvailableThemes() {
+        return EchartsThemeManager.getRegisteredThemeNames();
+    }
+
+    /**
+     * 获取内置主题名称
+     *
+     * @return 内置主题名称列表
+     */
+    public static List<String> getBuiltinThemes() {
+        return EchartsThemeManager.getBuiltinThemeNames();
+    }
+
+    /**
+     * ECharts-Java 只产出 HTML/JSON；在 JVM 内将页面栅格化为 PNG/SVG 需内嵌浏览器（如 JavaFX WebView），依赖体积大，
+     * 故本实现不引入 javafx-web。需要位图或内嵌位图的 SVG 时请改用 {@link com.yishape.lab.math.plot.javafx.JavaFxPlot}，
+     * 或使用 {@link #saveAsHtml(String)} / {@link #toHtml()} 在浏览器中打开后再导出。
+     */
+    private static PlotException rasterExportNotSupported() {
+        return new PlotException(
+                "EChartsPlot 不支持在本地直接生成 PNG/SVG：请使用 saveAsHtml()/toHtml() 在浏览器中导出，或使用 JavaFxPlot.saveAsPng/saveAsSvg。"
+        );
+    }
+
+    @Override
+    public IPlot saveAsSvg(String filename) {
+        throw rasterExportNotSupported();
+    }
+
+    @Override
+    public IPlot saveAsPng(String filename) {
+        throw rasterExportNotSupported();
+    }
+
+    @Override
+    public IPlot saveAsPdf(String filename) {
+        throw rasterExportNotSupported();
+    }
+
+    @Override
+    public String toBase64Svg() {
+        throw rasterExportNotSupported();
+    }
+
+    @Override
+    public String toBase64Png() {
+        throw rasterExportNotSupported();
+    }
+}

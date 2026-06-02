@@ -1,0 +1,400 @@
+package com.yishape.lab.math.stats.distribution;
+
+import com.yishape.lab.math.RereMathUtil;
+import java.io.Serializable;
+import com.yishape.lab.math.linalg.IDoubleVector;
+
+/**
+ * Beta分布 (Beta Distribution)
+ * 
+ * Beta分布是定义在区间[0,1]上的连续概率分布，由两个形状参数α和β控制。
+ * 其概率密度函数为：f(x) = (1/B(α,β)) * x^(α-1) * (1-x)^(β-1)
+ * 其中B(α,β)是Beta函数，α和β是形状参数。
+ * 
+ * Beta distribution is a continuous probability distribution defined on the interval [0,1],
+ * controlled by two shape parameters α and β. Its probability density function is:
+ * f(x) = (1/B(α,β)) * x^(α-1) * (1-x)^(β-1)
+ * where B(α,β) is the Beta function, and α and β are shape parameters.
+ * 
+ * @author lteb2
+ */
+public class BetaDistribution implements IContinuousDistribution, Serializable {
+    
+    private static final long serialVersionUID = 1L;
+    
+    /** 形状参数α / Shape parameter α */
+    private final double alpha;
+    
+    /** 形状参数β / Shape parameter β */
+    private final double beta;
+    
+    /** Beta函数值B(α,β)的缓存 / Cached value of Beta function B(α,β) */
+    private final double betaFunction;
+    
+    /** 均值 / Mean */
+    private final double mean;
+    
+    /** 方差 / Variance */
+    private final double variance;
+    
+    /** 标准差 / Standard deviation */
+    private final double stdDev;
+    
+    /**
+     * 构造函数
+     * Constructor
+     * 
+     * @param alpha 形状参数α，必须大于0 / Shape parameter α, must be greater than 0
+     * @param beta 形状参数β，必须大于0 / Shape parameter β, must be greater than 0
+     * @throws IllegalArgumentException 如果参数小于等于0 / If parameters are less than or equal to 0
+     */
+    public BetaDistribution(double alpha, double beta) {
+        if (alpha <= 0.0) {
+            throw new IllegalArgumentException("α参数必须大于0 / α parameter must be greater than 0");
+        }
+        if (beta <= 0.0) {
+            throw new IllegalArgumentException("β参数必须大于0 / β parameter must be greater than 0");
+        }
+        
+        this.alpha = alpha;
+        this.beta = beta;
+        this.betaFunction = RereMathUtil.beta(alpha, beta);
+        
+        // 计算统计量
+        this.mean = alpha / (alpha + beta);
+        this.variance = (alpha * beta) / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1.0));
+        this.stdDev = Math.sqrt(variance);
+    }
+    
+    /**
+     * 计算概率密度函数值
+     * Calculate probability density function value
+     * 
+     * @param x 输入值，必须在[0,1]范围内 / Input value, must be in range [0,1]
+     * @return 概率密度函数值 / PDF value
+     */
+    @Override
+    public double pdf(double x) {
+        if (Double.isNaN(x)) {
+            return Double.NaN;
+        }
+        if (x < 0.0 || x > 1.0) {
+            return 0.0;
+        }
+        
+        if (Double.isInfinite(x)) {
+            return 0.0;
+        }
+        
+        if (x == 0.0 && alpha < 1.0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        if (x == 1.0 && beta < 1.0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
+        if (x == 0.0 || x == 1.0) {
+            return 0.0;
+        }
+        
+        double logPdf = (alpha - 1.0) * Math.log(x) + (beta - 1.0) * Math.log(1.0 - x) - Math.log(betaFunction);
+        return Math.exp(logPdf);
+    }
+    
+    /**
+     * 计算累积分布函数值
+     * Calculate cumulative distribution function value
+     * 
+     * @param x 输入值，必须在[0,1]范围内 / Input value, must be in range [0,1]
+     * @return 累积分布函数值 / CDF value
+     */
+    @Override
+    public double cdf(double x) {
+        if (Double.isInfinite(x)) {
+            if (x == Double.NEGATIVE_INFINITY) return 0.0;
+            if (x == Double.POSITIVE_INFINITY) return 1.0;
+        }
+        if (Double.isNaN(x)) return Double.NaN;
+        
+        if (x < 0.0) return 0.0;
+        if (x > 1.0) return 1.0;
+        if (x == 0.0) return 0.0;
+        if (x == 1.0) return 1.0;
+        
+        return RereMathUtil.incompleteBeta(alpha, beta, x) / betaFunction;
+    }
+    
+    /**
+     * 计算百分点函数值（分位数函数）
+     * Calculate percent point function value (quantile function)
+     * 
+     * @param p 概率值，范围[0,1] / Probability value, range [0,1]
+     * @return 百分点函数值 / PPF value
+     */
+    @Override
+    public double ppf(double p) {
+        if (p < 0.0 || p > 1.0) {
+            throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
+        }
+        
+        if (p == 0.0) return 0.0;
+        if (p == 1.0) return 1.0;
+        
+        // 使用二分法求解逆Beta分布
+        // Using binary search to solve inverse Beta distribution
+        return inverseBetaCDF(p);
+    }
+    
+    /**
+     * 使用二分法计算逆Beta CDF
+     * Calculate inverse Beta CDF using binary search
+     */
+    private double inverseBetaCDF(double p) {
+        double low = 0.0;
+        double high = 1.0;
+        double tolerance = 1e-6;
+        int maxIter = 100;
+        
+        for (int i = 0; i < maxIter; i++) {
+            double mid = (low + high) / 2.0;
+            double cdfValue = cdf(mid);
+            
+            if (Math.abs(cdfValue - p) < tolerance) {
+                return mid;
+            }
+            
+            if (cdfValue < p) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        
+        return (low + high) / 2.0;
+    }
+    
+    /**
+     * 计算生存函数值（1 - CDF）
+     * Calculate survival function value (1 - CDF)
+     * 
+     * @param x 输入值 / Input value
+     * @return 生存函数值 / Survival function value
+     */
+    @Override
+    public double sf(double x) {
+        return 1.0 - cdf(x);
+    }
+    
+    /**
+     * 计算逆生存函数值
+     * Calculate inverse survival function value
+     * 
+     * @param p 概率值，范围[0,1] / Probability value, range [0,1]
+     * @return 逆生存函数值 / Inverse survival function value
+     */
+    @Override
+    public double isf(double p) {
+        return ppf(1.0 - p);
+    }
+    
+    /**
+     * 获取均值
+     * Get mean
+     * 
+     * @return 均值 / Mean
+     */
+    @Override
+    public double mean() {
+        return mean;
+    }
+    
+    /**
+     * 获取方差
+     * Get variance
+     * 
+     * @return 方差 / Variance
+     */
+    @Override
+    public double var() {
+        return variance;
+    }
+    
+    /**
+     * 获取标准差
+     * Get standard deviation
+     * 
+     * @return 标准差 / Standard deviation
+     */
+    @Override
+    public double std() {
+        return stdDev;
+    }
+    
+    /**
+     * 获取中位数
+     * Get median
+     * 
+     * @return 中位数 / Median
+     */
+    @Override
+    public double median() {
+        return ppf(0.5);
+    }
+    
+    /**
+     * 获取众数
+     * Get mode
+     * 
+     * @return 众数 / Mode
+     */
+    @Override
+    public double mode() {
+        if (alpha <= 1.0 && beta <= 1.0) {
+            // 当α≤1且β≤1时，众数在端点处
+            return alpha < beta ? 0.0 : (alpha > beta ? 1.0 : Double.NaN);
+        }
+        return (alpha - 1.0) / (alpha + beta - 2.0);
+    }
+    
+    /**
+     * 获取第一四分位数（Q1）
+     * Get first quartile (Q1)
+     * 
+     * @return 第一四分位数 / First quartile
+     */
+    @Override
+    public double q1() {
+        return ppf(0.25);
+    }
+    
+    /**
+     * 获取第三四分位数（Q3）
+     * Get third quartile (Q3)
+     * 
+     * @return 第三四分位数 / Third quartile
+     */
+    @Override
+    public double q3() {
+        return ppf(0.75);
+    }
+    
+    /**
+     * 获取偏度
+     * Get skewness
+     * 
+     * @return 偏度 / Skewness
+     */
+    @Override
+    public double skewness() {
+        double numerator = 2.0 * (beta - alpha) * Math.sqrt(alpha + beta + 1.0);
+        double denominator = (alpha + beta + 2.0) * Math.sqrt(alpha * beta);
+        return numerator / denominator;
+    }
+    
+    /**
+     * 获取峰度
+     * Get kurtosis
+     * 
+     * @return 峰度 / Kurtosis
+     */
+    @Override
+    public double kurtosis() {
+        double aPlusB = alpha + beta;
+        double numerator = 6.0 * ((alpha - beta) * (alpha - beta) * (aPlusB + 1.0) - alpha * beta * (aPlusB + 2.0));
+        double denominator = alpha * beta * (aPlusB + 2.0) * (aPlusB + 3.0);
+        return numerator / denominator;
+    }
+    
+    /**
+     * 生成一个随机样本
+     * Generate a random sample
+     * 
+     * @return 随机样本 / Random sample
+     */
+    @Override
+    public double sample() {
+        // 使用Gamma分布生成Beta分布样本
+        // Using Gamma distribution to generate Beta distribution samples
+        double gamma1 = gammaSample(alpha, 1.0);
+        double gamma2 = gammaSample(beta, 1.0);
+        return gamma1 / (gamma1 + gamma2);
+    }
+    
+    /**
+     * 生成n个随机样本
+     * Generate n random samples
+     * 
+     * @param n 样本数量 / Number of samples
+     * @return 随机样本数组 / Array of random samples
+     */
+    @Override
+    public double[] sample(int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("样本数量必须大于0 / Sample size must be greater than 0");
+        }
+        
+        IDoubleVector samples = IDoubleVector.zeros(n);
+        for (int i = 0; i < n; i++) {
+            samples.set(i, sample());
+        }
+        return samples.getData();
+    }
+    
+    /**
+     * 使用Box-Muller变换生成Gamma分布样本
+     * Generate Gamma distribution sample using Box-Muller transform
+     */
+    private double gammaSample(double shape, double scale) {
+        if (shape < 1.0) {
+            // 对于形状参数小于1的情况，使用变换
+            return gammaSample(shape + 1.0, scale) * Math.pow(Math.random(), 1.0 / shape);
+        }
+        
+        // 使用Marsaglia和Tsang的方法
+        double d = shape - 1.0 / 3.0;
+        double c = 1.0 / Math.sqrt(9.0 * d);
+        
+        while (true) {
+            double x = RereMathUtil.normalSample(0.0, 1.0);
+            double v = 1.0 + c * x;
+            
+            if (v <= 0.0) continue;
+            
+            v = v * v * v;
+            double u = Math.random();
+            
+            if (u < 1.0 - 0.0331 * x * x * x * x) {
+                return d * v * scale;
+            }
+            
+            if (Math.log(u) < 0.5 * x * x + d * (1.0 - v + Math.log(v))) {
+                return d * v * scale;
+            }
+        }
+    }
+    
+    /**
+     * 获取形状参数α
+     * Get shape parameter α
+     * 
+     * @return 形状参数α / Shape parameter α
+     */
+    public double getAlpha() {
+        return alpha;
+    }
+    
+    /**
+     * 获取形状参数β
+     * Get shape parameter β
+     * 
+     * @return 形状参数β / Shape parameter β
+     */
+    public double getBeta() {
+        return beta;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("BetaDistribution(α=%.3f, β=%.3f)", alpha, beta);
+    }
+}

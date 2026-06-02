@@ -1,0 +1,42 @@
+# 在 GitHub 创建 Release 时发布 com.yishape.lab:yishape-math 到 GitHub Packages。
+# 须先发布同版本的 yishape-math-hpc（见 yishape-math-hpc 仓库 workflow）。
+
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Deploy POM version as-is (must match pom.xml); use Release for tagged builds'
+        required: false
+        default: ''
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Build
+        run: mvn -B -q package
+
+      - name: Publish to GitHub Packages
+        run: mvn -B deploy -Pgithub-packages -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,1293 @@
+package com.yishape.lab.math.ml.clf.tree;
+
+import com.yishape.lab.util.YishapeLogger;
+
+import com.yishape.lab.math.ml.ISerializableModel;
+import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IVector;
+import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.ml.clf.BatchPredResult;
+import com.yishape.lab.math.ml.metric.ClassificationMetrics;
+import com.yishape.lab.math.optimize.IGradientFunction;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IOnlineOptimizer;
+import com.yishape.lab.math.optimize.newton.RereOnlineSGD;
+import com.yishape.lab.math.optimize.newton.RereOnlineAdam;
+
+import java.util.*;
+
+import com.yishape.lab.math.ml.clf.IClassifier;
+
+/**
+ * RereXGboost分类器
+ * <p>
+ * 实现XGBoost（eXtreme Gradient Boosting）算法，支持二分类和多分类。
+ * 使用梯度提升决策树（GBDT）作为基学习器，通过迭代训练多个决策树来提升模型性能。
+ * </p>
+ * 
+ * @author lteb2
+ * @version 1.0
+ * @since 1.0
+ */
+public class RereXGboost implements IClassifier, IGradientFunction, IObjectiveFunction {
+
+    private static final YishapeLogger log = YishapeLogger.getLogger(RereXGboost.class);
+
+    // ==================== 模型参数 ====================
+    
+    /** 决策树列表 */
+    private List<XGTree> trees;
+    
+    /** 损失函数 */
+    private XGBoostLossFunction lossFunction;
+    
+    /** 学习率 */
+    private double learningRate = 0.1;
+    
+    /** 最大迭代次数（树的数量） */
+    private int nEstimators = 100;
+    
+    /** 树的最大深度 */
+    private int maxDepth = 6;
+    
+    /** 最小分裂样本数 */
+    private int minSamplesSplit = 2;
+    
+    /** 最小叶子样本数 */
+    private int minSamplesLeaf = 1;
+    
+    /** L1正则化参数 */
+    private double alpha = 0.0;
+    
+    /** L2正则化参数 */
+    private double lambda = 1.0;
+    
+    /** 早停轮数 */
+    private int earlyStoppingRounds = 10;
+    
+    /** 验证集比例 */
+    private double validationFraction = 0.1;
+    
+    /** 收敛容忍度 */
+    private double tolerance = 1e-6;
+    
+    /** 随机种子 */
+    private long randomSeed = 42;
+
+    /**
+     * 建树策略：默认 {@link XGBoostTreeMethod#HIST}（直方图，大规模更快）；{@link XGBoostTreeMethod#EXACT} 用于小规模数值基准。
+     */
+    private XGBoostTreeMethod treeMethod = XGBoostTreeMethod.HIST;
+
+    /** 直方图分箱数（≥2），仅 {@link XGBoostTreeMethod#HIST} 有效 */
+    private int maxBin = 256;
+
+    /** 最小分裂增益 γ（对应 XGBoost {@code min_split_loss}） */
+    private double gamma = 0.0;
+
+    /** 子结点最小 Hessian 和（对应 XGBoost {@code min_child_weight}；0 表示不启用） */
+    private double minChildWeight = 0.0;
+
+    /** 每轮建树使用的样本比例 (0,1]，1 为全量 */
+    private double subsample = 1.0;
+
+    /** 每棵树使用的特征比例 (0,1]，1 为全特征 */
+    private double colsampleBytree = 1.0;
+
+    /**
+     * 直方图分箱：默认 Hessian 加权分位数（对齐工业库 weighted quantile）；
+     * {@link XGBoostHistogramBinning#UNIFORM} 为旧版均匀分箱。
+     */
+    private XGBoostHistogramBinning histogramBinning = XGBoostHistogramBinning.QUANTILE_WEIGHTED_SKETCH;
+
+    /**
+     * 全局初始 margin（base_score / base_margin）：{@code null} 表示按训练集标签频率自动计算；
+     * 二分类长度为 1（正类约定为索引 1 的 logit 参考方向与样本列一致），多分类长度为 K。
+     */
+    private double[] baseMarginOverride = null;
+
+    /** 训练用 RNG */
+    private Random rng;
+
+    // ==================== 训练状态 ====================
+    
+    /** 类别标签映射 */
+    private Map<String, Integer> labelToIndex;
+    
+    /** 索引到类别标签映射 */
+    private Map<Integer, String> indexToLabel;
+    
+    /** 类别数量 */
+    private int numClasses;
+    
+    /** 是否为二分类 */
+    private boolean isBinary;
+    
+    /** 特征数量 */
+    private int numFeatures;
+    
+    /** 训练损失历史 */
+    private List<Double> trainLossHistory;
+    
+    /** 验证损失历史 */
+    private List<Double> validationLossHistory;
+    
+    /** 特征重要性 */
+    private IVector featureImportance;
+    
+    /** 初始预测值 */
+    private IMatrix initialPredictions;
+    
+    /** 当前预测矩阵，用于优化计算 */
+    private IMatrix predictions;
+
+    /** 训练标签矩阵，用于 computeGradient/computeObjective 接口 */
+    private IMatrix trainLabelsMatrix;
+    
+    /** 是否已训练 */
+    private boolean isTrained = false;
+    
+    // 优化器相关字段
+    private IOnlineOptimizer optimizer;
+    private String optimizerType = "adam"; // 默认使用SGD
+    private double optimizerLearningRate = 0.01;
+    
+    /** 是否在每个 boosting 轮次用在线优化器改写 {@link #learningRate}（默认关闭，与工业 XGBoost 固定 eta 一致） */
+    private boolean adaptiveBoostingLearningRate = false;
+
+    private ClassificationMetrics metrics;
+    private XGBoostResult result;
+    
+    /**
+     * 默认构造函数
+     */
+    public RereXGboost() {
+        this.trees = new ArrayList<>();
+        this.trainLossHistory = new ArrayList<>();
+        this.validationLossHistory = new ArrayList<>();
+    }
+    
+    /**
+     * 带参数的构造函数
+     * @param learningRate 学习率
+     * @param nEstimators 树的数量
+     * @param maxDepth 最大深度
+     * @param alpha L1正则化参数
+     * @param lambda L2正则化参数
+     */
+    public RereXGboost(double learningRate, int nEstimators, int maxDepth, 
+                      double alpha, double lambda) {
+        this();
+        this.learningRate = learningRate;
+        this.nEstimators = nEstimators;
+        this.maxDepth = maxDepth;
+        this.alpha = alpha;
+        this.lambda = lambda;
+    }
+    
+    @Override
+    public IClassifier fit(IMatrix features, String[] labels) {
+
+        // 初始化
+        initializeModel(features, labels);
+
+        // 准备训练数据
+        IMatrix labelMatrix = prepareLabels(labels);
+
+        // 分割训练集和验证集
+        DataSplit dataSplit = splitData(features, labelMatrix);
+        this.trainLabelsMatrix = dataSplit.trainLabels;
+
+        double[] baseMargins = resolveBaseMargins(dataSplit.trainLabels);
+        this.initialPredictions = Linalg.zeros(1, baseMargins.length);
+        for (int j = 0; j < baseMargins.length; j++) {
+            this.initialPredictions.set(0, j, baseMargins[j]);
+        }
+
+        IMatrix trainPredictions = predictionMatrixFilled(dataSplit.trainFeatures.rows(), baseMargins);
+        IMatrix validPredictions = null;
+        if (dataSplit.validFeatures != null) {
+            validPredictions = predictionMatrixFilled(dataSplit.validFeatures.rows(), baseMargins);
+        }
+
+        // 梯度提升训练
+        int bestIteration = 0;
+        double bestValidLoss = Double.MAX_VALUE;
+        int noImprovementCount = 0;
+
+        // 初始化优化器参数向量（学习率）
+        IVector optimizerParams = Linalg.vector(new double[]{learningRate});
+        if (optimizer != null) {
+            optimizer.initialize(optimizerParams);
+        }
+
+        for (int iteration = 0; iteration < nEstimators; iteration++) {
+
+            // 计算梯度和海塞矩阵
+            IMatrix gradients = lossFunction.computeGradients(trainPredictions, dataSplit.trainLabels);
+            IMatrix hessians = lossFunction.computeHessians(trainPredictions, dataSplit.trainLabels);
+
+            // 训练决策树
+            List<XGTree> iterationTrees = trainTrees(dataSplit.trainFeatures, gradients, hessians);
+            trees.addAll(iterationTrees);
+
+            // 更新预测值 - 设置当前预测矩阵并调用优化后的方法
+            this.predictions = trainPredictions;
+            updatePredictions(dataSplit.trainFeatures, iterationTrees);
+            trainPredictions = this.predictions;
+
+            if (validPredictions != null) {
+                this.predictions = validPredictions;
+                updatePredictions(dataSplit.validFeatures, iterationTrees);
+                validPredictions = this.predictions;
+            }
+
+            // 计算损失
+            double trainLoss = lossFunction.computeLoss(trainPredictions, dataSplit.trainLabels);
+            trainLossHistory.add(trainLoss);
+
+            // 使用优化器动态调整学习率
+            if (optimizer != null && iteration > 0) {
+                // 计算学习率的梯度（基于损失变化）
+                double lossGradient = trainLossHistory.get(iteration) - trainLossHistory.get(iteration - 1);
+                IVector lrGradient = Linalg.vector(new double[]{lossGradient});
+
+                // 使用优化器更新学习率
+                IVector newParams = optimizer.step(lrGradient, trainLoss);
+                double newLearningRate = Math.max(0.001, Math.min(1.0, newParams.get(0))); // 限制学习率范围
+                this.learningRate = newLearningRate;
+            }
+
+            if (validPredictions != null) {
+                double validLoss = lossFunction.computeLoss(validPredictions, dataSplit.validLabels);
+                validationLossHistory.add(validLoss);
+
+                // 早停检查
+                if (validLoss < bestValidLoss - tolerance) {
+                    bestValidLoss = validLoss;
+                    bestIteration = iteration;
+                    noImprovementCount = 0;
+                } else {
+                    noImprovementCount++;
+                    if (noImprovementCount >= earlyStoppingRounds) {
+                        log.debug("Early stopping at iteration " + iteration);
+                        break;
+                    }
+                }
+            }
+
+            // 打印进度
+            if ((iteration + 1) % 10 == 0) {
+                if (validPredictions != null) {
+                    log.debug(String.format("Iteration %d: Train Loss = %.6f, Valid Loss = %.6f",
+                            iteration + 1, trainLoss, validationLossHistory.get(iteration)));
+                } else {
+                    log.debug(String.format("Iteration %d: Train Loss = %.6f", iteration + 1, trainLoss));
+                }
+            }
+        }
+
+        // 计算特征重要性
+        computeFeatureImportance();
+
+        this.isTrained = true;
+
+        // 创建结果对象
+        this.result = createResult();
+
+        return this;
+    }
+
+    @Override
+    public String[] fitPredict(IMatrix features, String[] labels) {
+        fit(features, labels);
+        return predictBatch(features);
+    }
+
+    @Override
+    public XGBoostResult getResult() {
+        return result;
+    }
+    
+    @Override
+    public String predict(IVector x) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("Model has not been trained yet.");
+        }
+        
+        // 获取预测概率
+        IVector probabilities = predictProbInternal(x);
+        
+        // 使用向量API找到最大概率对应的类别索引
+        int maxIndex = probabilities.argMax();
+        
+        return indexToLabel.get(maxIndex);
+    }
+    
+    /**
+     * 预测概率
+     * @param x 特征向量
+     * @return 各类别的概率
+     */
+    public IVector predictProbInternal(IVector x) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("Model has not been trained yet.");
+        }
+        
+        // 初始化预测值
+        IMatrix predictions = Linalg.zeros(1, isBinary ? 1 : numClasses);
+        
+        // 设置初始预测值
+        for (int j = 0; j < predictions.cols(); j++) {
+            predictions.set(0, j, initialPredictions.get(0, j));
+        }
+        
+        // 累加所有树的预测
+        int treeIndex = 0;
+        for (int i = 0; i < nEstimators && treeIndex < trees.size(); i++) {
+            for (int j = 0; j < (isBinary ? 1 : numClasses); j++) {
+                if (treeIndex < trees.size()) {
+                    double treePred = trees.get(treeIndex).predict(x);
+                    double currentPred = predictions.get(0, j);
+                    predictions.set(0, j, currentPred + treePred);
+                    treeIndex++;
+                }
+            }
+        }
+        
+        // 转换为概率
+        IMatrix probMatrix = lossFunction.predictProba(predictions);
+        return probMatrix.getRow(0);
+    }
+
+    @Override
+    public Map<String, Double> predictProb(IVector x) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+        
+        if (x == null) {
+            throw new IllegalArgumentException("输入特征向量不能为null");
+        }
+        
+        // 获取预测概率向量
+        IVector probabilities = predictProbInternal(x);
+        
+        // 转换为Map格式
+        Map<String, Double> result = new HashMap<>();
+        
+        if (isBinary) {
+            // 二分类：返回两个类别的概率
+            double prob1 = probabilities.get(0);
+            double prob0 = 1.0 - prob1;
+            // 获取类别标签
+            String label0 = null;
+            String label1 = null;
+            for (Map.Entry<String, Integer> entry : labelToIndex.entrySet()) {
+                if (entry.getValue() == 0) {
+                    label0 = entry.getKey();
+                } else if (entry.getValue() == 1) {
+                    label1 = entry.getKey();
+                }
+            }
+            result.put(label0, prob0);
+            result.put(label1, prob1);
+        } else {
+            // 多分类
+            for (int i = 0; i < numClasses; i++) {
+                String label = indexToLabel.get(i);
+                result.put(label, probabilities.get(i));
+            }
+        }
+        
+        return result;
+    }
+    
+    
+    
+    /**
+     * 批量预测
+     * @param features 特征矩阵
+     * @return 预测标签数组
+     */
+    @Override
+    public String[] predictBatch(IMatrix features) {
+        int numSamples = features.rows();
+        String[] predictions = new String[numSamples];
+        
+        for (int i = 0; i < numSamples; i++) {
+            predictions[i] = predict(features.getRow(i));
+        }
+        
+        return predictions;
+    }
+
+    @Override
+    public BatchPredResult predictBatchWithProbs(IMatrix features) {
+        if (trees.isEmpty()) {
+            throw new IllegalStateException("模型尚未训练，请先调用fit方法");
+        }
+
+        if (features == null) {
+            throw new IllegalArgumentException("特征矩阵不能为null");
+        }
+
+        int numSamples = features.rows();
+        String[] predictions = new String[numSamples];
+        int outputDim = isBinary ? 2 : numClasses;
+        double[][] classProbabilities = new double[numSamples][outputDim];
+
+        // 使用现有的批量概率预测方法
+        IMatrix probMatrix = predictProba(features);
+
+        for (int i = 0; i < numSamples; i++) {
+            // 找到概率最大的类别作为预测
+            int maxIndex = 0;
+            double maxProb = probMatrix.get(i, 0);
+
+            for (int j = 1; j < outputDim; j++) {
+                double prob = probMatrix.get(i, j);
+                classProbabilities[i][j] = prob;
+
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    maxIndex = j;
+                }
+            }
+
+            // 填充第一个类别的概率
+            if (isBinary) {
+                classProbabilities[i][0] = 1.0 - maxProb;
+            } else {
+                classProbabilities[i][0] = probMatrix.get(i, 0);
+            }
+
+            // 转换为类别标签
+            predictions[i] = indexToLabel.get(maxIndex);
+        }
+
+        return new BatchPredResult(predictions, classProbabilities);
+    }
+
+    
+    
+    /**
+     * 批量预测概率
+     * @param features 特征矩阵
+     * @return 概率矩阵
+     */
+    public IMatrix predictProba(IMatrix features) {
+        int numSamples = features.rows();
+        int outputDim = isBinary ? 2 : numClasses;
+        IMatrix probabilities = Linalg.zeros(numSamples, outputDim);
+        
+        // 批量初始化预测值
+        IMatrix predictions = Linalg.zeros(numSamples, isBinary ? 1 : numClasses);
+        
+        // 设置初始预测值 - 使用矩阵运算
+        for (int i = 0; i < numSamples; i++) {
+            for (int j = 0; j < predictions.cols(); j++) {
+                predictions.set(i, j, initialPredictions.get(0, j));
+            }
+        }
+        
+        // 累加所有树的预测
+        int treeIndex = 0;
+        for (int iter = 0; iter < nEstimators && treeIndex < trees.size(); iter++) {
+            for (int classIdx = 0; classIdx < (isBinary ? 1 : numClasses); classIdx++) {
+                if (treeIndex < trees.size()) {
+                    XGTree tree = trees.get(treeIndex);
+                    // 对每个样本进行预测
+                    for (int i = 0; i < numSamples; i++) {
+                        double treePred = tree.predict(features.getRow(i));
+                        double currentPred = predictions.get(i, classIdx);
+                        predictions.set(i, classIdx, currentPred + treePred);
+                    }
+                    treeIndex++;
+                }
+            }
+        }
+        
+        // 批量转换为概率
+        return lossFunction.predictProba(predictions);
+    }
+    
+    @Override
+    public IVector computeGradient(IVector x) {
+        if (predictions == null || lossFunction == null) {
+            return Linalg.vector(new double[x.size()]);
+        }
+        if (trainLabelsMatrix == null) {
+            return Linalg.vector(new double[x.size()]);
+        }
+
+        IMatrix gradients = lossFunction.computeGradients(predictions, trainLabelsMatrix);
+
+        double[] gradArray = new double[gradients.rows() * gradients.cols()];
+        int idx = 0;
+        for (int i = 0; i < gradients.rows(); i++) {
+            for (int j = 0; j < gradients.cols(); j++) {
+                gradArray[idx++] = gradients.get(i, j);
+            }
+        }
+
+        return Linalg.vector(gradArray);
+    }
+    
+    @Override
+    public double computeObjective(IVector x) {
+        if (predictions == null || lossFunction == null) {
+            return 0.0;
+        }
+        if (trainLabelsMatrix == null) {
+            return 0.0;
+        }
+
+        return lossFunction.computeLoss(predictions, trainLabelsMatrix);
+    }
+    
+    // ==================== 私有辅助方法 ====================
+    
+    /**
+     * 初始化模型
+     * @param features 特征矩阵
+     * @param labels 标签数组
+     */
+    private void initializeModel(IMatrix features, String[] labels) {
+        this.numFeatures = features.cols();
+        
+        // 构建标签映射
+        buildLabelMapping(labels);
+        
+        // 初始化损失函数
+        XGBoostLossFunction.LossType lossType = isBinary ? 
+            XGBoostLossFunction.LossType.BINARY_LOGISTIC : 
+            XGBoostLossFunction.LossType.MULTICLASS_SOFTMAX;
+        this.lossFunction = new XGBoostLossFunction(lossType, numClasses);
+        
+        // 清空之前的训练状态
+        this.trees.clear();
+        this.trainLossHistory.clear();
+        this.validationLossHistory.clear();
+        this.initialPredictions = null;
+
+        if (adaptiveBoostingLearningRate) {
+            initializeOptimizer();
+        } else {
+            optimizer = null;
+        }
+
+        this.rng = new Random(randomSeed);
+    }
+    
+    /**
+     * 构建标签映射
+     * @param labels 标签数组
+     */
+    private void buildLabelMapping(String[] labels) {
+        // 与工业实践一致：类别索引按标签字典序稳定分配，避免 HashSet 迭代顺序依赖 JVM/哈希桶
+        TreeSet<String> uniqueSorted = new TreeSet<>(Arrays.asList(labels));
+        this.numClasses = uniqueSorted.size();
+        this.isBinary = numClasses == 2;
+        
+        this.labelToIndex = new HashMap<>();
+        this.indexToLabel = new HashMap<>();
+        
+        int index = 0;
+        for (String label : uniqueSorted) {
+            labelToIndex.put(label, index);
+            indexToLabel.put(index, label);
+            index++;
+        }
+    }
+    
+    /**
+     * 准备标签矩阵
+     * @param labels 标签数组
+     * @return 标签矩阵
+     */
+    private IMatrix prepareLabels(String[] labels) {
+        int numSamples = labels.length;
+        
+        if (isBinary) {
+            // 二分类：使用0/1编码
+            IMatrix labelMatrix = Linalg.zeros(numSamples, 1);
+            for (int i = 0; i < numSamples; i++) {
+                int labelIndex = labelToIndex.get(labels[i]);
+                labelMatrix.set(i, 0, (double) labelIndex);
+            }
+            return labelMatrix;
+        } else {
+            // 多分类：使用one-hot编码
+            IMatrix labelMatrix = Linalg.zeros(numSamples, numClasses);
+            for (int i = 0; i < numSamples; i++) {
+                int labelIndex = labelToIndex.get(labels[i]);
+                for (int j = 0; j < numClasses; j++) {
+                    labelMatrix.set(i, j, j == labelIndex ? 1.0 : 0.0);
+                }
+            }
+            return labelMatrix;
+        }
+    }
+    
+    /**
+     * 分割训练集和验证集
+     * @param features 特征矩阵
+     * @param labels 标签矩阵
+     * @return 数据分割结果
+     */
+    private DataSplit splitData(IMatrix features, IMatrix labels) {
+        int numSamples = features.rows();
+        
+        if (validationFraction <= 0 || validationFraction >= 1) {
+            // 不使用验证集
+            return new DataSplit(features, labels, null, null);
+        }
+        
+        int validSize = (int) (numSamples * validationFraction);
+        int trainSize = numSamples - validSize;
+        
+        // 如果验证集大小为0，直接返回全部数据作为训练集
+        if (validSize == 0) {
+            return new DataSplit(features, labels, null, null);
+        }
+        
+        // 随机打乱索引
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < numSamples; i++) {
+            indices.add(i);
+        }
+        Collections.shuffle(indices, new Random(randomSeed));
+        
+        // 分割数据
+        IMatrix trainFeatures = Linalg.zeros(trainSize, features.cols());
+        IMatrix trainLabels = Linalg.zeros(trainSize, labels.cols());
+        IMatrix validFeatures = Linalg.zeros(validSize, features.cols());
+        IMatrix validLabels = Linalg.zeros(validSize, labels.cols());
+        
+        for (int i = 0; i < trainSize; i++) {
+            int idx = indices.get(i);
+            for (int j = 0; j < features.cols(); j++) {
+                trainFeatures.set(i, j, features.get(idx, j));
+            }
+            for (int j = 0; j < labels.cols(); j++) {
+                trainLabels.set(i, j, labels.get(idx, j));
+            }
+        }
+        
+        for (int i = 0; i < validSize; i++) {
+            int idx = indices.get(trainSize + i);
+            for (int j = 0; j < features.cols(); j++) {
+                validFeatures.set(i, j, features.get(idx, j));
+            }
+            for (int j = 0; j < labels.cols(); j++) {
+                validLabels.set(i, j, labels.get(idx, j));
+            }
+        }
+        
+        return new DataSplit(trainFeatures, trainLabels, validFeatures, validLabels);
+    }
+    
+    /**
+     * 用给定全局 margin 填满样本×类别预测矩阵（boosting 起点）。
+     */
+    private IMatrix predictionMatrixFilled(int numSamples, double[] margins) {
+        int predCols = margins.length;
+        IMatrix predictions = Linalg.zeros(numSamples, predCols);
+        for (int i = 0; i < numSamples; i++) {
+            for (int j = 0; j < predCols; j++) {
+                predictions.set(i, j, margins[j]);
+            }
+        }
+        return predictions;
+    }
+
+    private double[] resolveBaseMargins(IMatrix trainLabels) {
+        int expected = isBinary ? 1 : numClasses;
+        if (baseMarginOverride != null) {
+            if (baseMarginOverride.length != expected) {
+                throw new IllegalArgumentException(
+                        "baseMargin length must be " + expected + " for current task (binary=" + isBinary + ")");
+            }
+            return Arrays.copyOf(baseMarginOverride, expected);
+        }
+        return computeAutoBaseMargins(trainLabels);
+    }
+
+    /**
+     * 与常用 XGBoost/sklearn 默认一致：二分类用训练集正类比例 logit；多分类用 log 先验并中心化使 softmax 对称。
+     */
+    private double[] computeAutoBaseMargins(IMatrix trainLabels) {
+        int n = trainLabels.rows();
+        if (isBinary) {
+            double sumY = 0.0;
+            for (int i = 0; i < n; i++) {
+                sumY += trainLabels.get(i, 0);
+            }
+            double p = sumY / Math.max(1, n);
+            p = Math.min(1.0 - 1e-12, Math.max(1e-12, p));
+            double logit = Math.log(p / (1.0 - p));
+            return new double[]{logit};
+        }
+        double[] cnt = new double[numClasses];
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < numClasses; k++) {
+                cnt[k] += trainLabels.get(i, k);
+            }
+        }
+        double[] margins = new double[numClasses];
+        double mean = 0.0;
+        for (int k = 0; k < numClasses; k++) {
+            margins[k] = Math.log((cnt[k] + 1e-12) / Math.max(1, n));
+            mean += margins[k];
+        }
+        mean /= numClasses;
+        for (int k = 0; k < numClasses; k++) {
+            margins[k] -= mean;
+        }
+        return margins;
+    }
+
+    /**
+     * 行子采样索引（升序，便于缓存友好）。
+     */
+    private int[] subsampleRowIndices(int n, double fraction, Random rnd) {
+        if (fraction >= 1.0 - 1e-15 || n <= 0) {
+            int[] all = new int[n];
+            for (int i = 0; i < n; i++) {
+                all[i] = i;
+            }
+            return all;
+        }
+        double f = Math.min(1.0, Math.max(1e-6, fraction));
+        int m = Math.max(minSamplesSplit, (int) Math.round(n * f));
+        m = Math.min(m, n);
+        List<Integer> list = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list, rnd);
+        int[] out = new int[m];
+        for (int i = 0; i < m; i++) {
+            out[i] = list.get(i);
+        }
+        Arrays.sort(out);
+        return out;
+    }
+
+    /**
+     * 列子采样；{@code null} 表示使用全部特征。
+     */
+    private int[] subsampleFeatureIndices(int p, double fraction, Random rnd) {
+        if (fraction >= 1.0 - 1e-15 || p <= 0) {
+            return null;
+        }
+        double f = Math.min(1.0, Math.max(1e-6, fraction));
+        int k = Math.max(1, (int) Math.round(p * f));
+        k = Math.min(k, p);
+        List<Integer> list = new ArrayList<>(p);
+        for (int i = 0; i < p; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list, rnd);
+        int[] out = new int[k];
+        for (int i = 0; i < k; i++) {
+            out[i] = list.get(i);
+        }
+        Arrays.sort(out);
+        return out;
+    }
+    
+    /**
+     * 训练决策树
+     * @param features 特征矩阵
+     * @param gradients 梯度矩阵
+     * @param hessians 海塞矩阵
+     * @return 训练好的决策树列表
+     */
+    private List<XGTree> trainTrees(IMatrix features, IMatrix gradients, IMatrix hessians) {
+        List<XGTree> iterationTrees = new ArrayList<>();
+
+        int numTreesPerIter = isBinary ? 1 : numClasses;
+        int nRows = features.rows();
+        int[] rowSampler = subsampleRowIndices(nRows, subsample, rng);
+        int[] featSampler = subsampleFeatureIndices(features.cols(), colsampleBytree, rng);
+
+        for (int treeIdx = 0; treeIdx < numTreesPerIter; treeIdx++) {
+            IVector treeGradients = gradients.getColumn(treeIdx);
+            IVector treeHessians = hessians.getColumn(treeIdx);
+
+            XGTree tree = new XGTree(maxDepth, minSamplesSplit, minSamplesLeaf,
+                    alpha, lambda, learningRate,
+                    treeMethod, maxBin, gamma, minChildWeight, histogramBinning);
+            tree.fit(features, treeGradients, treeHessians, rowSampler, featSampler);
+
+            iterationTrees.add(tree);
+        }
+
+        return iterationTrees;
+    }
+    
+    /**
+     * 更新预测值
+     */
+    private void updatePredictions(IMatrix features, List<XGTree> newTrees) {
+        int numSamples = features.rows();
+        
+        // 为每个新树更新预测
+        int treeIndex = 0;
+        for (int classIdx = 0; classIdx < (isBinary ? 1 : numClasses); classIdx++) {
+            if (treeIndex < newTrees.size()) {
+                XGTree tree = newTrees.get(treeIndex);
+                
+                // 批量预测所有样本
+                for (int i = 0; i < numSamples; i++) {
+                    double treePred = tree.predict(features.getRow(i));
+                    double currentPred = predictions.get(i, classIdx);
+                    predictions.set(i, classIdx, currentPred + treePred);
+                }
+                treeIndex++;
+            }
+        }
+    }
+    
+    /**
+     * 计算特征重要性
+     */
+    private void computeFeatureImportance() {
+        // 使用向量运算优化特征重要性计算
+        IVector importance = Linalg.zeros(numFeatures);
+        
+        for (XGTree tree : trees) {
+            double[] treeImportance = tree.computeFeatureImportance(numFeatures);
+            IVector treeImportanceVector = Linalg.vector(treeImportance);
+            // 使用向量加法替代手动循环
+            importance = importance.add(treeImportanceVector);
+        }
+        
+        // 归一化 - 使用向量运算
+        double totalImportance = importance.sumValue();
+        if (totalImportance > 0) {
+            // 使用向量除法进行归一化
+            importance = importance.divideByScalar(totalImportance);
+        }
+        
+        this.featureImportance = importance;
+    }
+    
+    /**
+     * 创建结果对象
+     * @return XGBoost训练结果
+     */
+    private XGBoostResult createResult() {
+        XGBoostResult result = new XGBoostResult();
+        
+        result.setTrees(new ArrayList<>(trees));
+        result.setLearningRate(learningRate);
+        result.setLossHistory(new ArrayList<>(trainLossHistory));
+        result.setFeatureImportance(featureImportance);
+        result.setNumClasses(numClasses);
+        result.setBinary(isBinary);
+        result.setLabelToIndex(new HashMap<>(labelToIndex));
+        result.setIndexToLabel(new HashMap<>(indexToLabel));
+        result.setLambda(lambda);
+        result.setAlpha(alpha);
+        result.setMaxDepth(maxDepth);
+        result.setMinSamplesSplit(minSamplesSplit);
+        result.setMinSamplesLeaf(minSamplesLeaf);
+        
+        return result;
+    }
+    
+    // ==================== Getters and Setters ====================
+    
+    public double getLearningRate() {
+        return learningRate;
+    }
+    
+    public void setLearningRate(double learningRate) {
+        this.learningRate = learningRate;
+    }
+    
+    public int getNEstimators() {
+        return nEstimators;
+    }
+    
+    public int getNumEstimators() {
+        return nEstimators;
+    }
+
+    public void setNEstimators(int nEstimators) {
+        this.nEstimators = nEstimators;
+    }
+    
+    public void setNumEstimators(int numEstimators) {
+        this.nEstimators = numEstimators;
+    }
+    
+    public int getMaxDepth() {
+        return maxDepth;
+    }
+    
+    public void setMaxDepth(int maxDepth) {
+        this.maxDepth = maxDepth;
+    }
+    
+    public int getMinSamplesSplit() {
+        return minSamplesSplit;
+    }
+    
+    public void setMinSamplesSplit(int minSamplesSplit) {
+        this.minSamplesSplit = minSamplesSplit;
+    }
+    
+    public int getMinSamplesLeaf() {
+        return minSamplesLeaf;
+    }
+    
+    public void setMinSamplesLeaf(int minSamplesLeaf) {
+        this.minSamplesLeaf = minSamplesLeaf;
+    }
+    
+    public double getAlpha() {
+        return alpha;
+    }
+    
+    public void setAlpha(double alpha) {
+        this.alpha = alpha;
+    }
+    
+    public double getLambda() {
+        return lambda;
+    }
+    
+    public void setLambda(double lambda) {
+        this.lambda = lambda;
+    }
+    
+    public int getEarlyStoppingRounds() {
+        return earlyStoppingRounds;
+    }
+    
+    public void setEarlyStoppingRounds(int earlyStoppingRounds) {
+        this.earlyStoppingRounds = earlyStoppingRounds;
+    }
+    
+    public double getValidationFraction() {
+        return validationFraction;
+    }
+    
+    public void setValidationFraction(double validationFraction) {
+        this.validationFraction = validationFraction;
+    }
+    
+    public double getTolerance() {
+        return tolerance;
+    }
+    
+    public void setTolerance(double tolerance) {
+        this.tolerance = tolerance;
+    }
+    
+    public long getRandomSeed() {
+        return randomSeed;
+    }
+    
+    public void setRandomSeed(long randomSeed) {
+        this.randomSeed = randomSeed;
+    }
+
+    public XGBoostTreeMethod getTreeMethod() {
+        return treeMethod;
+    }
+
+    public void setTreeMethod(XGBoostTreeMethod treeMethod) {
+        this.treeMethod = treeMethod != null ? treeMethod : XGBoostTreeMethod.HIST;
+    }
+
+    public int getMaxBin() {
+        return maxBin;
+    }
+
+    public void setMaxBin(int maxBin) {
+        this.maxBin = Math.max(2, maxBin);
+    }
+
+    public double getGamma() {
+        return gamma;
+    }
+
+    public void setGamma(double gamma) {
+        this.gamma = gamma;
+    }
+
+    public double getMinChildWeight() {
+        return minChildWeight;
+    }
+
+    public void setMinChildWeight(double minChildWeight) {
+        this.minChildWeight = Math.max(0.0, minChildWeight);
+    }
+
+    public double getSubsample() {
+        return subsample;
+    }
+
+    public void setSubsample(double subsample) {
+        this.subsample = Math.min(1.0, Math.max(1e-6, subsample));
+    }
+
+    public double getColsampleBytree() {
+        return colsampleBytree;
+    }
+
+    public void setColsampleBytree(double colsampleBytree) {
+        this.colsampleBytree = Math.min(1.0, Math.max(1e-6, colsampleBytree));
+    }
+
+    public XGBoostHistogramBinning getHistogramBinning() {
+        return histogramBinning;
+    }
+
+    public void setHistogramBinning(XGBoostHistogramBinning histogramBinning) {
+        this.histogramBinning = histogramBinning != null ? histogramBinning : XGBoostHistogramBinning.UNIFORM;
+    }
+
+    /**
+     * 手工指定初始 margin（对应 XGBoost {@code base_score} / base_margin）。
+     * 传入 {@code null} 表示清除覆盖并恢复按训练集标签自动估计。
+     */
+    public void setBaseMargin(double[] margins) {
+        this.baseMarginOverride = margins == null ? null : Arrays.copyOf(margins, margins.length);
+    }
+
+    /** 二分类便捷 API：单一 logit 初值。 */
+    public void setBaseMargin(double scalarMargin) {
+        this.baseMarginOverride = new double[]{scalarMargin};
+    }
+
+    public double[] getBaseMarginOverride() {
+        return baseMarginOverride == null ? null : Arrays.copyOf(baseMarginOverride, baseMarginOverride.length);
+    }
+
+    public List<Double> getTrainLossHistory() {
+        return new ArrayList<>(trainLossHistory);
+    }
+    
+    public List<Double> getValidationLossHistory() {
+        return new ArrayList<>(validationLossHistory);
+    }
+    
+    public IVector getFeatureImportance() {
+        return featureImportance;
+    }
+    
+    public int getNumClasses() {
+        return numClasses;
+    }
+    
+    public boolean isBinary() {
+        return isBinary;
+    }
+    
+    public boolean isEarlyStopping() {
+        return earlyStoppingRounds > 0;
+    }
+    
+    public void setEarlyStopping(boolean earlyStopping) {
+        this.earlyStoppingRounds = earlyStopping ? 10 : 0;
+    }
+    
+    public void setAdaptiveBoostingLearningRate(boolean adaptiveBoostingLearningRate) {
+        this.adaptiveBoostingLearningRate = adaptiveBoostingLearningRate;
+    }
+
+    public boolean isAdaptiveBoostingLearningRate() {
+        return adaptiveBoostingLearningRate;
+    }
+
+    // ==================== 优化器相关方法 ====================
+    
+    /**
+     * 设置优化器类型
+     * @param optimizerType 优化器类型 ("sgd", "adam")
+     */
+    public void setOptimizerType(String optimizerType) {
+        this.optimizerType = optimizerType.toLowerCase();
+    }
+    
+    /**
+     * 获取优化器类型
+     * @return 优化器类型
+     */
+    public String getOptimizerType() {
+        return optimizerType;
+    }
+    
+    /**
+     * 设置优化器学习率
+     * @param optimizerLearningRate 优化器学习率
+     */
+    public void setOptimizerLearningRate(double optimizerLearningRate) {
+        this.optimizerLearningRate = optimizerLearningRate;
+    }
+    
+    /**
+     * 获取优化器学习率
+     * @return 优化器学习率
+     */
+    public double getOptimizerLearningRate() {
+        return optimizerLearningRate;
+    }
+
+    /**
+     * 获取优化器
+     * @return 当前使用的优化器
+     */
+    public IOnlineOptimizer getOptimizer() {
+        return optimizer;
+    }
+
+    /**
+     * 初始化优化器
+     */
+    private void initializeOptimizer() {
+        switch (optimizerType) {
+            case "sgd" -> optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9); // 学习率和动量
+            case "adam" -> optimizer = new RereOnlineAdam(optimizerLearningRate);
+            default -> {
+                // 对于无效的优化器类型，默认使用SGD
+                log.debug("警告: 不支持的优化器类型 '" + optimizerType + "'，使用默认的SGD优化器");
+                optimizer = new RereOnlineSGD(optimizerLearningRate, 0.9);
+                optimizerType = "sgd"; // 更新为实际使用的类型
+            }
+        }
+    }
+    
+    /**
+     * 数据分割结果内部类
+     */
+    private static class DataSplit {
+        IMatrix trainFeatures;
+        IMatrix trainLabels;
+        IMatrix validFeatures;
+        IMatrix validLabels;
+        
+        DataSplit(IMatrix trainFeatures, IMatrix trainLabels, 
+                 IMatrix validFeatures, IMatrix validLabels) {
+            this.trainFeatures = trainFeatures;
+            this.trainLabels = trainLabels;
+            this.validFeatures = validFeatures;
+            this.validLabels = validLabels;
+        }
+    }
+
+    @Override
+    public boolean isTrained() {
+        return isTrained;
+    }
+
+    @Override
+    public ClassificationMetrics getMetrics() {
+        return metrics;
+    }
+
+    @Override
+    public void setMetrics(ClassificationMetrics metrics) {
+        this.metrics = metrics;
+    }
+
+    
+    // ==================== JSON persistence ====================
+
+    @Override
+    public Map<String, Object> toParams() {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("learningRate", learningRate);
+        p.put("nEstimators", nEstimators);
+        p.put("maxDepth", maxDepth);
+        p.put("minSamplesSplit", minSamplesSplit);
+        p.put("minSamplesLeaf", minSamplesLeaf);
+        p.put("alpha", alpha);
+        p.put("lambda", lambda);
+        p.put("earlyStoppingRounds", earlyStoppingRounds);
+        p.put("validationFraction", validationFraction);
+        p.put("tolerance", tolerance);
+        p.put("randomSeed", randomSeed);
+        p.put("treeMethod", treeMethod.name());
+        p.put("maxBin", maxBin);
+        p.put("gamma", gamma);
+        p.put("minChildWeight", minChildWeight);
+        p.put("subsample", subsample);
+        p.put("colsampleBytree", colsampleBytree);
+        p.put("isTrained", isTrained);
+        p.put("numClasses", numClasses);
+        p.put("isBinary", isBinary);
+        p.put("optimizerType", optimizerType);
+        p.put("labelToIndex", labelToIndex != null ? new HashMap<>(labelToIndex) : null);
+        p.put("indexToLabel", indexToLabel != null ? indexToLabelToString() : null);
+        if (lossFunction != null) p.put("lossType", lossFunction.getClass().getSimpleName());
+        List<Map<String, Object>> treeList = new ArrayList<>();
+        if (trees != null) {
+            for (XGTree tree : trees) {
+                treeList.add(tree.toParams());
+            }
+        }
+        p.put("trees", treeList);
+        return p;
+    }
+
+    private Map<String, String> indexToLabelToString() {
+        Map<String, String> m = new LinkedHashMap<>();
+        for (Map.Entry<Integer, String> e : indexToLabel.entrySet()) {
+            m.put(String.valueOf(e.getKey()), e.getValue());
+        }
+        return m;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void fromParams(Map<String, Object> p) {
+        this.learningRate = ((Number) p.get("learningRate")).doubleValue();
+        this.nEstimators = ((Number) p.get("nEstimators")).intValue();
+        this.maxDepth = ((Number) p.get("maxDepth")).intValue();
+        this.minSamplesSplit = ((Number) p.get("minSamplesSplit")).intValue();
+        this.minSamplesLeaf = ((Number) p.get("minSamplesLeaf")).intValue();
+        this.alpha = ((Number) p.get("alpha")).doubleValue();
+        this.lambda = ((Number) p.get("lambda")).doubleValue();
+        this.earlyStoppingRounds = ((Number) p.get("earlyStoppingRounds")).intValue();
+        this.validationFraction = ((Number) p.get("validationFraction")).doubleValue();
+        this.tolerance = ((Number) p.get("tolerance")).doubleValue();
+        this.randomSeed = ((Number) p.get("randomSeed")).longValue();
+        this.treeMethod = XGBoostTreeMethod.valueOf((String) p.get("treeMethod"));
+        this.maxBin = ((Number) p.get("maxBin")).intValue();
+        this.gamma = ((Number) p.get("gamma")).doubleValue();
+        this.minChildWeight = ((Number) p.get("minChildWeight")).doubleValue();
+        if (p.containsKey("subsample")) this.subsample = ((Number) p.get("subsample")).doubleValue();
+        if (p.containsKey("colsampleBytree")) this.colsampleBytree = ((Number) p.get("colsampleBytree")).doubleValue();
+        this.isTrained = (Boolean) p.get("isTrained");
+        this.numClasses = ((Number) p.get("numClasses")).intValue();
+        this.isBinary = (Boolean) p.get("isBinary");
+        if (p.containsKey("optimizerType")) this.optimizerType = (String) p.get("optimizerType");
+        Map<String, Integer> lti = (Map<String, Integer>) p.get("labelToIndex");
+        this.labelToIndex = lti != null ? new HashMap<>(lti) : null;
+        Map<String, String> itl = (Map<String, String>) p.get("indexToLabel");
+        this.indexToLabel = itl != null ? indexToLabelFromString(itl) : null;
+        this.rng = new Random(randomSeed);
+        List<Map<String, Object>> treeList = (List<Map<String, Object>>) p.get("trees");
+        this.trees = new ArrayList<>();
+        if (treeList != null) {
+            for (Map<String, Object> treeMap : treeList) {
+                this.trees.add(XGTree.fromParams(treeMap));
+            }
+        }
+    }
+
+    private Map<Integer, String> indexToLabelFromString(Map<String, String> m) {
+        Map<Integer, String> result = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : m.entrySet()) {
+            result.put(Integer.parseInt(e.getKey()), e.getValue());
+        }
+        return result;
+    }
+}

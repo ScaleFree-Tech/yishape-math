@@ -1,0 +1,2 @@
+module|testName|subTest|status|error|relError|javaResult|message|timeMs
+regression|regression|eigen_symmetric_50x50|PASS|0.000000e+00|0.000000e+00||symmetric eigen 50x50 OK; relErr=7.860203482524645E-16|0
