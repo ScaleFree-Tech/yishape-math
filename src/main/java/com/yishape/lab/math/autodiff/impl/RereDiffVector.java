@@ -538,10 +538,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public IDiffVector exp() {
         IDoubleVector resultVal = this.value.exp();
-        IDoubleVector zVal = resultVal.copy();
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = ((RereDoubleVector) gradOut).getData();
-            double[] zd = zVal.getData();
+            double[] zd = resultVal.getData();
             this.accGradMulDirect(gd, zd, gd.length);
         };
         Function<IDiffVector, IDiffVector[]> symFn = (gradOut) -> new IDiffVector[] { gradOut.mul(this.exp()) };
@@ -596,10 +595,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public IDiffVector tan() {
         IDoubleVector resultVal = this.value.tan();
-        IDoubleVector zVal = resultVal.copy();
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = ((RereDoubleVector) gradOut).getData();
-            double[] zd = zVal.getData();
+            double[] zd = resultVal.getData();
             int n = gd.length;
             double[] buf = AutodiffBufferPool.acquire(n);
             for (int i = 0; i < n; i++) {
@@ -1307,16 +1305,15 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public IDiffVector sqrt() {
         IDoubleVector resultVal = this.value.sqrt();
-        IDoubleVector zVal = resultVal.copy();
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = ((RereDoubleVector) gradOut).getData();
-            double[] zd = zVal.getData();
+            double[] zd = resultVal.getData();
             int n = gd.length;
             double[] buf = AutodiffBufferPool.acquire(n);
             for (int i = 0; i < n; i++) buf[i] = gd[i] / (2.0 * zd[i]);
             this.accGradFromPooled(buf, n);
         };
-        IDiffVector constDenom = constant(zVal.multiplyByScalar(2.0));
+        IDiffVector constDenom = constant(resultVal.multiplyByScalar(2.0));
         Function<IDiffVector, IDiffVector[]> symFn = (gradOut) -> new IDiffVector[] { gradOut.div(constDenom) };
         return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn, symFn), "sqrt");
     }
