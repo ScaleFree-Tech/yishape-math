@@ -106,6 +106,48 @@ public final class FloatFlatGemm {
     }
 
     /**
+     * Float flat GEMM with transpose: C[m×n] = op(A)[m×k] @ op(B)[k×n].
+     * transp: 0=NN, 1=TN, 2=NT, 3=TT.
+     */
+    public static float[] flatMmulTransp(float[] a, int m, int k, float[] b, int n, int transp) {
+        boolean logFine = LOG.isLoggable(Level.FINE);
+        float[] c = new float[m * n];
+        // 0. Try GPU via double bridge
+        if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()) {
+            double[] da = new double[a.length];
+            double[] db = new double[b.length];
+            for (int i = 0; i < a.length; i++) da[i] = a[i];
+            for (int i = 0; i < b.length; i++) db[i] = b[i];
+            double[] dc = GpuOptionalRuntime.tryFlatMatMulTransp(da, db, m, k, n, transp);
+            if (dc != null) {
+                for (int i = 0; i < dc.length; i++) c[i] = (float) dc[i];
+                if (logFine) LOG.fine("flatMmulTransp GPU f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+                return c;
+            }
+        }
+        // 1. Scalar fallback
+        if (logFine) LOG.fine("flatMmulTransp SCALAR f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        flatMmulTranspScalar(a, m, k, b, n, c, transp);
+        return c;
+    }
+
+    private static void flatMmulTranspScalar(float[] a, int m, int k, float[] b, int n, float[] c, int transp) {
+        boolean ta = (transp & 1) != 0;
+        boolean tb = (transp & 2) != 0;
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                float sum = 0;
+                for (int kk = 0; kk < k; kk++) {
+                    float av = ta ? a[kk * m + i] : a[i * k + kk];
+                    float bv = tb ? b[j * k + kk] : b[kk * n + j];
+                    sum += av * bv;
+                }
+                c[i * n + j] = sum;
+            }
+        }
+    }
+
+    /**
      * Offset-aware flat GEMM for batched use.
      * Skips array copy when offset is 0 (common case in batch loops).
      */

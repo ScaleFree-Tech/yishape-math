@@ -18,6 +18,7 @@ import com.yishape.lab.math.linalg.RereDoubleVector;
 import com.yishape.lab.util.YishapeLogger;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffMatrix;
+import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 
 /**
  * Default reverse-mode AD implementation for {@link IDiffVector}.
@@ -678,19 +679,24 @@ public class RereDiffVector implements IDiffVector, Serializable {
         IDoubleVector xVal = this.isLeaf ? this.value.copy() : this.value;
         int n = xVal.size();
         double[] xd = xVal.getData();
-        double maxVal = xd[0];
-        for (int i = 1; i < n; i++) {
-            if (xd[i] > maxVal) maxVal = xd[i];
-        }
-        double[] expVals = new double[n];
-        double sumExp = 0;
-        for (int i = 0; i < n; i++) {
-            expVals[i] = Math.exp(xd[i] - maxVal);
-            sumExp += expVals[i];
-        }
-        double[] y = new double[n];
-        for (int i = 0; i < n; i++) {
-            y[i] = expVals[i] / sumExp;
+        // Try GPU fused softmax (single-row: rows=1, cols=n)
+        double[] y = GpuOptionalRuntime.trySoftmax(xd, 1, n);
+        if (y == null) {
+            // CPU fallback
+            double maxVal = xd[0];
+            for (int i = 1; i < n; i++) {
+                if (xd[i] > maxVal) maxVal = xd[i];
+            }
+            double[] expVals = new double[n];
+            double sumExp = 0;
+            for (int i = 0; i < n; i++) {
+                expVals[i] = Math.exp(xd[i] - maxVal);
+                sumExp += expVals[i];
+            }
+            y = new double[n];
+            for (int i = 0; i < n; i++) {
+                y[i] = expVals[i] / sumExp;
+            }
         }
         IDoubleVector resultVal = IDoubleVector.of(y);
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
@@ -717,22 +723,31 @@ public class RereDiffVector implements IDiffVector, Serializable {
         IDoubleVector xVal = this.isLeaf ? this.value.copy() : this.value;
         int n = xVal.size();
         double[] xd = xVal.getData();
-        double maxVal = xd[0];
-        for (int i = 1; i < n; i++) {
-            if (xd[i] > maxVal) maxVal = xd[i];
-        }
-        double sumExp = 0;
-        double[] expVals = new double[n];
-        for (int i = 0; i < n; i++) {
-            expVals[i] = Math.exp(xd[i] - maxVal);
-            sumExp += expVals[i];
-        }
-        double logSumExp = Math.log(sumExp) + maxVal;
-        double[] y = new double[n];
-        double[] sm = new double[n];
-        for (int i = 0; i < n; i++) {
-            sm[i] = expVals[i] / sumExp;
-            y[i] = xd[i] - logSumExp;
+        // Try GPU fused logSoftmax (single-row); softmax values needed for backward
+        double[] y = GpuOptionalRuntime.tryLogSoftmax(xd, 1, n);
+        double[] sm;
+        if (y != null) {
+            sm = new double[n];
+            for (int i = 0; i < n; i++) sm[i] = Math.exp(y[i]);
+        } else {
+            // CPU fallback
+            double maxVal = xd[0];
+            for (int i = 1; i < n; i++) {
+                if (xd[i] > maxVal) maxVal = xd[i];
+            }
+            double sumExp = 0;
+            double[] expVals = new double[n];
+            for (int i = 0; i < n; i++) {
+                expVals[i] = Math.exp(xd[i] - maxVal);
+                sumExp += expVals[i];
+            }
+            double logSumExp = Math.log(sumExp) + maxVal;
+            y = new double[n];
+            sm = new double[n];
+            for (int i = 0; i < n; i++) {
+                sm[i] = expVals[i] / sumExp;
+                y[i] = xd[i] - logSumExp;
+            }
         }
         IDoubleVector resultVal = IDoubleVector.of(y);
         IDoubleVector smVec = IDoubleVector.of(sm);
@@ -1924,25 +1939,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector addInPlace(IDiffVector other) {
-        if (!this.isLeaf) {
-            throw new IllegalStateException("addInPlace only allowed on leaf variables");
-        }
-        RereDiffVector o = (RereDiffVector) other;
-        RereDiffVector self = this;
-        IDoubleVector oldVal = this.value.copy();
-        IDoubleVector otherVal = o.value.copy();
-        this.value = this.value.add(o.value);
-        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
-            self.accGrad(gradOut);
-            o.accGrad(gradOut);
-        };
-        Function<IDiffVector, IDiffVector[]> symFn = (gradOut) -> new IDiffVector[] { gradOut, gradOut };
-        RereDiffVector node = new RereDiffVector(this.value, List.of(this, o), backwardFn, symFn);
-        this.isLeaf = false;
-        this.inputs = List.of(this, o);
-        this.backwardFn = node.backwardFn;
-        this.symbolicBackwardFn = node.symbolicBackwardFn;
-        return this;
+        // Delegate to out-of-place add() to avoid graph corruption.
+        // Mutating isLeaf in-place breaks Parameter leaf tracking.
+        return this.add(other);
     }
 
     @Override
@@ -2092,7 +2091,12 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector copy() {
-        return RereDiffVector.constant(this.value.copy());
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(
+            this.value.copy(), List.of(this), backwardFn), "copy");
     }
 
     @Override
@@ -2224,221 +2228,702 @@ public class RereDiffVector implements IDiffVector, Serializable {
         return this.value.normInf();
     }
 
-    // ---- IDoubleVector bridge methods (delegated to getValue(), no AD graph) ----
+    // ---- IDoubleVector bridge methods with proper AD graph ----
+
+    // ===== rounding: straight-through estimator (gradient = 1) =====
 
     @Override
-    public IDiffVector log10() {
-        return new RereDiffVector(this.getValue().log10().copy());
+    public IDiffVector round() {
+        IDoubleVector resultVal = this.value.round();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "round");
     }
 
     @Override
+    public IDiffVector floor() {
+        IDoubleVector resultVal = this.value.floor();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "floor");
+    }
+
+    @Override
+    public IDiffVector ceil() {
+        IDoubleVector resultVal = this.value.ceil();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "ceil");
+    }
+
+    @Override
+    public IDiffVector trunc() {
+        IDoubleVector resultVal = this.value.trunc();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "trunc");
+    }
+
+    @Override
+    public IDiffVector sign() {
+        IDoubleVector resultVal = this.value.sign();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // sign is flat everywhere → zero gradient
+            self.accGradDirect(new double[self.value.size()]);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "sign");
+    }
+
+    // ===== element-wise with standard derivative formula =====
+
+    @Override
+    public IDiffVector log10() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.log10();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = gradOut / (fwd * ln10) — uses SIMD/HPC/GPU through IDoubleVector ops
+            self.accGrad((IDoubleVector) gradOut.divide(fwdVal.multiplyByScalar(Math.log(10))));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "log10");
+    }
+
+    @Override
+    public IDiffVector reciprocal() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.reciprocal();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = -gradOut * fwd^2 — uses SIMD/HPC/GPU through IDoubleVector ops
+            self.accGrad((IDoubleVector) gradOut.multiply(fwdVal.square().neg()));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "reciprocal");
+    }
+
+    // ===== inverse trigonometric and hyperbolic =====
+
+    @Override
+    public IDiffVector arcsin() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.arcsin();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = gradOut / sqrt(1 - fwd^2) — uses SIMD/HPC/GPU through IDoubleVector ops
+            IDoubleVector denom = (IDoubleVector) fwdVal.square().neg().addScalar(1.0).sqrt();
+            self.accGrad((IDoubleVector) gradOut.divide(denom));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "arcsin");
+    }
+
+    @Override
+    public IDiffVector arccos() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.arccos();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = -gradOut / sqrt(1 - fwd^2) — uses SIMD/HPC/GPU through IDoubleVector ops
+            IDoubleVector denom = (IDoubleVector) fwdVal.square().neg().addScalar(1.0).sqrt();
+            self.accGrad((IDoubleVector) gradOut.divide(denom).neg());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "arccos");
+    }
+
+    @Override
+    public IDiffVector arctan() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.arctan();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = gradOut / (1 + fwd^2) — uses SIMD/HPC/GPU through IDoubleVector ops
+            self.accGrad((IDoubleVector) gradOut.divide(fwdVal.square().addScalar(1.0)));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "arctan");
+    }
+
+    @Override
+    public IDiffVector sinh() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.sinh();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = gradOut * cosh(fwd) — uses SIMD/HPC/GPU through IDoubleVector ops
+            self.accGrad((IDoubleVector) gradOut.multiply(fwdVal.cosh()));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "sinh");
+    }
+
+    @Override
+    public IDiffVector cosh() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.cosh();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            // dx = gradOut * sinh(fwd) — uses SIMD/HPC/GPU through IDoubleVector ops
+            self.accGrad((IDoubleVector) gradOut.multiply(fwdVal.sinh()));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "cosh");
+    }
+
+    // ===== remainder: straight-through estimator =====
+
+    @Override
+    public IDiffVector remainder(Double value) {
+        IDoubleVector resultVal = (IDoubleVector) this.value.remainder(value);
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(gradOut.getData());
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "remainder", value);
+    }
+
+    // ===== reverse: simple permute backward =====
+
+    @Override
+    public IDiffVector reverse() {
+        int n = this.value.size();
+        IDoubleVector resultVal = this.value.reverse();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            for (int i = 0; i < n; i++) {
+                dx[n - 1 - i] = go[i];
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "reverse");
+    }
+
+    // ===== tile / repeat: backward reduces over repeated axis =====
+
+    @Override
+    public IDiffVector tile(int reps) {
+        int n = this.value.size();
+        IDoubleVector resultVal = this.value.tile(reps);
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            for (int i = 0; i < go.length; i++) {
+                dx[i % n] += go[i];
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "tile", reps);
+    }
+
+    @Override
+    public IDiffVector repeat(int repeats) {
+        int n = this.value.size();
+        IDoubleVector resultVal = this.value.repeat(repeats);
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            for (int i = 0; i < go.length; i++) {
+                dx[i / repeats] += go[i];
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "repeat", repeats);
+    }
+
+    // ===== indexed slicing with step =====
+
+    @Override
     public IDiffVector slice(int start, int end, int step) {
-        return new RereDiffVector(this.getValue().slice(start, end, step).copy());
+        IDoubleVector resultVal = this.value.slice(start, end, step);
+        int len = resultVal.size();
+        int fullLen = this.value.size();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] gd = gradOut.getData();
+            double[] buf = AutodiffBufferPool.acquire(fullLen);
+            for (int i = 0, pos = start; pos < end && i < len; i++, pos += step) {
+                buf[pos] = gd[i];
+            }
+            self.accGradFromPooled(buf, fullLen);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "slice");
     }
 
     @Override
     public IDiffVector slice(String sliceExpression) {
-        return new RereDiffVector(this.getValue().slice(sliceExpression).copy());
+        // Parse "start:end:step" or "start:end" format
+        String[] parts = sliceExpression.split(":");
+        int start, end, step;
+        if (parts.length == 3) {
+            start = Integer.parseInt(parts[0]);
+            end = Integer.parseInt(parts[1]);
+            step = Integer.parseInt(parts[2]);
+        } else if (parts.length == 2) {
+            start = Integer.parseInt(parts[0]);
+            end = Integer.parseInt(parts[1]);
+            step = 1;
+        } else {
+            throw new IllegalArgumentException("Invalid slice expression: " + sliceExpression);
+        }
+        return slice(start, end, step);
     }
+
+    // ===== fancy indexing / boolean masking with scatter-add backward =====
 
     @Override
     public IDiffVector fancyGet(int[] positions) {
-        return new RereDiffVector(this.getValue().fancyGet(positions).copy());
+        IDoubleVector resultVal = this.value.fancyGet(positions);
+        int selfLen = this.value.size();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] gd = gradOut.getData();
+            double[] dx = new double[selfLen];
+            for (int i = 0; i < positions.length; i++) {
+                dx[positions[i]] += gd[i];
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "fancyGet");
     }
 
     @Override
     public IDiffVector booleanGet(boolean[] booleanIndex) {
-        return new RereDiffVector(this.getValue().booleanGet(booleanIndex).copy());
+        IDoubleVector resultVal = this.value.booleanGet(booleanIndex);
+        int selfLen = this.value.size();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] gd = gradOut.getData();
+            double[] dx = new double[selfLen];
+            for (int i = 0, outIdx = 0; i < selfLen; i++) {
+                if (booleanIndex[i]) {
+                    dx[i] += gd[outIdx++];
+                }
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "booleanGet");
     }
+
+    // ===== matrix operations with non-differentiable other operand =====
 
     @Override
     public IDiffVector mmul(IMatrix<Double> other) {
-        return new RereDiffVector(this.getValue().mmul(other).copy());
+        IDoubleVector resultVal = this.value.mmul(other);
+        int rows = other.rows();
+        int cols = other.cols();
+        double[][] matData = other.toDoubleArray();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[cols];
+            for (int j = 0; j < cols; j++) {
+                double sum = 0;
+                for (int i = 0; i < rows; i++) {
+                    sum += go[i] * matData[i][j];
+                }
+                dx[j] = sum;
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "mmul");
     }
 
     @Override
     public IDiffVector dot(IMatrix<Double> m) {
-        return new RereDiffVector(this.getValue().dot(m).copy());
+        IDoubleVector resultVal = this.value.dot(m);
+        int rows = m.rows();
+        int cols = m.cols();
+        double[][] matData = m.toDoubleArray();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[cols];
+            for (int j = 0; j < cols; j++) {
+                double sum = 0;
+                for (int i = 0; i < rows; i++) {
+                    sum += go[i] * matData[i][j];
+                }
+                dx[j] = sum;
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "dotMat");
+    }
+
+    @Override
+    public IDiffVector cross(IVector<Double> other) {
+        IDoubleVector resultVal = this.value.cross(other);
+        double[] oData = other.toDoubleArray();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            // d/da (a × b) = go × b = [go1*b2 - go2*b1, go2*b0 - go0*b2, go0*b1 - go1*b0]
+            double[] dx = new double[]{
+                go[1] * oData[2] - go[2] * oData[1],
+                go[2] * oData[0] - go[0] * oData[2],
+                go[0] * oData[1] - go[1] * oData[0]
+            };
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "cross");
+    }
+
+    // ===== where: self is a template, values come from condition-selected sources =====
+
+    @Override
+    public IDiffVector where(boolean[] condition, Double x, Double y) {
+        IDoubleVector resultVal = this.value.where(condition, x, y);
+        // self does not contribute values → zero gradient to self
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(new double[self.value.size()]);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "where");
+    }
+
+    @Override
+    public IDiffVector where(boolean[] condition, IVector<Double> x, IVector<Double> y) {
+        IDoubleVector resultVal = this.value.where(condition, x, y);
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            self.accGradDirect(new double[self.value.size()]);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "where");
+    }
+
+    // ===== cumulative operations =====
+
+    @Override
+    public IDiffVector cumsum() {
+        int n = this.value.size();
+        IDoubleVector resultVal = this.value.cumsum();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            // backward of cumsum: reverse cumsum of reversed gradient
+            double[] dx = new double[n];
+            double running = 0;
+            for (int i = n - 1; i >= 0; i--) {
+                running += go[i];
+                dx[i] = running;
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "cumsum");
+    }
+
+    @Override
+    public IDiffVector cumprod() {
+        int n = this.value.size();
+        double[] fwd = this.value.getData();
+        IDoubleVector resultVal = this.value.cumprod();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            // d(cumprod)/dx_j: for k >= j, product_{i!=j, i<=k} x_i
+            // Efficient: compute cumulative products and reversed cumulative products
+            double[] cumProd = new double[n];
+            cumProd[0] = fwd[0];
+            for (int i = 1; i < n; i++) cumProd[i] = cumProd[i - 1] * fwd[i];
+            double[] revCumProd = new double[n];
+            revCumProd[n - 1] = fwd[n - 1];
+            for (int i = n - 2; i >= 0; i--) revCumProd[i] = revCumProd[i + 1] * fwd[i];
+            for (int j = 0; j < n; j++) {
+                for (int k = j; k < n; k++) {
+                    double prodExcludingJ = 1.0;
+                    if (j > 0) prodExcludingJ *= cumProd[j - 1];
+                    if (k > 0) prodExcludingJ *= revCumProd[j + 1 < n ? j + 1 : 0];
+                    // Actually: product_{i<=k, i!=j} fwd[i] = cumProd[k] / fwd[j]
+                    if (Math.abs(fwd[j]) > 1e-15) {
+                        dx[j] += go[k] * cumProd[k] / fwd[j];
+                    }
+                }
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "cumprod");
+    }
+
+    @Override
+    public IDiffVector diff() {
+        int n = this.value.size();
+        IDoubleVector resultVal = this.value.diff();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            // d(diff(x))_i = x_{i+1} - x_i
+            // ∂result_k / ∂x_i: k=i → -1, k=i-1 → +1
+            dx[0] = -go[0];
+            for (int i = 1; i < n - 1; i++) {
+                dx[i] = go[i - 1] - go[i];
+            }
+            dx[n - 1] = go[n - 2];
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "diff");
+    }
+
+    @Override
+    public IDiffVector diff(int order) {
+        if (order == 1) return diff();
+        IDiffVector result = this;
+        for (int i = 0; i < order; i++) {
+            result = result.diff();
+        }
+        return result;
+    }
+
+    // ===== sort: gradient flows through permutation (reverse of sort indices) =====
+
+    @Override
+    public IDiffVector sort() {
+        double[] fwd = this.value.getData();
+        int n = fwd.length;
+        // Compute sort permutation (argsort)
+        Integer[] indices = new Integer[n];
+        for (int i = 0; i < n; i++) indices[i] = i;
+        java.util.Arrays.sort(indices, (a, b) -> Double.compare(fwd[a], fwd[b]));
+        int[] perm = new int[n];
+        for (int i = 0; i < n; i++) perm[i] = indices[i];
+
+        IDoubleVector resultVal = this.value.sort();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            for (int i = 0; i < n; i++) {
+                dx[perm[i]] = go[i];
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "sort");
+    }
+
+    // ===== concat with non-differentiable operand (deprecated; use cat()) =====
+
+    @Override
+    @Deprecated
+    public IDiffVector concat(IVector<Double> other) {
+        IDoubleVector resultVal = this.value.concat(other);
+        int selfLen = this.value.size();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] gd = gradOut.getData();
+            double[] dx = new double[selfLen];
+            System.arraycopy(gd, 0, dx, 0, selfLen);
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "concat");
+    }
+
+    // ===== statistics (return 1-element vector with gradient) =====
+
+    @Override
+    public IDiffVector min() {
+        double[] fwd = this.value.getData();
+        int n = fwd.length;
+        int minIdxVal = 0;
+        for (int i = 1; i < n; i++) if (fwd[i] < fwd[minIdxVal]) minIdxVal = i;
+        final int minIdx = minIdxVal;
+        IDoubleVector resultVal = this.value.min();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            double[] dx = new double[n];
+            dx[minIdx] = g;
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "min");
+    }
+
+    @Override
+    public IDiffVector max() {
+        double[] fwd = this.value.getData();
+        int n = fwd.length;
+        int maxIdxVal = 0;
+        for (int i = 1; i < n; i++) if (fwd[i] > fwd[maxIdxVal]) maxIdxVal = i;
+        final int maxIdx = maxIdxVal;
+        IDoubleVector resultVal = this.value.max();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            double[] dx = new double[n];
+            dx[maxIdx] = g;
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "max");
+    }
+
+    @Override
+    public IDiffVector prod() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        double[] fwd = fwdVal.getData();
+        int n = fwd.length;
+        double totalProd = 1.0;
+        for (int i = 0; i < n; i++) totalProd *= fwd[i];
+        final double tp = totalProd;
+        IDoubleVector resultVal = this.value.prod();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            self.accGrad(fwdVal.reciprocal().multiplyByScalar(g * tp));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "prod");
+    }
+
+    @Override
+    public IDiffVector norm2() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.norm2();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            double norm = resultVal.get(0);
+            if (norm > 1e-15) {
+                self.accGrad(fwdVal.multiplyByScalar(g / norm));
+            } else {
+                self.accGrad(fwdVal.multiplyByScalar(0));
+            }
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "norm2");
+    }
+
+    @Override
+    public IDiffVector norm1() {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        IDoubleVector resultVal = this.value.norm1();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            self.accGrad(fwdVal.sign().multiplyByScalar(g));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "norm1");
+    }
+
+    @Override
+    public IDiffVector ptp() {
+        double[] fwd = this.value.getData();
+        int n = fwd.length;
+        int maxIdxVal = 0, minIdxVal = 0;
+        for (int i = 1; i < n; i++) {
+            if (fwd[i] > fwd[maxIdxVal]) maxIdxVal = i;
+            if (fwd[i] < fwd[minIdxVal]) minIdxVal = i;
+        }
+        final int maxIdx = maxIdxVal;
+        final int minIdx = minIdxVal;
+        IDoubleVector resultVal = this.value.ptp();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            double[] dx = new double[n];
+            dx[maxIdx] = g;
+            dx[minIdx] = -g;
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "ptp");
+    }
+
+    @Override
+    public IDiffVector normalize() {
+        double[] fwd = this.value.getData();
+        int n = fwd.length;
+        double normSq = 0;
+        for (int i = 0; i < n; i++) normSq += fwd[i] * fwd[i];
+        final double norm = Math.sqrt(normSq);
+        final double invNorm = norm > 1e-15 ? 1.0 / norm : 0;
+        final double invNorm3 = invNorm * invNorm * invNorm;
+        IDoubleVector resultVal = this.value.normalize();
+        RereDiffVector self = this;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] go = gradOut.getData();
+            double[] dx = new double[n];
+            double dot = 0;
+            for (int i = 0; i < n; i++) dot += go[i] * fwd[i];
+            for (int i = 0; i < n; i++) {
+                dx[i] = go[i] * invNorm - dot * fwd[i] * invNorm3;
+            }
+            self.accGradDirect(dx);
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "normalize");
+    }
+
+    @Override
+    public IDiffVector std() {
+        return std(0);
+    }
+
+    @Override
+    public IDiffVector std(int ddof) {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        double[] fwd = fwdVal.getData();
+        int n = fwd.length;
+        double mean = 0;
+        for (int i = 0; i < n; i++) mean += fwd[i];
+        mean /= n;
+        double var = 0;
+        for (int i = 0; i < n; i++) var += (fwd[i] - mean) * (fwd[i] - mean);
+        double divisor = n - ddof;
+        double stdev = Math.sqrt(var / divisor);
+        IDoubleVector resultVal = this.value.std(ddof);
+        RereDiffVector self = this;
+        double m = mean;
+        double s = stdev;
+        double d = divisor;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            if (s > 1e-15) {
+                self.accGrad(fwdVal.addScalar(-m).multiplyByScalar(g / (d * s)));
+            } else {
+                self.accGrad(fwdVal.multiplyByScalar(0));
+            }
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "std");
+    }
+
+    @Override
+    public IDiffVector var() {
+        return var(0);
+    }
+
+    @Override
+    public IDiffVector var(int ddof) {
+        IDoubleVector fwdVal = this.isLeaf ? this.value.copy() : this.value;
+        double[] fwd = fwdVal.getData();
+        int n = fwd.length;
+        double mean = 0;
+        for (int i = 0; i < n; i++) mean += fwd[i];
+        mean /= n;
+        IDoubleVector resultVal = this.value.var(ddof);
+        RereDiffVector self = this;
+        double m = mean;
+        double divisor = n - ddof;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double g = gradOut.get(0);
+            self.accGrad(fwdVal.addScalar(-m).multiplyByScalar(2.0 * g / divisor));
+        };
+        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "var");
+    }
+
+    // ===== non-differentiable delegates =====
+
+    @Override
+    public IDiffVector map(Function<Double, Double> fun) {
+        throw new UnsupportedOperationException(
+            "map() with arbitrary function cannot be differentiated. Use specific operations instead.");
     }
 
     @Override
     public IDoubleMatrix asColumnVector() {
         return this.getValue().asColumnVector();
-    }
-
-    @Override
-    public IDiffVector arcsin() {
-        return new RereDiffVector(this.getValue().arcsin().copy());
-    }
-
-    @Override
-    public IDiffVector arccos() {
-        return new RereDiffVector(this.getValue().arccos().copy());
-    }
-
-    @Override
-    public IDiffVector arctan() {
-        return new RereDiffVector(this.getValue().arctan().copy());
-    }
-
-    @Override
-    public IDiffVector sinh() {
-        return new RereDiffVector(this.getValue().sinh().copy());
-    }
-
-    @Override
-    public IDiffVector cosh() {
-        return new RereDiffVector(this.getValue().cosh().copy());
-    }
-
-    @Override
-    public IDiffVector round() {
-        return new RereDiffVector(this.getValue().round().copy());
-    }
-
-    @Override
-    public IDiffVector floor() {
-        return new RereDiffVector(this.getValue().floor().copy());
-    }
-
-    @Override
-    public IDiffVector ceil() {
-        return new RereDiffVector(this.getValue().ceil().copy());
-    }
-
-    @Override
-    public IDiffVector trunc() {
-        return new RereDiffVector(this.getValue().trunc().copy());
-    }
-
-    @Override
-    public IDiffVector cumsum() {
-        return new RereDiffVector(this.getValue().cumsum().copy());
-    }
-
-    @Override
-    public IDiffVector cumprod() {
-        return new RereDiffVector(this.getValue().cumprod().copy());
-    }
-
-    @Override
-    public IDiffVector diff() {
-        return new RereDiffVector(this.getValue().diff().copy());
-    }
-
-    @Override
-    public IDiffVector diff(int n) {
-        return new RereDiffVector(this.getValue().diff(n).copy());
-    }
-
-    @Override
-    public IDiffVector sort() {
-        return new RereDiffVector(this.getValue().sort().copy());
-    }
-
-    @Override
-    public IDiffVector reverse() {
-        return new RereDiffVector(this.getValue().reverse().copy());
-    }
-
-    @Override
-    public IDiffVector normalize() {
-        return new RereDiffVector(this.getValue().normalize().copy());
-    }
-
-    @Override
-    public IDiffVector reciprocal() {
-        return new RereDiffVector(this.getValue().reciprocal().copy());
-    }
-
-    @Override
-    public IDiffVector cross(IVector<Double> other) {
-        return new RereDiffVector(this.getValue().cross(other).copy());
-    }
-
-    @Override
-    public IDiffVector where(boolean[] condition, Double x, Double y) {
-        return new RereDiffVector(this.getValue().where(condition, x, y).copy());
-    }
-
-    @Override
-    public IDiffVector where(boolean[] condition, IVector<Double> x, IVector<Double> y) {
-        return new RereDiffVector(this.getValue().where(condition, x, y).copy());
-    }
-
-    @Override
-    public IDiffVector repeat(int repeats) {
-        return new RereDiffVector(this.getValue().repeat(repeats).copy());
-    }
-
-    @Override
-    public IDiffVector tile(int reps) {
-        return new RereDiffVector(this.getValue().tile(reps).copy());
-    }
-
-    @Override
-    public IDiffVector map(Function<Double, Double> fun) {
-        return new RereDiffVector(this.getValue().map(fun).copy());
-    }
-
-    @Override
-    public IDiffVector concat(IVector<Double> other) {
-        return new RereDiffVector(this.getValue().concat(other).copy());
-    }
-
-    @Override
-    public IDiffVector sign() {
-        return new RereDiffVector(this.getValue().sign().copy());
-    }
-
-    @Override
-    public IDiffVector min() {
-        return new RereDiffVector(this.getValue().min().copy());
-    }
-
-    @Override
-    public IDiffVector max() {
-        return new RereDiffVector(this.getValue().max().copy());
-    }
-
-    @Override
-    public IDiffVector std() {
-        return new RereDiffVector(this.getValue().std().copy());
-    }
-
-    @Override
-    public IDiffVector std(int ddof) {
-        return new RereDiffVector(this.getValue().std(ddof).copy());
-    }
-
-    @Override
-    public IDiffVector var() {
-        return new RereDiffVector(this.getValue().var().copy());
-    }
-
-    @Override
-    public IDiffVector var(int ddof) {
-        return new RereDiffVector(this.getValue().var(ddof).copy());
-    }
-
-    @Override
-    public IDiffVector prod() {
-        return new RereDiffVector(this.getValue().prod().copy());
-    }
-
-    @Override
-    public IDiffVector norm2() {
-        return new RereDiffVector(this.getValue().norm2().copy());
-    }
-
-    @Override
-    public IDiffVector norm1() {
-        return new RereDiffVector(this.getValue().norm1().copy());
-    }
-
-    @Override
-    public IDiffVector ptp() {
-        return new RereDiffVector(this.getValue().ptp().copy());
     }
 
     @Override
@@ -2454,11 +2939,6 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public double corr(IVector<Double> other) {
         return this.getValue().corr(other);
-    }
-
-    @Override
-    public IDiffVector remainder(Double value) {
-        return new RereDiffVector(((IDoubleVector) this.getValue().remainder(value)).copy());
     }
 
     void propagateGradient() {

@@ -172,6 +172,12 @@ public interface IDoubleTensor extends ITensor {
     /** 沿 dim 根据 index 收集元素 */
     IDoubleTensor gather(int dim, IDoubleTensor index);
 
+    /** 沿 dim 按索引选择整片: 等效于 gather(dim, index.expand(...)) */
+    IDoubleTensor indexSelect(int dim, IDoubleTensor index);
+
+    /** 沿 dim 返回排序索引 (非可微) */
+    IDoubleTensor argsort(int dim, boolean descending);
+
     /** 沿 dim 根据 index 散布 source 的值 */
     IDoubleTensor scatter(int dim, IDoubleTensor index, IDoubleTensor source);
 

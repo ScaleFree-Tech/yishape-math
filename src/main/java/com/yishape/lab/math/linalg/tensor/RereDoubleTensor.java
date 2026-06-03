@@ -384,10 +384,16 @@ public class RereDoubleTensor implements IDoubleTensor {
             return this;
         }
         int n = (int) totalSize();
-        double[] newData = new double[n];
+        double[] pooled = ContiguousPool.acquire(n);
         for (int i = 0; i < n; i++) {
-            newData[i] = linearGet(i);
+            pooled[i] = linearGet(i);
         }
+        if (pooled.length == n) {
+            return new RereDoubleTensor(pooled, shape());
+        }
+        double[] newData = new double[n];
+        System.arraycopy(pooled, 0, newData, 0, n);
+        ContiguousPool.release(pooled);
         return new RereDoubleTensor(newData, shape());
     }
 
@@ -1268,6 +1274,53 @@ public class RereDoubleTensor implements IDoubleTensor {
             result[(int) linear] += source.get(idx);
         }
         return new RereDoubleTensor(result, resultShape);
+    }
+
+    @Override
+    public IDoubleTensor indexSelect(int dim, IDoubleTensor index) {
+        return gather(dim, index);
+    }
+
+    @Override
+    public IDoubleTensor argsort(int dim, boolean descending) {
+        int d = dim < 0 ? dim + rank() : dim;
+        int[] s = shape();
+        int dimSize = s[d];
+        int outerTotal = 1;
+        for (int i = 0; i < d; i++) outerTotal *= s[i];
+        int innerTotal = 1;
+        for (int i = d + 1; i < rank(); i++) innerTotal *= s[i];
+
+        double[] inData = toDoubleArray();
+        double[] outData = new double[inData.length];
+
+        for (int outer = 0; outer < outerTotal; outer++) {
+            for (int inner = 0; inner < innerTotal; inner++) {
+                int baseStride = outer * dimSize * innerTotal + inner;
+                int[] origIdx = new int[dimSize];
+                double[] sliceVals = new double[dimSize];
+                for (int i = 0; i < dimSize; i++) {
+                    origIdx[i] = i;
+                    sliceVals[i] = inData[baseStride + i * innerTotal];
+                }
+                for (int i = 1; i < dimSize; i++) {
+                    int ki = origIdx[i];
+                    double kv = sliceVals[i];
+                    int j = i - 1;
+                    while (j >= 0 && (descending ? sliceVals[j] < kv : sliceVals[j] > kv)) {
+                        origIdx[j + 1] = origIdx[j];
+                        sliceVals[j + 1] = sliceVals[j];
+                        j--;
+                    }
+                    origIdx[j + 1] = ki;
+                    sliceVals[j + 1] = kv;
+                }
+                for (int i = 0; i < dimSize; i++) {
+                    outData[baseStride + i * innerTotal] = origIdx[i];
+                }
+            }
+        }
+        return new RereDoubleTensor(outData, s);
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.DoubleBinaryOperator;
 
 import com.yishape.lab.math.linalg.tensor.TensorShape;
 import com.yishape.lab.math.compute.FlatGemm;
@@ -22,7 +23,7 @@ import com.yishape.lab.math.compute.FlatGemm;
  */
 public class RereDiffTensor implements IDiffTensor {
 
-    private final IDiffVector vec;
+    private IDiffVector vec;
     private RereDoubleTensor tensor;
     private boolean requiresGrad = true;
 
@@ -298,22 +299,22 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor add(IDoubleTensor other) {
-        return binaryDiffOp(other, IDiffVector::add);
+        return binaryDiffOp(other, IDiffVector::add, (a, b) -> a + b);
     }
 
     @Override
     public IDiffTensor sub(IDoubleTensor other) {
-        return binaryDiffOp(other, IDiffVector::sub);
+        return binaryDiffOp(other, IDiffVector::sub, (a, b) -> a - b);
     }
 
     @Override
     public IDiffTensor mul(IDoubleTensor other) {
-        return binaryDiffOp(other, IDiffVector::mul);
+        return binaryDiffOp(other, IDiffVector::mul, (a, b) -> a * b);
     }
 
     @Override
     public IDiffTensor div(IDoubleTensor other) {
-        return binaryDiffOp(other, IDiffVector::div);
+        return binaryDiffOp(other, IDiffVector::div, (a, b) -> a / b);
     }
 
     @Override
@@ -859,10 +860,122 @@ public class RereDiffTensor implements IDiffTensor {
     public IDiffTensor argmin(int dim) { return toNonDiff(tensor.argmin(dim)); }
 
     @Override
-    public IDiffTensor std(int dim, boolean keepdim) { return toNonDiff(tensor.std(dim, keepdim)); }
+    public IDiffTensor std(int dim, boolean keepdim) {
+        int d = dim < 0 ? dim + rank() : dim;
+        if (!requiresGrad) return toNonDiff(tensor.std(d, keepdim));
+        double[] vals = tensor.toDoubleArray();
+        int[] s = shape();
+        int outer = 1;
+        for (int i = 0; i < d; i++) outer *= s[i];
+        int reduce = s[d];
+        int inner = 1;
+        for (int i = d + 1; i < rank(); i++) inner *= s[i];
+
+        double[] means = new double[outer * inner];
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                double sum = 0;
+                for (int r = 0; r < reduce; r++) sum += vals[(o * reduce + r) * inner + i];
+                means[o * inner + i] = sum / reduce;
+            }
+        }
+        double[] varData = new double[outer * inner];
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                double sumSq = 0;
+                for (int r = 0; r < reduce; r++) {
+                    double diff = vals[(o * reduce + r) * inner + i] - means[o * inner + i];
+                    sumSq += diff * diff;
+                }
+                varData[o * inner + i] = sumSq / reduce;
+            }
+        }
+        double[] stdData = new double[outer * inner];
+        for (int i = 0; i < stdData.length; i++) stdData[i] = Math.sqrt(varData[i]);
+
+        if (!requiresGrad) return toNonDiff(new RereDoubleTensor(stdData, reducedShape(d, keepdim)));
+
+        RereDiffVector selfVec = (RereDiffVector) this.vec;
+        double[] fMeans = means;
+        int fOuter = outer, fReduce = reduce, fInner = inner;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] g = gradOut.getData();
+            double[] dx = new double[fOuter * fReduce * fInner];
+            for (int o = 0; o < fOuter; o++) {
+                for (int i = 0; i < fInner; i++) {
+                    int oi = o * fInner + i;
+                    double m = fMeans[oi];
+                    double st = stdData[oi];
+                    if (st > 1e-15) {
+                        double scale = g[oi] / (fReduce * st);
+                        for (int r = 0; r < fReduce; r++) {
+                            dx[(o * fReduce + r) * fInner + i] = scale * (vals[(o * fReduce + r) * fInner + i] - m);
+                        }
+                    }
+                }
+            }
+            selfVec.accGradDirect(dx);
+        };
+        IDiffVector resultVec = new RereDiffVector(
+            IDoubleVector.of(stdData), List.of(selfVec), backwardFn);
+        return new RereDiffTensor(resultVec, reducedShape(d, keepdim));
+    }
 
     @Override
-    public IDiffTensor var(int dim, boolean keepdim) { return toNonDiff(tensor.var(dim, keepdim)); }
+    public IDiffTensor var(int dim, boolean keepdim) {
+        int d = dim < 0 ? dim + rank() : dim;
+        if (!requiresGrad) return toNonDiff(tensor.var(d, keepdim));
+        double[] vals = tensor.toDoubleArray();
+        int[] s = shape();
+        int outer = 1;
+        for (int i = 0; i < d; i++) outer *= s[i];
+        int reduce = s[d];
+        int inner = 1;
+        for (int i = d + 1; i < rank(); i++) inner *= s[i];
+
+        double[] means = new double[outer * inner];
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                double sum = 0;
+                for (int r = 0; r < reduce; r++) sum += vals[(o * reduce + r) * inner + i];
+                means[o * inner + i] = sum / reduce;
+            }
+        }
+        double[] varData = new double[outer * inner];
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                double sumSq = 0;
+                for (int r = 0; r < reduce; r++) {
+                    double diff = vals[(o * reduce + r) * inner + i] - means[o * inner + i];
+                    sumSq += diff * diff;
+                }
+                varData[o * inner + i] = sumSq / reduce;
+            }
+        }
+
+        if (!requiresGrad) return toNonDiff(new RereDoubleTensor(varData, reducedShape(d, keepdim)));
+
+        RereDiffVector selfVec = (RereDiffVector) this.vec;
+        double[] fMeans = means;
+        int fOuter = outer, fReduce = reduce, fInner = inner;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] g = gradOut.getData();
+            double[] dx = new double[fOuter * fReduce * fInner];
+            for (int o = 0; o < fOuter; o++) {
+                for (int i = 0; i < fInner; i++) {
+                    double m = fMeans[o * fInner + i];
+                    double scale = 2.0 * g[o * fInner + i] / fReduce;
+                    for (int r = 0; r < fReduce; r++) {
+                        dx[(o * fReduce + r) * fInner + i] = scale * (vals[(o * fReduce + r) * fInner + i] - m);
+                    }
+                }
+            }
+            selfVec.accGradDirect(dx);
+        };
+        IDiffVector resultVec = new RereDiffVector(
+            IDoubleVector.of(varData), List.of(selfVec), backwardFn);
+        return new RereDiffTensor(resultVec, reducedShape(d, keepdim));
+    }
 
     // ==================== Softmax ====================
 
@@ -1153,12 +1266,9 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor einsum(String subscript, IDoubleTensor... others) {
-        IDoubleTensor[] detached = new IDoubleTensor[others.length];
-        for (int i = 0; i < others.length; i++) {
-            detached[i] = others[i] instanceof IDiffTensor ?
-                ((IDiffTensor) others[i]).detach() : others[i];
-        }
-        return toNonDiff(tensor.einsum(subscript, detached));
+        throw new UnsupportedOperationException(
+            "einsum() does not support automatic differentiation. "
+            + "Use Einstein summation only in non-training contexts.");
     }
 
     // ==================== 高级操作（非可微） ====================
@@ -1223,6 +1333,59 @@ public class RereDiffTensor implements IDiffTensor {
         IDiffVector resultVec = new RereDiffVector(
             IDoubleVector.of(resultData), List.of(selfVec), backwardFn);
         return new RereDiffTensor(resultVec, resultShape);
+    }
+
+    @Override
+    public IDiffTensor indexSelect(int dim, IDoubleTensor index) {
+        return gather(dim, index);
+    }
+
+    @Override
+    public IDiffTensor argsort(int dim, boolean descending) {
+        int d = dim < 0 ? dim + rank() : dim;
+        int[] s = shape();
+        int r = rank();
+        int dimSize = s[d];
+        int outerTotal = 1;
+        for (int i = 0; i < d; i++) outerTotal *= s[i];
+        int innerTotal = 1;
+        for (int i = d + 1; i < r; i++) innerTotal *= s[i];
+
+        double[] inData = tensor.toDoubleArray();
+        double[] outData = new double[inData.length];
+
+        for (int outer = 0; outer < outerTotal; outer++) {
+            for (int inner = 0; inner < innerTotal; inner++) {
+                // Collect (value, originalIndex) pairs for this slice
+                int sliceBase = (outer * dimSize + 0) * innerTotal + inner;
+                double[] sliceVals = new double[dimSize];
+                int[] origIdx = new int[dimSize];
+                for (int i = 0; i < dimSize; i++) {
+                    sliceVals[i] = inData[(outer * dimSize + i) * innerTotal + inner];
+                    origIdx[i] = i;
+                }
+                // Simple insertion sort on indices by value
+                for (int i = 1; i < dimSize; i++) {
+                    int keyIdx = origIdx[i];
+                    double keyVal = sliceVals[i];
+                    int j = i - 1;
+                    while (j >= 0 && (descending ? sliceVals[j] < keyVal : sliceVals[j] > keyVal)) {
+                        origIdx[j + 1] = origIdx[j];
+                        sliceVals[j + 1] = sliceVals[j];
+                        j--;
+                    }
+                    origIdx[j + 1] = keyIdx;
+                    sliceVals[j + 1] = keyVal;
+                }
+                // Write sorted indices to output
+                for (int i = 0; i < dimSize; i++) {
+                    outData[(outer * dimSize + i) * innerTotal + inner] = origIdx[i];
+                }
+            }
+        }
+
+        RereDiffVector resultVec = new RereDiffVector(IDoubleVector.of(outData));
+        return new RereDiffTensor(resultVec, s);
     }
 
     @Override
@@ -1549,7 +1712,70 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor unfold(int dim, int size, int stride, int dilation) {
-        return toNonDiff(tensor.unfold(dim, size, stride, dilation));
+        if (!requiresGrad) return toNonDiff(tensor.unfold(dim, size, stride, dilation));
+        int d = dim < 0 ? dim + rank() : dim;
+        int[] s = shape();
+        int total = (int) totalSize();
+
+        // Compute stride array from shape
+        int[] strides = new int[rank()];
+        strides[rank() - 1] = 1;
+        for (int i = rank() - 2; i >= 0; i--) strides[i] = strides[i + 1] * s[i + 1];
+
+        int dimSize = s[d];
+        int numPatches = (dimSize - dilation * (size - 1) - 1) / stride + 1;
+
+        // Build unfolded output manually
+        int outerElems = 1;
+        for (int i = 0; i < d; i++) outerElems *= s[i];
+        int innerElems = 1;
+        for (int i = d + 1; i < rank(); i++) innerElems *= s[i];
+
+        double[] vals = tensor.toDoubleArray();
+        double[] result = new double[outerElems * numPatches * innerElems * size];
+
+        for (int o = 0; o < outerElems; o++) {
+            for (int p = 0; p < numPatches; p++) {
+                for (int i = 0; i < innerElems; i++) {
+                    for (int k = 0; k < size; k++) {
+                        int srcIdx = (o * dimSize + (p * stride + k * dilation)) * innerElems + i;
+                        int dstIdx = ((o * numPatches + p) * innerElems + i) * size + k;
+                        result[dstIdx] = vals[srcIdx];
+                    }
+                }
+            }
+        }
+
+        int[] resultShape = new int[rank() + 1];
+        for (int i = 0; i < d; i++) resultShape[i] = s[i];
+        resultShape[d] = numPatches;
+        for (int i = d + 1; i < rank(); i++) resultShape[i] = s[i];
+        resultShape[rank()] = size;
+
+        RereDiffVector selfVec = (RereDiffVector) this.vec;
+        int fNumPatches = numPatches, fSize = size, fStride = stride, fDilation = dilation;
+        int fOuterElems = outerElems, fDimSize = dimSize, fInnerElems = innerElems;
+
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] g = gradOut.getData();
+            double[] dx = new double[total];
+            for (int o = 0; o < fOuterElems; o++) {
+                for (int p = 0; p < fNumPatches; p++) {
+                    for (int i = 0; i < fInnerElems; i++) {
+                        for (int k = 0; k < fSize; k++) {
+                            int dstIdx = ((o * fNumPatches + p) * fInnerElems + i) * fSize + k;
+                            int srcIdx = (o * fDimSize + (p * fStride + k * fDilation)) * fInnerElems + i;
+                            dx[srcIdx] += g[dstIdx];
+                        }
+                    }
+                }
+            }
+            selfVec.accGradDirect(dx);
+        };
+
+        IDiffVector resultVec = new RereDiffVector(
+            IDoubleVector.of(result), List.of(selfVec), backwardFn);
+        return new RereDiffTensor(resultVec, resultShape);
     }
 
     @Override
@@ -1888,39 +2114,57 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public IDiffTensor add_(IDoubleTensor other) {
         if (other instanceof IDiffTensor && requiresGrad) {
-            vec.addInPlace(((IDiffTensor) other).flattenValue());
+            vec = (RereDiffVector) vec.add(((IDiffTensor) other).flattenValue());
         } else {
+            // Non-differentiable: mutate tensor data directly, sync vec
             tensor.add_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
+            if (requiresGrad) {
+                ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+            }
         }
-        // sync tensor data from vec
         syncTensor();
         return this;
     }
 
     @Override
     public IDiffTensor sub_(IDoubleTensor other) {
-        tensor.sub_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
-        if (requiresGrad) {
-            ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+        if (other instanceof IDiffTensor && requiresGrad) {
+            vec = (RereDiffVector) vec.sub(((IDiffTensor) other).flattenValue());
+        } else {
+            tensor.sub_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
+            if (requiresGrad) {
+                ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+            }
         }
+        syncTensor();
         return this;
     }
 
     @Override
     public IDiffTensor mul_(IDoubleTensor other) {
-        tensor.mul_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
-        if (requiresGrad) {
-            ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+        if (other instanceof IDiffTensor && requiresGrad) {
+            vec = (RereDiffVector) vec.mul(((IDiffTensor) other).flattenValue());
+        } else {
+            tensor.mul_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
+            if (requiresGrad) {
+                ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+            }
         }
+        syncTensor();
         return this;
     }
 
     @Override
     public IDiffTensor div_(IDoubleTensor other) {
-        tensor.div_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
-        if (requiresGrad) {
-            ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+        if (other instanceof IDiffTensor && requiresGrad) {
+            vec = (RereDiffVector) vec.div(((IDiffTensor) other).flattenValue());
+        } else {
+            tensor.div_(other instanceof IDiffTensor ? ((IDiffTensor) other).detach() : other);
+            if (requiresGrad) {
+                ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+            }
         }
+        syncTensor();
         return this;
     }
 
@@ -1935,10 +2179,16 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor copy_(IDoubleTensor src) {
-        tensor.copy_(src instanceof IDiffTensor ? ((IDiffTensor) src).detach() : src);
-        if (requiresGrad) {
+        if (src instanceof IDiffTensor && requiresGrad) {
+            tensor.copy_(((IDiffTensor) src).detach());
             ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+        } else {
+            tensor.copy_(src instanceof IDiffTensor ? ((IDiffTensor) src).detach() : src);
+            if (requiresGrad) {
+                ((RereDiffVector) vec).updateData(tensor.toDoubleArray());
+            }
         }
+        syncTensor();
         return this;
     }
 
@@ -1952,7 +2202,14 @@ public class RereDiffTensor implements IDiffTensor {
     public IMatrix toMatrix() { return tensor.toMatrix(); }
     @Override
     public IDiffTensor clone() {
-        return new RereDiffTensor(AD.vector(toDoubleArray()), shape());
+        if (!requiresGrad) return toNonDiff(tensor.clone());
+        RereDiffVector selfVec = (RereDiffVector) this.vec;
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            selfVec.accGradDirect(gradOut.getData());
+        };
+        IDiffVector resultVec = new RereDiffVector(
+            this.vec.getValue().copy(), List.of(selfVec), backwardFn);
+        return new RereDiffTensor(resultVec, shape());
     }
 
     @Override
@@ -1969,11 +2226,11 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     private IDiffTensor binaryDiffOp(IDoubleTensor other,
-                                      java.util.function.BinaryOperator<IDiffVector> op) {
+                                      java.util.function.BinaryOperator<IDiffVector> op,
+                                      java.util.function.DoubleBinaryOperator scalarOp) {
         if (!requiresGrad) {
             IDoubleTensor detOther = other instanceof IDiffTensor ?
                 ((IDiffTensor) other).detach() : other;
-            // Apply the actual operation (not just add)
             IDiffVector selfVec = AD.vector(tensor.toDoubleArray());
             IDiffVector otherVec = AD.vector(detOther.toDoubleArray());
             IDoubleVector result = op.apply(selfVec, otherVec).getValue();
@@ -1991,10 +2248,9 @@ public class RereDiffTensor implements IDiffTensor {
         // Broadcast case: compute broadcast shape and do element-wise op
         IDoubleTensor detOther = other instanceof IDiffTensor ?
             ((IDiffTensor) other).detach() : other;
-        // Forward: element-wise binary op result
         double[] resultData;
         int[] resultShape;
-        if (this instanceof RereDiffTensor selfRD && other instanceof IDiffTensor otherIDiff) {
+        if (other instanceof IDiffTensor otherIDiff) {
             // Gradient tracking only when both are IDiffTensor
             int[] sA = shape();
             int[] sB = other.shape();
@@ -2002,19 +2258,17 @@ public class RereDiffTensor implements IDiffTensor {
             long total = 1;
             for (int d : resultShape) total *= d;
             resultData = new double[(int) total];
-            // Fill result with element-wise binary op using broadcast indexing
+            double[] aData = tensor.toDoubleArray();
+            double[] bData = ((RereDiffTensor) other).tensor.toDoubleArray();
             for (long i = 0; i < total; i++) {
                 int[] idxA = broadcastIndex(i, resultShape, sA);
                 int[] idxB = broadcastIndex(i, resultShape, sB);
                 int flatA = flatIndex(idxA, sA);
                 int flatB = flatIndex(idxB, sB);
-                double va = tensor.toDoubleArray()[flatA];
-                double vb = other instanceof IDiffTensor ?
-                    ((RereDiffTensor) other).tensor.toDoubleArray()[flatB] : detOther.toDoubleArray()[flatB];
-                resultData[(int) i] = op.apply(AD.vector(va), AD.vector(vb)).getValue().get(0);
+                resultData[(int) i] = scalarOp.applyAsDouble(aData[flatA], bData[flatB]);
             }
         } else {
-            // Broadcast without gradient tracking for other: compute forward using op
+            // Broadcast without gradient tracking for other: compute forward using scalar op
             int[] sA = shape();
             int[] sB = detOther.shape();
             int[] bShape = TensorShape.broadcastShape(sA, sB);
@@ -2028,7 +2282,7 @@ public class RereDiffTensor implements IDiffTensor {
                 int[] idxB = broadcastIndex(i, bShape, sB);
                 int flatA = flatIndex(idxA, sA);
                 int flatB = flatIndex(idxB, sB);
-                data[(int) i] = op.apply(AD.vector(aData[flatA]), AD.vector(bData[flatB])).getValue().get(0);
+                data[(int) i] = scalarOp.applyAsDouble(aData[flatA], bData[flatB]);
             }
             return toNonDiff(new RereDoubleTensor(data, bShape));
         }

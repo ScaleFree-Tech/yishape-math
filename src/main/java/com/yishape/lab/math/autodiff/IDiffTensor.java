@@ -101,6 +101,8 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor clone();
 
     @Override IDiffTensor gather(int dim, IDoubleTensor index);
+    @Override IDiffTensor indexSelect(int dim, IDoubleTensor index);
+    @Override IDiffTensor argsort(int dim, boolean descending);
     @Override IDiffTensor scatter(int dim, IDoubleTensor index, IDoubleTensor source);
     @Override IDiffTensor scatterAdd(int dim, IDoubleTensor index, IDoubleTensor source);
     @Override IDiffTensor where(IDoubleTensor condition, IDoubleTensor other);

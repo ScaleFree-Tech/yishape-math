@@ -100,6 +100,41 @@ public final class FlatGemm {
     }
 
     /**
+     * Flat GEMM with transpose: C[m×n] = op(A)[m×k] @ op(B)[k×n].
+     * transp: 0=NN, 1=TN, 2=NT, 3=TT.
+     * Dispatch: GPU → HPC → SIMD → scalar.
+     */
+    public static double[] flatMmulTransp(double[] a, int m, int k, double[] b, int n, int transp) {
+        boolean logFine = LOG.isLoggable(Level.FINE);
+        double[] c = new double[m * n];
+        // 0. Try GPU first
+        if (GpuGemm.tryFlatMatMulTransp(a, b, c, m, k, n, transp)) {
+            if (logFine) LOG.fine("flatMmulTransp GPU [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+            return c;
+        }
+        // 1. Scalar fallback (HPC/SIMD transp not yet available)
+        if (logFine) LOG.fine("flatMmulTransp SCALAR [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        flatMmulTranspScalar(a, m, k, b, n, c, transp);
+        return c;
+    }
+
+    private static void flatMmulTranspScalar(double[] a, int m, int k, double[] b, int n, double[] c, int transp) {
+        boolean ta = (transp & 1) != 0;
+        boolean tb = (transp & 2) != 0;
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                double sum = 0;
+                for (int kk = 0; kk < k; kk++) {
+                    double av = ta ? a[kk * m + i] : a[i * k + kk];
+                    double bv = tb ? b[j * k + kk] : b[kk * n + j];
+                    sum += av * bv;
+                }
+                c[i * n + j] = sum;
+            }
+        }
+    }
+
+    /**
      * Offset-aware flat GEMM for batched use.
      * Skips array copy when offset is 0 (common case in batch loops).
      */

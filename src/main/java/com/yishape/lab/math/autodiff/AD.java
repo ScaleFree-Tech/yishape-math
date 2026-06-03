@@ -20,6 +20,7 @@ import com.yishape.lab.math.autodiff.impl.CustomDiffVector;
 import com.yishape.lab.math.linalg.IFloatVector;
 import com.yishape.lab.math.linalg.sparse.ISparseMatrix;
 import com.yishape.lab.math.linalg.complex.IComplexMatrix.IComplexVector;
+import com.yishape.lab.math.autodiff.impl.FloatDiffTensor;
 import com.yishape.lab.math.autodiff.impl.FloatDiffVector;
 import com.yishape.lab.math.autodiff.impl.FusedMatrixOps;
 import com.yishape.lab.math.autodiff.impl.FusedOps;
@@ -98,6 +99,53 @@ public class AD {
         return new RereDiffVector(IDoubleVector.ones(size));
     }
 
+    // ---- tensor factories ----
+
+    public static IDiffTensor tensor(double[] data, int... shape) {
+        return IDiffTensor.fromDiffVector(vector(data), shape);
+    }
+
+    public static IDiffTensor zerosTensor(int... shape) {
+        long total = 1;
+        for (int s : shape) total *= s;
+        return IDiffTensor.fromDiffVector(zeros((int) total), shape);
+    }
+
+    public static IDiffTensor onesTensor(int... shape) {
+        long total = 1;
+        for (int s : shape) total *= s;
+        return IDiffTensor.fromDiffVector(ones((int) total), shape);
+    }
+
+    public static IDiffTensor fullTensor(double value, int... shape) {
+        long total = 1;
+        for (int s : shape) total *= s;
+        double[] data = new double[(int) total];
+        java.util.Arrays.fill(data, value);
+        return IDiffTensor.fromDiffVector(vector(data), shape);
+    }
+
+    public static IDiffVector arange(double start, double end, double step) {
+        int n = (int) Math.ceil((end - start) / step);
+        double[] data = new double[Math.max(n, 0)];
+        for (int i = 0; i < data.length; i++) data[i] = start + i * step;
+        return vector(data);
+    }
+
+    public static IDiffVector arange(double start, double end) {
+        return arange(start, end, 1.0);
+    }
+
+    public static IDiffVector arange(int end) {
+        return arange(0, end, 1.0);
+    }
+
+    public static IDiffTensor eye(int n) {
+        double[] data = new double[n * n];
+        for (int i = 0; i < n; i++) data[i * n + i] = 1.0;
+        return tensor(data, n, n);
+    }
+
     // ---- matrix factories ----
 
     public static IDiffMatrix matrix(double[][] data) {
@@ -136,6 +184,10 @@ public class AD {
 
     public static IDiffVector diffFloat(IFloatVector data) {
         return new FloatDiffVector(data);
+    }
+
+    public static IDiffTensor diffFloatTensor(float[] data, int... shape) {
+        return new FloatDiffTensor(data, shape);
     }
 
     // ---- constant factories (for tape-of-tape) ----

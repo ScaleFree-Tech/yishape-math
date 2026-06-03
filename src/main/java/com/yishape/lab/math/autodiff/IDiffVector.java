@@ -158,6 +158,14 @@ public interface IDiffVector extends IDoubleVector {
         return IDiffTensor.fromDiffVector(this, new int[]{length()});
     }
 
+    /**
+     * Returns this vector as a 2-D {@link IDiffTensor} with shape [rows, cols].
+     * Equivalent to {@code IDiffTensor.fromDiffVector(this, rows, cols)}.
+     */
+    default IDiffTensor asTensor(int rows, int cols) {
+        return IDiffTensor.fromDiffVector(this, rows, cols);
+    }
+
     // -- reshape --
     @Override
     default IDiffMatrix reshape(int rows, int cols) {

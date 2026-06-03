@@ -36,6 +36,10 @@ public final class GpuConfig {
         return parseLong("yishape.gpu.batchnorm.minElements", 10_000L);
     }
 
+    public static long im2colMinElements() {
+        return parseLong("yishape.gpu.im2col.minElements", 100_000L);
+    }
+
     private static long parseLong(String key, long def) {
         try {
             return Math.max(0, Long.parseLong(System.getProperty(key, String.valueOf(def))));

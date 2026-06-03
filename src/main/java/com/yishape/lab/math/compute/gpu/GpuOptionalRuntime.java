@@ -72,6 +72,11 @@ public final class GpuOptionalRuntime {
     private static final Method M_FLOAT_SQRT;
     private static final Method M_FLOAT_SIN;
     private static final Method M_FLOAT_COS;
+    private static final Method M_SOFTMAX;
+    private static final Method M_LOG_SOFTMAX;
+    private static final Method M_GATHER;
+    private static final Method M_IM2COL;
+    private static final Method M_FLAT_MAT_MUL_TRANSP;
 
     static {
         Class<?> c = null;
@@ -139,6 +144,11 @@ public final class GpuOptionalRuntime {
             M_FLOAT_SQRT = probe(c, "floatSqrt", float[].class);
             M_FLOAT_SIN = probe(c, "floatSin", float[].class);
             M_FLOAT_COS = probe(c, "floatCos", float[].class);
+            M_SOFTMAX = probe(c, "softmax", double[].class, int.class, int.class);
+            M_LOG_SOFTMAX = probe(c, "logSoftmax", double[].class, int.class, int.class);
+            M_GATHER = probe(c, "gather", double[].class, double[].class, int.class);
+            M_IM2COL = probe(c, "im2col", double[].class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class);
+            M_FLAT_MAT_MUL_TRANSP = probe(c, "flatMatMulTransp", double[].class, double[].class, int.class, int.class, int.class, int.class);
         } else {
             M_IS_AVAILABLE = null; M_DEVICE_NAME = null; M_MAT_MUL = null; M_FLAT_MAT_MUL = null;
             M_ELEMENTWISE = null; M_ADD = null; M_SUB = null; M_MUL = null; M_DIV = null;
@@ -154,6 +164,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_ELU = null; M_FLOAT_LEAKY_RELU = null; M_FLOAT_SILU = null; M_FLOAT_SOFTPLUS = null;
             M_FLOAT_SELU = null; M_FLOAT_HARDTANH = null; M_FLOAT_EXP = null; M_FLOAT_LOG = null;
             M_FLOAT_ABS = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
+            M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null;
         }
     }
 
@@ -303,6 +314,63 @@ public final class GpuOptionalRuntime {
 
     public static double[] tryCos(double[] input) {
         return tryInvoke(M_COS, "tryCos", input);
+    }
+
+    public static double[] trySoftmax(double[] input, int rows, int cols) {
+        if (M_SOFTMAX == null) return null;
+        try {
+            Object out = M_SOFTMAX.invoke(null, input, rows, cols);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("trySoftmax", e);
+            return null;
+        }
+    }
+
+    public static double[] tryLogSoftmax(double[] input, int rows, int cols) {
+        if (M_LOG_SOFTMAX == null) return null;
+        try {
+            Object out = M_LOG_SOFTMAX.invoke(null, input, rows, cols);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("tryLogSoftmax", e);
+            return null;
+        }
+    }
+
+    public static double[] tryGather(double[] weight, double[] indices, int embeddingDim) {
+        if (M_GATHER == null) return null;
+        try {
+            Object out = M_GATHER.invoke(null, weight, indices, embeddingDim);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("tryGather", e);
+            return null;
+        }
+    }
+
+    public static double[] tryFlatMatMulTransp(double[] a, double[] b, int m, int k, int n, int transp) {
+        if (M_FLAT_MAT_MUL_TRANSP == null) return null;
+        try {
+            Object out = M_FLAT_MAT_MUL_TRANSP.invoke(null, a, b, m, k, n, transp);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("tryFlatMatMulTransp", e);
+            return null;
+        }
+    }
+
+    public static double[] tryIm2col(double[] input, int C, int H, int W,
+                                      int outH, int outW, int kH, int kW,
+                                      int stride, int padding) {
+        if (M_IM2COL == null) return null;
+        try {
+            Object out = M_IM2COL.invoke(null, input, C, H, W, outH, outW, kH, kW, stride, padding);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("tryIm2col", e);
+            return null;
+        }
     }
 
     public static double[] tryReduce(int op, double[] input, int outer, int inner) {
