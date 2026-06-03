@@ -4,11 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.FloatVectorComputer;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
-import com.yishape.lab.math.compute.gpu.GpuBatchNorm;
-import com.yishape.lab.math.compute.gpu.GpuLayerNorm;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
 import com.yishape.lab.math.core.Complex;
 import com.yishape.lab.math.linalg.complex.IComplexMatrix;
 import com.yishape.lab.math.linalg.sparse.ISparseLinearSolver;
@@ -21,8 +19,6 @@ import com.yishape.lab.math.linalg.sparse.impl.SparseBICGSTABSolver;
 import com.yishape.lab.math.linalg.sparse.impl.SparseGMRESSolver;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.ITensor;
-import com.yishape.lab.math.linalg.IDoubleMatrix;
-import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.util.Tuple2;
 
 /**
@@ -1288,7 +1284,7 @@ public class Linalg {
      * 两个 float[] 的内积（使用 SIMD/HPC 加速，不产生 IVector 包装开销）。
      */
     public static float dot(float[] a, float[] b) {
-        return FC.binaryReduceOperate(a, b, IFloatVectorComputer.BinaryReduceOperation.DOT);
+        return FC.binaryReduceOperate(a, b, BinaryReduceOperation.DOT);
     }
 
     /**

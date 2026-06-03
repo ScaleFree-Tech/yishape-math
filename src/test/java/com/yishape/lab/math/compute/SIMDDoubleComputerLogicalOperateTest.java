@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.LogicalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +14,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
         // For NOT operation: 0 becomes true, non-zero becomes false
         boolean[] expected = {true, false, false, true, false};
         
-        boolean[] result = computer.logicalOperate(x1, IDoubleVectorComputer.LogicalOperation.NOT);
+        boolean[] result = computer.logicalOperate(x1, LogicalOperation.NOT);
         
         assertArrayEquals(expected, result);
     }
@@ -23,7 +24,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
         double[] x1 = {0.0, 1.0, -2.0, 0.0, 3.5};
         
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(x1, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(x1, LogicalOperation.AND);
         });
         
         assertTrue(exception.getMessage().contains("不支持的操作"));
@@ -35,7 +36,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
         double[] x1 = {0.0, 1.0, -2.0, 0.0, 3.5};
         
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(x1, IDoubleVectorComputer.LogicalOperation.OR);
+            computer.logicalOperate(x1, LogicalOperation.OR);
         });
         
         assertTrue(exception.getMessage().contains("不支持的操作"));
@@ -47,7 +48,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
         double[] x1 = {0.0, 1.0, -2.0, 0.0, 3.5};
         
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(x1, IDoubleVectorComputer.LogicalOperation.XOR);
+            computer.logicalOperate(x1, LogicalOperation.XOR);
         });
         
         assertTrue(exception.getMessage().contains("不支持的操作"));
@@ -57,7 +58,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
     @Test
     public void testLogicalOperateWithNullVector() {
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate((double[]) null, IDoubleVectorComputer.LogicalOperation.NOT);
+            computer.logicalOperate((double[]) null, LogicalOperation.NOT);
         });
     }
 
@@ -66,7 +67,7 @@ public class SIMDDoubleComputerLogicalOperateTest {
         double[] x1 = {};
         boolean[] expected = {};
         
-        boolean[] result = computer.logicalOperate(x1, IDoubleVectorComputer.LogicalOperation.NOT);
+        boolean[] result = computer.logicalOperate(x1, LogicalOperation.NOT);
         
         assertArrayEquals(expected, result);
     }

@@ -6,6 +6,11 @@ import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.compute.FloatVectorComputer;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.solver.ConditionNumberSolver;
 import com.yishape.lab.math.linalg.solver.DeterminantSolver;
 import com.yishape.lab.math.linalg.solver.LinearSystemSolver;
@@ -239,7 +244,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix sub(double scalar) {
-        var res = this.computer.binaryOperate(data, (float)scalar, IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, (float)scalar, BinaryOperation.SUBTRACT);
         return IFloatMatrix.of(res);
     }
 
@@ -257,7 +262,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix sub(IMatrix<Float> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.SUBTRACT);
         return IFloatMatrix.of(res);
     }
 
@@ -272,7 +277,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix multiplyByScalar(double scalar) {
-        var res = this.computer.binaryOperate(data, (float)scalar, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, (float)scalar, BinaryOperation.MULTIPLY);
         return IFloatMatrix.of(res);
     }
 
@@ -290,7 +295,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix add(IMatrix<Float> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IFloatVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.ADD);
         return IFloatMatrix.of(res);
     }
 
@@ -309,7 +314,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix divide(IMatrix<Float> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IFloatVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.DIVIDE);
         return IFloatMatrix.of(res);
     }
 
@@ -325,7 +330,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double frobeniusInnerProduct(IMatrix<Float> other) {
-        var res = this.computer.binaryReduceOperate(data, otherData(other), IFloatVectorComputer.BinaryReduceOperation.DOT);
+        var res = this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.DOT);
         return res;
     }
 
@@ -795,7 +800,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix log() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.LOG, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.LOG, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -810,8 +815,8 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double frobeniusNorm() {
-        var square = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, 2.0f);
-        float sum = this.computer.reduceOperate(square, IFloatVectorComputer.ReduceOperation.SUM);
+        var square = this.computer.universalOperate(data, UniversalOperation.POW, 2.0f);
+        float sum = this.computer.reduceOperate(square, ReduceOperation.SUM);
         return Math.sqrt(sum);
     }
 
@@ -859,17 +864,17 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         for (int i = 0; i < rows; i++) {
             // 计算行的L2范数
             // 先计算每个元素的平方
-            float[] squared = this.computer.universalOperate(data[i], IFloatVectorComputer.UniversalOperation.POW, 2.0f);
+            float[] squared = this.computer.universalOperate(data[i], UniversalOperation.POW, 2.0f);
             
             // 计算平方和
-            float sumOfSquares = this.computer.reduceOperate(squared, IFloatVectorComputer.ReduceOperation.SUM);
+            float sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             float norm = (float)Math.sqrt(sumOfSquares);
 
             if (norm > 0) {
                 // 使用SIMD归一化该行
-                result[i] = this.computer.binaryOperate(data[i], norm, IFloatVectorComputer.BinaryOperation.DIVIDE);
+                result[i] = this.computer.binaryOperate(data[i], norm, BinaryOperation.DIVIDE);
             } else {
                 System.arraycopy(data[i], 0, result[i], 0, cols);
             }
@@ -902,17 +907,17 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             
             // 计算列的L2范数
             // 先计算每个元素的平方
-            float[] squared = this.computer.universalOperate(column, IFloatVectorComputer.UniversalOperation.POW, 2.0f);
+            float[] squared = this.computer.universalOperate(column, UniversalOperation.POW, 2.0f);
             
             // 计算平方和
-            float sumOfSquares = this.computer.reduceOperate(squared, IFloatVectorComputer.ReduceOperation.SUM);
+            float sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             float norm = (float)Math.sqrt(sumOfSquares);
 
             // 归一化该列
             if (norm > 1e-10) { // 避免除零
-                float[] normalizedColumn = this.computer.binaryOperate(column, norm, IFloatVectorComputer.BinaryOperation.DIVIDE);
+                float[] normalizedColumn = this.computer.binaryOperate(column, norm, BinaryOperation.DIVIDE);
                 for (int i = 0; i < rows; i++) {
                     result[i][j] = normalizedColumn[i];
                 }
@@ -951,7 +956,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             }
             
             // 计算列均值
-            columnMeans[j] = this.computer.reduceOperate(column, IFloatVectorComputer.ReduceOperation.MEAN);
+            columnMeans[j] = this.computer.reduceOperate(column, ReduceOperation.MEAN);
         }
 
         // 使用SIMD对每列减去均值
@@ -963,7 +968,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             }
             
             // 使用SIMD减去均值
-            float[] centeredColumn = this.computer.binaryOperate(column, columnMeans[j], IFloatVectorComputer.BinaryOperation.SUBTRACT);
+            float[] centeredColumn = this.computer.binaryOperate(column, columnMeans[j], BinaryOperation.SUBTRACT);
             
             // 将结果放回矩阵
             for (int i = 0; i < rows; i++) {
@@ -1502,7 +1507,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix abs() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ABS, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.ABS, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1531,7 +1536,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix sin() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SIN, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SIN, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1545,7 +1550,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix cos() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.COS, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.COS, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1559,7 +1564,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix tan() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.TAN, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.TAN, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1574,7 +1579,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix sinh() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SINH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SINH, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1589,7 +1594,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix cosh() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.COSH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.COSH, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1604,7 +1609,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix tanh() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.TANH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.TANH, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -1710,7 +1715,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double max() {
-        return this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MAX);
+        return this.computer.reduceOperate(data, ReduceOperation.MAX);
     }
 
     /**
@@ -1723,7 +1728,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double min() {
-        return this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MIN);
+        return this.computer.reduceOperate(data, ReduceOperation.MIN);
     }
 
     /**
@@ -1736,7 +1741,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public IFloatMatrix sum() {
-        float result = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.SUM);
+        float result = this.computer.reduceOperate(data, ReduceOperation.SUM);
         return IFloatMatrix.of(new float[][]{{result}});
     }
 
@@ -1750,7 +1755,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public IFloatMatrix mean() {
-        float result = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MEAN);
+        float result = this.computer.reduceOperate(data, ReduceOperation.MEAN);
         return IFloatMatrix.of(new float[][]{{result}});
     }
 
@@ -1765,7 +1770,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double std() {
-        return this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.STANDARD_DEVIATION);
+        return this.computer.reduceOperate(data, ReduceOperation.STANDARD_DEVIATION);
     }
 
     /**
@@ -1778,7 +1783,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public double var() {
-        return this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.VARIANCE);
+        return this.computer.reduceOperate(data, ReduceOperation.VARIANCE);
     }
 
     /**
@@ -2122,7 +2127,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         
         // 使用SIMD计算每行的和
         for (int i = 0; i < rows; i++) {
-            sums[i] = this.computer.reduceOperate(data[i], IFloatVectorComputer.ReduceOperation.SUM);
+            sums[i] = this.computer.reduceOperate(data[i], ReduceOperation.SUM);
         }
         
         return IFloatVector.of(sums);
@@ -2146,7 +2151,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         
         // 使用SIMD计算每行的均值
         for (int i = 0; i < rows; i++) {
-            means[i] = this.computer.reduceOperate(data[i], IFloatVectorComputer.ReduceOperation.MEAN);
+            means[i] = this.computer.reduceOperate(data[i], ReduceOperation.MEAN);
         }
         
         return IFloatVector.of(means);
@@ -2176,7 +2181,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
                 column[i] = data[i][j];
             }
             // 计算列和
-            sums[j] = this.computer.reduceOperate(column, IFloatVectorComputer.ReduceOperation.SUM);
+            sums[j] = this.computer.reduceOperate(column, ReduceOperation.SUM);
         }
         
         return IFloatVector.of(sums);
@@ -2207,7 +2212,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             }
             
             // 计算列均值
-            means[j] = this.computer.reduceOperate(column, IFloatVectorComputer.ReduceOperation.MEAN);
+            means[j] = this.computer.reduceOperate(column, ReduceOperation.MEAN);
         }
         
         return IFloatVector.of(means);
@@ -2258,7 +2263,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         int rows = data.length;
         float[] mins = new float[rows];
         for (int i = 0; i < rows; i++) {
-            mins[i] = this.computer.reduceOperate(data[i], IFloatVectorComputer.ReduceOperation.MIN);
+            mins[i] = this.computer.reduceOperate(data[i], ReduceOperation.MIN);
         }
         return IFloatVector.of(mins);
     }
@@ -2268,7 +2273,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         int rows = data.length;
         float[] maxs = new float[rows];
         for (int i = 0; i < rows; i++) {
-            maxs[i] = this.computer.reduceOperate(data[i], IFloatVectorComputer.ReduceOperation.MAX);
+            maxs[i] = this.computer.reduceOperate(data[i], ReduceOperation.MAX);
         }
         return IFloatVector.of(maxs);
     }
@@ -2283,7 +2288,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            mins[j] = this.computer.reduceOperate(column, IFloatVectorComputer.ReduceOperation.MIN);
+            mins[j] = this.computer.reduceOperate(column, ReduceOperation.MIN);
         }
         return IFloatVector.of(mins);
     }
@@ -2298,7 +2303,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            maxs[j] = this.computer.reduceOperate(column, IFloatVectorComputer.ReduceOperation.MAX);
+            maxs[j] = this.computer.reduceOperate(column, ReduceOperation.MAX);
         }
         return IFloatVector.of(maxs);
     }
@@ -2316,7 +2321,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix sqrt() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SQRT, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SQRT, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -2332,7 +2337,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix pow(Float power) {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, power);
+        var res = this.computer.universalOperate(data, UniversalOperation.POW, power);
         return IFloatMatrix.of(res);
     }
 
@@ -2348,7 +2353,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     @Override
     public  IFloatMatrix exp() {
-        var res = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.EXP, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.EXP, 0);
         return IFloatMatrix.of(res);
     }
 
@@ -2656,7 +2661,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         if (RerePrecision.equalsZero(scalar, 1e-12)) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
-        var res = this.computer.binaryOperate(data, (float)scalar, IFloatVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, (float)scalar, BinaryOperation.DIVIDE);
         return IFloatMatrix.of(res);
     }
 
@@ -2670,10 +2675,10 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         // 使用SIMD计算每行的L2范数
         for (int i = 0; i < rows; i++) {
             // 计算每个元素的平方
-            float[] squared = this.computer.universalOperate(this.data[i], IFloatVectorComputer.UniversalOperation.POW, 2.0f);
+            float[] squared = this.computer.universalOperate(this.data[i], UniversalOperation.POW, 2.0f);
             
             // 计算平方和
-            float sumOfSquares = this.computer.reduceOperate(squared, IFloatVectorComputer.ReduceOperation.SUM);
+            float sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             float norm = (float)Math.sqrt(sumOfSquares);
@@ -2683,7 +2688,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             }
 
             // 使用SIMD归一化每行
-            result[i] = this.computer.binaryOperate(this.data[i], norm, IFloatVectorComputer.BinaryOperation.DIVIDE);
+            result[i] = this.computer.binaryOperate(this.data[i], norm, BinaryOperation.DIVIDE);
         }
 
         return IFloatMatrix.of(result);
@@ -2782,7 +2787,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
 
     @Override
     public  IFloatMatrix multiply(IMatrix<Float> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.MULTIPLY);
         return IFloatMatrix.of(res);
     }
 
@@ -2799,7 +2804,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
 
-        return this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.EQUALS);
     }
 
     @Override
@@ -2815,7 +2820,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
 
-        return this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.LESS_THAN);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN);
     }
 
     @Override
@@ -2829,7 +2834,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.GREATER_THAN);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN);
     }
     
         @Override
@@ -2843,7 +2848,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.GREATER_THAN_OR_EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN_OR_EQUALS);
     }
     
         @Override
@@ -2857,7 +2862,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.LESS_THAN_OR_EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN_OR_EQUALS);
     }
 
     /**

@@ -1,5 +1,12 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
+
 /**
  * Float Vector Computer Interface
  * 单精度向量计算器接口
@@ -17,124 +24,6 @@ package com.yishape.lab.math.compute;
  * @since 2024
  */
 public interface IFloatVectorComputer {
-    
-    /**
-     * Binary Operations Enumeration
-     * 二元运算枚举
-     *
-     * Defines basic arithmetic operations that can be performed between two float vectors
-     * or between a float vector and a scalar value.
-     *
-     * 定义可在两个单精度向量之间或向量与标量之间执行的基本算术运算。
-     */
-    enum BinaryOperation { 
-        ADD,
-        SUBTRACT,
-        MULTIPLY,
-        DIVIDE,
-        REMAINDER,
-    }
-
-    /**
-     * Binary Reduction Operations Enumeration
-     * 二元归约运算枚举
-     *
-     * Defines reduction operations that combine two float vectors into a scalar result,
-     * such as dot product and various distance norms.
-     *
-     * 定义将两个单精度向量合并为标量结果的归约运算，如点积和各种距离范数。
-     */
-    enum BinaryReduceOperation { 
-        DOT,
-        L2_NORM,
-        L1_NORM
-    }
-
-    /**
-     * Universal Operations Enumeration
-     * 通用运算枚举
-     *
-     * Defines unary mathematical operations that can be applied to all elements
-     * of a float vector uniformly, including trigonometric, exponential, and other functions.
-     *
-     * 定义可统一应用于单精度向量所有元素的单元数学运算，包括三角函数、指数函数等。
-     */
-    enum UniversalOperation { 
-        EXP,
-        LOG,
-        LOG10,
-        SIN,
-        COS,
-        TAN,
-        ASIN,
-        ACOS,
-        ATAN,
-        SQRT,
-        ABS,
-        POW,
-        CBRT,
-        COSH,
-        SINH,
-        TANH,
-        EXPM1,
-        LOG1P,
-        RELU,
-        SIGMOID,
-        GELU,
-    }
-
-    /**
-     * Reduction Operations Enumeration
-     * 归约运算枚举
-     *
-     * Defines operations that reduce a float vector to a single scalar value,
-     * such as sum, mean, min, max, and statistical measures.
-     *
-     * 定义将单精度向量归约为单个标量值的运算，如求和、均值、最小值、最大值和统计量。
-     */
-    enum ReduceOperation { 
-        SUM,
-        MEAN,
-        MIN,
-        MAX,
-        VARIANCE,
-        STANDARD_DEVIATION,
-        PROD
-    }
-
-    /**
-     * Logical Comparison Operations Enumeration
-     * 逻辑比较运算枚举
-     *
-     * Defines comparison operations between float vector elements,
-     * returning boolean results for each element comparison.
-     *
-     * 定义单精度向量元素间的比较运算，为每个元素比较返回布尔结果。
-     */
-    enum LogicalCompare { 
-        EQUALS,
-        NOT_EQUALS,
-        LESS_THAN,
-        LESS_THAN_OR_EQUALS,
-        GREATER_THAN,
-        GREATER_THAN_OR_EQUALS
-    }
-    
-    /**
-     * Logical Operations Enumeration
-     * 逻辑运算枚举
-     *
-     * Defines bitwise and logical operations that can be performed on float vectors,
-     * supporting boolean algebra operations.
-     *
-     * 定义可在单精度向量上执行的位运算和逻辑运算，支持布尔代数运算。
-     */
-    enum LogicalOperation { 
-        AND,
-        OR,
-        NOT,
-        XOR
-    }
     
     
     /**

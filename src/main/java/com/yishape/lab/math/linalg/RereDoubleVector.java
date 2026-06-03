@@ -3,13 +3,17 @@ package com.yishape.lab.math.linalg;
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.IDoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.function.Function;
 
 /**
@@ -220,7 +224,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector sub(IVector<Double> vec) {
-        var res = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.SUBTRACT);
         var vv = IDoubleVector.of(res);  // 创建结果向量对象
         return vv;
     }
@@ -273,7 +277,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector add(IVector<Double> vec) {
-        var res = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.ADD);
         var vv = IDoubleVector.of(res);  // 创建结果向量对象
         return vv;
     }
@@ -292,7 +296,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector innerProduct(IVector<Double> vec) {
-        double result = this.computer.binaryReduceOperate(data, otherData(vec), IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double result = this.computer.binaryReduceOperate(data, otherData(vec), BinaryReduceOperation.DOT);
         return IDoubleVector.of(result);
     }
 
@@ -349,7 +353,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector divideByScalar(double p) {
-        var res = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, p, BinaryOperation.DIVIDE);
         return IDoubleVector.of(res);
     }
 
@@ -361,12 +365,12 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
         double[] xData = otherData(x);
         double[] result;
         if (alpha == 1.0) {
-            result = this.computer.binaryOperate(data, xData, IDoubleVectorComputer.BinaryOperation.ADD);
+            result = this.computer.binaryOperate(data, xData, BinaryOperation.ADD);
         } else if (alpha == -1.0) {
-            result = this.computer.binaryOperate(data, xData, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+            result = this.computer.binaryOperate(data, xData, BinaryOperation.SUBTRACT);
         } else {
-            double[] scaled = this.computer.binaryOperate(xData, alpha, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
-            result = this.computer.binaryOperate(data, scaled, IDoubleVectorComputer.BinaryOperation.ADD);
+            double[] scaled = this.computer.binaryOperate(xData, alpha, BinaryOperation.MULTIPLY);
+            result = this.computer.binaryOperate(data, scaled, BinaryOperation.ADD);
         }
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
@@ -377,7 +381,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
         if (alpha == 0.0) {
             throw new ArithmeticException("除以零 / Division by zero");
         }
-        double[] result = this.computer.binaryOperate(data, alpha, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        double[] result = this.computer.binaryOperate(data, alpha, BinaryOperation.DIVIDE);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
@@ -410,35 +414,35 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
 
     @Override
     public IDoubleVector multiplyByScalarInPlace(double p) {
-        double[] result = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        double[] result = this.computer.binaryOperate(data, p, BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IDoubleVector addInPlace(IVector<Double> vec) {
-        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.ADD);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IDoubleVector subInPlace(IVector<Double> vec) {
-        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        double[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.SUBTRACT);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IDoubleVector multiplyInPlace(IVector<Double> vec) {
-        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        double[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IDoubleVector negInPlace() {
-        double[] result = this.computer.binaryOperate(data, -1.0, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        double[] result = this.computer.binaryOperate(data, -1.0, BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
@@ -472,7 +476,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector multiply(IVector<Double> vec1) {
-        var res = this.computer.binaryOperate(data, otherData(vec1), IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, otherData(vec1), BinaryOperation.MULTIPLY);
         return IDoubleVector.of(res);
     }
 
@@ -537,7 +541,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector subScalar(double p) {
-        var res = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, p, BinaryOperation.SUBTRACT);
         return IDoubleVector.of(res);
     }
 
@@ -552,7 +556,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector addScalar(double p) {
-        var res = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, p, BinaryOperation.ADD);
         return IDoubleVector.of(res);
     }
 
@@ -568,7 +572,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector multiplyByScalar(double p) {
-        var res = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, p, BinaryOperation.MULTIPLY);
         return IDoubleVector.of(res);
     }
 
@@ -582,7 +586,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector sum() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.SUM);
+        double result = this.computer.reduceOperate(data, ReduceOperation.SUM);
         return IDoubleVector.of(result);
     }
 
@@ -596,7 +600,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector min() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MIN);
+        double result = this.computer.reduceOperate(data, ReduceOperation.MIN);
         return IDoubleVector.of(result);
     }
 
@@ -610,7 +614,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector max() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MAX);
+        double result = this.computer.reduceOperate(data, ReduceOperation.MAX);
         return IDoubleVector.of(result);
     }
 
@@ -670,7 +674,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector mean() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MEAN);
+        double result = this.computer.reduceOperate(data, ReduceOperation.MEAN);
         return IDoubleVector.of(result);
     }
 
@@ -761,9 +765,9 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
             throw new ArithmeticException("标准差为0，无法计算偏度 / Standard deviation is 0, cannot calculate skewness");
         }
 
-        var diff = this.computer.binaryOperate(data, mean, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
-        var d3 = this.computer.universalOperate(diff, IDoubleVectorComputer.UniversalOperation.POW, 3);
-        double sum = this.computer.reduceOperate(d3, IDoubleVectorComputer.ReduceOperation.SUM);
+        var diff = this.computer.binaryOperate(data, mean, BinaryOperation.SUBTRACT);
+        var d3 = this.computer.universalOperate(diff, UniversalOperation.POW, 3);
+        double sum = this.computer.reduceOperate(d3, ReduceOperation.SUM);
 
         return sum / (this.length() * std * std * std);
     }
@@ -795,9 +799,9 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
             throw new ArithmeticException("标准差为0，无法计算峰度 / Standard deviation is 0, cannot calculate kurtosis");
         }
 
-        var diff = this.computer.binaryOperate(data, mean, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
-        var d3 = this.computer.universalOperate(diff, IDoubleVectorComputer.UniversalOperation.POW, 4);
-        double sum = this.computer.reduceOperate(d3, IDoubleVectorComputer.ReduceOperation.SUM);
+        var diff = this.computer.binaryOperate(data, mean, BinaryOperation.SUBTRACT);
+        var d3 = this.computer.universalOperate(diff, UniversalOperation.POW, 4);
+        double sum = this.computer.reduceOperate(d3, ReduceOperation.SUM);
 
         return (sum / (this.length() * std * std * std * std)) - 3.0;
     }
@@ -1151,7 +1155,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public boolean[] eq(IVector<Double> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.EQUALS);
         return v;
     }
 
@@ -1171,7 +1175,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     @Override
     public boolean[] lt(IVector<Double> other) {
 
-        var v = this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.LESS_THAN);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN);
 
         return v;
     }
@@ -1191,19 +1195,19 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public boolean[] gt(IVector<Double> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.GREATER_THAN);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN);
         return v;
     }
     
     @Override
     public boolean[] ge(IVector<Double> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.GREATER_THAN_OR_EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN_OR_EQUALS);
         return v;
     }
     
     @Override
     public boolean[] le(IVector<Double> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.LESS_THAN_OR_EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN_OR_EQUALS);
         return v;
     }
 
@@ -1217,7 +1221,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector prod() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.PROD);
+        double result = this.computer.reduceOperate(data, ReduceOperation.PROD);
         return IDoubleVector.of(result);
     }
 
@@ -1274,7 +1278,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector abs() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.ABS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ABS, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1353,7 +1357,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector sqrt() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SQRT, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SQRT, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1367,7 +1371,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector square() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.POW, 2);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.POW, 2);
         return IDoubleVector.of(v1);
     }
 
@@ -1383,7 +1387,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector exp() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.EXP, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.EXP, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1400,7 +1404,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector log() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.LOG, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.LOG, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1417,7 +1421,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector log10() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.LOG10, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.LOG10, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1432,7 +1436,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector sigmoid() {
-        double[] result = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SIGMOID, 0);
+        double[] result = this.computer.universalOperate(data, UniversalOperation.SIGMOID, 0);
         return IDoubleVector.of(result);
     }
 
@@ -1447,7 +1451,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector relu() {
-        double[] result = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.RELU, 0);
+        double[] result = this.computer.universalOperate(data, UniversalOperation.RELU, 0);
         return IDoubleVector.of(result);
     }
 
@@ -1464,7 +1468,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector pow(double m) {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.POW, m);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.POW, m);
         return IDoubleVector.of(v1);
     }
 
@@ -1480,7 +1484,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public  IDoubleVector remainder(Double value) {
-        var data2 = this.computer.binaryOperate(data, value, IDoubleVectorComputer.BinaryOperation.REMAINDER);
+        var data2 = this.computer.binaryOperate(data, value, BinaryOperation.REMAINDER);
         return IDoubleVector.of(data2);
     }
 
@@ -1511,7 +1515,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public double euclideanDistance(IVector<Double> other) {
-        return this.computer.binaryReduceOperate(data, otherData(other), IDoubleVectorComputer.BinaryReduceOperation.L2_NORM);
+        return this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.L2_NORM);
     }
 
     /**
@@ -1528,7 +1532,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public double manhattanDistance(IVector<Double> other) {
-        return this.computer.binaryReduceOperate(data, otherData(other), IDoubleVectorComputer.BinaryReduceOperation.L1_NORM);
+        return this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.L1_NORM);
     }
 
     /**
@@ -1546,7 +1550,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public double cosineSimilarity(IVector<Double> other) {
-        double dotProduct = this.computer.binaryReduceOperate(data, otherData(other), IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double dotProduct = this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.DOT);
         double norm1 = this.norm2Value();
         double norm2 = other.norm2Value();
         double denominator = norm1 * norm2;
@@ -1567,56 +1571,56 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     // ========== 三角函数操作实现 / Trigonometric Functions Implementation ==========
     @Override
     public  IDoubleVector sin() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SIN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SIN, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector cos() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.COS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.COS, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector tan() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.TAN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.TAN, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector arcsin() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.ASIN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ASIN, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector arccos() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.ACOS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ACOS, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector arctan() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.ATAN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ATAN, 0);
         return IDoubleVector.of(v1);
     }
 
     // ========== 双曲函数实现 / Hyperbolic Functions Implementation ==========
     @Override
     public  IDoubleVector sinh() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SINH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SINH, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector cosh() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.COSH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.COSH, 0);
         return IDoubleVector.of(v1);
     }
 
     @Override
     public  IDoubleVector tanh() {
-        var v1 = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.TANH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.TANH, 0);
         return IDoubleVector.of(v1);
     }
 
@@ -1660,25 +1664,25 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     // ========== 逻辑运算实现 / Logical Operations Implementation ==========
     @Override
     public boolean[] logicalAnd(IVector<Double> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IDoubleVectorComputer.LogicalOperation.AND);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.AND);
         return result;
     }
 
     @Override
     public boolean[] logicalOr(IVector<Double> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IDoubleVectorComputer.LogicalOperation.OR);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.OR);
         return result;
     }
 
     @Override
     public boolean[] logicalNot() {
-        var result = this.computer.logicalOperate(data, IDoubleVectorComputer.LogicalOperation.NOT);
+        var result = this.computer.logicalOperate(data, LogicalOperation.NOT);
         return result;
     }
 
     @Override
     public boolean[] logicalXor(IVector<Double> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IDoubleVectorComputer.LogicalOperation.XOR);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.XOR);
         return result;
     }
 
@@ -1885,8 +1889,8 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
             return this.normInf();
         }
 
-        double[] pd = computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.POW, p);
-        double sum = computer.reduceOperate(pd, IDoubleVectorComputer.ReduceOperation.SUM);
+        double[] pd = computer.universalOperate(data, UniversalOperation.POW, p);
+        double sum = computer.reduceOperate(pd, ReduceOperation.SUM);
 
         return Math.pow(sum, 1.0 / p);
     }

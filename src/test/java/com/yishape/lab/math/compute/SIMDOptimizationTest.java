@@ -1,5 +1,8 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,12 +48,12 @@ public class SIMDOptimizationTest {
         
         // SIMD计算
         long simdStart = System.nanoTime();
-        double[] simdResult = simdComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] simdResult = simdComputer.binaryOperate(x1, x2, BinaryOperation.ADD);
         long simdTime = System.nanoTime() - simdStart;
         
         // SISD计算（对照组）
         long sisdStart = System.nanoTime();
-        double[] sisdResult = sisdComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] sisdResult = sisdComputer.binaryOperate(x1, x2, BinaryOperation.ADD);
         long sisdTime = System.nanoTime() - sisdStart;
         
         // 验证结果正确性
@@ -79,12 +82,12 @@ public class SIMDOptimizationTest {
         
         // SIMD计算
         long simdStart = System.nanoTime();
-        double simdResult = simdComputer.binaryReduceOperate(x1, x2, IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double simdResult = simdComputer.binaryReduceOperate(x1, x2, BinaryReduceOperation.DOT);
         long simdTime = System.nanoTime() - simdStart;
         
         // SISD计算
         long sisdStart = System.nanoTime();
-        double sisdResult = sisdComputer.binaryReduceOperate(x1, x2, IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double sisdResult = sisdComputer.binaryReduceOperate(x1, x2, BinaryReduceOperation.DOT);
         long sisdTime = System.nanoTime() - sisdStart;
         
         // 验证结果正确性
@@ -153,9 +156,9 @@ public class SIMDOptimizationTest {
         
         // 执行多次操作
         for (int i = 0; i < 5; i++) {
-            simdComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
-            simdComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
-            simdComputer.reduceOperate(x1, IDoubleVectorComputer.ReduceOperation.SUM);
+            simdComputer.binaryOperate(x1, x2, BinaryOperation.ADD);
+            simdComputer.binaryOperate(x1, x2, BinaryOperation.MULTIPLY);
+            simdComputer.reduceOperate(x1, ReduceOperation.SUM);
         }
         
         // 输出性能统计

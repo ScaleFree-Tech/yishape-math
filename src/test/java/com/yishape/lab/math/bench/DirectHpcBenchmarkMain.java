@@ -24,14 +24,13 @@ import org.apache.commons.math4.legacy.linear.RealVector;
 import org.apache.commons.math4.legacy.linear.SingularValueDecomposition;
 
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import com.yishape.lab.math.compute.hpc.HpcConfig;
 import com.yishape.lab.math.compute.hpc.HpcSwitch;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
 import com.yishape.lab.math.hpc.*;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
-import com.yishape.lab.math.linalg.decomposition.*;
 import com.yishape.lab.math.optimize.IGradientFunction;
 import com.yishape.lab.math.optimize.IOptimizer;
 import com.yishape.lab.math.optimize.IObjectiveFunction;
@@ -1009,7 +1008,7 @@ public final class DirectHpcBenchmarkMain {
             double[] a = new double[n], b = new double[n];
             for (int i = 0; i < n; i++) { a[i] = rng.nextDouble(); b[i] = rng.nextDouble(); }
             int runs = (n >= 1000000) ? 1 : REPEAT;
-            double msAdd = benchMs(() -> computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.ADD), runs);
+            double msAdd = benchMs(() -> computer.binaryOperate(a, b, BinaryOperation.ADD), runs);
             double csAdd = Arrays.stream(a).sum();
             rows.add(row("compute", "vector_add", String.valueOf(n), "java_pure", msAdd, csAdd, 0));
         }

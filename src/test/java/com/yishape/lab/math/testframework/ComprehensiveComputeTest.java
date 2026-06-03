@@ -3,13 +3,16 @@ package com.yishape.lab.math.testframework;
 import com.yishape.lab.math.compute.ComputerConfig;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.FloatVectorComputer;
-import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,7 +64,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {1.0, 2.0, 3.0};
         double[] x2 = {4.0, 5.0, 6.0};
-        double[] result = doubleComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] result = doubleComputer.binaryOperate(x1, x2, BinaryOperation.ADD);
 
         TestResult r = recorder.record("simd", "double_binary_add");
         try {
@@ -81,7 +84,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {5.0, 3.0, 1.0};
         double[] x2 = {2.0, 2.0, 2.0};
-        double[] result = doubleComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        double[] result = doubleComputer.binaryOperate(x1, x2, BinaryOperation.SUBTRACT);
 
         TestResult r = recorder.record("simd", "double_binary_subtract");
         try {
@@ -101,7 +104,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {2.0, 3.0, 4.0};
         double[] x2 = {1.0, 2.0, 3.0};
-        double[] result = doubleComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        double[] result = doubleComputer.binaryOperate(x1, x2, BinaryOperation.MULTIPLY);
 
         TestResult r = recorder.record("simd", "double_binary_multiply");
         try {
@@ -121,7 +124,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {10.0, 20.0, 30.0};
         double[] x2 = {2.0, 5.0, 10.0};
-        double[] result = doubleComputer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        double[] result = doubleComputer.binaryOperate(x1, x2, BinaryOperation.DIVIDE);
 
         TestResult r = recorder.record("simd", "double_binary_divide");
         try {
@@ -141,7 +144,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {1.0, 2.0, 3.0};
         double scalar = 2.0;
-        double[] result = doubleComputer.binaryOperate(x1, scalar, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        double[] result = doubleComputer.binaryOperate(x1, scalar, BinaryOperation.MULTIPLY);
 
         TestResult r = recorder.record("simd", "double_scalar_multiply");
         try {
@@ -160,7 +163,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleReduceOperateSum() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        double result = doubleComputer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.SUM);
+        double result = doubleComputer.reduceOperate(x, ReduceOperation.SUM);
 
         TestResult r = recorder.record("simd", "double_reduce_sum");
         try {
@@ -179,7 +182,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleReduceOperateMean() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        double result = doubleComputer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MEAN);
+        double result = doubleComputer.reduceOperate(x, ReduceOperation.MEAN);
 
         TestResult r = recorder.record("simd", "double_reduce_mean");
         try {
@@ -198,7 +201,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleReduceOperateMax() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {1.0, 5.0, 3.0};
-        double result = doubleComputer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MAX);
+        double result = doubleComputer.reduceOperate(x, ReduceOperation.MAX);
 
         TestResult r = recorder.record("simd", "double_reduce_max");
         try {
@@ -217,7 +220,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleReduceOperateMin() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {1.0, 5.0, 3.0};
-        double result = doubleComputer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MIN);
+        double result = doubleComputer.reduceOperate(x, ReduceOperation.MIN);
 
         TestResult r = recorder.record("simd", "double_reduce_min");
         try {
@@ -236,7 +239,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleUniversalOperateExp() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {0.0, 1.0, 2.0};
-        double[] result = doubleComputer.universalOperate(x, IDoubleVectorComputer.UniversalOperation.EXP, 0.0);
+        double[] result = doubleComputer.universalOperate(x, UniversalOperation.EXP, 0.0);
 
         TestResult r = recorder.record("simd", "double_universal_exp");
         try {
@@ -258,7 +261,7 @@ public class ComprehensiveComputeTest {
     public void testDoubleUniversalOperateSqrt() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x = {1.0, 4.0, 9.0};
-        double[] result = doubleComputer.universalOperate(x, IDoubleVectorComputer.UniversalOperation.SQRT, 0.0);
+        double[] result = doubleComputer.universalOperate(x, UniversalOperation.SQRT, 0.0);
 
         TestResult r = recorder.record("simd", "double_universal_sqrt");
         try {
@@ -278,7 +281,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         double[] x1 = {1.0, 2.0, 3.0};
         double[] x2 = {4.0, 5.0, 6.0};
-        double result = doubleComputer.binaryReduceOperate(x1, x2, IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double result = doubleComputer.binaryReduceOperate(x1, x2, BinaryReduceOperation.DOT);
 
         TestResult r = recorder.record("simd", "double_binaryreduce_dot");
         try {
@@ -359,22 +362,22 @@ public class ComprehensiveComputeTest {
 
         TestResult r = recorder.record("simd", "double_logical_compare");
         try {
-            boolean[] eq = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.EQUALS);
+            boolean[] eq = doubleComputer.logicalCompare(x1, x2, LogicalCompare.EQUALS);
             assertArrayEquals(new boolean[]{true, false, false}, eq, "EQUALS");
 
-            boolean[] gt = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.GREATER_THAN);
+            boolean[] gt = doubleComputer.logicalCompare(x1, x2, LogicalCompare.GREATER_THAN);
             assertArrayEquals(new boolean[]{false, false, true}, gt, "GREATER_THAN");
 
-            boolean[] lt = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.LESS_THAN);
+            boolean[] lt = doubleComputer.logicalCompare(x1, x2, LogicalCompare.LESS_THAN);
             assertArrayEquals(new boolean[]{false, true, false}, lt, "LESS_THAN");
 
-            boolean[] gte = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.GREATER_THAN_OR_EQUALS);
+            boolean[] gte = doubleComputer.logicalCompare(x1, x2, LogicalCompare.GREATER_THAN_OR_EQUALS);
             assertArrayEquals(new boolean[]{true, false, true}, gte, "GREATER_THAN_OR_EQUALS");
 
-            boolean[] lte = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.LESS_THAN_OR_EQUALS);
+            boolean[] lte = doubleComputer.logicalCompare(x1, x2, LogicalCompare.LESS_THAN_OR_EQUALS);
             assertArrayEquals(new boolean[]{true, true, false}, lte, "LESS_THAN_OR_EQUALS");
 
-            boolean[] neq = doubleComputer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.NOT_EQUALS);
+            boolean[] neq = doubleComputer.logicalCompare(x1, x2, LogicalCompare.NOT_EQUALS);
             assertArrayEquals(new boolean[]{false, true, true}, neq, "NOT_EQUALS");
 
             r.pass("Double logicalCompare: EQUALS, GREATER_THAN, LESS_THAN, etc. all correct");
@@ -394,7 +397,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {1.0f, 2.0f, 3.0f};
         float[] x2 = {4.0f, 5.0f, 6.0f};
-        float[] result = floatComputer.binaryOperate(x1, x2, IFloatVectorComputer.BinaryOperation.ADD);
+        float[] result = floatComputer.binaryOperate(x1, x2, BinaryOperation.ADD);
 
         TestResult r = recorder.record("simd", "float_binary_add");
         try {
@@ -414,7 +417,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {5.0f, 3.0f, 1.0f};
         float[] x2 = {2.0f, 2.0f, 2.0f};
-        float[] result = floatComputer.binaryOperate(x1, x2, IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        float[] result = floatComputer.binaryOperate(x1, x2, BinaryOperation.SUBTRACT);
 
         TestResult r = recorder.record("simd", "float_binary_subtract");
         try {
@@ -434,7 +437,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {2.0f, 3.0f, 4.0f};
         float[] x2 = {1.0f, 2.0f, 3.0f};
-        float[] result = floatComputer.binaryOperate(x1, x2, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        float[] result = floatComputer.binaryOperate(x1, x2, BinaryOperation.MULTIPLY);
 
         TestResult r = recorder.record("simd", "float_binary_multiply");
         try {
@@ -454,7 +457,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {10.0f, 20.0f, 30.0f};
         float[] x2 = {2.0f, 5.0f, 10.0f};
-        float[] result = floatComputer.binaryOperate(x1, x2, IFloatVectorComputer.BinaryOperation.DIVIDE);
+        float[] result = floatComputer.binaryOperate(x1, x2, BinaryOperation.DIVIDE);
 
         TestResult r = recorder.record("simd", "float_binary_divide");
         try {
@@ -474,7 +477,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {1.0f, 2.0f, 3.0f};
         float scalar = 2.0f;
-        float[] result = floatComputer.binaryOperate(x1, scalar, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        float[] result = floatComputer.binaryOperate(x1, scalar, BinaryOperation.MULTIPLY);
 
         TestResult r = recorder.record("simd", "float_scalar_multiply");
         try {
@@ -493,7 +496,7 @@ public class ComprehensiveComputeTest {
     public void testFloatReduceOperateSum() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-        float result = floatComputer.reduceOperate(x, IFloatVectorComputer.ReduceOperation.SUM);
+        float result = floatComputer.reduceOperate(x, ReduceOperation.SUM);
 
         TestResult r = recorder.record("simd", "float_reduce_sum");
         try {
@@ -512,7 +515,7 @@ public class ComprehensiveComputeTest {
     public void testFloatReduceOperateMean() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-        float result = floatComputer.reduceOperate(x, IFloatVectorComputer.ReduceOperation.MEAN);
+        float result = floatComputer.reduceOperate(x, ReduceOperation.MEAN);
 
         TestResult r = recorder.record("simd", "float_reduce_mean");
         try {
@@ -531,7 +534,7 @@ public class ComprehensiveComputeTest {
     public void testFloatReduceOperateMax() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {1.0f, 5.0f, 3.0f};
-        float result = floatComputer.reduceOperate(x, IFloatVectorComputer.ReduceOperation.MAX);
+        float result = floatComputer.reduceOperate(x, ReduceOperation.MAX);
 
         TestResult r = recorder.record("simd", "float_reduce_max");
         try {
@@ -550,7 +553,7 @@ public class ComprehensiveComputeTest {
     public void testFloatReduceOperateMin() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {1.0f, 5.0f, 3.0f};
-        float result = floatComputer.reduceOperate(x, IFloatVectorComputer.ReduceOperation.MIN);
+        float result = floatComputer.reduceOperate(x, ReduceOperation.MIN);
 
         TestResult r = recorder.record("simd", "float_reduce_min");
         try {
@@ -569,7 +572,7 @@ public class ComprehensiveComputeTest {
     public void testFloatUniversalOperateExp() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {0.0f, 1.0f, 2.0f};
-        float[] result = floatComputer.universalOperate(x, IFloatVectorComputer.UniversalOperation.EXP, 0.0f);
+        float[] result = floatComputer.universalOperate(x, UniversalOperation.EXP, 0.0f);
 
         TestResult r = recorder.record("simd", "float_universal_exp");
         try {
@@ -591,7 +594,7 @@ public class ComprehensiveComputeTest {
     public void testFloatUniversalOperateSqrt() {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x = {1.0f, 4.0f, 9.0f};
-        float[] result = floatComputer.universalOperate(x, IFloatVectorComputer.UniversalOperation.SQRT, 0.0f);
+        float[] result = floatComputer.universalOperate(x, UniversalOperation.SQRT, 0.0f);
 
         TestResult r = recorder.record("simd", "float_universal_sqrt");
         try {
@@ -611,7 +614,7 @@ public class ComprehensiveComputeTest {
         TestResult.Recorder recorder = new TestResult.Recorder("compute", "test_docs/results");
         float[] x1 = {1.0f, 2.0f, 3.0f};
         float[] x2 = {4.0f, 5.0f, 6.0f};
-        float result = floatComputer.binaryReduceOperate(x1, x2, IFloatVectorComputer.BinaryReduceOperation.DOT);
+        float result = floatComputer.binaryReduceOperate(x1, x2, BinaryReduceOperation.DOT);
 
         TestResult r = recorder.record("simd", "float_binaryreduce_dot");
         try {
@@ -692,13 +695,13 @@ public class ComprehensiveComputeTest {
 
         TestResult r = recorder.record("simd", "float_logical_compare");
         try {
-            boolean[] eq = floatComputer.logicalCompare(x1, x2, IFloatVectorComputer.LogicalCompare.EQUALS);
+            boolean[] eq = floatComputer.logicalCompare(x1, x2, LogicalCompare.EQUALS);
             assertArrayEquals(new boolean[]{true, false, false}, eq, "Float EQUALS");
 
-            boolean[] gt = floatComputer.logicalCompare(x1, x2, IFloatVectorComputer.LogicalCompare.GREATER_THAN);
+            boolean[] gt = floatComputer.logicalCompare(x1, x2, LogicalCompare.GREATER_THAN);
             assertArrayEquals(new boolean[]{false, false, true}, gt, "Float GREATER_THAN");
 
-            boolean[] lt = floatComputer.logicalCompare(x1, x2, IFloatVectorComputer.LogicalCompare.LESS_THAN);
+            boolean[] lt = floatComputer.logicalCompare(x1, x2, LogicalCompare.LESS_THAN);
             assertArrayEquals(new boolean[]{false, true, false}, lt, "Float LESS_THAN");
 
             r.pass("Float logicalCompare: EQUALS, GREATER_THAN, LESS_THAN all correct");

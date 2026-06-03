@@ -1,5 +1,57 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.ADD;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.DIVIDE;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.REMAINDER;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.SUBTRACT;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import static com.yishape.lab.math.compute.ops.BinaryReduceOperation.DOT;
+import static com.yishape.lab.math.compute.ops.BinaryReduceOperation.L1_NORM;
+import static com.yishape.lab.math.compute.ops.BinaryReduceOperation.L2_NORM;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.EQUALS;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.GREATER_THAN;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.GREATER_THAN_OR_EQUALS;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.LESS_THAN;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.LESS_THAN_OR_EQUALS;
+import static com.yishape.lab.math.compute.ops.LogicalCompare.NOT_EQUALS;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import static com.yishape.lab.math.compute.ops.LogicalOperation.AND;
+import static com.yishape.lab.math.compute.ops.LogicalOperation.NOT;
+import static com.yishape.lab.math.compute.ops.LogicalOperation.OR;
+import static com.yishape.lab.math.compute.ops.LogicalOperation.XOR;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.MAX;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.MEAN;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.MIN;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.PROD;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.STANDARD_DEVIATION;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.SUM;
+import static com.yishape.lab.math.compute.ops.ReduceOperation.VARIANCE;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.ABS;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.ACOS;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.ASIN;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.ATAN;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.CBRT;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.COS;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.COSH;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.EXP;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.EXPM1;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.GELU;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.LOG;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.LOG10;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.LOG1P;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.POW;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.RELU;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SIGMOID;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SIN;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SINH;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SQRT;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.TAN;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.TANH;
 import com.yishape.lab.util.YishapeConfig;
 
 import com.yishape.lab.util.YishapeLogger;
@@ -260,7 +312,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或长度不匹配
      */
     @Override
-    public float[] binaryOperate(float[] x1, float[] x2, IFloatVectorComputer.BinaryOperation operation) {
+    public float[] binaryOperate(float[] x1, float[] x2, BinaryOperation operation) {
         // 改进的参数验证和性能监控
         validateVectorInputs(x1, x2, "binaryOperate(vector, vector)");
         recordOperation(true, x1.length);
@@ -280,7 +332,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     /**
      * 小数据集的二元运算处理
      */
-    private float[] binaryOperateSmall(float[] x1, float[] x2, IFloatVectorComputer.BinaryOperation operation, 
+    private float[] binaryOperateSmall(float[] x1, float[] x2, BinaryOperation operation, 
                                        float[] result, int length) {
         int i = 0;
         int upperBound = PREFERRED_SPECIES.loopBound(length);
@@ -301,7 +353,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     /**
      * 大数据集的优化二元运算处理
      */
-    private float[] binaryOperateOptimized(float[] x1, float[] x2, IFloatVectorComputer.BinaryOperation operation, 
+    private float[] binaryOperateOptimized(float[] x1, float[] x2, BinaryOperation operation, 
                                            float[] result, int length) {
         final int unrollFactor = calculateUnrollFactor(length);
         final int blockSize = unrollFactor * VECTOR_LENGTH;
@@ -332,7 +384,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 执行展开的二元运算
      */
     private void performUnrolledBinaryOperation(float[] x1, float[] x2, float[] result, 
-                                              IFloatVectorComputer.BinaryOperation operation, int startIndex, int unrollFactor) {
+                                              BinaryOperation operation, int startIndex, int unrollFactor) {
         // 根据展开因子动态处理
         for (int u = 0; u < unrollFactor; u++) {
             int idx = startIndex + u * VECTOR_LENGTH;
@@ -346,7 +398,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     /**
      * 执行具体的二元运算
      */
-    private FloatVector performBinaryOperation(FloatVector a, FloatVector b, IFloatVectorComputer.BinaryOperation operation) {
+    private FloatVector performBinaryOperation(FloatVector a, FloatVector b, BinaryOperation operation) {
         return switch (operation) {
             case ADD -> a.add(b);
             case SUBTRACT -> a.sub(b);
@@ -366,7 +418,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 处理标量剩余元素
      */
     private void performScalarRemainder(float[] x1, float[] x2, float[] result, 
-                                       IFloatVectorComputer.BinaryOperation operation, int startIndex, int length) {
+                                       BinaryOperation operation, int startIndex, int length) {
         for (int i = startIndex; i < length; i++) {
             result[i] = switch (operation) {
                 case ADD -> x1[i] + x2[i];
@@ -389,7 +441,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入向量为null
      */
     @Override
-    public float[] binaryOperate(float[] x1, float x2, IFloatVectorComputer.BinaryOperation operation) {
+    public float[] binaryOperate(float[] x1, float x2, BinaryOperation operation) {
         // 参数验证
         if (x1 == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -410,7 +462,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     /**
      * 小数据集的向量与标量二元运算处理
      */
-    private float[] binaryOperateWithScalarSmall(float[] x1, float x2, IFloatVectorComputer.BinaryOperation operation, 
+    private float[] binaryOperateWithScalarSmall(float[] x1, float x2, BinaryOperation operation, 
                                                   float[] result, int length) {
         int i = 0;
         int upperBound = PREFERRED_SPECIES.loopBound(length);
@@ -432,7 +484,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 大数据集的优化向量与标量二元运算处理
      * 简化了乘法操作的特殊处理，减少分支开销
      */
-    private float[] binaryOperateWithScalarOptimized(float[] x1, float x2, IFloatVectorComputer.BinaryOperation operation, 
+    private float[] binaryOperateWithScalarOptimized(float[] x1, float x2, BinaryOperation operation, 
                                                       float[] result, int length) {
         final int unrollFactor = Math.min(4, calculateUnrollFactor(length)); // 限制展开因子
         final int blockSize = unrollFactor * VECTOR_LENGTH;
@@ -463,7 +515,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 执行展开的向量与标量二元运算
      */
     private void performUnrolledBinaryOperationWithScalar(float[] x1, FloatVector scalarVector, float x2, 
-                                                          float[] result, IFloatVectorComputer.BinaryOperation operation, 
+                                                          float[] result, BinaryOperation operation, 
                                                           int startIndex, int unrollFactor) {
         for (int u = 0; u < unrollFactor; u++) {
             int idx = startIndex + u * VECTOR_LENGTH;
@@ -477,7 +529,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 执行具体的向量与标量二元运算
      */
     private FloatVector performBinaryOperationWithScalar(FloatVector a, FloatVector scalarVector, 
-                                                          float scalarValue, IFloatVectorComputer.BinaryOperation operation) {
+                                                          float scalarValue, BinaryOperation operation) {
         return switch (operation) {
             case ADD -> a.add(scalarVector);
             case SUBTRACT -> a.sub(scalarVector);
@@ -497,7 +549,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * 处理向量与标量的标量剩余元素
      */
     private void performScalarRemainderWithScalar(float[] x1, float x2, float[] result, 
-                                                  IFloatVectorComputer.BinaryOperation operation, int startIndex, int length) {
+                                                  BinaryOperation operation, int startIndex, int length) {
         for (int i = startIndex; i < length; i++) {
             result[i] = switch (operation) {
                 case ADD -> x1[i] + x2;
@@ -519,7 +571,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或维度不匹配
      */
     @Override
-    public float[][] binaryOperate(float[][] x1, float[][] x2, IFloatVectorComputer.BinaryOperation operation) {
+    public float[][] binaryOperate(float[][] x1, float[][] x2, BinaryOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -568,7 +620,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入矩阵为null
      */
     @Override
-    public float[][] binaryOperate(float[][] x1, float x2, IFloatVectorComputer.BinaryOperation operation) {
+    public float[][] binaryOperate(float[][] x1, float x2, BinaryOperation operation) {
         // 参数验证
         if (x1 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -597,7 +649,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null
      */
     @Override
-    public float[] universalOperate(float[] x, IFloatVectorComputer.UniversalOperation operation, float additionalParam) {
+    public float[] universalOperate(float[] x, UniversalOperation operation, float additionalParam) {
         // 参数验证
         if (x == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -763,7 +815,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null
      */
     @Override
-    public float[][] universalOperate(float[][] x, IFloatVectorComputer.UniversalOperation operation, float additionalParam) {
+    public float[][] universalOperate(float[][] x, UniversalOperation operation, float additionalParam) {
         // 参数验证
         if (x == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -1034,7 +1086,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或不支持的操作
      */
     @Override
-    public float reduceOperate(float[] x, IFloatVectorComputer.ReduceOperation operation) {
+    public float reduceOperate(float[] x, ReduceOperation operation) {
         // 参数验证
         if (x == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -1073,12 +1125,12 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
 
             case VARIANCE -> {
                 // 计算均值
-                float mean = reduceOperate(x, IFloatVectorComputer.ReduceOperation.MEAN);
+                float mean = reduceOperate(x, ReduceOperation.MEAN);
                 return reduceOperateVariance(x, species, mean);
             }
 
             case STANDARD_DEVIATION -> {
-                return (float)Math.sqrt(reduceOperate(x, IFloatVectorComputer.ReduceOperation.VARIANCE));
+                return (float)Math.sqrt(reduceOperate(x, ReduceOperation.VARIANCE));
             }
 
             case PROD -> {
@@ -1334,7 +1386,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或不支持的操作
      */
     @Override
-    public float reduceOperate(float[][] x, IFloatVectorComputer.ReduceOperation operation) {
+    public float reduceOperate(float[][] x, ReduceOperation operation) {
         // 参数验证
         if (x == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -1400,7 +1452,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
 
             case VARIANCE -> {
                 // 计算均值
-                float mean = reduceOperate(x, IFloatVectorComputer.ReduceOperation.MEAN);
+                float mean = reduceOperate(x, ReduceOperation.MEAN);
                 // 计算方差：reduceOperateVariance divides by row length internally,
                 // so multiply back by row length to accumulate raw SSD, then divide by totalCount
                 float varianceSum = 0.0f;
@@ -1413,7 +1465,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
             }
 
             case STANDARD_DEVIATION -> {
-                return (float)Math.sqrt(reduceOperate(x, IFloatVectorComputer.ReduceOperation.VARIANCE));
+                return (float)Math.sqrt(reduceOperate(x, ReduceOperation.VARIANCE));
             }
 
             case PROD -> {
@@ -1440,7 +1492,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或长度不匹配
      */
     @Override
-    public float binaryReduceOperate(float[] x1, float[] x2, IFloatVectorComputer.BinaryReduceOperation operation) {
+    public float binaryReduceOperate(float[] x1, float[] x2, BinaryReduceOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -1572,7 +1624,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public float binaryReduceOperate(float[][] x1, float[][] x2, IFloatVectorComputer.BinaryReduceOperation operation) {
+    public float binaryReduceOperate(float[][] x1, float[][] x2, BinaryReduceOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -1658,7 +1710,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
      * @throws IllegalArgumentException 如果输入为null或长度不匹配
      */
     @Override
-    public boolean[] logicalCompare(float[] x1, float[] x2, IFloatVectorComputer.LogicalCompare operation) {
+    public boolean[] logicalCompare(float[] x1, float[] x2, LogicalCompare operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -1731,7 +1783,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public boolean[] logicalOperate(float[] x1, float[] x2, IFloatVectorComputer.LogicalOperation operation) {
+    public boolean[] logicalOperate(float[] x1, float[] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -1800,7 +1852,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public boolean[] logicalOperate(float[] x1, IFloatVectorComputer.LogicalOperation operation) {
+    public boolean[] logicalOperate(float[] x1, LogicalOperation operation) {
         // 参数验证
         if (x1 == null) {
             throw new IllegalArgumentException("输入向量不能为null");
@@ -1851,7 +1903,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public boolean[][] logicalCompare(float[][] x1, float[][] x2, IFloatVectorComputer.LogicalCompare operation) {
+    public boolean[][] logicalCompare(float[][] x1, float[][] x2, LogicalCompare operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -1877,7 +1929,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public boolean[][] logicalOperate(float[][] x1, IFloatVectorComputer.LogicalOperation operation) {
+    public boolean[][] logicalOperate(float[][] x1, LogicalOperation operation) {
         // 参数验证
         if (x1 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");
@@ -1899,7 +1951,7 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
-    public boolean[][] logicalOperate(float[][] x1, float[][] x2, IFloatVectorComputer.LogicalOperation operation) {
+    public boolean[][] logicalOperate(float[][] x1, float[][] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
             throw new IllegalArgumentException("输入矩阵不能为null");

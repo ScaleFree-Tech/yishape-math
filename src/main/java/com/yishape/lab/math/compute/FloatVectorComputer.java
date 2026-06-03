@@ -1,5 +1,11 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.util.YishapeLogger;
 
 import java.io.Serializable;

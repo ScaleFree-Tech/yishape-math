@@ -7,6 +7,11 @@ import com.yishape.lab.math.compute.hpc.HpcLapackDecomps;
 import com.yishape.lab.util.Tuple2;
 import com.yishape.lab.util.Tuple3;
 import com.yishape.lab.math.compute.IDoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.solver.ConditionNumberSolver;
 import com.yishape.lab.math.linalg.solver.DeterminantSolver;
 import com.yishape.lab.math.linalg.solver.LinearSystemSolver;
@@ -19,7 +24,6 @@ import com.yishape.lab.math.util.RerePrecision;
 import java.io.Serializable;
 
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.DoubleBinaryOperator;
@@ -242,7 +246,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix sub(double scalar) {
-        var res = this.computer.binaryOperate(data, scalar, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, scalar, BinaryOperation.SUBTRACT);
         return IDoubleMatrix.of(res);
     }
 
@@ -260,7 +264,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix sub(IMatrix<Double> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.SUBTRACT);
         return IDoubleMatrix.of(res);
     }
 
@@ -275,7 +279,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix multiplyByScalar(double scalar) {
-        var res = this.computer.binaryOperate(data, scalar, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, scalar, BinaryOperation.MULTIPLY);
         return IDoubleMatrix.of(res);
     }
 
@@ -293,7 +297,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix add(IMatrix<Double> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IDoubleVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.ADD);
         return IDoubleMatrix.of(res);
     }
 
@@ -312,7 +316,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix divide(IMatrix<Double> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.DIVIDE);
         return IDoubleMatrix.of(res);
     }
 
@@ -328,7 +332,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double frobeniusInnerProduct(IMatrix<Double> other) {
-        return this.computer.binaryReduceOperate(data, otherData(other), IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        return this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.DOT);
     }
 
     /**
@@ -814,7 +818,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix log() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.LOG, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.LOG, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -829,8 +833,8 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double frobeniusNorm() {
-        var square = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.POW, 2.0);
-        double sum = this.computer.reduceOperate(square, IDoubleVectorComputer.ReduceOperation.SUM);
+        var square = this.computer.universalOperate(data, UniversalOperation.POW, 2.0);
+        double sum = this.computer.reduceOperate(square, ReduceOperation.SUM);
         return Math.sqrt(sum);
     }
 
@@ -882,17 +886,17 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         for (int i = 0; i < rows; i++) {
             // 计算行的L2范数
             // 先计算每个元素的平方
-            double[] squared = this.computer.universalOperate(data[i], IDoubleVectorComputer.UniversalOperation.POW, 2.0);
+            double[] squared = this.computer.universalOperate(data[i], UniversalOperation.POW, 2.0);
             
             // 计算平方和
-            double sumOfSquares = this.computer.reduceOperate(squared, IDoubleVectorComputer.ReduceOperation.SUM);
+            double sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             double norm = Math.sqrt(sumOfSquares);
 
             if (norm > 0) {
                 // 使用SIMD归一化该行
-                result[i] = this.computer.binaryOperate(data[i], norm, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+                result[i] = this.computer.binaryOperate(data[i], norm, BinaryOperation.DIVIDE);
             } else {
                 System.arraycopy(data[i], 0, result[i], 0, cols);
             }
@@ -926,17 +930,17 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             
             // 计算列的L2范数
             // 先计算每个元素的平方
-            double[] squared = this.computer.universalOperate(column, IDoubleVectorComputer.UniversalOperation.POW, 2.0);
+            double[] squared = this.computer.universalOperate(column, UniversalOperation.POW, 2.0);
             
             // 计算平方和
-            double sumOfSquares = this.computer.reduceOperate(squared, IDoubleVectorComputer.ReduceOperation.SUM);
+            double sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             double norm = Math.sqrt(sumOfSquares);
 
             // 归一化该列
             if (norm > 1e-10) { // 避免除零
-                double[] normalizedColumn = this.computer.binaryOperate(column, norm, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+                double[] normalizedColumn = this.computer.binaryOperate(column, norm, BinaryOperation.DIVIDE);
                 for (int i = 0; i < rows; i++) {
                     result[i][j] = normalizedColumn[i];
                 }
@@ -973,7 +977,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            columnMeans[j] = this.computer.reduceOperate(column, IDoubleVectorComputer.ReduceOperation.MEAN);
+            columnMeans[j] = this.computer.reduceOperate(column, ReduceOperation.MEAN);
         }
 
         // 使用SIMD对每列减去均值
@@ -981,7 +985,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            double[] centeredColumn = this.computer.binaryOperate(column, columnMeans[j], IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+            double[] centeredColumn = this.computer.binaryOperate(column, columnMeans[j], BinaryOperation.SUBTRACT);
             for (int i = 0; i < rows; i++) {
                 result[i][j] = centeredColumn[i];
             }
@@ -1531,7 +1535,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix abs() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.ABS, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.ABS, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1560,7 +1564,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix sin() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SIN, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SIN, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1574,7 +1578,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix cos() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.COS, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.COS, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1588,7 +1592,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix tan() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.TAN, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.TAN, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1603,7 +1607,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix sinh() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SINH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SINH, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1618,7 +1622,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix cosh() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.COSH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.COSH, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1633,7 +1637,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix tanh() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.TANH, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.TANH, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -1760,7 +1764,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double max() {
-        return this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MAX);
+        return this.computer.reduceOperate(data, ReduceOperation.MAX);
     }
 
     /**
@@ -1773,7 +1777,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double min() {
-        return this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MIN);
+        return this.computer.reduceOperate(data, ReduceOperation.MIN);
     }
 
     /**
@@ -1786,7 +1790,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public IDoubleMatrix sum() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.SUM);
+        double result = this.computer.reduceOperate(data, ReduceOperation.SUM);
         return IDoubleMatrix.of(new double[][]{{result}});
     }
 
@@ -1800,7 +1804,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public IDoubleMatrix mean() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.MEAN);
+        double result = this.computer.reduceOperate(data, ReduceOperation.MEAN);
         return IDoubleMatrix.of(new double[][]{{result}});
     }
 
@@ -1815,7 +1819,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double std() {
-        return this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.STANDARD_DEVIATION);
+        return this.computer.reduceOperate(data, ReduceOperation.STANDARD_DEVIATION);
     }
 
     /**
@@ -1828,7 +1832,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public double var() {
-        return this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.VARIANCE);
+        return this.computer.reduceOperate(data, ReduceOperation.VARIANCE);
     }
 
     /**
@@ -2170,7 +2174,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         int rows = data.length;
         double[] sums = new double[rows];
         for (int i = 0; i < rows; i++) {
-            sums[i] = this.computer.reduceOperate(data[i], IDoubleVectorComputer.ReduceOperation.SUM);
+            sums[i] = this.computer.reduceOperate(data[i], ReduceOperation.SUM);
         }
         return IDoubleVector.of(sums);
     }
@@ -2181,7 +2185,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         int cols = data[0].length;
         double[] means = new double[rows];
         for (int i = 0; i < rows; i++) {
-            means[i] = this.computer.reduceOperate(data[i], IDoubleVectorComputer.ReduceOperation.MEAN);
+            means[i] = this.computer.reduceOperate(data[i], ReduceOperation.MEAN);
         }
         return IDoubleVector.of(means);
     }
@@ -2197,7 +2201,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            sums[j] = this.computer.reduceOperate(column, IDoubleVectorComputer.ReduceOperation.SUM);
+            sums[j] = this.computer.reduceOperate(column, ReduceOperation.SUM);
         }
         return IDoubleVector.of(sums);
     }
@@ -2213,7 +2217,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             for (int i = 0; i < rows; i++) {
                 column[i] = data[i][j];
             }
-            means[j] = this.computer.reduceOperate(column, IDoubleVectorComputer.ReduceOperation.MEAN);
+            means[j] = this.computer.reduceOperate(column, ReduceOperation.MEAN);
         }
         return IDoubleVector.of(means);
     }
@@ -2291,7 +2295,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix sqrt() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.SQRT, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.SQRT, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -2307,7 +2311,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix pow(Double power) {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.POW, power);
+        var res = this.computer.universalOperate(data, UniversalOperation.POW, power);
         return IDoubleMatrix.of(res);
     }
 
@@ -2323,7 +2327,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     @Override
     public  IDoubleMatrix exp() {
-        var res = this.computer.universalOperate(data, IDoubleVectorComputer.UniversalOperation.EXP, 0);
+        var res = this.computer.universalOperate(data, UniversalOperation.EXP, 0);
         return IDoubleMatrix.of(res);
     }
 
@@ -2630,7 +2634,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         if (RerePrecision.equalsZero(scalar, 1e-12)) {
             throw new ArithmeticException("除数不能为零 / Divisor cannot be zero");
         }
-        var res = this.computer.binaryOperate(data, scalar, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, scalar, BinaryOperation.DIVIDE);
         return IDoubleMatrix.of(res);
     }
 
@@ -2644,10 +2648,10 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         // 使用SIMD计算每行的L2范数
         for (int i = 0; i < rows; i++) {
             // 计算每个元素的平方
-            double[] squared = this.computer.universalOperate(this.data[i], IDoubleVectorComputer.UniversalOperation.POW, 2.0);
+            double[] squared = this.computer.universalOperate(this.data[i], UniversalOperation.POW, 2.0);
             
             // 计算平方和
-            double sumOfSquares = this.computer.reduceOperate(squared, IDoubleVectorComputer.ReduceOperation.SUM);
+            double sumOfSquares = this.computer.reduceOperate(squared, ReduceOperation.SUM);
             
             // 计算L2范数
             double norm = Math.sqrt(sumOfSquares);
@@ -2657,7 +2661,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             }
 
             // 使用SIMD归一化每行
-            result[i] = this.computer.binaryOperate(this.data[i], norm, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+            result[i] = this.computer.binaryOperate(this.data[i], norm, BinaryOperation.DIVIDE);
         }
 
         return IDoubleMatrix.of(result);
@@ -2757,7 +2761,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
 
     @Override
     public  IDoubleMatrix multiply(IMatrix<Double> other) {
-        var res = this.computer.binaryOperate(data, otherData(other), IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, otherData(other), BinaryOperation.MULTIPLY);
         return IDoubleMatrix.of(res);
     }
 
@@ -2774,7 +2778,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             throw new IllegalArgumentException("矩阵形状不一致");
         }
 
-        return this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.EQUALS);
     }
 
     @Override
@@ -2790,7 +2794,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             throw new IllegalArgumentException("矩阵形状不一致");
         }
 
-        return this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.LESS_THAN);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN);
     }
 
     @Override
@@ -2804,7 +2808,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.GREATER_THAN);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN);
     }
     
         @Override
@@ -2818,7 +2822,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.GREATER_THAN_OR_EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN_OR_EQUALS);
     }
     
         @Override
@@ -2832,7 +2836,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         if (other.cols() != cols||rows!=other.rows()) {
             throw new IllegalArgumentException("矩阵形状不一致");
         }
-        return this.computer.logicalCompare(data, otherData(other), IDoubleVectorComputer.LogicalCompare.LESS_THAN_OR_EQUALS);
+        return this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN_OR_EQUALS);
     }
 
     /**

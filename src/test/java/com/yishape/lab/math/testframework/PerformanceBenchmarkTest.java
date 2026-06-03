@@ -1,7 +1,8 @@
 package com.yishape.lab.math.testframework;
 
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.IDoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.ml.clf.lr.RereLogisticRegression;
@@ -644,8 +645,8 @@ public class PerformanceBenchmarkTest {
             }
             int runs = (n >= 1000000) ? 1 : 3;
             long ms = runBenchmark(
-                () -> computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.ADD),
-                () -> computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.ADD),
+                () -> computer.binaryOperate(a, b, BinaryOperation.ADD),
+                () -> computer.binaryOperate(a, b, BinaryOperation.ADD),
                 2, runs
             );
             benchmark("compute", "vector_add", String.valueOf(n), ms);
@@ -665,15 +666,15 @@ public class PerformanceBenchmarkTest {
             }
             int runs = (n >= 1000000) ? 1 : 3;
             long msSum = runBenchmark(
-                () -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.SUM),
-                () -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.SUM),
+                () -> computer.reduceOperate(a, ReduceOperation.SUM),
+                () -> computer.reduceOperate(a, ReduceOperation.SUM),
                 2, runs
             );
             benchmark("compute", "vector_sum", String.valueOf(n), msSum);
 
             long msMean = runBenchmark(
-                () -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.MEAN),
-                () -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.MEAN),
+                () -> computer.reduceOperate(a, ReduceOperation.MEAN),
+                () -> computer.reduceOperate(a, ReduceOperation.MEAN),
                 2, runs
             );
             benchmark("compute", "vector_mean", String.valueOf(n), msMean);

@@ -3,12 +3,16 @@ package com.yishape.lab.math.linalg;
 import com.yishape.lab.math.RereMathUtil;
 import com.yishape.lab.math.compute.FloatVectorComputer;
 import com.yishape.lab.math.compute.IFloatVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.concurrent.*;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.function.Function;
 
 /**
@@ -219,7 +223,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public  IFloatVector sub(IVector<Float> vec) {
-        var res = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.SUBTRACT);
         var vv = IFloatVector.of(res);  // 创建结果向量对象
         return vv;
     }
@@ -272,7 +276,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public  IFloatVector add(IVector<Float> vec) {
-        var res = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.ADD);
         var vv = IFloatVector.of(res);  // 创建结果向量对象
         return vv;
     }
@@ -291,7 +295,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector innerProduct(IVector<Float> vec) {
-        double result = this.computer.binaryReduceOperate(data, otherData(vec), IFloatVectorComputer.BinaryReduceOperation.DOT);
+        double result = this.computer.binaryReduceOperate(data, otherData(vec), BinaryReduceOperation.DOT);
         return IFloatVector.of((float) result);
     }
 
@@ -311,8 +315,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector norm2() {
-        float[] squared = computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, 2.0f);
-        double result = Math.sqrt(computer.reduceOperate(squared, IFloatVectorComputer.ReduceOperation.SUM));
+        float[] squared = computer.universalOperate(data, UniversalOperation.POW, 2.0f);
+        double result = Math.sqrt(computer.reduceOperate(squared, ReduceOperation.SUM));
         return IFloatVector.of((float) result);
     }
 
@@ -327,8 +331,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector norm1() {
-        float[] squared = computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ABS, 0.0f);
-        double result = computer.reduceOperate(squared, IFloatVectorComputer.ReduceOperation.SUM);
+        float[] squared = computer.universalOperate(data, UniversalOperation.ABS, 0.0f);
+        double result = computer.reduceOperate(squared, ReduceOperation.SUM);
         return IFloatVector.of((float) result);
     }
 
@@ -345,7 +349,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public IFloatVector divideByScalar(double p) {
         float pp = (float)p;
-        var res = this.computer.binaryOperate(data, pp, IFloatVectorComputer.BinaryOperation.DIVIDE);
+        var res = this.computer.binaryOperate(data, pp, BinaryOperation.DIVIDE);
         return IFloatVector.of(res);
     }
 
@@ -358,12 +362,12 @@ public class RereFloatVector implements IFloatVector,Serializable {
         float[] xData = otherData(x);
         float[] result;
         if (fa == 1.0f) {
-            result = this.computer.binaryOperate(data, xData, IFloatVectorComputer.BinaryOperation.ADD);
+            result = this.computer.binaryOperate(data, xData, BinaryOperation.ADD);
         } else if (fa == -1.0f) {
-            result = this.computer.binaryOperate(data, xData, IFloatVectorComputer.BinaryOperation.SUBTRACT);
+            result = this.computer.binaryOperate(data, xData, BinaryOperation.SUBTRACT);
         } else {
-            float[] scaled = this.computer.binaryOperate(xData, fa, IFloatVectorComputer.BinaryOperation.MULTIPLY);
-            result = this.computer.binaryOperate(data, scaled, IFloatVectorComputer.BinaryOperation.ADD);
+            float[] scaled = this.computer.binaryOperate(xData, fa, BinaryOperation.MULTIPLY);
+            result = this.computer.binaryOperate(data, scaled, BinaryOperation.ADD);
         }
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
@@ -374,7 +378,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
         if (alpha == 0.0) {
             throw new ArithmeticException("除以零 / Division by zero");
         }
-        float[] result = this.computer.binaryOperate(data, (float)alpha, IFloatVectorComputer.BinaryOperation.DIVIDE);
+        float[] result = this.computer.binaryOperate(data, (float)alpha, BinaryOperation.DIVIDE);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
@@ -399,35 +403,35 @@ public class RereFloatVector implements IFloatVector,Serializable {
 
     @Override
     public IFloatVector multiplyByScalarInPlace(double p) {
-        float[] result = this.computer.binaryOperate(data, (float) p, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        float[] result = this.computer.binaryOperate(data, (float) p, BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IFloatVector addInPlace(IVector<Float> vec) {
-        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.ADD);
+        float[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.ADD);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IFloatVector subInPlace(IVector<Float> vec) {
-        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        float[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.SUBTRACT);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IFloatVector multiplyInPlace(IVector<Float> vec) {
-        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        float[] result = this.computer.binaryOperate(data, otherData(vec), BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IFloatVector negInPlace() {
-        float[] result = this.computer.binaryOperate(data, -1.0f, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        float[] result = this.computer.binaryOperate(data, -1.0f, BinaryOperation.MULTIPLY);
         System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
@@ -461,7 +465,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public  IFloatVector multiply(IVector<Float> vec1) {
-        var res = this.computer.binaryOperate(data, otherData(vec1), IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, otherData(vec1), BinaryOperation.MULTIPLY);
         return IFloatVector.of(res);
     }
 
@@ -524,7 +528,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector subScalar(double p) {
-        var res = this.computer.binaryOperate(data, (float)p, IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        var res = this.computer.binaryOperate(data, (float)p, BinaryOperation.SUBTRACT);
         return IFloatVector.of(res);
     }
 
@@ -539,7 +543,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector addScalar(double p) {
-        var res = this.computer.binaryOperate(data, (float)p, IFloatVectorComputer.BinaryOperation.ADD);
+        var res = this.computer.binaryOperate(data, (float)p, BinaryOperation.ADD);
         return IFloatVector.of(res);
     }
 
@@ -555,7 +559,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector multiplyByScalar(double p) {
-        var res = this.computer.binaryOperate(data, (float)p, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        var res = this.computer.binaryOperate(data, (float)p, BinaryOperation.MULTIPLY);
         return IFloatVector.of(res);
     }
 
@@ -569,7 +573,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector sum() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.SUM);
+        var res = this.computer.reduceOperate(data, ReduceOperation.SUM);
         return IFloatVector.of((float) res);
     }
 
@@ -583,7 +587,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector min() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MIN);
+        var res = this.computer.reduceOperate(data, ReduceOperation.MIN);
         return IFloatVector.of((float) res);
     }
 
@@ -597,7 +601,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector max() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MAX);
+        var res = this.computer.reduceOperate(data, ReduceOperation.MAX);
         return IFloatVector.of((float) res);
     }
 
@@ -657,7 +661,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector mean() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.MEAN);
+        var res = this.computer.reduceOperate(data, ReduceOperation.MEAN);
         return IFloatVector.of((float) res);
     }
 
@@ -734,9 +738,9 @@ public class RereFloatVector implements IFloatVector,Serializable {
             throw new ArithmeticException("标准差为0，无法计算偏度 / Standard deviation is 0, cannot calculate skewness");
         }
 
-        var diff = this.computer.binaryOperate(data, (float)mean, IFloatVectorComputer.BinaryOperation.SUBTRACT);
-        var d3 = this.computer.universalOperate(diff, IFloatVectorComputer.UniversalOperation.POW, 3);
-        float sum = this.computer.reduceOperate(d3, IFloatVectorComputer.ReduceOperation.SUM);
+        var diff = this.computer.binaryOperate(data, (float)mean, BinaryOperation.SUBTRACT);
+        var d3 = this.computer.universalOperate(diff, UniversalOperation.POW, 3);
+        float sum = this.computer.reduceOperate(d3, ReduceOperation.SUM);
 
         return sum / (this.length() * std * std * std);
     }
@@ -768,9 +772,9 @@ public class RereFloatVector implements IFloatVector,Serializable {
             throw new ArithmeticException("标准差为0，无法计算峰度 / Standard deviation is 0, cannot calculate kurtosis");
         }
 
-        var diff = this.computer.binaryOperate(data, (float)mean, IFloatVectorComputer.BinaryOperation.SUBTRACT);
-        var d3 = this.computer.universalOperate(diff, IFloatVectorComputer.UniversalOperation.POW, 4);
-        float sum = this.computer.reduceOperate(d3, IFloatVectorComputer.ReduceOperation.SUM);
+        var diff = this.computer.binaryOperate(data, (float)mean, BinaryOperation.SUBTRACT);
+        var d3 = this.computer.universalOperate(diff, UniversalOperation.POW, 4);
+        float sum = this.computer.reduceOperate(d3, ReduceOperation.SUM);
 
         return (sum / (this.length() * std * std * std * std)) - 3.0f;
     }
@@ -1128,7 +1132,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public boolean[] eq(IVector<Float> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.EQUALS);
         return v;
     }
 
@@ -1148,7 +1152,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public boolean[] lt(IVector<Float> other) {
 
-        var v = this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.LESS_THAN);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN);
 
         return v;
     }
@@ -1168,19 +1172,19 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public boolean[] gt(IVector<Float> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.GREATER_THAN);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN);
         return v;
     }
     
     @Override
     public boolean[] ge(IVector<Float> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.GREATER_THAN_OR_EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.GREATER_THAN_OR_EQUALS);
         return v;
     }
     
     @Override
     public boolean[] le(IVector<Float> other) {
-        var v = this.computer.logicalCompare(data, otherData(other), IFloatVectorComputer.LogicalCompare.LESS_THAN_OR_EQUALS);
+        var v = this.computer.logicalCompare(data, otherData(other), LogicalCompare.LESS_THAN_OR_EQUALS);
         return v;
     }
 
@@ -1194,7 +1198,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector prod() {
-        var v = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.PROD);
+        var v = this.computer.reduceOperate(data, ReduceOperation.PROD);
         return IFloatVector.of((float) v);
     }
 
@@ -1251,7 +1255,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector abs() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ABS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ABS, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1330,7 +1334,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector sqrt() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SQRT, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SQRT, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1344,7 +1348,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector square() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, 2);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.POW, 2);
         return IFloatVector.of(v1);
     }
 
@@ -1360,7 +1364,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector exp() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.EXP, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.EXP, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1377,7 +1381,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector log() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.LOG, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.LOG, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1394,7 +1398,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector log10() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.LOG10, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.LOG10, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1447,7 +1451,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector pow(double m) {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, (float)m);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.POW, (float)m);
         return IFloatVector.of(v1);
     }
 
@@ -1463,7 +1467,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public  IFloatVector remainder(Float value) {
-        var data2 = this.computer.binaryOperate(data, value, IFloatVectorComputer.BinaryOperation.REMAINDER);
+        var data2 = this.computer.binaryOperate(data, value, BinaryOperation.REMAINDER);
         return IFloatVector.of(data2);
     }
 
@@ -1494,7 +1498,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public double euclideanDistance(IVector<Float> other) {
-        var v1 = this.computer.binaryReduceOperate(data, otherData(other), IFloatVectorComputer.BinaryReduceOperation.L2_NORM);
+        var v1 = this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.L2_NORM);
         return v1;
     }
 
@@ -1512,7 +1516,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public double manhattanDistance(IVector<Float> other) {
-        var v1 = this.computer.binaryReduceOperate(data, otherData(other), IFloatVectorComputer.BinaryReduceOperation.L1_NORM);
+        var v1 = this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.L1_NORM);
         return v1;
     }
 
@@ -1531,7 +1535,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public double cosineSimilarity(IVector<Float> other) {
-        var dotProduct = this.computer.binaryReduceOperate(data, otherData(other), IFloatVectorComputer.BinaryReduceOperation.DOT);
+        var dotProduct = this.computer.binaryReduceOperate(data, otherData(other), BinaryReduceOperation.DOT);
         var norm1 = this.norm2Value();
         var norm2 = other.norm2Value();
         double denominator = norm1 * norm2;
@@ -1552,56 +1556,56 @@ public class RereFloatVector implements IFloatVector,Serializable {
     // ========== 三角函数操作实现 / Trigonometric Functions Implementation ==========
     @Override
     public IFloatVector sin() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SIN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SIN, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public IFloatVector cos() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.COS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.COS, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public IFloatVector tan() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.TAN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.TAN, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public  IFloatVector arcsin() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ASIN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ASIN, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public  IFloatVector arccos() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ACOS, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ACOS, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public  IFloatVector arctan() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.ATAN, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.ATAN, 0);
         return IFloatVector.of(v1);
     }
 
     // ========== 双曲函数实现 / Hyperbolic Functions Implementation ==========
     @Override
     public  IFloatVector sinh() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.SINH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SINH, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public  IFloatVector cosh() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.COSH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.COSH, 0);
         return IFloatVector.of(v1);
     }
 
     @Override
     public  IFloatVector tanh() {
-        var v1 = this.computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.TANH, 0);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.TANH, 0);
         return IFloatVector.of(v1);
     }
 
@@ -1645,25 +1649,25 @@ public class RereFloatVector implements IFloatVector,Serializable {
     // ========== 逻辑运算实现 / Logical Operations Implementation ==========
     @Override
     public boolean[] logicalAnd(IVector<Float> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IFloatVectorComputer.LogicalOperation.AND);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.AND);
         return result;
     }
 
     @Override
     public boolean[] logicalOr(IVector<Float> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IFloatVectorComputer.LogicalOperation.OR);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.OR);
         return result;
     }
 
     @Override
     public boolean[] logicalNot() {
-        var result = this.computer.logicalOperate(data, IFloatVectorComputer.LogicalOperation.NOT);
+        var result = this.computer.logicalOperate(data, LogicalOperation.NOT);
         return result;
     }
 
     @Override
     public boolean[] logicalXor(IVector<Float> other) {
-        var result = this.computer.logicalOperate(data, otherData(other), IFloatVectorComputer.LogicalOperation.XOR);
+        var result = this.computer.logicalOperate(data, otherData(other), LogicalOperation.XOR);
         return result;
     }
 
@@ -1860,8 +1864,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
             return this.normInf();
         }
 
-        float[] pd = computer.universalOperate(data, IFloatVectorComputer.UniversalOperation.POW, (float)p);
-        float sum = computer.reduceOperate(pd, IFloatVectorComputer.ReduceOperation.SUM);
+        float[] pd = computer.universalOperate(data, UniversalOperation.POW, (float)p);
+        float sum = computer.reduceOperate(pd, ReduceOperation.SUM);
 
         return (float)Math.pow(sum, 1.0 / p);
     }

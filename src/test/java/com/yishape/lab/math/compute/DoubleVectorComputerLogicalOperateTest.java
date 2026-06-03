@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.LogicalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,17 +23,17 @@ public class DoubleVectorComputerLogicalOperateTest {
         double[] x2 = {0.0, 0.0, 3.0, 4.0, 5.0};
 
         // Test AND operation
-        boolean[] andResult = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.AND);
+        boolean[] andResult = computer.logicalOperate(x1, x2, LogicalOperation.AND);
         boolean[] expectedAnd = {false, false, true, false, true};
         assertArrayEquals(expectedAnd, andResult);
 
         // Test OR operation
-        boolean[] orResult = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.OR);
+        boolean[] orResult = computer.logicalOperate(x1, x2, LogicalOperation.OR);
         boolean[] expectedOr = {false, true, true, true, true};
         assertArrayEquals(expectedOr, orResult);
 
         // Test XOR operation
-        boolean[] xorResult = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.XOR);
+        boolean[] xorResult = computer.logicalOperate(x1, x2, LogicalOperation.XOR);
         boolean[] expectedXor = {false, true, false, true, false};
         assertArrayEquals(expectedXor, xorResult);
     }
@@ -43,17 +44,17 @@ public class DoubleVectorComputerLogicalOperateTest {
 
         // Test with null first array
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(null, new double[]{1.0, 2.0}, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(null, new double[]{1.0, 2.0}, LogicalOperation.AND);
         });
 
         // Test with null second array
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(new double[]{1.0, 2.0}, null, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(new double[]{1.0, 2.0}, null, LogicalOperation.AND);
         });
 
         // Test with different length arrays
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(new double[]{1.0, 2.0}, new double[]{1.0, 2.0, 3.0}, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(new double[]{1.0, 2.0}, new double[]{1.0, 2.0, 3.0}, LogicalOperation.AND);
         });
     }
 }

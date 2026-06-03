@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.LogicalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,13 +16,13 @@ public class SISDDoubleComputerUnimplementedMethodsTest {
         // Test NOT operation on double array
         double[] input = {0.0, 1.0, -1.0, 2.5, 0.0};
         boolean[] expected = {true, false, false, false, true};
-        boolean[] result = computer.logicalOperate(input, IDoubleVectorComputer.LogicalOperation.NOT);
+        boolean[] result = computer.logicalOperate(input, LogicalOperation.NOT);
         
         assertArrayEquals(expected, result);
         
         // Test with null input
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate((double[]) null, IDoubleVectorComputer.LogicalOperation.NOT);
+            computer.logicalOperate((double[]) null, LogicalOperation.NOT);
         });
     }
 

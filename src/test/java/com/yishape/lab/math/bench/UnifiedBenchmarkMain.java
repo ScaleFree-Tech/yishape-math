@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Locale;
 
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import com.yishape.lab.math.compute.hpc.HpcConfig;
-import com.yishape.lab.math.hpc.SymmetricEigenResult;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.hpc.YishapeHpc;
 import com.yishape.lab.math.hpc.YishapeHpcStatus;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -456,13 +456,13 @@ public final class UnifiedBenchmarkMain {
             }
             int runs = (n >= 1000000) ? 1 : REPEAT;
 
-            double msAdd = benchMs(() -> computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.ADD), runs);
+            double msAdd = benchMs(() -> computer.binaryOperate(a, b, BinaryOperation.ADD), runs);
             rows.add(new Row("java", "compute", "vector_add", String.valueOf(n), backend, msAdd));
 
-            double msSum = benchMs(() -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.SUM), runs);
+            double msSum = benchMs(() -> computer.reduceOperate(a, ReduceOperation.SUM), runs);
             rows.add(new Row("java", "compute", "vector_sum", String.valueOf(n), backend, msSum));
 
-            double msMean = benchMs(() -> computer.reduceOperate(a, IDoubleVectorComputer.ReduceOperation.MEAN), runs);
+            double msMean = benchMs(() -> computer.reduceOperate(a, ReduceOperation.MEAN), runs);
             rows.add(new Row("java", "compute", "vector_mean", String.valueOf(n), backend, msMean));
         }
     }

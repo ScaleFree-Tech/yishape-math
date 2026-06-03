@@ -1,5 +1,7 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,14 +36,14 @@ public class SIMDSpecificOptimizationTest {
         
         // 预热求和操作
         for (int i = 0; i < 50; i++) {
-            simdComputer.reduceOperate(warmupData, IDoubleVectorComputer.ReduceOperation.SUM);
-            sisdComputer.reduceOperate(warmupData, IDoubleVectorComputer.ReduceOperation.SUM);
+            simdComputer.reduceOperate(warmupData, ReduceOperation.SUM);
+            sisdComputer.reduceOperate(warmupData, ReduceOperation.SUM);
         }
         
         // 预热向量标量乘法
         for (int i = 0; i < 50; i++) {
-            simdComputer.binaryOperate(warmupData, 2.5, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
-            sisdComputer.binaryOperate(warmupData, 2.5, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+            simdComputer.binaryOperate(warmupData, 2.5, BinaryOperation.MULTIPLY);
+            sisdComputer.binaryOperate(warmupData, 2.5, BinaryOperation.MULTIPLY);
         }
         
         System.out.println("预热完成");
@@ -65,7 +67,7 @@ public class SIMDSpecificOptimizationTest {
             double simdResult = 0;
             for (int iter = 0; iter < iterations; iter++) {
                 long start = System.nanoTime();
-                simdResult = simdComputer.reduceOperate(testData, IDoubleVectorComputer.ReduceOperation.SUM);
+                simdResult = simdComputer.reduceOperate(testData, ReduceOperation.SUM);
                 simdTotalTime += System.nanoTime() - start;
             }
             
@@ -73,7 +75,7 @@ public class SIMDSpecificOptimizationTest {
             double sisdResult = 0;
             for (int iter = 0; iter < iterations; iter++) {
                 long start = System.nanoTime();
-                sisdResult = sisdComputer.reduceOperate(testData, IDoubleVectorComputer.ReduceOperation.SUM);
+                sisdResult = sisdComputer.reduceOperate(testData, ReduceOperation.SUM);
                 sisdTotalTime += System.nanoTime() - start;
             }
             
@@ -108,7 +110,7 @@ public class SIMDSpecificOptimizationTest {
             double[] simdResult = null;
             for (int iter = 0; iter < iterations; iter++) {
                 long start = System.nanoTime();
-                simdResult = simdComputer.binaryOperate(testData, scalar, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+                simdResult = simdComputer.binaryOperate(testData, scalar, BinaryOperation.MULTIPLY);
                 simdTotalTime += System.nanoTime() - start;
             }
             
@@ -116,7 +118,7 @@ public class SIMDSpecificOptimizationTest {
             double[] sisdResult = null;
             for (int iter = 0; iter < iterations; iter++) {
                 long start = System.nanoTime();
-                sisdResult = sisdComputer.binaryOperate(testData, scalar, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+                sisdResult = sisdComputer.binaryOperate(testData, scalar, BinaryOperation.MULTIPLY);
                 sisdTotalTime += System.nanoTime() - start;
             }
             
@@ -166,7 +168,7 @@ public class SIMDSpecificOptimizationTest {
         long totalTime = 0;
         for (int i = 0; i < iterations; i++) {
             long start = System.nanoTime();
-            computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.SUM);
+            computer.reduceOperate(data, ReduceOperation.SUM);
             totalTime += System.nanoTime() - start;
         }
         return totalTime / iterations;
@@ -176,7 +178,7 @@ public class SIMDSpecificOptimizationTest {
         long totalTime = 0;
         for (int i = 0; i < iterations; i++) {
             long start = System.nanoTime();
-            computer.binaryOperate(data, scalar, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+            computer.binaryOperate(data, scalar, BinaryOperation.MULTIPLY);
             totalTime += System.nanoTime() - start;
         }
         return totalTime / iterations;

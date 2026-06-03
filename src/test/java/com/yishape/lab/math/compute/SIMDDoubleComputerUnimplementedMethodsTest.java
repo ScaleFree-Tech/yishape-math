@@ -1,5 +1,7 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,18 +36,18 @@ public class SIMDDoubleComputerUnimplementedMethodsTest {
     public void testLogicalCompare2DExceptions() {
         // Test null input
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalCompare(null, new double[0][0], IDoubleVectorComputer.LogicalCompare.EQUALS);
+            computer.logicalCompare(null, new double[0][0], LogicalCompare.EQUALS);
         });
         
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalCompare(new double[0][0], null, IDoubleVectorComputer.LogicalCompare.EQUALS);
+            computer.logicalCompare(new double[0][0], null, LogicalCompare.EQUALS);
         });
         
         // Test dimension mismatch
         double[][] x1 = {{1.0, 2.0}, {3.0, 4.0}};
         double[][] x2 = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.EQUALS);
+            computer.logicalCompare(x1, x2, LogicalCompare.EQUALS);
         });
     }
 
@@ -53,7 +55,7 @@ public class SIMDDoubleComputerUnimplementedMethodsTest {
     public void testLogicalOperate2DUnaryExceptions() {
         // Test null input
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate((double[][]) null, IDoubleVectorComputer.LogicalOperation.NOT);
+            computer.logicalOperate((double[][]) null, LogicalOperation.NOT);
         });
     }
 
@@ -61,18 +63,18 @@ public class SIMDDoubleComputerUnimplementedMethodsTest {
     public void testLogicalOperate2DBinaryExceptions() {
         // Test null input
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(null, new double[0][0], IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(null, new double[0][0], LogicalOperation.AND);
         });
         
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(new double[0][0], null, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(new double[0][0], null, LogicalOperation.AND);
         });
         
         // Test dimension mismatch
         double[][] x1 = {{1.0, 2.0}, {3.0, 4.0}};
         double[][] x2 = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(x1, x2, LogicalOperation.AND);
         });
     }
 

@@ -3,6 +3,8 @@ package com.yishape.lab.math.autodiff;
 import com.yishape.lab.math.autodiff.vjp.BatchVjpResult;
 import com.yishape.lab.math.autodiff.vjp.VjpFunction;
 import com.yishape.lab.math.autodiff.vjp.VjpResult;
+import com.yishape.lab.math.autodiff.vmap.VMap;
+import com.yishape.lab.util.Messages;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -640,6 +642,11 @@ public class AD {
      * For gradient accumulation, use {@link #batchVjp} followed by
      * {@link BatchVjpResult#sumGradients(IDiffVector)}.
      *
+     * <p>The {@link VMap} infrastructure provides GPU/HPC/SIMD batched compute
+     * primitives available for direct use. When the autodiff graph supports
+     * batch-aware reductions, vmap will be upgraded to use single-graph
+     * batched execution.
+     *
      * <p>对列表中每个样本独立应用 {@code fn}，返回每样本输出数组。
      *
      * @param fn  function R^n → R^m operating on single elements
@@ -648,7 +655,7 @@ public class AD {
      */
     public static IDiffVector[] vmap(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
         if (xs.isEmpty()) {
-            throw new IllegalArgumentException("vmap requires non-empty input list");
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
         int n = xs.size();
         IDiffVector[] ys = new IDiffVector[n];
@@ -686,10 +693,12 @@ public class AD {
 
     /**
      * IDiffTensor version of {@link #vmap(Function, List)}.
+     * Currently delegates to per-sample execution; tensor batching
+     * support via {@link VMap} is a future enhancement.
      */
     public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
         if (xs.isEmpty()) {
-            throw new IllegalArgumentException("vmap requires non-empty input list");
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
         int n = xs.size();
         IDiffTensor[] ys = new IDiffTensor[n];

@@ -5,6 +5,26 @@ import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.gpu.GpuReduce;
 import com.yishape.lab.math.compute.hpc.HpcConfig;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.ADD;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.DIVIDE;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY;
+import static com.yishape.lab.math.compute.ops.BinaryOperation.SUBTRACT;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.LogicalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.ABS;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.COS;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.EXP;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.GELU;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.LOG;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.RELU;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SIGMOID;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SIN;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.SQRT;
+import static com.yishape.lab.math.compute.ops.UniversalOperation.TANH;
 
 /**
  * GPU-accelerated float vector computer. Calls the f32 GPU API

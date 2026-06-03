@@ -2,7 +2,8 @@ package com.yishape.lab.math.linalg.tensor;
 
 import com.yishape.lab.math.compute.FloatVectorComputer;
 import com.yishape.lab.math.compute.FloatFlatGemm;
-import com.yishape.lab.math.compute.IFloatVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.IFloatVector;
 import com.yishape.lab.math.linalg.IFloatMatrix;
 import com.yishape.lab.math.linalg.Linalg;
@@ -489,68 +490,68 @@ public class RereFloatTensor implements IFloatTensor {
     }
     @Override public IFloatTensor abs() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.ABS, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.ABS, 0), shape());
         }
         return applyUnary(v -> (float) Math.abs(v));
     }
     @Override public IFloatTensor sqrt() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.SQRT, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.SQRT, 0), shape());
         }
         return applyUnary(v -> (float) Math.sqrt(v));
     }
     @Override public IFloatTensor exp() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.EXP, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.EXP, 0), shape());
         }
         return applyUnary(v -> (float) Math.exp(v));
     }
     @Override public IFloatTensor log() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.LOG, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.LOG, 0), shape());
         }
         return applyUnary(v -> (float) Math.log(v));
     }
     @Override public IFloatTensor sin() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.SIN, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.SIN, 0), shape());
         }
         return applyUnary(v -> (float) Math.sin(v));
     }
     @Override public IFloatTensor cos() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.COS, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.COS, 0), shape());
         }
         return applyUnary(v -> (float) Math.cos(v));
     }
     @Override public IFloatTensor tan() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.TAN, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.TAN, 0), shape());
         }
         return applyUnary(v -> (float) Math.tan(v));
     }
     @Override public IFloatTensor square() { return applyUnary(v -> v * v); }
     @Override public IFloatTensor sigmoid() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.SIGMOID, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.SIGMOID, 0), shape());
         }
         return applyUnary(v -> (float)(1.0 / (1.0 + Math.exp(-v))));
     }
     @Override public IFloatTensor relu() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.RELU, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.RELU, 0), shape());
         }
         return applyUnary(v -> v > 0 ? v : 0);
     }
     @Override public IFloatTensor tanh() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.TANH, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.TANH, 0), shape());
         }
         return applyUnary(v -> (float) Math.tanh(v));
     }
     @Override public IFloatTensor gelu() {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.universalOperate(data, IFloatVectorComputer.UniversalOperation.GELU, 0), shape());
+            return new RereFloatTensor(COMPUTER.universalOperate(data, UniversalOperation.GELU, 0), shape());
         }
         return applyUnary(x -> {
             float inner = 0.7978845608028654f * (x + 0.044715f * x * x * x);
@@ -593,25 +594,25 @@ public class RereFloatTensor implements IFloatTensor {
 
     @Override public IFloatTensor add(float scalar) {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, IFloatVectorComputer.BinaryOperation.ADD), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.ADD), shape());
         }
         return applyUnary(v -> v + scalar);
     }
     @Override public IFloatTensor sub(float scalar) {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, IFloatVectorComputer.BinaryOperation.SUBTRACT), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.SUBTRACT), shape());
         }
         return applyUnary(v -> v - scalar);
     }
     @Override public IFloatTensor mul(float scalar) {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, IFloatVectorComputer.BinaryOperation.MULTIPLY), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.MULTIPLY), shape());
         }
         return applyUnary(v -> v * scalar);
     }
     @Override public IFloatTensor div(float scalar) {
         if (isContiguous() && offset == 0) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, IFloatVectorComputer.BinaryOperation.DIVIDE), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.DIVIDE), shape());
         }
         return applyUnary(v -> v / scalar);
     }
@@ -623,7 +624,7 @@ public class RereFloatTensor implements IFloatTensor {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
                 && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
                 && java.util.Arrays.equals(shape(), rt.shape())) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.ADD), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, BinaryOperation.ADD), shape());
         }
         return elementWiseBinary(other, Float::sum);
     }
@@ -633,7 +634,7 @@ public class RereFloatTensor implements IFloatTensor {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
                 && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
                 && java.util.Arrays.equals(shape(), rt.shape())) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.SUBTRACT), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, BinaryOperation.SUBTRACT), shape());
         }
         return elementWiseBinary(other, (a, b) -> a - b);
     }
@@ -643,7 +644,7 @@ public class RereFloatTensor implements IFloatTensor {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
                 && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
                 && java.util.Arrays.equals(shape(), rt.shape())) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.MULTIPLY), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, BinaryOperation.MULTIPLY), shape());
         }
         return elementWiseBinary(other, (a, b) -> a * b);
     }
@@ -653,7 +654,7 @@ public class RereFloatTensor implements IFloatTensor {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
                 && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
                 && java.util.Arrays.equals(shape(), rt.shape())) {
-            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.DIVIDE), shape());
+            return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, BinaryOperation.DIVIDE), shape());
         }
         return elementWiseBinary(other, (a, b) -> a / b);
     }

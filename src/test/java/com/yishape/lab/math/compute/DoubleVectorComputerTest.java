@@ -1,5 +1,10 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,19 +21,19 @@ public class DoubleVectorComputerTest {
         double[] x2 = {4.0, 5.0, 6.0};
         
         // Test addition
-        double[] result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] result = computer.binaryOperate(x1, x2, BinaryOperation.ADD);
         assertArrayEquals(new double[]{5.0, 7.0, 9.0}, result, 1e-10);
         
         // Test subtraction
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.SUBTRACT);
         assertArrayEquals(new double[]{-3.0, -3.0, -3.0}, result, 1e-10);
         
         // Test multiplication
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.MULTIPLY);
         assertArrayEquals(new double[]{4.0, 10.0, 18.0}, result, 1e-10);
         
         // Test division
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.DIVIDE);
         assertArrayEquals(new double[]{0.25, 0.4, 0.5}, result, 1e-10);
     }
 
@@ -38,19 +43,19 @@ public class DoubleVectorComputerTest {
         double x2 = 2.0;
         
         // Test addition
-        double[] result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.ADD);
+        double[] result = computer.binaryOperate(x1, x2, BinaryOperation.ADD);
         assertArrayEquals(new double[]{3.0, 4.0, 5.0}, result, 1e-10);
         
         // Test subtraction
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.SUBTRACT);
         assertArrayEquals(new double[]{-1.0, 0.0, 1.0}, result, 1e-10);
         
         // Test multiplication
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.MULTIPLY);
         assertArrayEquals(new double[]{2.0, 4.0, 6.0}, result, 1e-10);
         
         // Test division
-        result = computer.binaryOperate(x1, x2, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        result = computer.binaryOperate(x1, x2, BinaryOperation.DIVIDE);
         assertArrayEquals(new double[]{0.5, 1.0, 1.5}, result, 1e-10);
     }
 
@@ -59,11 +64,11 @@ public class DoubleVectorComputerTest {
         double[] x = {1.0, 4.0, 9.0};
         
         // Test square root
-        double[] result = computer.universalOperate(x, IDoubleVectorComputer.UniversalOperation.SQRT, 0.0);
+        double[] result = computer.universalOperate(x, UniversalOperation.SQRT, 0.0);
         assertArrayEquals(new double[]{1.0, 2.0, 3.0}, result, 1e-10);
         
         // Test power
-        result = computer.universalOperate(x, IDoubleVectorComputer.UniversalOperation.POW, 2.0);
+        result = computer.universalOperate(x, UniversalOperation.POW, 2.0);
         assertArrayEquals(new double[]{1.0, 16.0, 81.0}, result, 1e-10);
     }
 
@@ -72,19 +77,19 @@ public class DoubleVectorComputerTest {
         double[] x = {1.0, 2.0, 3.0, 4.0};
         
         // Test sum
-        double result = computer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.SUM);
+        double result = computer.reduceOperate(x, ReduceOperation.SUM);
         assertEquals(10.0, result, 1e-10);
         
         // Test mean
-        result = computer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MEAN);
+        result = computer.reduceOperate(x, ReduceOperation.MEAN);
         assertEquals(2.5, result, 1e-10);
         
         // Test min
-        result = computer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MIN);
+        result = computer.reduceOperate(x, ReduceOperation.MIN);
         assertEquals(1.0, result, 1e-10);
         
         // Test max
-        result = computer.reduceOperate(x, IDoubleVectorComputer.ReduceOperation.MAX);
+        result = computer.reduceOperate(x, ReduceOperation.MAX);
         assertEquals(4.0, result, 1e-10);
     }
 
@@ -120,11 +125,11 @@ public class DoubleVectorComputerTest {
         double[] x2 = {1.0, 3.0, 2.0};
         
         // Test equals
-        boolean[] result = computer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.EQUALS);
+        boolean[] result = computer.logicalCompare(x1, x2, LogicalCompare.EQUALS);
         assertArrayEquals(new boolean[]{true, false, false}, result);
         
         // Test less than
-        result = computer.logicalCompare(x1, x2, IDoubleVectorComputer.LogicalCompare.LESS_THAN);
+        result = computer.logicalCompare(x1, x2, LogicalCompare.LESS_THAN);
         assertArrayEquals(new boolean[]{false, true, false}, result);
     }
 
@@ -134,7 +139,7 @@ public class DoubleVectorComputerTest {
         double[] x2 = {4.0, 5.0, 6.0};
         
         // Test dot product
-        double result = computer.binaryReduceOperate(x1, x2, IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        double result = computer.binaryReduceOperate(x1, x2, BinaryReduceOperation.DOT);
         assertEquals(32.0, result, 1e-10); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
     }
 }

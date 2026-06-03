@@ -1,7 +1,8 @@
 package com.yishape.lab.math.linalg.decomposition;
 
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.IDoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
 
 /**
  * Lightweight segment view over a {@code double[]} backing array with offset and length.
@@ -86,7 +87,7 @@ public final class SegmentDoubleVector {
     public double dot(SegmentDoubleVector other) {
         double[] a = toContiguous();
         double[] b = other.toContiguous();
-        return computer.binaryReduceOperate(a, b, IDoubleVectorComputer.BinaryReduceOperation.DOT);
+        return computer.binaryReduceOperate(a, b, BinaryReduceOperation.DOT);
     }
 
     /**
@@ -109,12 +110,12 @@ public final class SegmentDoubleVector {
         double[] b = other.toContiguous();
         double[] result;
         if (alpha == 1.0) {
-            result = computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.ADD);
+            result = computer.binaryOperate(a, b, BinaryOperation.ADD);
         } else if (alpha == -1.0) {
-            result = computer.binaryOperate(a, b, IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+            result = computer.binaryOperate(a, b, BinaryOperation.SUBTRACT);
         } else {
-            double[] scaled = computer.binaryOperate(b, alpha, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
-            result = computer.binaryOperate(a, scaled, IDoubleVectorComputer.BinaryOperation.ADD);
+            double[] scaled = computer.binaryOperate(b, alpha, BinaryOperation.MULTIPLY);
+            result = computer.binaryOperate(a, scaled, BinaryOperation.ADD);
         }
         System.arraycopy(result, 0, base, offset, length);
     }
@@ -130,7 +131,7 @@ public final class SegmentDoubleVector {
      */
     public void divideInPlace(double alpha) {
         double[] a = toContiguous();
-        double[] result = computer.binaryOperate(a, alpha, IDoubleVectorComputer.BinaryOperation.DIVIDE);
+        double[] result = computer.binaryOperate(a, alpha, BinaryOperation.DIVIDE);
         System.arraycopy(result, 0, base, offset, length);
     }
 

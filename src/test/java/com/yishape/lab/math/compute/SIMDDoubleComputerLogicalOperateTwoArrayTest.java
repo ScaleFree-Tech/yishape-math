@@ -1,5 +1,6 @@
 package com.yishape.lab.math.compute;
 
+import com.yishape.lab.math.compute.ops.LogicalOperation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,7 +15,7 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
         // For AND operation: both non-zero -> true, otherwise false
         boolean[] expected = {false, false, true, false, true};
         
-        boolean[] result = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.AND);
+        boolean[] result = computer.logicalOperate(x1, x2, LogicalOperation.AND);
         
         assertArrayEquals(expected, result);
     }
@@ -26,7 +27,7 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
         // For OR operation: at least one non-zero -> true, otherwise false
         boolean[] expected = {false, true, true, true, true};
         
-        boolean[] result = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.OR);
+        boolean[] result = computer.logicalOperate(x1, x2, LogicalOperation.OR);
         
         assertArrayEquals(expected, result);
     }
@@ -38,7 +39,7 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
         // For XOR operation: exactly one non-zero -> true, otherwise false
         boolean[] expected = {false, true, false, true, false};
         
-        boolean[] result = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.XOR);
+        boolean[] result = computer.logicalOperate(x1, x2, LogicalOperation.XOR);
         
         assertArrayEquals(expected, result);
     }
@@ -49,7 +50,7 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
         double[] x2 = {0.0, 0.0, 3.0, 4.0, 5.0};
         
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.NOT);
+            computer.logicalOperate(x1, x2, LogicalOperation.NOT);
         });
         
         assertTrue(exception.getMessage().contains("不支持的操作"));
@@ -59,21 +60,21 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
     @Test
     public void testLogicalOperateWithNullFirstVector() {
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(null, new double[]{1.0, 2.0}, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(null, new double[]{1.0, 2.0}, LogicalOperation.AND);
         });
     }
 
     @Test
     public void testLogicalOperateWithNullSecondVector() {
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(new double[]{1.0, 2.0}, null, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(new double[]{1.0, 2.0}, null, LogicalOperation.AND);
         });
     }
 
     @Test
     public void testLogicalOperateWithDifferentLengths() {
         assertThrows(IllegalArgumentException.class, () -> {
-            computer.logicalOperate(new double[]{1.0, 2.0}, new double[]{1.0, 2.0, 3.0}, IDoubleVectorComputer.LogicalOperation.AND);
+            computer.logicalOperate(new double[]{1.0, 2.0}, new double[]{1.0, 2.0, 3.0}, LogicalOperation.AND);
         });
     }
 
@@ -83,7 +84,7 @@ public class SIMDDoubleComputerLogicalOperateTwoArrayTest {
         double[] x2 = {};
         boolean[] expected = {};
         
-        boolean[] result = computer.logicalOperate(x1, x2, IDoubleVectorComputer.LogicalOperation.AND);
+        boolean[] result = computer.logicalOperate(x1, x2, LogicalOperation.AND);
         
         assertArrayEquals(expected, result);
     }
