@@ -427,10 +427,12 @@ public class ARIMADiagnostics implements ITimeSeriesDiagnostics {
      * 计算Shapiro-Wilk p值 / Calculate Shapiro-Wilk p-value
      */
     private double calculateShapiroWilkPValue(double statistic, int n) {
-        if (statistic > 0.95) return 0.90;
-        if (statistic > 0.90) return 0.80;
-        if (statistic > 0.85) return 0.70;
-        return 0.50;
+        // Use chi-squared approximation for Shapiro-Wilk p-value
+        // Transform: -2*ln(1 - statistic) ~ chi2(2) for moderate n
+        if (statistic >= 1.0) return 1.0;
+        if (statistic <= 0.0) return 0.0;
+        double transformed = -2.0 * Math.log(1.0 - statistic);
+        return 1.0 - Stats.chi2(2).cdf(transformed);
     }
     
     /**
@@ -452,27 +454,36 @@ public class ARIMADiagnostics implements ITimeSeriesDiagnostics {
      * 计算Ljung-Box p值 / Calculate Ljung-Box p-value
      */
     private double calculateLjungBoxPValue(double statistic, int df, int n) {
-        if (statistic < 3.84) return 0.95;
-        if (statistic < 6.63) return 0.90;
-        if (statistic < 7.81) return 0.80;
-        return 0.50;
+        return 1.0 - Stats.chi2(df).cdf(statistic);
     }
     
     /**
      * 计算Breusch-Pagan统计量 / Calculate Breusch-Pagan statistic
      */
     private double calculateBreuschPaganStatistic(IVector<Double> residuals, IVector<Double> fitted) {
-        // 简化的Breusch-Pagan检验 / Simplified Breusch-Pagan test
-        return residuals.multiply(residuals).meanValue() / fitted.multiply(fitted).meanValue();
+        // Breusch-Pagan LM statistic: n * R² from auxiliary regression of squared residuals on fitted values
+        int n = residuals.length();
+        IVector<Double> squaredRes = residuals.multiply(residuals);
+        double meanSqRes = squaredRes.meanValue();
+        double meanFitted = fitted.meanValue();
+
+        double num = 0, denSqRes = 0, denFitted = 0;
+        for (int i = 0; i < n; i++) {
+            double sqResC = squaredRes.get(i) - meanSqRes;
+            double fitC = fitted.get(i) - meanFitted;
+            num += sqResC * fitC;
+            denSqRes += sqResC * sqResC;
+            denFitted += fitC * fitC;
+        }
+        double rSquared = (denSqRes > 0 && denFitted > 0) ? (num * num) / (denSqRes * denFitted) : 0;
+        return n * rSquared;
     }
     
     /**
      * 计算Breusch-Pagan p值 / Calculate Breusch-Pagan p-value
      */
     private double calculateBreuschPaganPValue(double statistic, int df) {
-        if (statistic < 3.84) return 0.95;
-        if (statistic < 6.63) return 0.90;
-        return 0.50;
+        return 1.0 - Stats.chi2(df).cdf(statistic);
     }
     
     /**
@@ -508,10 +519,13 @@ public class ARIMADiagnostics implements ITimeSeriesDiagnostics {
      * 计算ADF p值 / Calculate ADF p-value
      */
     private double calculateADFPValue(double statistic) {
-        if (statistic < -3.5) return 0.01;
-        if (statistic < -2.9) return 0.05;
-        if (statistic < -2.6) return 0.10;
-        return 0.20;
+        // MacKinnon (1994) approximate p-values for Dickey-Fuller test
+        // Using asymptotic critical value approximations
+        if (statistic <= -3.96) return 0.01;
+        if (statistic <= -3.41) return 0.05;
+        if (statistic <= -3.12) return 0.10;
+        if (statistic <= -2.86) return 0.20;
+        return 0.50;
     }
     
     /**
@@ -541,8 +555,32 @@ public class ARIMADiagnostics implements ITimeSeriesDiagnostics {
      * 计算偏自相关函数 / Calculate partial autocorrelation function
      */
     private double partialAutocorrelation(IVector<Double> data, int lag) {
-        // 简化的偏自相关函数计算 / Simplified partial autocorrelation function calculation
-        return autocorrelation(data, lag) * 0.5; // 简化处理 / Simplified handling
+        // Durbin-Levinson recursion for PACF
+        if (lag <= 0) return 1.0;
+        double[] acf = new double[lag + 1];
+        for (int k = 0; k <= lag; k++) {
+            acf[k] = autocorrelation(data, k);
+        }
+        if (lag == 1) return acf[1];
+
+        double[] phi = new double[lag + 1];
+        double[] phiPrev = new double[lag + 1];
+        phi[1] = acf[1];
+
+        for (int k = 2; k <= lag; k++) {
+            double num = acf[k];
+            double den = 1.0;
+            for (int j = 1; j < k; j++) {
+                num -= phiPrev[j] * acf[k - j];
+                den -= phiPrev[j] * acf[j];
+            }
+            phi[k] = (den != 0) ? num / den : 0;
+            for (int j = 1; j < k; j++) {
+                phi[j] = phiPrev[j] - phi[k] * phiPrev[k - j];
+            }
+            System.arraycopy(phi, 0, phiPrev, 0, k + 1);
+        }
+        return phi[lag];
     }
     
     /**

@@ -129,7 +129,7 @@ public class TimeSeriesUtils {
             for (int i = 0; i < n - lag; i++) {
                 sum += (data.get(i) - mean) * (data.get(i + lag) - mean);
             }
-            autocorr.set(lag, sum / (n - lag) / variance);
+            autocorr.set(lag, sum / n / variance);
         }
         
         return autocorr;

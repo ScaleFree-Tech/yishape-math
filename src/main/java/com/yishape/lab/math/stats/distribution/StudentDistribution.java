@@ -121,7 +121,7 @@ public class StudentDistribution implements IContinuousDistribution, Serializabl
         // 使用不完全贝塔函数
         // Using incomplete beta function
         double t = standardized / Math.sqrt(degreesOfFreedom + standardized * standardized);
-        return 0.5 + 0.5 * sign(standardized) * RereMathUtil.incompleteBeta(halfDof, 0.5, t * t);
+        return 0.5 + 0.5 * sign(standardized) * RereMathUtil.regularizedIncompleteBeta(halfDof, 0.5, t * t);
     }
 
     /**

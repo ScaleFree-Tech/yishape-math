@@ -429,10 +429,30 @@ public interface IDiffVector extends IDoubleVector {
             "map not supported on " + this.getClass().getSimpleName());
     }
 
+    /**
+     * @deprecated Use {@link #cat(IDiffVector...)} instead — concat breaks the autodiff graph.
+     */
+    @Deprecated
     @Override
     default IDiffVector concat(IVector<Double> other) {
         throw new UnsupportedOperationException(
-            "concat not supported on " + this.getClass().getSimpleName());
+            "concat not supported on " + this.getClass().getSimpleName()
+            + ". Use cat() for AD-preserving concatenation.");
+    }
+
+    /**
+     * AD-preserving concatenation. Returns a new IDiffVector containing
+     * this vector followed by all others. Backward splits gradient by offset.
+     * <p>保留自动微分图的拼接。返回包含此向量及所有其它向量的新向量。
+     * 反向传播按偏移量拆分梯度。</p>
+     *
+     * @param others vectors to append
+     * @return concatenated vector with graph connections preserved
+     */
+    default IDiffVector cat(IDiffVector... others) {
+        // Default: delegate to RereDiffVector implementation (which has access to internal methods).
+        // TangentDiffVector and TracerDiffVector override this method directly.
+        return ((com.yishape.lab.math.autodiff.impl.RereDiffVector) this).cat(others);
     }
 
     @Override

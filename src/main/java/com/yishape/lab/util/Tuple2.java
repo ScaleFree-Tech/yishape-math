@@ -52,4 +52,17 @@ public class Tuple2<E1, E2> implements Serializable{
     public E2 getSecond(){
         return this._2;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tuple2)) return false;
+        Tuple2<?, ?> t = (Tuple2<?, ?>) o;
+        return java.util.Objects.equals(_1, t._1) && java.util.Objects.equals(_2, t._2);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(_1, _2);
+    }
 }

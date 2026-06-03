@@ -55,8 +55,9 @@ public class RootCauseAnalysisTest {
         double v1Error = orthoError(V1tV1);
         System.out.println("  V1 orthogonality: " + v1Error);
 
-        // Verify: A ≈ U1 * B * V1^T
-        IMatrix<Double> reconBidiag = U1.mmul(B).mmul(V1.transposeNew());
+        // Verify: A ≈ U1 * B * V1[:,0:m]^T (thin form for wide matrices)
+        IMatrix<Double> V1thin = extractColumns(V1, m);
+        IMatrix<Double> reconBidiag = U1.mmul(B).mmul(V1thin.transposeNew());
         double bidiagError = maxError(A, reconBidiag);
         System.out.println("  Bidiagonalization recon error: " + bidiagError);
 

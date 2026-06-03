@@ -344,7 +344,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
      * If gradient exists: accumulates in-place (zero alloc), then releases buffer.
      * If gradient is null: allocates correctly-sized copy, accumulates, then releases buffer.
      */
-    private void accGradFromPooled(double[] pooledBuf, int n) {
+    void accGradFromPooled(double[] pooledBuf, int n) {
         if (gradient != null) {
             double[] g = gradient.getData();
             for (int i = 0; i < n; i++) g[i] += pooledBuf[i];
@@ -2015,6 +2015,51 @@ public class RereDiffVector implements IDiffVector, Serializable {
         return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn, symFn), "slice");
     }
 
+    // ---- cat ----
+
+    @Override
+    public IDiffVector cat(IDiffVector... others) {
+        int n = 1 + others.length;
+        IDiffVector[] all = new IDiffVector[n];
+        all[0] = this;
+        System.arraycopy(others, 0, all, 1, others.length);
+
+        // 1. Build concatenated value
+        int totalLen = 0;
+        for (IDiffVector v : all) totalLen += v.getValue().size();
+        double[] catData = new double[totalLen];
+        int pos = 0;
+        for (IDiffVector v : all) {
+            double[] d = v.getValue().getData();
+            System.arraycopy(d, 0, catData, pos, d.length);
+            pos += d.length;
+        }
+
+        // 2. Collect inputs and save offsets for backward
+        List<RereDiffVector> inputs = new ArrayList<>();
+        for (IDiffVector v : all) inputs.add((RereDiffVector) v);
+
+        int[] offsets = new int[n];
+        int off = 0;
+        for (int i = 0; i < n; i++) {
+            offsets[i] = off;
+            off += inputs.get(i).value.size();
+        }
+
+        // 3. Backward: split gradient by offset, accumulate into each input
+        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+            double[] gd = gradOut.getData();
+            for (int i = 0; i < n; i++) {
+                int len = inputs.get(i).value.size();
+                double[] buf = AutodiffBufferPool.acquire(len);
+                System.arraycopy(gd, offsets[i], buf, 0, len);
+                inputs.get(i).accGradFromPooled(buf, len);
+            }
+        };
+
+        return withTag(new RereDiffVector(IDoubleVector.of(catData), inputs, backwardFn), "cat");
+    }
+
     // ---- reshape ----
 
     @Override
@@ -2054,6 +2099,74 @@ public class RereDiffVector implements IDiffVector, Serializable {
     public IDiffVector divideInPlace(double alpha) {
         if (alpha == 1.0) return this;
         return this.mulInPlace(1.0 / alpha);
+    }
+
+    @Override
+    public IDiffVector addScalarInPlace(double p) {
+        if (p == 0.0) return this;
+        double[] data = this.getValue().getData();
+        for (int i = 0; i < data.length; i++) {
+            data[i] += p;
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector subScalarInPlace(double p) {
+        if (p == 0.0) return this;
+        double[] data = this.getValue().getData();
+        for (int i = 0; i < data.length; i++) {
+            data[i] -= p;
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector multiplyByScalarInPlace(double p) {
+        double[] data = this.getValue().getData();
+        for (int i = 0; i < data.length; i++) {
+            data[i] *= p;
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector addInPlace(IVector<Double> vec) {
+        double[] data = this.getValue().getData();
+        double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
+        for (int i = 0; i < data.length; i++) {
+            data[i] += other[i];
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector subInPlace(IVector<Double> vec) {
+        double[] data = this.getValue().getData();
+        double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
+        for (int i = 0; i < data.length; i++) {
+            data[i] -= other[i];
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector multiplyInPlace(IVector<Double> vec) {
+        double[] data = this.getValue().getData();
+        double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
+        for (int i = 0; i < data.length; i++) {
+            data[i] *= other[i];
+        }
+        return this;
+    }
+
+    @Override
+    public IDiffVector negInPlace() {
+        double[] data = this.getValue().getData();
+        for (int i = 0; i < data.length; i++) {
+            data[i] = -data[i];
+        }
+        return this;
     }
 
     @Override

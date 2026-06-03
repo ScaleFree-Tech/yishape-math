@@ -734,6 +734,6 @@ public class GMMClustering implements IClustering {
     }
 
     private void log(String msg) {
-        org.slf4j.LoggerFactory.getLogger(GMMClustering.class).info(msg);
+        com.yishape.lab.util.YishapeLogger.getLogger(GMMClustering.class).info(msg);
     }
 }

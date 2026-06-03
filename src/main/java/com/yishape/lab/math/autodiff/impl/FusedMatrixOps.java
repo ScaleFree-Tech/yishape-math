@@ -311,7 +311,7 @@ public class FusedMatrixOps {
             case CLAMP   -> grad * (inputV >= op.param && inputV <= op.param2 ? 1.0 : 0.0);
             case SIN     -> grad * Math.cos(inputV);
             case COS     -> -grad * Math.sin(inputV);
-            case TAN     -> grad * (1.0 - outputV * outputV);
+            case TAN     -> grad * (1.0 + outputV * outputV);
             case RECIPROCAL -> -grad / (inputV * inputV);
             default      -> grad;
         };

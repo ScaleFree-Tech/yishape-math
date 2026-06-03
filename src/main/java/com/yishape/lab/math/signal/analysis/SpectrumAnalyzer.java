@@ -176,27 +176,17 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
     
     /**
      * 互相关分析 / Cross-correlation analysis
+     * <p>需要两个信号，请使用 {@link #compareAnalyze} 方法。 / Requires two signals, use {@link #compareAnalyze} instead.</p>
      */
     private AnalysisResult<IVector<Double>> analyzeCrossCorrelation(IVector<Double> signal, AnalysisParameters parameters) throws SignalProcessingException {
-        // 简化的实现 / Simplified implementation
-        return analyzeAutocorrelation(signal, parameters);
+        throw new SignalProcessingException("互相关分析需要两个信号，请使用 compareAnalyze 方法 / Cross-correlation requires two signals, use compareAnalyze");
     }
     
     /**
      * 相干性分析 / Coherence analysis
      */
     private AnalysisResult<IVector<Double>> analyzeCoherence(IVector<Double> signal, AnalysisParameters parameters) throws SignalProcessingException {
-        try {
-            // 简化的相干性分析：计算信号与自身的相干性（恒为1）
-            int n = signal.length();
-            IVector<Double> coherence = Linalg.ones(n);
-            
-            String[] resultNames = {"相干性 / Coherence"};
-            
-            return new AnalysisResult<>(AnalysisType.COHERENCE, coherence, resultNames, "相干性分析结果 / Coherence analysis result", 0.95);
-        } catch (Exception e) {
-            throw new SignalProcessingException("相干性分析失败 / Coherence analysis failed", e);
-        }
+        throw new SignalProcessingException("相干性分析需要两个信号，请使用 compareAnalyze 方法 / Coherence requires two signals, use compareAnalyze");
     }
     
     /**
@@ -234,21 +224,65 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
     
     /**
      * 瞬时频率分析 / Instantaneous frequency analysis
+     * <p>通过 Hilbert 变换计算解析信号，从解析信号的相位导数得到瞬时频率。</p>
      */
     private AnalysisResult<IVector<Double>> analyzeInstantaneousFrequency(IVector<Double> signal, AnalysisParameters parameters) throws SignalProcessingException {
         try {
             int n = signal.length();
-            IVector<Double> frequency = Linalg.zeros(n);
-            
-            // 简单的瞬时频率估计：通过差分计算 / Simple instantaneous frequency estimation: calculated by differencing
             double samplingRate = parameters.getSamplingRate();
-            for (int i = 1; i < n; i++) {
-                frequency.set(i, (signal.get(i) - signal.get(i-1)) * samplingRate);
+            double[] signalArray = signal.toDoubleArray();
+
+            // Build complex signal and compute FFT
+            Complex[] complexSignal = new Complex[signalArray.length];
+            for (int i = 0; i < signalArray.length; i++) {
+                complexSignal[i] = new Complex(signalArray[i], 0);
             }
-            
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            int fftLen = paddedSignal.length;
+            Complex[] fftResult = RereFFT.fft(paddedSignal);
+
+            // Hilbert transform: zero negative frequencies, double positive
+            Complex[] hilbert = new Complex[fftLen];
+            hilbert[0] = fftResult[0];
+            for (int i = 1; i < fftLen / 2; i++) {
+                hilbert[i] = new Complex(2.0 * fftResult[i].real, 2.0 * fftResult[i].imag);
+            }
+            for (int i = fftLen / 2; i < fftLen; i++) {
+                hilbert[i] = new Complex(0, 0);
+            }
+
+            Complex[] analyticSignal = RereFFT.ifft(hilbert);
+
+            // Compute unwrapped phase
+            double[] phase = new double[n];
+            for (int i = 0; i < n; i++) {
+                phase[i] = Math.atan2(analyticSignal[i].imag, analyticSignal[i].real);
+            }
+
+            // Unwrap phase
+            double[] unwrapped = new double[n];
+            unwrapped[0] = phase[0];
+            double cumulativeShift = 0;
+            for (int i = 1; i < n; i++) {
+                double diff = phase[i] - phase[i - 1];
+                if (diff > Math.PI) cumulativeShift -= 2 * Math.PI;
+                else if (diff < -Math.PI) cumulativeShift += 2 * Math.PI;
+                unwrapped[i] = phase[i] + cumulativeShift;
+            }
+
+            // Instantaneous frequency from phase derivative
+            IVector<Double> frequency = Linalg.zeros(n);
+            for (int i = 1; i < n; i++) {
+                double freq = (unwrapped[i] - unwrapped[i - 1]) * samplingRate / (2.0 * Math.PI);
+                frequency.set(i, freq);
+            }
+            if (n > 1) {
+                frequency.set(0, frequency.get(1));
+            }
+
             String[] resultNames = {"瞬时频率 / Instantaneous Frequency"};
-            
-            return new AnalysisResult<>(AnalysisType.INSTANTANEOUS_FREQUENCY, frequency, resultNames, "瞬时频率分析结果 / Instantaneous frequency analysis result", 0.95);
+            return new AnalysisResult<>(AnalysisType.INSTANTANEOUS_FREQUENCY, frequency, resultNames,
+                "瞬时频率分析结果 / Instantaneous frequency analysis result", 0.95);
         } catch (Exception e) {
             throw new SignalProcessingException("瞬时频率分析失败 / Instantaneous frequency analysis failed", e);
         }
@@ -379,55 +413,88 @@ public class SpectrumAnalyzer extends AbstractSignalProcessor<Double> implements
      */
     private AnalysisResult<Double> analyzeSNR(IVector<Double> signal, AnalysisParameters parameters) throws SignalProcessingException {
         try {
-            // 简化的SNR分析：假设信号均值为信号部分，方差为噪声部分
             int n = signal.length();
-            double mean = 0;
+            // Compute total signal power
+            double totalPower = 0;
             for (int i = 0; i < n; i++) {
-                mean += signal.get(i);
+                double v = signal.get(i);
+                totalPower += v * v;
             }
-            mean /= n;
-            
-            double variance = 0;
-            for (int i = 0; i < n; i++) {
-                double diff = signal.get(i) - mean;
-                variance += diff * diff;
+            totalPower /= n;
+
+            // Estimate noise floor from high-frequency FFT bins
+            double[] signalArray = signal.toDoubleArray();
+            Complex[] complexSignal = new Complex[signalArray.length];
+            for (int i = 0; i < signalArray.length; i++) {
+                complexSignal[i] = new Complex(signalArray[i], 0);
             }
-            variance /= n;
-            
-            double snr = (variance > 0) ? (mean * mean) / variance : Double.POSITIVE_INFINITY;
-            
-            String[] resultNames = {"信噪比 / SNR"};
-            
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            Complex[] fftResult = RereFFT.fft(paddedSignal);
+            int fftLen = fftResult.length;
+
+            double noisePower = 0;
+            int noiseBins = 0;
+            for (int i = fftLen / 4; i < fftLen / 2; i++) {
+                double mag = fftResult[i].magnitude();
+                noisePower += mag * mag;
+                noiseBins++;
+            }
+            noisePower = noiseBins > 0 ? noisePower / (noiseBins * fftLen) : 0;
+            double signalPower = Math.max(0, totalPower - noisePower);
+
+            double snr = noisePower > 0 ? 10.0 * Math.log10(signalPower / noisePower) : Double.POSITIVE_INFINITY;
+
+            String[] resultNames = {"信噪比 / SNR (dB)"};
+
             return new AnalysisResult<>(AnalysisType.SNR, snr, resultNames, "信噪比分析结果 / SNR analysis result", 0.95);
         } catch (Exception e) {
             throw new SignalProcessingException("信噪比分析失败 / SNR analysis failed", e);
         }
     }
-    
+
     /**
      * 总谐波失真分析 / THD analysis
      */
     private AnalysisResult<Double> analyzeTHD(IVector<Double> signal, AnalysisParameters parameters) throws SignalProcessingException {
         try {
-            // 简化的THD分析：计算信号的标准差作为失真度量
             int n = signal.length();
-            double mean = 0;
-            for (int i = 0; i < n; i++) {
-                mean += signal.get(i);
+            double[] signalArray = signal.toDoubleArray();
+            Complex[] complexSignal = new Complex[signalArray.length];
+            for (int i = 0; i < signalArray.length; i++) {
+                complexSignal[i] = new Complex(signalArray[i], 0);
             }
-            mean /= n;
-            
-            double variance = 0;
-            for (int i = 0; i < n; i++) {
-                double diff = signal.get(i) - mean;
-                variance += diff * diff;
+            Complex[] paddedSignal = RereFFT.zeroPadToPowerOfTwo(complexSignal);
+            Complex[] fftResult = RereFFT.fft(paddedSignal);
+            int fftLen = fftResult.length;
+            double samplingRate = parameters.getSamplingRate();
+
+            // Find fundamental frequency (largest peak, excluding DC)
+            int fundBin = 1;
+            double fundMag = 0;
+            for (int i = 1; i < fftLen / 2; i++) {
+                double mag = fftResult[i].magnitude();
+                if (mag > fundMag) {
+                    fundMag = mag;
+                    fundBin = i;
+                }
             }
-            variance /= n;
-            
-            double thd = Math.sqrt(variance);
-            
+
+            // Sum harmonic magnitudes squared (harmonics 2 through 10)
+            double harmonicPower = 0;
+            int maxHarmonic = Math.min(10, (fftLen / 2) / fundBin);
+            for (int h = 2; h <= maxHarmonic; h++) {
+                int hBin = h * fundBin;
+                if (hBin < fftLen / 2) {
+                    double mag = fftResult[hBin].magnitude();
+                    harmonicPower += mag * mag;
+                }
+            }
+
+            double thd = fundMag > 0 ? Math.sqrt(harmonicPower) / fundMag : 0;
+            if (thd > 1.0) thd = 1.0; // cap at 100%
+
             String[] resultNames = {"总谐波失真 / THD"};
-            
+
             return new AnalysisResult<>(AnalysisType.THD, thd, resultNames, "总谐波失真分析结果 / THD analysis result", 0.95);
         } catch (Exception e) {
             throw new SignalProcessingException("总谐波失真分析失败 / THD analysis failed", e);

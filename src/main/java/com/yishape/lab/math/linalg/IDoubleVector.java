@@ -472,6 +472,27 @@ public interface IDoubleVector extends IVector<Double> {
     public IDoubleVector divideInPlace(double alpha);
 
     @Override
+    public IDoubleVector addScalarInPlace(double p);
+
+    @Override
+    public IDoubleVector subScalarInPlace(double p);
+
+    @Override
+    public IDoubleVector multiplyByScalarInPlace(double p);
+
+    @Override
+    public IDoubleVector addInPlace(IVector<Double> vec);
+
+    @Override
+    public IDoubleVector subInPlace(IVector<Double> vec);
+
+    @Override
+    public IDoubleVector multiplyInPlace(IVector<Double> vec);
+
+    @Override
+    public IDoubleVector negInPlace();
+
+    @Override
     public IDoubleVector copy();
 
     @Override

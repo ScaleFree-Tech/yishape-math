@@ -1156,6 +1156,106 @@ public interface IVector<T extends Number> extends Serializable{
     }
 
     /**
+     * 向量加标量（就地） / Vector add scalar (in-place)
+     * <p>
+     * 计算 this = this + p，修改当前向量并返回自身。
+     * Computes this = this + p, modifies this vector in-place and returns itself.
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 当前向量自身 / This vector (for chaining)
+     */
+    default IVector<T> addScalarInPlace(double p) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) + p);
+        }
+        return this;
+    }
+
+    /**
+     * In-place scalar subtraction. Subtracts scalar p from every element.
+     * 原地标量减法，每个元素减去标量 p。
+     *
+     * @param p scalar value to subtract
+     * @return this vector (for chaining)
+     */
+    default IVector<T> subScalarInPlace(double p) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) - p);
+        }
+        return this;
+    }
+
+    /**
+     * In-place scalar multiplication. Multiplies every element by scalar p.
+     * 原地标量乘法，每个元素乘以标量 p。
+     *
+     * @param p scalar multiplier
+     * @return this vector (for chaining)
+     */
+    default IVector<T> multiplyByScalarInPlace(double p) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) * p);
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise addition. Adds vec to this vector element-wise.
+     * 原地逐元素加法，要求两个向量长度相同。
+     *
+     * @param vec vector to add (must have same length)
+     * @return this vector (for chaining)
+     */
+    default IVector<T> addInPlace(IVector<T> vec) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) + vec.get(i));
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise subtraction. Subtracts vec from this vector element-wise.
+     * 原地逐元素减法，要求两个向量长度相同。
+     *
+     * @param vec vector to subtract (must have same length)
+     * @return this vector (for chaining)
+     */
+    default IVector<T> subInPlace(IVector<T> vec) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) - vec.get(i));
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise multiplication (Hadamard product).
+     * 原地逐元素乘法（Hadamard 积），要求两个向量长度相同。
+     *
+     * @param vec vector to multiply element-wise (must have same length)
+     * @return this vector (for chaining)
+     */
+    default IVector<T> multiplyInPlace(IVector<T> vec) {
+        for (int i = 0; i < size(); i++) {
+            set(i, get(i) * vec.get(i));
+        }
+        return this;
+    }
+
+    /**
+     * In-place negation. Negates every element.
+     * 原地取反，每个元素变为其相反数。
+     *
+     * @return this vector (for chaining)
+     */
+    default IVector<T> negInPlace() {
+        for (int i = 0; i < size(); i++) {
+            set(i, -get(i));
+        }
+        return this;
+    }
+
+    /**
      * 向量逐元素除法运算 / Vector element-wise division
      * <p>
      * 对应元素相除，要求两个向量长度相同。此方法通过计算除数向量的倒数然后进行逐元素乘法来实现。 Element-wise division,

@@ -51,12 +51,16 @@ public class RereFFT {
         int fftSize = nextPowerOfTwo(n);
 
         Complex[] work = getWorkBuffer(fftSize);
-        // 复制并补零
+        // Copy input values (not references) to avoid mutating caller's objects;
+        // use fresh Complex(0,0) for zero-padding to avoid corrupting Complex.ZERO
         for (int i = 0; i < n; i++) {
-            work[i] = x[i];
+            Complex xi = x[i];
+            work[i].real = xi.real;
+            work[i].imag = xi.imag;
         }
         for (int i = n; i < fftSize; i++) {
-            work[i] = Complex.ZERO;
+            work[i].real = 0;
+            work[i].imag = 0;
         }
 
         iterativeFFT(work, fftSize, false);
@@ -64,10 +68,16 @@ public class RereFFT {
         // 截取或返回完整结果
         if (n == fftSize) {
             Complex[] result = new Complex[n];
-            System.arraycopy(work, 0, result, 0, n);
+            for (int i = 0; i < n; i++) {
+                result[i] = new Complex(work[i].real, work[i].imag);
+            }
             return result;
         }
-        return Arrays.copyOf(work, fftSize);
+        Complex[] result = new Complex[fftSize];
+        for (int i = 0; i < fftSize; i++) {
+            result[i] = new Complex(work[i].real, work[i].imag);
+        }
+        return result;
     }
 
     /**
@@ -79,12 +89,15 @@ public class RereFFT {
         int fftSize = nextPowerOfTwo(n);
 
         Complex[] work = getWorkBuffer(fftSize);
-        // 共轭输入
+        // 共轭输入 — write into work buffer in-place
         for (int i = 0; i < n; i++) {
-            work[i] = x[i].conjugate();
+            Complex xi = x[i];
+            work[i].real = xi.real;
+            work[i].imag = -xi.imag;
         }
         for (int i = n; i < fftSize; i++) {
-            work[i] = Complex.ZERO;
+            work[i].real = 0;
+            work[i].imag = 0;
         }
 
         iterativeFFT(work, fftSize, false);
@@ -93,7 +106,7 @@ public class RereFFT {
         Complex[] result = new Complex[n];
         double scale = 1.0 / fftSize;
         for (int i = 0; i < n; i++) {
-            result[i] = work[i].conjugate().scale(scale);
+            result[i] = new Complex(work[i].real * scale, -work[i].imag * scale);
         }
         return result;
     }
@@ -111,7 +124,7 @@ public class RereFFT {
             cx[i] = new Complex(x[i], 0);
         }
         for (int i = x.length; i < n; i++) {
-            cx[i] = Complex.ZERO;
+            cx[i] = new Complex(0, 0);
         }
         Complex[] full = fft(cx);
         return Arrays.copyOf(full, n / 2 + 1);
@@ -200,7 +213,7 @@ public class RereFFT {
             padded[i] = signal[i];
         }
         for (int i = n; i < paddedLength; i++) {
-            padded[i] = Complex.ZERO;
+            padded[i] = new Complex(0, 0);
         }
         return padded;
     }
@@ -235,14 +248,14 @@ public class RereFFT {
             for (int i = 0; i < n; i += len) {
                 for (int j = 0; j < halfLen; j++) {
                     Complex u = a[i + j];
-                    // t = w * a[i + j + halfLen]
                     Complex v = a[i + j + halfLen];
                     double tRe = w[j].real * v.real - w[j].imag * v.imag;
                     double tIm = w[j].real * v.imag + w[j].imag * v.real;
-                    a[i + j].real = u.real + tRe;
-                    a[i + j].imag = u.imag + tIm;
-                    a[i + j + halfLen].real = u.real - tRe;
-                    a[i + j + halfLen].imag = u.imag - tIm;
+                    double uRe = u.real, uIm = u.imag;
+                    a[i + j].real = uRe + tRe;
+                    a[i + j].imag = uIm + tIm;
+                    a[i + j + halfLen].real = uRe - tRe;
+                    a[i + j + halfLen].imag = uIm - tIm;
                 }
             }
         }
@@ -258,6 +271,9 @@ public class RereFFT {
         Complex[] buf = (ref != null) ? ref.get() : null;
         if (buf == null || buf.length < minSize) {
             buf = new Complex[minSize];
+            for (int i = 0; i < minSize; i++) {
+                buf[i] = new Complex(0, 0);
+            }
             complexBufRef.set(new SoftReference<>(buf));
         }
         return buf;

@@ -383,6 +383,67 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     }
 
     /**
+     * 向量加标量（就地） / Vector add scalar (in-place)
+     * <p>
+     * 直接修改内部数据数组，无中间分配。
+     * Directly modifies the internal data array with zero intermediate allocation.
+     * </p>
+     *
+     * @param p 标量值 / Scalar value
+     * @return 当前向量自身 / This vector (for chaining)
+     */
+    @Override
+    public IDoubleVector addScalarInPlace(double p) {
+        for (int i = 0; i < data.length; i++) {
+            data[i] += p;
+        }
+        return this;
+    }
+
+    @Override
+    public IDoubleVector subScalarInPlace(double p) {
+        for (int i = 0; i < data.length; i++) {
+            data[i] -= p;
+        }
+        return this;
+    }
+
+    @Override
+    public IDoubleVector multiplyByScalarInPlace(double p) {
+        double[] result = this.computer.binaryOperate(data, p, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IDoubleVector addInPlace(IVector<Double> vec) {
+        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.ADD);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IDoubleVector subInPlace(IVector<Double> vec) {
+        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.SUBTRACT);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IDoubleVector multiplyInPlace(IVector<Double> vec) {
+        double[] result = this.computer.binaryOperate(data, otherData(vec), IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IDoubleVector negInPlace() {
+        double[] result = this.computer.binaryOperate(data, -1.0, IDoubleVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    /**
      * 获取向量数据数组 / Get vector data array
      * <p>
      * 返回向量的内部数据数组引用 Returns a reference to the internal data array of the
@@ -624,8 +685,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector std() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.STANDARD_DEVIATION);
-        return IDoubleVector.of(result);
+        return IDoubleVector.of(Math.sqrt(this.varValue()));
     }
 
     /**
@@ -653,8 +713,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector var() {
-        double result = this.computer.reduceOperate(data, IDoubleVectorComputer.ReduceOperation.VARIANCE);
-        return IDoubleVector.of(result);
+        return this.var(1);
     }
 
     /**
@@ -1593,7 +1652,7 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
     public  IDoubleVector trunc() {
         double[] result = new double[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = Math.rint(this.data[i]);
+            result[i] = (double) (long) this.data[i];
         }
         return IDoubleVector.of(result);
     }

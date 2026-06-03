@@ -223,42 +223,14 @@ public class BesselFilter extends AbstractSignalProcessor<Double> implements ISi
         return new FilterCoefficients(numerator, denominator);
     }
     
-    /**
-     * 计算带通贝塞尔滤波器系数 / Compute band-pass Bessel filter coefficients
-     */
     private FilterCoefficients computeBandPassCoefficients() {
-        // 简化实现，实际应用中需要更复杂的带通设计
-        // Simplified implementation, actual applications need more complex band-pass design
-        
-        double[] numerator = new double[order * 2 + 1];
-        double[] denominator = new double[order * 2 + 1];
-        
-        // 使用简化的系数作为示例 / Use simplified coefficients as example
-        for (int i = 0; i <= order * 2; i++) {
-            numerator[i] = (i == 0) ? 1.0 : 0.0;
-            denominator[i] = 1.0;
-        }
-        
-        return new FilterCoefficients(numerator, denominator);
+        throw new UnsupportedOperationException(
+            "Bessel band-pass filter is not yet implemented. Use ButterworthFilter or ChebyshevFilter (Type I) for band-pass filtering.");
     }
-    
-    /**
-     * 计算带阻贝塞尔滤波器系数 / Compute band-stop Bessel filter coefficients
-     */
+
     private FilterCoefficients computeBandStopCoefficients() {
-        // 简化实现，实际应用中需要更复杂的带阻设计
-        // Simplified implementation, actual applications need more complex band-stop design
-        
-        double[] numerator = new double[order * 2 + 1];
-        double[] denominator = new double[order * 2 + 1];
-        
-        // 使用简化的系数作为示例 / Use simplified coefficients as example
-        for (int i = 0; i <= order * 2; i++) {
-            numerator[i] = (i == 0) ? 1.0 : 0.0;
-            denominator[i] = 1.0;
-        }
-        
-        return new FilterCoefficients(numerator, denominator);
+        throw new UnsupportedOperationException(
+            "Bessel band-stop filter is not yet implemented. Use ButterworthFilter or ChebyshevFilter (Type I) for band-stop filtering.");
     }
     
     /**

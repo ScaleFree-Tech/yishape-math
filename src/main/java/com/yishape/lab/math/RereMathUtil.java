@@ -85,7 +85,7 @@ public class RereMathUtil {
     public static double[] intToDouble(int[] array) {
         double[] darr = new double[array.length];
         for (int i = 0; i < array.length; i++) {
-            darr[i] = (float) array[i];
+            darr[i] = (double) array[i];
         }
         return darr;
     }

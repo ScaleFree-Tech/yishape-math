@@ -788,22 +788,8 @@ public final class HpcOptionalRuntime {
      * @return 结果 float 数组，失败返回 null
      */
     public static float[] tryFloatActivation(String opName, float[] input) {
-        if (!isNativeRuntimeAvailable() || HPC == null) return null;
-        Method m = cachedMethod(HPC, opName, double[].class, double[].class);
-        if (m == null) return null;
-        try {
-            double[] inD = new double[input.length];
-            for (int i = 0; i < input.length; i++) inD[i] = input[i];
-            double[] outD = new double[input.length];
-            int status = (Integer) m.invoke(null, inD, outD);
-            if (status != 0) return null;
-            float[] result = new float[input.length];
-            for (int i = 0; i < input.length; i++) result[i] = (float) outD[i];
-            return result;
-        } catch (ReflectiveOperationException | LinkageError e) {
-            logHpcError(opName, e);
-            return null;
-        }
+        // HPC 无双精度浮点核，float→double→float 转换+三次临时分配抵消任何收益，直接走 SIMD
+        return null;
     }
 
     /**
@@ -815,23 +801,8 @@ public final class HpcOptionalRuntime {
      * @return 结果 float 数组，失败返回 null
      */
     public static float[] tryFloatElementwise(String opName, float[] a, float[] b) {
-        if (!isNativeRuntimeAvailable() || HPC == null) return null;
-        Method m = cachedMethod(HPC, opName, double[].class, double[].class, double[].class);
-        if (m == null) return null;
-        try {
-            double[] aD = new double[a.length];
-            double[] bD = new double[a.length];
-            for (int i = 0; i < a.length; i++) { aD[i] = a[i]; bD[i] = b[i]; }
-            double[] outD = new double[a.length];
-            int status = (Integer) m.invoke(null, aD, bD, outD);
-            if (status != 0) return null;
-            float[] result = new float[a.length];
-            for (int i = 0; i < a.length; i++) result[i] = (float) outD[i];
-            return result;
-        } catch (ReflectiveOperationException | LinkageError e) {
-            logHpcError(opName, e);
-            return null;
-        }
+        // HPC 无双精度浮点核，float→double→float 转换+临时分配抵消任何收益，直接走 SIMD
+        return null;
     }
 
     /**

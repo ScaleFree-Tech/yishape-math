@@ -21,7 +21,7 @@ public class SparseConjugateGradientSolver implements ISparseLinearSolver {
     }
 
     public SparseConjugateGradientSolver(double tol, int maxIter, boolean usePreconditioner) {
-        this(tol, maxIter, usePreconditioner ? null : null);
+        this(tol, maxIter, (ISparsePreconditioner) null);
     }
 
     public SparseConjugateGradientSolver() {

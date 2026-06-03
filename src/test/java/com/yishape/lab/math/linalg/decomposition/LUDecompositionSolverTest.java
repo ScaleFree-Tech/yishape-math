@@ -4,6 +4,7 @@ import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.linalg.decomposition.SingularMatrixException;
 import com.yishape.lab.math.linalg.decomposition.impl.RereLUDecomposition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,25 +140,29 @@ public class LUDecompositionSolverTest {
     @Test
     void testSingularityHandling() {
         System.out.println("Testing singularity handling...");
-        
+
         // Create LU decomposition of singular matrix
         RereLUDecomposition luDecomposition = new RereLUDecomposition();
-        luDecomposition.decompose(singularMatrix);
-        
+        try {
+            luDecomposition.decompose(singularMatrix);
+        } catch (SingularMatrixException e) {
+            // Expected: decomposition throws for singular matrices
+        }
+
         // Get solver
         IDecompositionSolver solver = luDecomposition.getSolver();
-        
+
         // Check that matrix is detected as singular
         assertFalse(solver.isNonSingular(), "Singular matrix should be detected as singular");
-        
+
         // Try to solve - should throw exception
         double[] bData = {1.0, 2.0};
         IVector<Double> b = Linalg.vector(bData);
-        
+
         assertThrows(RuntimeException.class, () -> {
             solver.solve(b);
         }, "Solving with singular matrix should throw RuntimeException");
-        
+
         System.out.println("Singularity handling test passed.");
     }
 }

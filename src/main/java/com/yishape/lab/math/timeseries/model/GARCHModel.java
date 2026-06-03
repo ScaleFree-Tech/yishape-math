@@ -2,6 +2,11 @@ package com.yishape.lab.math.timeseries.model;
 
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
+import com.yishape.lab.math.optimize.IGradientFunction;
+import com.yishape.lab.math.optimize.IObjectiveFunction;
+import com.yishape.lab.math.optimize.IOptimizer;
+import com.yishape.lab.math.optimize.OptResult;
+import com.yishape.lab.math.optimize.Opts;
 import com.yishape.lab.math.stats.Stats;
 
 import java.util.ArrayList;
@@ -79,36 +84,50 @@ public class GARCHModel {
      */
     public static GARCHModel fit(IVector<Double> returns, int p, int q) {
         int n = returns.length();
-        if (n < Math.max(p, q) + 10) {
+        int maxLag = Math.max(p, q);
+        if (n < maxLag + 10) {
             throw new IllegalArgumentException("数据长度不足以拟合GARCH模型");
         }
-        
-        // 初始化参数 / Initialize parameters
-        double omega = returns.varValue() * 0.1; // 初始方差估计 / Initial variance estimate
-        IVector<Double> alpha = Linalg.zeros(p);
-        IVector<Double> beta = Linalg.zeros(q);
-        
-        // 使用简化的参数估计方法 / Use simplified parameter estimation method
-        for (int i = 0; i < p; i++) {
-            alpha.set(i, 0.1 / p); // 均匀分配 / Uniform distribution
-        }
-        for (int i = 0; i < q; i++) {
-            beta.set(i, 0.8 / q); // 均匀分配 / Uniform distribution
-        }
-        
-        // 计算条件方差和残差 / Calculate conditional variance and residuals
-        IVector<Double> variance = calculateConditionalVariance(returns, omega, alpha, beta);
+
+        double[] r = new double[n];
+        for (int i = 0; i < n; i++) r[i] = returns.get(i);
+
+        int numParams = 1 + p + q;
+        IVector<Double> initTheta = Linalg.zeros(numParams);
+        double initVar = returns.varValue();
+        initTheta.set(0, Math.log(Math.max(initVar * 0.1, 1e-8)));
+        for (int i = 0; i < p; i++) initTheta.set(1 + i, Math.log(0.1 / Math.max(p, 1)));
+        for (int j = 0; j < q; j++) initTheta.set(1 + p + j, Math.log(0.8 / Math.max(q, 1)));
+
+        IObjectiveFunction objective = theta -> {
+            double[] params = unconstrainedToGarchParams(theta, p, q);
+            return garchNegLogLikelihood(r, params[0],
+                java.util.Arrays.copyOfRange(params, 1, 1 + p),
+                java.util.Arrays.copyOfRange(params, 1 + p, params.length));
+        };
+
+        IGradientFunction gradient = theta -> numericalGradient(theta, objective);
+
+        IOptimizer optimizer = Opts.lbfgs(1e-8, 500);
+        OptResult result = optimizer.optimize(initTheta, objective, gradient);
+
+        IVector<Double> optTheta = result.getOptimalPoint();
+        double[] optParams = unconstrainedToGarchParams(optTheta, p, q);
+        double optOmega = optParams[0];
+        IVector<Double> optAlpha = Linalg.zeros(p);
+        IVector<Double> optBeta = Linalg.zeros(q);
+        for (int i = 0; i < p; i++) optAlpha.set(i, optParams[1 + i]);
+        for (int j = 0; j < q; j++) optBeta.set(j, optParams[1 + p + j]);
+
+        IVector<Double> variance = calculateConditionalVariance(returns, optOmega, optAlpha, optBeta);
         IVector<Double> residuals = returns.divide(variance.apply(Math::sqrt));
-        
-        // 计算对数似然 / Calculate log likelihood
         double logLikelihood = calculateLogLikelihood(returns, variance);
-        
-        // 计算信息准则 / Calculate information criteria
-        int k = 1 + p + q; // 参数个数 / Number of parameters
+
+        int k = 1 + p + q;
         double aic = 2 * k - 2 * logLikelihood;
         double bic = k * Math.log(n) - 2 * logLikelihood;
-        
-        return new GARCHModel(p, q, omega, alpha, beta, variance, residuals, logLikelihood, aic, bic);
+
+        return new GARCHModel(p, q, optOmega, optAlpha, optBeta, variance, residuals, logLikelihood, aic, bic);
     }
     
     /**
@@ -391,6 +410,74 @@ public class GARCHModel {
     }
     
     // ========== 私有辅助方法 / Private Helper Methods ==========
+
+    /**
+     * 将无约束参数变换为满足 GARCH 约束的参数。
+     * Transform unconstrained parameters to GARCH-constrained parameters.
+     * omega = exp(theta_0), alpha_i = exp(theta_i) / S, beta_j = exp(theta_j) / S,
+     * where S = 1 + sum(exp(theta_alpha)) + sum(exp(theta_beta)).
+     */
+    private static double[] unconstrainedToGarchParams(IVector<Double> theta, int p, int q) {
+        int n = theta.length();
+        double[] params = new double[n];
+        params[0] = Math.exp(theta.get(0));
+        double sum = 1.0;
+        for (int i = 1; i < n; i++) {
+            sum += Math.exp(theta.get(i));
+        }
+        for (int i = 1; i < n; i++) {
+            params[i] = Math.exp(theta.get(i)) / sum;
+        }
+        return params;
+    }
+
+    /**
+     * GARCH 负对数似然（使用原始 double[] 以提升性能）。
+     * GARCH negative log-likelihood (using raw double[] for performance).
+     */
+    private static double garchNegLogLikelihood(double[] returns, double omega, double[] alpha, double[] beta) {
+        int n = returns.length;
+        int p = alpha.length;
+        int q = beta.length;
+        int maxLag = Math.max(p, q);
+
+        double[] sigma2 = new double[n];
+        double initVar = 0.0;
+        for (int i = 0; i < n; i++) initVar += returns[i] * returns[i];
+        initVar /= n;
+        for (int i = 0; i < maxLag; i++) sigma2[i] = initVar;
+
+        double nll = 0.0;
+        for (int t = maxLag; t < n; t++) {
+            double s2 = omega;
+            for (int i = 0; i < p; i++) {
+                s2 += alpha[i] * returns[t - i - 1] * returns[t - i - 1];
+            }
+            for (int j = 0; j < q; j++) {
+                s2 += beta[j] * sigma2[t - j - 1];
+            }
+            sigma2[t] = s2;
+            nll += 0.5 * (Math.log(2.0 * Math.PI * s2) + returns[t] * returns[t] / s2);
+        }
+        return nll;
+    }
+
+    /** 中心差分数值梯度 / Central-difference numerical gradient */
+    private static IVector<Double> numericalGradient(IVector<Double> theta, IObjectiveFunction f) {
+        int n = theta.length();
+        IVector<Double> grad = Linalg.zeros(n);
+        double h = 1e-6;
+        for (int i = 0; i < n; i++) {
+            double orig = theta.get(i);
+            theta.set(i, orig + h);
+            double fp = f.computeObjective(theta);
+            theta.set(i, orig - h);
+            double fm = f.computeObjective(theta);
+            theta.set(i, orig);
+            grad.set(i, (fp - fm) / (2.0 * h));
+        }
+        return grad;
+    }
     
     /**
      * 计算条件方差 / Calculate conditional variance

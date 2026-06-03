@@ -72,12 +72,16 @@ public class SVDWideMatrixDebugTest {
         double thinError = maxError(A, reconThin);
         System.out.printf("Thin reconstruction error: %.15e%n", thinError);
 
-        // Test 2: Using full VT (wrong for thin SVD)
-        System.out.println("\n=== Test 2: Full VT reconstruction (theoretically wrong) ===");
-        IMatrix<Double> reconFull = UD.mmul(VT);  // 5x5 * 5x10 - but VT is 10x10!
-        double fullError = maxError(A, reconFull);
-        System.out.printf("Full VT shape: %d x %d%n", VT.rows(), VT.cols());
-        System.out.printf("Full reconstruction error: %.15e%n", fullError);
+        // Test 2: Using full VT (dimension mismatch for wide matrices)
+        System.out.println("\n=== Test 2: Full VT reconstruction (dimension mismatch for wide matrices) ===");
+        System.out.printf("Full VT shape: %d x %d, UD shape: %d x %d%n", VT.rows(), VT.cols(), UD.rows(), UD.cols());
+        try {
+            IMatrix<Double> reconFull = UD.mmul(VT);
+            double fullError = maxError(A, reconFull);
+            System.out.printf("Full reconstruction error: %.15e%n", fullError);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Expected: dimension mismatch — " + e.getMessage());
+        }
 
         // Test 3: Check U orthogonality
         System.out.println("\n=== Test 3: U Orthogonality ===");

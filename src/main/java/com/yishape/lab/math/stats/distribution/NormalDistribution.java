@@ -32,14 +32,14 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
     private final double variance;
     
     /** 1/√(2π) 的预计算值 / Precomputed value of 1/√(2π) */
-    private static final double INV_SQRT_2PI = 0.3989422804014327f;
+    private static final double INV_SQRT_2PI = 0.3989422804014327;
     
     /**
      * 构造函数，创建标准正态分布（均值为0，标准差为1）
      * Constructor for standard normal distribution (mean=0, stdDev=1)
      */
     public NormalDistribution() {
-        this(0.0f, 1.0f);
+        this(0.0, 1.0);
     }
     
     /**
@@ -69,8 +69,8 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
     @Override
     public double pdf(double x) {
         double diff = x - mean;
-        double exponent = -(diff * diff) / (2.0f * variance);
-        return INV_SQRT_2PI / stdDev * (float) Math.exp(exponent);
+        double exponent = -(diff * diff) / (2.0 * variance);
+        return INV_SQRT_2PI / stdDev * Math.exp(exponent);
     }
     
     /**
@@ -97,16 +97,16 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double ppf(double p) {
-        if (p < 0.0f || p > 1.0f) {
+        if (p < 0.0 || p > 1.0) {
             throw new IllegalArgumentException("概率值必须在[0,1]范围内 / Probability must be in range [0,1]");
         }
-        
-        if (p == 0.0f) return Float.NEGATIVE_INFINITY;
-        if (p == 1.0f) return Float.POSITIVE_INFINITY;
-        
+
+        if (p == 0.0) return Double.NEGATIVE_INFINITY;
+        if (p == 1.0) return Double.POSITIVE_INFINITY;
+
         // 使用近似方法计算逆正态分布
         // Using approximation method to calculate inverse normal distribution
-        double z = (float) RereMathUtil.inverseNormalCDF(p);
+        double z = RereMathUtil.inverseNormalCDF(p);
         return mean + stdDev * z;
     }
     
@@ -119,7 +119,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double sf(double x) {
-        return 1.0f - cdf(x);
+        return 1.0 - cdf(x);
     }
     
     /**
@@ -131,7 +131,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double isf(double p) {
-        return ppf(1.0f - p);
+        return ppf(1.0 - p);
     }
     
     
@@ -198,7 +198,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double q1() {
-        return ppf(0.25f);
+        return ppf(0.25);
     }
     
     /**
@@ -209,7 +209,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double q3() {
-        return ppf(0.75f);
+        return ppf(0.75);
     }
     
     /**
@@ -220,7 +220,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double skewness() {
-        return 0.0f; // 正态分布的偏度为0
+        return 0.0; // 正态分布的偏度为0
     }
     
     /**
@@ -231,7 +231,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
      */
     @Override
     public double kurtosis() {
-        return 0.0f; // 正态分布的峰度为0（超额峰度）
+        return 0.0; // 正态分布的峰度为0（超额峰度）
     }
     
     /**
@@ -250,8 +250,8 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
         }
 
         hasSpare = true;
-        double u = Math.random();
-        double v = Math.random();
+        double u = java.util.concurrent.ThreadLocalRandom.current().nextDouble();
+        double v = java.util.concurrent.ThreadLocalRandom.current().nextDouble();
         double mag = stdDev * Math.sqrt(-2.0 * Math.log(u));
         spare = mag * Math.sin(2.0 * Math.PI * v);
         return mean + mag * Math.cos(2.0 * Math.PI * v);
@@ -282,7 +282,7 @@ public class NormalDistribution implements IContinuousDistribution, Serializable
     // Box-Muller变换的辅助变量
     // Helper variables for Box-Muller transform
     private boolean hasSpare = false;
-    private double spare = 0.0f;
+    private double spare = 0.0;
     
     @Override
     public String toString() {

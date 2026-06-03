@@ -423,6 +423,36 @@ public class TangentDiffVector implements IDiffVector {
         return new TangentDiffVector(p, t, List.of(this), p);
     }
 
+    @Override public IDiffVector cat(IDiffVector... others) {
+        // Forward: cat primals. JVP: cat tangents (cat is linear).
+        IDiffVector[] primals = new IDiffVector[others.length];
+        IDoubleVector[] tangents = new IDoubleVector[others.length];
+        for (int i = 0; i < others.length; i++) {
+            TangentDiffVector td = (TangentDiffVector) others[i];
+            primals[i] = td.primal;
+            tangents[i] = td.tangent;
+        }
+        RereDiffVector p = (RereDiffVector) this.primal.cat(primals);
+
+        // Concatenate tangents
+        int totalLen = this.tangent.size();
+        for (IDoubleVector tv : tangents) totalLen += tv.size();
+        double[] tData = new double[totalLen];
+        int pos = 0;
+        System.arraycopy(this.tangent.getData(), 0, tData, pos, this.tangent.size());
+        pos += this.tangent.size();
+        for (IDoubleVector tv : tangents) {
+            System.arraycopy(tv.getData(), 0, tData, pos, tv.size());
+            pos += tv.size();
+        }
+
+        java.util.List<TangentDiffVector> inputTangents = new java.util.ArrayList<>();
+        inputTangents.add(this);
+        for (IDiffVector o : others) inputTangents.add((TangentDiffVector) o);
+
+        return new TangentDiffVector(p, IDoubleVector.of(tData), inputTangents, p);
+    }
+
     @Override public IDiffMatrix reshape(int rows, int cols) {
         throw new UnsupportedOperationException(
             "reshape not supported in forward mode (TangentDiffMatrix not available)");
@@ -489,6 +519,13 @@ public class TangentDiffVector implements IDiffVector {
     }
 
     @Override public IDiffVector divideInPlace(double alpha) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector addScalarInPlace(double p) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector subScalarInPlace(double p) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector multiplyByScalarInPlace(double p) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector addInPlace(IVector<Double> vec) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector subInPlace(IVector<Double> vec) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector multiplyInPlace(IVector<Double> vec) { throw new UnsupportedOperationException(); }
+    @Override public IDiffVector negInPlace() { throw new UnsupportedOperationException(); }
 
     @Override public IDiffVector add(IVector<Double> vec) { return this.add((IDiffVector) vec); }
     @Override public IDiffVector sub(IVector<Double> vec) { return this.sub((IDiffVector) vec); }

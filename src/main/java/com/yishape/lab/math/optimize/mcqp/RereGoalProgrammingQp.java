@@ -141,8 +141,15 @@ public class RereGoalProgrammingQp implements IMcqpSolver {
         // 扩展变量：[x; d^+; d^-]
         int totalVars = numVariables + numDeviationVariables;
 
-        // 扩展Q矩阵（线性目标，Q为零）
+        // 扩展Q矩阵：加权组合各目标的二次项
         double[][] qExtData = new double[totalVars][totalVars];
+        for (int objIdx = 0; objIdx < numObjectives; objIdx++) {
+            for (int i = 0; i < numVariables; i++) {
+                for (int j = 0; j < numVariables; j++) {
+                    qExtData[i][j] += weights[objIdx] * ((Number) Q[objIdx].get(i, j)).doubleValue();
+                }
+            }
+        }
         IMatrix extendedQ = Linalg.matrix(qExtData);
 
         // 扩展c向量：仅偏差变量有系数

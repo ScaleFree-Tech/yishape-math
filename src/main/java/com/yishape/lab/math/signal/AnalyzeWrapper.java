@@ -45,14 +45,32 @@ public class AnalyzeWrapper {
     }
 
     public IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2) {
-        try {
-            ISignalAnalyzer<Double> analyzer = SignalProcessorFactory.getInstance().createAnalyzer("crosscorr");
-            ISignalAnalyzer.AnalysisResult<IVector<Double>> result =
-                analyzer.analyze(signal1, ISignalAnalyzer.AnalysisType.CROSS_CORRELATION);
-            return result.getResult();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to calculate cross-correlation", e);
+        int n1 = signal1.length();
+        int n2 = signal2.length();
+        int n = n1 + n2;
+        int fftSize = 1;
+        while (fftSize < n) fftSize <<= 1;
+
+        Complex[] x = new Complex[fftSize];
+        Complex[] y = new Complex[fftSize];
+        for (int i = 0; i < fftSize; i++) {
+            x[i] = new Complex(i < n1 ? signal1.get(i) : 0, 0);
+            y[i] = new Complex(i < n2 ? signal2.get(i) : 0, 0);
         }
+
+        Complex[] fftX = RereFFT.fft(x);
+        Complex[] fftY = RereFFT.fft(y);
+        for (int i = 0; i < fftSize; i++) {
+            fftX[i] = fftX[i].multiply(fftY[i].conjugate());
+        }
+        Complex[] result = RereFFT.ifft(fftX);
+
+        double[] corr = new double[n - 1];
+        for (int i = 0; i < n - 1; i++) {
+            int idx = i < n2 ? n2 - 1 - i : i - n2 + 1;
+            corr[i] = result[idx % fftSize].real;
+        }
+        return IVector.of(corr);
     }
 
     public IVector<Double> crossCorrelation(IVector<Double> signal1, IVector<Double> signal2, int maxLag) {

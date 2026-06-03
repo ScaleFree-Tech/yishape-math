@@ -136,9 +136,9 @@ public class RereFA implements ITransform<Double> {
         this.nFactors = nComponents;
 
         // 步骤1：数据中心化
-        IVector<Double> colMeans = ((IMatrix)feature).rowMeans();
+        IVector<Double> colMeans = ((IMatrix)feature).colMeans();
         this.mean = colMeans;
-        IMatrix<Double> centeredData = ((IMatrix)feature).center();
+        IMatrix<Double> centeredData = ((IMatrix)feature).broadcastSubRow(colMeans);
 
         // 步骤2：初始化参数
         initializeParameters(centeredData);
@@ -160,8 +160,8 @@ public class RereFA implements ITransform<Double> {
             throw new IllegalArgumentException("特征维度不匹配 / Feature dimension mismatch");
         }
 
-        // 步骤1：数据中心化
-        IMatrix<Double> centeredData = ((IMatrix)feature).center();
+        // 步骤1：使用训练集均值进行数据中心化
+        IMatrix<Double> centeredData = ((IMatrix)feature).broadcastSubRow(this.mean);
 
         // 步骤4：计算因子得分（隐变量后验均值）
         IMatrix<Double> factorScores = computeFactorScores(centeredData);

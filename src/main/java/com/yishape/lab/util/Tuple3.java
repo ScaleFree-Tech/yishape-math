@@ -41,4 +41,18 @@ public class Tuple3<E1, E2, E3> extends Tuple2<E1, E2> implements Serializable {
     public E3 getThird() {
         return this._3;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tuple3)) return false;
+        if (!super.equals(o)) return false;
+        Tuple3<?, ?, ?> t = (Tuple3<?, ?, ?>) o;
+        return java.util.Objects.equals(_3, t._3);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(_1, _2, _3);
+    }
 }

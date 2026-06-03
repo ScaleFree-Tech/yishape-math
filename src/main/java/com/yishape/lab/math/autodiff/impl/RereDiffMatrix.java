@@ -1176,6 +1176,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                     }
                 }
             }
+            self.propagateGradient();
         };
         RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
         node.opTag = "sum";
@@ -1227,6 +1228,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                     }
                 }
             }
+            self.propagateGradient();
         };
         RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
         node.opTag = "mean";
@@ -1324,6 +1326,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         int cols = this.value.cols();
         IDoubleVector resultVal;
         Consumer<IDoubleVector> backwardFn;
+        RereDiffMatrix self = this;
 
         if (axis == 0) {
             resultVal = (IDoubleVector) this.value.colSums();
@@ -1336,7 +1339,8 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                         dx[i][j] = gj;
                     }
                 }
-                this.accGrad(IDoubleMatrix.of(dx));
+                self.accGrad(IDoubleMatrix.of(dx));
+                self.propagateGradient();
             };
         } else if (axis == 1) {
             resultVal = (IDoubleVector) this.value.rowSums();
@@ -1349,7 +1353,8 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                         dx[i][j] = gi;
                     }
                 }
-                this.accGrad(IDoubleMatrix.of(dx));
+                self.accGrad(IDoubleMatrix.of(dx));
+                self.propagateGradient();
             };
         } else {
             throw new IllegalArgumentException("axis must be 0 or 1, got " + axis);
@@ -1364,6 +1369,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         int rows = this.value.rows();
         int cols = this.value.cols();
         IDoubleMatrix xVal = this.value.copy();
+        RereDiffMatrix self = this;
 
         if (axis == 0) {
             IDoubleVector resultVal = (IDoubleVector) xVal.colMaxs();
@@ -1382,7 +1388,8 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                     }
                     dx[maxI][j] = gd[j];
                 }
-                this.accGrad(IDoubleMatrix.of(dx));
+                self.accGrad(IDoubleMatrix.of(dx));
+                self.propagateGradient();
             };
             RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
             node.opTag = "max";
@@ -1404,7 +1411,8 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                     }
                     dx[i][maxJ] = gd[i];
                 }
-                this.accGrad(IDoubleMatrix.of(dx));
+                self.accGrad(IDoubleMatrix.of(dx));
+                self.propagateGradient();
             };
             RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
             node.opTag = "max";

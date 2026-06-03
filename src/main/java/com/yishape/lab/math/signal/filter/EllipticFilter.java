@@ -282,46 +282,14 @@ public class EllipticFilter extends AbstractSignalProcessor<Double> implements I
         return new FilterCoefficients(newNum, newDen);
     }
     
-    /**
-     * 低通到带通变换 / Low-pass to band-pass transformation
-     */
     private FilterCoefficients transformLowPassToBandPass(FilterCoefficients lowPassCoeffs) {
-        // 带通变换较为复杂，这里提供简化实现
-        // Band-pass transformation is complex, simplified implementation provided here
-        
-        double[] num = lowPassCoeffs.getNumerator();
-        double[] den = lowPassCoeffs.getDenominator();
-        
-        // 带通变换会将阶数翻倍 / Band-pass transformation doubles the order
-        double[] newNum = new double[num.length * 2 - 1];
-        double[] newDen = new double[den.length * 2 - 1];
-        
-        // 简化的带通变换 / Simplified band-pass transformation
-        System.arraycopy(num, 0, newNum, 0, num.length);
-        System.arraycopy(den, 0, newDen, 0, den.length);
-        
-        return new FilterCoefficients(newNum, newDen);
+        throw new UnsupportedOperationException(
+            "Elliptic band-pass filter is not yet implemented. Use ButterworthFilter or ChebyshevFilter (Type I) for band-pass filtering.");
     }
-    
-    /**
-     * 低通到带阻变换 / Low-pass to band-stop transformation
-     */
+
     private FilterCoefficients transformLowPassToBandStop(FilterCoefficients lowPassCoeffs) {
-        // 带阻变换，这里提供简化实现
-        // Band-stop transformation, simplified implementation provided here
-        
-        double[] num = lowPassCoeffs.getNumerator();
-        double[] den = lowPassCoeffs.getDenominator();
-        
-        // 带阻变换也会将阶数翻倍 / Band-stop transformation also doubles the order
-        double[] newNum = new double[den.length * 2 - 1];
-        double[] newDen = new double[num.length * 2 - 1];
-        
-        // 简化的带阻变换 / Simplified band-stop transformation
-        System.arraycopy(den, 0, newNum, 0, den.length);
-        System.arraycopy(num, 0, newDen, 0, num.length);
-        
-        return new FilterCoefficients(newNum, newDen);
+        throw new UnsupportedOperationException(
+            "Elliptic band-stop filter is not yet implemented. Use ButterworthFilter or ChebyshevFilter (Type I) for band-stop filtering.");
     }
     
     @Override

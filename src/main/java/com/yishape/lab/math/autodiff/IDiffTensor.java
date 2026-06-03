@@ -54,6 +54,18 @@ public interface IDiffTensor extends IDoubleTensor {
     IDiffTensor dropout(double p);
 
     @Override IDiffTensor sum(int dim, boolean keepdim);
+
+    /**
+     * Sum all elements. Returns a differentiable scalar tensor (shape [1]).
+     * Equivalent to {@code flattenValue().sum()} wrapped as a scalar tensor.
+     * 对所有元素求和，返回可微标量张量（shape [1]）。
+     */
+    default IDiffTensor sum() {
+        IDiffVector flat = this.flattenValue();
+        IDiffVector sumVec = flat.sum();
+        return IDiffTensor.fromDiffVector(sumVec, 1);
+    }
+
     @Override IDiffTensor mean(int dim, boolean keepdim);
     @Override IDiffTensor max(int dim, boolean keepdim);
     @Override IDiffTensor min(int dim, boolean keepdim);

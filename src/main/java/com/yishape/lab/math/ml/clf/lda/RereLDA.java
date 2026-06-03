@@ -103,7 +103,7 @@ public class RereLDA implements IClassifier {
         for (int i = 0; i < nSamples; i++) {
             int clsIdx = y[i];
             for (int j = 0; j < nFeatures; j++) {
-                means[clsIdx][j] += (Double) feature.get(clsIdx, j);
+                means[clsIdx][j] += (Double) feature.get(i, j);
             }
         }
         for (int i = 0; i < nClasses; i++) {

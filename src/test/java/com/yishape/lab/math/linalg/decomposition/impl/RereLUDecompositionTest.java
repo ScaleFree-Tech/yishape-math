@@ -3,6 +3,7 @@ package com.yishape.lab.math.linalg.decomposition.impl;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.decomposition.ILUDecomposition;
+import com.yishape.lab.math.linalg.decomposition.SingularMatrixException;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.util.Tuple2;
 import org.junit.jupiter.api.Assertions;
@@ -185,15 +186,19 @@ public class RereLUDecompositionTest {
     @Test
     void testSingularityDetection() {
         System.out.println("Testing singularity detection...");
-        
+
         ILUDecomposition luDecomposition = new RereLUDecomposition();
-        luDecomposition.decompose(singularMatrix);
-        
+        try {
+            luDecomposition.decompose(singularMatrix);
+        } catch (SingularMatrixException e) {
+            // Expected: decomposition throws for singular matrices
+        }
+
         Assertions.assertFalse(luDecomposition.getSolver().isNonSingular(), "Singular matrix should be detected as singular");
-        
+
         // Determinant of singular matrix should be 0
         assertEquals(0.0, luDecomposition.getDeterminant(), 1e-10, "Determinant of singular matrix should be 0");
-        
+
         System.out.println("Singularity detection test passed.");
     }
     

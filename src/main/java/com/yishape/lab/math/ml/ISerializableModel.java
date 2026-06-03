@@ -46,6 +46,7 @@ public interface ISerializableModel {
             Files.writeString(Path.of(path), json, StandardCharsets.UTF_8);
         } catch (Exception e) {
             YishapeLogger.getLogger(ISerializableModel.class).error("Failed to save model to {}", path, e);
+            throw new RuntimeException("Failed to save model to " + path, e);
         }
     }
 

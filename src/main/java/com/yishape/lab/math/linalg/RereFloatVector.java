@@ -379,6 +379,59 @@ public class RereFloatVector implements IFloatVector,Serializable {
         return this;
     }
 
+    @Override
+    public IFloatVector addScalarInPlace(double p) {
+        float pf = (float) p;
+        for (int i = 0; i < data.length; i++) {
+            data[i] += pf;
+        }
+        return this;
+    }
+
+    @Override
+    public IFloatVector subScalarInPlace(double p) {
+        float pf = (float) p;
+        for (int i = 0; i < data.length; i++) {
+            data[i] -= pf;
+        }
+        return this;
+    }
+
+    @Override
+    public IFloatVector multiplyByScalarInPlace(double p) {
+        float[] result = this.computer.binaryOperate(data, (float) p, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IFloatVector addInPlace(IVector<Float> vec) {
+        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.ADD);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IFloatVector subInPlace(IVector<Float> vec) {
+        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.SUBTRACT);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IFloatVector multiplyInPlace(IVector<Float> vec) {
+        float[] result = this.computer.binaryOperate(data, otherData(vec), IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
+    @Override
+    public IFloatVector negInPlace() {
+        float[] result = this.computer.binaryOperate(data, -1.0f, IFloatVectorComputer.BinaryOperation.MULTIPLY);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
+        return this;
+    }
+
     /**
      * 获取向量数据数组 / Get vector data array
      * <p>
@@ -583,7 +636,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public int argMax() {
         int len = this.data.length;
-        float max = Float.MIN_VALUE;
+        float max = -Float.MAX_VALUE;
         int ind = -1;
         for (int i = 0; i < len; i++) {
             if (data[i] > max) {
@@ -619,8 +672,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector std() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.STANDARD_DEVIATION);
-        return IFloatVector.of((float) res);
+        return IFloatVector.of((float) Math.sqrt(this.varValue()));
     }
 
     /**
@@ -648,8 +700,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector var() {
-        var res = this.computer.reduceOperate(data, IFloatVectorComputer.ReduceOperation.VARIANCE);
-        return IFloatVector.of((float) res);
+        return this.var(1);
     }
 
     @Override
@@ -1483,7 +1534,11 @@ public class RereFloatVector implements IFloatVector,Serializable {
         var dotProduct = this.computer.binaryReduceOperate(data, otherData(other), IFloatVectorComputer.BinaryReduceOperation.DOT);
         var norm1 = this.norm2Value();
         var norm2 = other.norm2Value();
-        return dotProduct / (norm1 * norm2);
+        double denominator = norm1 * norm2;
+        if (denominator == 0.0) {
+            throw new ArithmeticException("Cosine similarity is undefined for zero-norm vectors");
+        }
+        return dotProduct / denominator;
     }
 
     /**
@@ -2102,7 +2157,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
         // 计算协方差：使用中心化向量的内积
         IVector<Float> centeredX = this.subScalar(this.meanValue());
         IVector<Float> centeredY = other.subScalar(other.meanValue());
-        var covariance = centeredX.innerProductValue(centeredY) / len;
+        var covariance = centeredX.innerProductValue(centeredY) / (len - 1);
 
         return covariance;
     }

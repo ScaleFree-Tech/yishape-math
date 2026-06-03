@@ -606,7 +606,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor add(IDoubleTensor other) {
         if (other instanceof RereDoubleTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, rt.data, IDoubleVectorComputer.BinaryOperation.ADD), shape());
         }
         return elementWiseBinary(other, Double::sum);
@@ -615,7 +616,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor sub(IDoubleTensor other) {
         if (other instanceof RereDoubleTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, rt.data, IDoubleVectorComputer.BinaryOperation.SUBTRACT), shape());
         }
         return elementWiseBinary(other, (a, b) -> a - b);
@@ -624,7 +626,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor mul(IDoubleTensor other) {
         if (other instanceof RereDoubleTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, rt.data, IDoubleVectorComputer.BinaryOperation.MULTIPLY), shape());
         }
         return elementWiseBinary(other, (a, b) -> a * b);
@@ -633,7 +636,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor div(IDoubleTensor other) {
         if (other instanceof RereDoubleTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, rt.data, IDoubleVectorComputer.BinaryOperation.DIVIDE), shape());
         }
         return elementWiseBinary(other, (a, b) -> a / b);

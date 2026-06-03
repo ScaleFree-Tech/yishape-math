@@ -121,7 +121,7 @@ public class Complex {
 
     public Complex divide(Complex other) {
         double denominator = other.real * other.real + other.imag * other.imag;
-        if (denominator < EPSILON) {
+        if (Math.abs(denominator) < EPSILON) {
             throw new ArithmeticException("Division by near-zero denominator: " + denominator);
         }
         double realPart = (real * other.real + imag * other.imag) / denominator;
@@ -196,6 +196,9 @@ public class Complex {
 
     @Override
     public int hashCode() {
-        return Double.hashCode(real) + 31 * Double.hashCode(imag);
+        // Quantize to epsilon buckets so equals-consistent objects have same hashCode
+        long rBits = Double.doubleToLongBits(Math.round(real / EPSILON) * EPSILON);
+        long iBits = Double.doubleToLongBits(Math.round(imag / EPSILON) * EPSILON);
+        return (int) (rBits ^ (rBits >>> 32)) + 31 * (int) (iBits ^ (iBits >>> 32));
     }
 }

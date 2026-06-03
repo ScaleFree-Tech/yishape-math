@@ -44,10 +44,10 @@ public final class RngFactory {
         return System.nanoTime()
             ^ Thread.currentThread().threadId()
             ^ System.currentTimeMillis()
-            ^ counter++;
+            ^ counter.getAndIncrement();
     }
 
-    private static long counter = 0x9e3779b97f4a7c15L;
+    private static final java.util.concurrent.atomic.AtomicLong counter = new java.util.concurrent.atomic.AtomicLong(0x9e3779b97f4a7c15L);
 
     private RngFactory() {}
 }

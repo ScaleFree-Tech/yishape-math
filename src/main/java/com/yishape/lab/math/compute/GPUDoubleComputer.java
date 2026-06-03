@@ -118,6 +118,7 @@ final class GPUDoubleComputer implements IDoubleVectorComputer {
                     result[i] = gpuRow;
                     anyGpu = true;
                 } else {
+                    anyGpu = false;
                     break;
                 }
             }
@@ -132,6 +133,7 @@ final class GPUDoubleComputer implements IDoubleVectorComputer {
                     result[i] = hpcRow;
                     anyHpc = true;
                 } else {
+                    anyHpc = false;
                     break;
                 }
             }

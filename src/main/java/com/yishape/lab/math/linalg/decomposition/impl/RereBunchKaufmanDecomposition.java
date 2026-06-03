@@ -134,7 +134,86 @@ public class RereBunchKaufmanDecomposition implements IBunchKaufmanDecomposition
         if (!decomposed) {
             throw new IllegalStateException("Decomposition not performed yet");
         }
-        return Double.NaN;
+        // Estimate condition number via 1-norm of inverse using factorization
+        int n = ldlt.length;
+        if (n == 0) return 0.0;
+        // Estimate ||A^{-1}||_1 by solving A·y = x for a random x and computing ||y||_1 / ||x||_1
+        double[] x = new double[n];
+        java.util.Random rng = new java.util.Random(42L);
+        double xNorm1 = 0;
+        for (int i = 0; i < n; i++) {
+            x[i] = rng.nextGaussian();
+            xNorm1 += Math.abs(x[i]);
+        }
+        if (xNorm1 == 0) return 0;
+        // Solve A·y = x using the Bunch-Kaufman factorization
+        double[] y = bunchKaufmanSolve(x);
+        double yNorm1 = 0;
+        for (int i = 0; i < n; i++) yNorm1 += Math.abs(y[i]);
+        double normA1 = 0;
+        for (int i = 0; i < n; i++) {
+            double rowSum = 0;
+            for (int j = 0; j < n; j++) rowSum += Math.abs(ldlt[i][j]);
+            normA1 = Math.max(normA1, rowSum);
+        }
+        return normA1 * yNorm1 / xNorm1;
+    }
+
+    private double[] bunchKaufmanSolve(double[] b) {
+        int n = ldlt.length;
+        double[] x = b.clone();
+        // Forward solve L·y = P·b
+        for (int k = 0; k < n; k++) {
+            int pivot = ipiv[k];
+            if (pivot != k) {
+                double tmp = x[k];
+                x[k] = x[pivot];
+                x[pivot] = tmp;
+            }
+            if (pivot >= 0) {
+                for (int i = k + 1; i < n; i++) {
+                    x[i] -= ldlt[i][k] * x[k];
+                }
+            } else {
+                // 2×2 pivot: swap rows and apply block elimination
+                int kp = -(pivot + 1);
+                if (kp != k) {
+                    double tmp = x[k];
+                    x[k] = x[kp];
+                    x[kp] = tmp;
+                }
+                for (int i = k + 2; i < n; i++) {
+                    x[i] -= ldlt[i][k] * x[k] + ldlt[i][k + 1] * x[k + 1];
+                }
+                k++;
+            }
+        }
+        // Backward solve D·U·x = y (where U = L^T, D is diagonal/block-diagonal)
+        for (int k = n - 1; k >= 0; k--) {
+            int pivot = ipiv[k];
+            if (pivot >= 0) {
+                x[k] /= ldlt[k][k];
+                for (int i = 0; i < k; i++) {
+                    x[i] -= ldlt[k][i] * x[k];
+                }
+            } else {
+                int kp = -(pivot + 1);
+                // 2×2 pivot: solve 2×2 system
+                double a11 = ldlt[k - 1][k - 1];
+                double a12 = ldlt[k - 1][k];
+                double a22 = ldlt[k][k];
+                double det = a11 * a22 - a12 * a12;
+                double b1 = x[k - 1];
+                double b2 = x[k];
+                x[k - 1] = (a22 * b1 - a12 * b2) / det;
+                x[k] = (a11 * b2 - a12 * b1) / det;
+                for (int i = 0; i < k - 1; i++) {
+                    x[i] -= ldlt[k - 1][i] * x[k - 1] + ldlt[k][i] * x[k];
+                }
+                k--;
+            }
+        }
+        return x;
     }
 
     @Override

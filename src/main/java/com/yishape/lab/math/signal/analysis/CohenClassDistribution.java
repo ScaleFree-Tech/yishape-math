@@ -59,13 +59,11 @@ public class CohenClassDistribution {
 
             for (int n = 0; n < N; n++) {
                 int bin = m + M;
+                int wrappedBin = ((bin % numFreqBins) + numFreqBins) % numFreqBins;
                 double re = gFiltered[n].real / gFiltered.length;
                 double im = gFiltered[n].imag / gFiltered.length;
-                realParts[bin % numFreqBins][n] += re;
-                if (bin >= 0 && bin < numFreqBins) {
-                    realParts[bin][n] = re;
-                    imagParts[bin][n] = im;
-                }
+                realParts[wrappedBin][n] += re;
+                imagParts[wrappedBin][n] += im;
             }
         }
 

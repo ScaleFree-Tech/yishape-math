@@ -255,19 +255,133 @@ public class ChebyshevFilter extends AbstractSignalProcessor<Double> implements 
     }
     
     /**
-     * 计算带通切比雪夫滤波器系数 / Compute band-pass Chebyshev filter coefficients
+     * 计算带通切比雪夫滤波器系数。
+     * Compute band-pass Chebyshev filter coefficients via analog LP→BP transformation.
      */
     private FilterCoefficients computeBandPassCoefficients() {
-        FilterCoefficients lowPassCoeffs = computeLowPassCoefficients();
-        return transformLowPassToBandPass(lowPassCoeffs);
+        if (chebyshevType == ChebyshevType.TYPE_II) {
+            throw new UnsupportedOperationException(
+                "Chebyshev Type II band-pass is not yet implemented. Use Type I or ButterworthFilter.");
+        }
+        double wc1 = 2.0 * Math.PI * cutoffFrequencies[0] / samplingRate;
+        double wc2 = 2.0 * Math.PI * cutoffFrequencies[1] / samplingRate;
+        double wa1 = 2.0 * Math.tan(wc1 / 2.0);
+        double wa2 = 2.0 * Math.tan(wc2 / 2.0);
+        double w0 = Math.sqrt(wa1 * wa2);
+        double B = wa2 - wa1;
+
+        double epsilon = Math.sqrt(Math.pow(10, ripple / 10) - 1);
+        Complex[] lpPoles = computeChebyshevPoles(order, epsilon, chebyshevType);
+
+        // LP→BP: s_lp = (s² + w₀²) / (B·s)
+        Complex[] bpPoles = new Complex[order * 2];
+        for (int i = 0; i < order; i++) {
+            Complex p = lpPoles[i];
+            double a = p.real * B;
+            double b = p.imag * B;
+            double discRe = a * a - b * b - 4.0 * w0 * w0;
+            double discIm = 2.0 * a * b;
+            Complex disc = new Complex(discRe, discIm).sqrt();
+            bpPoles[2 * i] = new Complex((a + disc.real) / 2.0, (b + disc.imag) / 2.0);
+            bpPoles[2 * i + 1] = new Complex((a - disc.real) / 2.0, (b - disc.imag) / 2.0);
+        }
+
+        Complex[] digitalPoles = new Complex[bpPoles.length];
+        for (int i = 0; i < bpPoles.length; i++) {
+            digitalPoles[i] = bilinearMap(bpPoles[i]);
+        }
+
+        double[] denominator = expandFromRoots(digitalPoles);
+
+        int numOrder = order * 2;
+        double[] numerator = new double[numOrder + 1];
+        for (int k = 0; k <= order; k++) {
+            double sign = (k % 2 == 0) ? 1.0 : -1.0;
+            int pos = 2 * k;
+            if (pos <= numOrder) {
+                numerator[pos] = sign * binomialCoeff(order, k);
+            }
+        }
+
+        double centerFreq = (wc1 + wc2) / 2.0;
+        Complex z = new Complex(Math.cos(centerFreq), Math.sin(centerFreq));
+        Complex numEval = evaluatePolyAtZ(numerator, z);
+        Complex denEval = evaluatePolyAtZ(denominator, z);
+        double gain = denEval.magnitude() / numEval.magnitude();
+        for (int i = 0; i <= numOrder; i++) {
+            numerator[i] *= gain;
+        }
+
+        return new FilterCoefficients(numerator, denominator);
     }
     
     /**
-     * 计算带阻切比雪夫滤波器系数 / Compute band-stop Chebyshev filter coefficients
+     * 计算带阻切比雪夫滤波器系数。
+     * Compute band-stop Chebyshev filter coefficients via analog LP→BS transformation.
      */
     private FilterCoefficients computeBandStopCoefficients() {
-        FilterCoefficients lowPassCoeffs = computeLowPassCoefficients();
-        return transformLowPassToBandStop(lowPassCoeffs);
+        if (chebyshevType == ChebyshevType.TYPE_II) {
+            throw new UnsupportedOperationException(
+                "Chebyshev Type II band-stop is not yet implemented. Use Type I or ButterworthFilter.");
+        }
+        double wc1 = 2.0 * Math.PI * cutoffFrequencies[0] / samplingRate;
+        double wc2 = 2.0 * Math.PI * cutoffFrequencies[1] / samplingRate;
+        double wa1 = 2.0 * Math.tan(wc1 / 2.0);
+        double wa2 = 2.0 * Math.tan(wc2 / 2.0);
+        double w0 = Math.sqrt(wa1 * wa2);
+        double B = wa2 - wa1;
+
+        double epsilon = Math.sqrt(Math.pow(10, ripple / 10) - 1);
+        Complex[] lpPoles = computeChebyshevPoles(order, epsilon, chebyshevType);
+
+        // LP→BS: s_lp = B·s / (s² + w₀²)
+        // Each pole p → s = (B/p ± sqrt(B²/p² - 4w₀²)) / 2
+        Complex[] bsPoles = new Complex[order * 2];
+        for (int i = 0; i < order; i++) {
+            Complex p = lpPoles[i];
+            double mag2 = p.real * p.real + p.imag * p.imag;
+            double bOverPRe = B * p.real / mag2;
+            double bOverPIm = -B * p.imag / mag2;
+            double discRe = bOverPRe * bOverPRe - bOverPIm * bOverPIm - 4.0 * w0 * w0;
+            double discIm = 2.0 * bOverPRe * bOverPIm;
+            Complex disc = new Complex(discRe, discIm).sqrt();
+            bsPoles[2 * i] = new Complex((bOverPRe + disc.real) / 2.0, (bOverPIm + disc.imag) / 2.0);
+            bsPoles[2 * i + 1] = new Complex((bOverPRe - disc.real) / 2.0, (bOverPIm - disc.imag) / 2.0);
+        }
+
+        Complex[] digitalPoles = new Complex[bsPoles.length];
+        for (int i = 0; i < bsPoles.length; i++) {
+            digitalPoles[i] = bilinearMap(bsPoles[i]);
+        }
+
+        double[] denominator = expandFromRoots(digitalPoles);
+
+        // Numerator: (1 - 2·cos(w₀)·z⁻¹ + z⁻²)^order
+        int numOrder = order * 2;
+        double cosW0 = Math.cos((wc1 + wc2) / 2.0);
+        double[] numerator = new double[numOrder + 1];
+        numerator[0] = 1.0;
+        for (int seg = 0; seg < order; seg++) {
+            double[] next = new double[numOrder + 1];
+            for (int i = 0; i <= numOrder; i++) {
+                next[i] = numerator[i];
+                if (i >= 1) next[i] += -2.0 * cosW0 * numerator[i - 1];
+                if (i >= 2) next[i] += numerator[i - 2];
+            }
+            numerator = next;
+        }
+
+        double denSum = 0, numSum = 0;
+        for (int i = 0; i <= numOrder; i++) {
+            denSum += denominator[i];
+            numSum += numerator[i];
+        }
+        double dcGain = denSum / numSum;
+        for (int i = 0; i <= numOrder; i++) {
+            numerator[i] *= dcGain;
+        }
+
+        return new FilterCoefficients(numerator, denominator);
     }
     
     /**
@@ -395,38 +509,15 @@ public class ChebyshevFilter extends AbstractSignalProcessor<Double> implements 
         return new FilterCoefficients(newNum, newDen);
     }
     
-    /**
-     * 低通到带通变换 / Low-pass to band-pass transformation
-     */
-    private FilterCoefficients transformLowPassToBandPass(FilterCoefficients lowPassCoeffs) {
-        // 简化的带通变换 / Simplified band-pass transformation
-        double[] num = lowPassCoeffs.getNumerator();
-        double[] den = lowPassCoeffs.getDenominator();
-        
-        double[] newNum = new double[num.length * 2 - 1];
-        double[] newDen = new double[den.length * 2 - 1];
-        
-        System.arraycopy(num, 0, newNum, 0, num.length);
-        System.arraycopy(den, 0, newDen, 0, den.length);
-        
-        return new FilterCoefficients(newNum, newDen);
-    }
-    
-    /**
-     * 低通到带阻变换 / Low-pass to band-stop transformation
-     */
-    private FilterCoefficients transformLowPassToBandStop(FilterCoefficients lowPassCoeffs) {
-        // 简化的带阻变换 / Simplified band-stop transformation
-        double[] num = lowPassCoeffs.getNumerator();
-        double[] den = lowPassCoeffs.getDenominator();
-        
-        double[] newNum = new double[den.length * 2 - 1];
-        double[] newDen = new double[num.length * 2 - 1];
-        
-        System.arraycopy(den, 0, newNum, 0, den.length);
-        System.arraycopy(num, 0, newDen, 0, num.length);
-        
-        return new FilterCoefficients(newNum, newDen);
+    /** 计算复多项式在 z 点的值 / Evaluate complex polynomial at z */
+    private static Complex evaluatePolyAtZ(double[] coeffs, Complex z) {
+        Complex sum = Complex.ZERO;
+        Complex zPow = Complex.ONE;
+        for (double c : coeffs) {
+            sum = sum.add(zPow.scale(c));
+            zPow = zPow.multiply(z);
+        }
+        return sum;
     }
     
     @Override

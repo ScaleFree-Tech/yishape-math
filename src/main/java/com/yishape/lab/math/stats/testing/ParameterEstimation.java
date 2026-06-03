@@ -47,9 +47,8 @@ public class ParameterEstimation {
         double mean = sample.meanValue();
         int n = sample.length();
         // 修正：使用正确的公式
-        double margin = zUpperBound * sigma / Math.sqrt(n);
-        double mLowBound = mean - margin;
-        double mUpperBound = mean + margin;
+        double mLowBound = mean + zLowBound * sigma / Math.sqrt(n);
+        double mUpperBound = mean + zUpperBound * sigma / Math.sqrt(n);
         return new Tuple2(mLowBound, mUpperBound);
     }
 

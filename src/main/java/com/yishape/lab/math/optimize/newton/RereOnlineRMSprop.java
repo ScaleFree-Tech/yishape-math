@@ -110,7 +110,7 @@ public class RereOnlineRMSprop implements IOnlineOptimizer {
             if (centered) {
                 double mgi = alp * mgArr[i] + oneMinusAlpha * gi;
                 newMg[i] = mgi;
-                denomI = Math.sqrt(vi - mgi * mgi) + eps;
+                denomI = Math.sqrt(Math.max(0, vi - mgi * mgi)) + eps;
             } else {
                 denomI = Math.sqrt(vi) + eps;
             }

@@ -621,7 +621,8 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor add(IFloatTensor other) {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.ADD), shape());
         }
         return elementWiseBinary(other, Float::sum);
@@ -630,7 +631,8 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor sub(IFloatTensor other) {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.SUBTRACT), shape());
         }
         return elementWiseBinary(other, (a, b) -> a - b);
@@ -639,7 +641,8 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor mul(IFloatTensor other) {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.MULTIPLY), shape());
         }
         return elementWiseBinary(other, (a, b) -> a * b);
@@ -648,7 +651,8 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor div(IFloatTensor other) {
         if (other instanceof RereFloatTensor rt && isContiguous() && offset == 0
-                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length) {
+                && rt.isContiguous() && rt.offset == 0 && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
             return new RereFloatTensor(COMPUTER.binaryOperate(data, rt.data, IFloatVectorComputer.BinaryOperation.DIVIDE), shape());
         }
         return elementWiseBinary(other, (a, b) -> a / b);

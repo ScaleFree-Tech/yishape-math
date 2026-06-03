@@ -152,6 +152,7 @@ public interface ITensor {
     int[] shape();
     int dim(int axis);
     long totalSize();
+    default int size() { return (int) totalSize(); }
     double get(int... indices);
     ITensor set(double value, int... indices);
     ITensor fill(double value);

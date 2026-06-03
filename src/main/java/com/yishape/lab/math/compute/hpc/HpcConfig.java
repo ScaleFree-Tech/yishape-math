@@ -314,7 +314,7 @@ public final class HpcConfig {
      */
     public static final String PROP_ACTIVATION_MIN_ELEMENTS = "yishape.hpc.activation.minElements";
 
-    static final int DEFAULT_ACTIVATION_MIN_ELEMENTS = 8192;
+    static final int DEFAULT_ACTIVATION_MIN_ELEMENTS = 1_000_000;
 
     public static int activationMinElements() {
         Integer v = parseNonNegativeInt(System.getProperty(PROP_ACTIVATION_MIN_ELEMENTS));

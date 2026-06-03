@@ -136,6 +136,7 @@ public class TracerDiffVector implements IDiffVector {
     @Override public IDiffVector layerNorm(IDiffVector gamma, IDiffVector beta, double eps) { bail(); return null; }
     @Override public IDiffVector batchNorm(IDiffVector gamma, IDiffVector beta, double eps) { bail(); return null; }
     @Override public IDiffVector slice(int start, int length) { bail(); return null; }
+    @Override public IDiffVector cat(IDiffVector... others) { bail(); return null; }
 
     @Override public IDiffMatrix reshape(int rows, int cols) { bail(); return null; }
 
@@ -152,6 +153,13 @@ public class TracerDiffVector implements IDiffVector {
         return c;
     }
     @Override public IDiffVector divideInPlace(double alpha) { bail(); return null; }
+    @Override public IDiffVector addScalarInPlace(double p) { bail(); return null; }
+    @Override public IDiffVector subScalarInPlace(double p) { bail(); return null; }
+    @Override public IDiffVector multiplyByScalarInPlace(double p) { bail(); return null; }
+    @Override public IDiffVector addInPlace(IVector<Double> vec) { bail(); return null; }
+    @Override public IDiffVector subInPlace(IVector<Double> vec) { bail(); return null; }
+    @Override public IDiffVector multiplyInPlace(IVector<Double> vec) { bail(); return null; }
+    @Override public IDiffVector negInPlace() { bail(); return null; }
     @Override public IDiffVector add(IVector<Double> vec) { return this.add((IDiffVector) vec); }
     @Override public IDiffVector sub(IVector<Double> vec) { return this.sub((IDiffVector) vec); }
     @Override public IDiffVector multiply(IVector<Double> vec) { return this.mul((IDiffVector) vec); }

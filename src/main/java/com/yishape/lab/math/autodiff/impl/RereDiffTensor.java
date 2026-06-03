@@ -86,13 +86,13 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public IDiffVector flattenValue() {
         // For contiguous tensors, return the original vec to preserve the autodiff graph.
-        // For non-contiguous views (e.g. after permute/slice), the raw vec data is in
-        // the original array order, not the logical order — so we must materialize via
-        // toDoubleArray() which handles stride-based indexing.
+        // For non-contiguous views (e.g. after permute/slice), contiguous() materializes
+        // the data in logical order while preserving the AD graph, then flattenValue()
+        // on the contiguous result returns its vec directly.
         if (tensor.isContiguous() && tensor.totalSize() == vec.getValue().size()) {
             return vec;
         }
-        return AD.vector(tensor.toDoubleArray());
+        return this.contiguous().flattenValue();
     }
 
     @Override
@@ -216,7 +216,9 @@ public class RereDiffTensor implements IDiffTensor {
         if (isContiguous() && offset() == 0) {
             return new RereDiffTensor(vec, (RereDoubleTensor) tensor.reshape(newShape));
         }
-        return new RereDiffTensor(AD.vector(toDoubleArray()), newShape);
+        // Non-contiguous (e.g. after permute): contiguous() preserves the AD graph,
+        // then reshape on the contiguous result is a zero-copy view.
+        return this.contiguous().reshape(newShape);
     }
 
     @Override

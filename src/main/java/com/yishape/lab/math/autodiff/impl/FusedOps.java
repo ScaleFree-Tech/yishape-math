@@ -151,13 +151,7 @@ public class FusedOps {
                 for (int bi = 0; bi < n; bi++) {
                     dx[bi] = applyGradientUnary(singleOp, gradData[bi], saved0[bi], result[bi]);
                 }
-                if (dx.length > n) {
-                    double[] trimmed = new double[n];
-                    System.arraycopy(dx, 0, trimmed, 0, n);
-                    AutodiffBufferPool.release(dx);
-                    dx = trimmed;
-                }
-                self.accGradDirect(dx); // takes ownership, no copy needed
+                self.accGradFromPooled(dx, n);
                 AutodiffBufferPool.release(saved0);
             };
             List<RereDiffVector> inputs = new ArrayList<>();
@@ -261,13 +255,7 @@ public class FusedOps {
                 }
                 dx[bi] = g;
             }
-            if (dx.length > n) {
-                double[] trimmed = new double[n];
-                System.arraycopy(dx, 0, trimmed, 0, n);
-                AutodiffBufferPool.release(dx);
-                dx = trimmed;
-            }
-            self.accGradDirect(dx); // takes ownership, no copy needed
+            self.accGradFromPooled(dx, n);
 
             for (int j = 0; j < ops.size(); j++) {
                 if (ops.get(j).isBinary()) {
@@ -409,7 +397,7 @@ public class FusedOps {
             case SIGMOID -> grad * outputV * (1.0 - outputV);
             case TANH    -> grad * (1.0 - outputV * outputV);
             case RELU    -> grad * (inputV > 0.0 ? 1.0 : 0.0);
-            case ABS     -> grad * (inputV >= 0.0 ? 1.0 : -1.0); // subgradient: 1 at x=0
+            case ABS     -> grad * (inputV > 0.0 ? 1.0 : (inputV < 0.0 ? -1.0 : 0.0));
             case NEG     -> -grad;
             case POW     -> grad * op.param * Math.pow(inputV, op.param - 1.0);
             case LEAKY_RELU -> grad * (inputV > 0 ? 1.0 : op.param);

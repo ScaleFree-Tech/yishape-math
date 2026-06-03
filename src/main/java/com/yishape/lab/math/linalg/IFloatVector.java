@@ -209,6 +209,20 @@ public interface IFloatVector extends IVector<Float> {
     @Override
     public IFloatVector divideInPlace(double alpha);
     @Override
+    public IFloatVector addScalarInPlace(double p);
+    @Override
+    public IFloatVector subScalarInPlace(double p);
+    @Override
+    public IFloatVector multiplyByScalarInPlace(double p);
+    @Override
+    public IFloatVector addInPlace(IVector<Float> vec);
+    @Override
+    public IFloatVector subInPlace(IVector<Float> vec);
+    @Override
+    public IFloatVector multiplyInPlace(IVector<Float> vec);
+    @Override
+    public IFloatVector negInPlace();
+    @Override
     public IFloatVector copy();
     @Override
     public IFloatVector slice(int start, int end);
