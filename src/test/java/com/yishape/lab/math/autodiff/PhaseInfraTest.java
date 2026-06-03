@@ -108,6 +108,69 @@ public class PhaseInfraTest {
     }
 
     @Test
+    void testBroadcastSubBackward() {
+        IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
+        IDiffTensor b = IDiffTensor.fromTensor(ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3), true);
+        IDiffTensor c = a.sub(b);
+        c.backward();
+        // sub backward: dA=g (all 1s), dB=-g (all -1s)
+        // dA: reduce [1,3] from [2,3] → 2 per element
+        double[] gradA = a.flattenGrad().getData();
+        assertEquals(2.0, gradA[0], TOL);
+        assertEquals(2.0, gradA[2], TOL);
+        // dB: reduce [2,3] from [2,3] → no reduction, all -1s
+        double[] gradB = b.flattenGrad().getData();
+        assertEquals(-1.0, gradB[0], TOL);
+        assertEquals(-1.0, gradB[5], TOL);
+    }
+
+    @Test
+    void testBroadcastMulBackward() {
+        // a=[1,2,3] broadcasts to [2,3]; b=[10..60] 2x3
+        // d(a*b)/da = b, d(a*b)/db = a
+        IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
+        IDiffTensor b = IDiffTensor.fromTensor(ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3), true);
+        IDiffTensor c = a.mul(b);
+        c.backward();
+        // dA = sum over batch of (g * b_broadcast) = [10+40, 20+50, 30+60]
+        double[] gradA = a.flattenGrad().getData();
+        assertEquals(50.0, gradA[0], TOL);
+        assertEquals(70.0, gradA[1], TOL);
+        assertEquals(90.0, gradA[2], TOL);
+        // dB = g * a_broadcast (no reduction)
+        double[] gradB = b.flattenGrad().getData();
+        assertEquals(1.0, gradB[0], TOL);
+        assertEquals(2.0, gradB[1], TOL);
+        assertEquals(3.0, gradB[2], TOL);
+        assertEquals(1.0, gradB[3], TOL);
+        assertEquals(2.0, gradB[4], TOL);
+        assertEquals(3.0, gradB[5], TOL);
+    }
+
+    @Test
+    void testBroadcastDivBackward() {
+        // a=[1,2,3] broadcasts to [2,3]; b=[10..60] 2x3
+        // d(a/b)/da = 1/b, d(a/b)/db = -a/b^2
+        IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
+        IDiffTensor b = IDiffTensor.fromTensor(ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3), true);
+        IDiffTensor c = a.div(b);
+        c.backward();
+        // dA = reduce(1/b): [1/10 + 1/40, 1/20 + 1/50, 1/30 + 1/60]
+        double[] gradA = a.flattenGrad().getData();
+        assertEquals(1.0/10.0 + 1.0/40.0, gradA[0], TOL);
+        assertEquals(1.0/20.0 + 1.0/50.0, gradA[1], TOL);
+        assertEquals(1.0/30.0 + 1.0/60.0, gradA[2], TOL);
+        // dB = -a/b^2: [-1/100, -2/400, -3/900, -1/1600, -2/2500, -3/3600]
+        double[] gradB = b.flattenGrad().getData();
+        assertEquals(-1.0/100.0, gradB[0], TOL);
+        assertEquals(-2.0/400.0, gradB[1], TOL);
+        assertEquals(-3.0/900.0, gradB[2], TOL);
+        assertEquals(-1.0/1600.0, gradB[3], TOL);
+        assertEquals(-2.0/2500.0, gradB[4], TOL);
+        assertEquals(-3.0/3600.0, gradB[5], TOL);
+    }
+
+    @Test
     void testBroadcastNonDiffOther() {
         IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
         IDoubleTensor b = ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3);
@@ -115,6 +178,34 @@ public class PhaseInfraTest {
         assertArrayEquals(new int[]{2, 3}, c.shape());
         assertEquals(11.0, c.get(0, 0), TOL);
         assertEquals(63.0, c.get(1, 2), TOL);
+    }
+
+    @Test
+    void testBroadcastNonDiffGradientFlow() {
+        // BUG 2 fix: non-diff other should still preserve gradient flow to this
+        IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
+        IDoubleTensor b = ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3);
+        IDiffTensor c = a.add(b);
+        c.backward();
+        // a shape [1,3], gradOut all 1s from [2,3] → reduce → 2 per element
+        double[] gradA = a.flattenGrad().getData();
+        assertEquals(2.0, gradA[0], TOL);
+        assertEquals(2.0, gradA[1], TOL);
+        assertEquals(2.0, gradA[2], TOL);
+    }
+
+    @Test
+    void testBroadcastNonDiffMulGradientFlow() {
+        // BUG 2: mul with non-diff b: dA = g * b, reduce to original shape
+        IDiffTensor a = IDiffTensor.fromTensor(ITensor.tensor(new double[]{1, 2, 3}, 1, 3), true);
+        IDoubleTensor b = ITensor.tensor(new double[]{10, 20, 30, 40, 50, 60}, 2, 3);
+        IDiffTensor c = a.mul(b);
+        c.backward();
+        // dA = sum over batch of (1 * b_broadcast) = [10+40, 20+50, 30+60]
+        double[] gradA = a.flattenGrad().getData();
+        assertEquals(50.0, gradA[0], TOL);
+        assertEquals(70.0, gradA[1], TOL);
+        assertEquals(90.0, gradA[2], TOL);
     }
 
     // ==================== Phase 5: AD tensor factories ====================
