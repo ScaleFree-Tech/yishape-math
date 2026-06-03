@@ -1,7 +1,7 @@
 package com.yishape.lab.math.autodiff;
 
 import com.yishape.lab.math.autodiff.impl.FloatDiffTensor;
-import com.yishape.lab.math.compute.FlatGemm;
+import com.yishape.lab.math.compute.DoubleFlatGemm;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.tensor.ContiguousPool;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
@@ -303,14 +303,14 @@ public class PhaseInfraTest {
         assertEquals(2.0, result.get(0, 1), TOL);
     }
 
-    // ==================== Phase 4: FlatGemm transp ====================
+    // ==================== Phase 4: DoubleFlatGemm transp ====================
 
     @Test
     void testFlatGemmTranspNN() {
         int m = 2, k = 3, n = 2;
         double[] a = {1, 2, 3, 4, 5, 6};
         double[] b = {7, 8, 9, 10, 11, 12};
-        double[] c = FlatGemm.flatMmulTransp(a, m, k, b, n, 0);
+        double[] c = DoubleFlatGemm.flatMmulTransp(a, m, k, b, n, 0);
         assertEquals(58.0, c[0], TOL);
         assertEquals(64.0, c[1], TOL);
         assertEquals(139.0, c[2], TOL);
@@ -322,7 +322,7 @@ public class PhaseInfraTest {
         int m = 2, k = 3, n = 2;
         double[] a = {1, 2, 3, 4, 5, 6};
         double[] b = {7, 8, 9, 10, 11, 12};
-        double[] c = FlatGemm.flatMmulTransp(a, m, k, b, n, 1);
+        double[] c = DoubleFlatGemm.flatMmulTransp(a, m, k, b, n, 1);
         assertEquals(89.0, c[0], TOL);
         assertEquals(98.0, c[1], TOL);
         assertEquals(116.0, c[2], TOL);
@@ -334,7 +334,7 @@ public class PhaseInfraTest {
         int m = 2, k = 3, n = 2;
         double[] a = {1, 2, 3, 4, 5, 6};
         double[] b = {7, 8, 9, 10, 11, 12};
-        double[] c = FlatGemm.flatMmulTransp(a, m, k, b, n, 2);
+        double[] c = DoubleFlatGemm.flatMmulTransp(a, m, k, b, n, 2);
         assertEquals(50.0, c[0], TOL);
         assertEquals(68.0, c[1], TOL);
         assertEquals(122.0, c[2], TOL);
@@ -346,7 +346,7 @@ public class PhaseInfraTest {
         int m = 2, k = 3, n = 2;
         double[] a = {1, 2, 3, 4, 5, 6};
         double[] b = {7, 8, 9, 10, 11, 12};
-        double[] c = FlatGemm.flatMmulTransp(a, m, k, b, n, 3);
+        double[] c = DoubleFlatGemm.flatMmulTransp(a, m, k, b, n, 3);
         assertEquals(76.0, c[0], TOL);
         assertEquals(103.0, c[1], TOL);
         assertEquals(100.0, c[2], TOL);

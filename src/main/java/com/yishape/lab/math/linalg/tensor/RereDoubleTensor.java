@@ -1,7 +1,7 @@
 package com.yishape.lab.math.linalg.tensor;
 
 import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.FlatGemm;
+import com.yishape.lab.math.compute.DoubleFlatGemm;
 import com.yishape.lab.math.compute.IDoubleVectorComputer;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -1081,7 +1081,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         }
         double[] aFlat = toContiguousFlat();
         double[] bFlat = ((RereDoubleTensor) other).toContiguousFlat();
-        double[] result = FlatGemm.flatMmul(aFlat, m, k, bFlat, n);
+        double[] result = DoubleFlatGemm.flatMmul(aFlat, m, k, bFlat, n);
         return new RereDoubleTensor(result, m, n);
     }
 
@@ -1127,7 +1127,7 @@ public class RereDoubleTensor implements IDoubleTensor {
                 int aOff = (int) (b * m * k);
                 int bOff = (int) (b * k * n);
                 int cOff = (int) (b * m * n);
-                double[] cSlice = FlatGemm.flatMmul(aFull, aOff, m, k, bFull, bOff, n);
+                double[] cSlice = DoubleFlatGemm.flatMmul(aFull, aOff, m, k, bFull, bOff, n);
                 System.arraycopy(cSlice, 0, result, cOff, m * n);
             }
         } else {

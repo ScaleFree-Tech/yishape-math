@@ -18,11 +18,11 @@ import java.util.logging.Logger;
  * detection is reflection-based so this class loads successfully even when
  * {@code jdk.incubator.vector} is absent.
  */
-public final class FlatGemm {
+public final class DoubleFlatGemm {
 
-    private static final Logger LOG = Logger.getLogger(FlatGemm.class.getName());
+    private static final Logger LOG = Logger.getLogger(DoubleFlatGemm.class.getName());
 
-    private FlatGemm() {}
+    private DoubleFlatGemm() {}
 
     /** Cached MethodHandle for SIMDDoubleComputer.flatMmul(double[],int,int,double[],int) — null if unavailable */
     private static final MethodHandle MH_FLAT_MMUL;

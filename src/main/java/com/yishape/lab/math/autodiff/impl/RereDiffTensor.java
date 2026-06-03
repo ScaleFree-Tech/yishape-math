@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
 
 import com.yishape.lab.math.linalg.tensor.TensorShape;
-import com.yishape.lab.math.compute.FlatGemm;
+import com.yishape.lab.math.compute.DoubleFlatGemm;
 
 /**
  * 可微张量实现：通过组合 RereDoubleTensor（数据）+ IDiffVector（梯度追踪）实现.
@@ -1120,13 +1120,13 @@ public class RereDiffTensor implements IDiffTensor {
             int[] otherStrides = otherContig ? null : ((RereDiffTensor) otherDiff).strides();
 
             // Pre-compute transposes for backward (avoid manual loops)
-            double[] bT = FlatGemm.flatTranspose(bData, fK, fN);
-            double[] aT = FlatGemm.flatTranspose(aData, fM, fK);
+            double[] bT = DoubleFlatGemm.flatTranspose(bData, fK, fN);
+            double[] aT = DoubleFlatGemm.flatTranspose(aData, fM, fK);
 
             Consumer<IDoubleVector> backwardFn = (gradOut) -> {
                 double[] g = gradOut.getData();
                 // dA[M,K] = dC[M,N] @ B^T[N,K]  →  (M,N) @ (N,K) = (M,K)
-                double[] dA = FlatGemm.flatMmul(g, fM, fN, bT, fK);
+                double[] dA = DoubleFlatGemm.flatMmul(g, fM, fN, bT, fK);
                 if (selfContig) {
                     selfVec.accGradDirect(dA);
                 } else {
@@ -1140,7 +1140,7 @@ public class RereDiffTensor implements IDiffTensor {
                     selfVec.accGradDirect(dARemap);
                 }
                 // dB[K,N] = A^T[K,M] @ dC[M,N]  →  (K,M) @ (M,N) = (K,N)
-                double[] dB = FlatGemm.flatMmul(aT, fK, fM, g, fN);
+                double[] dB = DoubleFlatGemm.flatMmul(aT, fK, fM, g, fN);
                 if (otherContig) {
                     otherVec.accGradDirect(dB);
                 } else {
@@ -1201,8 +1201,8 @@ public class RereDiffTensor implements IDiffTensor {
             int aOff = bi * fM * fK, bOff = bi * fK * fN;
             double[] bSlice = Arrays.copyOfRange(bData, bOff, bOff + fK * fN);
             double[] aSlice = Arrays.copyOfRange(aData, aOff, aOff + fM * fK);
-            bT_slices[bi] = FlatGemm.flatTranspose(bSlice, fK, fN);
-            aT_slices[bi] = FlatGemm.flatTranspose(aSlice, fM, fK);
+            bT_slices[bi] = DoubleFlatGemm.flatTranspose(bSlice, fK, fN);
+            aT_slices[bi] = DoubleFlatGemm.flatTranspose(aSlice, fM, fK);
         }
 
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
@@ -1213,10 +1213,10 @@ public class RereDiffTensor implements IDiffTensor {
             for (int bi = 0; bi < fB; bi++) {
                 int aOff = bi * aStride, bOff = bi * bStride, gOff = bi * gStride;
                 // dA[M,K] = g[M,N] @ B^T[N,K]
-                double[] dASlice = FlatGemm.flatMmul(g, gOff, fM, fN, bT_slices[bi], 0, fK);
+                double[] dASlice = DoubleFlatGemm.flatMmul(g, gOff, fM, fN, bT_slices[bi], 0, fK);
                 System.arraycopy(dASlice, 0, dA, aOff, aStride);
                 // dB[K,N] = A^T[K,M] @ g[M,N]
-                double[] dBSlice = FlatGemm.flatMmul(aT_slices[bi], 0, fK, fM, g, gOff, fN);
+                double[] dBSlice = DoubleFlatGemm.flatMmul(aT_slices[bi], 0, fK, fM, g, gOff, fN);
                 System.arraycopy(dBSlice, 0, dB, bOff, bStride);
             }
             selfVec.accGradDirect(dA);
