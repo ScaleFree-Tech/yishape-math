@@ -635,32 +635,67 @@ public class AD {
     // ---- vmap (automatic batching) ----
 
     /**
-     * Applies {@code fn} to each element of {@code xs} independently,
-     * returning the per-element outputs as an array.
+     * Vectorized map: stacks inputs into a single flat vector, executes
+     * {@code fn} once on a {@link BatchedDiffVector}, then unstacks the result.
      *
-     * <p>Each element gets its own computation graph (no graph sharing).
-     * For gradient accumulation, use {@link #batchVjp} followed by
-     * {@link BatchVjpResult#sumGradients(IDiffVector)}.
+     * <p>Uses <strong>single-graph batched execution</strong>: all N samples share
+     * one computation graph. Reductions ({@code sum()}, {@code mean()}) inside
+     * {@code fn} are automatically applied per-sample over the inner dimension.
+     * Element-wise operations are shape-agnostic and work unchanged on the
+     * flattened representation.
      *
-     * <p>The {@link VMap} infrastructure provides GPU/HPC/SIMD batched compute
-     * primitives available for direct use. When the autodiff graph supports
-     * batch-aware reductions, vmap will be upgraded to use single-graph
-     * batched execution.
+     * <p><strong>Supported operations inside {@code fn}:</strong>
+     * <ul>
+     *   <li>Element-wise: {@code add, sub, mul, div, pow, exp, log, sin, cos,
+     *       tanh, sigmoid, relu, gelu, abs, sqrt, square}, and all activations</li>
+     *   <li>Reductions: {@code sum(), mean()} (applied per-sample)</li>
+     *   <li>{@code dropout(p)} (element-wise, seed-shared)</li>
+     * </ul>
      *
-     * <p>对列表中每个样本独立应用 {@code fn}，返回每样本输出数组。
+     * <p><strong>Unsupported inside {@code fn}:</strong>
+     * {@code slice, dot, broadcast, cat, softmax, layerNorm, batchNorm}
+     * — these operations are incompatible with the batched flat representation.
      *
-     * @param fn  function R^n → R^m operating on single elements
-     * @param xs  list of input elements
-     * @return array of per-element outputs
+     * <p>对列表中每个样本独立应用 {@code fn}，使用单图批量执行。
+     *
+     * @param fn  function R^D → R^M operating on single elements (element-wise + sum/mean only)
+     * @param xs  list of input vectors, all same length D
+     * @return array of per-element outputs, each of length M
      */
     public static IDiffVector[] vmap(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
         if (xs.isEmpty()) {
             throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
         int n = xs.size();
+        int d = xs.get(0).size();
+
+        // Validate uniform dimension
+        for (int i = 1; i < n; i++) {
+            if (xs.get(i).size() != d) {
+                throw new IllegalArgumentException(
+                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
+            }
+        }
+
+        // Stack inputs into a single flat array
+        double[][] raw = new double[n][];
+        for (int i = 0; i < n; i++) {
+            raw[i] = xs.get(i).getValue().getData();
+        }
+        double[] stacked = VMap.INSTANCE.stack(raw);
+
+        // Single-graph batched execution
+        IDiffVector batchedInput = vector(stacked);
+        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
+        IDiffVector batchedResult = fn.apply(bdv);
+
+        // Unstack results: split flat output into per-sample slices
+        IDiffVector flat = (batchedResult instanceof BatchedDiffVector b)
+            ? b.unwrap() : batchedResult;
+        int outDim = flat.size() / n;
         IDiffVector[] ys = new IDiffVector[n];
         for (int i = 0; i < n; i++) {
-            ys[i] = fn.apply(xs.get(i));
+            ys[i] = flat.slice(i * outDim, (i + 1) * outDim);
         }
         return ys;
     }
@@ -668,63 +703,167 @@ public class AD {
     /**
      * Convenience: apply fn to each element and sum the results.
      *
+     * <p>Uses single-graph batched execution via {@link #vmap(Function, List)},
+     * then sums across the batch dimension.
+     *
      * <p>便捷方法：对每个样本应用 fn 并求和结果。
      */
     public static IDiffVector vmapSum(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
-        IDiffVector[] ys = vmap(fn, xs);
-        IDiffVector sum = ys[0];
-        for (int i = 1; i < ys.length; i++) {
-            sum = sum.add(ys[i]);
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
-        return sum;
+        int n = xs.size();
+        int d = xs.get(0).size();
+
+        for (int i = 1; i < n; i++) {
+            if (xs.get(i).size() != d) {
+                throw new IllegalArgumentException(
+                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
+            }
+        }
+
+        double[][] raw = new double[n][];
+        for (int i = 0; i < n; i++) raw[i] = xs.get(i).getValue().getData();
+        double[] stacked = VMap.INSTANCE.stack(raw);
+
+        IDiffVector batchedInput = vector(stacked);
+        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
+        IDiffVector result = fn.apply(bdv);
+
+        // Sum across batch dimension
+        IDiffVector flat = (result instanceof BatchedDiffVector b) ? b.unwrap() : result;
+        int outDim = flat.size() / n;
+        if (outDim == 1) {
+            return flat.sum();
+        }
+        return flat.reshape(n, outDim).sum(0);
     }
 
     /**
      * Convenience: apply fn to each element and return the mean.
      *
+     * <p>Uses single-graph batched execution via {@link #vmap(Function, List)},
+     * then averages across the batch dimension.
+     *
      * <p>便捷方法：对每个样本应用 fn 并返回均值。
      */
     public static IDiffVector vmapMean(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
-        IDiffVector sum = vmapSum(fn, xs);
-        return sum.div(xs.size());
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
+        }
+        int n = xs.size();
+        int d = xs.get(0).size();
+
+        for (int i = 1; i < n; i++) {
+            if (xs.get(i).size() != d) {
+                throw new IllegalArgumentException(
+                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
+            }
+        }
+
+        double[][] raw = new double[n][];
+        for (int i = 0; i < n; i++) raw[i] = xs.get(i).getValue().getData();
+        double[] stacked = VMap.INSTANCE.stack(raw);
+
+        IDiffVector batchedInput = vector(stacked);
+        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
+        IDiffVector result = fn.apply(bdv);
+
+        // Mean across batch dimension
+        IDiffVector flat = (result instanceof BatchedDiffVector b) ? b.unwrap() : result;
+        int outDim = flat.size() / n;
+        if (outDim == 1) {
+            return flat.mean();
+        }
+        return flat.reshape(n, outDim).sum(0).div(n);
     }
 
     // ---- IDiffTensor vmap overloads ----
 
     /**
      * IDiffTensor version of {@link #vmap(Function, List)}.
-     * Currently delegates to per-sample execution; tensor batching
-     * support via {@link VMap} is a future enhancement.
+     *
+     * <p>Stacks tensors along dim 0 into a single {@link BatchedDiffTensor},
+     * executes {@code fn} once with single-graph batched execution, then
+     * unstacks results along the batch dimension.
+     *
+     * <p>Same constraints as vector vmap: only element-wise operations and
+     * {@code sum()/sum(dim,keepdim)/mean(dim,keepdim)} are supported inside
+     * {@code fn}. Dimension-indexed operations have their dim shifted by +1.
      */
     public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
         if (xs.isEmpty()) {
             throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
         int n = xs.size();
+
+        // Stack all tensors along dim 0 → [B, D1, D2, ...]
+        IDiffTensor[] rest = new IDiffTensor[n - 1];
+        for (int i = 1; i < n; i++) {
+            rest[i - 1] = xs.get(i);
+        }
+        IDiffTensor batched = xs.get(0).stack(0, rest);
+
+        // Single-graph batched execution
+        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
+        IDiffTensor result = fn.apply(bdt);
+
+        // Unstack results along batch dim 0
+        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
         IDiffTensor[] ys = new IDiffTensor[n];
         for (int i = 0; i < n; i++) {
-            ys[i] = fn.apply(xs.get(i));
+            ys[i] = flat.select(0, i);
         }
         return ys;
     }
 
     /**
      * IDiffTensor version of {@link #vmapSum(Function, List)}.
+     *
+     * <p>Uses single-graph batched execution, then sums across the batch
+     * dimension (dim 0).
      */
     public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
-        IDiffTensor[] ys = vmapT(fn, xs);
-        IDiffTensor sum = ys[0];
-        for (int i = 1; i < ys.length; i++) {
-            sum = sum.add(ys[i]);
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
-        return sum;
+        int n = xs.size();
+
+        IDiffTensor[] rest = new IDiffTensor[n - 1];
+        for (int i = 1; i < n; i++) {
+            rest[i - 1] = xs.get(i);
+        }
+        IDiffTensor batched = xs.get(0).stack(0, rest);
+
+        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
+        IDiffTensor result = fn.apply(bdt);
+
+        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
+        return flat.sum(0, false);
     }
 
     /**
      * IDiffTensor version of {@link #vmapMean(Function, List)}.
+     *
+     * <p>Uses single-graph batched execution, then averages across the batch
+     * dimension (dim 0).
      */
     public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
-        IDiffTensor sum = vmapSumT(fn, xs);
-        return sum.div(xs.size());
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
+        }
+        int n = xs.size();
+
+        IDiffTensor[] rest = new IDiffTensor[n - 1];
+        for (int i = 1; i < n; i++) {
+            rest[i - 1] = xs.get(i);
+        }
+        IDiffTensor batched = xs.get(0).stack(0, rest);
+
+        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
+        IDiffTensor result = fn.apply(bdt);
+
+        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
+        return flat.sum(0, false).div(n);
     }
 }
