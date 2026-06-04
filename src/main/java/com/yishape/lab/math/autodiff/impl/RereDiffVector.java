@@ -171,6 +171,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
                 v.backwardFn.accept(v.gradient);
             }
         }
+        // Clear root gradient to prevent double-backward when the outer
+        // backward (loss.backward()) visits this node in its topo order.
+        this.gradient = null;
     }
 
     /** Iterative DFS post-order topological sort for backward traversal. / 迭代式深度优先后序拓扑排序，避免深层图 StackOverflow。 */

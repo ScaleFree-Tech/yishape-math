@@ -84,6 +84,7 @@
         </dependency>
         -->
         <!--Support for high performance computing-->
+        
         <dependency>
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-hpc</artifactId>
@@ -98,6 +99,7 @@
             <classifier>${os.detected.classifier}</classifier>
             <optional>true</optional>
         </dependency>
+        
         <!-- Support for CSV files reading -->
         <dependency>
             <groupId>org.apache.commons</groupId>

@@ -56,6 +56,7 @@ public final class HpcGraphExecutor {
      * @return loss value, or {@link Double#NaN} if HPC is unavailable or fails
      */
     public static double tryExecute(RereDiffVector root) {
+        if (!com.yishape.lab.math.compute.hpc.HpcConfig.allowAttempts()) return Double.NaN;
         ArrayList<RereDiffVector> order = HPC_TOPO_LIST.get();
         order.clear();
         HashSet<RereDiffVector> visited = HPC_TOPO_SET.get();
