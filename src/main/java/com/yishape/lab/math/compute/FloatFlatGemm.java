@@ -2,6 +2,7 @@ package com.yishape.lab.math.compute;
 
 import com.yishape.lab.math.compute.gpu.GpuConfig;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
+import com.yishape.lab.math.compute.hpc.HpcConfig;
 import com.yishape.lab.math.compute.hpc.HpcIm2col;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
 
@@ -79,7 +80,7 @@ public final class FloatFlatGemm {
             return c;
         }
         // 2. Try HPC native via double bridge (check availability first to avoid wasteful allocations)
-        if (HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+        if (HpcConfig.allowAttempts() && HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             double[] aD = toDouble(a);
             double[] bD = toDouble(b);
             double[] cD = new double[m * n];

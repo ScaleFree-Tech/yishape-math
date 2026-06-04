@@ -137,13 +137,13 @@ public final class GraphExporter {
     }
 
     private static void appendScalarParam(StringBuilder sb, double scalar) {
-        if (!Double.isNaN(scalar)) {
+        if (!Double.isNaN(scalar) && !Double.isInfinite(scalar)) {
             sb.append(",\"scalar\":").append(scalar);
         }
     }
 
     private static void appendScalarParam2(StringBuilder sb, double param2) {
-        if (!Double.isNaN(param2)) {
+        if (!Double.isNaN(param2) && !Double.isInfinite(param2)) {
             sb.append(",\"param2\":").append(param2);
         }
     }

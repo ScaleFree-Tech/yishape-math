@@ -208,6 +208,22 @@ public final class HpcConfig {
 
     static final long DEFAULT_CTC_MIN_ELEMENTS = 4096L;
 
+    // ===================== DL inference thresholds =====================
+
+    /**
+     * MHA attention 使用 HPC 的最小元素数 {@code seqLen * dModel}；低于则走 Java 实现。
+     */
+    public static final String PROP_MHA_MIN_ELEMENTS = "yishape.hpc.mha.minElements";
+
+    static final long DEFAULT_MHA_MIN_ELEMENTS = 4096L;
+
+    /**
+     * Depthwise 1D conv 使用 HPC 的最小元素数 {@code seqLen * channels}；低于则走 Java 实现。
+     */
+    public static final String PROP_DEPTHWISE_CONV1D_MIN_ELEMENTS = "yishape.hpc.depthwiseConv1d.minElements";
+
+    static final long DEFAULT_DEPTHWISE_CONV1D_MIN_ELEMENTS = 2048L;
+
     // ===================== HNSW =====================
 
     /**
@@ -303,6 +319,24 @@ public final class HpcConfig {
             return Math.max(0L, v);
         } catch (NumberFormatException e) {
             return DEFAULT_CTC_MIN_ELEMENTS;
+        }
+    }
+
+    static long mhaMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_MHA_MIN_ELEMENTS, Long.toString(DEFAULT_MHA_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_MHA_MIN_ELEMENTS;
+        }
+    }
+
+    static long depthwiseConv1dMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_DEPTHWISE_CONV1D_MIN_ELEMENTS, Long.toString(DEFAULT_DEPTHWISE_CONV1D_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_DEPTHWISE_CONV1D_MIN_ELEMENTS;
         }
     }
 

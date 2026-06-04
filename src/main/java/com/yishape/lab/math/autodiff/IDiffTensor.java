@@ -160,7 +160,13 @@ public interface IDiffTensor extends IDoubleTensor {
         if (vec instanceof com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector tbdv) {
             return tbdv.unwrap().reshape(shape);
         }
-        return new RereDiffTensor(vec.getValue().toDoubleArray(), shape);
+        RereDiffTensor t = new RereDiffTensor(vec.getValue().toDoubleArray(), shape);
+        // Bridge back to the vector graph so backward can flow through
+        // CustomOp layers (Linear, Conv2d, etc.) that produce RereDiffVector outputs.
+        if (vec instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rv) {
+            t.vectorSource = rv;
+        }
+        return t;
     }
 
     /** 从 IDoubleTensor + requiresGrad 创建可微张量（注：不会追踪前序梯度） */

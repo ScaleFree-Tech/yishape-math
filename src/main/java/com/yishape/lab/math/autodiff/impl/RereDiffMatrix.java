@@ -1632,6 +1632,8 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         // so propagateGradient() is needed to propagate through the matrix graph.
         RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
         node.opTag = "softmaxCrossEntropy";
+        node.scalarParam = m;
+        node.exportShape = new int[]{m, k};
         return node;
     }
 }

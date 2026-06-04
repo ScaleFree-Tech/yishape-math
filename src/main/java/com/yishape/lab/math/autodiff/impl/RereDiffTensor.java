@@ -48,6 +48,14 @@ public class RereDiffTensor implements IDiffTensor {
     public double scalarParam = Double.NaN;
     public double scalarParam2 = Double.NaN;
 
+    /**
+     * Link back to the vector-graph node that produced this tensor.
+     * Set by {@link IDiffTensor#fromDiffVector} when wrapping a RereDiffVector.
+     * Used during backward to bridge gradients from the tensor graph back into
+     * the vector graph (e.g. Conv2d → ReLU → Linear parameter chain).
+     */
+    public com.yishape.lab.math.autodiff.impl.RereDiffVector vectorSource;
+
     // ==================== ThreadLocal ====================
 
     private static final ThreadLocal<ArrayList<RereDiffTensor>> TOPO_LIST =
@@ -160,9 +168,74 @@ public class RereDiffTensor implements IDiffTensor {
                     v.backwardFn.accept(v);
                 }
             }
+            // Bridge gradients from leaf tensors into the vector graph.
+            // Leaf tensors with vectorSource were produced by CustomOp layers
+            // (Linear, Conv2d, etc.) — their gradient must flow back through
+            // the vector graph to reach parameter leaves.
+            for (int i = 0; i < order.size(); i++) {
+                RereDiffTensor v = order.get(i);
+                if (v.vectorSource != null && v.grad != null) {
+                    v.triggerVectorBackward();
+                }
+            }
         } finally {
             order.clear();
             visited.clear();
+        }
+    }
+
+    /**
+     * Propagate gradient backward through this tensor's sub-graph without zeroing
+     * this tensor's own gradient. Uses local collections (not ThreadLocal) so it
+     * can be safely called from within RereDiffVector.backward().
+     *
+     * <p>Called by {@link CustomOp}'s backwardFn to bridge gradients from the
+     * vector graph into the tensor graph, enabling gradient flow through layers
+     * that use CustomOp (Conv2d, Linear, MaxPool2d, etc.).</p>
+     */
+    public void propagateGrad() {
+        if (this.grad == null || !requiresGrad) return;
+
+        ArrayList<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        buildTopo(order, visited);
+
+        // Zero intermediate gradients (skip root — its grad was set by the caller)
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (v != this) v.grad = null;
+        }
+        // Propagate backward through sub-graph INCLUDING the root.
+        // The root's backwardFn must be called to flow gradient to its inputs
+        // (e.g. flattenOutTensor.backwardFn → reluOutTensor → convOutTensor).
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (v.grad != null && v.backwardFn != null) {
+                v.backwardFn.accept(v);
+            }
+        }
+        // Bridge gradients from leaf tensors into the vector graph.
+        // Leaf tensors with vectorSource were produced by CustomOp layers
+        // (Conv2d, Linear, etc.) — their gradient must flow back through
+        // the vector graph to reach parameter leaves.
+        for (int i = 0; i < order.size(); i++) {
+            RereDiffTensor v = order.get(i);
+            if (v.vectorSource != null && v.grad != null) {
+                v.triggerVectorBackward();
+            }
+        }
+    }
+
+    /**
+     * Bridge gradient from this tensor into the vector graph via vectorSource.
+     * Called during tensor backward propagation when a leaf tensor was produced
+     * by a CustomOp (e.g. Linear, Conv2d output wrapped via IDiffTensor.fromDiffVector).
+     */
+    void triggerVectorBackward() {
+        if (vectorSource != null && grad != null) {
+            // Use backwardNested to avoid corrupting the outer backward's
+            // ThreadLocal topo list (which would cause IndexOutOfBounds on re-entry).
+            vectorSource.backwardNested(IDoubleVector.of(grad));
         }
     }
 

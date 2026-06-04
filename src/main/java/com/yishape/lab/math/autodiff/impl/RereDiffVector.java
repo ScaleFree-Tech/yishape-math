@@ -20,6 +20,7 @@ import com.yishape.lab.math.linalg.RereDoubleVector;
 import com.yishape.lab.util.YishapeLogger;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffMatrix;
+import com.yishape.lab.math.compute.gpu.GpuConfig;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 
 /**
@@ -143,6 +144,32 @@ public class RereDiffVector implements IDiffVector, Serializable {
             // Release graph node references promptly for GC, even on exception
             order.clear();
             visited.clear();
+        }
+    }
+
+    /**
+     * Nested backward for use from tensor-graph bridge (triggerVectorBackward).
+     * Uses LOCAL collections to avoid corrupting the outer backward's ThreadLocal
+     * topo list, which would cause IndexOutOfBoundsException on re-entry.
+     */
+    public void backwardNested(IDoubleVector initialGradient) {
+        this.gradient = initialGradient;
+
+        ArrayList<RereDiffVector> order = new ArrayList<>();
+        HashSet<RereDiffVector> visited = new HashSet<>();
+        buildTopo(order, visited);
+
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffVector v = order.get(i);
+            if (v != this) {
+                v.gradient = null;
+            }
+        }
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffVector v = order.get(i);
+            if (v.gradient != null && v.backwardFn != null) {
+                v.backwardFn.accept(v.gradient);
+            }
         }
     }
 
@@ -689,7 +716,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         int n = xVal.size();
         double[] xd = xVal.getData();
         // Try GPU fused softmax (single-row: rows=1, cols=n)
-        double[] y = GpuOptionalRuntime.trySoftmax(xd, 1, n);
+        double[] y = GpuConfig.allowAttempts() ? GpuOptionalRuntime.trySoftmax(xd, 1, n) : null;
         if (y == null) {
             // CPU fallback
             double maxVal = xd[0];
@@ -733,7 +760,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         int n = xVal.size();
         double[] xd = xVal.getData();
         // Try GPU fused logSoftmax (single-row); softmax values needed for backward
-        double[] y = GpuOptionalRuntime.tryLogSoftmax(xd, 1, n);
+        double[] y = GpuConfig.allowAttempts() ? GpuOptionalRuntime.tryLogSoftmax(xd, 1, n) : null;
         double[] sm;
         if (y != null) {
             sm = new double[n];

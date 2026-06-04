@@ -1,5 +1,6 @@
 package com.yishape.lab.math.optimize.linpg.highs;
 
+import com.yishape.lab.math.compute.hpc.HpcConfig;
 import com.yishape.lab.math.compute.hpc.HpcDenseLpResult;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -29,7 +30,7 @@ public class HighsIntegerProg extends RereIntegerProg {
     @Override
     public OptResult solve(IVector c, IMatrix A_ub, IVector b_ub, IMatrix A_eq, IVector b_eq, IVector initX) {
         HighsNativeAdapt.DenseLpPack pack = HighsNativeAdapt.packDenseOrNull(c, A_ub, b_ub, A_eq, b_eq);
-        if (pack == null || !HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+        if (pack == null || !HpcConfig.allowAttempts() || !HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return super.solve(c, A_ub, b_ub, A_eq, b_eq, initX);
         }
         int[] flags = new int[pack.n];

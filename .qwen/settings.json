@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(E:\\work\\yishape-dl/**)",
+      "Read(E:\\work\\yishape-math-gpu/**)",
+      "Read(E:\\work\\yishape-dl\\src\\main\\java\\com\\yishape\\lab\\dl/**)",
+      "Read(E:\\rust_work\\yishape_math_gpu/**)",
+      "Read(E:\\work\\yishape-dl\\src\\main\\java\\com\\yishape\\lab\\dl\\nn/**)",
+      "Read(E:\\rust_work\\yishape_math_gpu\\src\\ops/**)",
+      "Read(E:\\work\\yishape-dl\\src\\main\\java\\com\\yishape\\lab\\dl\\nn\\conv/**)",
+      "Read(E:\\work\\yishape-dl\\src\\main\\java\\com\\yishape\\lab\\dl\\nn\\pooling/**)",
+      "Agent(general-purpose)",
+      "Bash(dir *)",
+      "Bash(findstr *)",
+      "Bash(jar *)",
+      "Bash(javap *)",
+      "Bash(mkdir *)",
+      "Bash(strings *)",
+      "Bash(powershell *)"
+    ]
+  },
+  "$version": 4
+}

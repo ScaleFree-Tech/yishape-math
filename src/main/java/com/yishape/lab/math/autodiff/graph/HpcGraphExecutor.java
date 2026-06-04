@@ -65,6 +65,14 @@ public final class HpcGraphExecutor {
         // Early check: if any node has an op tag not supported by Rust, skip HPC
         for (RereDiffVector v : order) {
             if (v.opTag != null && !SUPPORTED_OPS.contains(v.opTag)) {
+                if (log.isDebugEnabled()) {
+                    int leafCount = 0;
+                    for (RereDiffVector n : order) {
+                        if (n.isLeaf) leafCount++;
+                    }
+                    log.debug("HPC graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
+                        v.opTag, order.size(), leafCount);
+                }
                 return Double.NaN;
             }
         }
@@ -77,9 +85,28 @@ public final class HpcGraphExecutor {
             }
         }
 
+        // Diagnostic: print leaf ordering
+        boolean diag = Boolean.getBoolean("yishape.grad.diag");
+        if (diag) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("[HpcLeafOrder] %d leaves in topo order:\n", leaves.size()));
+            for (int i = 0; i < leaves.size(); i++) {
+                RereDiffVector leaf = leaves.get(i);
+                String tag = leaf.opTag != null ? leaf.opTag : "null";
+                sb.append(String.format("  leaves[%d] opTag=%s size=%d isLeaf=%b\n",
+                    i, tag, leaf.value.size(), leaf.isLeaf));
+            }
+            System.out.print(sb);
+        }
+
         String json = GraphExporter.toJson(root);
+        if (json == null) {
+            log.debug("HPC graph fallback: JSON export failed");
+            return Double.NaN;
+        }
         double[][] result = HpcAutodiff.tryExecute(json);
         if (result == null || result.length < 2 || result[0] == null) {
+            log.debug("HPC graph fallback: Rust execution returned null or invalid result");
             return Double.NaN;
         }
 
@@ -88,6 +115,26 @@ public final class HpcGraphExecutor {
         if (result.length - 1 != leaves.size()) {
             log.warn("HPC gradient count mismatch: got {} gradients for {} leaves",
                     result.length - 1, leaves.size());
+        }
+        // Diagnostic: print leaf details and gradient norms
+        if (diag) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("[HpcGradDiag] loss=%.6f leaves=%d grads=%d\n", loss, leaves.size(), result.length - 1));
+            for (int i = 0; i < leaves.size(); i++) {
+                RereDiffVector leaf = leaves.get(i);
+                String tag = leaf.opTag != null ? leaf.opTag : (leaf.isLeaf ? "leaf" : "unknown");
+                int leafSize = leaf.value.size();
+                double gradNorm = 0;
+                int gradLen = 0;
+                if (i < numGrads && result[i + 1] != null) {
+                    gradLen = result[i + 1].length;
+                    for (double v : result[i + 1]) gradNorm += v * v;
+                    gradNorm = Math.sqrt(gradNorm);
+                }
+                sb.append(String.format("  leaf[%d] op=%s size=%d gradLen=%d gradL2=%.6e\n",
+                        i, tag, leafSize, gradLen, gradNorm));
+            }
+            System.out.print(sb);
         }
         for (int i = 0; i < numGrads; i++) {
             if (result[i + 1] != null) {

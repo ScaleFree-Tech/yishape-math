@@ -88,12 +88,14 @@
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-hpc</artifactId>
             <version>0.5.0</version>
+            <classifier>${os.detected.classifier}</classifier>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-gpu</artifactId>
             <version>0.5.0</version>
+            <classifier>${os.detected.classifier}</classifier>
             <optional>true</optional>
         </dependency>
         <!-- Support for CSV files reading -->
@@ -204,8 +206,15 @@
 
     </dependencies>
     
-    <build>  
-        <plugins>  
+    <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.1</version>
+            </extension>
+        </extensions>
+        <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
