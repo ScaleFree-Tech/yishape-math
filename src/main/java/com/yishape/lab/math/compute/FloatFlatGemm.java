@@ -112,22 +112,29 @@ public final class FloatFlatGemm {
     public static float[] flatMmulTransp(float[] a, int m, int k, float[] b, int n, int transp) {
         boolean logFine = LOG.isLoggable(Level.FINE);
         float[] c = new float[m * n];
-        // 0. Try GPU via double bridge
+        // 0. Try GPU via double bridge (no native f32 transpose path yet)
         if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()) {
-            double[] da = new double[a.length];
-            double[] db = new double[b.length];
-            for (int i = 0; i < a.length; i++) da[i] = a[i];
-            for (int i = 0; i < b.length; i++) db[i] = b[i];
+            double[] da = toDouble(a);
+            double[] db = toDouble(b);
             double[] dc = GpuOptionalRuntime.tryFlatMatMulTransp(da, db, m, k, n, transp);
             if (dc != null) {
-                for (int i = 0; i < dc.length; i++) c[i] = (float) dc[i];
-                if (logFine) LOG.fine("flatMmulTransp GPU f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+                toFloatInPlace(dc, c);
+                if (logFine) LOG.fine("flatMmulTransp GPU f64 bridge [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
                 return c;
             }
         }
-        // 1. Scalar fallback
-        if (logFine) LOG.fine("flatMmulTransp SCALAR f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
-        flatMmulTranspScalar(a, m, k, b, n, c, transp);
+        // 1. If no transpose needed, use full dispatch
+        if (transp == 0) return flatMmul(a, m, k, b, n);
+        // 2. Transpose inputs as needed, then use fast dispatch
+        boolean ta = (transp & 1) != 0;
+        boolean tb = (transp & 2) != 0;
+        float[] aEff = ta ? flatTranspose(a, k, m) : a;
+        int aRows = m, aCols = k;
+        float[] bEff = tb ? flatTranspose(b, n, k) : b;
+        int bCols = n;
+        if (logFine) LOG.fine("flatMmulTransp HPC/SIMD via transpose f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        float[] result = flatMmul(aEff, aRows, aCols, bEff, bCols);
+        System.arraycopy(result, 0, c, 0, c.length);
         return c;
     }
 

@@ -74,6 +74,7 @@ public final class GpuOptionalRuntime {
     private static final Method M_FLOAT_COS;
     private static final Method M_SOFTMAX;
     private static final Method M_LOG_SOFTMAX;
+    private static final Method M_NORMALIZE;
     private static final Method M_GATHER;
     private static final Method M_IM2COL;
     private static final Method M_FLAT_MAT_MUL_TRANSP;
@@ -146,6 +147,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_COS = probe(c, "floatCos", float[].class);
             M_SOFTMAX = probe(c, "softmax", double[].class, int.class, int.class);
             M_LOG_SOFTMAX = probe(c, "logSoftmax", double[].class, int.class, int.class);
+            M_NORMALIZE = probe(c, "normalize", double[].class, int.class, int.class, double.class);
             M_GATHER = probe(c, "gather", double[].class, double[].class, int.class);
             M_IM2COL = probe(c, "im2col", double[].class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class);
             M_FLAT_MAT_MUL_TRANSP = probe(c, "flatMatMulTransp", double[].class, double[].class, int.class, int.class, int.class, int.class);
@@ -164,7 +166,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_ELU = null; M_FLOAT_LEAKY_RELU = null; M_FLOAT_SILU = null; M_FLOAT_SOFTPLUS = null;
             M_FLOAT_SELU = null; M_FLOAT_HARDTANH = null; M_FLOAT_EXP = null; M_FLOAT_LOG = null;
             M_FLOAT_ABS = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
-            M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null;
+            M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_NORMALIZE = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null;
         }
     }
 
@@ -323,6 +325,17 @@ public final class GpuOptionalRuntime {
             return (out instanceof double[]) ? (double[]) out : null;
         } catch (Exception e) {
             logError("trySoftmax", e);
+            return null;
+        }
+    }
+
+    public static double[] tryNormalize(double[] input, int rows, int cols, double p) {
+        if (M_NORMALIZE == null) return null;
+        try {
+            Object out = M_NORMALIZE.invoke(null, input, rows, cols, p);
+            return (out instanceof double[]) ? (double[]) out : null;
+        } catch (Exception e) {
+            logError("tryNormalize", e);
             return null;
         }
     }

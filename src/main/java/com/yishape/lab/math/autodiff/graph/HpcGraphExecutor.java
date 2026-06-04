@@ -21,17 +21,21 @@ public final class HpcGraphExecutor {
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
         "neg", "pow", "exp", "log", "sin", "cos", "tan",
-        "sigmoid", "tanh", "relu", "abs", "sqrt", "square",
+        "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
         "sum", "mean", "squareSum", "squareMean",
         "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
         "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
         "siluSum", "siluMean", "mishSum", "mishMean",
         "expSum", "expMean", "powSum", "powMean", "mulSum", "mulMean",
         "dot", "broadcast", "matmul", "transpose", "reshape", "flatten",
+        "squeeze", "unsqueeze",
         "softmaxCrossEntropy",
         "gelu", "softmax", "logSoftmax", "leakyRelu", "elu", "selu",
-        "silu", "mish", "softplus", "hardtanh", "clamp", "layerNorm", "batchNorm",
-        "leaf", "constant"
+        "silu", "mish", "softplus", "hardtanh", "clamp", "layerNorm",
+        "leaf", "constant",
+        // DL CustomOp layers (graphOpTag-based)
+        "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
+        "selectiveScan", "selectiveScan2", "depthwiseConv1d"
     ));
 
     private static final ThreadLocal<ArrayList<RereDiffVector>> HPC_TOPO_LIST =

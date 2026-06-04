@@ -69,7 +69,16 @@ public final class GraphExporter {
     private static void appendVectorNode(StringBuilder sb, RereDiffVector v, int id,
             Map<RereDiffVector, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
-        sb.append(",\"shape\":[").append(v.value.size()).append(']');
+        if (v.exportShape != null) {
+            sb.append(",\"shape\":[");
+            for (int i = 0; i < v.exportShape.length; i++) {
+                if (i > 0) sb.append(',');
+                sb.append(v.exportShape[i]);
+            }
+            sb.append(']');
+        } else {
+            sb.append(",\"shape\":[").append(v.value.size()).append(']');
+        }
         appendOpTag(sb, v);
         if (v.isLeaf) {
             appendLeafData(sb, v.value.getData());
@@ -101,6 +110,7 @@ public final class GraphExporter {
             sb.append(']');
         }
         appendScalarParam(sb, v.scalarParam);
+        appendScalarParam2(sb, v.scalarParam2);
         appendMatrixInputs(sb, v.inputs, indexMap);
         sb.append('}');
     }

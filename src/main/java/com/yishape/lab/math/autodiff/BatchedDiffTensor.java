@@ -162,6 +162,15 @@ final class BatchedDiffTensor implements IDiffTensor {
         return wrap(data.logSoftmax(shift(dim)));
     }
 
+    @Override
+    public IDiffTensor softmaxCrossEntropy(IDoubleTensor labels, int dim) {
+        // labels must be a BatchedDiffTensor with same batch handling
+        if (labels instanceof BatchedDiffTensor bl) {
+            return wrap(data.softmaxCrossEntropy(bl.data, shift(dim)));
+        }
+        return wrap(data.softmaxCrossEntropy(labels, shift(dim)));
+    }
+
     // ---- accessors ----
 
     @Override public int[] shape() { return data.shape(); }

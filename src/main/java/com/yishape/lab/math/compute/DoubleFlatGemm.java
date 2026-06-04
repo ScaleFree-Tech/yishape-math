@@ -112,9 +112,20 @@ public final class DoubleFlatGemm {
             if (logFine) LOG.fine("flatMmulTransp GPU [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
             return c;
         }
-        // 1. Scalar fallback (HPC/SIMD transp not yet available)
-        if (logFine) LOG.fine("flatMmulTransp SCALAR [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
-        flatMmulTranspScalar(a, m, k, b, n, c, transp);
+        // 1. If no transpose needed, use full HPC → SIMD → scalar dispatch
+        if (transp == 0) {
+            return flatMmul(a, m, k, b, n);
+        }
+        // 2. Transpose inputs as needed, then use fast dispatch
+        boolean ta = (transp & 1) != 0;
+        boolean tb = (transp & 2) != 0;
+        double[] aEff = ta ? flatTranspose(a, k, m) : a;
+        int aRows = m, aCols = k;
+        double[] bEff = tb ? flatTranspose(b, n, k) : b;
+        int bCols = n;
+        if (logFine) LOG.fine("flatMmulTransp HPC/SIMD via transpose [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        double[] result = flatMmul(aEff, aRows, aCols, bEff, bCols);
+        System.arraycopy(result, 0, c, 0, c.length);
         return c;
     }
 

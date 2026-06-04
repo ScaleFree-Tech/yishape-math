@@ -10,7 +10,6 @@ import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
-import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 
 /**
  * Self-contained custom differentiable operation with tensor shape awareness.
@@ -61,14 +60,11 @@ public abstract class TensorCustomOp {
      * Always creates a computation graph node with embedded backward.
      */
     public IDiffTensor apply(IDiffTensor... inputs) {
-        RereDiffVector[] vecNodes = new RereDiffVector[inputs.length];
-        IDoubleVector[] rawVecs = new IDoubleVector[inputs.length];
+        RereDiffTensor[] tensorNodes = new RereDiffTensor[inputs.length];
         IDoubleTensor[] rawTensors = new IDoubleTensor[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
-            RereDiffTensor t = (RereDiffTensor) inputs[i];
-            vecNodes[i] = (RereDiffVector) t.flattenValue();
-            rawVecs[i] = vecNodes[i].getValue();
-            rawTensors[i] = t.detach();
+            tensorNodes[i] = (RereDiffTensor) inputs[i];
+            rawTensors[i] = inputs[i].detach();
         }
 
         ForwardResult fr = forward(rawTensors);
@@ -77,22 +73,21 @@ public abstract class TensorCustomOp {
         putCache(id, fr.context());
 
         int[] outShape = fr.output().shape();
-        IDoubleVector outputVec = fr.output().toVector();
+        double[] outputData = fr.output().toDoubleArray();
 
-        List<RereDiffVector> insList = Arrays.asList(vecNodes);
-        Consumer<IDoubleVector> backwardFn = (gradOut) -> {
+        List<RereDiffTensor> insList = Arrays.asList(tensorNodes);
+        Consumer<RereDiffTensor> backwardFn = (self) -> {
             Object ctx = getCache(id);
-            IDoubleTensor gradTensor = new RereDoubleTensor(gradOut.getData(), outShape);
+            IDoubleTensor gradTensor = new RereDoubleTensor(self.grad, outShape);
             IDoubleTensor[] grads = backward(gradTensor, ctx);
-            for (int j = 0; j < vecNodes.length && j < grads.length; j++) {
+            for (int j = 0; j < tensorNodes.length && j < grads.length; j++) {
                 if (grads[j] != null) {
-                    vecNodes[j].accGrad(grads[j].toVector());
+                    tensorNodes[j].accGrad(grads[j].toDoubleArray());
                 }
             }
         };
 
-        IDiffVector resultVec = RereDiffVector.createOpNode(outputVec, insList, backwardFn);
-        return new RereDiffTensor(resultVec, outShape);
+        return new RereDiffTensor(outputData, outShape, insList, backwardFn, "CustomOp");
     }
 
     /**

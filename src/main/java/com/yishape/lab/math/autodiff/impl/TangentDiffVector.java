@@ -498,6 +498,28 @@ public class TangentDiffVector implements IDiffVector {
         return new TangentDiffVector(p, t, List.of(this), p);
     }
 
+    @Override public IDiffVector cumsum() {
+        RereDiffVector p = (RereDiffVector) primal.cumsum();
+        return new TangentDiffVector(p, this.tangent.cumsum(), List.of(this), p);
+    }
+
+    @Override public IDiffVector cumprod() {
+        RereDiffVector p = (RereDiffVector) primal.cumprod();
+        int n = primal.getValue().size();
+        double[] x = primal.getValue().getData();
+        double[] v = this.tangent.getData();
+        double[] tc = new double[n];
+        double[] fc = new double[n];
+        fc[0] = x[0];
+        tc[0] = v[0];
+        for (int k = 1; k < n; k++) {
+            tc[k] = tc[k - 1] * x[k] + fc[k - 1] * v[k];
+            fc[k] = fc[k - 1] * x[k];
+        }
+        IDoubleVector t = IDoubleVector.of(tc);
+        return new TangentDiffVector(p, t, List.of(this), p);
+    }
+
     // -- vector ops --
 
     @Override public IDiffVector dot(IDiffVector other) {

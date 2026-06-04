@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -964,12 +965,14 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         int rows = xVal.rows();
         int cols = xVal.cols();
         double scale = 1.0 / (1.0 - p);
+        long seed = RereDiffVector.DROPOUT_SEED_COUNTER.incrementAndGet();
+        Random rng = new Random(seed);
         double[][] mask = new double[rows][cols];
         double[][] y = new double[rows][cols];
         double[][] xd = xVal.getData();
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                mask[i][j] = Math.random() > p ? scale : 0.0;
+                mask[i][j] = rng.nextDouble() > p ? scale : 0.0;
                 y[i][j] = xd[i][j] * mask[i][j];
             }
         }
@@ -984,7 +987,11 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
             }
             this.accGrad(IDoubleMatrix.of(dx));
         };
-        return withTag(new RereDiffMatrix(resultVal, List.of(this), backwardFn), "dropout", p);
+        RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(this), backwardFn);
+        node.opTag = "dropout";
+        node.scalarParam = p;
+        node.scalarParam2 = Double.longBitsToDouble(seed);
+        return node;
     }
 
     // ---- reductions ----

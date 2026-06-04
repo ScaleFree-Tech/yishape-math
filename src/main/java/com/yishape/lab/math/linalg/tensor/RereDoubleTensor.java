@@ -161,7 +161,7 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     // ==================== 线性索引（stride 遍历） ====================
 
-    protected long linearToOffset(long flatIndex) {
+    public long linearToOffset(long flatIndex) {
         long off = offset;
         long remaining = flatIndex;
         for (int i = rank() - 1; i >= 0; i--) {
@@ -172,12 +172,17 @@ public class RereDoubleTensor implements IDoubleTensor {
         return off;
     }
 
-    protected double linearGet(long flatIndex) {
+    public double linearGet(long flatIndex) {
         return data[(int) linearToOffset(flatIndex)];
     }
 
-    protected void linearSet(long flatIndex, double value) {
+    public void linearSet(long flatIndex, double value) {
         data[(int) linearToOffset(flatIndex)] = value;
+    }
+
+    /** Returns the underlying storage array (may be shared across views). */
+    public double[] getStorageData() {
+        return data;
     }
 
     // ==================== 视图操作（零拷贝） ====================
@@ -1173,41 +1178,56 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     @Override
     public IDoubleTensor einsum(String subscript, IDoubleTensor... others) {
-        // Delegate to existing mechanism - this is a placeholder for full implementation
-        // Full einsum is complex and will be expanded in Phase 4
-        String[] parts = subscript.split("->");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid einsum subscript: " + subscript);
+        int[][] shapes;
+        if (others.length == 0) {
+            shapes = new int[][]{shape()};
+        } else {
+            shapes = new int[others.length + 1][];
+            shapes[0] = shape();
+            for (int i = 0; i < others.length; i++) shapes[i + 1] = others[i].shape();
         }
-        String[] inputs = parts[0].split(",");
-        if (inputs.length != others.length + 1) {
-            throw new IllegalArgumentException("Number of subscripts must match number of inputs");
+        EinsumParser.EinsumSpec spec = EinsumParser.parse(subscript, shapes);
+
+        if (spec.singleInput()) {
+            return einsumSingle(spec);
+        }
+        if (others.length > 1) {
+            throw new UnsupportedOperationException(
+                "einsum with >2 inputs not yet supported: " + subscript);
         }
 
-        // Handle common cases
-        if (subscript.equals("ij,jk->ik")) {
-            return mmul(others[0]);
-        }
-        if (subscript.equals("bij,bjk->bik")) {
-            return bmm(others[0]);
+        if (spec.contractAxes.isEmpty()) {
+            return mul(others[0]);
         }
 
-        // For multi-head attention: bqhd,bkhd->bhqk
-        if (subscript.equals("bqhd,bkhd->bhqk")) {
-            IDoubleTensor a = this;
-            IDoubleTensor b = others[0];
-            int B = a.dim(0), Q = a.dim(1), H = a.dim(2), D = a.dim(3);
-            int K = b.dim(1);
-            // Permute a: (B,Q,H,D) -> (B,H,Q,D)
-            // Permute b: (B,K,H,D) -> (B,H,K,D)
-            // bmm: (B,H,Q,D) @ (B,H,D,K) -> (B,H,Q,K)
-            IDoubleTensor aP = a.permute(0, 2, 1, 3);
-            IDoubleTensor bP = b.permute(0, 2, 3, 1);
-            IDoubleTensor result = aP.bmm(bP);
-            return result.permute(0, 2, 1, 3).reshape(B, H, Q, K);
-        }
+        // Compositional: permute → reshape → bmm → reshape
+        IDoubleTensor aP = permute(spec.permuteA());
+        IDoubleTensor bP = others[0].permute(spec.permuteB());
+        IDoubleTensor aR = aP.reshape(spec.reshapeTo3D(0, aP.shape()));
+        IDoubleTensor bR = bP.reshape(spec.reshapeTo3D(1, bP.shape()));
+        IDoubleTensor result = aR.bmm(bR);
+        return result.reshape(spec.outputShape(shape(), others[0].shape()));
+    }
 
-        throw new UnsupportedOperationException("einsum subscript not yet implemented: " + subscript);
+    private IDoubleTensor einsumSingle(EinsumParser.EinsumSpec spec) {
+        if (!spec.contractAxes.isEmpty()) {
+            IDoubleTensor result = this;
+            int[] sortedDims = spec.contractAxes.stream()
+                .mapToInt(c -> spec.inputLabels[0].indexOf(c))
+                .sorted().toArray();
+            for (int i = sortedDims.length - 1; i >= 0; i--) {
+                boolean keep = spec.outputLabels.indexOf(spec.inputLabels[0].charAt(sortedDims[i])) >= 0;
+                result = result.sum(sortedDims[i], keep);
+            }
+            return result;
+        }
+        // Pure permutation
+        int[] perm = new int[spec.inputLabels[0].length()];
+        for (int i = 0; i < spec.outputLabels.length(); i++) {
+            char c = spec.outputLabels.charAt(i);
+            perm[i] = spec.inputLabels[0].indexOf(c);
+        }
+        return permute(perm);
     }
 
     // ==================== 高级操作 ====================

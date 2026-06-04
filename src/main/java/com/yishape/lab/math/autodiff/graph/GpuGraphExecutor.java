@@ -22,20 +22,26 @@ public final class GpuGraphExecutor {
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
         "neg", "pow", "exp", "log", "sin", "cos", "tan",
-        "sigmoid", "tanh", "relu", "abs", "sqrt", "square",
+        "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
         "sum", "mean", "dot", "matmul",
         "gelu", "softmax", "logSoftmax", "silu", "mish",
         "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
         "softmaxCrossEntropy",
-        "layerNorm", "batchNorm",
+        "normalize",
+        "layerNorm",
         "broadcast", "transpose", "reshape", "flatten",
+        "squeeze", "unsqueeze",
+        "gather",
         "leaf", "constant",
         // Fused elementwise + reduction ops (from AD pattern fusion)
         "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
         "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
         "siluSum", "siluMean", "mishSum", "mishMean",
         "expSum", "expMean", "squareSum", "squareMean",
-        "mulSum", "mulMean", "powSum", "powMean"
+        "mulSum", "mulMean", "powSum", "powMean",
+        // DL CustomOp layers (graphOpTag-based)
+        "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
+        "selectiveScan", "selectiveScan2", "depthwiseConv1d"
     ));
 
     private static final ThreadLocal<ArrayList<RereDiffVector>> TOPO_LIST =

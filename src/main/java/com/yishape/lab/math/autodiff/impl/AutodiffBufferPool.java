@@ -21,7 +21,7 @@ import java.util.Deque;
  */
 final class AutodiffBufferPool {
 
-    private static final int MAX_BUCKET = 24; // supports up to 2^23 = 8MB
+    private static final int MAX_BUCKET = 28; // supports up to 2^27 = 128M elements (~1GB for double)
     private static final int MAX_PER_BUCKET = 4; // per-thread cache cap per bucket
 
     private static final ThreadLocal<Deque<double[]>[]> POOLS = ThreadLocal.withInitial(() -> {

@@ -26,6 +26,7 @@ import com.yishape.lab.math.autodiff.impl.FloatDiffTensor;
 import com.yishape.lab.math.autodiff.impl.FloatDiffVector;
 import com.yishape.lab.math.autodiff.impl.FusedMatrixOps;
 import com.yishape.lab.math.autodiff.impl.FusedOps;
+import com.yishape.lab.math.autodiff.impl.FusedReductionOps;
 import com.yishape.lab.math.autodiff.impl.ODEDiffVector;
 import com.yishape.lab.math.autodiff.graph.GraphExporter;
 import com.yishape.lab.math.autodiff.graph.GraphOptimizer;
@@ -217,6 +218,20 @@ public class AD {
     /** Starts a fused element-wise op chain on vector {@code x}. / 在向量 {@code x} 上构建融合逐元素算子链。 */
     public static FusedOps fuse(IDiffVector x) {
         return new FusedOps(x);
+    }
+
+    /**
+     * Starts a fused element-wise + reduction op chain on vector {@code x}.
+     * The chain may include element-wise ops followed by a reduction terminator
+     * (softmax, normalize, layerNorm, sum, mean). All ops execute in a single
+     * forward/backward kernel.
+     *
+     * <pre>{@code
+     *   IDiffVector y = AD.fuseReduce(x).exp().relu().softmax();
+     * }</pre>
+     */
+    public static FusedReductionOps fuseReduce(IDiffVector x) {
+        return new FusedReductionOps((RereDiffVector) x);
     }
 
     public static FusedMatrixOps fuseMatrix(IDiffMatrix x) {

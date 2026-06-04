@@ -79,6 +79,7 @@ public interface IDiffTensor extends IDoubleTensor {
 
     @Override IDiffTensor softmax(int dim);
     @Override IDiffTensor logSoftmax(int dim);
+    IDiffTensor softmaxCrossEntropy(IDoubleTensor labels, int dim);
 
     @Override IDiffTensor mmul(IDoubleTensor other);
     @Override IDiffTensor bmm(IDoubleTensor other);
@@ -156,30 +157,23 @@ public interface IDiffTensor extends IDoubleTensor {
 
     /** 从 IDiffVector + shape 创建可微张量 */
     static IDiffTensor fromDiffVector(IDiffVector vec, int... shape) {
-        return new RereDiffTensor(vec, shape);
+        if (vec instanceof com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector tbdv) {
+            return tbdv.unwrap().reshape(shape);
+        }
+        return new RereDiffTensor(vec.getValue().toDoubleArray(), shape);
     }
 
     /** 从 IDoubleTensor + requiresGrad 创建可微张量（注：不会追踪前序梯度） */
     static IDiffTensor fromTensor(IDoubleTensor tensor, boolean requiresGrad) {
-        IDiffVector vec = com.yishape.lab.math.autodiff.AD.vector(tensor.toDoubleArray());
-        IDiffTensor t = new RereDiffTensor(vec, tensor.shape());
+        RereDiffTensor t = new RereDiffTensor(tensor.toDoubleArray(), tensor.shape());
         return t.setRequiresGrad(requiresGrad);
     }
 
     /**
      * 创建不可微常量张量：不会构建 AD 计算图。
-     * <p>
-     * 用于 eval/推理模式，所有下游操作（relu, mmul, add 等）将走
-     * {@code if (!requiresGrad) return toNonDiff(...)} 快速路径，
-     * 完全跳过 AD 图构建。比 {@link #fromDiffVector(IDiffVector, int...)} 快 10-50 倍。
-     *
-     * @param data  原始数据（直接引用，不复制）
-     * @param shape 张量形状
-     * @return 不可微张量（requiresGrad=false）
      */
     static IDiffTensor constantTensor(double[] data, int... shape) {
-        IDiffVector vec = com.yishape.lab.math.autodiff.AD.constant(IDoubleVector.of(data));
-        RereDiffTensor t = new RereDiffTensor(vec, shape);
+        RereDiffTensor t = new RereDiffTensor(data, shape);
         t.setRequiresGrad(false);
         return t;
     }

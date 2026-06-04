@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -32,6 +34,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     private static final long serialVersionUID = 4L;
     private static final YishapeLogger log = YishapeLogger.getLogger(RereDiffVector.class);
+    /** Global seed counter for deterministic dropout (reproducible across Java/Rust). */
+    static final AtomicLong DROPOUT_SEED_COUNTER = new AtomicLong(0);
 
     private static final ThreadLocal<ArrayList<RereDiffVector>> TOPO_LIST =
         ThreadLocal.withInitial(ArrayList::new);
@@ -50,6 +54,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
     public double scalarParam = Double.NaN;
     /** Second scalar parameter for dual-param ops like hardtanh/clamp (NaN if not applicable). */
     public double scalarParam2 = Double.NaN;
+    /**
+     * Override shape in JSON export. When null, GraphExporter serializes shape as [value.size()].
+     * When non-null, serializes the specified N-D shape (e.g. [B, C] for softmaxCrossEntropy).
+     */
+    public int[] exportShape;
 
     public RereDiffVector(IDoubleVector value) {
         this.value = value;
@@ -1273,11 +1282,13 @@ public class RereDiffVector implements IDiffVector, Serializable {
         IDoubleVector xVal = this.value.copy();
         int n = xVal.size();
         double scale = 1.0 / (1.0 - p);
+        long seed = DROPOUT_SEED_COUNTER.incrementAndGet();
+        Random rng = new Random(seed);
         double[] mask = new double[n];
         double[] y = new double[n];
         double[] xd = xVal.getData();
         for (int i = 0; i < n; i++) {
-            mask[i] = Math.random() > p ? scale : 0.0;
+            mask[i] = rng.nextDouble() > p ? scale : 0.0;
             y[i] = xd[i] * mask[i];
         }
         IDoubleVector resultVal = IDoubleVector.of(y);
@@ -1289,7 +1300,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
             }
             this.accGradFromPooled(buf, n);
         };
-        return withTag(new RereDiffVector(resultVal, List.of(this), backwardFn), "dropout", p);
+        RereDiffVector node = new RereDiffVector(resultVal, List.of(this), backwardFn);
+        node.opTag = "dropout";
+        node.scalarParam = p;
+        node.scalarParam2 = Double.longBitsToDouble(seed);
+        return node;
     }
 
     @Override
