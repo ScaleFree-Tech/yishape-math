@@ -65,6 +65,11 @@ public final class GpuGraphExecutor {
         visited.clear();
         root.buildTopo(order, visited);
 
+        // Try binary path first (faster, no subnormal double corruption)
+        double binaryResult = Double.NaN; //tryExecuteBinary(root, order);
+        if (!Double.isNaN(binaryResult)) return binaryResult;
+
+        // Fall back to JSON path (reuse order from binary attempt)
         // Check all ops are supported
         for (RereDiffVector v : order) {
             if (v.opTag != null && !SUPPORTED_OPS.contains(v.opTag)) {
@@ -222,5 +227,41 @@ public final class GpuGraphExecutor {
             }
         }
         return -1;
+    }
+
+    /** Binary graph execution using YSGP protocol. Returns loss or NaN on failure. */
+    private static double tryExecuteBinary(RereDiffVector root, ArrayList<RereDiffVector> order) {
+        try {
+            java.nio.ByteBuffer buf = com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol.serializeGraph(root, order);
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+            
+            byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
+            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+            
+            java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            
+            var parsed = com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol.deserializeResult(resultBuf);
+            double loss = parsed.loss();
+            if (Double.isNaN(loss)) return Double.NaN;
+            
+            // Apply gradients to leaves
+            java.util.ArrayList<RereDiffVector> leaves = new java.util.ArrayList<>();
+            for (RereDiffVector v : order) { if (v.isLeaf) leaves.add(v); }
+            java.util.List<double[]> grads = parsed.grads();
+            if (grads.size() != leaves.size()) return Double.NaN;
+            
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            if (batchSize > 1.0) loss /= batchSize;
+            
+            for (int i = 0; i < grads.size(); i++) {
+                double[] g = grads.get(i);
+                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
+                leaves.get(i).accGrad(IDoubleVector.of(g));
+            }
+            return loss;
+        } catch (Exception e) {
+            return Double.NaN;
+        }
     }
 }

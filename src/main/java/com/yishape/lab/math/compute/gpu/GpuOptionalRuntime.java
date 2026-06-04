@@ -455,15 +455,28 @@ public final class GpuOptionalRuntime {
     public static String tryExecuteGraph(String json) {
         if (GPU == null) return null;
         try {
-            // Probe for executeGraph method (may not exist in older GPU module versions)
             Method m = GPU.getMethod("executeGraph", String.class);
             Object out = m.invoke(null, json);
             return (out instanceof String s) ? s : null;
         } catch (NoSuchMethodException e) {
-            // GPU module does not support executeGraph yet
             return null;
         } catch (ReflectiveOperationException | LinkageError e) {
             logError("tryExecuteGraph", e);
+            return null;
+        }
+    }
+
+    /** Binary graph execution via YSGP protocol. Returns raw result bytes, or null. */
+    public static byte[] tryExecuteGraphBinary(byte[] data) {
+        if (GPU == null) return null;
+        try {
+            Method m = GPU.getMethod("executeGraphBinary", byte[].class);
+            Object out = m.invoke(null, (Object) data);
+            return (out instanceof byte[] b) ? b : null;
+        } catch (NoSuchMethodException e) {
+            return null;
+        } catch (ReflectiveOperationException | LinkageError e) {
+            logError("tryExecuteGraphBinary", e);
             return null;
         }
     }
