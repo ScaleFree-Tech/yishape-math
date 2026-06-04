@@ -60,6 +60,12 @@ public class RereDiffVector implements IDiffVector, Serializable {
      * When non-null, serializes the specified N-D shape (e.g. [B, C] for softmaxCrossEntropy).
      */
     public int[] exportShape;
+    /**
+     * Auxiliary backward data exported to JSON for GPU/HPC backends.
+     * For MaxPool2d: argmax indices [B*C*outH*outW], used directly instead of recomputing.
+     * When non-null, GraphExporter includes an "indices" array in the node JSON.
+     */
+    public int[] backwardIndices;
 
     public RereDiffVector(IDoubleVector value) {
         this.value = value;

@@ -96,7 +96,8 @@ public final class GpuGraphExecutor {
 
         // Parse result and apply gradients to leaves
         try {
-            return applyGradientsfromJson(root, order, resultJson);
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            return applyGradientsfromJson(root, order, resultJson, batchSize);
         } catch (Exception e) {
             return Double.NaN;
         }
@@ -108,10 +109,10 @@ public final class GpuGraphExecutor {
      * Simple parser without external JSON library dependency.
      */
     private static double applyGradientsfromJson(RereDiffVector root,
-            ArrayList<RereDiffVector> order, String resultJson) {
-        // Extract loss value
+            ArrayList<RereDiffVector> order, String resultJson, double batchSize) {
         double loss = extractDoubleField(resultJson, "loss");
         if (Double.isNaN(loss)) return Double.NaN;
+        if (batchSize > 1.0) loss /= batchSize;
 
         // Extract gradients array — GPU returns "grads", HPC returns "gradients"
         int gradStart = resultJson.indexOf("\"grads\"");
@@ -176,6 +177,9 @@ public final class GpuGraphExecutor {
                 for (double v : gradData) nrm += v * v;
                 System.out.printf("[GpuGradMap] leaf[%d] size=%d gradLen=%d gradL2=%.6e%n",
                     leafIdx, leaves.get(leafIdx).value.size(), gradLen, Math.sqrt(nrm));
+            }
+            if (batchSize > 1.0) {
+                for (int i = 0; i < gradData.length; i++) gradData[i] /= batchSize;
             }
             leaves.get(leafIdx).accGrad(IDoubleVector.of(gradData));
             leafIdx++;

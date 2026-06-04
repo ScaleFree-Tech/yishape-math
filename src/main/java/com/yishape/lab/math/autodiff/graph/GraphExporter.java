@@ -85,6 +85,7 @@ public final class GraphExporter {
         }
         appendScalarParam(sb, v.scalarParam);
         appendScalarParam2(sb, v.scalarParam2);
+        appendBackwardIndices(sb, v.backwardIndices);
         appendInputs(sb, v.inputs, indexMap);
         sb.append('}');
     }
@@ -145,6 +146,17 @@ public final class GraphExporter {
     private static void appendScalarParam2(StringBuilder sb, double param2) {
         if (!Double.isNaN(param2) && !Double.isInfinite(param2)) {
             sb.append(",\"param2\":").append(param2);
+        }
+    }
+
+    private static void appendBackwardIndices(StringBuilder sb, int[] indices) {
+        if (indices != null && indices.length > 0) {
+            sb.append(",\"indices\":[");
+            for (int i = 0; i < indices.length; i++) {
+                if (i > 0) sb.append(',');
+                sb.append(indices[i]);
+            }
+            sb.append(']');
         }
     }
 

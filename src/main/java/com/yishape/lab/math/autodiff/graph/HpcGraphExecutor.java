@@ -111,7 +111,9 @@ public final class HpcGraphExecutor {
             return Double.NaN;
         }
 
+        double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
         double loss = result[0][0];
+        if (batchSize > 1.0) loss /= batchSize;
         int numGrads = Math.min(result.length - 1, leaves.size());
         if (result.length - 1 != leaves.size()) {
             log.warn("HPC gradient count mismatch: got {} gradients for {} leaves",
@@ -144,6 +146,9 @@ public final class HpcGraphExecutor {
                 if (gradLen != leafLen) {
                     log.warn("HPC gradient length mismatch at leaf {}: got {} expected {}",
                             i, gradLen, leafLen);
+                }
+                if (batchSize > 1.0) {
+                    for (int j = 0; j < gradLen; j++) result[i + 1][j] /= batchSize;
                 }
                 leaves.get(i).accGrad(IDoubleVector.of(result[i + 1]));
             }
