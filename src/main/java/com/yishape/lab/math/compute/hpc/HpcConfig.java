@@ -12,12 +12,12 @@ public final class HpcConfig {
     public static final String PROP_ENABLE = "yishape.hpc";
 
     /**
-     * 双精度矩阵乘的最小乘积维度阈值 {@code m×n×p}，低于则走 Java 实现。
-     * 默认约 {@code 100³}：在 n≥256 的方阵乘上本机 faer 已稳定快于纯 Java，更小矩阵保留 JVM 路径以降低 FFM 固定成本。
+     * 双精度矩阵乘的最小 FLOPS 阈值 {@code m×n×k}，低于则走 Java SIMD/SISD。
+     * 零拷贝 faer 的 break-even 约在 2M-5M FLOPS；设 5M 确保中等规模 GEMM 留在 SIMD。
      */
     public static final String PROP_GEMM_MIN_FLOPS = "yishape.hpc.gemm.minFlops";
 
-    static final long DEFAULT_GEMM_MIN_FLOPS = 1_000_000L;
+    static final long DEFAULT_GEMM_MIN_FLOPS = 5_000_000L;
 
     /**
      * 对称正定 Cholesky（下三角 L）走原生的最小阶数 {@code n}（仅限方阵）。
@@ -168,18 +168,20 @@ public final class HpcConfig {
     // ===================== DL convolution thresholds =====================
 
     /**
-     * im2col / conv2d 使用 HPC 的最小元素数 {@code C*H*W}；低于则走 Java 实现。
+     * im2col / conv2d 使用 HPC 的最小元素数 {@code C*H*W}；低于则走 Java SIMD/JIT 实现。
+     * HPC im2col 为标量实现，仅在大 tensor（≥TinyImageNet 规模）上有优势。
      */
     public static final String PROP_CONV_MIN_ELEMENTS = "yishape.hpc.conv.minElements";
 
-    static final long DEFAULT_CONV_MIN_ELEMENTS = 4096L;
+    static final long DEFAULT_CONV_MIN_ELEMENTS = 50_000L;
 
     /**
-     * flat dgemm 使用 HPC 的最小乘积维度阈值 {@code m×n×k}。
+     * DL flat dgemm 使用 HPC 的最小 FLOPS 阈值 {@code m×n×k}。
+     * 零拷贝 faer 的 break-even 约在 2M-5M FLOPS；设 5M 确保 MNIST 级 GEMM 留在 SIMD。
      */
     public static final String PROP_FLAT_GEMM_MIN_FLOPS = "yishape.hpc.flatGemm.minFlops";
 
-    static final long DEFAULT_FLAT_GEMM_MIN_FLOPS = 100_000L;
+    static final long DEFAULT_FLAT_GEMM_MIN_FLOPS = 5_000_000L;
 
     // ===================== DL scan thresholds =====================
 

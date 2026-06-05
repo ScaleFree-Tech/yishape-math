@@ -53,6 +53,8 @@ public final class HpcOptionalRuntime {
     private static final Method M_EIGEN_NONSYMMETRIC;
     // v0.8.0: autodiff graph execution
     private static final Method M_EXECUTE_GRAPH;
+    // v0.9.0: binary graph execution (YSGP protocol)
+    private static final Method M_EXECUTE_GRAPH_BINARY;
     // v0.7.0: HNSW
     private static final Method M_HNSW_BUILD;
     private static final Method M_HNSW_ADD;
@@ -145,6 +147,13 @@ public final class HpcOptionalRuntime {
             } catch (ReflectiveOperationException e) {
                 mExecuteGraph = null;
             }
+            // v0.9.0: binary graph execution (YSGP protocol)
+            Method mExecuteGraphBinary = null;
+            try {
+                mExecuteGraphBinary = c.getMethod("executeGraphBinary", byte[].class);
+            } catch (ReflectiveOperationException e) {
+                mExecuteGraphBinary = null;
+            }
             // v0.7.0: HNSW（可选探测）
             Method mHnswBuild = null, mHnswAdd = null, mHnswSearch = null,
                     mHnswGet = null, mHnswSize = null, mHnswSetEf = null, mHnswFree = null;
@@ -185,6 +194,7 @@ public final class HpcOptionalRuntime {
                 mHnswFree = null;
             }
             M_EXECUTE_GRAPH = mExecuteGraph;
+            M_EXECUTE_GRAPH_BINARY = mExecuteGraphBinary;
             M_HNSW_BUILD = mHnswBuild;
             M_HNSW_ADD = mHnswAdd;
             M_HNSW_SEARCH = mHnswSearch;
@@ -207,6 +217,7 @@ public final class HpcOptionalRuntime {
             M_RESULT_FOUND     = mResFound;
         } else {
             M_EXECUTE_GRAPH = null;
+            M_EXECUTE_GRAPH_BINARY = null;
             M_HNSW_BUILD = M_HNSW_ADD = M_HNSW_SEARCH = M_HNSW_GET =
                     M_HNSW_SIZE = M_HNSW_SET_EF = M_HNSW_FREE = null;
             M_RESULT_STATUS = M_RESULT_IDS = M_RESULT_DISTANCES = M_RESULT_FOUND = null;
@@ -751,6 +762,22 @@ public final class HpcOptionalRuntime {
             return out;
         } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
             logHpcError("tryExecuteGraph", e);
+            return null;
+        }
+    }
+
+    /**
+     * Binary graph execution via YSGP protocol. Returns raw result bytes, or null.
+     */
+    public static byte[] tryExecuteGraphBinary(byte[] data) {
+        if (M_EXECUTE_GRAPH_BINARY == null) {
+            return null;
+        }
+        try {
+            Object out = M_EXECUTE_GRAPH_BINARY.invoke(null, (Object) data);
+            return (out instanceof byte[] b) ? b : null;
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+            logHpcError("tryExecuteGraphBinary", e);
             return null;
         }
     }

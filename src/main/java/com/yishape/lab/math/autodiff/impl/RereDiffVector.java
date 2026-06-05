@@ -403,11 +403,32 @@ public class RereDiffVector implements IDiffVector, Serializable {
         }
     }
 
+    /**
+     * Resolves a potentially non-Rere IDiffVector (e.g. TensorBackedDiffVector)
+     * into a RereDiffVector with a backward bridge, for use in binary ops.
+     */
+    static RereDiffVector resolveToRere(IDiffVector v) {
+        if (v instanceof RereDiffVector rv) return rv;
+        if (v instanceof TensorBackedDiffVector tb) {
+            double[] data = tb.getValue().getData();
+            RereDiffVector rv = new RereDiffVector(IDoubleVector.of(data));
+            final RereDiffTensor tensor = tb.unwrap();
+            rv.backwardFn = gradVec -> {
+                double[] g = gradVec.getData();
+                if (tensor.grad == null) tensor.grad = new double[(int) tensor.value.totalSize()];
+                for (int i = 0; i < g.length; i++) tensor.grad[i] += g[i];
+                tensor.backward(); // continue propagation through AD graph
+            };
+            return rv;
+        }
+        throw new IllegalArgumentException("Cannot resolve to RereDiffVector: " + v.getClass().getSimpleName());
+    }
+
     // ---- arithmetic with variables ----
 
     @Override
     public IDiffVector add(IDiffVector other) {
-        RereDiffVector o = (RereDiffVector) other;
+        RereDiffVector o = resolveToRere(other);
         IDoubleVector resultVal = this.value.add(o.value);
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             this.accGrad(gradOut);
@@ -419,7 +440,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector sub(IDiffVector other) {
-        RereDiffVector o = (RereDiffVector) other;
+        RereDiffVector o = resolveToRere(other);
         IDoubleVector resultVal = this.value.sub(o.value);
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = ((RereDoubleVector) gradOut).getData();
@@ -433,7 +454,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector mul(IDiffVector other) {
-        RereDiffVector o = (RereDiffVector) other;
+        RereDiffVector o = resolveToRere(other);
         IDoubleVector resultVal = this.value.multiply(o.value);
         IDoubleVector thisVal = this.isLeaf ? this.value.copy() : this.value;
         IDoubleVector otherVal = o.isLeaf ? o.value.copy() : o.value;
@@ -451,7 +472,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector div(IDiffVector other) {
-        RereDiffVector o = (RereDiffVector) other;
+        RereDiffVector o = resolveToRere(other);
         IDoubleVector resultVal = div(this.value, o.value);
         IDoubleVector thisVal = this.isLeaf ? this.value.copy() : this.value;
         IDoubleVector otherVal = o.isLeaf ? o.value.copy() : o.value;
@@ -2018,7 +2039,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector dot(IDiffVector other) {
-        RereDiffVector o = (RereDiffVector) other;
+        RereDiffVector o = resolveToRere(other);
         double dotVal = this.value.dotValue(o.value);
         IDoubleVector resultVal = IDoubleVector.of(dotVal);
         IDoubleVector thisVal = this.isLeaf ? this.value.copy() : this.value;
@@ -2086,28 +2107,40 @@ public class RereDiffVector implements IDiffVector, Serializable {
         }
 
         // 2. Collect inputs and save offsets for backward
-        List<RereDiffVector> inputs = new ArrayList<>();
-        for (IDiffVector v : all) inputs.add((RereDiffVector) v);
+        // Accept both RereDiffVector and TensorBackedDiffVector
+        List<IDiffVector> inputs = new ArrayList<>();
+        for (IDiffVector v : all) inputs.add(v);
 
         int[] offsets = new int[n];
         int off = 0;
         for (int i = 0; i < n; i++) {
             offsets[i] = off;
-            off += inputs.get(i).value.size();
+            off += inputs.get(i).getValue().size();
         }
 
         // 3. Backward: split gradient by offset, accumulate into each input
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = gradOut.getData();
             for (int i = 0; i < n; i++) {
-                int len = inputs.get(i).value.size();
-                double[] buf = AutodiffBufferPool.acquire(len);
+                IDiffVector v = inputs.get(i);
+                int len = v.getValue().size();
+                double[] buf = new double[len];
                 System.arraycopy(gd, offsets[i], buf, 0, len);
-                inputs.get(i).accGradFromPooled(buf, len);
+                if (v instanceof RereDiffVector rv) {
+                    rv.accGradFromPooled(buf, len);
+                } else if (v instanceof TensorBackedDiffVector tb) {
+                    double[] tg = tb.unwrap().grad;
+                    if (tg == null) tg = tb.unwrap().grad = new double[(int) tb.unwrap().value.totalSize()];
+                    for (int j = 0; j < len; j++) tg[j] += buf[j];
+                }
             }
         };
-
-        return withTag(new RereDiffVector(IDoubleVector.of(catData), inputs, backwardFn), "cat");
+        // Collect RereDiffVector inputs for backward graph; wrap others
+        List<RereDiffVector> rvInputs = new ArrayList<>();
+        for (IDiffVector v : inputs) {
+            if (v instanceof RereDiffVector rv) rvInputs.add(rv);
+        }
+        return withTag(new RereDiffVector(IDoubleVector.of(catData), rvInputs, backwardFn), "cat");
     }
 
     // ---- reshape ----

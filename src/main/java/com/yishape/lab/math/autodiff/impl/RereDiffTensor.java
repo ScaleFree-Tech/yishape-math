@@ -2589,7 +2589,9 @@ public class RereDiffTensor implements IDiffTensor {
         @Override public void backward(IDoubleTensor gradient) {}
         @Override public void zeroGradient() {}
         @Override public IDiffVector flattenGrad() { return null; }
-        @Override public IDiffVector flattenValue() { return null; }
+        @Override public IDiffVector flattenValue() {
+            return new RereDiffVector(IDoubleVector.of(value.toDoubleArray()));
+        }
         @Override public IDoubleTensor detach() { return new RereDoubleTensor(value.toDoubleArray(), shape()); }
         @Override public boolean requiresGrad() { return false; }
         @Override public IDiffTensor setRequiresGrad(boolean rg) { return this; }

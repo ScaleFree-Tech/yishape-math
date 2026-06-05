@@ -1,13 +1,17 @@
 package com.yishape.lab.math.autodiff.graph;
 
+import com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
+import com.yishape.lab.math.compute.hpc.HpcAutodiff;
+import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
+import com.yishape.lab.math.linalg.IDoubleVector;
+import com.yishape.lab.util.YishapeLogger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-
-import com.yishape.lab.math.compute.hpc.HpcAutodiff;
-import com.yishape.lab.math.linalg.IDoubleVector;
-import com.yishape.lab.util.YishapeLogger;
+import java.util.List;
 
 /**
  * Bridges HPC graph execution into the autodiff impl package, where it has
@@ -78,6 +82,10 @@ public final class HpcGraphExecutor {
             }
         }
 
+        // Try binary path first (faster, exact scalar params)
+        double binaryResult = tryExecuteBinary(root, order);
+        if (!Double.isNaN(binaryResult)) return binaryResult;
+
         ArrayList<RereDiffVector> leaves = HPC_LEAVES.get();
         leaves.clear();
         for (RereDiffVector v : order) {
@@ -100,6 +108,7 @@ public final class HpcGraphExecutor {
             System.out.print(sb);
         }
 
+        // JSON fallback path
         String json = GraphExporter.toJson(root);
         if (json == null) {
             log.debug("HPC graph fallback: JSON export failed");
@@ -154,5 +163,41 @@ public final class HpcGraphExecutor {
             }
         }
         return loss;
+    }
+
+    /** Binary graph execution using YSGP protocol. Returns loss or NaN on failure. */
+    private static double tryExecuteBinary(RereDiffVector root, ArrayList<RereDiffVector> order) {
+        try {
+            ByteBuffer buf = BinaryProtocol.serializeGraph(root, order);
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+
+            byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
+            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+
+            ByteBuffer resultBuf = ByteBuffer.wrap(resultBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+            var parsed = BinaryProtocol.deserializeResult(resultBuf);
+            double loss = parsed.loss();
+            if (Double.isNaN(loss)) return Double.NaN;
+
+            // Apply gradients to leaves
+            ArrayList<RereDiffVector> leaves = new ArrayList<>();
+            for (RereDiffVector v : order) { if (v.isLeaf) leaves.add(v); }
+            List<double[]> grads = parsed.grads();
+            if (grads.size() != leaves.size()) return Double.NaN;
+
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            if (batchSize > 1.0) loss /= batchSize;
+
+            for (int i = 0; i < grads.size(); i++) {
+                double[] g = grads.get(i);
+                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
+                leaves.get(i).accGrad(IDoubleVector.of(g));
+            }
+            return loss;
+        } catch (Exception e) {
+            return Double.NaN;
+        }
     }
 }

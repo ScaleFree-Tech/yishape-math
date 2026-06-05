@@ -19,6 +19,8 @@ import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.autodiff.impl.CheckpointVariable;
 import com.yishape.lab.math.autodiff.impl.CustomDiffVector;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
+import com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector;
 import com.yishape.lab.math.linalg.IFloatVector;
 import com.yishape.lab.math.linalg.sparse.ISparseMatrix;
 import com.yishape.lab.math.linalg.complex.IComplexMatrix.IComplexVector;
@@ -245,9 +247,14 @@ public class AD {
      * 尝试融合 {@code fn} 内逐元素运算；不可融合时回退为逐算子求值。
      */
     public static IDiffVector elementwise(IDiffVector x, Function<IDiffVector, IDiffVector> fn) {
+        // Bridge TensorBackedDiffVector → RereDiffVector so SequenceModel outputs
+        // can use elementwise loss functions (MSELoss, BCELoss, etc.)
+        if (x instanceof TensorBackedDiffVector tb) {
+            return elementwise(tensorBackedToRere(tb), fn);
+        }
         if (!(x instanceof RereDiffVector rx)) {
             throw new IllegalArgumentException(
-                "elementwise requires RereDiffVector, got: " + x.getClass().getSimpleName());
+                "elementwise requires RereDiffVector or TensorBackedDiffVector, got: " + x.getClass().getSimpleName());
         }
         TracerDiffVector tracer = new TracerDiffVector(rx);
         try {
@@ -259,6 +266,27 @@ public class AD {
             // non-fusible op detected, fall through to fallback
         }
         return fn.apply(x);
+    }
+
+    /**
+     * Converts a TensorBackedDiffVector to a RereDiffVector with a backward bridge
+     * that routes gradients back to the underlying tensor's grad array.
+     */
+    private static RereDiffVector tensorBackedToRere(TensorBackedDiffVector tb) {
+        double[] data = tb.getValue().getData();
+        RereDiffVector rv = new RereDiffVector(IDoubleVector.of(data));
+        final RereDiffTensor tensor = tb.unwrap();
+        rv.backwardFn = gradVec -> {
+            double[] g = gradVec.getData();
+            if (tensor.grad == null) {
+                tensor.grad = new double[(int) tensor.value.totalSize()];
+            }
+            for (int i = 0; i < g.length; i++) {
+                tensor.grad[i] += g[i];
+            }
+            tensor.backward(); // continue gradient propagation through AD graph
+        };
+        return rv;
     }
 
     // ---- custom gradient registration ----

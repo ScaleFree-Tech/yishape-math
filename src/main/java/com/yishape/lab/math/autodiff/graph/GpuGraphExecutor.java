@@ -66,7 +66,7 @@ public final class GpuGraphExecutor {
         root.buildTopo(order, visited);
 
         // Try binary path first (faster, no subnormal double corruption)
-        double binaryResult = Double.NaN; //tryExecuteBinary(root, order);
+        double binaryResult = tryExecuteBinary(root, order);
         if (!Double.isNaN(binaryResult)) return binaryResult;
 
         // Fall back to JSON path (reuse order from binary attempt)
