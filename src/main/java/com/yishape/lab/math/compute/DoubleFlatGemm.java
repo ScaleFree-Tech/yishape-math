@@ -257,11 +257,12 @@ public final class DoubleFlatGemm {
     /**
      * Fused in-place DAXPY: {@code y[i] = a * x[i] + b * y[i]}.
      * Used by EMA shadow updates and other linear combinations.
-     * Dispatch: SIMD → scalar.
+     * Dispatch: HPC (Rust native) → SISD (JIT auto-vectorized scalar).
+     * GPU not used: DAXPY is memory-bandwidth-bound; PCIe transfer overhead dominates.
      *
      * @param a coefficient for x
      * @param x source array
-     * @param b coefficient for y (the scaling factor, e.g. 1-decay)
+     * @param b coefficient for y (the scaling factor)
      * @param y target array (modified in-place)
      */
     public static void fusedDaxpyInPlace(double a, double[] x, double b, double[] y) {
@@ -269,17 +270,18 @@ public final class DoubleFlatGemm {
         if (x.length != len) {
             throw new IllegalArgumentException("x.length=" + x.length + " != y.length=" + len);
         }
-        // For EMA: a = 1-decay, b = decay. Common case: JIT auto-vectorizes.
-        // Manual loop with stable stride allows maximum JIT optimization.
+        // 0. Try HPC native (Rust) — only for arrays large enough to justify FFI overhead
+        if (len >= 4096 && com.yishape.lab.math.compute.hpc.HpcNormStats.tryFusedDaxpyInPlace(a, x, b, y)) {
+            return;
+        }
+        // 1. SISD: JIT auto-vectorizes simple counted loops with stable stride
         if (b == 0.0) {
-            // Pure scaling: y[i] = a * x[i]
             if (a == 1.0) {
-                System.arraycopy(x, 0, y, 0, len); // identity
+                System.arraycopy(x, 0, y, 0, len);
             } else {
                 for (int i = 0; i < len; i++) y[i] = a * x[i];
             }
         } else {
-            // General case: y[i] = a*x[i] + b*y[i]
             for (int i = 0; i < len; i++) {
                 y[i] = a * x[i] + b * y[i];
             }

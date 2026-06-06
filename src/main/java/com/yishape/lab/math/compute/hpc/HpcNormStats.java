@@ -50,9 +50,10 @@ public final class HpcNormStats {
                                                       double[] outMean, double[] outVar) {
         if (!HpcConfig.allowAttempts()) return false;
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
+        // OK = 0, avoids static field reference to optional YishapeHpcStatus class
         try {
             int rc = com.yishape.lab.math.hpc.YishapeHpc.batchChannelMeanVar(data, B, C, HW, outMean, outVar);
-            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            return rc == 0;
         } catch (Throwable t) {
             return false;
         }
@@ -123,7 +124,7 @@ public final class HpcNormStats {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
         try {
             int rc = com.yishape.lab.math.hpc.YishapeHpc.perSampleMeanVar(data, batchSize, features, outMean, outVar);
-            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            return rc == 0;
         } catch (Throwable t) {
             return false;
         }
@@ -186,6 +187,25 @@ public final class HpcNormStats {
             for (int f = 0; f < F; f++) {
                 normalized[off + f] = (xData[off + f] - m) * is;
             }
+        }
+    }
+
+    // ======================== Fused DAXPY ========================
+
+    /**
+     * Try HPC-native fused DAXPY: {@code y[i] = a * x[i] + b * y[i]}.
+     * @return true if HPC succeeded, false to fall back to scalar
+     */
+    public static boolean tryFusedDaxpyInPlace(double a, double[] x, double b, double[] y) {
+        if (x == null || y == null || x.length != y.length) return false;
+        if (x.length < 4096) return false; // too small for FFI overhead
+        if (!HpcConfig.allowAttempts()) return false;
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.fusedDaxpyF64(a, x, b, y);
+            return rc == 0;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
