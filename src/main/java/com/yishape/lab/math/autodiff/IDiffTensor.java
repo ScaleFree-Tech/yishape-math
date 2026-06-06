@@ -27,6 +27,13 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor mul(double scalar);
     @Override IDiffTensor div(double scalar);
 
+    /** Reverse-subtract: scalar - this. */
+    IDiffTensor rsub(double scalar);
+    /** Reverse-divide: scalar / this. */
+    IDiffTensor rdiv(double scalar);
+    /** Element-wise reciprocal (1/x). */
+    IDiffTensor reciprocal();
+
     @Override IDiffTensor neg();
     @Override IDiffTensor abs();
     @Override IDiffTensor sqrt();
@@ -80,6 +87,27 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor softmax(int dim);
     @Override IDiffTensor logSoftmax(int dim);
     IDiffTensor softmaxCrossEntropy(IDoubleTensor labels, int dim);
+
+    /**
+     * Fused Layer Normalization: y = gamma * (x - mean) / sqrt(var + eps) + beta.
+     * Normalizes over the last dimension of the input tensor.
+     * @param gamma scale parameter (size = last dimension)
+     * @param beta  shift parameter (size = last dimension)
+     * @param eps   small constant for numerical stability
+     * @return normalized tensor with the same shape as input
+     */
+    IDiffTensor layerNorm(IDiffTensor gamma, IDiffTensor beta, double eps);
+
+    /**
+     * Fused Batch Normalization (training mode).
+     * Normalizes over the batch dimension for each feature.
+     * Input shape: [batch, features] — beta and gamma have size [features].
+     * @param gamma scale parameter (size = features)
+     * @param beta  shift parameter (size = features)
+     * @param eps   small constant for numerical stability
+     * @return normalized output with the same shape as input
+     */
+    IDiffTensor batchNorm(IDiffTensor gamma, IDiffTensor beta, double eps);
 
     @Override IDiffTensor mmul(IDoubleTensor other);
     @Override IDiffTensor bmm(IDoubleTensor other);
@@ -160,7 +188,11 @@ public interface IDiffTensor extends IDoubleTensor {
         if (vec instanceof com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector tbdv) {
             return tbdv.unwrap().reshape(shape);
         }
-        RereDiffTensor t = new RereDiffTensor(vec.getValue().toDoubleArray(), shape);
+        IDoubleVector val = vec.getValue();
+        if (val == null) {
+            throw new IllegalArgumentException("vec.getValue() returned null — cannot create tensor from null vector");
+        }
+        RereDiffTensor t = new RereDiffTensor(val.toDoubleArray(), shape);
         // Bridge back to the vector graph so backward can flow through
         // CustomOp layers (Linear, Conv2d, etc.) that produce RereDiffVector outputs.
         if (vec instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rv) {

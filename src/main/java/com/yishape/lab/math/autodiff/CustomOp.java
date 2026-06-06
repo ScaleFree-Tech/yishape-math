@@ -83,9 +83,13 @@ public abstract class CustomOp {
     }
 
     /**
-     * Apply this operation to the given inputs.
+     * Apply this operation to the given vector inputs.
      * Always creates a computation graph node with embedded backward.
+     *
+     * @deprecated Use {@link #apply(int[], IDiffTensor...)} for the tensor-native API.
+     *             The vector-based apply will be removed in Phase 7 cleanup.
      */
+    @Deprecated
     public IDiffVector apply(IDiffVector... inputs) {
         RereDiffVector[] nodes = new RereDiffVector[inputs.length];
         IDoubleVector[] raw = new IDoubleVector[inputs.length];
@@ -164,6 +168,39 @@ public abstract class CustomOp {
     }
 
     /**
+     * Apply this operation to tensor inputs, creating a tensor-native graph node
+     * with full gradient flow in the tensor graph (no vector bridge needed).
+     *
+     * <p>This is the <b>primary API</b> for CustomOp — the replacement for both
+     * the deprecated {@link #apply(IDiffVector...)} and the deprecated
+     * {@link #tensorApply(int[], IDiffVector...)} bridge.</p>
+     *
+     * <p>Internally:
+     * <ol>
+     *   <li>Extracts flat {@code double[]} from each tensor input</li>
+     *   <li>Calls {@link #forward(IDoubleVector[])} on the flat data</li>
+     *   <li>Creates a {@link RereDiffTensor} graph node wrapping the result</li>
+     * </ol>
+     *
+     * <p>The result is a pure tensor graph node — gradients flow directly through
+     * the tensor graph without the old {@code vectorSource} bridge.</p>
+     *
+     * @param outShape desired output tensor shape (product must equal output size)
+     * @param inputs   differentiable tensor inputs to this operation
+     * @return differentiable tensor with gradient flow in the tensor graph
+     */
+    public IDiffTensor apply(int[] outShape, IDiffTensor... inputs) {
+        return tensorApply(outShape, inputs);
+    }
+
+    /**
+     * Convenience overload: {@code op.apply(new IDiffTensor[]{x, w}, outCh, H, W)}.
+     */
+    public IDiffTensor apply(IDiffTensor[] inputs, int... outShape) {
+        return tensorApply(outShape, inputs);
+    }
+
+    /**
      * Apply this operation and wrap the result as an {@link IDiffTensor} with
      * guaranteed gradient flow back through both the vector and tensor graphs.
      *
@@ -186,7 +223,10 @@ public abstract class CustomOp {
      * @param shape the desired output tensor shape (must match output vector size)
      * @param inputs differentiable vector inputs to this operation
      * @return differentiable tensor with bridged gradient flow
+     * @deprecated Use {@link #apply(int[], IDiffTensor...)} for tensor-native graphs
+     *             (no vector bridge). This bridge will be removed in Phase 7 cleanup.
      */
+    @Deprecated(forRemoval = true)
     public IDiffTensor tensorApply(int[] shape, IDiffVector... inputs) {
         IDiffVector result = apply(inputs);
         IDiffTensor tensor = IDiffTensor.fromDiffVector(result, shape);
@@ -201,9 +241,66 @@ public abstract class CustomOp {
 
     /**
      * Overload accepting a variadic shape for convenience: {@code tensorApply(2, 3, inputs)}.
+     * @deprecated Use {@link #apply(IDiffTensor[], int...)} (the tensor-native overload).
      */
+    @Deprecated(forRemoval = true)
     public IDiffTensor tensorApply(IDiffVector[] inputs, int... shape) {
         return tensorApply(shape, inputs);
+    }
+
+    /**
+     * Tensor-native apply: creates tensor graph nodes directly with no vector bridge.
+     *
+     * <p>New code should use {@link #apply(int[], IDiffTensor...)} instead.
+     * This method is retained as the internal implementation delegate.</p>
+     *
+     * <p>No {@code vectorSource} bridge is needed — gradients flow entirely within
+     * the tensor graph.</p>
+     *
+     * @param outShape output tensor shape (product must equal forward output size)
+     * @param inputs differentiable tensor inputs to this operation
+     * @return differentiable tensor with embedded CustomOp backward
+     */
+    public IDiffTensor tensorApply(int[] outShape, IDiffTensor... inputs) {
+        RereDiffTensor[] tNodes = new RereDiffTensor[inputs.length];
+        IDoubleVector[] rawVectors = new IDoubleVector[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            tNodes[i] = (RereDiffTensor) inputs[i];
+            rawVectors[i] = IDoubleVector.of(tNodes[i].value.toDoubleArray());
+        }
+
+        ForwardResult fr = forward(rawVectors);
+
+        long id = fwdCounter.incrementAndGet();
+        putCache(id, fr.context());
+
+        double[] outputData = fr.output().getData();
+        List<RereDiffTensor> insList = Arrays.asList(tNodes);
+
+        Consumer<RereDiffTensor> backwardFn = (self) -> {
+            Object ctx = getCache(id);
+            IDoubleVector[] grads = backward(IDoubleVector.of(self.grad), ctx);
+            for (int j = 0; j < tNodes.length && j < grads.length; j++) {
+                if (grads[j] != null) {
+                    tNodes[j].accGrad(grads[j].getData());
+                }
+            }
+        };
+
+        RereDiffTensor result = new RereDiffTensor(outputData, outShape, insList, backwardFn,
+            graphOpTag != null ? graphOpTag : "CustomOp");
+        if (graphOpTag != null) {
+            if (!Double.isNaN(graphScalarParam)) result.scalarParam = graphScalarParam;
+            if (!Double.isNaN(graphScalarParam2)) result.scalarParam2 = graphScalarParam2;
+        }
+        return result;
+    }
+
+    /**
+     * Convenience overload: {@code op.tensorApply(new IDiffTensor[]{x, w}, outCh, H, W)}.
+     */
+    public IDiffTensor tensorApply(IDiffTensor[] inputs, int... outShape) {
+        return tensorApply(outShape, inputs);
     }
 
     /**
@@ -222,7 +319,10 @@ public abstract class CustomOp {
      *
      * @return a RereDiffVector connected to the tensor's vectorSource chain,
      *         or {@code null} if no vectorSource is reachable
+     * @deprecated No longer needed with tensor-native CustomOp.tensorApply(IDiffTensor...).
+     *             The tensor graph is the only graph; no chain resolution required.
      */
+    @Deprecated
     private static RereDiffVector resolveTensorChain(RereDiffTensor t) {
         // 1. Walk backward through tensor graph, collecting value-changing ops
         List<String> ops = new ArrayList<>();
@@ -270,7 +370,10 @@ public abstract class CustomOp {
         return chainNode;
     }
 
-    /** Check if an op tag represents a value-changing operation (not just shape change). */
+    /** Check if an op tag represents a value-changing operation (not just shape change).
+     * @deprecated Only used by the deprecated {@link #resolveTensorChain(RereDiffTensor)}.
+     */
+    @Deprecated
     private static boolean isValueChangingOp(String op) {
         return switch (op) {
             case "relu", "sigmoid", "tanh", "gelu", "silu", "mish",
@@ -284,7 +387,9 @@ public abstract class CustomOp {
     /**
      * Create a vector-graph node that mirrors a tensor-graph unary op.
      * The node has the correct forward value and backward function for GPU gradient computation.
+     * @deprecated No longer needed — tensor-native graph nodes handle this directly.
      */
+    @Deprecated
     private static RereDiffVector createChainVectorNode(RereDiffVector input, String op) {
         double[] inData = input.value.getData();
         int n = inData.length;

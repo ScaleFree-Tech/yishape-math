@@ -1,5 +1,8 @@
 package com.yishape.lab.math.autodiff.graph;
 
+import com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol;
+import com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.gpu.GpuConfig;
@@ -8,6 +11,7 @@ import com.yishape.lab.util.YishapeLogger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * GPU graph-level execution. Exports the autodiff graph to JSON,
@@ -45,9 +49,25 @@ public final class GpuGraphExecutor {
         "softmaxCrossEntropy"
     ));
 
+    /** Ops supported in tensor-native GPU execution (superset). */
+    private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(SUPPORTED_OPS);
+    static {
+        TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
+            "permute", "expand", "reciprocal", "rsub", "rdiv",
+            "gather", "scatter", "select", "slice", "narrow"
+        ));
+    }
+
+    // Vector thread locals
     private static final ThreadLocal<ArrayList<RereDiffVector>> TOPO_LIST =
         ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<HashSet<RereDiffVector>> TOPO_SET =
+        ThreadLocal.withInitial(HashSet::new);
+
+    // Tensor thread locals
+    private static final ThreadLocal<ArrayList<RereDiffTensor>> TENSOR_TOPO =
+        ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<HashSet<RereDiffTensor>> TENSOR_VISITED =
         ThreadLocal.withInitial(HashSet::new);
 
     private GpuGraphExecutor() {}
@@ -104,6 +124,157 @@ public final class GpuGraphExecutor {
             double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
             return applyGradientsfromJson(root, order, resultJson, batchSize);
         } catch (Exception e) {
+            log.debug("GPU graph execution failed", e);
+            return Double.NaN;
+        }
+    }
+
+    /**
+     * Attempt GPU graph execution for a tensor-based computation graph.
+     * Exports via {@link TensorGraphExporter} and delegates to the GPU bridge.
+     *
+     * @param root the tensor graph root node
+     * @return loss value, or {@link Double#NaN} if GPU is unavailable or fails
+     */
+    public static double tryExecute(RereDiffTensor root) {
+        if (!GpuConfig.allowAttempts()) return Double.NaN;
+        if (!GpuOptionalRuntime.isGpuAvailable()) return Double.NaN;
+
+        ArrayList<RereDiffTensor> order = TENSOR_TOPO.get();
+        order.clear();
+        HashSet<RereDiffTensor> visited = TENSOR_VISITED.get();
+        visited.clear();
+        root.buildTopo(order, visited);
+
+        // Try binary path first
+        double binaryResult = tryExecuteTensorBinary(root, order);
+        if (!Double.isNaN(binaryResult)) return binaryResult;
+
+        // Check ops
+        for (RereDiffTensor v : order) {
+            if (v.opTag != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag)) {
+                if (log.isDebugEnabled()) {
+                    int leafCount = 0;
+                    for (RereDiffTensor n : order) {
+                        if (n.isLeaf) leafCount++;
+                    }
+                    log.debug("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
+                        v.opTag, order.size(), leafCount);
+                }
+                return Double.NaN;
+            }
+        }
+
+        // Collect leaves
+        ArrayList<RereDiffTensor> leaves = new ArrayList<>();
+        for (RereDiffTensor v : order) {
+            if (v.isLeaf) {
+                leaves.add(v);
+            }
+        }
+
+        // Export and execute
+        String json = TensorGraphExporter.toJson(root);
+        if (json == null) {
+            log.debug("GPU tensor graph fallback: JSON export failed");
+            return Double.NaN;
+        }
+
+        String resultJson = GpuOptionalRuntime.tryExecuteGraph(json);
+        if (resultJson == null) {
+            log.debug("GPU tensor graph fallback: Rust execution returned null");
+            return Double.NaN;
+        }
+
+        try {
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            return applyTensorGradientsFromJson(root, leaves, resultJson, batchSize);
+        } catch (Exception e) {
+            log.debug("GPU graph execution failed", e);
+            return Double.NaN;
+        }
+    }
+
+    /** Parse JSON result and apply gradients to tensor leaves. */
+    private static double applyTensorGradientsFromJson(RereDiffTensor root,
+            ArrayList<RereDiffTensor> leaves, String resultJson, double batchSize) {
+        double loss = extractDoubleField(resultJson, "loss");
+        if (Double.isNaN(loss)) return Double.NaN;
+        if (batchSize > 1.0) loss /= batchSize;
+
+        int gradStart = resultJson.indexOf("\"grads\"");
+        if (gradStart < 0) gradStart = resultJson.indexOf("\"gradients\"");
+        if (gradStart < 0) return Double.NaN;
+        int arrStart = resultJson.indexOf('[', gradStart);
+        if (arrStart < 0) return Double.NaN;
+        int arrEnd = findMatchingBracket(resultJson, arrStart);
+        if (arrEnd < 0) return Double.NaN;
+
+        int pos = arrStart + 1;
+        int leafIdx = 0;
+        while (pos < arrEnd && leafIdx < leaves.size()) {
+            while (pos < arrEnd && (resultJson.charAt(pos) == ',' || Character.isWhitespace(resultJson.charAt(pos)))) {
+                pos++;
+            }
+            if (pos >= arrEnd || resultJson.charAt(pos) != '[') break;
+            int innerEnd = findMatchingBracket(resultJson, pos);
+            if (innerEnd < 0) break;
+
+            String inner = resultJson.substring(pos + 1, innerEnd);
+            String[] tokens = inner.split(",");
+            double[] gradData = new double[tokens.length];
+            for (int i = 0; i < tokens.length; i++) {
+                gradData[i] = Double.parseDouble(tokens[i].trim());
+            }
+
+            if (batchSize > 1.0) {
+                for (int i = 0; i < gradData.length; i++) gradData[i] /= batchSize;
+            }
+            leaves.get(leafIdx).accGrad(gradData);
+            leafIdx++;
+            pos = innerEnd + 1;
+        }
+
+        if (leafIdx < leaves.size()) {
+            log.warn("GPU tensor returned fewer gradients ({}) than leaves ({})", leafIdx, leaves.size());
+        }
+        return loss;
+    }
+
+    /** Binary graph execution for tensors using YSGP protocol. */
+    private static double tryExecuteTensorBinary(RereDiffTensor root,
+            ArrayList<RereDiffTensor> order) {
+        try {
+            java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+
+            byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
+            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+
+            java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+
+            var parsed = com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol.deserializeResult(resultBuf);
+            double loss = parsed.loss();
+            if (Double.isNaN(loss)) return Double.NaN;
+
+            // Collect leaves
+            java.util.ArrayList<RereDiffTensor> leaves = new java.util.ArrayList<>();
+            for (RereDiffTensor v : order) { if (v.isLeaf) leaves.add(v); }
+            java.util.List<double[]> grads = parsed.grads();
+            if (grads.size() != leaves.size()) return Double.NaN;
+
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            if (batchSize > 1.0) loss /= batchSize;
+
+            for (int i = 0; i < grads.size(); i++) {
+                double[] g = grads.get(i);
+                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
+                leaves.get(i).accGrad(g);
+            }
+            return loss;
+        } catch (Exception e) {
+            log.debug("GPU graph execution failed", e);
             return Double.NaN;
         }
     }
@@ -211,6 +382,7 @@ public final class GpuGraphExecutor {
         try {
             return Double.parseDouble(json.substring(start, end).trim());
         } catch (NumberFormatException e) {
+            log.debug("GPU graph result JSON number parse failed", e);
             return Double.NaN;
         }
     }
@@ -261,6 +433,7 @@ public final class GpuGraphExecutor {
             }
             return loss;
         } catch (Exception e) {
+            log.debug("GPU graph execution failed", e);
             return Double.NaN;
         }
     }

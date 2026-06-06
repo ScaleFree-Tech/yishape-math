@@ -120,7 +120,6 @@ public class FusedReductionOps {
             saved = new double[numElem][];
             for (int j = 0; j < numElem; j++) saved[j] = AutodiffBufferPool.acquire(n);
             forwardElementOpsWithSaved(xData, n, saved);
-            System.arraycopy(mid, 0, saved[numElem - 1], 0, n); // last saved is input to reduction
         }
 
         // Apply reduction
@@ -247,8 +246,6 @@ public class FusedReductionOps {
             }
             double[] tmp = cur; cur = next; next = tmp;
         }
-        // cur now holds the final element-wise output
-        System.arraycopy(cur, 0, saved[elementOps.size() - 1], 0, n);
         AutodiffBufferPool.release(cur);
         AutodiffBufferPool.release(next);
     }

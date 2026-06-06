@@ -113,6 +113,27 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
 
     @Override public void zeroGradient() { this.gradient = null; }
 
+    /**
+     * Propagate this sparse matrix's gradient to its upstream inputs.
+     * Called when gradient is accumulated from a vector-graph node
+     * (e.g. sum(), mean(), matmul()) to bridge the sparse matrix graph
+     * into the vector graph traversal.
+     */
+    void propagateGradient() {
+        if (this.gradient == null || this.backwardFn == null) return;
+        ArrayList<RereDiffSparseMatrix> order = new ArrayList<>();
+        HashSet<RereDiffSparseMatrix> visited = new HashSet<>();
+        buildTopo(order, visited);
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffSparseMatrix v = order.get(i);
+            if (v.gradient != null && v.backwardFn != null) {
+                ISparseMatrix savedGrad = v.gradient;
+                v.gradient = null;
+                v.backwardFn.accept(savedGrad);
+            }
+        }
+    }
+
     @Override
     public IDiffSparseMatrix grad() {
         return new RereDiffSparseMatrix(this.gradient.copy());
@@ -137,6 +158,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
                     if (Math.abs(dense[i][j]) > 1e-15)
                         grad[i][j] = g;
             self.accGrad(ISparseMatrix.fromDense(grad));
+            self.propagateGradient();
         };
         RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
         node.opTag = "sum";
@@ -164,6 +186,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
                     if (Math.abs(dense[i][j]) > 1e-15)
                         grad[i][j] = g;
             self.accGrad(ISparseMatrix.fromDense(grad));
+            self.propagateGradient();
         };
         RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
         node.opTag = "mean";
@@ -194,6 +217,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
                 }
             }
             self.accGrad(ISparseMatrix.fromDense(outerData));
+            self.propagateGradient();
             v.accGrad((IDoubleVector) aVal.transpose().multiply(gradOut));
         };
         RereDiffVector node = new RereDiffVector((IDoubleVector) result, List.of(), backwardFn);

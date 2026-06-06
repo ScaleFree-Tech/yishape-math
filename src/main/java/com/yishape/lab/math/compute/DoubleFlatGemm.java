@@ -251,4 +251,38 @@ public final class DoubleFlatGemm {
             }
         }
     }
+
+    // ======================== Element-wise fused ops ========================
+
+    /**
+     * Fused in-place DAXPY: {@code y[i] = a * x[i] + b * y[i]}.
+     * Used by EMA shadow updates and other linear combinations.
+     * Dispatch: SIMD → scalar.
+     *
+     * @param a coefficient for x
+     * @param x source array
+     * @param b coefficient for y (the scaling factor, e.g. 1-decay)
+     * @param y target array (modified in-place)
+     */
+    public static void fusedDaxpyInPlace(double a, double[] x, double b, double[] y) {
+        int len = y.length;
+        if (x.length != len) {
+            throw new IllegalArgumentException("x.length=" + x.length + " != y.length=" + len);
+        }
+        // For EMA: a = 1-decay, b = decay. Common case: JIT auto-vectorizes.
+        // Manual loop with stable stride allows maximum JIT optimization.
+        if (b == 0.0) {
+            // Pure scaling: y[i] = a * x[i]
+            if (a == 1.0) {
+                System.arraycopy(x, 0, y, 0, len); // identity
+            } else {
+                for (int i = 0; i < len; i++) y[i] = a * x[i];
+            }
+        } else {
+            // General case: y[i] = a*x[i] + b*y[i]
+            for (int i = 0; i < len; i++) {
+                y[i] = a * x[i] + b * y[i];
+            }
+        }
+    }
 }

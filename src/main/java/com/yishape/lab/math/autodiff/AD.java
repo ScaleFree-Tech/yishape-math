@@ -5,6 +5,7 @@ import com.yishape.lab.math.autodiff.vjp.VjpFunction;
 import com.yishape.lab.math.autodiff.vjp.VjpResult;
 import com.yishape.lab.math.autodiff.vmap.VMap;
 import com.yishape.lab.util.Messages;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -30,8 +31,12 @@ import com.yishape.lab.math.autodiff.impl.FusedMatrixOps;
 import com.yishape.lab.math.autodiff.impl.FusedOps;
 import com.yishape.lab.math.autodiff.impl.FusedReductionOps;
 import com.yishape.lab.math.autodiff.impl.ODEDiffVector;
+import com.yishape.lab.math.autodiff.impl.TensorFusedOps;
+import com.yishape.lab.math.autodiff.impl.TensorFusedReductionOps;
 import com.yishape.lab.math.autodiff.graph.GraphExporter;
 import com.yishape.lab.math.autodiff.graph.GraphOptimizer;
+import com.yishape.lab.math.autodiff.graph.TensorGraphExporter;
+import com.yishape.lab.math.autodiff.graph.TensorGraphOptimizer;
 import com.yishape.lab.math.autodiff.graph.GpuGraphExecutor;
 import com.yishape.lab.math.autodiff.graph.HpcGraphExecutor;
 import com.yishape.lab.math.autodiff.graph.GraphRenderer;
@@ -108,6 +113,26 @@ public class AD {
 
     public static IDiffTensor tensor(double[] data, int... shape) {
         return IDiffTensor.fromDiffVector(vector(data), shape);
+    }
+
+    /**
+     * Create a tensor-native differentiable leaf (no vector graph bridge).
+     * This is the preferred factory for creating parameter tensors in the
+     * unified tensor-first AD system. Unlike {@link #tensor(double[], int...)}
+     * which wraps a vector leaf, this creates a pure tensor graph node.
+     */
+    public static IDiffTensor leafTensor(double[] data, int... shape) {
+        return new RereDiffTensor(data.clone(), shape);
+    }
+
+    /**
+     * Create a tensor-native constant (non-differentiable) with the given data and shape.
+     * Useful for labels, masks, and other inputs that should not participate in backward.
+     */
+    public static IDiffTensor constantTensor(double[] data, int... shape) {
+        RereDiffTensor t = new RereDiffTensor(data.clone(), shape);
+        t.requiresGrad = false;
+        return t;
     }
 
     public static IDiffTensor zerosTensor(int... shape) {
@@ -215,11 +240,75 @@ public class AD {
         return RereDiffVector.grad(output, inputs);
     }
 
+    /**
+     * Higher-order gradient computation on tensor graph.
+     * Computes gradients of {@code output} w.r.t. each {@code input} using the
+     * symbolic backward functions stored on each tensor node.
+     * The returned gradients are themselves differentiable tensors,
+     * enabling second-order computations like Hessian-vector products.
+     */
+    public static IDiffTensor[] grad(IDiffTensor output, IDiffTensor... inputs) {
+        RereDiffTensor out = (RereDiffTensor) output;
+        List<RereDiffTensor> order = new ArrayList<>();
+        java.util.HashSet<RereDiffTensor> visited = new java.util.HashSet<>();
+        out.buildTopo(order, visited);
+
+        // Create differentiable seed gradient (ones)
+        int seedN = (int) out.value.totalSize();
+        double[] onesData = new double[seedN];
+        java.util.Arrays.fill(onesData, 1.0);
+        RereDiffTensor seedGrad = new RereDiffTensor(onesData, out.shape());
+        seedGrad.setRequiresGrad(true);
+
+        java.util.Map<RereDiffTensor, IDiffTensor> nodeGrads = new java.util.HashMap<>();
+        nodeGrads.put(out, seedGrad);
+
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor node = order.get(i);
+            IDiffTensor nodeGrad = nodeGrads.get(node);
+            if (nodeGrad != null && node.symbolicBackwardFn != null) {
+                IDiffTensor[] localGrads = node.symbolicBackwardFn.apply(nodeGrad);
+                List<RereDiffTensor> nodeInputs = node.inputs;
+                for (int j = 0; j < nodeInputs.size() && j < localGrads.length; j++) {
+                    RereDiffTensor inputNode = nodeInputs.get(j);
+                    IDiffTensor existing = nodeGrads.get(inputNode);
+                    if (existing == null) {
+                        nodeGrads.put(inputNode, localGrads[j]);
+                    } else {
+                        nodeGrads.put(inputNode, existing.add(localGrads[j]));
+                    }
+                }
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        IDiffTensor[] result = new IDiffTensor[inputs.length];
+        for (int k = 0; k < inputs.length; k++) {
+            RereDiffTensor in = (RereDiffTensor) inputs[k];
+            IDiffTensor g = nodeGrads.get(in);
+            result[k] = g != null ? g : new RereDiffTensor(
+                new double[(int) in.value.totalSize()], in.shape()).fill_(0);
+        }
+        return result;
+    }
+
     // ---- JIT operator fusion ----
 
     /** Starts a fused element-wise op chain on vector {@code x}. / 在向量 {@code x} 上构建融合逐元素算子链。 */
     public static FusedOps fuse(IDiffVector x) {
         return new FusedOps(x);
+    }
+
+    /**
+     * Starts a fused element-wise op chain on tensor {@code t}.
+     * Returns a {@link TensorFusedOps} that chains operations on a single buffer
+     * and creates one fused graph node at {@link com.yishape.lab.math.autodiff.impl.TensorFusedOps#done()}.
+     */
+    public static TensorFusedOps fuseTensor(IDiffTensor t) {
+        if (!(t instanceof com.yishape.lab.math.autodiff.impl.RereDiffTensor rt)) {
+            throw new IllegalArgumentException("fuseTensor requires RereDiffTensor, got " + t.getClass().getSimpleName());
+        }
+        return new TensorFusedOps(rt);
     }
 
     /**
@@ -234,6 +323,24 @@ public class AD {
      */
     public static FusedReductionOps fuseReduce(IDiffVector x) {
         return new FusedReductionOps((RereDiffVector) x);
+    }
+
+    /**
+     * Starts a fused element-wise + reduction op chain on tensor {@code t}.
+     * The chain may include element-wise ops followed by an N-D reduction terminator
+     * (softmax, sum, mean over a specific dimension or all elements).
+     * All ops execute in a single forward/backward kernel.
+     *
+     * <pre>{@code
+     *   IDiffTensor y = AD.fuseReduceTensor(t).exp().relu().sum(dim);
+     * }</pre>
+     */
+    public static TensorFusedReductionOps fuseReduceTensor(IDiffTensor t) {
+        if (!(t instanceof com.yishape.lab.math.autodiff.impl.RereDiffTensor rt)) {
+            throw new IllegalArgumentException(
+                "fuseReduceTensor requires RereDiffTensor, got " + t.getClass().getSimpleName());
+        }
+        return new TensorFusedReductionOps(rt);
     }
 
     public static FusedMatrixOps fuseMatrix(IDiffMatrix x) {
@@ -378,14 +485,64 @@ public class AD {
         return GraphRenderer.renderMatrix(rdm);
     }
 
+    /** Renders tensor DAG as Graphviz DOT. / 将张量计算图渲染为 Graphviz DOT。 */
+    public static String render(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rdt)) {
+            throw new IllegalArgumentException(
+                "render requires RereDiffTensor, got: " + root.getClass().getSimpleName());
+        }
+        java.util.List<RereDiffTensor> order = new java.util.ArrayList<>();
+        java.util.HashSet<RereDiffTensor> visited = new java.util.HashSet<>();
+        rdt.buildTopo(order, visited);
+        StringBuilder sb = new StringBuilder();
+        sb.append("digraph AD_Tensor {\n");
+        sb.append("  rankdir=BT;\n");
+        sb.append("  node [shape=box, style=filled, fontname=\"Courier\"];\n");
+        for (int idx = 0; idx < order.size(); idx++) {
+            RereDiffTensor v = order.get(idx);
+            String id = "n" + System.identityHashCode(v);
+            String label = v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "?");
+            int[] shape = v.shape();
+            StringBuilder shapeStr = new StringBuilder("[");
+            for (int s = 0; s < shape.length; s++) {
+                if (s > 0) shapeStr.append("x");
+                shapeStr.append(shape[s]);
+            }
+            shapeStr.append("]");
+            sb.append("  ").append(id).append(" [label=\"").append(label).append("\\n").append(shapeStr).append("\"");
+            sb.append(v.isLeaf ? ", fillcolor=lightgreen" : ", fillcolor=lightyellow");
+            sb.append("];\n");
+            if (v.inputs != null) {
+                for (RereDiffTensor inp : v.inputs) {
+                    if (inp != null) {
+                        String inpId = "n" + System.identityHashCode(inp);
+                        sb.append("  ").append(inpId).append(" -> ").append(id).append(";\n");
+                    }
+                }
+            }
+        }
+        sb.append("}\n");
+        return sb.toString();
+    }
+
     // ---- graph optimization ----
 
     public static IDiffVector optimize(IDiffVector x) {
         return GraphOptimizer.optimize(x);
     }
 
+    /** Optimizes a tensor-based computation graph (constant folding). / 优化张量计算图（常量折叠）。 */
+    public static IDiffTensor optimize(IDiffTensor x) {
+        return TensorGraphOptimizer.optimize(x);
+    }
+
     public static GraphOptimizer.GraphStats graphStats(IDiffVector x) {
         return GraphOptimizer.stats(x);
+    }
+
+    /** Returns stats for a tensor-based computation graph. / 返回张量计算图的统计信息。 */
+    public static TensorGraphOptimizer.GraphStats graphStats(IDiffTensor x) {
+        return TensorGraphOptimizer.stats(x);
     }
 
     // ---- HPC bridge ----
@@ -397,6 +554,15 @@ public class AD {
                 "exportGraph requires RereDiffVector, got: " + root.getClass().getSimpleName());
         }
         return GraphExporter.toJson(rdv);
+    }
+
+    /** Exports tensor computation graph as JSON for native HPC/GPU execution. / 导出张量计算图 JSON 供 HPC/GPU 执行。 */
+    public static String exportGraph(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rdt)) {
+            throw new IllegalArgumentException(
+                "exportGraph requires RereDiffTensor, got: " + root.getClass().getSimpleName());
+        }
+        return TensorGraphExporter.toJson(rdt);
     }
 
     /**
@@ -412,6 +578,18 @@ public class AD {
     }
 
     /**
+     * Attempts HPC execution of a tensor computation graph.
+     * On success, leaf gradients are populated and the loss value is stored in the root node's value.
+     *
+     * @param root the tensor computation graph root
+     * @return true if HPC execution succeeded
+     */
+    public static boolean tryHpcExecute(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rdt)) return false;
+        return !Double.isNaN(HpcGraphExecutor.tryExecute(rdt));
+    }
+
+    /**
      * Attempts GPU graph execution. On success, leaf gradients are populated
      * and the loss value is stored in the root node's value.
      *
@@ -421,6 +599,18 @@ public class AD {
     public static boolean tryGpuExecute(IDiffVector root) {
         if (!(root instanceof RereDiffVector rdv)) return false;
         return !Double.isNaN(GpuGraphExecutor.tryExecute(rdv));
+    }
+
+    /**
+     * Attempts GPU execution of a tensor computation graph.
+     * On success, leaf gradients are populated and the loss value is stored in the root node's value.
+     *
+     * @param root the tensor computation graph root
+     * @return true if GPU execution succeeded
+     */
+    public static boolean tryGpuExecute(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rdt)) return false;
+        return !Double.isNaN(GpuGraphExecutor.tryExecute(rdt));
     }
 
     // ---- numerical gradient checker ----

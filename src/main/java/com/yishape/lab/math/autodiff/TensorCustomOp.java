@@ -78,12 +78,16 @@ public abstract class TensorCustomOp {
         List<RereDiffTensor> insList = Arrays.asList(tensorNodes);
         Consumer<RereDiffTensor> backwardFn = (self) -> {
             Object ctx = getCache(id);
-            IDoubleTensor gradTensor = new RereDoubleTensor(self.grad, outShape);
-            IDoubleTensor[] grads = backward(gradTensor, ctx);
-            for (int j = 0; j < tensorNodes.length && j < grads.length; j++) {
-                if (grads[j] != null) {
-                    tensorNodes[j].accGrad(grads[j].toDoubleArray());
+            try {
+                IDoubleTensor gradTensor = new RereDoubleTensor(self.grad, outShape);
+                IDoubleTensor[] grads = backward(gradTensor, ctx);
+                for (int j = 0; j < tensorNodes.length && j < grads.length; j++) {
+                    if (grads[j] != null) {
+                        tensorNodes[j].accGrad(grads[j].toDoubleArray());
+                    }
                 }
+            } finally {
+                fwdCache.remove(id);
             }
         };
 

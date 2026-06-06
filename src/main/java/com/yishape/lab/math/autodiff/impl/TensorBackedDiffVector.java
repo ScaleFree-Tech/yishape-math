@@ -16,7 +16,14 @@ import com.yishape.lab.math.linalg.IVector;
  * {@link RereDiffTensor#flattenGrad()} for optimizer integration.
  * All shape-aware operations delegate to the backing tensor; element-wise
  * operations are unsupported in this flat context.
+ *
+ * @deprecated Part of the dual-AD bridge being phased out in Tensor-First AD unification.
+ *             In the unified architecture, {@code flattenValue()}/{@code flattenGrad()}
+ *             will return a rank-1 {@code RereDiffTensor} view instead of this wrapper.
+ *             Optimizer integration will use {@code IDiffTensor.flattenGrad()} directly.
+ *             Migration tracked in Phase 7 of the AD Unification plan.
  */
+@Deprecated
 public final class TensorBackedDiffVector implements IDiffVector {
 
     private final RereDiffTensor tensor;

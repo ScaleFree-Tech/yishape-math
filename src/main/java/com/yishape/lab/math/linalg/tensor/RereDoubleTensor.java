@@ -159,6 +159,20 @@ public class RereDoubleTensor implements IDoubleTensor {
         return toDoubleArray();
     }
 
+    /**
+     * Apply a {@link UniversalOperation} to all elements, using SIMD acceleration when available.
+     * For contiguous tensors with offset==0, reads the internal array directly (zero-copy input);
+     * otherwise materializes first. Always returns a new array.
+     */
+    public double[] universalOp(UniversalOperation op, double param) {
+        int n = (int) totalSize();
+        if (isContiguous() && offset == 0 && n == data.length) {
+            return COMPUTER.universalOperate(data, op, param);
+        }
+        double[] flat = toDoubleArray();
+        return COMPUTER.universalOperate(flat, op, param);
+    }
+
     // ==================== 线性索引（stride 遍历） ====================
 
     public long linearToOffset(long flatIndex) {

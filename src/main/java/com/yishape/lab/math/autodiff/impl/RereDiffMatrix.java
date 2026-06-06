@@ -1251,14 +1251,12 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         }
         RereDiffMatrix o = (RereDiffMatrix) other;
         this.value = this.value.add(o.value);
-        Consumer<IDoubleMatrix> backwardFn = (gradOut) -> {
+        this.isLeaf = false;
+        this.inputs = List.of(o);
+        this.backwardFn = (gradOut) -> {
             this.accGrad(gradOut);
             o.accGrad(gradOut);
         };
-        RereDiffMatrix node = new RereDiffMatrix(this.value, List.of(this, o), backwardFn);
-        this.isLeaf = false;
-        this.inputs = List.of(this, o);
-        this.backwardFn = node.backwardFn;
         return this;
     }
 
@@ -1268,13 +1266,11 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
             throw new IllegalStateException("mulInPlace only allowed on leaf variables");
         }
         this.value = this.value.multiplyByScalar(scalar);
-        Consumer<IDoubleMatrix> backwardFn = (gradOut) -> {
+        this.isLeaf = false;
+        this.inputs = List.of();
+        this.backwardFn = (gradOut) -> {
             this.accGrad(gradOut.multiplyByScalar(scalar));
         };
-        RereDiffMatrix node = new RereDiffMatrix(this.value, List.of(this), backwardFn);
-        this.isLeaf = false;
-        this.inputs = List.of(this);
-        this.backwardFn = node.backwardFn;
         return this;
     }
 

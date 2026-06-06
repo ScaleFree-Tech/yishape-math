@@ -125,6 +125,18 @@ final class BatchedDiffTensor implements IDiffTensor {
     @Override public IDiffTensor hardtanh(double minVal, double maxVal) { return wrap(data.hardtanh(minVal, maxVal)); }
     @Override public IDiffTensor dropout(double p) { return wrap(data.dropout(p)); }
 
+    // ---- reverse ops / norm ----
+
+    @Override public IDiffTensor rsub(double scalar) { return wrap(data.rsub(scalar)); }
+    @Override public IDiffTensor rdiv(double scalar) { return wrap(data.rdiv(scalar)); }
+    @Override public IDiffTensor reciprocal() { return wrap(data.reciprocal()); }
+    @Override public IDiffTensor layerNorm(IDiffTensor gamma, IDiffTensor beta, double eps) {
+        return wrap(data.layerNorm(gamma, beta, eps));
+    }
+    @Override public IDiffTensor batchNorm(IDiffTensor gamma, IDiffTensor beta, double eps) {
+        return wrap(data.batchNorm(gamma, beta, eps));
+    }
+
     // ---- structural with dim (shift) ----
 
     @Override

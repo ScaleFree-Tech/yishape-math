@@ -1,6 +1,8 @@
 package com.yishape.lab.math.autodiff.graph;
 
 import com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol;
+import com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 import com.yishape.lab.math.compute.hpc.HpcAutodiff;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
@@ -42,12 +44,30 @@ public final class HpcGraphExecutor {
         "selectiveScan", "selectiveScan2", "depthwiseConv1d"
     ));
 
+    /** Ops supported in tensor-native HPC execution (superset). */
+    private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(SUPPORTED_OPS);
+    static {
+        // Additional tensor-native operations also available in Rust HPC
+        TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
+            "permute", "expand", "reciprocal", "rsub", "rdiv",
+            "gather", "scatter", "select", "slice", "narrow",
+            "batchNorm", "groupNorm"
+        ));
+    }
+
+    // Vector thread locals
     private static final ThreadLocal<ArrayList<RereDiffVector>> HPC_TOPO_LIST =
         ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<HashSet<RereDiffVector>> HPC_TOPO_SET =
         ThreadLocal.withInitial(HashSet::new);
     private static final ThreadLocal<ArrayList<RereDiffVector>> HPC_LEAVES =
         ThreadLocal.withInitial(ArrayList::new);
+
+    // Tensor thread locals
+    private static final ThreadLocal<ArrayList<RereDiffTensor>> HPC_TENSOR_TOPO =
+        ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<HashSet<RereDiffTensor>> HPC_TENSOR_VISITED =
+        ThreadLocal.withInitial(HashSet::new);
 
     private HpcGraphExecutor() {
     }
@@ -122,7 +142,8 @@ public final class HpcGraphExecutor {
 
         double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
         double loss = result[0][0];
-        // HPC forward already returns MEAN loss, no need to divide again
+        // HPC forward returns MEAN loss; HPC backward now also returns MEAN gradients.
+        // No additional batchSize division needed.
         int numGrads = Math.min(result.length - 1, leaves.size());
         if (result.length - 1 != leaves.size()) {
             log.warn("HPC gradient count mismatch: got {} gradients for {} leaves",
@@ -156,13 +177,125 @@ public final class HpcGraphExecutor {
                     log.warn("HPC gradient length mismatch at leaf {}: got {} expected {}",
                             i, gradLen, leafLen);
                 }
-                if (batchSize > 1.0) {
-                    for (int j = 0; j < gradLen; j++) result[i + 1][j] /= batchSize;
-                }
+                // Rust backward already divides by batchSize for softmaxCrossEntropy
                 leaves.get(i).accGrad(IDoubleVector.of(result[i + 1]));
             }
         }
         return loss;
+    }
+
+    /**
+     * Attempt HPC graph execution for a tensor-based computation graph.
+     * Exports via {@link TensorGraphExporter} and delegates to the HPC bridge.
+     *
+     * @param root the tensor graph root node
+     * @return loss value, or {@link Double#NaN} if HPC is unavailable or fails
+     */
+    public static double tryExecute(RereDiffTensor root) {
+        if (!com.yishape.lab.math.compute.hpc.HpcConfig.allowAttempts()) return Double.NaN;
+
+        ArrayList<RereDiffTensor> order = HPC_TENSOR_TOPO.get();
+        order.clear();
+        HashSet<RereDiffTensor> visited = HPC_TENSOR_VISITED.get();
+        visited.clear();
+        root.buildTopo(order, visited);
+
+        // Check unsupported ops
+        for (RereDiffTensor v : order) {
+            if (v.opTag != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag)) {
+                if (log.isDebugEnabled()) {
+                    int leafCount = 0;
+                    for (RereDiffTensor n : order) {
+                        if (n.isLeaf) leafCount++;
+                    }
+                    log.debug("HPC tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
+                        v.opTag, order.size(), leafCount);
+                }
+                return Double.NaN;
+            }
+        }
+
+        // Collect leaves
+        ArrayList<RereDiffTensor> leaves = new ArrayList<>();
+        for (RereDiffTensor v : order) {
+            if (v.isLeaf) {
+                leaves.add(v);
+            }
+        }
+
+        // Try binary path first
+        double binaryResult = tryExecuteTensorBinary(root, order, leaves);
+        if (!Double.isNaN(binaryResult)) return binaryResult;
+
+        // JSON fallback
+        String json = TensorGraphExporter.toJson(root);
+        if (json == null) {
+            log.debug("HPC tensor graph fallback: JSON export failed");
+            return Double.NaN;
+        }
+        double[][] result = HpcAutodiff.tryExecute(json);
+        if (result == null || result.length < 2 || result[0] == null) {
+            log.debug("HPC tensor graph fallback: Rust execution returned null or invalid result");
+            return Double.NaN;
+        }
+
+        double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+        double loss = result[0][0];
+        int numGrads = Math.min(result.length - 1, leaves.size());
+        if (result.length - 1 != leaves.size()) {
+            log.warn("HPC tensor gradient count mismatch: got {} gradients for {} leaves",
+                    result.length - 1, leaves.size());
+        }
+        for (int i = 0; i < numGrads; i++) {
+            if (result[i + 1] != null) {
+                int gradLen = result[i + 1].length;
+                int leafLen = Math.toIntExact(leaves.get(i).totalSize());
+                if (gradLen != leafLen) {
+                    log.warn("HPC tensor gradient length mismatch at leaf {}: got {} expected {}",
+                            i, gradLen, leafLen);
+                }
+                if (batchSize > 1.0) {
+                    for (int j = 0; j < gradLen; j++) result[i + 1][j] /= batchSize;
+                }
+                leaves.get(i).accGrad(result[i + 1]);
+            }
+        }
+        return loss;
+    }
+
+    /** Binary graph execution for tensors using YSGP protocol. */
+    private static double tryExecuteTensorBinary(RereDiffTensor root,
+            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves) {
+        try {
+            ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+
+            byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
+            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+
+            ByteBuffer resultBuf = ByteBuffer.wrap(resultBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+            var parsed = BinaryProtocol.deserializeResult(resultBuf);
+            double loss = parsed.loss();
+            if (Double.isNaN(loss)) return Double.NaN;
+
+            List<double[]> grads = parsed.grads();
+            if (grads.size() != leaves.size()) return Double.NaN;
+
+            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+            if (batchSize > 1.0) loss /= batchSize;
+
+            for (int i = 0; i < grads.size(); i++) {
+                double[] g = grads.get(i);
+                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
+                leaves.get(i).accGrad(g);
+            }
+            return loss;
+        } catch (Exception e) {
+            log.debug("HPC graph execution failed", e);
+            return Double.NaN;
+        }
     }
 
     /** Binary graph execution using YSGP protocol. Returns loss or NaN on failure. */
@@ -197,6 +330,7 @@ public final class HpcGraphExecutor {
             }
             return loss;
         } catch (Exception e) {
+            log.debug("HPC graph execution failed", e);
             return Double.NaN;
         }
     }

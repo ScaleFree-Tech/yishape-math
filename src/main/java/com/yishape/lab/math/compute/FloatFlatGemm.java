@@ -286,4 +286,33 @@ public final class FloatFlatGemm {
     private static void toFloatInPlace(double[] d, float[] f) {
         for (int i = 0; i < d.length; i++) f[i] = (float) d[i];
     }
+
+    // ======================== Element-wise fused ops ========================
+
+    /**
+     * Fused in-place DAXPY: {@code y[i] = a * x[i] + b * y[i]}.
+     * Used by EMA shadow updates and other linear combinations.
+     *
+     * @param a coefficient for x
+     * @param x source array
+     * @param b coefficient for y (the scaling factor)
+     * @param y target array (modified in-place)
+     */
+    public static void fusedDaxpyInPlace(float a, float[] x, float b, float[] y) {
+        int len = y.length;
+        if (x.length != len) {
+            throw new IllegalArgumentException("x.length=" + x.length + " != y.length=" + len);
+        }
+        if (b == 0.0f) {
+            if (a == 1.0f) {
+                System.arraycopy(x, 0, y, 0, len);
+            } else {
+                for (int i = 0; i < len; i++) y[i] = a * x[i];
+            }
+        } else {
+            for (int i = 0; i < len; i++) {
+                y[i] = a * x[i] + b * y[i];
+            }
+        }
+    }
 }
