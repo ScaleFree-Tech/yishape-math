@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Phase 3a: Higher-order AD via AD.grad() and symbolicBackwardFn.
+ * Phase 3a: Higher-order AD via AD.gradData() and symbolicBackwardFn.
  */
 public class HigherOrderADTest {
 
@@ -74,7 +74,7 @@ public class HigherOrderADTest {
         IDiffTensor h = g.sum();
 
         h.backward();
-        double[] d2 = x.grad;
+        double[] d2 = x.gradData();
         assertArrayEquals(new double[]{1, Math.E, Math.E*Math.E}, d2, 1e-10);
     }
 

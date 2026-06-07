@@ -37,36 +37,36 @@ public class TensorGraphOptimizer {
         Map<RereDiffTensor, RereDiffTensor> replacements = new HashMap<>();
 
         for (RereDiffTensor node : order) {
-            if (node.isLeaf) {
+            if (node.isLeaf()) {
                 replacements.put(node, node);
                 continue;
             }
 
-            String tag = node.opTag;
-            double sp = node.scalarParam;
-            int nInputs = node.inputs != null ? node.inputs.size() : 0;
+            String tag = node.opTag();
+            double sp = node.scalarParam();
+            int nInputs = node.inputs() != null ? node.inputs().size() : 0;
 
             // addScalar(0) → pass-through input
             if ("addScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // subScalar(0) → pass-through input
             if ("subScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // mulScalar(1) → pass-through input
             if ("mulScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // divScalar(1) → pass-through input
             if ("divScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
                 replacements.put(node, rep);
                 continue;
             }
@@ -74,14 +74,14 @@ public class TensorGraphOptimizer {
             if ("mulScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
                 int totalSize = Math.toIntExact(node.totalSize());
                 RereDiffTensor zeros = new RereDiffTensor(new double[totalSize], node.shape());
-                zeros.opTag = "constant";
-                zeros.isLeaf = true;
+                zeros.setOpTag("constant");
+                zeros.setIsLeaf(true);
                 replacements.put(node, zeros);
                 continue;
             }
             // pow(1) → pass-through input
             if ("pow".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
                 replacements.put(node, rep);
                 continue;
             }
@@ -89,13 +89,13 @@ public class TensorGraphOptimizer {
             // Rewrite inputs to use replacements (transitive folding)
             boolean changed = false;
             for (int i = 0; i < nInputs; i++) {
-                RereDiffTensor replaced = replacements.get(node.inputs.get(i));
-                if (replaced != null && replaced != node.inputs.get(i)) {
+                RereDiffTensor replaced = replacements.get(node.inputs().get(i));
+                if (replaced != null && replaced != node.inputs().get(i)) {
                     if (!changed) {
-                        node.inputs = new ArrayList<>(node.inputs);
+                        node.setInputs(new ArrayList<>(node.inputs()));
                         changed = true;
                     }
-                    node.inputs.set(i, replaced);
+                    node.inputs().set(i, replaced);
                 }
             }
             replacements.put(node, node);
@@ -117,7 +117,7 @@ public class TensorGraphOptimizer {
         ((RereDiffTensor) root).buildTopo(order, visited);
         int count = 0;
         for (RereDiffTensor v : order) {
-            if (v.isLeaf) count++;
+            if (v.isLeaf()) count++;
         }
         return count;
     }
@@ -128,7 +128,7 @@ public class TensorGraphOptimizer {
         ((RereDiffTensor) root).buildTopo(order, visited);
         int leaves = 0, nonLeaf = 0;
         for (RereDiffTensor v : order) {
-            if (v.isLeaf) leaves++;
+            if (v.isLeaf()) leaves++;
             else nonLeaf++;
         }
         return new GraphStats(order.size(), leaves, nonLeaf);

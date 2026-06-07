@@ -40,8 +40,8 @@ public class ODEDiffTensorTest {
         loss.backward();
 
         // d(loss)/dz0 = exp(1) ≈ 2.718...
-        assertNotNull(z0.grad);
-        assertEquals(Math.E, z0.grad[0], 0.3); // RK4 ≈ exact for exponential
+        assertNotNull(z0.gradData());
+        assertEquals(Math.E, z0.gradData()[0], 0.3); // RK4 ≈ exact for exponential
     }
 
     @Test
@@ -64,10 +64,10 @@ public class ODEDiffTensorTest {
 
         // Gradient check
         result.sum().backward();
-        assertNotNull(z0.grad);
-        assertEquals(4, z0.grad.length);
+        assertNotNull(z0.gradData());
+        assertEquals(4, z0.gradData().length);
         // All gradients should be positive (all inputs contribute positively)
-        for (double g : z0.grad) {
+        for (double g : z0.gradData()) {
             assertTrue(g > 0);
         }
     }
@@ -92,8 +92,8 @@ public class ODEDiffTensorTest {
         // dz(1)/dz0 = 1/(1+1/z0)^2 * 1/z0^2 = 1/(z0+1)^2
         // For z0=2: dz(1)/dz0 = 1/9 ≈ 0.111
         result.sum().backward();
-        assertNotNull(z0.grad);
-        assertEquals(1.0 / 9, z0.grad[0], 0.02);
+        assertNotNull(z0.gradData());
+        assertEquals(1.0 / 9, z0.gradData()[0], 0.02);
     }
 
     @Test
@@ -116,9 +116,9 @@ public class ODEDiffTensorTest {
 
         // Gradient flows back
         result.sum().backward();
-        assertNotNull(z0.grad);
-        assertEquals(4, z0.grad.length);
-        for (double g : z0.grad) {
+        assertNotNull(z0.gradData());
+        assertEquals(4, z0.gradData().length);
+        for (double g : z0.gradData()) {
             assertTrue(g > 1);
         }
     }

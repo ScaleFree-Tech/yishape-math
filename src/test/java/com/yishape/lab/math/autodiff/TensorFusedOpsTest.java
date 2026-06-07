@@ -24,7 +24,7 @@ public class TensorFusedOpsTest {
         y.setRequiresGrad(true);
         y.exp().sum().backward();
 
-        assertArrayEquals(y.grad, x.grad, 1e-12);
+        assertArrayEquals(y.gradData(), x.gradData(), 1e-12);
     }
 
     @Test
@@ -40,7 +40,7 @@ public class TensorFusedOpsTest {
         y.setRequiresGrad(true);
         y.exp().relu().sum().backward();
 
-        assertArrayEquals(y.grad, x.grad, 1e-12);
+        assertArrayEquals(y.gradData(), x.gradData(), 1e-12);
     }
 
     @Test
@@ -56,7 +56,7 @@ public class TensorFusedOpsTest {
         y.setRequiresGrad(true);
         y.square().add(1).sum().backward();
 
-        assertArrayEquals(y.grad, x.grad, 1e-12);
+        assertArrayEquals(y.gradData(), x.gradData(), 1e-12);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class TensorFusedOpsTest {
         IDiffTensor s = fused.sum();
         s.backward();
 
-        assertArrayEquals(new double[]{1, 1, 1}, x.grad, 1e-12);
+        assertArrayEquals(new double[]{1, 1, 1}, x.gradData(), 1e-12);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class TensorFusedOpsTest {
         y.setRequiresGrad(true);
         y.sigmoid().sum().backward();
 
-        assertArrayEquals(y.grad, x.grad, 1e-10);
+        assertArrayEquals(y.gradData(), x.gradData(), 1e-10);
     }
 
     @Test
@@ -98,6 +98,6 @@ public class TensorFusedOpsTest {
         y.setRequiresGrad(true);
         y.mul(2).add(1).sum().backward();
 
-        assertArrayEquals(y.grad, x.grad, 1e-12);
+        assertArrayEquals(y.gradData(), x.gradData(), 1e-12);
     }
 }

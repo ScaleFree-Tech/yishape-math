@@ -71,10 +71,65 @@ public class AD {
     private AD() {
     }
 
+    // ==================== Debug mode ====================
+
+    /**
+     * Thread-local debug flag. When enabled, AD operations perform extra
+     * safety checks and emit warnings for common mistakes:
+     * <ul>
+     *   <li>{@link #vector(double...)} logs a warning with stack trace —
+     *       helps catch accidental leaf-node creation inside
+     *       {@code Module.forward()}</li>
+     *   <li>{@code RereDiffTensor.reshape()} logs when it takes the
+     *       non-contiguous path (potential performance regression)</li>
+     * </ul>
+     */
+    private static final ThreadLocal<Boolean> DEBUG_MODE = ThreadLocal.withInitial(() -> false);
+
+    /** Enable or disable debug mode for the current thread. */
+    public static void setDebugMode(boolean enabled) {
+        DEBUG_MODE.set(enabled);
+    }
+
+    /** Check whether debug mode is enabled for the current thread. */
+    public static boolean isDebugMode() {
+        return DEBUG_MODE.get();
+    }
+
     // ---- vector factories ----
 
-    /** Creates a leaf differentiable vector from a raw array. / 从原始数组创建叶子可微向量。 */
+    /**
+     * Creates a leaf differentiable vector from a raw array. / 从原始数组创建叶子可微向量。
+     *
+     * <p><b>⚠️ DO NOT USE INSIDE {@code Module.forward()}.</b>
+     * This creates a leaf node with no backward connection to upstream
+     * computation. If used in the middle of a forward pass (e.g., to create
+     * a temporary tensor from raw data), it <b>breaks the gradient chain</b>
+     * — upstream parameters will receive zero gradients.</p>
+     *
+     * <p><b>Valid uses:</b> initial hidden state (h/c in RNN), initial KV cache,
+     * standalone numerical experiments. <b>Invalid:</b> converting intermediate
+     * results back to differentiable form (use tensor-level ops instead).</p>
+     */
     public static IDiffVector vector(double... data) {
+        if (DEBUG_MODE.get()) {
+            // Emit stack trace to help identify leaf-node creation inside Module.forward().
+            // Filtered to show only caller frames (skip AD.<clinit>/<init> noise).
+            StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+            int callerIdx = 0;
+            for (int i = 0; i < trace.length; i++) {
+                String cn = trace[i].getClassName();
+                if (!cn.startsWith("com.yishape.lab.math.autodiff.AD")
+                    && !cn.startsWith("java.lang.Thread")) {
+                    callerIdx = i;
+                    break;
+                }
+            }
+            System.err.println("[AD-DEBUG] AD.vector() called at " + trace[callerIdx]);
+            if (callerIdx + 2 < trace.length) {
+                System.err.println("           from " + trace[callerIdx + 1]);
+            }
+        }
         return new RereDiffVector(data);
     }
 
@@ -133,7 +188,7 @@ public class AD {
      */
     public static IDiffTensor constantTensor(double[] data, int... shape) {
         RereDiffTensor t = new RereDiffTensor(data.clone(), shape);
-        t.requiresGrad = false;
+        t.setRequiresGrad(false);
         return t;
     }
 
@@ -222,6 +277,28 @@ public class AD {
         return new FloatDiffTensor(data, shape);
     }
 
+    // ---- autocast (AMP) ----
+
+    /**
+     * Enter automatic mixed precision (AMP) context.
+     *
+     * <p>Within the autocast block, tensor operations automatically use FP32
+     * precision where supported. Gradient accumulation remains FP64.</p>
+     *
+     * <pre>{@code
+     *   try (AutocastContext ctx = AD.autocast()) {
+     *       IDiffTensor loss = model.forward(x);
+     *       loss.backward();
+     *       // optimizer.step() after ctx.close()
+     *   }
+     * }</pre>
+     *
+     * @return AutoCloseable context; closes to exit AMP
+     */
+    public static com.yishape.lab.math.autodiff.support.AutocastContext autocast() {
+        return new com.yishape.lab.math.autodiff.support.AutocastContext();
+    }
+
     // ---- constant factories (for tape-of-tape) ----
 
     public static IDiffVector constant(IDoubleVector value) {
@@ -257,7 +334,7 @@ public class AD {
         out.buildTopo(order, visited);
 
         // Create differentiable seed gradient (ones)
-        int seedN = (int) out.value.totalSize();
+        int seedN = (int) out.value().totalSize();
         double[] onesData = new double[seedN];
         java.util.Arrays.fill(onesData, 1.0);
         RereDiffTensor seedGrad = new RereDiffTensor(onesData, out.shape());
@@ -269,9 +346,9 @@ public class AD {
         for (int i = order.size() - 1; i >= 0; i--) {
             RereDiffTensor node = order.get(i);
             IDiffTensor nodeGrad = nodeGrads.get(node);
-            if (nodeGrad != null && node.symbolicBackwardFn != null) {
-                IDiffTensor[] localGrads = node.symbolicBackwardFn.apply(nodeGrad);
-                List<RereDiffTensor> nodeInputs = node.inputs;
+            if (nodeGrad != null && node.symbolicBackwardFn() != null) {
+                IDiffTensor[] localGrads = node.symbolicBackwardFn().apply(nodeGrad);
+                List<RereDiffTensor> nodeInputs = node.inputs();
                 for (int j = 0; j < nodeInputs.size() && j < localGrads.length; j++) {
                     RereDiffTensor inputNode = nodeInputs.get(j);
                     IDiffTensor existing = nodeGrads.get(inputNode);
@@ -290,7 +367,7 @@ public class AD {
             RereDiffTensor in = (RereDiffTensor) inputs[k];
             IDiffTensor g = nodeGrads.get(in);
             result[k] = g != null ? g : new RereDiffTensor(
-                new double[(int) in.value.totalSize()], in.shape()).fill_(0);
+                new double[(int) in.value().totalSize()], in.shape()).fill_(0);
         }
         return result;
     }
@@ -422,7 +499,7 @@ public class AD {
         List<RereDiffTensor> tensorInputs = new ArrayList<>();
         for (RereDiffVector rv : rvInputs) tensorInputs.add(rv.tensor);
         Consumer<RereDiffTensor> tensorBackwardFn = (self) -> {
-            IDoubleVector[] grads = gradFn.apply(IDoubleVector.of(self.grad));
+            IDoubleVector[] grads = gradFn.apply(IDoubleVector.of(self.gradData()));
             for (int j = 0; j < tensorInputs.size() && j < grads.length; j++) {
                 if (grads[j] != null) {
                     tensorInputs.get(j).accGrad(grads[j].getData());
@@ -462,7 +539,7 @@ public class AD {
         List<RereDiffTensor> insList = java.util.Arrays.asList(tensorInputs);
         java.util.function.Consumer<RereDiffTensor> tensorBackwardFn = (self) -> {
             Object ctx = op.getCache(id);
-            IDoubleVector[] grads = op.backward(IDoubleVector.of(self.grad), ctx);
+            IDoubleVector[] grads = op.backward(IDoubleVector.of(self.gradData()), ctx);
             for (int j = 0; j < tensorInputs.length && j < grads.length; j++) {
                 if (grads[j] != null) {
                     tensorInputs[j].accGrad(grads[j].getData());
@@ -472,8 +549,8 @@ public class AD {
         String tag = op.graphOpTag != null ? op.graphOpTag : "CustomOp";
         RereDiffTensor resultTensor = new RereDiffTensor(outputData, new int[]{n}, insList, tensorBackwardFn, tag);
         if (op.graphOpTag != null) {
-            if (!Double.isNaN(op.graphScalarParam)) resultTensor.scalarParam = op.graphScalarParam;
-            if (!Double.isNaN(op.graphScalarParam2)) resultTensor.scalarParam2 = op.graphScalarParam2;
+            if (!Double.isNaN(op.graphScalarParam)) resultTensor.setScalarParam( op.graphScalarParam);
+            if (!Double.isNaN(op.graphScalarParam2)) resultTensor.setScalarParam2( op.graphScalarParam2);
         }
         return new RereDiffVector(resultTensor);
     }
@@ -506,6 +583,23 @@ public class AD {
     public static IDiffVector odeint(Function<IDiffVector, IDiffVector> dynamics, IDiffVector z0,
             double t0, double t1, double dt) {
         return new ODEDiffVector(dynamics, z0, t0, t1, dt);
+    }
+
+    /**
+     * Neural ODE integration with configurable solver.
+     *
+     * @param dynamics dz/dt = f(z, t)
+     * @param z0       initial state
+     * @param t0       start time
+     * @param t1       end time
+     * @param dt       step size (for RK4 only; ignored by Dopri5)
+     * @param config   solver configuration (see {@link OdeintConfig})
+     * @return final state z1 with gradient tape attached
+     */
+    public static IDiffVector odeint(Function<IDiffVector, IDiffVector> dynamics, IDiffVector z0,
+            double t0, double t1, double dt,
+            com.yishape.lab.math.autodiff.support.OdeintConfig config) {
+        return new ODEDiffVector(dynamics, z0, t0, t1, dt, config);
     }
 
     // ---- computation graph visualization ----
@@ -543,7 +637,7 @@ public class AD {
         for (int idx = 0; idx < order.size(); idx++) {
             RereDiffTensor v = order.get(idx);
             String id = "n" + System.identityHashCode(v);
-            String label = v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "?");
+            String label = v.opTag() != null ? v.opTag() : (v.isLeaf() ? "leaf" : "?");
             int[] shape = v.shape();
             StringBuilder shapeStr = new StringBuilder("[");
             for (int s = 0; s < shape.length; s++) {
@@ -552,10 +646,10 @@ public class AD {
             }
             shapeStr.append("]");
             sb.append("  ").append(id).append(" [label=\"").append(label).append("\\n").append(shapeStr).append("\"");
-            sb.append(v.isLeaf ? ", fillcolor=lightgreen" : ", fillcolor=lightyellow");
+            sb.append(v.isLeaf() ? ", fillcolor=lightgreen" : ", fillcolor=lightyellow");
             sb.append("];\n");
-            if (v.inputs != null) {
-                for (RereDiffTensor inp : v.inputs) {
+            if (v.inputs() != null) {
+                for (RereDiffTensor inp : v.inputs()) {
                     if (inp != null) {
                         String inpId = "n" + System.identityHashCode(inp);
                         sb.append("  ").append(inpId).append(" -> ").append(id).append(";\n");
@@ -653,6 +747,123 @@ public class AD {
     public static boolean tryGpuExecute(IDiffTensor root) {
         if (!(root instanceof RereDiffTensor rdt)) return false;
         return !Double.isNaN(GpuGraphExecutor.tryExecute(rdt));
+    }
+
+    // ---- infrastructure ----
+
+    /**
+     * Reset all per-thread resources held by the autodiff subsystem.
+     * Safe to call from web container shutdown hooks or {@code finalize()} guards.
+     * Clears ThreadLocal collections and buffer pools to prevent ClassLoader leaks.
+     */
+    public static void resetThreadLocals() {
+        RereDiffTensor.resetThreadLocals();
+    }
+
+    // ---- activation memory & checkpoint policy ----
+
+    /**
+     * Checkpoint policy for activation memory management.
+     */
+    public enum CheckpointPolicy {
+        /** Never checkpoint — keep all activations. Fastest, highest memory. */
+        NONE,
+        /** Checkpoint largest activations when memory budget is exceeded. */
+        AUTO,
+        /** Checkpoint every node except leaves. Lowest memory, slowest. */
+        AGGRESSIVE
+    }
+
+    /**
+     * Memory statistics for a computation graph.
+     * @param nodeCount         total graph nodes (ops + leaves)
+     * @param leafCount         number of leaf (parameter) nodes
+     * @param activationBytes   total bytes consumed by intermediate activation values
+     * @param largestNodeBytes  size of the single largest activation tensor
+     * @param largestNodeOp     op tag of the largest activation node
+     * @param estimatedPeakBytes estimated peak memory during training (activations + gradients)
+     */
+    public record GraphMemoryStats(
+        int nodeCount,
+        int leafCount,
+        long activationBytes,
+        long largestNodeBytes,
+        String largestNodeOp,
+        long estimatedPeakBytes
+    ) {
+        /** Human-readable summary. */
+        public String toText() {
+            return String.format(
+                "Graph: %d nodes (%d leaves), activations: %.1f MB, largest: %.1f MB (%s), peak est: %.1f MB",
+                nodeCount, leafCount,
+                activationBytes / (1024.0 * 1024.0),
+                largestNodeBytes / (1024.0 * 1024.0),
+                largestNodeOp != null ? largestNodeOp : "leaf",
+                estimatedPeakBytes / (1024.0 * 1024.0)
+            );
+        }
+    }
+
+    /**
+     * Analyze memory usage of a tensor computation graph.
+     * Walks the graph to count nodes, measure activation sizes, and estimate peak memory.
+     * Useful for deciding checkpoint policy and memory budget.
+     */
+    public static GraphMemoryStats graphMemoryStats(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rdt)) {
+            throw new IllegalArgumentException(
+                "graphMemoryStats requires RereDiffTensor, got: " + root.getClass().getSimpleName());
+        }
+        // BFS walk to collect all reachable nodes
+        java.util.ArrayList<RereDiffTensor> order = new java.util.ArrayList<>();
+        java.util.HashSet<RereDiffTensor> visited = new java.util.HashSet<>();
+        java.util.ArrayDeque<RereDiffTensor> queue = new java.util.ArrayDeque<>();
+        queue.add(rdt);
+        while (!queue.isEmpty()) {
+            RereDiffTensor node = queue.pollFirst();
+            if (!visited.add(node)) continue;
+            order.add(node);
+            for (RereDiffTensor in : node.inputs()) {
+                if (!visited.contains(in)) queue.addLast(in);
+            }
+        }
+
+        int nodeCount = order.size();
+        int leafCount = 0;
+        long activationBytes = 0;
+        long largestBytes = 0;
+        String largestOp = null;
+
+        for (RereDiffTensor node : order) {
+            long size = node.activationBytes();
+            if (!node.isLeaf()) {
+                activationBytes += size;
+                if (size > largestBytes) {
+                    largestBytes = size;
+                    largestOp = node.opTag();
+                }
+            } else {
+                leafCount++;
+            }
+        }
+
+        // Peak estimate: activations + gradient storage (same size as activations for non-leaves)
+        long estimatedPeakBytes = activationBytes * 2 + leafCount * 8L; // leaves have param + grad
+
+        return new GraphMemoryStats(nodeCount, leafCount, activationBytes,
+            largestBytes, largestOp, estimatedPeakBytes);
+    }
+
+    /**
+     * Analyze memory usage of a vector computation graph.
+     * @see #graphMemoryStats(IDiffTensor)
+     */
+    public static GraphMemoryStats graphMemoryStats(IDiffVector root) {
+        if (!(root instanceof RereDiffVector rdv)) {
+            throw new IllegalArgumentException(
+                "graphMemoryStats requires RereDiffVector, got: " + root.getClass().getSimpleName());
+        }
+        return graphMemoryStats((IDiffTensor) rdv.tensor);
     }
 
     // ---- numerical gradient checker ----
@@ -1053,52 +1264,287 @@ public class AD {
         return flat.reshape(n, outDim).sum(0).div(n);
     }
 
-    // ---- IDiffTensor vmap overloads ----
+    // ==================== IDiffTensor vmap overloads ====================
 
     /**
-     * IDiffTensor version of {@link #vmap(Function, List)}.
-     *
-     * <p>Stacks tensors along dim 0 into a single {@link BatchedDiffTensor},
+     * JAX-style vmap over tensors. Stacks inputs along {@code inAxes},
      * executes {@code fn} once with single-graph batched execution, then
-     * unstacks results along the batch dimension.
+     * unstacks results along {@code outAxes}.
      *
-     * <p>Same constraints as vector vmap: only element-wise operations and
-     * {@code sum()/sum(dim,keepdim)/mean(dim,keepdim)} are supported inside
-     * {@code fn}. Dimension-indexed operations have their dim shifted by +1.
+     * <p>Supported operations inside {@code fn}:
+     * <ul>
+     *   <li>All element-wise unary ops (exp, log, sigmoid, tanh, relu, gelu, silu, etc.)</li>
+     *   <li>All element-wise binary ops (add, sub, mul, div with tensor or scalar)</li>
+     *   <li>Reductions: sum(dim), mean(dim), max(dim), prod(dim), std(dim), var(dim)</li>
+     *   <li>Matrix ops: mmul (batched weight handled automatically), bmm, einsum</li>
+     *   <li>Structural ops: reshape, permute, transpose, flatten, contiguous, squeeze, unsqueeze</li>
+     *   <li>Advanced ops: gather, scatter, scatterAdd, indexSelect, where, pad, unfold, cat, stack</li>
+     *   <li>Normalization: layerNorm, batchNorm, softmax, logSoftmax, softmaxCrossEntropy</li>
+     *   <li>In-place ops: add_, sub_, mul_, div_, fill_, copy_</li>
+     * </ul>
+     *
+     * @param fn      function to vectorize (receives BatchedDiffTensor with batch at dim 0)
+     * @param xs      input tensors to stack along inAxes
+     * @param inAxes  axis to stack inputs along (0 = leading batch dim, -1 = trailing)
+     * @param outAxes axis in the output where the batch dim should appear
+     * @return unstacked per-sample results
      */
-    public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+    public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn,
+                                      List<? extends IDiffTensor> xs,
+                                      int inAxes, int outAxes) {
         if (xs.isEmpty()) {
             throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
         int n = xs.size();
 
-        // Stack all tensors along dim 0 → [B, D1, D2, ...]
+        // Stack all tensors along inAxes → batch dim
         IDiffTensor[] rest = new IDiffTensor[n - 1];
         for (int i = 1; i < n; i++) {
             rest[i - 1] = xs.get(i);
         }
-        IDiffTensor batched = xs.get(0).stack(0, rest);
+        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
+
+        // Move batch dim to position 0 for BatchedDiffTensor
+        if (inAxes != 0) {
+            int ndim = batched.rank();
+            int[] perm = new int[ndim];
+            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
+            int idx = 1;
+            for (int d = 0; d < ndim; d++) {
+                if (d != perm[0]) perm[idx++] = d;
+            }
+            batched = batched.permute(perm);
+        }
 
         // Single-graph batched execution
         BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
         IDiffTensor result = fn.apply(bdt);
 
-        // Unstack results along batch dim 0
+        // Unwrap and move batch dim to outAxes
         IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
+
+        if (outAxes != 0) {
+            int ndim = flat.rank();
+            int targetOut = outAxes < 0 ? ndim + outAxes : outAxes;
+            int[] perm = new int[ndim];
+            int idx = 0;
+            for (int d = 1; d <= targetOut; d++) perm[idx++] = d;
+            perm[idx++] = 0;
+            for (int d = targetOut + 1; d < ndim; d++) perm[idx++] = d;
+            flat = flat.permute(perm);
+        }
+
+        // Unstack results along outAxes (which is now at position outAxes after permute)
+        int unstackDim = outAxes < 0 ? flat.rank() + outAxes : outAxes;
         IDiffTensor[] ys = new IDiffTensor[n];
         for (int i = 0; i < n; i++) {
-            ys[i] = flat.select(0, i);
+            ys[i] = flat.select(unstackDim, i);
         }
         return ys;
     }
 
     /**
-     * IDiffTensor version of {@link #vmapSum(Function, List)}.
+     * JAX-style vmap over tensors with default {@code outAxes = 0}.
+     * Equivalent to {@code vmapT(fn, xs, 0, 0)}.
      *
-     * <p>Uses single-graph batched execution, then sums across the batch
-     * dimension (dim 0).
+     * <p>Stacks tensors along dim 0 into a single {@link BatchedDiffTensor},
+     * executes {@code fn} once with single-graph batched execution, then
+     * unstacks results along the batch dimension.
+     *
+     * <p>Supported operations inside {@code fn}: all element-wise ops,
+     * reductions, matrix ops (mmul with auto-broadcast), structural ops,
+     * advanced ops (gather, scatter, where, pad, unfold, cat, stack),
+     * and normalization layers. Dimension-indexed operations have their
+     * dim shifted by +1 transparently.
      */
-    public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+    public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+        return vmapT(fn, xs, 0, 0);
+    }
+
+    /**
+     * JAX-style vmap that returns a stacked (still-batched) result instead of
+     * unstacking. This is the building block for nested vmap: the returned
+     * {@link BatchedDiffTensor} can be used as input to another vmap call.
+     *
+     * <p>Example — nested vmap (per-class then per-sample):
+     * <pre>{@code
+     *   // Data shape: [numClasses, numSamples, featureDim]
+     *   IDiffTensor data = AD.tensor(rawData, C, S, D);
+     *
+     *   // Outer vmap over classes
+     *   IDiffTensor outer = AD.vmapStackedT(
+     *       classData -> {  // classData shape: [S, D], BatchedDiffTensor
+     *           // Inner vmap over samples within this class
+     *           return AD.vmapStackedT(
+     *               sample -> model.predict(sample),
+     *               classData.unstack(0)  // unstack BatchedDiffTensor
+     *           );
+     *       },
+     *       data.unstack(0)  // unstack by class
+     *   );
+     *   // outer shape: [C, S, outputDim] as BatchedDiffTensor(depth=2)
+     * }</pre>
+     *
+     * @param fn     function receiving a BatchedDiffTensor (one per input list element)
+     * @param xs     input tensors to stack and batch
+     * @param inAxes axis along which to stack (0 = leading batch dim)
+     * @return BatchedDiffTensor wrapping the stacked result (NOT unstacked)
+     */
+    public static IDiffTensor vmapStackedT(Function<IDiffTensor, IDiffTensor> fn,
+                                            List<? extends IDiffTensor> xs,
+                                            int inAxes) {
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
+        }
+        int n = xs.size();
+
+        // Stack all tensors along inAxes → batch dim
+        IDiffTensor[] rest = new IDiffTensor[n - 1];
+        for (int i = 1; i < n; i++) {
+            rest[i - 1] = xs.get(i);
+        }
+        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
+
+        // Move batch dim to position 0
+        if (inAxes != 0) {
+            int ndim = batched.rank();
+            int[] perm = new int[ndim];
+            perm[0] = inAxes;
+            int idx = 1;
+            for (int d = 0; d < ndim; d++) {
+                if (d != inAxes) perm[idx++] = d;
+            }
+            batched = batched.permute(perm);
+        }
+
+        // Wrap and execute
+        BatchedDiffTensor wrapper = new BatchedDiffTensor(batched);
+        IDiffTensor result = fn.apply(wrapper);
+
+        // Return still-batched (unwrap if fn returned a BatchedDiffTensor)
+        if (result instanceof BatchedDiffTensor bdt) {
+            return bdt;
+        }
+        // Re-wrap if fn returned raw tensor (retaining batch semantics)
+        return new BatchedDiffTensor(result);
+    }
+
+    /** Shorthand for {@code vmapStackedT(fn, xs, 0)}. */
+    public static IDiffTensor vmapStackedT(Function<IDiffTensor, IDiffTensor> fn,
+                                            List<? extends IDiffTensor> xs) {
+        return vmapStackedT(fn, xs, 0);
+    }
+
+    /**
+     * JAX-style multi-axis vmap: each input tensor can have its batch dimension
+     * at a different axis. Each input is independently aligned to batch-dim-0,
+     * wrapped in a {@link BatchedDiffTensor}, and passed to {@code fn}.
+     *
+     * <p>Example: per-sample prediction with features at different axes:
+     * <pre>{@code
+     *   IDiffTensor[] results = AD.vmapMultiT(
+     *       inputs -> model.forward(inputs.get(0), inputs.get(1)),
+     *       List.of(batchA, batchB),
+     *       new int[]{0, 1},  // batchA dim 0, batchB dim 1
+     *       0
+     *   );
+     * }</pre>
+     *
+     * <p><b>Constraints:</b> All inputs must have the same batch size at their
+     * respective batch axes. The function receives a mutable list of
+     * BatchedDiffTensors — one per original input — already aligned to dim 0.
+     * Dimension-indexed operations (mmul, sum, softmax, etc.) inside fn have
+     * their dim argument shifted by +1 transparently.
+     *
+     * @param fn      function receiving list of BatchedDiffTensors (one per input)
+     * @param xs      input tensors, each with its own batch dim
+     * @param inAxes  per-input batch axis (must match xs.size()); negative = from end
+     * @param outAxes axis in the output where the batch dim should appear
+     * @return unstacked per-sample results
+     */
+    public static IDiffTensor[] vmapMultiT(Function<List<IDiffTensor>, IDiffTensor> fn,
+                                            List<? extends IDiffTensor> xs,
+                                            int[] inAxes, int outAxes) {
+        if (xs.isEmpty()) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
+        }
+        if (inAxes.length != xs.size()) {
+            throw new IllegalArgumentException(
+                "inAxes.length=" + inAxes.length + " but xs.size()=" + xs.size());
+        }
+        int n = xs.size();
+
+        // Step 1: For each input, move its batch dim to position 0, then wrap in
+        // BatchedDiffTensor. All BatchedDiffTensors share the same batch size.
+        List<IDiffTensor> batchedInputs = new ArrayList<>(n);
+        int batchSize = -1;
+        for (int i = 0; i < n; i++) {
+            IDiffTensor x = xs.get(i);
+            int ax = inAxes[i];
+            int ndim = x.rank();
+            int batchAxis = ax < 0 ? ndim + ax : ax;
+
+            // Verify batch size consistency
+            int bs = x.dim(batchAxis);
+            if (batchSize < 0) batchSize = bs;
+            else if (batchSize != bs) {
+                throw new IllegalArgumentException(
+                    "Inconsistent batch sizes: input[0] batch=" + batchSize
+                    + " but input[" + i + "] batch=" + bs + " at axis " + ax);
+            }
+
+            // Permute batch dim to position 0
+            if (batchAxis != 0) {
+                int[] perm = new int[ndim];
+                perm[0] = batchAxis;
+                int idx = 1;
+                for (int d = 0; d < ndim; d++) {
+                    if (d != batchAxis) perm[idx++] = d;
+                }
+                x = x.permute(perm);
+            }
+            batchedInputs.add(new BatchedDiffTensor(x));
+        }
+
+        // Step 2: Execute fn with per-input BatchedDiffTensors
+        IDiffTensor result = fn.apply(batchedInputs);
+        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
+
+        // Step 3: Move batch dim to outAxes and unstack
+        if (outAxes != 0) {
+            int ndim = flat.rank();
+            int targetOut = outAxes < 0 ? ndim + outAxes : outAxes;
+            int[] perm = new int[ndim];
+            int idx = 0;
+            for (int d = 1; d <= targetOut; d++) perm[idx++] = d;
+            perm[idx++] = 0;
+            for (int d = targetOut + 1; d < ndim; d++) perm[idx++] = d;
+            flat = flat.permute(perm);
+        }
+
+        int unstackDim = outAxes < 0 ? flat.rank() + outAxes : outAxes;
+        IDiffTensor[] ys = new IDiffTensor[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            ys[i] = flat.select(unstackDim, i);
+        }
+        return ys;
+    }
+
+    /**
+     * JAX-style vmap with sum reduction. Equivalent to summing
+     * {@link #vmapT(Function, List, int, int)} across the batch dimension.
+     *
+     * <p>Useful for per-sample loss computation:
+     * <pre>{@code
+     *   IDiffTensor totalLoss = AD.vmapSumT(
+     *       x -> lossFn(model.forward(x), label),
+     *       samples
+     *   );
+     * }</pre>
+     */
+    public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn,
+                                        List<? extends IDiffTensor> xs,
+                                        int inAxes) {
         if (xs.isEmpty()) {
             throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
@@ -1108,7 +1554,18 @@ public class AD {
         for (int i = 1; i < n; i++) {
             rest[i - 1] = xs.get(i);
         }
-        IDiffTensor batched = xs.get(0).stack(0, rest);
+        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
+
+        if (inAxes != 0) {
+            int ndim = batched.rank();
+            int[] perm = new int[ndim];
+            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
+            int idx = 1;
+            for (int d = 0; d < ndim; d++) {
+                if (d != perm[0]) perm[idx++] = d;
+            }
+            batched = batched.permute(perm);
+        }
 
         BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
         IDiffTensor result = fn.apply(bdt);
@@ -1118,12 +1575,20 @@ public class AD {
     }
 
     /**
-     * IDiffTensor version of {@link #vmapMean(Function, List)}.
-     *
-     * <p>Uses single-graph batched execution, then averages across the batch
-     * dimension (dim 0).
+     * JAX-style vmap with sum reduction, default {@code inAxes = 0}.
+     * Equivalent to {@code vmapSumT(fn, xs, 0)}.
      */
-    public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+    public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+        return vmapSumT(fn, xs, 0);
+    }
+
+    /**
+     * JAX-style vmap with mean reduction. Equivalent to averaging
+     * {@link #vmapT(Function, List, int, int)} across the batch dimension.
+     */
+    public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn,
+                                         List<? extends IDiffTensor> xs,
+                                         int inAxes) {
         if (xs.isEmpty()) {
             throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
         }
@@ -1133,12 +1598,111 @@ public class AD {
         for (int i = 1; i < n; i++) {
             rest[i - 1] = xs.get(i);
         }
-        IDiffTensor batched = xs.get(0).stack(0, rest);
+        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
+
+        if (inAxes != 0) {
+            int ndim = batched.rank();
+            int[] perm = new int[ndim];
+            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
+            int idx = 1;
+            for (int d = 0; d < ndim; d++) {
+                if (d != perm[0]) perm[idx++] = d;
+            }
+            batched = batched.permute(perm);
+        }
 
         BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
         IDiffTensor result = fn.apply(bdt);
 
         IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
         return flat.sum(0, false).div(n);
+    }
+
+    /**
+     * JAX-style vmap with mean reduction, default {@code inAxes = 0}.
+     * Equivalent to {@code vmapMeanT(fn, xs, 0)}.
+     */
+    public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
+        return vmapMeanT(fn, xs, 0);
+    }
+
+    // ==================== vmap with multiple inputs ====================
+
+    /**
+     * JAX-style vmap with multiple input tensors and a rank-matching function.
+     * Each input list is stacked along its own inAxes, and the function
+     * receives a corresponding array of BatchedDiffTensors.
+     *
+     * <p>Example — per-sample gradients for a model parameterized by w:
+     * <pre>{@code
+     *   // Compute per-sample loss gradients w.r.t. w using vmap
+     *   IDiffTensor[] perSampleGrads = AD.vmapMultiT(
+     *       (tensors) -> {
+     *           IDiffTensor x = tensors[0];  // single sample [D]
+     *           IDiffTensor y = tensors[1];  // label
+     *           IDiffTensor pred = model.forward(x, w); // w captured from outer scope
+     *           return lossFn(pred, y);
+     *       },
+     *       samples,  // List of [D] tensors
+     *       labels    // List of scalar tensors
+     *   );
+     * }</pre>
+     *
+     * @param fn       function receiving an array of BatchedDiffTensors
+     * @param inAxes   per-input stacking axes (length must match inputs.length)
+     * @param inputs   list-of-lists: inputs[i] is the list of tensors for the i-th argument
+     * @return per-sample results
+     */
+    @SafeVarargs
+    public static IDiffTensor[] vmapMultiT(Function<IDiffTensor[], IDiffTensor> fn,
+                                            int[] inAxes,
+                                            List<? extends IDiffTensor>... inputs) {
+        if (inputs.length == 0) {
+            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
+        }
+        int n = inputs[0].size();
+        for (int i = 1; i < inputs.length; i++) {
+            if (inputs[i].size() != n) {
+                throw new IllegalArgumentException(
+                    "All input lists must have the same size. Expected " + n
+                    + " but input[" + i + "] has " + inputs[i].size());
+            }
+        }
+
+        // Stack each input along its specified axis
+        IDiffTensor[] batched = new IDiffTensor[inputs.length];
+        for (int j = 0; j < inputs.length; j++) {
+            List<? extends IDiffTensor> list = inputs[j];
+            int ax = inAxes != null && j < inAxes.length ? inAxes[j] : 0;
+            IDiffTensor[] rest = new IDiffTensor[n - 1];
+            for (int i = 1; i < n; i++) rest[i - 1] = list.get(i);
+            batched[j] = list.get(0).stack(ax, rest);
+            if (ax != 0) {
+                int ndim = batched[j].rank();
+                int[] perm = new int[ndim];
+                perm[0] = ax < 0 ? ndim - 1 + ax : ax;
+                int idx = 1;
+                for (int d = 0; d < ndim; d++) {
+                    if (d != perm[0]) perm[idx++] = d;
+                }
+                batched[j] = batched[j].permute(perm);
+            }
+        }
+
+        // Wrap all in BatchedDiffTensor
+        BatchedDiffTensor[] bdts = new BatchedDiffTensor[batched.length];
+        for (int j = 0; j < batched.length; j++) {
+            bdts[j] = new BatchedDiffTensor(batched[j]);
+        }
+
+        IDiffTensor result = fn.apply(bdts);
+        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
+
+        // Unstack
+        IDiffTensor[] ys = new IDiffTensor[n];
+        for (int i = 0; i < n; i++) {
+            ys[i] = flat.select(0, i);
+        }
+        return ys;
     }
 }

@@ -36,6 +36,22 @@ public interface IDiffVector extends IDoubleVector {
     /** Whether this node is a leaf (trainable parameter). / 是否为叶子（可训练参数）节点。 */
     boolean isLeaf();
 
+    /**
+     * Whether the backing storage is a flat 1-D array.
+     *
+     * <p>Returns {@code true} when this vector is backed by a truly 1-D tensor
+     * ({@code shape.length == 1} or {@code shape[0] == totalSize}).
+     * Returns {@code false} when this vector is backed by a multi-dimensional tensor
+     * that was flattened via {@code view} (not a copy) — such vectors share the
+     * multi-D stride layout, and operations like {@link #slice(int, int)} may
+     * interpret flat indices as dim-0 indices, leading to
+     * {@link IndexOutOfBoundsException}.</p>
+     *
+     * <p>Default returns {@code true}; implementors with multi-D backing should
+     * override.</p>
+     */
+    default boolean isFlat() { return true; }
+
     /** Reverse-mode AD with unit initial gradient (for scalar outputs). / 以单位初始梯度做反向传播。 */
     void backward();
 
@@ -147,7 +163,16 @@ public interface IDiffVector extends IDoubleVector {
 
     IDiffVector broadcast(int n);
 
-    /** Returns a differentiable sub-vector slice [start, end). Backward scatters gradient back to original positions. */
+    /**
+     * Returns a differentiable sub-vector slice [{@code start}, {@code end}).
+     * Backward scatters gradient back to original positions.
+     *
+     * <p><b>⚠️ Multi-D backing trap:</b> If this vector is backed by a multi-dimensional
+     * tensor (see {@link #isFlat()}), the flat {@code start}/{@code end} indices may
+     * be misinterpreted as dim-0 indices. Use {@code isFlat()} to verify, or wrap
+     * the vector in {@code AD.vector(v.toDoubleArray())} to force a flat copy
+     * before slicing.</p>
+     */
     IDiffVector slice(int start, int end);
 
     /**

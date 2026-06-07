@@ -53,8 +53,9 @@ public final class TensorGraphExporter {
                                     Map<RereDiffTensor, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
 
-        // Shape: use exportShape if set (fused pattern nodes), otherwise tensor's own shape
-        int[] shape = v.exportShape != null ? v.exportShape : v.shape();
+        // Shape: use the tensor's actual output shape (NOT exportShape — which is the input shape
+        // for backward context; using it here would cause Rust to overallocate buffers for fused ops)
+        int[] shape = v.shape();
         sb.append(",\"shape\":[");
         for (int i = 0; i < shape.length; i++) {
             if (i > 0) sb.append(',');
@@ -64,12 +65,12 @@ public final class TensorGraphExporter {
 
         // Operation tag
         sb.append(",\"op\":\"");
-        sb.append(v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown"));
+        sb.append(v.opTag() != null ? v.opTag() : (v.isLeaf() ? "leaf" : "unknown"));
         sb.append('"');
 
         // Leaf data
-        if (v.isLeaf) {
-            double[] data = v.value.toDoubleArray();
+        if (v.isLeaf()) {
+            double[] data = v.value().toDoubleArray();
             sb.append(",\"data\":[");
             for (int i = 0; i < data.length; i++) {
                 if (i > 0) sb.append(',');
@@ -78,28 +79,29 @@ public final class TensorGraphExporter {
             sb.append(']');
         }
 
-        // Scalar parameters
-        if (!Double.isNaN(v.scalarParam) && !Double.isInfinite(v.scalarParam)) {
-            sb.append(",\"scalar\":").append(v.scalarParam);
+        // Scalar parameters — op-specific (exponent for pow, divisor for div, alpha for activations).
+        // NOT batch size. The Rust GPU/HPC backends interpret "scalar" according to the "op" field.
+        if (!Double.isNaN(v.scalarParam()) && !Double.isInfinite(v.scalarParam())) {
+            sb.append(",\"scalar\":").append(v.scalarParam());
         }
-        if (!Double.isNaN(v.scalarParam2) && !Double.isInfinite(v.scalarParam2)) {
-            sb.append(",\"param2\":").append(v.scalarParam2);
+        if (!Double.isNaN(v.scalarParam2()) && !Double.isInfinite(v.scalarParam2())) {
+            sb.append(",\"param2\":").append(v.scalarParam2());
         }
 
         // Backward indices (e.g. MaxPool2d argmax)
-        if (v.backwardIndices != null && v.backwardIndices.length > 0) {
+        if (v.backwardIndices() != null && v.backwardIndices().length > 0) {
             sb.append(",\"indices\":[");
-            for (int i = 0; i < v.backwardIndices.length; i++) {
+            for (int i = 0; i < v.backwardIndices().length; i++) {
                 if (i > 0) sb.append(',');
-                sb.append(v.backwardIndices[i]);
+                sb.append(v.backwardIndices()[i]);
             }
             sb.append(']');
         }
 
         // Input references
-        if (v.inputs != null && !v.inputs.isEmpty()) {
+        if (v.inputs() != null && !v.inputs().isEmpty()) {
             List<RereDiffTensor> inputs = new ArrayList<>();
-            for (RereDiffTensor inp : v.inputs) {
+            for (RereDiffTensor inp : v.inputs()) {
                 if (inp != null && indexMap.containsKey(inp)) {
                     inputs.add(inp);
                 }

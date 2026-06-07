@@ -255,7 +255,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         // Note: self (matrix) is NOT in inputs because inputs is List<RereDiffVector>.
         // propagateGradient() in backwardFn handles matrix graph traversal.
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(v), backwardFn);
-        node.tensor.opTag = "matmul";
+        node.tensor.setOpTag("matmul");
         return node;
     }
 
@@ -1139,7 +1139,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.opTag = "squareSum";
+            node.tensor.setOpTag("squareSum");
             return node;
         }
         // Pattern fusion: exp().sumAsVector() → single fused node
@@ -1162,7 +1162,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.opTag = "expSum";
+            node.tensor.setOpTag("expSum");
             return node;
         }
         double s = this.value.sumValue();
@@ -1186,7 +1186,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
             self.propagateGradient();
         };
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "sum";
+        node.tensor.setOpTag("sum");
         return node;
     }
 
@@ -1213,7 +1213,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.opTag = "squareMean";
+            node.tensor.setOpTag("squareMean");
             return node;
         }
         double m = this.value.meanValue();
@@ -1238,7 +1238,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
             self.propagateGradient();
         };
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "mean";
+        node.tensor.setOpTag("mean");
         return node;
     }
 
@@ -1290,7 +1290,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         // self (RereDiffMatrix) cannot be in List<RereDiffVector> inputs,
         // so propagateGradient() is needed to propagate through the matrix graph.
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "flatten";
+        node.tensor.setOpTag("flatten");
         return node;
     }
 
@@ -1363,7 +1363,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
             throw new IllegalArgumentException("axis must be 0 or 1, got " + axis);
         }
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "sum";
+        node.tensor.setOpTag("sum");
         return node;
     }
 
@@ -1395,7 +1395,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 self.propagateGradient();
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.opTag = "max";
+            node.tensor.setOpTag("max");
             return node;
         } else if (axis == 1) {
             IDoubleVector resultVal = (IDoubleVector) xVal.rowMaxs();
@@ -1418,7 +1418,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 self.propagateGradient();
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.opTag = "max";
+            node.tensor.setOpTag("max");
             return node;
         } else {
             throw new IllegalArgumentException("axis must be 0 or 1, got " + axis);
@@ -1627,9 +1627,9 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
         // self (RereDiffMatrix) cannot be in List<RereDiffVector> inputs,
         // so propagateGradient() is needed to propagate through the matrix graph.
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "softmaxCrossEntropy";
-        node.tensor.scalarParam = m;
-        node.tensor.exportShape = new int[]{m, k};
+        node.tensor.setOpTag("softmaxCrossEntropy");
+        node.tensor.setScalarParam(m);
+        node.tensor.setExportShape(new int[]{m, k});
         return node;
     }
 }

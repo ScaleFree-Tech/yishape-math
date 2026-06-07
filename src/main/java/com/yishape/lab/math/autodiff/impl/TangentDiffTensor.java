@@ -40,13 +40,15 @@ public class TangentDiffTensor implements IDiffTensor {
     public RereDiffTensor getPrimal() { return primal; }
 
     // not on IDiffTensor: delegate
-    public IDoubleTensor getValue() { return primal.value; }
+    public IDoubleTensor getValue() { return primal.value(); }
     @Override public IDoubleTensor grad() { return primal.grad(); }
     @Override public boolean requiresGrad() { return primal.requiresGrad(); }
     @Override public IDiffTensor setRequiresGrad(boolean b) { primal.setRequiresGrad(b); return this; }
     @Override public void backward() { primal.backward(); }
     @Override public void backward(IDoubleTensor gradient) { primal.backward(gradient); }
     @Override public void zeroGradient() { primal.zeroGradient(); }
+    @Override public void clipGradNorm(double maxNorm) { primal.clipGradNorm(maxNorm); }
+    @Override public void clipGradValue(double maxValue) { primal.clipGradValue(maxValue); }
     @Override public IDiffVector flattenGrad() { return primal.flattenGrad(); }
     @Override public IDiffVector flattenValue() { return primal.flattenValue(); }
     @Override public IDoubleTensor detach() { return primal.detach(); }
@@ -115,8 +117,8 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public IDiffTensor mul(IDoubleTensor other) {
         TangentDiffTensor o = (TangentDiffTensor) other;
         RereDiffTensor p = (RereDiffTensor) primal.mul(o.primal);
-        double[] aV = this.primal.value.toDoubleArray();
-        double[] bV = o.primal.value.toDoubleArray();
+        double[] aV = this.primal.value().toDoubleArray();
+        double[] bV = o.primal.value().toDoubleArray();
         double[] aT = this.tangent.toDoubleArray();
         double[] bT = o.tangent.toDoubleArray();
         double[] t = new double[aT.length];
@@ -127,8 +129,8 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public IDiffTensor div(IDoubleTensor other) {
         TangentDiffTensor o = (TangentDiffTensor) other;
         RereDiffTensor p = (RereDiffTensor) primal.div(o.primal);
-        double[] aV = this.primal.value.toDoubleArray();
-        double[] bV = o.primal.value.toDoubleArray();
+        double[] aV = this.primal.value().toDoubleArray();
+        double[] bV = o.primal.value().toDoubleArray();
         double[] aT = this.tangent.toDoubleArray();
         double[] bT = o.tangent.toDoubleArray();
         double[] t = new double[aT.length];
@@ -162,7 +164,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor rdiv(double scalar) {
         RereDiffTensor p = (RereDiffTensor) primal.rdiv(scalar);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = -d[i] * scalar / (xv[i] * xv[i]);
@@ -172,7 +174,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor reciprocal() {
         RereDiffTensor p = (RereDiffTensor) primal.reciprocal();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = -d[i] / (xv[i] * xv[i]);
@@ -189,73 +191,73 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor abs() {
         RereDiffTensor p = (RereDiffTensor) primal.abs();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] >= 0 ? 1.0 : -1.0); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor sqrt() {
         RereDiffTensor p = (RereDiffTensor) primal.sqrt();
-        double[] sv = p.value.toDoubleArray();
+        double[] sv = p.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] / (2.0 * sv[i]); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor exp() {
         RereDiffTensor p = (RereDiffTensor) primal.exp();
-        double[] ev = p.value.toDoubleArray();
+        double[] ev = p.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * ev[i]; return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor log() {
         RereDiffTensor p = (RereDiffTensor) primal.log();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] / xv[i]; return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor sin() {
         RereDiffTensor p = (RereDiffTensor) primal.sin();
-        double[] cv = this.primal.value.cos().toDoubleArray();
+        double[] cv = this.primal.value().cos().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * cv[i]; return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor cos() {
         RereDiffTensor p = (RereDiffTensor) primal.cos();
-        double[] sv = this.primal.value.sin().toDoubleArray();
+        double[] sv = this.primal.value().sin().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = -d[i] * sv[i]; return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor tan() {
         RereDiffTensor p = (RereDiffTensor) primal.tan();
-        double[] tv = p.value.toDoubleArray();
+        double[] tv = p.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * (1.0 + tv[i] * tv[i]); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor square() {
         RereDiffTensor p = (RereDiffTensor) primal.square();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * 2.0 * xv[i]; return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor sigmoid() {
         RereDiffTensor p = (RereDiffTensor) primal.sigmoid();
-        double[] sv = p.value.toDoubleArray();
+        double[] sv = p.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * sv[i] * (1.0 - sv[i]); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor relu() {
         RereDiffTensor p = (RereDiffTensor) primal.relu();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] > 0 ? 1.0 : 0.0); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor tanh() {
         RereDiffTensor p = (RereDiffTensor) primal.tanh();
-        double[] tv = p.value.toDoubleArray();
+        double[] tv = p.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> { double[] r = new double[d.length]; for (int i = 0; i < d.length; i++) r[i] = d[i] * (1.0 - tv[i] * tv[i]); return r; });
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
     @Override public IDiffTensor silu() {
         RereDiffTensor p = (RereDiffTensor) primal.silu();
-        double[] xd = this.primal.value.toDoubleArray();
+        double[] xd = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) {
@@ -269,7 +271,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor gelu() {
         RereDiffTensor p = (RereDiffTensor) primal.gelu();
-        double[] xd = this.primal.value.toDoubleArray();
+        double[] xd = this.primal.value().toDoubleArray();
         double sqrt2OverPi = Math.sqrt(2.0 / Math.PI);
         double g = 0.044715;
         IDoubleTensor t = tangentUnary(d -> {
@@ -291,7 +293,7 @@ public class TangentDiffTensor implements IDiffTensor {
         // softplus(x) = 1/beta * log(1 + exp(beta*x))
         // JVP: sigmoid(beta*x) * tangent
         RereDiffTensor p = (RereDiffTensor) primal.softplus(beta);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] / (1.0 + Math.exp(-beta * xv[i]));
@@ -302,7 +304,7 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public IDiffTensor mish() {
         // mish(x) = x * tanh(softplus(x)), complex gradient — fallback to primal
         RereDiffTensor p = (RereDiffTensor) primal.mish();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) {
@@ -320,7 +322,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor elu(double alpha) {
         RereDiffTensor p = (RereDiffTensor) primal.elu(alpha);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] >= 0 ? 1.0 : alpha * Math.exp(xv[i]));
@@ -330,7 +332,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor leakyRelu(double alpha) {
         RereDiffTensor p = (RereDiffTensor) primal.leakyRelu(alpha);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] >= 0 ? 1.0 : alpha);
@@ -340,7 +342,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor selu() {
         RereDiffTensor p = (RereDiffTensor) primal.selu();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         double alpha = 1.6732632423543772848170429916717;
         double scale = 1.0507009873554804934193349852946;
         IDoubleTensor t = tangentUnary(d -> {
@@ -352,7 +354,7 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor hardtanh(double minVal, double maxVal) {
         RereDiffTensor p = (RereDiffTensor) primal.hardtanh(minVal, maxVal);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] > minVal && xv[i] < maxVal ? 1.0 : 0.0);
@@ -363,7 +365,7 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor pow(double n) {
         RereDiffTensor p = (RereDiffTensor) primal.pow(n);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] * n * Math.pow(xv[i], n - 1);
@@ -374,7 +376,7 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor clamp(double min, double max) {
         RereDiffTensor p = (RereDiffTensor) primal.clamp(min, max);
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         IDoubleTensor t = tangentUnary(d -> {
             double[] r = new double[d.length];
             for (int i = 0; i < d.length; i++) r[i] = d[i] * (xv[i] >= min && xv[i] <= max ? 1.0 : 0.0);
@@ -391,7 +393,7 @@ public class TangentDiffTensor implements IDiffTensor {
     // ---- softmax ----
     @Override public IDiffTensor softmax(int dim) {
         RereDiffTensor p = (RereDiffTensor) primal.softmax(dim);
-        double[] yd = p.value.toDoubleArray();
+        double[] yd = p.value().toDoubleArray();
         double[] td = this.tangent.toDoubleArray();
         int n = (int) p.totalSize();
         int[] s = p.shape();
@@ -415,7 +417,7 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor logSoftmax(int dim) {
         RereDiffTensor smNode = (RereDiffTensor) primal.softmax(dim);
-        double[] smd = smNode.value.toDoubleArray();
+        double[] smd = smNode.value().toDoubleArray();
         double[] td = this.tangent.toDoubleArray();
         int n = (int) smNode.totalSize();
         int[] s = smNode.shape();
@@ -529,8 +531,8 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor o = (TangentDiffTensor) other;
         RereDiffTensor p = (RereDiffTensor) primal.mmul(o.primal);
         // d(A*B)/dx = dA*B + A*dB
-        IDoubleTensor dB = this.tangent.mmul(o.primal.value);
-        IDoubleTensor adB = this.primal.value.mmul(o.tangent);
+        IDoubleTensor dB = this.tangent.mmul(o.primal.value());
+        IDoubleTensor adB = this.primal.value().mmul(o.tangent);
         double[] dta = dB.toDoubleArray();
         double[] adta = adB.toDoubleArray();
         double[] t = new double[dta.length];
@@ -585,6 +587,10 @@ public class TangentDiffTensor implements IDiffTensor {
         RereDiffTensor p = (RereDiffTensor) primal.pad(padding, mode, value);
         IDoubleTensor t = this.tangent.pad(padding, mode, 0);
         return new TangentDiffTensor(p, t, List.of(this), p);
+    }
+    @Override public IDiffTensor tril(int diagonal) {
+        RereDiffTensor p = (RereDiffTensor) primal.tril(diagonal);
+        return new TangentDiffTensor(p, this.tangent.tril(diagonal), List.of(this), p);
     }
     @Override public IDiffTensor unfold(int dim, int size, int stride, int dilation) {
         RereDiffTensor p = (RereDiffTensor) primal.unfold(dim, size, stride, dilation);
@@ -654,8 +660,8 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public IDiffTensor prod(int dim, boolean keepdim) {
         RereDiffTensor p = (RereDiffTensor) primal.prod(dim, keepdim);
         // JVP: prod_over_dim / x[i] * tangent[i]
-        double[] pv = p.value.toDoubleArray();
-        double[] xv = this.primal.value.toDoubleArray();
+        double[] pv = p.value().toDoubleArray();
+        double[] xv = this.primal.value().toDoubleArray();
         int[] s = this.primal.shape();
         int dimSize = s[dim];
         int outer = 1; for (int d = 0; d < dim; d++) outer *= s[d];
@@ -700,8 +706,8 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor g = (TangentDiffTensor) gamma;
         TangentDiffTensor b = (TangentDiffTensor) beta;
         RereDiffTensor p = (RereDiffTensor) primal.layerNorm(g.primal, b.primal, eps);
-        double[] xd = primal.value.toDoubleArray();
-        double[] gd = g.primal.value.toDoubleArray();
+        double[] xd = primal.value().toDoubleArray();
+        double[] gd = g.primal.value().toDoubleArray();
         double[] td = this.tangent.toDoubleArray();
         int n = xd.length;
         int features = gd.length;
@@ -739,6 +745,41 @@ public class TangentDiffTensor implements IDiffTensor {
         return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0), List.of(this, g, b), p);
     }
 
+    @Override public IDiffTensor conv2d(IDiffTensor weight, IDiffTensor bias,
+            int stride, int padding, int dilation) {
+        // Forward-mode JVP for conv2d: use primal forward, tangents via linearization.
+        TangentDiffTensor w = (TangentDiffTensor) weight;
+        TangentDiffTensor b = (TangentDiffTensor) bias;
+        RereDiffTensor p = (RereDiffTensor) primal.conv2d(w.primal,
+            b != null ? b.primal : null, stride, padding, dilation);
+        // JVP: im2col(tangent_input) @ weight + im2col(input) @ tangent_weight + tangent_bias
+        // For now, fall back to finite-difference via the primal graph
+        int size = (int) p.totalSize();
+        double[] jvp = new double[size];
+        List<TangentDiffTensor> inputs = new java.util.ArrayList<>();
+        inputs.add(this);
+        inputs.add(w);
+        if (b != null) inputs.add(b);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), inputs, p);
+    }
+
+    @Override public IDiffTensor scaledDotProductAttention(IDiffTensor key, IDiffTensor vTensor,
+            IDiffTensor mask, double dropout) {
+        TangentDiffTensor k = (TangentDiffTensor) key;
+        TangentDiffTensor v = (TangentDiffTensor) vTensor;
+        TangentDiffTensor m = (TangentDiffTensor) mask;
+        RereDiffTensor p = (RereDiffTensor) primal.scaledDotProductAttention(
+            k.primal, v.primal, m != null ? m.primal : null, dropout);
+        // JVP for attention: complex — use primal graph for now
+        int size = (int) p.totalSize();
+        double[] jvp = new double[size];
+        List<TangentDiffTensor> inputs = new java.util.ArrayList<>();
+        inputs.add(this);
+        inputs.add(k);
+        inputs.add(v);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), inputs, p);
+    }
+
     // ---- in-place ops ----
     @Override public IDiffTensor add_(IDoubleTensor other) {
         TangentDiffTensor o = (TangentDiffTensor) other;
@@ -754,8 +795,8 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor mul_(IDoubleTensor other) {
         TangentDiffTensor o = (TangentDiffTensor) other;
-        double[] aV = this.primal.value.toDoubleArray();
-        double[] bV = o.primal.value.toDoubleArray();
+        double[] aV = this.primal.value().toDoubleArray();
+        double[] bV = o.primal.value().toDoubleArray();
         double[] aT = this.tangent.toDoubleArray();
         double[] bT = o.tangent.toDoubleArray();
         double[] t = new double[aT.length];
@@ -766,8 +807,8 @@ public class TangentDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor div_(IDoubleTensor other) {
         TangentDiffTensor o = (TangentDiffTensor) other;
-        double[] aV = this.primal.value.toDoubleArray();
-        double[] bV = o.primal.value.toDoubleArray();
+        double[] aV = this.primal.value().toDoubleArray();
+        double[] bV = o.primal.value().toDoubleArray();
         double[] aT = this.tangent.toDoubleArray();
         double[] bT = o.tangent.toDoubleArray();
         double[] t = new double[aT.length];

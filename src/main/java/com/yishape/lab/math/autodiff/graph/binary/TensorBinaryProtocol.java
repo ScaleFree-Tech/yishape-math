@@ -69,7 +69,7 @@ public final class TensorBinaryProtocol {
         // Pass 1: compute total size
         int size = 12; // header: magic + version + num_nodes
         for (RereDiffTensor v : order) {
-            size += nodeSize(v);
+            size += nodeSize(v, posMap);
         }
 
         ByteBuffer buf = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
@@ -132,21 +132,26 @@ public final class TensorBinaryProtocol {
 
     // ── Internal: node sizing ──
 
-    private static int nodeSize(RereDiffTensor v) {
+    private static int nodeSize(RereDiffTensor v, java.util.Map<RereDiffTensor, Integer> posMap) {
         int s = 2 + 2 + 4; // flags(u16) + op_len(u16) + id(u32)
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
         s += opBytes.length;
         s += 2; // num_dims (u16)
-        int[] shape = v.exportShape != null ? v.exportShape : v.shape();
+        int[] shape = v.shape();
         s += shape.length * 4; // shape (u32[])
         s += 2; // num_inputs (u16)
-        if (v.inputs != null) s += v.inputs.size() * 4; // inputs (u32[])
+        // Only count inputs that are in posMap (safe for Rust deserialization)
+        if (v.inputs() != null) {
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) s += 4; // inputs (u32[])
+            }
+        }
 
-        if (!Double.isNaN(v.scalarParam)) s += 8; // f64
-        if (!Double.isNaN(v.scalarParam2)) s += 8; // f64
-        if (v.isLeaf) s += 4 + v.totalSize() * 8; // data_len (u32) + data (f64[])
-        if (v.backwardIndices != null && v.backwardIndices.length > 0)
-            s += 4 + v.backwardIndices.length * 4; // indices_len + indices (i32[])
+        if (!Double.isNaN(v.scalarParam())) s += 8; // f64
+        if (!Double.isNaN(v.scalarParam2())) s += 8; // f64
+        if (v.isLeaf()) s += 4 + v.totalSize() * 8; // data_len (u32) + data (f64[])
+        if (v.backwardIndices() != null && v.backwardIndices().length > 0)
+            s += 4 + v.backwardIndices().length * 4; // indices_len + indices (i32[])
 
         return s;
     }
@@ -156,14 +161,14 @@ public final class TensorBinaryProtocol {
     private static void writeNode(ByteBuffer buf, RereDiffTensor v,
                                    java.util.Map<RereDiffTensor, Integer> posMap) {
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
-        int[] shape = v.exportShape != null ? v.exportShape : v.shape();
+        int[] shape = v.shape();
 
         // Flags
-        int flags = (v.isLeaf ? FLAG_IS_LEAF : 0)
-                  | (v.isLeaf ? FLAG_HAS_DATA : 0)
-                  | (!Double.isNaN(v.scalarParam) ? FLAG_HAS_SCALAR : 0)
-                  | (!Double.isNaN(v.scalarParam2) ? FLAG_HAS_PARAM2 : 0)
-                  | (v.backwardIndices != null && v.backwardIndices.length > 0 ? FLAG_HAS_INDICES : 0);
+        int flags = (v.isLeaf() ? FLAG_IS_LEAF : 0)
+                  | (v.isLeaf() ? FLAG_HAS_DATA : 0)
+                  | (!Double.isNaN(v.scalarParam()) ? FLAG_HAS_SCALAR : 0)
+                  | (!Double.isNaN(v.scalarParam2()) ? FLAG_HAS_PARAM2 : 0)
+                  | (v.backwardIndices() != null && v.backwardIndices().length > 0 ? FLAG_HAS_INDICES : 0);
         buf.putShort((short) flags);
         buf.putShort((short) opBytes.length);
         buf.putInt(posMap.getOrDefault(v, -1)); // id = position in order
@@ -171,34 +176,39 @@ public final class TensorBinaryProtocol {
         buf.putShort((short) shape.length);
         for (int d : shape) buf.putInt(d);
 
-        // Input references with actual positions
-        if (v.inputs != null && !v.inputs.isEmpty()) {
-            buf.putShort((short) v.inputs.size());
-            for (RereDiffTensor inp : v.inputs) {
-                int inpPos = posMap.getOrDefault(inp, -1);
-                buf.putInt(inpPos);
+        // Input references — only write inputs that are in posMap (matching JSON exporter behavior)
+        if (v.inputs() != null && !v.inputs().isEmpty()) {
+            int validCount = 0;
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) validCount++;
+            }
+            buf.putShort((short) validCount);
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) {
+                    buf.putInt(posMap.get(inp));
+                }
             }
         } else {
             buf.putShort((short) 0);
         }
 
-        if ((flags & FLAG_HAS_SCALAR) != 0) buf.putDouble(v.scalarParam);
-        if ((flags & FLAG_HAS_PARAM2) != 0) buf.putDouble(v.scalarParam2);
+        if ((flags & FLAG_HAS_SCALAR) != 0) buf.putDouble(v.scalarParam());
+        if ((flags & FLAG_HAS_PARAM2) != 0) buf.putDouble(v.scalarParam2());
         if ((flags & FLAG_HAS_DATA) != 0) {
-            double[] data = v.value.toDoubleArray();
+            double[] data = v.value().toDoubleArray();
             buf.putInt(data.length);
             for (double d : data) buf.putDouble(d);
         }
         if ((flags & FLAG_HAS_INDICES) != 0) {
-            buf.putInt(v.backwardIndices.length);
-            for (int idx : v.backwardIndices) buf.putInt(idx);
+            buf.putInt(v.backwardIndices().length);
+            for (int idx : v.backwardIndices()) buf.putInt(idx);
         }
     }
 
     // ── Internal: op tag resolution ──
 
     private static String opTag(RereDiffTensor v) {
-        return v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown");
+        return v.opTag() != null ? v.opTag() : (v.isLeaf() ? "leaf" : "unknown");
     }
 
     // ── Helpers for Rust FFI compatibility ──

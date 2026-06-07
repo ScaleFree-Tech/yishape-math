@@ -22,6 +22,16 @@ public final class GpuGraphExecutor {
 
     private static final YishapeLogger log = YishapeLogger.getLogger(GpuGraphExecutor.class);
 
+    /** Graphs with more nodes than this threshold should use binary protocol, not JSON. */
+    public static final int BINARY_THRESHOLD = 500;
+
+    /**
+     * Minimum total element count for GPU execution. Graphs with fewer total elements
+     * skip GPU to avoid kernel launch overhead dominating compute time.
+     * Configurable via {@code -Dyishape.gpu.minElements=N}.
+     */
+    public static final int MIN_ELEMENTS = Integer.getInteger("yishape.gpu.minElements", 1000);
+
     private static final HashSet<String> SUPPORTED_OPS = new HashSet<>(Arrays.asList(
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
@@ -46,7 +56,10 @@ public final class GpuGraphExecutor {
         // DL CustomOp layers (graphOpTag-based)
         "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
         "selectiveScan", "selectiveScan2", "depthwiseConv1d",
-        "softmaxCrossEntropy"
+        "scaledDotProductAttention",
+        "softmaxCrossEntropy",
+        // Concatenation
+        "cat"
     ));
 
     /** Ops supported in tensor-native GPU execution (superset). */
@@ -54,7 +67,8 @@ public final class GpuGraphExecutor {
     static {
         TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
             "permute", "expand", "reciprocal", "rsub", "rdiv",
-            "gather", "scatter", "select", "slice", "narrow"
+            "gather", "scatter", "select", "slice", "narrow",
+            "cat"
         ));
     }
 
@@ -91,29 +105,49 @@ public final class GpuGraphExecutor {
         visited.clear();
         root.buildTopo(order, visited);
 
-        // Try binary path first
-        double binaryResult = tryExecuteTensorBinary(root, order);
-        if (!Double.isNaN(binaryResult)) return binaryResult;
-
-        // Check ops
+        // Smart threshold: skip GPU for tiny graphs where kernel launch overhead
+        // would dominate compute time. Controlled by -Dyishape.gpu.minElements.
+        long totalElements = 0;
         for (RereDiffTensor v : order) {
-            if (v.opTag != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag)) {
-                if (log.isDebugEnabled()) {
-                    int leafCount = 0;
-                    for (RereDiffTensor n : order) {
-                        if (n.isLeaf) leafCount++;
-                    }
-                    log.debug("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
-                        v.opTag, order.size(), leafCount);
+            totalElements += v.totalSize();
+        }
+        if (totalElements < MIN_ELEMENTS) {
+            if (log.isDebugEnabled()) {
+                log.debug("GPU skipped: graph has {} total elements (<{} threshold)",
+                    totalElements, MIN_ELEMENTS);
+            }
+            return Double.NaN;
+        }
+
+        // Check ops first (common to both binary and JSON paths)
+        // TEMPORARY: print all unique ops in the graph for debugging
+        java.util.LinkedHashSet<String> seenOps = new java.util.LinkedHashSet<>();
+        for (RereDiffTensor v : order) {
+            if (v.opTag() != null) seenOps.add(v.opTag());
+        }
+        System.err.println("[GPU-OPS] Graph ops: " + seenOps);
+        for (RereDiffTensor v : order) {
+            if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
+                int leafCount = 0;
+                for (RereDiffTensor n : order) {
+                    if (n.isLeaf()) leafCount++;
                 }
+                log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
+                    v.opTag(), order.size(), leafCount);
+                System.err.println("[GPU-UNSUPPORTED] '" + v.opTag() + "' graph=" + order.size() + " leaves=" + leafCount);
                 return Double.NaN;
             }
         }
 
+        // Try binary path first
+        // TEMPORARY: force JSON path to isolate binary protocol issues
+        double binaryResult = Double.NaN; // tryExecuteTensorBinary(root, order);
+        // if (!Double.isNaN(binaryResult)) return binaryResult;
+
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
         for (RereDiffTensor v : order) {
-            if (v.isLeaf) {
+            if (v.isLeaf()) {
                 leaves.add(v);
             }
         }
@@ -124,6 +158,10 @@ public final class GpuGraphExecutor {
             log.debug("GPU tensor graph fallback: JSON export failed");
             return Double.NaN;
         }
+        if (order.size() > BINARY_THRESHOLD) {
+            log.warn("GPU graph has {} nodes (>{}); JSON path should be avoided — "
+                + "binary protocol is preferred. Check why binary path failed.", order.size(), BINARY_THRESHOLD);
+        }
 
         String resultJson = GpuOptionalRuntime.tryExecuteGraph(json);
         if (resultJson == null) {
@@ -132,8 +170,12 @@ public final class GpuGraphExecutor {
         }
 
         try {
-            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
-            return applyTensorGradientsFromJson(root, leaves, resultJson, batchSize);
+            // NOTE: Do NOT derive batchSize from root.scalarParam.
+            // scalarParam is overloaded — it stores op-specific parameters:
+            //   exponent for pow/powSum, divisor n for mean/div, alpha for activations.
+            // Treating it as batchSize would incorrectly divide loss/grads (e.g. powSum
+            // with scalarParam=2 gives halved results). Each GPU op must be self-contained.
+            return applyTensorGradientsFromJson(root, leaves, resultJson);
         } catch (Exception e) {
             log.debug("GPU graph execution failed", e);
             return Double.NaN;
@@ -142,10 +184,9 @@ public final class GpuGraphExecutor {
 
     /** Parse JSON result and apply gradients to tensor leaves. */
     private static double applyTensorGradientsFromJson(RereDiffTensor root,
-            ArrayList<RereDiffTensor> leaves, String resultJson, double batchSize) {
+            ArrayList<RereDiffTensor> leaves, String resultJson) {
         double loss = extractDoubleField(resultJson, "loss");
         if (Double.isNaN(loss)) return Double.NaN;
-        if (batchSize > 1.0) loss /= batchSize;
 
         int gradStart = resultJson.indexOf("\"grads\"");
         if (gradStart < 0) gradStart = resultJson.indexOf("\"gradients\"");
@@ -172,9 +213,6 @@ public final class GpuGraphExecutor {
                 gradData[i] = Double.parseDouble(tokens[i].trim());
             }
 
-            if (batchSize > 1.0) {
-                for (int i = 0; i < gradData.length; i++) gradData[i] /= batchSize;
-            }
             leaves.get(leafIdx).accGrad(gradData);
             leafIdx++;
             pos = innerEnd + 1;
@@ -203,18 +241,16 @@ public final class GpuGraphExecutor {
             double loss = parsed.loss();
             if (Double.isNaN(loss)) return Double.NaN;
 
-            // Collect leaves
+            // Collect leaves — NOTE: no batchSize normalization.
+            // root.scalarParam stores op-specific parameters (exponent, divisor, alpha),
+            // NOT batch size. Each GPU op must produce correct loss/grads independently.
             java.util.ArrayList<RereDiffTensor> leaves = new java.util.ArrayList<>();
-            for (RereDiffTensor v : order) { if (v.isLeaf) leaves.add(v); }
+            for (RereDiffTensor v : order) { if (v.isLeaf()) leaves.add(v); }
             java.util.List<double[]> grads = parsed.grads();
             if (grads.size() != leaves.size()) return Double.NaN;
 
-            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
-            if (batchSize > 1.0) loss /= batchSize;
-
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
-                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
                 leaves.get(i).accGrad(g);
             }
             return loss;

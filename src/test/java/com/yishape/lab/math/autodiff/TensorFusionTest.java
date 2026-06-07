@@ -18,14 +18,14 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.square().sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         // Non-fused reference
         RereDiffTensor y = new RereDiffTensor(new double[]{1, 2, 3, 4}, 2, 2);
         y.setRequiresGrad(true);
         IDiffTensor ref = y.square().sum();
         ref.backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -37,12 +37,12 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.relu().sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         RereDiffTensor y = new RereDiffTensor(new double[]{-1, 2, -3, 4, 0, 6}, 2, 3);
         y.setRequiresGrad(true);
         y.relu().sum().backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -54,12 +54,12 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.exp().sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         RereDiffTensor y = new RereDiffTensor(new double[]{0, 1, -1, 2}, 2, 2);
         y.setRequiresGrad(true);
         y.exp().sum().backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -71,12 +71,12 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.sigmoid().sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         RereDiffTensor y = new RereDiffTensor(new double[]{-1, 0, 1, 2}, 2, 2);
         y.setRequiresGrad(true);
         y.sigmoid().sum().backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -88,12 +88,12 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.pow(3).sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         RereDiffTensor y = new RereDiffTensor(new double[]{1, 2, 3, 4}, 2, 2);
         y.setRequiresGrad(true);
         y.pow(3).sum().backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -105,12 +105,12 @@ public class TensorFusionTest {
 
         IDiffTensor fused = x.tanh().sum();
         fused.backward();
-        double[] fusedGrad = x.grad.clone();
+        double[] fusedGrad = x.gradData().clone();
 
         RereDiffTensor y = new RereDiffTensor(new double[]{-1, 0, 1, 2}, 2, 2);
         y.setRequiresGrad(true);
         y.tanh().sum().backward();
-        double[] refGrad = y.grad;
+        double[] refGrad = y.gradData();
 
         assertArrayEquals(refGrad, fusedGrad, 1e-12);
     }
@@ -125,7 +125,7 @@ public class TensorFusionTest {
         IDiffTensor v = x.reshape(3, 2).relu().sum();
         v.backward();
 
-        double[] g = x.grad;
+        double[] g = x.gradData();
         assertNotNull(g);
         assertEquals(6, g.length);
         // After relu gradient: positive → 1, negative → 0
@@ -141,8 +141,8 @@ public class TensorFusionTest {
         IDiffTensor s = x.square().sum();
         assertTrue(s instanceof RereDiffTensor);
         RereDiffTensor rs = (RereDiffTensor) s;
-        assertArrayEquals(new int[]{2, 2}, rs.exportShape, "exportShape should match input shape");
-        assertEquals("squareSum", rs.opTag);
+        assertArrayEquals(new int[]{2, 2}, rs.exportShape(), "exportShape should match input shape");
+        assertEquals("squareSum", rs.opTag());
     }
 
     @Test
@@ -154,7 +154,7 @@ public class TensorFusionTest {
         IDiffTensor s = x.add(1).sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertArrayEquals(new double[]{1, 1, 1}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertArrayEquals(new double[]{1, 1, 1}, x.gradData(), 1e-12);
     }
 }

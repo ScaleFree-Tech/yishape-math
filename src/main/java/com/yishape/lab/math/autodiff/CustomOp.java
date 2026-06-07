@@ -75,6 +75,11 @@ public abstract class CustomOp {
         return fwdCache.get(id);
     }
 
+    /** Remove the cached forward context after backward to prevent unbounded growth. */
+    void removeCache(long id) {
+        fwdCache.remove(id);
+    }
+
     /**
      * Apply this operation to tensor inputs, creating a tensor-native graph node
      * with full gradient flow in the tensor graph (no vector bridge needed).
@@ -125,8 +130,22 @@ public abstract class CustomOp {
         RereDiffTensor[] tNodes = new RereDiffTensor[inputs.length];
         IDoubleVector[] rawVectors = new IDoubleVector[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
-            tNodes[i] = (RereDiffTensor) inputs[i];
-            rawVectors[i] = IDoubleVector.of(tNodes[i].value.toDoubleArray());
+            IDiffTensor in = inputs[i];
+            // Unwrap BatchedDiffTensor to get the underlying tensor
+            while (in instanceof BatchedDiffTensor bdt) {
+                in = bdt.unwrap();
+            }
+            if (in instanceof RereDiffTensor rt) {
+                tNodes[i] = rt;
+                rawVectors[i] = IDoubleVector.of(rt.value().toDoubleArray());
+            } else {
+                // Non-RereDiffTensor impl (e.g., ConstantDiffTensor or user-defined):
+                // wrap its data as a leaf or non-leaf node preserving requiresGrad
+                double[] data = in.toDoubleArray();
+                tNodes[i] = new RereDiffTensor(data, in.shape());
+                tNodes[i].setRequiresGrad(in.requiresGrad());
+                rawVectors[i] = IDoubleVector.of(data);
+            }
         }
 
         ForwardResult fr = forward(rawVectors);
@@ -139,7 +158,8 @@ public abstract class CustomOp {
 
         Consumer<RereDiffTensor> backwardFn = (self) -> {
             Object ctx = getCache(id);
-            IDoubleVector[] grads = backward(IDoubleVector.of(self.grad), ctx);
+            removeCache(id); // release cache entry immediately after retrieval
+            IDoubleVector[] grads = backward(IDoubleVector.of(self.gradData()), ctx);
             for (int j = 0; j < tNodes.length && j < grads.length; j++) {
                 if (grads[j] != null) {
                     tNodes[j].accGrad(grads[j].getData());
@@ -150,8 +170,8 @@ public abstract class CustomOp {
         RereDiffTensor result = new RereDiffTensor(outputData, outShape, insList, backwardFn,
             graphOpTag != null ? graphOpTag : "CustomOp");
         if (graphOpTag != null) {
-            if (!Double.isNaN(graphScalarParam)) result.scalarParam = graphScalarParam;
-            if (!Double.isNaN(graphScalarParam2)) result.scalarParam2 = graphScalarParam2;
+            if (!Double.isNaN(graphScalarParam)) result.setScalarParam(graphScalarParam);
+            if (!Double.isNaN(graphScalarParam2)) result.setScalarParam2(graphScalarParam2);
         }
         return result;
     }

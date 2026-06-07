@@ -23,6 +23,9 @@ public final class HpcGraphExecutor {
 
     private static final YishapeLogger log = YishapeLogger.getLogger(HpcGraphExecutor.class);
 
+    /** Graphs with more nodes than this threshold should use binary protocol, not JSON. */
+    public static final int BINARY_THRESHOLD = 500;
+
     private static final HashSet<String> SUPPORTED_OPS = new HashSet<>(Arrays.asList(
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
@@ -90,14 +93,14 @@ public final class HpcGraphExecutor {
 
         // Check unsupported ops
         for (RereDiffTensor v : order) {
-            if (v.opTag != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag)) {
+            if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
                 if (log.isDebugEnabled()) {
                     int leafCount = 0;
                     for (RereDiffTensor n : order) {
-                        if (n.isLeaf) leafCount++;
+                        if (n.isLeaf()) leafCount++;
                     }
                     log.debug("HPC tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
-                        v.opTag, order.size(), leafCount);
+                        v.opTag(), order.size(), leafCount);
                 }
                 return Double.NaN;
             }
@@ -106,7 +109,7 @@ public final class HpcGraphExecutor {
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
         for (RereDiffTensor v : order) {
-            if (v.isLeaf) {
+            if (v.isLeaf()) {
                 leaves.add(v);
             }
         }
@@ -121,32 +124,41 @@ public final class HpcGraphExecutor {
             log.debug("HPC tensor graph fallback: JSON export failed");
             return Double.NaN;
         }
+        if (order.size() > BINARY_THRESHOLD) {
+            log.warn("HPC graph has {} nodes (>{}); JSON path should be avoided — "
+                + "binary protocol is preferred. Check why binary path failed.", order.size(), BINARY_THRESHOLD);
+        }
         double[][] result = HpcAutodiff.tryExecute(json);
         if (result == null || result.length < 2 || result[0] == null) {
             log.debug("HPC tensor graph fallback: Rust execution returned null or invalid result");
             return Double.NaN;
         }
 
-        double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
+        // NOTE: Do NOT derive batchSize from root.scalarParam.
+        // scalarParam is overloaded: exponent (pow/powSum/powMean), divisor n (mean/div),
+        // activation alpha, etc. Treating it as batchSize causes incorrect loss/grad scaling.
+        // Each HPC op must produce self-contained, correctly-scaled results.
         double loss = result[0][0];
-        int numGrads = Math.min(result.length - 1, leaves.size());
+        // Validate gradient count and lengths — any mismatch means the HPC graph
+        // is inconsistent with the Java graph; fall back to CPU to avoid silent errors.
         if (result.length - 1 != leaves.size()) {
-            log.warn("HPC tensor gradient count mismatch: got {} gradients for {} leaves",
+            log.warn("HPC tensor gradient count mismatch: got {} gradients for {} leaves — falling back to CPU",
                     result.length - 1, leaves.size());
+            return Double.NaN;
         }
-        for (int i = 0; i < numGrads; i++) {
-            if (result[i + 1] != null) {
-                int gradLen = result[i + 1].length;
-                int leafLen = Math.toIntExact(leaves.get(i).totalSize());
-                if (gradLen != leafLen) {
-                    log.warn("HPC tensor gradient length mismatch at leaf {}: got {} expected {}",
-                            i, gradLen, leafLen);
-                }
-                if (batchSize > 1.0) {
-                    for (int j = 0; j < gradLen; j++) result[i + 1][j] /= batchSize;
-                }
-                leaves.get(i).accGrad(result[i + 1]);
+        for (int i = 0; i < leaves.size(); i++) {
+            if (result[i + 1] == null) {
+                log.warn("HPC tensor gradient[{}] is null — falling back to CPU", i);
+                return Double.NaN;
             }
+            int gradLen = result[i + 1].length;
+            int leafLen = Math.toIntExact(leaves.get(i).totalSize());
+            if (gradLen != leafLen) {
+                log.warn("HPC tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                        i, gradLen, leafLen);
+                return Double.NaN;
+            }
+            leaves.get(i).accGrad(result[i + 1]);
         }
         return loss;
     }
@@ -168,15 +180,13 @@ public final class HpcGraphExecutor {
             double loss = parsed.loss();
             if (Double.isNaN(loss)) return Double.NaN;
 
+            // No batchSize normalization — scalarParam stores op parameters, not batch size.
+            // Each HPC op computes correctly-scaled loss and grads independently.
             List<double[]> grads = parsed.grads();
             if (grads.size() != leaves.size()) return Double.NaN;
 
-            double batchSize = !Double.isNaN(root.scalarParam) ? root.scalarParam : 1.0;
-            if (batchSize > 1.0) loss /= batchSize;
-
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
-                if (batchSize > 1.0) { for (int j = 0; j < g.length; j++) g[j] /= batchSize; }
                 leaves.get(i).accGrad(g);
             }
             return loss;

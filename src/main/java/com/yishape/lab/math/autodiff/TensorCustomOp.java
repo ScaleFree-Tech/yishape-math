@@ -79,7 +79,7 @@ public abstract class TensorCustomOp {
         Consumer<RereDiffTensor> backwardFn = (self) -> {
             Object ctx = getCache(id);
             try {
-                IDoubleTensor gradTensor = new RereDoubleTensor(self.grad, outShape);
+                IDoubleTensor gradTensor = new RereDoubleTensor(self.gradData(), outShape);
                 IDoubleTensor[] grads = backward(gradTensor, ctx);
                 for (int j = 0; j < tensorNodes.length && j < grads.length; j++) {
                     if (grads[j] != null) {

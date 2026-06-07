@@ -19,7 +19,7 @@ public class TensorGraphExportTest {
         IDiffTensor s = r.sum();
         s.backward();
 
-        double[] g = x.grad;
+        double[] g = x.gradData();
         assertNotNull(g);
         assertEquals(1.0, g[0], 1e-12);
         assertEquals(0.0, g[1], 1e-12);
@@ -45,7 +45,7 @@ public class TensorGraphExportTest {
             double si = 1.0 / (1.0 + Math.exp(-xd[i]));
             expected[i] = si * (1 - si);
         }
-        double[] g = x.grad;
+        double[] g = x.gradData();
         assertNotNull(g);
         for (int i = 0; i < 4; i++) {
             assertEquals(expected[i], g[i], 1e-10);
@@ -56,8 +56,8 @@ public class TensorGraphExportTest {
     void testExportJsonFormat() {
         RereDiffTensor x = new RereDiffTensor(new double[]{1, -2, 3}, 1, 3);
         x.setRequiresGrad(true);
-        x.opTag = "leaf";
-        x.scalarParam = 0.5;
+        x.setOpTag("leaf");
+        x.setScalarParam(0.5);
 
         IDiffTensor r = x.relu();
         IDiffTensor s = r.sum();
@@ -82,8 +82,8 @@ public class TensorGraphExportTest {
         s.backward();
 
         // d/dx_i (x_i + y_i) = 1
-        assertArrayEquals(new double[]{1, 1, 1}, a.grad, 1e-12);
-        assertArrayEquals(new double[]{1, 1, 1}, b.grad, 1e-12);
+        assertArrayEquals(new double[]{1, 1, 1}, a.gradData(), 1e-12);
+        assertArrayEquals(new double[]{1, 1, 1}, b.gradData(), 1e-12);
     }
 
     @Test
@@ -98,8 +98,8 @@ public class TensorGraphExportTest {
         s.backward();
 
         // d/dx_i (x_i * y_i) = y_i
-        assertArrayEquals(new double[]{4, 5, 6}, a.grad, 1e-12);
-        assertArrayEquals(new double[]{1, 2, 3}, b.grad, 1e-12);
+        assertArrayEquals(new double[]{4, 5, 6}, a.gradData(), 1e-12);
+        assertArrayEquals(new double[]{1, 2, 3}, b.gradData(), 1e-12);
     }
 
     @Test
@@ -115,7 +115,7 @@ public class TensorGraphExportTest {
         s.backward();
 
         // d/db_i = sum over broadcast dimension (rows): each b_i contributes to 2 rows
-        assertArrayEquals(new double[]{1, 1, 1, 1, 1, 1}, a.grad, 1e-12);
-        assertArrayEquals(new double[]{2, 2, 2}, b.grad, 1e-12);
+        assertArrayEquals(new double[]{1, 1, 1, 1, 1, 1}, a.gradData(), 1e-12);
+        assertArrayEquals(new double[]{2, 2, 2}, b.gradData(), 1e-12);
     }
 }

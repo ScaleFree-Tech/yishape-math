@@ -23,14 +23,14 @@ public class ODEDiffTensor extends RereDiffTensor {
         super(new double[1], 1); // placeholder, will overwrite in body
         RereDiffTensor z0r = (RereDiffTensor) z0;
         List<IDoubleTensor> trajectory = new ArrayList<>();
-        IDoubleTensor y0 = z0r.value.copy();
+        IDoubleTensor y0 = z0r.value().copy();
         trajectory.add(y0.copy());
         IDoubleTensor y = integrateForward(dynamics, y0, t0, t1, dt, trajectory);
-        this.value = (RereDoubleTensor) y;
-        this.isLeaf = false;
-        this.inputs = new ArrayList<>();
-        this.inputs.add(z0r);
-        this.backwardFn = buildAdjointBackward(dynamics, z0r, trajectory, t0, t1, dt);
+        this.setValue((RereDoubleTensor) y);
+        this.setIsLeaf(false);
+        this.setInputs(new ArrayList<>());
+        this.inputs().add(z0r);
+        this.setBackwardFn(buildAdjointBackward(dynamics, z0r, trajectory, t0, t1, dt));
     }
 
     private static IDoubleTensor integrateForward(Function<IDiffTensor, IDiffTensor> dynamics,
@@ -60,14 +60,14 @@ public class ODEDiffTensor extends RereDiffTensor {
     private static IDoubleTensor evalDynamics(Function<IDiffTensor, IDiffTensor> dynamics,
                                               IDoubleTensor z) {
         RereDiffTensor zv = new RereDiffTensor(z.toDoubleArray(), z.shape());
-        return ((RereDiffTensor) dynamics.apply(zv)).value;
+        return ((RereDiffTensor) dynamics.apply(zv)).value();
     }
 
     private static Consumer<RereDiffTensor> buildAdjointBackward(
             Function<IDiffTensor, IDiffTensor> dynamics, RereDiffTensor z0r,
             List<IDoubleTensor> trajectory, double t0, double t1, double dt) {
         return (self) -> {
-            IDoubleTensor a = ITensor.tensor(self.grad.clone(), trajectory.get(0).shape());
+            IDoubleTensor a = ITensor.tensor(self.gradData().clone(), trajectory.get(0).shape());
             for (int i = trajectory.size() - 1; i > 0; i--) {
                 double h = (i == trajectory.size() - 1)
                     ? t1 - (t0 + (trajectory.size() - 2) * dt) : dt;
@@ -94,11 +94,11 @@ public class ODEDiffTensor extends RereDiffTensor {
                                             IDoubleTensor z, IDoubleTensor a) {
         RereDiffTensor zv = new RereDiffTensor(z.toDoubleArray(), z.shape());
         RereDiffTensor fz = (RereDiffTensor) dynamics.apply(zv);
-        fz.grad = a.toDoubleArray();  // set gradient directly (no ThreadLocal state)
+        fz.setGradData(a.toDoubleArray());  // set gradient directly (no ThreadLocal state)
         fz.propagateGrad();           // backward with local collections (safe for nested calls)
-        double[] grad = zv.grad;
-        zv.grad = null;               // clean up to avoid memory leak
-        zv.requiresGrad = false;      // detach local graph
+        double[] grad = zv.gradData();
+        zv.setGradData(null);               // clean up to avoid memory leak
+        zv.setRequiresGrad(false);      // detach local graph
         return ITensor.tensor(grad, z.shape());
     }
 }

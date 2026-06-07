@@ -543,7 +543,12 @@ public class RereDoubleTensor implements IDoubleTensor {
         }
         return applyUnary(Math::tan);
     }
-    @Override public IDoubleTensor square() { return applyUnary(v -> v * v); }
+    @Override public IDoubleTensor square() {
+        if (isContiguous() && offset == 0) {
+            return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.POW, 2.0), shape());
+        }
+        return applyUnary(v -> v * v);
+    }
     @Override public IDoubleTensor sigmoid() {
         if (isContiguous() && offset == 0) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.SIGMOID, 0), shape());
@@ -1457,6 +1462,28 @@ public class RereDoubleTensor implements IDoubleTensor {
             }
         }
         return new RereDoubleTensor(result, newShape);
+    }
+
+    @Override
+    public IDoubleTensor tril(int diagonal) {
+        int r = rank();
+        if (r < 2) return clone(); // scalar/vector: all elements on "diagonal"
+        int M = dim(r - 2);
+        int N = dim(r - 1);
+        double[] result = toDoubleArray();
+        int batchStride = M * N;
+        int batchCount = result.length / batchStride;
+        for (int b = 0; b < batchCount; b++) {
+            int base = b * batchStride;
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < N; j++) {
+                    if (j > i + diagonal) {
+                        result[base + i * N + j] = 0.0;
+                    }
+                }
+            }
+        }
+        return new RereDoubleTensor(result, shape());
     }
 
     @Override

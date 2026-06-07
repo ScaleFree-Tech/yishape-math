@@ -23,10 +23,10 @@ public class TensorViewGradientTest {
         s.backward();
 
         // After sum() backward + reshape backward, every element should have gradient 1
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -40,9 +40,9 @@ public class TensorViewGradientTest {
         IDiffTensor s = v.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(1, x.grad.length);
-        assertEquals(1.0, x.grad[0], 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(1, x.gradData().length);
+        assertEquals(1.0, x.gradData()[0], 1e-12);
     }
 
     @Test
@@ -55,10 +55,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = v.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(4, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(4, x.gradData().length);
         for (int i = 0; i < 4; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -73,10 +73,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = p.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -89,10 +89,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = p.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(8, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(8, x.gradData().length);
         for (int i = 0; i < 8; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -107,10 +107,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = t.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -123,10 +123,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = t.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -141,10 +141,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = sq.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -157,10 +157,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = us.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -175,10 +175,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = f.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
         for (int i = 0; i < 6; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -191,10 +191,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = f.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(8, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(8, x.gradData().length);
         for (int i = 0; i < 8; i++) {
-            assertEquals(1.0, x.grad[i], 1e-12);
+            assertEquals(1.0, x.gradData()[i], 1e-12);
         }
     }
 
@@ -210,9 +210,9 @@ public class TensorViewGradientTest {
         s.backward();
 
         // Only row 1 should get gradients
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
-        assertArrayEquals(new double[]{0, 0, 0, 1, 1, 1}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
+        assertArrayEquals(new double[]{0, 0, 0, 1, 1, 1}, x.gradData(), 1e-12);
     }
 
     @Test
@@ -224,9 +224,9 @@ public class TensorViewGradientTest {
         IDiffTensor s = sel.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
-        assertArrayEquals(new double[]{0, 0, 1, 0, 0, 1}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
+        assertArrayEquals(new double[]{0, 0, 1, 0, 0, 1}, x.gradData(), 1e-12);
     }
 
     // ---- Slice ----
@@ -241,9 +241,9 @@ public class TensorViewGradientTest {
         s.backward();
 
         // gradient is 1 on sliced rows, 0 on first row
-        assertNotNull(x.grad);
-        assertEquals(6, x.grad.length);
-        assertArrayEquals(new double[]{0, 0, 1, 1, 1, 1}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(6, x.gradData().length);
+        assertArrayEquals(new double[]{0, 0, 1, 1, 1, 1}, x.gradData(), 1e-12);
     }
 
     // ---- Narrow ----
@@ -257,9 +257,9 @@ public class TensorViewGradientTest {
         IDiffTensor s = nr.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(8, x.grad.length);
-        assertArrayEquals(new double[]{0, 0, 1, 1, 1, 1, 0, 0}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(8, x.gradData().length);
+        assertArrayEquals(new double[]{0, 0, 1, 1, 1, 1, 0, 0}, x.gradData(), 1e-12);
     }
 
     // ---- Expand ----
@@ -275,9 +275,9 @@ public class TensorViewGradientTest {
         s.backward();
 
         // gradient per original element = sum over expanded dims = 2
-        assertNotNull(x.grad);
-        assertEquals(3, x.grad.length);
-        assertArrayEquals(new double[]{2, 2, 2}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(3, x.gradData().length);
+        assertArrayEquals(new double[]{2, 2, 2}, x.gradData(), 1e-12);
     }
 
     @Test
@@ -290,9 +290,9 @@ public class TensorViewGradientTest {
         IDiffTensor s = ex.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(3, x.grad.length);
-        assertArrayEquals(new double[]{8, 8, 8}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(3, x.gradData().length);
+        assertArrayEquals(new double[]{8, 8, 8}, x.gradData(), 1e-12);
     }
 
     // ---- Tile ----
@@ -306,10 +306,10 @@ public class TensorViewGradientTest {
         IDiffTensor s = t.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(4, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(4, x.gradData().length);
         // each original element contributes to 2 output elements
-        assertArrayEquals(new double[]{2, 2, 2, 2}, x.grad, 1e-12);
+        assertArrayEquals(new double[]{2, 2, 2, 2}, x.gradData(), 1e-12);
     }
 
     // ---- BroadcastTo ----
@@ -323,9 +323,9 @@ public class TensorViewGradientTest {
         IDiffTensor s = bt.sum();
         s.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(3, x.grad.length);
-        assertArrayEquals(new double[]{2, 2, 2}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertEquals(3, x.gradData().length);
+        assertArrayEquals(new double[]{2, 2, 2}, x.gradData(), 1e-12);
     }
 
     // ---- Chain: multiple view ops ----
@@ -343,12 +343,12 @@ public class TensorViewGradientTest {
             .sum();                            // scalar
         v.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(12, x.grad.length);
+        assertNotNull(x.gradData());
+        assertEquals(12, x.gradData().length);
         // verify gradients are non-zero and correctly shaped
         for (int i = 0; i < 12; i++) {
-            assertTrue(Double.isFinite(x.grad[i]),
-                "grad[" + i + "] should be finite but was " + x.grad[i]);
+            assertTrue(Double.isFinite(x.gradData()[i]),
+                "grad[" + i + "] should be finite but was " + x.gradData()[i]);
         }
     }
 
@@ -365,8 +365,8 @@ public class TensorViewGradientTest {
         v.backward();
 
         // relu gradient: 1 for positive, 0 for negative
-        assertNotNull(x.grad);
-        assertArrayEquals(new double[]{1, 0, 1, 0}, x.grad, 1e-12);
+        assertNotNull(x.gradData());
+        assertArrayEquals(new double[]{1, 0, 1, 0}, x.gradData(), 1e-12);
     }
 
     // ---- Grad shape consistency check after multiple view ops ----
@@ -385,8 +385,8 @@ public class TensorViewGradientTest {
             .sum();                         // scalar
         v.backward();
 
-        assertNotNull(x.grad);
-        assertEquals(8, x.grad.length);
-        assertTrue(x.grad[0] > 0, "grad should be non-zero after view chain");
+        assertNotNull(x.gradData());
+        assertEquals(8, x.gradData().length);
+        assertTrue(x.gradData()[0] > 0, "grad should be non-zero after view chain");
     }
 }

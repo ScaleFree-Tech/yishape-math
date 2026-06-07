@@ -193,6 +193,14 @@ public interface IDoubleTensor extends ITensor {
     /** Padding */
     IDoubleTensor pad(int[][] padding, String mode, double value);
 
+    /**
+     * Lower triangular mask: sets elements above diagonal+k to zero.
+     * Operates on the last two dimensions (matrix rows, cols).
+     * @param diagonal k: 0 = main diagonal, k > 0 includes k super-diagonals,
+     *                  k < 0 excludes |k| sub-diagonals
+     */
+    IDoubleTensor tril(int diagonal);
+
     /** 滑动窗口展开（im2col 等价） */
     IDoubleTensor unfold(int dim, int size, int stride, int dilation);
 

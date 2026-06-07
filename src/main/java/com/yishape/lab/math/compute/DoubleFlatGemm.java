@@ -116,14 +116,20 @@ public final class DoubleFlatGemm {
         if (transp == 0) {
             return flatMmul(a, m, k, b, n);
         }
-        // 2. Transpose inputs as needed, then use fast dispatch
+        // 2. Try HPC with transp flags — transpose happens in Rust (auto-vectorized),
+        //    eliminating Java-side flatTranspose allocations.
+        if (HpcIm2col.tryFlatDgemmTransp(m, n, k, a, b, c, transp)) {
+            if (logFine) LOG.fine("flatMmulTransp HPC transp [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+            return c;
+        }
+        // 3. Java-side transpose as fallback, then use fast dispatch
         boolean ta = (transp & 1) != 0;
         boolean tb = (transp & 2) != 0;
         double[] aEff = ta ? flatTranspose(a, k, m) : a;
         int aRows = m, aCols = k;
         double[] bEff = tb ? flatTranspose(b, n, k) : b;
         int bCols = n;
-        if (logFine) LOG.fine("flatMmulTransp HPC/SIMD via transpose [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        if (logFine) LOG.fine("flatMmulTransp SIMD/scalar via transpose [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
         double[] result = flatMmul(aEff, aRows, aCols, bEff, bCols);
         System.arraycopy(result, 0, c, 0, c.length);
         return c;
@@ -202,6 +208,39 @@ public final class DoubleFlatGemm {
     }
 
     /**
+     * Flat GEMM writing to pre-allocated {@code out}.
+     * out.length must be &gt;= m * n. Caller is responsible for sizing.
+     * Dispatch: GPU → HPC → SIMD → scalar.
+     */
+    public static void flatMmul(double[] a, int m, int k, double[] b, int n, double[] out) {
+        boolean logFine = LOG.isLoggable(Level.FINE);
+        // 0. Try GPU first
+        if (GpuGemm.tryFlatMatMul(a, b, out, m, k, n)) {
+            if (logFine) LOG.fine("flatMmul(out) GPU [" + m + "," + k + "]@[" + k + "," + n + "]");
+            return;
+        }
+        // 1. Try HPC native
+        if (HpcIm2col.tryFlatDgemm(m, n, k, a, b, out)) {
+            if (logFine) LOG.fine("flatMmul(out) HPC [" + m + "," + k + "]@[" + k + "," + n + "]");
+            return;
+        }
+        // 2. Try SIMD via reflection
+        if (MH_FLAT_MMUL != null) {
+            try {
+                double[] simdResult = (double[]) MH_FLAT_MMUL.invoke(a, m, k, b, n);
+                System.arraycopy(simdResult, 0, out, 0, m * n);
+                if (logFine) LOG.fine("flatMmul(out) SIMD [" + m + "," + k + "]@[" + k + "," + n + "]");
+                return;
+            } catch (Throwable t) {
+                // fall through to scalar
+            }
+        }
+        // 3. Scalar fallback
+        if (logFine) LOG.fine("flatMmul(out) SCALAR [" + m + "," + k + "]@[" + k + "," + n + "]");
+        flatMmulScalar(a, 0, m, k, b, 0, n, out, 0);
+    }
+
+    /**
      * Cache-blocked transpose of a row-major flat matrix.
      * dst[j*m+i] = src[i*n+j].
      */
@@ -229,6 +268,37 @@ public final class DoubleFlatGemm {
             }
         }
         return dst;
+    }
+
+    /**
+     * Cache-blocked transpose writing to pre-allocated {@code dst}.
+     * dst.length must be &gt;= m * n. Caller is responsible for sizing.
+     * dst[j*m+i] = src[i*n+j].
+     */
+    public static void flatTranspose(double[] src, int m, int n, double[] dst) {
+        // 1. Try SIMD via reflection
+        if (MH_FLAT_TRANSPOSE != null) {
+            try {
+                double[] simdResult = (double[]) MH_FLAT_TRANSPOSE.invoke(src, m, n);
+                System.arraycopy(simdResult, 0, dst, 0, m * n);
+                return;
+            } catch (Throwable t) {
+                // fall through to scalar
+            }
+        }
+        // 2. Scalar fallback
+        int blockSize = Math.min(64, Math.min(m, n));
+        for (int i = 0; i < m; i += blockSize) {
+            int iEnd = Math.min(i + blockSize, m);
+            for (int j = 0; j < n; j += blockSize) {
+                int jEnd = Math.min(j + blockSize, n);
+                for (int ii = i; ii < iEnd; ii++) {
+                    for (int jj = j; jj < jEnd; jj++) {
+                        dst[jj * m + ii] = src[ii * n + jj];
+                    }
+                }
+            }
+        }
     }
 
     /**

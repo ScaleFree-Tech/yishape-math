@@ -26,8 +26,8 @@ public final class TensorFusedOps {
 
     public TensorFusedOps(RereDiffTensor input) {
         this.root = input;
-        this.totalSize = (int) input.value.totalSize();
-        this.cur = input.value.toDoubleArray();
+        this.totalSize = (int) input.value().totalSize();
+        this.cur = input.value().toDoubleArray();
     }
 
     /** Register a unary op: forward / backward(g, x) → gradient. */
@@ -60,7 +60,7 @@ public final class TensorFusedOps {
      * The output shape matches the input shape.
      */
     public IDiffTensor done() {
-        if (!root.requiresGrad) {
+        if (!root.requiresGrad()) {
             return new RereDiffTensor.ConstantDiffTensor(new RereDoubleTensor(cur, root.shape()));
         }
         int n = totalSize;
@@ -70,9 +70,9 @@ public final class TensorFusedOps {
         List<DoubleBinaryOperator> savedBackwards = new ArrayList<>(opBackwards);
 
         Consumer<RereDiffTensor> bw = self -> {
-            RereDiffTensor input = self.inputs.get(0);
+            RereDiffTensor input = self.inputs().get(0);
             double[] dx = AutodiffBufferPool.acquire(n);
-            System.arraycopy(self.grad, 0, dx, 0, n);
+            System.arraycopy(self.gradData(), 0, dx, 0, n);
             // Apply chain rule backward
             for (int k = savedBackwards.size() - 1; k >= 0; k--) {
                 double[] in = savedInputs.get(k);
@@ -84,7 +84,7 @@ public final class TensorFusedOps {
             input.accGradFromPooled(dx, n);
         };
         RereDiffTensor result = new RereDiffTensor(out, root.shape(), List.of(root), bw, chainTag);
-        result.exportShape = root.shape();
+        result.setExportShape(root.shape());
         return result;
     }
 }

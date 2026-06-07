@@ -49,7 +49,7 @@ public class VjpFunctionImpl implements VjpFunction {
         // Reset all gradients in the computation graph to avoid contamination
         // from previous backward passes
         for (RereDiffTensor node : order) {
-            node.grad = null;
+            node.setGradData(null);
         }
 
         // Execute backward pass with the given upstream gradient

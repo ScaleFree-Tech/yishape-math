@@ -27,6 +27,7 @@ public class GpuGraphExecutorTest {
 
     @BeforeAll
     static void detect() {
+        System.setProperty("yishape.gpu.minElements", "0");
         gpuPresent = GpuOptionalRuntime.isGpuAvailable();
     }
 
@@ -472,16 +473,20 @@ public class GpuGraphExecutorTest {
     // ==================== Fused Op Fallback ====================
 
     @Test
-    void testFusedPowSumFallsBack() {
-        // pow(2).sum() → fused to powSum → GPU can't handle → returns NaN
+    void testFusedPowSum() {
+        // pow(2).sum() → fused to powSum → GPU can handle → returns correct loss
         IDiffVector x = AD.vector(new double[]{1, 2, 3});
         RereDiffVector loss = (RereDiffVector) x.pow(2).sum();
 
         double result = GpuGraphExecutor.tryExecute(loss);
-        // Should return NaN (fused op not supported by GPU)
-        assertTrue(Double.isNaN(result), "Fused powSum should return NaN from GPU");
 
-        // But gradient should still work via CPU fallback in AD.optimize()
+        if (gpuPresent) {
+            assertFalse(Double.isNaN(result), "GPU should compute fused powSum");
+            assertEquals(14.0, result, 1e-5); // 1^2 + 2^2 + 3^2 = 14
+        } else {
+            assertTrue(Double.isNaN(result), "No GPU available, should fall back to NaN");
+        }
+
         // Verify the fused node still has correct structure
         String json = GraphExporter.toJson(loss);
         assertTrue(json.contains("powSum"), "Should produce fused powSum op");

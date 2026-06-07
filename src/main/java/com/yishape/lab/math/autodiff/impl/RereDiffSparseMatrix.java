@@ -161,7 +161,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             self.propagateGradient();
         };
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "sum";
+        node.tensor.setOpTag("sum");
         return node;
     }
 
@@ -189,7 +189,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             self.propagateGradient();
         };
         RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-        node.tensor.opTag = "mean";
+        node.tensor.setOpTag("mean");
         return node;
     }
 
@@ -221,7 +221,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             v.accGrad((IDoubleVector) aVal.transpose().multiply(gradOut));
         };
         RereDiffVector node = RereDiffVector.createNonLeaf(((IDoubleVector) result).getData(), List.of(), backwardFn);
-        node.tensor.opTag = "matmul";
+        node.tensor.setOpTag("matmul");
         return node;
     }
 

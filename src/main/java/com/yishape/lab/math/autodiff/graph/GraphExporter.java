@@ -13,6 +13,14 @@ import java.util.Set;
 /**
  * Exports autodiff computation graphs to JSON for HPC / external backends.
  * Operates on the tensor graph via {@link RereDiffVector#tensor}.
+ *
+ * <p><b>⚠️ Cross-backend input ordering contract:</b> The JSON nodes produced by
+ * this exporter are consumed by HPC (yishape_math_rust/src/graph.rs) and GPU
+ * (yishape_math_gpu/src/ops/graph.rs) backends. Each {@code graphOpTag} has a
+ * fixed input array ordering that MUST match across all three codebases.
+ * See {@code yishape-dl/private_docs/CUSTOM_OP_CONTRACT.md} for the definitive
+ * per-op schema. When modifying any CustomOp's forward/backward input list,
+ * update all three implementations simultaneously.</p>
  */
 public final class GraphExporter {
 
@@ -70,37 +78,28 @@ public final class GraphExporter {
     private static void appendTensorNode(StringBuilder sb, RereDiffTensor t, int id,
             Map<RereDiffTensor, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
-        if (t.exportShape != null) {
-            sb.append(",\"shape\":[");
-            for (int i = 0; i < t.exportShape.length; i++) {
-                if (i > 0) sb.append(',');
-                sb.append(t.exportShape[i]);
-            }
-            sb.append(']');
-        } else {
-            sb.append(",\"shape\":[").append(t.value.totalSize()).append(']');
-        }
+        sb.append(",\"shape\":[").append(t.value().totalSize()).append(']');
         sb.append(",\"op\":\"");
-        sb.append(t.opTag != null ? t.opTag : (t.isLeaf ? "leaf" : "unknown"));
+        sb.append(t.opTag() != null ? t.opTag() : (t.isLeaf() ? "leaf" : "unknown"));
         sb.append('"');
-        if (t.isLeaf) {
-            appendLeafData(sb, t.value.toDoubleArray());
+        if (t.isLeaf()) {
+            appendLeafData(sb, t.value().toDoubleArray());
         }
-        appendScalarParam(sb, t.scalarParam);
-        appendScalarParam2(sb, t.scalarParam2);
-        if (t.backwardIndices != null && t.backwardIndices.length > 0) {
+        appendScalarParam(sb, t.scalarParam());
+        appendScalarParam2(sb, t.scalarParam2());
+        if (t.backwardIndices() != null && t.backwardIndices().length > 0) {
             sb.append(",\"indices\":[");
-            for (int i = 0; i < t.backwardIndices.length; i++) {
+            for (int i = 0; i < t.backwardIndices().length; i++) {
                 if (i > 0) sb.append(',');
-                sb.append(t.backwardIndices[i]);
+                sb.append(t.backwardIndices()[i]);
             }
             sb.append(']');
         }
-        if (t.inputs != null && !t.inputs.isEmpty()) {
+        if (t.inputs() != null && !t.inputs().isEmpty()) {
             sb.append(",\"inputs\":[");
-            for (int j = 0; j < t.inputs.size(); j++) {
+            for (int j = 0; j < t.inputs().size(); j++) {
                 if (j > 0) sb.append(',');
-                sb.append(indexMap.get(t.inputs.get(j)));
+                sb.append(indexMap.get(t.inputs().get(j)));
             }
             sb.append(']');
         }
@@ -151,6 +150,7 @@ public final class GraphExporter {
         sb.append(']');
     }
 
+    /** Serialize op-specific scalar parameter (exponent, divisor, alpha — NOT batch size). */
     private static void appendScalarParam(StringBuilder sb, double scalar) {
         if (!Double.isNaN(scalar) && !Double.isInfinite(scalar)) {
             sb.append(",\"scalar\":").append(scalar);

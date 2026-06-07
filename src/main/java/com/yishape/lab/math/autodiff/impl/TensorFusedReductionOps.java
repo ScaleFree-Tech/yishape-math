@@ -35,9 +35,9 @@ public final class TensorFusedReductionOps {
 
     public TensorFusedReductionOps(RereDiffTensor input) {
         this.root = input;
-        this.totalSize = (int) input.value.totalSize();
+        this.totalSize = (int) input.value().totalSize();
         this.originalShape = input.shape();
-        this.cur = input.value.toDoubleArray();
+        this.cur = input.value().toDoubleArray();
     }
 
     // ── Element-wise builder methods ──
@@ -225,7 +225,7 @@ public final class TensorFusedReductionOps {
     private IDiffTensor buildFusedNode(double[] result, int[] outShape,
                                         String chainTag, String reduceTag,
                                         int reduceDim, boolean keepdim) {
-        if (!root.requiresGrad) {
+        if (!root.requiresGrad()) {
             return new RereDiffTensor.ConstantDiffTensor(new RereDoubleTensor(result, outShape));
         }
 
@@ -243,17 +243,17 @@ public final class TensorFusedReductionOps {
 
             // Step 1: Reduction backward → broadcast grad to full shape
             switch (reduceTag) {
-                case "sum" -> reductionBackwardSum(self.grad, gradBuf, origShape, reduceDim);
+                case "sum" -> reductionBackwardSum(self.gradData(), gradBuf, origShape, reduceDim);
                 case "sumAll" -> {
-                    double g = self.grad[0];
+                    double g = self.gradData()[0];
                     for (int i = 0; i < n; i++) gradBuf[i] = g;
                 }
-                case "mean" -> reductionBackwardMean(self.grad, gradBuf, origShape, reduceDim);
+                case "mean" -> reductionBackwardMean(self.gradData(), gradBuf, origShape, reduceDim);
                 case "meanAll" -> {
-                    double g = self.grad[0] / n;
+                    double g = self.gradData()[0] / n;
                     for (int i = 0; i < n; i++) gradBuf[i] = g;
                 }
-                case "softmax" -> reductionBackwardSoftmax(self.grad, softmaxOut, gradBuf, origShape, reduceDim);
+                case "softmax" -> reductionBackwardSoftmax(self.gradData(), softmaxOut, gradBuf, origShape, reduceDim);
             }
 
             // Step 2: Element-wise backward chain (reverse order)
@@ -269,10 +269,10 @@ public final class TensorFusedReductionOps {
         };
 
         RereDiffTensor node = new RereDiffTensor(result, outShape, List.of(root), bw, chainTag);
-        node.exportShape = outShape;
+        node.setExportShape(outShape);
         if (reduceDim >= 0) {
-            node.scalarParam = reduceDim;
-            node.scalarParam2 = keepdim ? 1.0 : 0.0;
+            node.setScalarParam(reduceDim);
+            node.setScalarParam2(keepdim ? 1.0 : 0.0);
         }
         return node;
     }

@@ -261,6 +261,15 @@ public class TensorShape {
 
     /**
      * 静态广播方法: 左对齐后逐维取 max，任一维须为 1.
+     *
+     * <p><b>⚠️ Left-alignment trap:</b> Broadcasting uses NumPy/PyTorch-style
+     * left-alignment — the smaller-rank shape is padded with 1s on the <b>left</b>.
+     * This means {@code [64]} vs {@code [4, 4, 4]} becomes
+     * {@code [1, 1, 64]} vs {@code [4, 4, 4]}, and axis 2 fails because
+     * 4 ≠ 64 and neither is 1.</p>
+     *
+     * <p><b>Workaround:</b> Explicitly reshape to matching rank, e.g.,
+     * {@code reshape(1, 1, 64)} before the operation.</p>
      */
     public static int[] broadcastShape(int[] shapeA, int[] shapeB) {
         int maxRank = Math.max(shapeA.length, shapeB.length);
@@ -275,10 +284,37 @@ public class TensorShape {
             } else if (b[i] == 1) {
                 result[i] = a[i];
             } else {
+                String origA = shapeToString(shapeA);
+                String origB = shapeToString(shapeB);
+                String alignA = shapeToString(a);
+                String alignB = shapeToString(b);
                 throw new IllegalArgumentException(
-                    "Incompatible dimensions for broadcast at axis " + i + ": " + a[i] + " vs " + b[i]);
+                    "Cannot broadcast " + origA + " with " + origB + ":\n" +
+                    "  Left-aligned: " + alignA + " vs " + alignB + "\n" +
+                    "  Axis " + i + ": " + a[i] + " != " + b[i] + " (neither is 1)\n" +
+                    "  Hint: reshape to matching rank before the operation, e.g.,\n" +
+                    "  reshape(" + shapeToString(prependOnes(shapeA, maxRank - shapeA.length)) + ") or\n" +
+                    "  reshape(" + shapeToString(prependOnes(shapeB, maxRank - shapeB.length)) + ")");
             }
         }
+        return result;
+    }
+
+    /** Format a shape array as [d0, d1, ...]. */
+    private static String shapeToString(int[] shape) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < shape.length; i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(shape[i]);
+        }
+        return sb.append("]").toString();
+    }
+
+    /** Prepend n ones to a shape array (for hint generation). */
+    private static int[] prependOnes(int[] shape, int n) {
+        int[] result = new int[shape.length + n];
+        for (int i = 0; i < n; i++) result[i] = 1;
+        System.arraycopy(shape, 0, result, n, shape.length);
         return result;
     }
 

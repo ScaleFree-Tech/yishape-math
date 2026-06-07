@@ -29,8 +29,12 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.im2col(input, C, H, W, Kh, Kw, stride, pad, out);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.im2col(input, C, H, W, Kh, Kw, stride, pad, out);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -51,8 +55,12 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im(colGrad, C, H, W, Kh, Kw, stride, pad, imgGradOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im(colGrad, C, H, W, Kh, Kw, stride, pad, imgGradOut);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -74,8 +82,12 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.flatSgemm(m, n, k, a, b, cOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatSgemm(m, n, k, a, b, cOut);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -97,8 +109,12 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemm(m, n, k, a, b, cOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemm(m, n, k, a, b, cOut);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -121,8 +137,43 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmBatch(batch, m, n, k, a, b, cOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmBatch(batch, m, n, k, a, b, cOut);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Attempt HPC row-major dgemm with transpose flags: C[m×n] = op(A)[...] @ op(B)[...].
+     * transp: 0=NN, 1=TN, 2=NT, 3=TT.
+     * Eliminates Java-side flatTranspose allocations — transpose happens in Rust.
+     *
+     * @return true if HPC succeeded
+     */
+    public static boolean tryFlatDgemmTransp(int m, int n, int k,
+                                              double[] a, double[] b, double[] cOut,
+                                              int transp) {
+        if (a == null || b == null || cOut == null) {
+            return false;
+        }
+        long flops = (long) m * n * k;
+        if (flops < HpcConfig.flatGemmMinFlops()) {
+            return false;
+        }
+        if (!HpcConfig.allowAttempts()) {
+            return false;
+        }
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+            return false;
+        }
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmTransp(m, n, k, a, b, cOut, transp);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -148,9 +199,13 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.conv2dForward(
-                input, weight, bias, C, H, W, outCh, Kh, Kw, stride, pad, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.conv2dForward(
+                    input, weight, bias, C, H, W, outCh, Kh, Kw, stride, pad, output);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -176,9 +231,13 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.convTranspose2dForward(
-                input, weight, bias, inCh, H, W, outCh, Kh, Kw, stride, pad, outH, outW, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.convTranspose2dForward(
+                    input, weight, bias, inCh, H, W, outCh, Kh, Kw, stride, pad, outH, outW, output);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -203,9 +262,13 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.conv1dForward(
-                input, weight, bias, inCh, seqLen, outCh, K, stride, pad, dilation, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.conv1dForward(
+                    input, weight, bias, inCh, seqLen, outCh, K, stride, pad, dilation, output);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -229,9 +292,13 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im1d(
-                colGrad, inCh, seqLen, K, stride, pad, dilation, imgGrad);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im1d(
+                    colGrad, inCh, seqLen, K, stride, pad, dilation, imgGrad);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -252,8 +319,12 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.batchIm2col(input, B, C, H, W, Kh, Kw, stride, pad, out);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchIm2col(input, B, C, H, W, Kh, Kw, stride, pad, out);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 
     /**
@@ -274,7 +345,11 @@ public final class HpcIm2col {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.batchCol2im(colGrad, B, C, H, W, Kh, Kw, stride, pad, imgGradOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchCol2im(colGrad, B, C, H, W, Kh, Kw, stride, pad, imgGradOut);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
     }
 }
