@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 
 /**
  * Zero-dependency binary graph protocol replacing JSON for GPU/HPC graph execution.
@@ -58,42 +57,6 @@ public final class BinaryProtocol {
 
     private BinaryProtocol() {}
 
-    // ── Graph Export ──
-
-    /**
-     * Serializes a computation graph rooted at {@code root} into a binary buffer.
-     *
-     * @param root   the root of the computation graph
-     * @param order  nodes in topological order (output positions = indices in this list)
-     * @return ByteBuffer containing the serialized graph
-     */
-    public static ByteBuffer serializeGraph(RereDiffVector root, List<RereDiffVector> order) {
-        // Build position map for input references
-        java.util.Map<RereDiffVector, Integer> posMap = new java.util.HashMap<>();
-        for (int i = 0; i < order.size(); i++) posMap.put(order.get(i), i);
-
-        // Pass 1: compute total size
-        int size = 12; // header: magic + version + num_nodes
-        for (RereDiffVector v : order) {
-            size += nodeSize(v);
-        }
-
-        ByteBuffer buf = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
-
-        // Header
-        buf.putInt(MAGIC);
-        buf.putInt(VERSION);
-        buf.putInt(order.size());
-
-        // Nodes
-        for (RereDiffVector v : order) {
-            writeNode(buf, v, posMap);
-        }
-
-        buf.flip();
-        return buf;
-    }
-
     // ── Result Serialization ──
 
     /**
@@ -137,77 +100,6 @@ public final class BinaryProtocol {
     }
 
     public record GraphResult(double loss, List<double[]> grads) {}
-
-    // ── Internal: node sizing ──
-
-    private static int nodeSize(RereDiffVector v) {
-        int s = 2 + 2 + 4; // flags(u16) + op_len(u16) + id(u32)
-        byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
-        s += opBytes.length;
-        s += 2; // num_dims (u16)
-        int[] shape = v.exportShape != null ? v.exportShape : new int[]{v.value.size()};
-        s += shape.length * 4; // shape (u32[])
-        s += 2; // num_inputs (u16)
-        if (v.inputs != null) s += v.inputs.size() * 4; // inputs (u32[])
-
-        if (!Double.isNaN(v.scalarParam)) s += 8; // f64
-        if (!Double.isNaN(v.scalarParam2)) s += 8; // f64
-        if (v.isLeaf) s += 4 + v.value.size() * 8; // data_len (u32) + data (f64[])
-        if (v.backwardIndices != null && v.backwardIndices.length > 0)
-            s += 4 + v.backwardIndices.length * 4; // indices_len + indices (i32[])
-
-        return s;
-    }
-
-    // ── Internal: node writing ──
-
-    private static void writeNode(ByteBuffer buf, RereDiffVector v,
-                                   java.util.Map<RereDiffVector, Integer> posMap) {
-        byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
-        int[] shape = v.exportShape != null ? v.exportShape : new int[]{v.value.size()};
-
-        // Flags
-        int flags = (v.isLeaf ? FLAG_IS_LEAF : 0)
-                  | (v.isLeaf ? FLAG_HAS_DATA : 0) // leaf → has data
-                  | (!Double.isNaN(v.scalarParam) ? FLAG_HAS_SCALAR : 0)
-                  | (!Double.isNaN(v.scalarParam2) ? FLAG_HAS_PARAM2 : 0)
-                  | (v.backwardIndices != null && v.backwardIndices.length > 0 ? FLAG_HAS_INDICES : 0);
-        buf.putShort((short) flags);
-        buf.putShort((short) opBytes.length);
-        buf.putInt(posMap.getOrDefault(v, -1)); // id = position in order
-        buf.put(opBytes);
-        buf.putShort((short) shape.length);
-        for (int d : shape) buf.putInt(d);
-
-        // Input references with actual positions
-        if (v.inputs != null && !v.inputs.isEmpty()) {
-            buf.putShort((short) v.inputs.size());
-            for (RereDiffVector inp : v.inputs) {
-                int inpPos = posMap.getOrDefault(inp, -1);
-                buf.putInt(inpPos);
-            }
-        } else {
-            buf.putShort((short) 0);
-        }
-
-        if ((flags & FLAG_HAS_SCALAR) != 0) buf.putDouble(v.scalarParam);
-        if ((flags & FLAG_HAS_PARAM2) != 0) buf.putDouble(v.scalarParam2);
-        if ((flags & FLAG_HAS_DATA) != 0) {
-            double[] data = v.value.getData();
-            buf.putInt(data.length);
-            for (double d : data) buf.putDouble(d);
-        }
-        if ((flags & FLAG_HAS_INDICES) != 0) {
-            buf.putInt(v.backwardIndices.length);
-            for (int idx : v.backwardIndices) buf.putInt(idx);
-        }
-    }
-
-    // ── Internal: op tag resolution ──
-
-    private static String opTag(RereDiffVector v) {
-        return v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown");
-    }
 
     // ── Helpers for Rust FFI compatibility ──
 

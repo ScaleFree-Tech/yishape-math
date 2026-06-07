@@ -19,7 +19,10 @@ import jdk.incubator.vector.VectorSpecies;
  * {@link TracerDiffVector} auto-fusion.
  * 通过 {@link com.yishape.lab.math.optimize.autodiff.AD#fuse(IDiffVector)} 或
  * {@link TracerDiffVector} 自动融合构建。</p>
+ *
+ * @deprecated Use {@link TensorFusedOps} for tensor-native fused operations.
  */
+@Deprecated
 public class FusedOps {
 
     private final RereDiffVector x;
@@ -122,8 +125,8 @@ public class FusedOps {
             return x;
         }
 
-        int n = x.value.size();
-        double[] xData = x.value.getData();
+        int n = x.getValue().size();
+        double[] xData = x.getValue().getData();
 
         // --- Fast path: single SIMD-friendly op → vectorized directly ---
         if (ops.size() == 1 && !ops.get(0).isBinary() && isSimdFriendlyUnary(ops.get(0).type)) {
@@ -156,7 +159,7 @@ public class FusedOps {
             };
             List<RereDiffVector> inputs = new ArrayList<>();
             inputs.add(this.x);
-            return new RereDiffVector(resultVal, inputs, backwardFn);
+            return RereDiffVector.createNonLeaf(result, inputs, backwardFn);
         }
 
         // --- Multi-op path: SIMD vectorized forward, scalar backward ---
@@ -177,7 +180,7 @@ public class FusedOps {
         double[][] otherData = new double[ops.size()][];
         for (int j = 0; j < ops.size(); j++) {
             if (ops.get(j).isBinary()) {
-                otherData[j] = ((RereDiffVector) ops.get(j).other).value.getData();
+                otherData[j] = ((RereDiffVector) ops.get(j).other).getValue().getData();
             }
         }
 
@@ -278,7 +281,7 @@ public class FusedOps {
                 }
             }
         }
-        return new RereDiffVector(resultVal, inputs, backwardFn);
+        return RereDiffVector.createNonLeaf(result, inputs, backwardFn);
     }
 
     static boolean isSimdFriendlyUnary(OpType type) {

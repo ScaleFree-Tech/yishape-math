@@ -160,8 +160,8 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             self.accGrad(ISparseMatrix.fromDense(grad));
             self.propagateGradient();
         };
-        RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
-        node.opTag = "sum";
+        RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
+        node.tensor.opTag = "sum";
         return node;
     }
 
@@ -188,8 +188,8 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             self.accGrad(ISparseMatrix.fromDense(grad));
             self.propagateGradient();
         };
-        RereDiffVector node = new RereDiffVector(resultVal, List.of(), backwardFn);
-        node.opTag = "mean";
+        RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
+        node.tensor.opTag = "mean";
         return node;
     }
 
@@ -201,9 +201,9 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
     @Override
     public IDiffVector matmul(IDiffVector vector) {
         RereDiffVector v = (RereDiffVector) vector;
-        IVector result = value.multiply(v.value);
+        IVector result = value.multiply(v.getValue());
         ISparseMatrix aVal = value.copy();
-        IDoubleVector xVal = v.value.copy();
+        IDoubleVector xVal = v.getValue().copy();
         RereDiffSparseMatrix self = this;
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
             double[] gd = gradOut.getData();
@@ -220,8 +220,8 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
             self.propagateGradient();
             v.accGrad((IDoubleVector) aVal.transpose().multiply(gradOut));
         };
-        RereDiffVector node = new RereDiffVector((IDoubleVector) result, List.of(), backwardFn);
-        node.opTag = "matmul";
+        RereDiffVector node = RereDiffVector.createNonLeaf(((IDoubleVector) result).getData(), List.of(), backwardFn);
+        node.tensor.opTag = "matmul";
         return node;
     }
 

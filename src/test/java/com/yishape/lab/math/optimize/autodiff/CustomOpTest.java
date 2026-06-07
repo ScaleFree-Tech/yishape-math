@@ -36,7 +36,7 @@ public class CustomOpTest {
         };
 
         IDiffVector x = AD.vector(new double[]{1, 2, 3});
-        IDiffVector y = square.apply(x);
+        IDiffVector y = AD.op(square, x);
         IDiffVector loss = y.sum();
         loss.backward();
 
@@ -76,7 +76,7 @@ public class CustomOpTest {
 
         IDiffVector a = AD.vector(new double[]{1, 2, 3});
         IDiffVector b = AD.vector(new double[]{4, 5, 6});
-        IDiffVector c = addMul.apply(a, b);
+        IDiffVector c = AD.op(addMul, a, b);
         IDiffVector loss = c.sum();
         loss.backward();
 
@@ -118,7 +118,7 @@ public class CustomOpTest {
         };
 
         IDiffVector x = AD.vector(new double[]{2.0, 3.0, 5.0});
-        IDiffVector y = op.apply(x);
+        IDiffVector y = AD.op(op, x);
         IDiffVector loss = y.sum();
         loss.backward();
 
@@ -158,12 +158,12 @@ public class CustomOpTest {
         IDiffVector f2 = AD.vector(3.0);
 
         // Call 1: x1 * 2.0 = [2, 4], backward expects *2 in dX
-        IDiffVector y1 = scale.apply(x1, f1);
+        IDiffVector y1 = AD.op(scale, x1, f1);
         y1.sum().backward();
         assertArrayEquals(new double[]{2, 2}, x1.getGradient().getData(), TOL);
 
         // Call 2: x2 * 3.0 = [9, 12], backward expects *3 in dX
-        IDiffVector y2 = scale.apply(x2, f2);
+        IDiffVector y2 = AD.op(scale, x2, f2);
         y2.sum().backward();
         assertArrayEquals(new double[]{3, 3}, x2.getGradient().getData(), TOL);
     }
@@ -191,7 +191,7 @@ public class CustomOpTest {
         };
 
         IDiffVector x = AD.vector(new double[]{0.5, 1.0, 1.5});
-        IDiffVector y = cube.apply(x);
+        IDiffVector y = AD.op(cube, x);
         IDiffVector loss = y.sum();
         loss.backward();
 

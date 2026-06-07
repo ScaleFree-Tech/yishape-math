@@ -30,11 +30,16 @@ public class ODEDiffVector extends RereDiffVector {
         IDoubleVector y0 = z0r.getValue().copy();
         trajectory.add(y0.copy());
         IDoubleVector y = integrateForward(dynamics, y0, t0, t1, dt, trajectory);
-        this.value = y;
-        this.isLeaf = false;
-        this.inputs = new ArrayList<>();
-        this.inputs.add(z0r);
-        this.backwardFn = buildAdjointBackward(dynamics, z0r, trajectory, t0, t1, dt);
+        // Overwrite the placeholder tensor data
+        this.tensor.value = new com.yishape.lab.math.linalg.tensor.RereDoubleTensor(
+            y.getData(), new int[]{y.size()});
+        this.tensor.isLeaf = false;
+        this.tensor.inputs.add(z0r.tensor);
+        // Wrap the adjoint backward for the tensor graph
+        Consumer<IDoubleVector> vecBackwardFn = buildAdjointBackward(dynamics, z0r, trajectory, t0, t1, dt);
+        this.tensor.backwardFn = (selfTensor) -> {
+            vecBackwardFn.accept(IDoubleVector.of(selfTensor.grad));
+        };
     }
 
     private static IDoubleVector integrateForward(Function<IDiffVector, IDiffVector> dynamics,

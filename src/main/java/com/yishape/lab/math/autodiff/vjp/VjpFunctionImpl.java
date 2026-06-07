@@ -8,6 +8,7 @@ import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.vjp.VjpFunction;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
 /**
  * Reusable VJP (Vector-Jacobian Product) operator implementation.
@@ -23,7 +24,7 @@ public class VjpFunctionImpl implements VjpFunction {
 
     private final RereDiffVector root;
     private final RereDiffVector input;
-    private final List<RereDiffVector> order;
+    private final List<RereDiffTensor> order;
     private final int inputSize;
 
     /**
@@ -37,8 +38,8 @@ public class VjpFunctionImpl implements VjpFunction {
         this.input = input;
         this.inputSize = input.getValue().size();
         this.order = new ArrayList<>();
-        HashSet<RereDiffVector> visited = new HashSet<>();
-        root.buildTopo(order, visited);
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.tensor.buildTopo(order, visited);
     }
 
     @Override
@@ -47,8 +48,8 @@ public class VjpFunctionImpl implements VjpFunction {
 
         // Reset all gradients in the computation graph to avoid contamination
         // from previous backward passes
-        for (RereDiffVector node : order) {
-            node.gradient = null;
+        for (RereDiffTensor node : order) {
+            node.grad = null;
         }
 
         // Execute backward pass with the given upstream gradient
@@ -57,8 +58,8 @@ public class VjpFunctionImpl implements VjpFunction {
         // Read and deep-copy the gradient from the input leaf
         IDoubleVector grad = input.getGradient();
         if (grad == null) {
-            return new RereDiffVector(IDoubleVector.zeros(inputSize));
+            return new RereDiffVector(new double[inputSize]);
         }
-        return new RereDiffVector(IDoubleVector.of(grad.getData().clone()));
+        return new RereDiffVector(grad.getData().clone());
     }
 }

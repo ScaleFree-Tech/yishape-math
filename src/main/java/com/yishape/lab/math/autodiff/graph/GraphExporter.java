@@ -1,6 +1,7 @@
 package com.yishape.lab.math.autodiff.graph;
 
 import com.yishape.lab.math.autodiff.impl.RereDiffMatrix;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,7 @@ import java.util.Set;
 
 /**
  * Exports autodiff computation graphs to JSON for HPC / external backends.
- * 将自动微分计算图导出为 JSON，供 HPC 或外部后端使用。
+ * Operates on the tensor graph via {@link RereDiffVector#tensor}.
  */
 public final class GraphExporter {
 
@@ -22,11 +23,11 @@ public final class GraphExporter {
      * Exports a vector-based computation graph to JSON.
      */
     public static String toJson(RereDiffVector root) {
-        List<RereDiffVector> order = new ArrayList<>();
-        Set<RereDiffVector> visited = new HashSet<>();
-        root.buildTopo(order, visited);
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.tensor.buildTopo(order, visited);
 
-        Map<RereDiffVector, Integer> indexMap = new HashMap<>();
+        Map<RereDiffTensor, Integer> indexMap = new HashMap<>();
         for (int i = 0; i < order.size(); i++) {
             indexMap.put(order.get(i), i);
         }
@@ -34,9 +35,9 @@ public final class GraphExporter {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"nodes\":[");
         for (int i = 0; i < order.size(); i++) {
-            RereDiffVector v = order.get(i);
+            RereDiffTensor t = order.get(i);
             if (i > 0) sb.append(',');
-            appendVectorNode(sb, v, i, indexMap);
+            appendTensorNode(sb, t, i, indexMap);
         }
         sb.append("]}");
         return sb.toString();
@@ -66,27 +67,43 @@ public final class GraphExporter {
         return sb.toString();
     }
 
-    private static void appendVectorNode(StringBuilder sb, RereDiffVector v, int id,
-            Map<RereDiffVector, Integer> indexMap) {
+    private static void appendTensorNode(StringBuilder sb, RereDiffTensor t, int id,
+            Map<RereDiffTensor, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
-        if (v.exportShape != null) {
+        if (t.exportShape != null) {
             sb.append(",\"shape\":[");
-            for (int i = 0; i < v.exportShape.length; i++) {
+            for (int i = 0; i < t.exportShape.length; i++) {
                 if (i > 0) sb.append(',');
-                sb.append(v.exportShape[i]);
+                sb.append(t.exportShape[i]);
             }
             sb.append(']');
         } else {
-            sb.append(",\"shape\":[").append(v.value.size()).append(']');
+            sb.append(",\"shape\":[").append(t.value.totalSize()).append(']');
         }
-        appendOpTag(sb, v);
-        if (v.isLeaf) {
-            appendLeafData(sb, v.value.getData());
+        sb.append(",\"op\":\"");
+        sb.append(t.opTag != null ? t.opTag : (t.isLeaf ? "leaf" : "unknown"));
+        sb.append('"');
+        if (t.isLeaf) {
+            appendLeafData(sb, t.value.toDoubleArray());
         }
-        appendScalarParam(sb, v.scalarParam);
-        appendScalarParam2(sb, v.scalarParam2);
-        appendBackwardIndices(sb, v.backwardIndices);
-        appendInputs(sb, v.inputs, indexMap);
+        appendScalarParam(sb, t.scalarParam);
+        appendScalarParam2(sb, t.scalarParam2);
+        if (t.backwardIndices != null && t.backwardIndices.length > 0) {
+            sb.append(",\"indices\":[");
+            for (int i = 0; i < t.backwardIndices.length; i++) {
+                if (i > 0) sb.append(',');
+                sb.append(t.backwardIndices[i]);
+            }
+            sb.append(']');
+        }
+        if (t.inputs != null && !t.inputs.isEmpty()) {
+            sb.append(",\"inputs\":[");
+            for (int j = 0; j < t.inputs.size(); j++) {
+                if (j > 0) sb.append(',');
+                sb.append(indexMap.get(t.inputs.get(j)));
+            }
+            sb.append(']');
+        }
         sb.append('}');
     }
 
@@ -94,7 +111,9 @@ public final class GraphExporter {
             Map<RereDiffMatrix, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
         sb.append(",\"shape\":[").append(v.value.rows()).append(',').append(v.value.cols()).append(']');
-        appendOpTag(sb, v);
+        sb.append(",\"op\":\"");
+        sb.append(v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown"));
+        sb.append('"');
         if (v.isLeaf) {
             double[][] d = v.value.getData();
             sb.append(",\"data\":[");
@@ -112,20 +131,15 @@ public final class GraphExporter {
         }
         appendScalarParam(sb, v.scalarParam);
         appendScalarParam2(sb, v.scalarParam2);
-        appendMatrixInputs(sb, v.inputs, indexMap);
+        if (v.inputs != null && !v.inputs.isEmpty()) {
+            sb.append(",\"inputs\":[");
+            for (int j = 0; j < v.inputs.size(); j++) {
+                if (j > 0) sb.append(',');
+                sb.append(indexMap.get(v.inputs.get(j)));
+            }
+            sb.append(']');
+        }
         sb.append('}');
-    }
-
-    private static void appendOpTag(StringBuilder sb, RereDiffVector v) {
-        sb.append(",\"op\":\"");
-        sb.append(v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown"));
-        sb.append('"');
-    }
-
-    private static void appendOpTag(StringBuilder sb, RereDiffMatrix v) {
-        sb.append(",\"op\":\"");
-        sb.append(v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown"));
-        sb.append('"');
     }
 
     private static void appendLeafData(StringBuilder sb, double[] data) {
@@ -146,41 +160,6 @@ public final class GraphExporter {
     private static void appendScalarParam2(StringBuilder sb, double param2) {
         if (!Double.isNaN(param2) && !Double.isInfinite(param2)) {
             sb.append(",\"param2\":").append(param2);
-        }
-    }
-
-    private static void appendBackwardIndices(StringBuilder sb, int[] indices) {
-        if (indices != null && indices.length > 0) {
-            sb.append(",\"indices\":[");
-            for (int i = 0; i < indices.length; i++) {
-                if (i > 0) sb.append(',');
-                sb.append(indices[i]);
-            }
-            sb.append(']');
-        }
-    }
-
-    private static void appendInputs(StringBuilder sb, List<RereDiffVector> inputs,
-            Map<RereDiffVector, Integer> indexMap) {
-        if (inputs != null && !inputs.isEmpty()) {
-            sb.append(",\"inputs\":[");
-            for (int j = 0; j < inputs.size(); j++) {
-                if (j > 0) sb.append(',');
-                sb.append(indexMap.get(inputs.get(j)));
-            }
-            sb.append(']');
-        }
-    }
-
-    private static void appendMatrixInputs(StringBuilder sb, List<RereDiffMatrix> inputs,
-            Map<RereDiffMatrix, Integer> indexMap) {
-        if (inputs != null && !inputs.isEmpty()) {
-            sb.append(",\"inputs\":[");
-            for (int j = 0; j < inputs.size(); j++) {
-                if (j > 0) sb.append(',');
-                sb.append(indexMap.get(inputs.get(j)));
-            }
-            sb.append(']');
         }
     }
 }

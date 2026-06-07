@@ -70,19 +70,6 @@ public class RereDiffTensor implements IDiffTensor {
      */
     public java.util.function.Function<IDiffTensor, IDiffTensor[]> symbolicBackwardFn;
 
-    /**
-     * Link back to the vector-graph node that produced this tensor.
-     * Set by {@link IDiffTensor#fromDiffVector} when wrapping a RereDiffVector.
-     * Used during backward to bridge gradients from the tensor graph back into
-     * the vector graph (e.g. Conv2d → ReLU → Linear parameter chain).
-     *
-     * @deprecated Tensor-native graph nodes (via CustomOp.tensorApply) don't need
-     *             the dual-graph bridge. Once all layers are migrated, this field
-     *             and {@link #triggerVectorBackward()} will be removed.
-     */
-    @Deprecated
-    public com.yishape.lab.math.autodiff.impl.RereDiffVector vectorSource;
-
     // ==================== ThreadLocal ====================
 
     private static final ThreadLocal<ArrayList<RereDiffTensor>> TOPO_LIST =
@@ -195,16 +182,6 @@ public class RereDiffTensor implements IDiffTensor {
                     v.backwardFn.accept(v);
                 }
             }
-            // Bridge gradients from leaf tensors into the vector graph.
-            // Leaf tensors with vectorSource were produced by CustomOp layers
-            // (Linear, Conv2d, etc.) — their gradient must flow back through
-            // the vector graph to reach parameter leaves.
-            for (int i = 0; i < order.size(); i++) {
-                RereDiffTensor v = order.get(i);
-                if (v.vectorSource != null && v.grad != null) {
-                    v.triggerVectorBackward();
-                }
-            }
         } finally {
             order.clear();
             visited.clear();
@@ -213,17 +190,10 @@ public class RereDiffTensor implements IDiffTensor {
 
     /**
      * Propagate gradient backward through this tensor's sub-graph without zeroing
-     * this tensor's own gradient. Uses local collections (not ThreadLocal) so it
-     * can be safely called from within RereDiffVector.backward().
+     * this tensor's own gradient. Uses local collections (not ThreadLocal).
      *
-     * <p>Called by {@link CustomOp}'s backwardFn to bridge gradients from the
-     * vector graph into the tensor graph, enabling gradient flow through layers
-     * that use CustomOp (Conv2d, Linear, MaxPool2d, etc.).</p>
-     *
-     * @deprecated Tensor-native CustomOp.tensorApply() creates pure tensor graph nodes
-     *             that propagate gradients through the tensor graph directly — no bridge needed.
+     * <p>Called by {@link ODEDiffTensor} during adjoint sensitivity computation.
      */
-    @Deprecated
     public void propagateGrad() {
         if (this.grad == null || !requiresGrad) return;
 
@@ -237,51 +207,10 @@ public class RereDiffTensor implements IDiffTensor {
             if (v != this) v.grad = null;
         }
         // Propagate backward through sub-graph INCLUDING the root.
-        // The root's backwardFn must be called to flow gradient to its inputs
-        // (e.g. flattenOutTensor.backwardFn → reluOutTensor → convOutTensor).
         for (int i = order.size() - 1; i >= 0; i--) {
             RereDiffTensor v = order.get(i);
             if (v.grad != null && v.backwardFn != null) {
                 v.backwardFn.accept(v);
-            }
-        }
-        // Bridge gradients from leaf tensors into the vector graph.
-        // Leaf tensors with vectorSource were produced by CustomOp layers
-        // (Conv2d, Linear, etc.) — their gradient must flow back through
-        // the vector graph to reach parameter leaves.
-        for (int i = 0; i < order.size(); i++) {
-            RereDiffTensor v = order.get(i);
-            if (v.vectorSource != null && v.grad != null) {
-                v.triggerVectorBackward();
-            }
-        }
-    }
-
-    /**
-     * Bridge gradient from this tensor into the vector graph via vectorSource.
-     * Called during tensor backward propagation when a leaf tensor was produced
-     * by a CustomOp (e.g. Linear, Conv2d output wrapped via IDiffTensor.fromDiffVector)
-     * or by {@link com.yishape.lab.dl.nn.Parameter#asLeaf() Parameter.asLeaf()}.
-     *
-     * <p>For leaf vectors (no backwardFn chain), accumulates gradient directly
-     * via {@code accGrad()} so {@code syncGradient()} can read it. For non-leaf
-     * vectors (CustomOp outputs), traverses the vector backward chain via
-     * {@code backwardNested()} and then restores the root gradient.</p>
-     * @deprecated Not needed with tensor-native graph nodes (use Parameter.asLeafTensor()).
-     */
-    @Deprecated
-    void triggerVectorBackward() {
-        if (vectorSource != null && grad != null) {
-            if (vectorSource.isLeaf()) {
-                // Raw leaf (e.g. Parameter.asLeafVector()): just accumulate gradient.
-                // backwardNested would set and then clear it, losing the gradient.
-                vectorSource.accGrad(IDoubleVector.of(grad));
-            } else {
-                // Non-leaf (CustomOp output): traverse vector backward chain.
-                // backwardNested sets grad, runs backwardFn chain, then clears root.
-                // Restore root gradient afterward so syncGradient can read it.
-                vectorSource.backwardNested(IDoubleVector.of(grad));
-                vectorSource.accGrad(IDoubleVector.of(grad));
             }
         }
     }
@@ -314,12 +243,13 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public IDiffVector flattenGrad() {
         if (grad == null) return null;
-        return new TensorBackedDiffVector(this, true);
+        double[] g = grad.clone();
+        return new RereDiffVector(new RereDiffTensor(g, new int[]{g.length}));
     }
 
     @Override
     public IDiffVector flattenValue() {
-        return new TensorBackedDiffVector(this, false);
+        return new RereDiffVector(this);
     }
 
     @Override
@@ -391,8 +321,12 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public IDiffTensor sum() {
         if (!requiresGrad) {
-            IDoubleTensor r = value;
-            for (int d = rank() - 1; d >= 0; d--) r = r.sum(d, false);
+            // Scalar sum for non-differentiable tensors — avoids empty-shape bug
+            // in RereDoubleTensor.sum(dim, false) for rank-1 tensors
+            double total = 0;
+            long n = value.totalSize();
+            for (long i = 0; i < n; i++) total += value.linearGet(i);
+            IDoubleTensor r = new RereDoubleTensor(new double[]{total}, new int[]{1});
             return toNonDiff(r);
         }
         // Pattern fusion: detect common unaryOp + sum patterns
@@ -434,9 +368,10 @@ public class RereDiffTensor implements IDiffTensor {
             };
             RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "squareSum");
             r.exportShape = x.shape();
-            double[] squareFactor = new double[m];
-            for (int i = 0; i < m; i++) squareFactor[i] = 2.0 * xData[i];
-            r.symbolicBackwardFn = broadcastGradFn(x.shape(), squareFactor);
+            // Symbolic backward for tape-of-tape: d/dx 2*x = 2, use x_ref for
+            // chain-rule propagation. 2.0 * g broadcast via scalar-op mul.
+            RereDiffTensor xRefSq = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(2.0).mul(xRefSq)};
             return r;
         }
         // relu().sum()
@@ -565,9 +500,19 @@ public class RereDiffTensor implements IDiffTensor {
             RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "powSum");
             r.exportShape = x.shape();
             r.scalarParam = scalarP;
-            double[] powFactor = new double[m];
-            for (int i = 0; i < m; i++) powFactor[i] = scalarP * Math.pow(xData[i], scalarP - 1);
-            r.symbolicBackwardFn = broadcastGradFn(x.shape(), powFactor);
+            // Symbolic backward for tape-of-tape: d/dx n*x^(n-1)
+            // Use the original input tensor x_ref so second derivatives flow back.
+            RereDiffTensor xRefPw = x;
+            double nCaptured = scalarP;
+            if (nCaptured == 1.0) {
+                r.symbolicBackwardFn = g -> new IDiffTensor[]{g};
+            } else if (nCaptured == 2.0) {
+                r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(2.0).mul(xRefPw)};
+            } else if (nCaptured == 3.0) {
+                r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(3.0).mul(xRefPw.pow(2))};
+            } else {
+                r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(nCaptured).mul(xRefPw.pow(nCaptured - 1))};
+            }
             return r;
         }
         return null;
@@ -862,10 +807,30 @@ public class RereDiffTensor implements IDiffTensor {
         };
         RereDiffTensor powResult = new RereDiffTensor(out, shape(), List.of(this), bw, "pow", n);
         // pow symbolic backward: d/dx x^n = n * x^(n-1)
-        double[] xData = value.toDoubleArray();
-        double scalarN = n;
-        powResult.symbolicBackwardFn = scalarOpGradFn(
-            (g, v) -> g * scalarN * Math.pow(v, scalarN - 1), xData, shape());
+        // Use the original input tensor (this) so tape-of-tape AD can compute
+        // second derivatives through the pow node.
+        RereDiffTensor xRef = this;
+        double scalarN_captured = n;
+        powResult.symbolicBackwardFn = g -> {
+            if (scalarN_captured == 0.0) {
+                // d/dx x^0 = 0, gradient is null
+                return new IDiffTensor[]{
+                    new RereDiffTensor(new double[(int)xRef.value.totalSize()], xRef.shape()).fill_(0)
+                };
+            } else if (scalarN_captured == 1.0) {
+                // d/dx x^1 = 1, gradient is g
+                return new IDiffTensor[]{g};
+            } else if (scalarN_captured == 2.0) {
+                // d/dx x^2 = 2x, gradient is g * 2 * x
+                return new IDiffTensor[]{g.mul(2.0).mul(xRef)};
+            } else if (scalarN_captured == 3.0) {
+                // d/dx x^3 = 3x^2
+                return new IDiffTensor[]{g.mul(3.0).mul(xRef.pow(2))};
+            } else {
+                // d/dx x^n = n * x^(n-1)
+                return new IDiffTensor[]{g.mul(scalarN_captured).mul(xRef.pow(scalarN_captured - 1))};
+            }
+        };
         return powResult;
     }
 
@@ -1065,10 +1030,10 @@ public class RereDiffTensor implements IDiffTensor {
 
     // ==================== Element-wise binary ops — scalar ====================
 
-    @Override public IDiffTensor add(double scalar) { return scalarOp(scalar, (a, b) -> a + b, (g, v) -> g, "add"); }
-    @Override public IDiffTensor sub(double scalar) { return scalarOp(scalar, (a, b) -> a - b, (g, v) -> g, "sub"); }
-    @Override public IDiffTensor mul(double scalar) { return scalarOp(scalar, (a, b) -> a * b, (g, v) -> g * scalar, "mul"); }
-    @Override public IDiffTensor div(double scalar) { return scalarOp(scalar, (a, b) -> a / b, (g, v) -> g / scalar, "div"); }
+    @Override public IDiffTensor add(double scalar) { return scalarOp(scalar, (a, b) -> a + b, (g, v) -> g, "addScalar"); }
+    @Override public IDiffTensor sub(double scalar) { return scalarOp(scalar, (a, b) -> a - b, (g, v) -> g, "subScalar"); }
+    @Override public IDiffTensor mul(double scalar) { return scalarOp(scalar, (a, b) -> a * b, (g, v) -> g * scalar, "mulScalar"); }
+    @Override public IDiffTensor div(double scalar) { return scalarOp(scalar, (a, b) -> a / b, (g, v) -> g / scalar, "divScalar"); }
 
     @Override
     public IDiffTensor rsub(double scalar) {
@@ -1218,7 +1183,40 @@ public class RereDiffTensor implements IDiffTensor {
             RereDiffTensor result = new RereDiffTensor(out, shape(), inputs, bw, tag);
             boolean hasA = requiresGrad;
             boolean hasB = otherNode != null;
-            result.symbolicBackwardFn = binarySameSymbolicFn(n, gradA, gradB, aData, bData, shape(), hasA, hasB);
+            // Per-op symbolic backward: for mul/div, use original tensor references
+            // so that tape-of-tape AD (MixedMode.hvp) can flow gradients back
+            // to the primal variables. For add/sub, constant factors are fine.
+            if ("mul".equals(tag)) {
+                RereDiffTensor aRef = this;
+                RereDiffTensor bRef = otherNode;
+                result.symbolicBackwardFn = g -> {
+                    if (hasA && hasB) {
+                        return new IDiffTensor[]{g.mul(bRef), g.mul(aRef)};
+                    }
+                    IDiffTensor gradAT = (bRef != null) ? g.mul(bRef)
+                        : g.mul(IDiffTensor.constantTensor(bData, shape()));
+                    IDiffTensor gradBT = g.mul(aRef);
+                    return new IDiffTensor[]{hasA ? gradAT : gradBT};
+                };
+            } else if ("div".equals(tag)) {
+                RereDiffTensor aRef = this;
+                RereDiffTensor bRef = otherNode;
+                result.symbolicBackwardFn = g -> {
+                    if (hasA && hasB) {
+                        return new IDiffTensor[]{g.div(bRef),
+                            g.neg().mul(aRef).div(bRef.mul(bRef))};
+                    } else if (hasA) {
+                        IDiffTensor bDiv = (bRef != null) ? bRef
+                            : IDiffTensor.constantTensor(bData, shape());
+                        return new IDiffTensor[]{g.div(bDiv)};
+                    } else {
+                        IDiffTensor aConst = IDiffTensor.constantTensor(aData, shape());
+                        return new IDiffTensor[]{g.neg().mul(aConst).div(bRef.mul(bRef))};
+                    }
+                };
+            } else {
+                result.symbolicBackwardFn = binarySameSymbolicFn(n, gradA, gradB, aData, bData, shape(), hasA, hasB);
+            }
             return result;
         }
 
@@ -1278,8 +1276,37 @@ public class RereDiffTensor implements IDiffTensor {
         RereDiffTensor result = new RereDiffTensor(out, resultShape, inputs, bw, tag);
         boolean bHasA = requiresGrad;
         boolean bHasB = otherNode != null;
-        result.symbolicBackwardFn = binaryBroadcastSymbolicFn(
-            n, gradA, gradB, bcA, bcB, sA, sB, resultShape, bHasA, bHasB);
+        // Per-op symbolic backward for broadcast: use original tensor references
+        // for mul/div to preserve tape-of-tape connections.
+        if ("mul".equals(tag)) {
+            RereDiffTensor bRefBc = otherNode;
+            result.symbolicBackwardFn = g -> {
+                if (bHasA && bHasB) {
+                    return new IDiffTensor[]{g.mul(bRefBc), g.mul(this)};
+                }
+                IDiffTensor gradAT = (bRefBc != null) ? g.mul(bRefBc)
+                    : g.mul(IDiffTensor.constantTensor(bData, sB));
+                return new IDiffTensor[]{bHasA ? gradAT : g.mul(this)};
+            };
+        } else if ("div".equals(tag)) {
+            RereDiffTensor bRefBc = otherNode;
+            result.symbolicBackwardFn = g -> {
+                if (bHasA && bHasB) {
+                    return new IDiffTensor[]{g.div(bRefBc),
+                        g.neg().mul(this).div(bRefBc.mul(bRefBc))};
+                } else if (bHasA) {
+                    IDiffTensor bDiv = (bRefBc != null) ? bRefBc
+                        : IDiffTensor.constantTensor(bData, sB);
+                    return new IDiffTensor[]{g.div(bDiv)};
+                } else {
+                    IDiffTensor aConst = IDiffTensor.constantTensor(aData, sA);
+                    return new IDiffTensor[]{g.neg().mul(aConst).div(bRefBc.mul(bRefBc))};
+                }
+            };
+        } else {
+            result.symbolicBackwardFn = binaryBroadcastSymbolicFn(
+                n, gradA, gradB, bcA, bcB, sA, sB, resultShape, bHasA, bHasB);
+        }
         return result;
     }
 
@@ -3420,7 +3447,7 @@ public class RereDiffTensor implements IDiffTensor {
         @Override public void zeroGradient() {}
         @Override public IDiffVector flattenGrad() { return null; }
         @Override public IDiffVector flattenValue() {
-            return new RereDiffVector(IDoubleVector.of(value.toDoubleArray()));
+            return new RereDiffVector(value.toDoubleArray());
         }
         @Override public IDoubleTensor detach() { return new RereDoubleTensor(value.toDoubleArray(), shape()); }
         @Override public boolean requiresGrad() { return false; }

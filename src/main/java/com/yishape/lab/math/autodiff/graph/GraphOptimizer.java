@@ -7,13 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.autodiff.IDiffVector;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 
 /**
  * Computation-graph inspection and rewrite utilities.
- * 计算图分析与图优化工具。
+ * Operates on the tensor graph via {@link RereDiffVector#tensor}.
  */
 public class GraphOptimizer {
 
@@ -28,13 +28,13 @@ public class GraphOptimizer {
     }
 
     private static RereDiffVector foldConstants(RereDiffVector root) {
-        List<RereDiffVector> order = new ArrayList<>();
-        Set<RereDiffVector> visited = new HashSet<>();
-        root.buildTopo(order, visited);
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.tensor.buildTopo(order, visited);
 
-        Map<RereDiffVector, RereDiffVector> replacements = new HashMap<>();
+        Map<RereDiffTensor, RereDiffTensor> replacements = new HashMap<>();
 
-        for (RereDiffVector node : order) {
+        for (RereDiffTensor node : order) {
             if (node.isLeaf) {
                 replacements.put(node, node);
                 continue;
@@ -46,31 +46,31 @@ public class GraphOptimizer {
 
             // addScalar(0) → pass-through input
             if ("addScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffVector rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // subScalar(0) → pass-through input
             if ("subScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffVector rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // mulScalar(1) → pass-through input
             if ("mulScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffVector rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // divScalar(1) → pass-through input
             if ("divScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffVector rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // mulScalar(0) → zeros constant (detach from input)
             if ("mulScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffVector zeros = new RereDiffVector(IDoubleVector.zeros(node.value.size()));
+                RereDiffTensor zeros = new RereDiffTensor(new double[(int) node.value.totalSize()], node.shape());
                 zeros.opTag = "constant";
                 zeros.isLeaf = true;
                 replacements.put(node, zeros);
@@ -78,7 +78,7 @@ public class GraphOptimizer {
             }
             // pow(1) → pass-through input
             if ("pow".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffVector rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
+                RereDiffTensor rep = replacements.getOrDefault(node.inputs.get(0), node.inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
@@ -86,7 +86,7 @@ public class GraphOptimizer {
             // Rewrite inputs to use replacements (transitive folding)
             boolean changed = false;
             for (int i = 0; i < nInputs; i++) {
-                RereDiffVector replaced = replacements.get(node.inputs.get(i));
+                RereDiffTensor replaced = replacements.get(node.inputs.get(i));
                 if (replaced != null && replaced != node.inputs.get(i)) {
                     if (!changed) {
                         node.inputs = new ArrayList<>(node.inputs);
@@ -98,40 +98,46 @@ public class GraphOptimizer {
             replacements.put(node, node);
         }
 
-        return replacements.getOrDefault(root, root);
+        RereDiffTensor newRoot = replacements.getOrDefault(root.tensor, root.tensor);
+        return new RereDiffVector(newRoot);
     }
 
     public static int countNodes(IDiffVector root) {
-        List<RereDiffVector> order = new ArrayList<>();
-        Set<RereDiffVector> visited = new HashSet<>();
-        ((RereDiffVector) root).buildTopo(order, visited);
+        if (!(root instanceof RereDiffVector r)) return 1;
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        r.tensor.buildTopo(order, visited);
         return order.size();
     }
 
     public static int countLeaves(IDiffVector root) {
-        List<RereDiffVector> order = new ArrayList<>();
-        Set<RereDiffVector> visited = new HashSet<>();
-        ((RereDiffVector) root).buildTopo(order, visited);
+        if (!(root instanceof RereDiffVector r)) return 1;
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        r.tensor.buildTopo(order, visited);
         int count = 0;
-        for (RereDiffVector v : order) {
-            if (v.isLeaf) count++;
+        for (RereDiffTensor t : order) {
+            if (t.isLeaf) count++;
         }
         return count;
     }
 
     public static GraphStats stats(IDiffVector root) {
-        List<RereDiffVector> order = new ArrayList<>();
-        Set<RereDiffVector> visited = new HashSet<>();
-        ((RereDiffVector) root).buildTopo(order, visited);
+        if (!(root instanceof RereDiffVector r)) {
+            return new GraphStats(1, 1, 0, 0);
+        }
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        r.tensor.buildTopo(order, visited);
         int leaves = 0, nonLeaf = 0, fusibleChains = 0;
-        for (RereDiffVector v : order) {
-            if (v.isLeaf) leaves++;
+        for (RereDiffTensor t : order) {
+            if (t.isLeaf) leaves++;
             else nonLeaf++;
         }
         return new GraphStats(order.size(), leaves, nonLeaf, fusibleChains);
     }
 
-    /** Summary statistics of a vector autodiff graph. / 向量计算图统计摘要。 */
+    /** Summary statistics of an autodiff graph. */
     public record GraphStats(int totalNodes, int leafNodes, int nonLeafNodes, int fusibleChains) {
         @Override
         public String toString() {

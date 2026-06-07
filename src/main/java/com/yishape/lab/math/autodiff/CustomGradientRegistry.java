@@ -14,10 +14,8 @@ import com.yishape.lab.math.linalg.IDoubleVector;
  *             graph nodes, eliminating the need for a global registry and preventing memory leaks
  *             from forgotten {@link #unregister} calls.
  *
- * <p>Used by {@link com.yishape.lab.math.optimize.autodiff.impl.CustomDiffVector} and
- * {@link AD#custom(String, java.util.function.Function, IDiffVector...)}.
- * 供 {@link com.yishape.lab.math.optimize.autodiff.impl.CustomDiffVector} 与
- * {@link AD#custom(String, java.util.function.Function, IDiffVector...)} 使用。</p>
+ * <p>Used by {@link AD#custom(String, java.util.function.Function, IDiffVector...)}.
+ * 供 {@link AD#custom(String, java.util.function.Function, IDiffVector...)} 使用。</p>
  */
 @Deprecated
 public class CustomGradientRegistry {

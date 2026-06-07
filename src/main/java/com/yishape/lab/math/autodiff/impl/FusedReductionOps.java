@@ -17,7 +17,10 @@ import com.yishape.lab.math.linalg.IDoubleVector;
  * The element-wise ops reuse the same {@link FusedOps.OpType} kernel logic.
  * Reduction-specific intermediate values (softmax output, norm values, etc.)
  * are saved for the backward pass.</p>
+ *
+ * @deprecated Use {@link TensorFusedReductionOps} for tensor-native fused reduction operations.
  */
+@Deprecated
 public class FusedReductionOps {
 
     private final RereDiffVector x;
@@ -109,8 +112,8 @@ public class FusedReductionOps {
             return fo.compute();
         }
 
-        int n = x.value.size();
-        double[] xData = x.value.getData();
+        int n = x.getValue().size();
+        double[] xData = x.getValue().getData();
 
         // Apply element-wise chain
         double[] mid = forwardElementOps(xData, n);
@@ -158,7 +161,6 @@ public class FusedReductionOps {
             }
         }
 
-        IDoubleVector resultVal = IDoubleVector.of(result);
         RereDiffVector self = this.x;
 
         // Capture for backward
@@ -214,7 +216,7 @@ public class FusedReductionOps {
 
         List<RereDiffVector> inputs = new ArrayList<>();
         inputs.add(self);
-        return new RereDiffVector(resultVal, inputs, backwardFn);
+        return RereDiffVector.createNonLeaf(result, inputs, backwardFn);
     }
 
     // ---- Element-wise forward helpers ----

@@ -8,6 +8,7 @@ import com.yishape.lab.util.Messages;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.yishape.lab.math.linalg.IDoubleMatrix;
@@ -19,9 +20,7 @@ import com.yishape.lab.math.optimize.IObjectiveFunction;
 import com.yishape.lab.math.optimize.OptResult;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.autodiff.impl.CheckpointVariable;
-import com.yishape.lab.math.autodiff.impl.CustomDiffVector;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
-import com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector;
 import com.yishape.lab.math.linalg.IFloatVector;
 import com.yishape.lab.math.linalg.sparse.ISparseMatrix;
 import com.yishape.lab.math.linalg.complex.IComplexMatrix.IComplexVector;
@@ -76,7 +75,7 @@ public class AD {
 
     /** Creates a leaf differentiable vector from a raw array. / 从原始数组创建叶子可微向量。 */
     public static IDiffVector vector(double... data) {
-        return new RereDiffVector(IDoubleVector.of(data));
+        return new RereDiffVector(data);
     }
 
     /**
@@ -94,19 +93,22 @@ public class AD {
     }
 
     public static IDiffVector vector(IDoubleVector data) {
-        return new RereDiffVector(data.copy());
+        IDoubleVector copy = data.copy();
+        return new RereDiffVector(copy.getData());
     }
 
     public static IDiffVector vector(double scalar) {
-        return new RereDiffVector(IDoubleVector.of(scalar));
+        return new RereDiffVector(new double[]{scalar});
     }
 
     public static IDiffVector zeros(int size) {
-        return new RereDiffVector(IDoubleVector.zeros(size));
+        return new RereDiffVector(new double[size]);
     }
 
     public static IDiffVector ones(int size) {
-        return new RereDiffVector(IDoubleVector.ones(size));
+        double[] ones = new double[size];
+        java.util.Arrays.fill(ones, 1.0);
+        return new RereDiffVector(ones);
     }
 
     // ---- tensor factories ----
@@ -223,11 +225,12 @@ public class AD {
     // ---- constant factories (for tape-of-tape) ----
 
     public static IDiffVector constant(IDoubleVector value) {
-        return new RereDiffVector(value.copy());
+        IDoubleVector copy = value.copy();
+        return new RereDiffVector(copy.getData());
     }
 
     public static IDiffVector constant(double scalar) {
-        return new RereDiffVector(IDoubleVector.of(scalar));
+        return new RereDiffVector(new double[]{scalar});
     }
 
     // ---- tape-of-tape higher-order differentiation ----
@@ -354,14 +357,12 @@ public class AD {
      * 尝试融合 {@code fn} 内逐元素运算；不可融合时回退为逐算子求值。
      */
     public static IDiffVector elementwise(IDiffVector x, Function<IDiffVector, IDiffVector> fn) {
-        // Bridge TensorBackedDiffVector → RereDiffVector so SequenceModel outputs
-        // can use elementwise loss functions (MSELoss, BCELoss, etc.)
-        if (x instanceof TensorBackedDiffVector tb) {
-            return elementwise(tensorBackedToRere(tb), fn);
-        }
-        if (!(x instanceof RereDiffVector rx)) {
-            throw new IllegalArgumentException(
-                "elementwise requires RereDiffVector or TensorBackedDiffVector, got: " + x.getClass().getSimpleName());
+        RereDiffVector rx;
+        if (x instanceof RereDiffVector r) {
+            rx = r;
+        } else {
+            // Unwrap any non-Rere IDiffVector to its underlying tensor
+            rx = RereDiffVector.resolveToRere(x);
         }
         TracerDiffVector tracer = new TracerDiffVector(rx);
         try {
@@ -373,27 +374,6 @@ public class AD {
             // non-fusible op detected, fall through to fallback
         }
         return fn.apply(x);
-    }
-
-    /**
-     * Converts a TensorBackedDiffVector to a RereDiffVector with a backward bridge
-     * that routes gradients back to the underlying tensor's grad array.
-     */
-    private static RereDiffVector tensorBackedToRere(TensorBackedDiffVector tb) {
-        double[] data = tb.getValue().getData();
-        RereDiffVector rv = new RereDiffVector(IDoubleVector.of(data));
-        final RereDiffTensor tensor = tb.unwrap();
-        rv.backwardFn = gradVec -> {
-            double[] g = gradVec.getData();
-            if (tensor.grad == null) {
-                tensor.grad = new double[(int) tensor.value.totalSize()];
-            }
-            for (int i = 0; i < g.length; i++) {
-                tensor.grad[i] += g[i];
-            }
-            tensor.backward(); // continue gradient propagation through AD graph
-        };
-        return rv;
     }
 
     // ---- custom gradient registration ----
@@ -424,16 +404,78 @@ public class AD {
     @Deprecated
     public static IDiffVector custom(String name,
             java.util.function.Function<IDiffVector[], IDiffVector> forwardFn, IDiffVector... inputs) {
-        return CustomDiffVector.create(name, forwardFn, inputs);
+        java.util.function.Function<IDoubleVector, IDoubleVector[]> gradFn = CustomGradientRegistry.get(name);
+        if (gradFn == null) {
+            throw new IllegalArgumentException(
+                "No gradient registered for '" + name + "'. Call AD.registerGradient() first.");
+        }
+        // Resolve inputs and run forward
+        RereDiffVector[] rvInputs = new RereDiffVector[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            rvInputs[i] = RereDiffVector.resolveToRere(inputs[i]);
+        }
+        IDiffVector result = forwardFn.apply(inputs);
+        RereDiffVector rvResult = RereDiffVector.resolveToRere(result);
+        double[] outputData = rvResult.getValue().getData();
+        int n = outputData.length;
+        // Build tensor-native graph node with gradient from CustomGradientRegistry
+        List<RereDiffTensor> tensorInputs = new ArrayList<>();
+        for (RereDiffVector rv : rvInputs) tensorInputs.add(rv.tensor);
+        Consumer<RereDiffTensor> tensorBackwardFn = (self) -> {
+            IDoubleVector[] grads = gradFn.apply(IDoubleVector.of(self.grad));
+            for (int j = 0; j < tensorInputs.size() && j < grads.length; j++) {
+                if (grads[j] != null) {
+                    tensorInputs.get(j).accGrad(grads[j].getData());
+                }
+            }
+        };
+        RereDiffTensor resultTensor = new RereDiffTensor(outputData, new int[]{n},
+            tensorInputs, tensorBackwardFn, name);
+        return new RereDiffVector(resultTensor);
     }
 
     /**
-     * Apply a {@link CustomOp} to the given inputs.
-     * This is the preferred replacement for {@link #custom(String, java.util.function.Function, IDiffVector...)}.
+     * Apply a {@link CustomOp} to the given vector inputs.
      * No global registration, no memory leaks — the backward function is embedded in the op.
+     *
+     * <p>Internally unwraps vector inputs to rank-1 tensors, calls
+     * {@link CustomOp#forward}, and builds a pure tensor-graph node.
+     * The returned {@link IDiffVector} wraps a tensor node — gradients flow
+     * entirely within the tensor graph (no vector bridge).</p>
      */
     public static IDiffVector op(CustomOp op, IDiffVector... inputs) {
-        return op.apply(inputs);
+        RereDiffVector[] rvInputs = new RereDiffVector[inputs.length];
+        IDoubleVector[] raw = new IDoubleVector[inputs.length];
+        RereDiffTensor[] tensorInputs = new RereDiffTensor[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            rvInputs[i] = RereDiffVector.resolveToRere(inputs[i]);
+            tensorInputs[i] = rvInputs[i].tensor;
+            raw[i] = rvInputs[i].getValue();
+        }
+        // Forward pass — gets output data and context for backward
+        CustomOp.ForwardResult fr = op.forward(raw);
+        long id = op.fwdCounter.incrementAndGet();
+        op.putCache(id, fr.context());
+        // Build tensor-native graph node with CustomOp backward embedded
+        double[] outputData = fr.output().getData();
+        int n = outputData.length;
+        List<RereDiffTensor> insList = java.util.Arrays.asList(tensorInputs);
+        java.util.function.Consumer<RereDiffTensor> tensorBackwardFn = (self) -> {
+            Object ctx = op.getCache(id);
+            IDoubleVector[] grads = op.backward(IDoubleVector.of(self.grad), ctx);
+            for (int j = 0; j < tensorInputs.length && j < grads.length; j++) {
+                if (grads[j] != null) {
+                    tensorInputs[j].accGrad(grads[j].getData());
+                }
+            }
+        };
+        String tag = op.graphOpTag != null ? op.graphOpTag : "CustomOp";
+        RereDiffTensor resultTensor = new RereDiffTensor(outputData, new int[]{n}, insList, tensorBackwardFn, tag);
+        if (op.graphOpTag != null) {
+            if (!Double.isNaN(op.graphScalarParam)) resultTensor.scalarParam = op.graphScalarParam;
+            if (!Double.isNaN(op.graphScalarParam2)) resultTensor.scalarParam2 = op.graphScalarParam2;
+        }
+        return new RereDiffVector(resultTensor);
     }
 
     // ---- gradient checkpointing ----
@@ -654,12 +696,12 @@ public class AD {
             double orig = xVal.get(i);
             double[] xpData = xVal.getData().clone();
             xpData[i] = orig + epsilon;
-            IDiffVector xp = new RereDiffVector(IDoubleVector.of(xpData));
+            IDiffVector xp = new RereDiffVector(xpData);
             double fp = lossFn.apply(xp).getValue().get(0);
 
             double[] xmData = xVal.getData().clone();
             xmData[i] = orig - epsilon;
-            IDiffVector xm = new RereDiffVector(IDoubleVector.of(xmData));
+            IDiffVector xm = new RereDiffVector(xmData);
             double fm = lossFn.apply(xm).getValue().get(0);
 
             nGrad[i] = (fp - fm) / (2.0 * epsilon);

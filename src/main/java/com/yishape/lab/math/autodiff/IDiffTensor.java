@@ -185,20 +185,25 @@ public interface IDiffTensor extends IDoubleTensor {
 
     /** 从 IDiffVector + shape 创建可微张量 */
     static IDiffTensor fromDiffVector(IDiffVector vec, int... shape) {
-        if (vec instanceof com.yishape.lab.math.autodiff.impl.TensorBackedDiffVector tbdv) {
-            return tbdv.unwrap().reshape(shape);
+        if (vec instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rv) {
+            // Unwrap to underlying tensor; reshape only if shape differs
+            int[] tensorShape = rv.tensor.shape();
+            boolean sameShape = tensorShape.length == shape.length;
+            if (sameShape) {
+                for (int i = 0; i < shape.length; i++) {
+                    if (tensorShape[i] != shape[i]) { sameShape = false; break; }
+                }
+            }
+            if (sameShape) {
+                return rv.tensor;
+            }
+            return rv.tensor.reshape(shape);
         }
         IDoubleVector val = vec.getValue();
         if (val == null) {
             throw new IllegalArgumentException("vec.getValue() returned null — cannot create tensor from null vector");
         }
-        RereDiffTensor t = new RereDiffTensor(val.toDoubleArray(), shape);
-        // Bridge back to the vector graph so backward can flow through
-        // CustomOp layers (Linear, Conv2d, etc.) that produce RereDiffVector outputs.
-        if (vec instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rv) {
-            t.vectorSource = rv;
-        }
-        return t;
+        return new RereDiffTensor(val.toDoubleArray(), shape);
     }
 
     /** 从 IDoubleTensor + requiresGrad 创建可微张量（注：不会追踪前序梯度） */

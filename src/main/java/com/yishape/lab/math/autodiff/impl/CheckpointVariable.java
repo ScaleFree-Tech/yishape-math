@@ -23,20 +23,16 @@ public class CheckpointVariable extends RereDiffVector {
         super(value);
         this.forwardFn = forwardFn;
         this.originalInput = originalInput;
-        this.isLeaf = false;
-        this.inputs = new ArrayList<>();
+        this.tensor.isLeaf = false;
 
-        CheckpointVariable self = this;
         // Re-run forward from saved input, then backward through recomputed subgraph
         // 从保存的输入重算前向，再对重算子图做反向
-        this.backwardFn = (Consumer<IDoubleVector>) (gradOut) -> {
-            if (self.gradient == null) {
-                self.gradient = gradOut;
-            }
-            IDoubleVector savedGrad = self.gradient;
+        this.tensor.backwardFn = (self) -> {
+            double[] g = self.grad;
             IDiffVector recomputed = forwardFn.apply(originalInput);
             RereDiffVector out = (RereDiffVector) recomputed;
-            out.backward(savedGrad);
+            out.tensor.grad = g;
+            out.tensor.backward();
         };
     }
 }
