@@ -5,12 +5,11 @@ import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.hpc.HpcConfig;
 import com.yishape.lab.math.compute.hpc.HpcIm2col;
 import com.yishape.lab.math.compute.hpc.HpcOptionalRuntime;
+import com.yishape.lab.util.YishapeLogger;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * 单精度 Flat GEMM 调度：SIMD → scalar fallback.
@@ -20,7 +19,7 @@ import java.util.logging.Logger;
  */
 public final class FloatFlatGemm {
 
-    private static final Logger LOG = Logger.getLogger(FloatFlatGemm.class.getName());
+    private static final YishapeLogger log = YishapeLogger.getLogger(FloatFlatGemm.class);
 
     private FloatFlatGemm() {}
 
@@ -64,19 +63,19 @@ public final class FloatFlatGemm {
      * Dispatch: GPU → HPC (via double bridge) → SIMD → scalar.
      */
     public static float[] flatMmul(float[] a, int m, int k, float[] b, int n) {
-        boolean logFine = LOG.isLoggable(Level.FINE);
+        boolean logFine = log.isDebugEnabled();
         float[] c = new float[m * n];
         // 0. Try GPU f32 directly
         if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()) {
             float[] gpuResult = GpuOptionalRuntime.tryFloatFlatMatMul(a, b, m, k, n);
             if (gpuResult != null) {
-                if (logFine) LOG.fine("flatMmul GPU f32 [" + m + "," + k + "]@[" + k + "," + n + "]");
+                if (logFine) log.debug("flatMmul GPU f32 [{},{}]@[{},{}]", m, k, k, n);
                 return gpuResult;
             }
         }
         // 1. Try HPC native f32 directly (avoids float↔double conversion)
         if (HpcIm2col.tryFlatSgemm(m, n, k, a, b, c)) {
-            if (logFine) LOG.fine("flatMmul HPC f32 [" + m + "," + k + "]@[" + k + "," + n + "]");
+            if (logFine) log.debug("flatMmul HPC f32 [{},{}]@[{},{}]", m, k, k, n);
             return c;
         }
         // 2. Try HPC native via double bridge (check availability first to avoid wasteful allocations)
@@ -86,7 +85,7 @@ public final class FloatFlatGemm {
             double[] cD = new double[m * n];
             if (HpcIm2col.tryFlatDgemm(m, n, k, aD, bD, cD)) {
                 toFloatInPlace(cD, c);
-                if (logFine) LOG.fine("flatMmul HPC f64 [" + m + "," + k + "]@[" + k + "," + n + "]");
+                if (logFine) log.debug("flatMmul HPC f64 [{},{}]@[{},{}]", m, k, k, n);
                 return c;
             }
         }
@@ -94,14 +93,14 @@ public final class FloatFlatGemm {
         if (MH_FLAT_MMUL != null) {
             try {
                 float[] simdResult = (float[]) MH_FLAT_MMUL.invoke(a, m, k, b, n);
-                if (logFine) LOG.fine("flatMmul SIMD [" + m + "," + k + "]@[" + k + "," + n + "]");
+                if (logFine) log.debug("flatMmul SIMD [{},{}]@[{},{}]", m, k, k, n);
                 return simdResult;
             } catch (Throwable t) {
                 // SIMD invoke failed — fall through to scalar
             }
         }
         // 3. Scalar fallback
-        if (logFine) LOG.fine("flatMmul SCALAR [" + m + "," + k + "]@[" + k + "," + n + "]");
+        if (logFine) log.debug("flatMmul SCALAR [{},{}]@[{},{}]", m, k, k, n);
         flatMmulScalar(a, 0, m, k, b, 0, n, c, 0);
         return c;
     }
@@ -111,7 +110,7 @@ public final class FloatFlatGemm {
      * transp: 0=NN, 1=TN, 2=NT, 3=TT.
      */
     public static float[] flatMmulTransp(float[] a, int m, int k, float[] b, int n, int transp) {
-        boolean logFine = LOG.isLoggable(Level.FINE);
+        boolean logFine = log.isDebugEnabled();
         float[] c = new float[m * n];
         // 0. Try GPU via double bridge (no native f32 transpose path yet)
         if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()) {
@@ -120,7 +119,7 @@ public final class FloatFlatGemm {
             double[] dc = GpuOptionalRuntime.tryFlatMatMulTransp(da, db, m, k, n, transp);
             if (dc != null) {
                 toFloatInPlace(dc, c);
-                if (logFine) LOG.fine("flatMmulTransp GPU f64 bridge [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+                if (logFine) log.debug("flatMmulTransp GPU f64 bridge [{},{}]@[{},{}] transp={}", m, k, k, n, transp);
                 return c;
             }
         }
@@ -133,7 +132,7 @@ public final class FloatFlatGemm {
         int aRows = m, aCols = k;
         float[] bEff = tb ? flatTranspose(b, n, k) : b;
         int bCols = n;
-        if (logFine) LOG.fine("flatMmulTransp HPC/SIMD via transpose f32 [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        if (logFine) log.debug("flatMmulTransp HPC/SIMD via transpose f32 [{},{}]@[{},{}] transp={}", m, k, k, n, transp);
         float[] result = flatMmul(aEff, aRows, aCols, bEff, bCols);
         System.arraycopy(result, 0, c, 0, c.length);
         return c;

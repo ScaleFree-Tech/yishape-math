@@ -3,7 +3,6 @@ package com.yishape.lab.math.linalg.decomposition.impl;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.decomposition.ISchurDecomposition;
-import com.yishape.lab.math.linalg.decomposition.IMatrixDecomposition;
 import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.SchurDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.NonSquareMatrixException;
@@ -53,23 +52,36 @@ public class RereSchurDecomposition implements ISchurDecomposition {
     private double[][] uData;
     /** Epsilon for numerical comparisons. */
     private double epsilon;
-    /** Maximum number of iterations. */
-    private static final int MAX_ITERATIONS = 1000;
+    /** Maximum number of iterations for the QR algorithm. */
+    private int maxIterations = 1000;
     
     /**
-     * Default constructor with default epsilon.
+     * Default constructor with default epsilon and maxIterations.
      */
     public RereSchurDecomposition() {
         this.epsilon = DEFAULT_EPSILON;
+        this.maxIterations = DEFAULT_MAX_ITERATIONS;
     }
-    
+
     /**
      * Constructor with configurable epsilon.
-     * 
+     *
      * @param epsilon threshold for considering an element as zero
      */
     public RereSchurDecomposition(double epsilon) {
         this.epsilon = epsilon;
+        this.maxIterations = DEFAULT_MAX_ITERATIONS;
+    }
+
+    /**
+     * Constructor with configurable epsilon and max iterations.
+     *
+     * @param epsilon       threshold for considering an element as zero
+     * @param maxIterations maximum number of QR iterations
+     */
+    public RereSchurDecomposition(double epsilon, int maxIterations) {
+        this.epsilon = epsilon;
+        this.maxIterations = maxIterations;
     }
     
     @Override
@@ -227,7 +239,7 @@ public class RereSchurDecomposition implements ISchurDecomposition {
         int totalIter = 0;
         int p = n - 1;
 
-        while (p > 0 && totalIter < MAX_ITERATIONS) {
+        while (p > 0 && totalIter < maxIterations) {
             // Deflate from bottom: zero out negligible subdiagonals at position p
             while (p > 0) {
                 double tol = epsilon * (Math.abs(hData[p - 1][p - 1]) + Math.abs(hData[p][p]));
@@ -254,7 +266,7 @@ public class RereSchurDecomposition implements ISchurDecomposition {
 
             // Apply Francis QR steps to subproblem [q, p]
             int subIter = 0;
-            while (subIter < 100 && totalIter < MAX_ITERATIONS) {
+            while (subIter < 100 && totalIter < maxIterations) {
                 // Check for deflation at the bottom of the subproblem
                 double tol = epsilon * (Math.abs(hData[p - 1][p - 1]) + Math.abs(hData[p][p]));
                 if (Math.abs(hData[p][p - 1]) <= tol) {
@@ -297,9 +309,9 @@ public class RereSchurDecomposition implements ISchurDecomposition {
             }
         }
 
-        if (totalIter >= MAX_ITERATIONS) {
+        if (totalIter >= maxIterations) {
             throw new DecompositionFailedException(
-                "Schur decomposition failed to converge after " + MAX_ITERATIONS + " iterations",
+                "Schur decomposition failed to converge after " + maxIterations + " iterations",
                 "Schur Decomposition",
                 "Matrix " + n + "x" + n,
                 totalIter,
@@ -419,8 +431,7 @@ public class RereSchurDecomposition implements ISchurDecomposition {
      */
     @Override
     public Tuple2<IMatrix<Double>, IMatrix<Double>> decompose(IMatrix<Double> matrix, double epsilon, int maxIterations) {
-        // Save original maxIterations value
-        // Note: This implementation doesn't use maxIterations directly, but we maintain the interface contract
+        this.maxIterations = maxIterations;
         return decompose(matrix, epsilon);
     }
 
@@ -534,6 +545,6 @@ public class RereSchurDecomposition implements ISchurDecomposition {
      */
     @Override
     public int getMaxIterations() {
-        return IMatrixDecomposition.DEFAULT_MAX_ITERATIONS;
+        return maxIterations;
     }
 }

@@ -381,11 +381,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
      * Proxy to {@link IDiffTensor#scaledDotProductAttention(IDiffTensor, IDiffTensor, IDiffTensor, double)}.
      * Reshapes this 1-D vector to [batch, seqQ, d_k], performs attention, and reshapes back.
      */
-    public IDiffVector scaledDotProductAttention(IDiffVector key, IDiffVector value,
+    public IDiffVector scaledDotProductAttention(IDiffVector key, IDiffVector vTensor,
                                                    IDiffVector mask, int[] shape,
                                                    double dropout) {
         RereDiffVector kv = (RereDiffVector) key;
-        RereDiffVector vv = (RereDiffVector) value;
+        RereDiffVector vv = (RereDiffVector) vTensor;
         RereDiffVector mv = (RereDiffVector) mask;
         IDiffTensor reshaped = tensor.reshape(shape);
         IDiffTensor result = reshaped.scaledDotProductAttention(

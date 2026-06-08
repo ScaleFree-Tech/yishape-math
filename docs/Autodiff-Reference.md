@@ -161,7 +161,7 @@ var y = op.apply(t1, t2);  // returns IDiffTensor
 |------|---------|------|
 | `AD.render(IDiffVector root)` | `String` | 计算图 Graphviz DOT 格式可视化 |
 | `AD.render(IDiffMatrix root)` | `String` | 矩阵计算图 DOT 可视化 |
-| `AD.exportGraph(IDiffVector root)` | `String` | JSON 导出（HPC 桥接） |
+| `AD.dumpGraphJson(IDiffVector root)` | `String` | JSON 调试导出（仅检查；执行路径使用二进制 YSGP） |
 | `AD.tryHpcExecute(IDiffVector root)` | `boolean` | 尝试 Rust HPC 执行计算图 |
 | `AD.optimize(IDiffVector x)` | `IDiffVector` | 图优化 pass（常量折叠：x+0→x, x×1→x, x×0→0 等） |
 | `AD.graphStats(IDiffVector x)` | `GraphOptimizer.GraphStats` | 图统计：`totalNodes`, `leafNodes`, `nonLeafNodes`, `fusibleChains` |
@@ -412,7 +412,7 @@ t.fill_(double) / t.copy_(IDoubleTensor)
 - **自动融合**：`AD.elementwise()` 追踪运算，可融合则融合，不可则回退 eager
 - **混合精度**：`AD.diffFloat()` 提供 FP32 前向 + FP64 梯度累积，适合显存受限场景
 - **检查点**：`AD.checkpoint()` 用重计算换内存（O(√n) 内存）
-- **HPC 桥接**：`AD.exportGraph()` → JSON → Rust `HpcAutodiff` 执行（28 种算子支持），不可用时自动回退 Java SIMD → SISD
+- **HPC 桥接**：二进制 YSGP 协议（`tryGpuExecute`/`tryHpcExecute`）→ Rust 执行（28 种算子支持），不可用时自动回退 Java SIMD → SISD。JSON 调试导出：`AD.dumpGraphJson()`
 - **GPU 桥接**：`GpuGraphExecutor`（25 种算子，执行路径开发中）
 - **并发安全**：`ThreadLocal` 拓扑排序支持多线程同时 backward
 

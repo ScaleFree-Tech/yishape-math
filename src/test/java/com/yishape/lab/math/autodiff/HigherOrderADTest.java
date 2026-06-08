@@ -56,7 +56,6 @@ public class HigherOrderADTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("Deferred: second-order requires symbolicBackwardFn to reference original input nodes, not constant tensors")
     void testSecondOrderThroughGrad() {
         // f(x) = sum(exp(x))
         // g = AD.grad(f, x)[0] = exp(x)

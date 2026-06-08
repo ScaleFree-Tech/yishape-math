@@ -1,5 +1,6 @@
 package com.yishape.lab.math.linalg.decomposition.solver;
 
+import com.yishape.lab.math.linalg.IDoubleMatrix;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.Linalg;
@@ -115,30 +116,40 @@ public class LUDecompositionSolver implements IDecompositionSolver {
         }
 
         // 2. Forward substitution: Solve L*Y = P*b
-        // L is unit lower triangular (diagonal is 1's)
-        final IMatrix<Double> bpMat = IMatrix.of(bp);
+        // L is unit lower triangular (diagonal is 1's).
+        // Operate directly on bp[][] – RereDoubleMatrix.getRow() now returns
+        // a clone (immutable pattern), so bpMat.getRow().axpy() would miss.
         for (int col = 0; col < m; col++) {
-            final IVector<Double> bpCol = bpMat.getRow(col);
+            final double[] bpCol = bp[col];           // y[col] = Pb[col] (L[col][col]=1)
             for (int i = col + 1; i < m; i++) {
                 final double luICol = lu[i][col];
                 if (luICol != 0.0) {
-                    bpMat.getRow(i).axpy(-luICol, bpCol);
+                    final double[] bpRow = bp[i];
+                    for (int j = 0; j < nColB; j++) {
+                        bpRow[j] -= luICol * bpCol[j];
+                    }
                 }
             }
         }
 
         // 3. Backward substitution: Solve U*X = Y
         for (int col = m - 1; col >= 0; col--) {
-            final IVector<Double> bpCol = bpMat.getRow(col);
+            final double[] bpCol = bp[col];
             final double uDiag = lu[col][col];
             if (Math.abs(uDiag) < 1e-15) {
                 throw new RuntimeException("Numerically singular U diagonal at column " + col);
             }
-            bpCol.divideInPlace(uDiag);
+            final double invDiag = 1.0 / uDiag;
+            for (int j = 0; j < nColB; j++) {
+                bpCol[j] *= invDiag;
+            }
             for (int i = 0; i < col; i++) {
                 final double luICol = lu[i][col];
                 if (luICol != 0.0) {
-                    bpMat.getRow(i).axpy(-luICol, bpCol);
+                    final double[] bpRow = bp[i];
+                    for (int j = 0; j < nColB; j++) {
+                        bpRow[j] -= luICol * bpCol[j];
+                    }
                 }
             }
         }

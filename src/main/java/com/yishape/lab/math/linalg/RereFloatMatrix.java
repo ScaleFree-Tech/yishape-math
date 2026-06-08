@@ -679,7 +679,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         float tolerance = 1e-10f;
 
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = i + 1; j < n; j++) {
                 if (!RerePrecision.equals(data[i][j], data[j][i], tolerance)) {
                     return false;
                 }
@@ -2481,10 +2481,10 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
         int cols = data[0].length;
         double[][] result = new double[rows][cols];
 
-        // 将float转换为float
+        // 将float转换为double
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                result[i][j] = (float) data[i][j];
+                result[i][j] = data[i][j];
             }
         }
 

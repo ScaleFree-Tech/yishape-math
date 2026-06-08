@@ -184,7 +184,7 @@ public class RereEigenDecomposition implements IEigenDecomposition {
 
     @Override
     public Tuple2<IVector<Double>, IMatrix<Double>> decompose(IMatrix<Double> matrix, double epsilon) {
-        return decompose(matrix, epsilon, DEFAULT_MAX_ITERATIONS);
+        return decompose(matrix, epsilon, this.maxIterations);
     }
 
     @Override
@@ -427,8 +427,8 @@ public class RereEigenDecomposition implements IEigenDecomposition {
                 }
 
                 if (m != j) {
-                    if (its == DEFAULT_MAX_ITERATIONS) {
-                        throw new RuntimeException("QR algorithm failed to converge after " + DEFAULT_MAX_ITERATIONS + " iterations");
+                    if (its >= maxIterations) {
+                        throw new RuntimeException("QR algorithm failed to converge after " + maxIterations + " iterations");
                     }
                     its++;
 

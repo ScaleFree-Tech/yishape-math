@@ -1,6 +1,7 @@
 package com.yishape.lab.math.linalg.decomposition.impl;
 
 import com.yishape.lab.math.linalg.IMatrix;
+import com.yishape.lab.math.linalg.IDoubleMatrix;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.linalg.RereDoubleMatrix;
 import com.yishape.lab.math.linalg.decomposition.ILUDecomposition;
@@ -9,6 +10,7 @@ import com.yishape.lab.math.linalg.decomposition.solver.IDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.solver.LUDecompositionSolver;
 import com.yishape.lab.math.linalg.decomposition.DecompositionDenseAccess;
 import com.yishape.lab.math.linalg.decomposition.SingularMatrixException;
+import com.yishape.lab.math.linalg.decomposition.impl.support.HagerConditionEstimator;
 import com.yishape.lab.util.Tuple2;
 
 /**
@@ -505,53 +507,26 @@ public class RereLUDecomposition implements ILUDecomposition {
         if (lu == null) {
             throw new IllegalStateException("Decomposition not performed yet");
         }
-        
+
         if (singular) {
             return Double.POSITIVE_INFINITY;
         }
-        
-        // For LU decomposition, we can estimate the condition number
-        // Using the fact that ||A|| ≈ ||L|| * ||U||
+
         IMatrix<Double> l = getL();
         IMatrix<Double> u = getU();
-        
+
         if (l == null || u == null) {
-            // Matrix is singular
             return Double.POSITIVE_INFINITY;
         }
-        
-        // Estimate norms (using Frobenius norm for simplicity)
-        double lNorm = 0.0;
-        double uNorm = 0.0;
-        
-        for (int i = 0; i < l.rows(); i++) {
-            for (int j = 0; j < l.cols(); j++) {
-                double val = l.get(i, j);
-                lNorm += val * val;
-            }
-        }
-        lNorm = Math.sqrt(lNorm);
-        
-        for (int i = 0; i < u.rows(); i++) {
-            for (int j = 0; j < u.cols(); j++) {
-                double val = u.get(i, j);
-                uNorm += val * val;
-            }
-        }
-        uNorm = Math.sqrt(uNorm);
-        
-        // Condition number estimate
-        double normA = lNorm * uNorm;
-        
-        // For the inverse, we would need to compute it, but we can estimate
-        // For now, we'll use a simplified approach
-        double det = getDeterminant();
-        if (Math.abs(det) < singularityThreshold) {
-            return Double.POSITIVE_INFINITY;
-        }
-        double normInvEstimate = 1.0 / Math.abs(det);
-        
-        return normA * normInvEstimate;
+
+        // Reconstruct A = P^T * (L * U); since P*A = L*U → A = P^T * L * U.
+        // Permutation doesn't change ||·||_1 so ||A||_1 = ||L*U||_1 ≤ ||L||_1 * ||U||_1,
+        // but we reconstruct A directly for Hager's algorithm.
+        IMatrix<Double> p = getP();
+        IMatrix<Double> luProduct = l.mmul(u);
+        IMatrix<Double> aMatrix = p.transpose().mmul(luProduct);
+
+        return HagerConditionEstimator.estimateCondition(((IDoubleMatrix) aMatrix).getData());
     }
 
     /**

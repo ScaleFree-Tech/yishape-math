@@ -101,8 +101,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public double get(int... indices) {
         if (indices.length != rank()) {
-            // 尝试用可变参数的 get(int, int...) 风格处理
-            // 但这里我们期望精确匹配
+            throw new IllegalArgumentException(
+                "Index count " + indices.length + " != tensor rank " + rank());
         }
         long idx = offset;
         for (int i = 0; i < indices.length; i++) {

@@ -310,6 +310,16 @@ public class RereCholeskyDecomposition implements ICholeskyDecomposition {
             System.arraycopy(data[i], 0, lTData[i], 0, n);
         }
 
+        // Transpose L^T from upper triangle to lower triangle so the returned view IS L.
+        // data[i][j] for i <= j contains L[j][i] (= L^T element).
+        // Move to data[j][i] so that column i of the lower triangle stores L's column i.
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                data[j][i] = data[i][j]; // L[i][j] from L^T[j][i]
+                data[i][j] = 0.0;        // zero upper triangle
+            }
+        }
+
         // View: lower triangle of the mutated input IS L
         return new DoubleMatrixView(dm, 0, 0, n, n);
     }

@@ -137,7 +137,7 @@ public final class TensorBinaryProtocol {
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
         s += opBytes.length;
         s += 2; // num_dims (u16)
-        int[] shape = v.shape();
+        int[] shape = v.serializationShape();
         s += shape.length * 4; // shape (u32[])
         s += 2; // num_inputs (u16)
         // Only count inputs that are in posMap (safe for Rust deserialization)
@@ -161,7 +161,7 @@ public final class TensorBinaryProtocol {
     private static void writeNode(ByteBuffer buf, RereDiffTensor v,
                                    java.util.Map<RereDiffTensor, Integer> posMap) {
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
-        int[] shape = v.shape();
+        int[] shape = v.serializationShape();
 
         // Flags
         int flags = (v.isLeaf() ? FLAG_IS_LEAF : 0)

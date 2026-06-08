@@ -781,8 +781,8 @@ public class GraphToolsExample {
         String dot = AD.render(y);
         System.out.println("Graphviz DOT:\n" + dot);
 
-        // JSON 导出（HPC 桥接）
-        String json = AD.exportGraph(y);
+        // JSON 调试导出（检查用；执行路径使用二进制 YSGP 协议）
+        String json = AD.dumpGraphJson(y);
 
         // 图优化（常量折叠）
         var optimized = AD.optimize(y);
@@ -884,7 +884,7 @@ public class OnlineLearningADExample {
 | **混合精度** | `AD.diffFloat()` | FP32 前向 + FP64 梯度 |
 | **Tensor** | `IDiffTensor` | 多维张量自动微分 |
 | **自定义操作** | `CustomOp` / `AD.op()` | 自定义前向/反向核 |
-| **图工具** | `AD.render()` / `AD.exportGraph()` / `AD.optimize()` | 可视化、导出、优化 |
+| **图工具** | `AD.render()` / `AD.dumpGraphJson()` / `AD.optimize()` | 可视化、调试导出、优化 |
 | **在线学习** | `AD.autogradOptimizer()` / `AD.onlineLearn()` | 在线优化 + 自动梯度 |
 
 ---

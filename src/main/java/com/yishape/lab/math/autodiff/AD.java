@@ -683,20 +683,28 @@ public class AD {
 
     // ---- HPC bridge ----
 
-    /** Exports computation graph as JSON for native HPC execution. / 导出 JSON 计算图供 HPC 执行。 */
-    public static String exportGraph(IDiffVector root) {
+    /**
+     * Dumps the computation graph as human-readable JSON for debugging/inspection only.
+     * Execution uses the binary YSGP protocol (via tryGpuExecute / tryHpcExecute).
+     * 导出 JSON 计算图供调试/检查使用（执行路径使用二进制 YSGP 协议）。
+     */
+    public static String dumpGraphJson(IDiffVector root) {
         if (!(root instanceof RereDiffVector rdv)) {
             throw new IllegalArgumentException(
-                "exportGraph requires RereDiffVector, got: " + root.getClass().getSimpleName());
+                "dumpGraphJson requires RereDiffVector, got: " + root.getClass().getSimpleName());
         }
         return GraphExporter.toJson(rdv);
     }
 
-    /** Exports tensor computation graph as JSON for native HPC/GPU execution. / 导出张量计算图 JSON 供 HPC/GPU 执行。 */
-    public static String exportGraph(IDiffTensor root) {
+    /**
+     * Dumps the tensor computation graph as human-readable JSON for debugging/inspection only.
+     * Execution uses the binary YSGP protocol (via tryGpuExecute / tryHpcExecute).
+     * 导出张量计算图 JSON 供调试/检查使用（执行路径使用二进制 YSGP 协议）。
+     */
+    public static String dumpGraphJson(IDiffTensor root) {
         if (!(root instanceof RereDiffTensor rdt)) {
             throw new IllegalArgumentException(
-                "exportGraph requires RereDiffTensor, got: " + root.getClass().getSimpleName());
+                "dumpGraphJson requires RereDiffTensor, got: " + root.getClass().getSimpleName());
         }
         return TensorGraphExporter.toJson(rdt);
     }

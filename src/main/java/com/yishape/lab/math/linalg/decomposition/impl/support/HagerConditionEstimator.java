@@ -41,10 +41,14 @@ public final class HagerConditionEstimator {
         int n = A.length;
         return estimateInverseNorm1(n, (b, transpose) -> {
             double[] x = new double[n];
-            if (transpose) {
-                solveTranspose(A, b, x);
-            } else {
-                solveNormal(A, b, x);
+            try {
+                if (transpose) {
+                    solveTranspose(A, b, x);
+                } else {
+                    solveNormal(A, b, x);
+                }
+            } catch (IllegalArgumentException e) {
+                return null; // signal singular matrix upstream
             }
             return x;
         });
@@ -72,6 +76,9 @@ public final class HagerConditionEstimator {
         for (int iter = 0; iter < MAX_ITER; iter++) {
             // y = A^{-1} * x (solve A*y = x)
             double[] yTmp = solve.apply(x, false);
+            if (yTmp == null) {
+                return Double.POSITIVE_INFINITY;
+            }
             System.arraycopy(yTmp, 0, y, 0, n);
 
             // Estimate: ||y||_1
@@ -93,6 +100,9 @@ public final class HagerConditionEstimator {
 
             // x = (A^{-1})^T * z (solve A^T * x = z)
             double[] xTmp = solve.apply(z, true);
+            if (xTmp == null) {
+                return Double.POSITIVE_INFINITY;
+            }
             System.arraycopy(xTmp, 0, x, 0, n);
 
             // Find max |x_i|
@@ -179,7 +189,7 @@ public final class HagerConditionEstimator {
                 }
             }
             if (maxVal == 0.0) {
-                A[k][k] = 1e-30; // regularization for singular matrices
+                throw new IllegalArgumentException("Matrix is singular at column " + k);
             }
             // Swap rows
             if (maxRow != k) {

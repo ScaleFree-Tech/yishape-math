@@ -32,6 +32,12 @@ public final class GpuGraphExecutor {
      */
     public static final int MIN_ELEMENTS = Integer.getInteger("yishape.gpu.minElements", 1000);
 
+    /**
+     * Enables verbose graph-level debug output (ops, shapes, params per node).
+     * Set via {@code -Dyishape.gpu.verbose=true}.
+     */
+    private static final boolean VERBOSE = Boolean.getBoolean("yishape.gpu.verbose");
+
     private static final HashSet<String> SUPPORTED_OPS = new HashSet<>(Arrays.asList(
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
@@ -46,6 +52,7 @@ public final class GpuGraphExecutor {
         "broadcast", "transpose", "reshape", "flatten",
         "squeeze", "unsqueeze",
         "gather",
+        "mmul", // RereDiffTensor.mmul() uses "mmul" (not "matmul")
         "leaf", "constant",
         // Fused elementwise + reduction ops (from AD pattern fusion)
         "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
@@ -68,7 +75,7 @@ public final class GpuGraphExecutor {
         TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
             "permute", "expand", "reciprocal", "rsub", "rdiv",
             "gather", "scatter", "select", "slice", "narrow",
-            "cat"
+            "cat", "contiguous"
         ));
     }
 
@@ -119,30 +126,77 @@ public final class GpuGraphExecutor {
             return Double.NaN;
         }
 
-        // Check ops first (common to both binary and JSON paths)
-        // TEMPORARY: print all unique ops in the graph for debugging
-        java.util.LinkedHashSet<String> seenOps = new java.util.LinkedHashSet<>();
-        for (RereDiffTensor v : order) {
-            if (v.opTag() != null) seenOps.add(v.opTag());
+        // Shape validation: verify that serialization shapes carry sufficient metadata
+        // for HPC/GPU backends to correctly resolve input dimensions. Blocks export
+        // when a mismatched shape would produce silently wrong results.
+        ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
+        if (validation.hasErrors()) {
+            log.error("GPU graph export BLOCKED: shape validation failed:\n{}", validation);
+            if (VERBOSE) System.err.println("[GPU-VALIDATE-FAIL] " + validation);
+            return Double.NaN;
         }
-        System.err.println("[GPU-OPS] Graph ops: " + seenOps);
+        if (validation.hasWarnings() && VERBOSE) {
+            System.err.println("[GPU-VALIDATE-WARN] " + validation);
+        }
+        if (VERBOSE) {
+            java.util.LinkedHashSet<String> seenOps = new java.util.LinkedHashSet<>();
+            for (RereDiffTensor v : order) {
+                if (v.opTag() != null) seenOps.add(v.opTag());
+            }
+            System.err.println("[GPU-OPS] Graph ops: " + seenOps + " nodes=" + order.size());
+            for (RereDiffTensor v : order) {
+                if (v.totalSize() == 0) {
+                    System.err.println("[GPU-ZERO-SIZE] op='" + v.opTag() + "' shape=" + java.util.Arrays.toString(v.shape()) + " exportShape=" + java.util.Arrays.toString(v.exportShape()) + " scalar=" + v.scalarParam() + " isLeaf=" + v.isLeaf());
+                }
+                if ("conv2d".equals(v.opTag())) {
+                    long bits = Double.doubleToRawLongBits(v.scalarParam());
+                    int kh = (int)((bits >> 16) & 0xFF);
+                    int kw = (int)((bits >> 8) & 0xFF);
+                    int stride = (int)(bits & 0xFF);
+                    long bits2 = Double.doubleToRawLongBits(v.scalarParam2());
+                    int pad = (int)((bits2 >> 16) & 0xFFFF);
+                    int outCh = (int)(bits2 & 0xFFFF);
+                    System.err.println("[GPU-CONV] kh=" + kh + " kw=" + kw + " stride=" + stride +
+                        " pad=" + pad + " outCh=" + outCh + " shape=" + java.util.Arrays.toString(v.shape()) +
+                        " exportShape=" + java.util.Arrays.toString(v.exportShape()));
+                }
+                if ("linear".equals(v.opTag())) {
+                    System.err.println("[GPU-LINEAR] shape=" + java.util.Arrays.toString(v.shape()));
+                }
+                if ("maxpool2d".equals(v.opTag())) {
+                    long bits = Double.doubleToRawLongBits(v.scalarParam());
+                    int kh = (int)((bits >> 16) & 0xFF);
+                    int kw = (int)((bits >> 8) & 0xFF);
+                    int stride = (int)(bits & 0xFF);
+                    long bits2 = Double.doubleToRawLongBits(v.scalarParam2());
+                    int pad = (int)((bits2 >> 16) & 0xFFFF);
+                    int ch = (int)(bits2 & 0xFFFF);
+                    System.err.println("[GPU-MAXPOOL] kh=" + kh + " kw=" + kw + " stride=" + stride +
+                        " pad=" + pad + " ch=" + ch + " shape=" + java.util.Arrays.toString(v.shape()) +
+                        " exportShape=" + java.util.Arrays.toString(v.exportShape()));
+                }
+            }
+        }
+        // Guard: reject graphs with zero-size nodes (would cause wgpu crash)
+        for (RereDiffTensor v : order) {
+            if (v.totalSize() == 0 && !v.isLeaf()) {
+                System.err.println("[GPU-ZERO-SIZE-BLOCK] op='" + v.opTag() + "' shape=" + java.util.Arrays.toString(v.shape()) + " — skipping GPU to prevent wgpu crash");
+                return Double.NaN;
+            }
+        }
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
-                int leafCount = 0;
-                for (RereDiffTensor n : order) {
-                    if (n.isLeaf()) leafCount++;
-                }
-                log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
-                    v.opTag(), order.size(), leafCount);
-                System.err.println("[GPU-UNSUPPORTED] '" + v.opTag() + "' graph=" + order.size() + " leaves=" + leafCount);
+                System.err.println("[GPU-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
+                log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes",
+                    v.opTag(), order.size());
                 return Double.NaN;
             }
         }
 
-        // Try binary path first
-        // TEMPORARY: force JSON path to isolate binary protocol issues
-        double binaryResult = Double.NaN; // tryExecuteTensorBinary(root, order);
-        // if (!Double.isNaN(binaryResult)) return binaryResult;
+        // Try binary path first (production default — no JSON precision issues)
+        double binaryResult = tryExecuteTensorBinary(root, order);
+        if (!Double.isNaN(binaryResult)) return binaryResult;
+        System.err.println("[GRU-DIAG] binary path returned NaN, trying JSON...");
 
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
@@ -154,6 +208,7 @@ public final class GpuGraphExecutor {
 
         // Export and execute
         String json = TensorGraphExporter.toJson(root);
+        System.err.println("[GRU-DIAG] toJson returned " + (json != null ? json.length() + " chars" : "null"));
         if (json == null) {
             log.debug("GPU tensor graph fallback: JSON export failed");
             return Double.NaN;
@@ -165,6 +220,7 @@ public final class GpuGraphExecutor {
 
         String resultJson = GpuOptionalRuntime.tryExecuteGraph(json);
         if (resultJson == null) {
+            if (VERBOSE) System.err.println("[GPU-EXECUTE-FAIL] Rust returned null, nodes=" + order.size() + " leaves=" + leaves.size());
             log.debug("GPU tensor graph fallback: Rust execution returned null");
             return Double.NaN;
         }
@@ -228,7 +284,9 @@ public final class GpuGraphExecutor {
     private static double tryExecuteTensorBinary(RereDiffTensor root,
             ArrayList<RereDiffTensor> order) {
         try {
+            System.err.println("[GRU-DIAG] serializing " + order.size() + " nodes...");
             java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
+            System.err.println("[GRU-DIAG] serialized " + buf.remaining() + " bytes");
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
 

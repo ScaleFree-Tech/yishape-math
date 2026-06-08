@@ -78,6 +78,7 @@ public final class GpuOptionalRuntime {
     private static final Method M_GATHER;
     private static final Method M_IM2COL;
     private static final Method M_FLAT_MAT_MUL_TRANSP;
+    private static final Method M_GET_MEMORY_BUDGET;
 
     static {
         Class<?> c = null;
@@ -151,6 +152,7 @@ public final class GpuOptionalRuntime {
             M_GATHER = probe(c, "gather", double[].class, double[].class, int.class);
             M_IM2COL = probe(c, "im2col", double[].class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class, int.class);
             M_FLAT_MAT_MUL_TRANSP = probe(c, "flatMatMulTransp", double[].class, double[].class, int.class, int.class, int.class, int.class);
+            M_GET_MEMORY_BUDGET = probe(c, "getMemoryBudget");
         } else {
             M_IS_AVAILABLE = null; M_DEVICE_NAME = null; M_MAT_MUL = null; M_FLAT_MAT_MUL = null;
             M_ELEMENTWISE = null; M_ADD = null; M_SUB = null; M_MUL = null; M_DIV = null;
@@ -166,7 +168,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_ELU = null; M_FLOAT_LEAKY_RELU = null; M_FLOAT_SILU = null; M_FLOAT_SOFTPLUS = null;
             M_FLOAT_SELU = null; M_FLOAT_HARDTANH = null; M_FLOAT_EXP = null; M_FLOAT_LOG = null;
             M_FLOAT_ABS = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
-            M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_NORMALIZE = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null;
+            M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_NORMALIZE = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null; M_GET_MEMORY_BUDGET = null;
         }
     }
 
@@ -453,7 +455,7 @@ public final class GpuOptionalRuntime {
     }
 
     public static String tryExecuteGraph(String json) {
-        if (GPU == null) return null;
+        if (GPU == null || !isGpuAvailable()) return null;
         try {
             Method m = GPU.getMethod("executeGraph", String.class);
             Object out = m.invoke(null, json);
@@ -468,7 +470,7 @@ public final class GpuOptionalRuntime {
 
     /** Binary graph execution via YSGP protocol. Returns raw result bytes, or null. */
     public static byte[] tryExecuteGraphBinary(byte[] data) {
-        if (GPU == null) return null;
+        if (GPU == null || !isGpuAvailable()) return null;
         try {
             Method m = GPU.getMethod("executeGraphBinary", byte[].class);
             Object out = m.invoke(null, (Object) data);
@@ -620,6 +622,23 @@ public final class GpuOptionalRuntime {
         } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
             logError(name, e);
             return null;
+        }
+    }
+
+    // ==================== Memory Budget ====================
+
+    /**
+     * Query the GPU memory budget from the active context (in bytes).
+     * Returns 0 if no context exists or query fails.
+     */
+    public static long tryGetMemoryBudget() {
+        if (M_GET_MEMORY_BUDGET == null) return 0;
+        try {
+            Object result = M_GET_MEMORY_BUDGET.invoke(null);
+            return result instanceof Long ? (Long) result : 0;
+        } catch (ReflectiveOperationException | LinkageError e) {
+            logError("tryGetMemoryBudget", e);
+            return 0;
         }
     }
 

@@ -305,7 +305,7 @@ public interface IDoubleMatrix extends IMatrix<Double> {
         double[][] data = new double[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                data[i][j] = 1.0f;
+                data[i][j] = 1.0;
             }
         }
         return new RereDoubleMatrix(data);
@@ -421,7 +421,7 @@ public interface IDoubleMatrix extends IMatrix<Double> {
         double[][] data = new double[rows][cols];
         int minDim = Math.min(rows, cols);
         for (int i = 0; i < minDim; i++) {
-            data[i][i] = 1.0f;
+            data[i][i] = 1.0;
         }
         return new RereDoubleMatrix(data);
     }

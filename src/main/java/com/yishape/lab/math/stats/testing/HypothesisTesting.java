@@ -61,9 +61,12 @@ public class HypothesisTesting {
      * @return 检验结果 / Test result
      */
     public TestingResult testVarEqualWithChi2(double h0, IVector sample, double confidence) {
-        var chi2 = Stats.chi2(sample.length() - 1);
+        int n = sample.length();
+        double sampleVar = sample.varValue();
+        double testStat = (n - 1) * sampleVar / h0;
+        var chi2 = Stats.chi2(n - 1);
         Tuple2<Double, Double> tp = estimator.estimateVarIntevalWithChi2(sample, confidence);
-        double cdfVal = chi2.cdf(h0);
+        double cdfVal = chi2.cdf(testStat);
         double p = 2 * Math.min(cdfVal, 1 - cdfVal);
         boolean pass = (h0 >= tp._1 && h0 <= tp._2);
         return new TestingResult(pass, p, tp);

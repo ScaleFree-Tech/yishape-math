@@ -60,4 +60,12 @@ public interface IDiffSparseMatrix extends Serializable {
     IDiffVector mean();
 
     IDiffSparseMatrix grad();
+
+    /**
+     * Converts this sparse differentiable node to a dense {@link IDiffTensor}.
+     * The returned tensor wraps the sparse data in a flat 2-D row-major layout.
+     * Backward gradient is mapped back to this sparse node's gradient storage
+     * and propagated through the upstream sparse graph.
+     */
+    IDiffTensor asDenseDiffTensor();
 }

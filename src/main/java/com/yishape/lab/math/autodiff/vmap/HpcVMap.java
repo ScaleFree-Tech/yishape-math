@@ -144,7 +144,7 @@ final class HpcVMap implements IVMap {
             int rows = C * kH * kW;
             int cols = outH * outW;
             double[] out = new double[rows * cols];
-            if (HpcIm2col.tryIm2col(input, C, H, W, kH, kW, stride, pad, out)) {
+            if (HpcIm2col.tryIm2col(input, C, H, W, kH, kW, stride, pad, 1, out)) {
                 return out;
             }
         }

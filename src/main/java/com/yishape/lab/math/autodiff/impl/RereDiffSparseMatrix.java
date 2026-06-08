@@ -10,6 +10,7 @@ import java.util.function.Function;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.sparse.ISparseMatrix;
+import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffSparseMatrix;
 
@@ -112,6 +113,50 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
     }
 
     @Override public void zeroGradient() { this.gradient = null; }
+
+    // ==================== Sparse → Dense bridge ====================
+
+    /**
+     * Converts this sparse differentiable node to a dense {@link IDiffTensor}.
+     *
+     * <p>The returned tensor wraps the sparse data as a flat 1-D tensor
+     * (row-major). When {@code backward()} is called on the dense graph,
+     * the gradient is mapped back to this sparse matrix's gradient storage
+     * and propagated through the sparse graph via {@link #propagateGradient()}.</p>
+     *
+     * <p>This is the <b>primary bridge</b> for mixed sparse↔dense computation:
+     * any sparse subgraph that needs to interact with dense operations
+     * (e.g. {@code IDiffTensor.add()}, {@code IDiffTensor.mul()}) should
+     * call this method first, then operate on the returned dense tensor.</p>
+     *
+     * <h4>Usage</h4>
+     * <pre>{@code
+     * IDiffSparseMatrix sparse = ...;
+     * IDiffTensor dense = sparse.asDenseDiffTensor();
+     * IDiffTensor result = dense.add(otherDense).relu(); // all dense ops
+     * result.backward(); // gradient flows back to sparse
+     * }</pre>
+     */
+    public IDiffTensor asDenseDiffTensor() {
+        int rows = value.rows();
+        int cols = value.cols();
+        double[][] dense = value.toDenseArray();
+        double[] flat = new double[rows * cols];
+        for (int i = 0; i < rows; i++)
+            System.arraycopy(dense[i], 0, flat, i * cols, cols);
+
+        RereDiffSparseMatrix self = this;
+        Consumer<RereDiffTensor> bw = t -> {
+            double[] gradData = t.gradData();
+            if (gradData == null) return;
+            double[][] sparseGrad = new double[rows][cols];
+            for (int i = 0; i < rows; i++)
+                System.arraycopy(gradData, i * cols, sparseGrad[i], 0, cols);
+            self.accGrad(ISparseMatrix.fromDense(sparseGrad));
+            self.propagateGradient();
+        };
+        return new RereDiffTensor(flat, new int[]{rows, cols}, new ArrayList<>(), bw, "sparseBridge");
+    }
 
     /**
      * Propagate this sparse matrix's gradient to its upstream inputs.

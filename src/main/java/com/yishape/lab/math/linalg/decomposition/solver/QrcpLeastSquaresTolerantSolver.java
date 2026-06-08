@@ -47,8 +47,6 @@ public class QrcpLeastSquaresTolerantSolver implements IDecompositionSolver {
         for (int i = 0; i < lim; i++) {
             if (Math.abs(rDiag[i]) > rankTolerance) {
                 r++;
-            } else {
-                break;
             }
         }
         return r;

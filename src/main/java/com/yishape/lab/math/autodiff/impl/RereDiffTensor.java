@@ -14,8 +14,11 @@ import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
 import com.yishape.lab.math.compute.DoubleFlatGemm;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.gpu.GpuActivation;
+import com.yishape.lab.math.compute.gpu.GpuReduce;
 import com.yishape.lab.math.compute.hpc.HpcIm2col;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -105,6 +108,30 @@ public class RereDiffTensor implements IDiffTensor {
     public void setScalarParam2(double sp2) { this.scalarParam2 = sp2; }
     public int[] exportShape() { return exportShape; }
     public void setExportShape(int[] es) { this.exportShape = es; }
+
+    /**
+     * Returns the shape for backend serialization (JSON / binary protocol).
+     *
+     * <p>Prefers {@link #exportShape()} when it carries extra metadata dimensions
+     * beyond the mathematical output shape (e.g. maxpool2d uses
+     * {@code [B,C,inH,inW,outH,outW]} 6D while {@link #shape()} is
+     * {@code [B,C,outH,outW]} 4D). Backend executors need the extra dimensions
+     * to correctly resolve input layout when stride doesn't divide evenly.</p>
+     *
+     * <p>All graph serializers ({@code TensorGraphExporter},
+     * {@code TensorBinaryProtocol}, {@code ExportShapeValidator}) MUST use this
+     * method — never bare {@link #shape()} — to avoid dimension-derivation bugs
+     * in HPC/GPU backends.</p>
+     *
+     * @return the complete shape for backend execution (never null)
+     */
+    public int[] serializationShape() {
+        int[] raw = shape();
+        if (exportShape != null && exportShape.length > raw.length) {
+            return exportShape;
+        }
+        return raw;
+    }
     public int[] backwardIndices() { return backwardIndices; }
     public void setBackwardIndices(int[] bi) { this.backwardIndices = bi; }
     public java.util.function.Function<IDiffTensor, IDiffTensor[]> symbolicBackwardFn() { return symbolicBackwardFn; }
@@ -1450,7 +1477,10 @@ public class RereDiffTensor implements IDiffTensor {
             List<RereDiffTensor> inputs = new ArrayList<>();
             if (requiresGrad) inputs.add(this);
             RereDiffTensor otherNode = (other instanceof RereDiffTensor rt && rt.requiresGrad) ? rt : null;
-            if (otherNode != null) inputs.add(otherNode);
+            // Always include the other tensor in inputs for GPU/HPC graph serialization,
+            // even if it doesn't require gradients. The backward function below only
+            // propagates to inputs that require grad (controlled by otherNode flag).
+            if (other instanceof RereDiffTensor) inputs.add((RereDiffTensor) other);
 
             Consumer<RereDiffTensor> bw = self -> {
                 int idx = 0;
@@ -1536,7 +1566,10 @@ public class RereDiffTensor implements IDiffTensor {
         List<RereDiffTensor> inputs = new ArrayList<>();
         if (requiresGrad) inputs.add(this);
         RereDiffTensor otherNode = (other instanceof RereDiffTensor rt && rt.requiresGrad) ? rt : null;
-        if (otherNode != null) inputs.add(otherNode);
+        // Always include the other tensor in inputs for GPU/HPC graph serialization,
+        // even if it doesn't require gradients. The backward function below only
+        // propagates to inputs that require grad (controlled by otherNode flag).
+        if (other instanceof RereDiffTensor) inputs.add((RereDiffTensor) other);
 
         Consumer<RereDiffTensor> bw = self -> {
             int idx = 0;
@@ -1623,14 +1656,23 @@ public class RereDiffTensor implements IDiffTensor {
             }
             parentIdx[i] = flatIndex(pIdx, parentShape);
         }
+        // Store parentIdx for GPU/HPC backend graph serialization
+        int[] bi = parentIdx;
         Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor parent = self.inputs.get(0);
             int pt = (int) parent.value.totalSize();
             double[] pGrad = AutodiffBufferPool.acquire(pt);
-            for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
+            int[] idx = self.backwardIndices();
+            if (idx != null) {
+                for (int i = 0; i < viewTotal; i++) pGrad[idx[i]] += self.grad[i];
+            } else {
+                for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
+            }
             parent.accGradFromPooled(pGrad, pt);
         };
-        return new RereDiffTensor(view, List.of(this), bw, "select");
+        RereDiffTensor result = new RereDiffTensor(view, List.of(this), bw, "select");
+        result.backwardIndices = bi;
+        return result;
     }
 
     @Override
@@ -3678,10 +3720,10 @@ public class RereDiffTensor implements IDiffTensor {
         // im2col: [N*outH*outW, C*kH*kW], HPC→SISD fallback
         double[] col = new double[mM * Kcol];
         int kH_kW = kH * kW;
-        if (dilation == 1 && HpcIm2col.tryBatchIm2col(xd, N, C, H, W_in, kH, kW, stride, padding, col)) {
+        if (HpcIm2col.tryBatchIm2col(xd, N, C, H, W_in, kH, kW, stride, padding, dilation, col)) {
             // HPC succeeded
         } else {
-            // SISD fallback (handles dilation != 1)
+            // SISD fallback
             int H_W = H * W_in;
             for (int n = 0; n < N; n++) {
                 for (int oh = 0; oh < outH; oh++) {
@@ -3775,14 +3817,17 @@ public class RereDiffTensor implements IDiffTensor {
             double[] dW = DoubleFlatGemm.flatMmul(dOutT, fOutC, fM, savedCol, fKcol);
             inpW.accGrad(dW);
 
-            // d_bias = sum over spatial+batch
-            // SISD: column-wise reduce — no flat-array "sum over rows" utility exists yet
+            // d_bias = sum over batch+spatial (column-wise sum of [fM, fOutC])
+            // Reuses dOutT ([fOutC, fM]) computed above for d_weight; reduce over last dim via GPU→SISD chain
             if (inpB != null) {
-                double[] dB = new double[fOutC];
-                for (int i = 0; i < fM; i++) {
-                    int base = i * fOutC;
+                double[] dB = GpuReduce.tryReduce(GpuReduce.SUM, dOutT, fOutC, fM);
+                if (dB == null) {
+                    dB = new double[fOutC];
+                    DoubleVectorComputer bwVc2 = new DoubleVectorComputer();
                     for (int oc = 0; oc < fOutC; oc++) {
-                        dB[oc] += dOutCol[base + oc];
+                        dB[oc] = bwVc2.reduceOperate(
+                            java.util.Arrays.copyOfRange(dOutT, oc * fM, (oc + 1) * fM),
+                            ReduceOperation.SUM);
                     }
                 }
                 inpB.accGrad(dB);
@@ -3792,10 +3837,10 @@ public class RereDiffTensor implements IDiffTensor {
             double[] dCol = DoubleFlatGemm.flatMmul(dOutCol, fM, fOutC, savedWd, fKcol);
             int dXsize = fN * fC * fH * fW;
             double[] dX = new double[dXsize];
-            if (fDil == 1 && HpcIm2col.tryBatchCol2im(dCol, fN, fC, fH, fW, fKH, fKW, fStride, fPad, dX)) {
+            if (HpcIm2col.tryBatchCol2im(dCol, fN, fC, fH, fW, fKH, fKW, fStride, fPad, fDil, dX)) {
                 // HPC succeeded
             } else {
-                // SISD fallback (handles dilation != 1)
+                // SISD fallback
                 int fHW = fH * fW;
                 for (int n2 = 0; n2 < fN; n2++) {
                     for (int oh = 0; oh < fOutH; oh++) {
@@ -3833,11 +3878,8 @@ public class RereDiffTensor implements IDiffTensor {
 
     /**
      * Stable softmax over the last dimension of a flat 2-D matrix.
-     * <p>
-     * TODO: Replace with GPU-accelerated softmax kernel when available.
-     * Currently uses SISD because no flat-array softmax exists in the
-     * GPU→HPC→SIMD→SISD chain. The row-wise max/sum/exp pattern cannot
-     * be expressed as a single {@code DoubleVectorComputer} call.
+     * Uses GPU→SIMD→SISD acceleration chain for row-reduce (max/sum),
+     * element-wise exp, and per-row scalar arithmetic.
      *
      * @param scores  flat row-major array [rows, cols], modified in-place
      * @param rows    number of rows
@@ -3845,22 +3887,50 @@ public class RereDiffTensor implements IDiffTensor {
      * @return the same {@code scores} array, now containing row-wise softmax probabilities
      */
     private static double[] softmaxRowsStable(double[] scores, int rows, int cols) {
+        int total = rows * cols;
+        DoubleVectorComputer vc = new DoubleVectorComputer();
+
+        // Step 1: Row-wise max via GPU reduce → SISD fallback
+        double[] rowMax = GpuReduce.tryReduce(GpuReduce.MAX, scores, rows, cols);
+        if (rowMax == null) {
+            rowMax = new double[rows];
+            for (int r = 0; r < rows; r++) {
+                double[] rowSlice = java.util.Arrays.copyOfRange(scores, r * cols, r * cols + cols);
+                rowMax[r] = vc.reduceOperate(rowSlice, ReduceOperation.MAX);
+            }
+        }
+
+        // Step 2: Subtract row max (per-row scalar add) → collect into shifted for batch exp
+        double[] shifted = new double[total];
         for (int r = 0; r < rows; r++) {
             int rowOff = r * cols;
-            double maxVal = -Double.MAX_VALUE;
-            for (int c = 0; c < cols; c++) {
-                maxVal = Math.max(maxVal, scores[rowOff + c]);
+            double[] rowSlice = java.util.Arrays.copyOfRange(scores, rowOff, rowOff + cols);
+            double[] shiftRow = vc.binaryOperate(rowSlice, -rowMax[r], BinaryOperation.ADD);
+            System.arraycopy(shiftRow, 0, shifted, rowOff, cols);
+        }
+
+        // Step 3: Batch exp via GPU → SIMD/SISD fallback
+        double[] exped = GpuActivation.tryExp(shifted);
+        if (exped == null) {
+            exped = vc.universalOperate(shifted, UniversalOperation.EXP, 0);
+        }
+
+        // Step 4: Row-wise sum via GPU reduce → SISD fallback
+        double[] rowSum = GpuReduce.tryReduce(GpuReduce.SUM, exped, rows, cols);
+        if (rowSum == null) {
+            rowSum = new double[rows];
+            for (int r = 0; r < rows; r++) {
+                double[] rowSlice = java.util.Arrays.copyOfRange(exped, r * cols, r * cols + cols);
+                rowSum[r] = vc.reduceOperate(rowSlice, ReduceOperation.SUM);
             }
-            double sumExp = 0;
-            for (int c = 0; c < cols; c++) {
-                double e = Math.exp(scores[rowOff + c] - maxVal);
-                scores[rowOff + c] = e;
-                sumExp += e;
-            }
-            double invSum = 1.0 / sumExp;
-            for (int c = 0; c < cols; c++) {
-                scores[rowOff + c] *= invSum;
-            }
+        }
+
+        // Step 5: Normalize (per-row scalar multiply) into scores
+        for (int r = 0; r < rows; r++) {
+            int rowOff = r * cols;
+            double[] rowSlice = java.util.Arrays.copyOfRange(exped, rowOff, rowOff + cols);
+            double[] normRow = vc.binaryOperate(rowSlice, 1.0 / rowSum[r], BinaryOperation.MULTIPLY);
+            System.arraycopy(normRow, 0, scores, rowOff, cols);
         }
         return scores;
     }
@@ -3919,10 +3989,19 @@ public class RereDiffTensor implements IDiffTensor {
                 if (md.length == scoresStride) {
                     scaledScores = vc.binaryOperate(scaledScores, md, BinaryOperation.ADD);
                 } else {
-                    // SISD: mask broadcast (md.length != scoresStride), no accelerated broadcast-tile available
+                    // Tile mask to scores shape using data-movement primitives, then accelerate the add
                     double[] maskTiled = new double[scoresStride];
-                    for (int i = 0; i < scoresStride; i++) {
-                        maskTiled[i] = md[i % md.length];
+                    if (md.length == 1) {
+                        Arrays.fill(maskTiled, md[0]);
+                    } else {
+                        int fullReps = scoresStride / md.length;
+                        for (int r = 0; r < fullReps; r++) {
+                            System.arraycopy(md, 0, maskTiled, r * md.length, md.length);
+                        }
+                        int rem = scoresStride % md.length;
+                        if (rem > 0) {
+                            System.arraycopy(md, 0, maskTiled, fullReps * md.length, rem);
+                        }
                     }
                     scaledScores = vc.binaryOperate(scaledScores, maskTiled, BinaryOperation.ADD);
                 }

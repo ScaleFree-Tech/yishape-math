@@ -610,7 +610,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
             throw new IndexOutOfBoundsException("行索引超出范围: " + i + " / Row index out of bounds: " + i);
         }
 
-        return IDoubleVector.of(data[i]);
+        return IDoubleVector.of(data[i].clone());
     }
 
     /**
@@ -695,7 +695,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
         double tolerance = 1e-10;
 
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = i + 1; j < n; j++) {
                 if (!RerePrecision.equals(data[i][j], data[j][i], tolerance)) {
                     return false;
                 }

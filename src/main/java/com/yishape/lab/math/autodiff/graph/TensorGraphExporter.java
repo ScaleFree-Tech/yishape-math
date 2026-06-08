@@ -33,6 +33,17 @@ public final class TensorGraphExporter {
         HashSet<RereDiffTensor> visited = new HashSet<>();
         root.buildTopo(order, visited);
 
+        // Validate shape metadata before export — catches misconfigured shapes
+        // (e.g. maxpool2d with 4D shape when stride doesn't divide evenly)
+        ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
+        if (validation.hasErrors()) {
+            throw new IllegalStateException(
+                "TensorGraphExporter: shape validation failed — " +
+                validation.errors().size() + " error(s). " +
+                "The exported JSON would cause wrong results in HPC/GPU backends.\n" +
+                validation);
+        }
+
         Map<RereDiffTensor, Integer> indexMap = new HashMap<>();
         for (int i = 0; i < order.size(); i++) {
             indexMap.put(order.get(i), i);
@@ -53,9 +64,10 @@ public final class TensorGraphExporter {
                                     Map<RereDiffTensor, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
 
-        // Shape: use the tensor's actual output shape (NOT exportShape — which is the input shape
-        // for backward context; using it here would cause Rust to overallocate buffers for fused ops)
-        int[] shape = v.shape();
+        // Shape: use serializationShape() — the single source of truth for backend export.
+        // This returns exportShape when it provides extra metadata (e.g. maxpool2d 6D),
+        // falling back to the mathematical output shape for normal ops.
+        int[] shape = v.serializationShape();
         sb.append(",\"shape\":[");
         for (int i = 0; i < shape.length; i++) {
             if (i > 0) sb.append(',');

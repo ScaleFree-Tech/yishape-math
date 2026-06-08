@@ -4,12 +4,11 @@ import com.yishape.lab.math.compute.gpu.GpuConfig;
 import com.yishape.lab.math.compute.gpu.GpuGemm;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.hpc.HpcIm2col;
+import com.yishape.lab.util.YishapeLogger;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Flat GEMM dispatch: HPC native → SIMD (Vector API) → scalar fallback.
@@ -20,7 +19,7 @@ import java.util.logging.Logger;
  */
 public final class DoubleFlatGemm {
 
-    private static final Logger LOG = Logger.getLogger(DoubleFlatGemm.class.getName());
+    private static final YishapeLogger log = YishapeLogger.getLogger(DoubleFlatGemm.class);
 
     private DoubleFlatGemm() {}
 
@@ -65,36 +64,34 @@ public final class DoubleFlatGemm {
      * Dispatch: GPU → HPC → SIMD → scalar.
      */
     public static double[] flatMmul(double[] a, int m, int k, double[] b, int n) {
-        boolean logFine = LOG.isLoggable(Level.FINE);
+        boolean logFine = log.isDebugEnabled();
         double[] c = new double[m * n];
         // 0. Try GPU first (fastest when available)
         if (GpuGemm.tryFlatMatMul(a, b, c, m, k, n)) {
-            if (logFine) LOG.fine("flatMmul GPU [" + m + "," + k + "]@[" + k + "," + n + "]  flops=" + ((long) m * n * k));
+            if (logFine) log.debug("flatMmul GPU [{},{}]@[{},{}]  flops={}", m, k, k, n, (long) m * n * k);
             return c;
         }
         if (logFine) {
-            LOG.fine("flatMmul GPU skip [" + m + "," + k + "]@[" + k + "," + n + "]"
-                + " flops=" + ((long) m * n * k)
-                + " allow=" + GpuConfig.allowAttempts()
-                + " avail=" + GpuOptionalRuntime.isGpuAvailable());
+            log.debug("flatMmul GPU skip [{},{}]@[{},{}] flops={} allow={} avail={}",
+                m, k, k, n, (long) m * n * k, GpuConfig.allowAttempts(), GpuOptionalRuntime.isGpuAvailable());
         }
         // 1. Try HPC native
         if (HpcIm2col.tryFlatDgemm(m, n, k, a, b, c)) {
-            if (logFine) LOG.fine("flatMmul HPC [" + m + "," + k + "]@[" + k + "," + n + "]");
+            if (logFine) log.debug("flatMmul HPC [{},{}]@[{},{}]", m, k, k, n);
             return c;
         }
         // 2. Try SIMD via reflection
         if (MH_FLAT_MMUL != null) {
             try {
                 double[] simdResult = (double[]) MH_FLAT_MMUL.invoke(a, m, k, b, n);
-                if (logFine) LOG.fine("flatMmul SIMD [" + m + "," + k + "]@[" + k + "," + n + "]");
+                if (logFine) log.debug("flatMmul SIMD [{},{}]@[{},{}]", m, k, k, n);
                 return simdResult;
             } catch (Throwable t) {
                 // SIMD invoke failed — fall through to scalar
             }
         }
         // 3. Scalar fallback
-        if (logFine) LOG.fine("flatMmul SCALAR [" + m + "," + k + "]@[" + k + "," + n + "]");
+        if (logFine) log.debug("flatMmul SCALAR [{},{}]@[{},{}]", m, k, k, n);
         flatMmulScalar(a, 0, m, k, b, 0, n, c, 0);
         return c;
     }
@@ -105,11 +102,11 @@ public final class DoubleFlatGemm {
      * Dispatch: GPU → HPC → SIMD → scalar.
      */
     public static double[] flatMmulTransp(double[] a, int m, int k, double[] b, int n, int transp) {
-        boolean logFine = LOG.isLoggable(Level.FINE);
+        boolean logFine = log.isDebugEnabled();
         double[] c = new double[m * n];
         // 0. Try GPU first
         if (GpuGemm.tryFlatMatMulTransp(a, b, c, m, k, n, transp)) {
-            if (logFine) LOG.fine("flatMmulTransp GPU [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+            if (logFine) log.debug("flatMmulTransp GPU [{},{}]@[{},{}] transp={}", m, k, k, n, transp);
             return c;
         }
         // 1. If no transpose needed, use full HPC → SIMD → scalar dispatch
@@ -119,7 +116,7 @@ public final class DoubleFlatGemm {
         // 2. Try HPC with transp flags — transpose happens in Rust (auto-vectorized),
         //    eliminating Java-side flatTranspose allocations.
         if (HpcIm2col.tryFlatDgemmTransp(m, n, k, a, b, c, transp)) {
-            if (logFine) LOG.fine("flatMmulTransp HPC transp [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+            if (logFine) log.debug("flatMmulTransp HPC transp [{},{}]@[{},{}] transp={}", m, k, k, n, transp);
             return c;
         }
         // 3. Java-side transpose as fallback, then use fast dispatch
@@ -129,7 +126,7 @@ public final class DoubleFlatGemm {
         int aRows = m, aCols = k;
         double[] bEff = tb ? flatTranspose(b, n, k) : b;
         int bCols = n;
-        if (logFine) LOG.fine("flatMmulTransp SIMD/scalar via transpose [" + m + "," + k + "]@[" + k + "," + n + "] transp=" + transp);
+        if (logFine) log.debug("flatMmulTransp SIMD/scalar via transpose [{},{}]@[{},{}] transp={}", m, k, k, n, transp);
         double[] result = flatMmul(aEff, aRows, aCols, bEff, bCols);
         System.arraycopy(result, 0, c, 0, c.length);
         return c;
@@ -213,15 +210,15 @@ public final class DoubleFlatGemm {
      * Dispatch: GPU → HPC → SIMD → scalar.
      */
     public static void flatMmul(double[] a, int m, int k, double[] b, int n, double[] out) {
-        boolean logFine = LOG.isLoggable(Level.FINE);
+        boolean logFine = log.isDebugEnabled();
         // 0. Try GPU first
         if (GpuGemm.tryFlatMatMul(a, b, out, m, k, n)) {
-            if (logFine) LOG.fine("flatMmul(out) GPU [" + m + "," + k + "]@[" + k + "," + n + "]");
+            if (logFine) log.debug("flatMmul(out) GPU [{},{}]@[{},{}]", m, k, k, n);
             return;
         }
         // 1. Try HPC native
         if (HpcIm2col.tryFlatDgemm(m, n, k, a, b, out)) {
-            if (logFine) LOG.fine("flatMmul(out) HPC [" + m + "," + k + "]@[" + k + "," + n + "]");
+            if (logFine) log.debug("flatMmul(out) HPC [{},{}]@[{},{}]", m, k, k, n);
             return;
         }
         // 2. Try SIMD via reflection
@@ -229,14 +226,14 @@ public final class DoubleFlatGemm {
             try {
                 double[] simdResult = (double[]) MH_FLAT_MMUL.invoke(a, m, k, b, n);
                 System.arraycopy(simdResult, 0, out, 0, m * n);
-                if (logFine) LOG.fine("flatMmul(out) SIMD [" + m + "," + k + "]@[" + k + "," + n + "]");
+                if (logFine) log.debug("flatMmul(out) SIMD [{},{}]@[{},{}]", m, k, k, n);
                 return;
             } catch (Throwable t) {
                 // fall through to scalar
             }
         }
         // 3. Scalar fallback
-        if (logFine) LOG.fine("flatMmul(out) SCALAR [" + m + "," + k + "]@[" + k + "," + n + "]");
+        if (logFine) log.debug("flatMmul(out) SCALAR [{},{}]@[{},{}]", m, k, k, n);
         flatMmulScalar(a, 0, m, k, b, 0, n, out, 0);
     }
 

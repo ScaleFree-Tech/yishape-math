@@ -15,7 +15,7 @@ public final class HpcIm2col {
      * @return true if HPC succeeded, false to fall back to Java
      */
     public static boolean tryIm2col(double[] input, int C, int H, int W,
-            int Kh, int Kw, int stride, int pad, double[] out) {
+            int Kh, int Kw, int stride, int pad, int dilation, double[] out) {
         if (input == null || out == null) {
             return false;
         }
@@ -30,7 +30,7 @@ public final class HpcIm2col {
             return false;
         }
         try {
-            int rc = com.yishape.lab.math.hpc.YishapeHpc.im2col(input, C, H, W, Kh, Kw, stride, pad, out);
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.im2col(input, C, H, W, Kh, Kw, stride, pad, dilation, out);
             return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
         } catch (LinkageError | RuntimeException e) {
             return false;
@@ -41,7 +41,7 @@ public final class HpcIm2col {
      * Attempt HPC col2im: scatter column gradients back to image space.
      */
     public static boolean tryCol2im(double[] colGrad, int C, int H, int W,
-            int Kh, int Kw, int stride, int pad, double[] imgGradOut) {
+            int Kh, int Kw, int stride, int pad, int dilation, double[] imgGradOut) {
         if (colGrad == null || imgGradOut == null) {
             return false;
         }
@@ -56,7 +56,7 @@ public final class HpcIm2col {
             return false;
         }
         try {
-            int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im(colGrad, C, H, W, Kh, Kw, stride, pad, imgGradOut);
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.col2im(colGrad, C, H, W, Kh, Kw, stride, pad, dilation, imgGradOut);
             return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
         } catch (LinkageError | RuntimeException e) {
             return false;
@@ -184,7 +184,7 @@ public final class HpcIm2col {
     public static boolean tryConv2dForward(
             double[] input, double[] weight, double[] bias,
             int C, int H, int W, int outCh,
-            int Kh, int Kw, int stride, int pad,
+            int Kh, int Kw, int stride, int pad, int dilation,
             double[] output) {
         if (input == null || weight == null || output == null) {
             return false;
@@ -201,7 +201,7 @@ public final class HpcIm2col {
         }
         try {
             int rc = com.yishape.lab.math.hpc.YishapeHpc.conv2dForward(
-                    input, weight, bias, C, H, W, outCh, Kh, Kw, stride, pad, output);
+                    input, weight, bias, C, H, W, outCh, Kh, Kw, stride, pad, dilation, output);
             return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
         } catch (LinkageError | RuntimeException e) {
             return false;
@@ -305,7 +305,7 @@ public final class HpcIm2col {
      * Attempt HPC batch im2col: process B samples in a single call.
      */
     public static boolean tryBatchIm2col(double[] input, int B, int C, int H, int W,
-            int Kh, int Kw, int stride, int pad, double[] out) {
+            int Kh, int Kw, int stride, int pad, int dilation, double[] out) {
         if (input == null || out == null) {
             return false;
         }
@@ -320,7 +320,7 @@ public final class HpcIm2col {
             return false;
         }
         try {
-            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchIm2col(input, B, C, H, W, Kh, Kw, stride, pad, out);
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchIm2col(input, B, C, H, W, Kh, Kw, stride, pad, dilation, out);
             return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
         } catch (LinkageError | RuntimeException e) {
             return false;
@@ -331,7 +331,7 @@ public final class HpcIm2col {
      * Attempt HPC batch col2im: scatter B samples' column gradients back to image space.
      */
     public static boolean tryBatchCol2im(double[] colGrad, int B, int C, int H, int W,
-            int Kh, int Kw, int stride, int pad, double[] imgGradOut) {
+            int Kh, int Kw, int stride, int pad, int dilation, double[] imgGradOut) {
         if (colGrad == null || imgGradOut == null) {
             return false;
         }
@@ -346,7 +346,7 @@ public final class HpcIm2col {
             return false;
         }
         try {
-            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchCol2im(colGrad, B, C, H, W, Kh, Kw, stride, pad, imgGradOut);
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.batchCol2im(colGrad, B, C, H, W, Kh, Kw, stride, pad, dilation, imgGradOut);
             return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
         } catch (LinkageError | RuntimeException e) {
             return false;

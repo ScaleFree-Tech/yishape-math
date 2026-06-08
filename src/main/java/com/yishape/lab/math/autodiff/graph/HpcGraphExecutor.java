@@ -41,6 +41,7 @@ public final class HpcGraphExecutor {
         "softmaxCrossEntropy",
         "gelu", "softmax", "logSoftmax", "leakyRelu", "elu", "selu",
         "silu", "mish", "softplus", "hardtanh", "clamp", "layerNorm",
+        "mmul", // RereDiffTensor.mmul() uses "mmul" (not "matmul")
         "leaf", "constant",
         // DL CustomOp layers (graphOpTag-based)
         "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
@@ -54,6 +55,7 @@ public final class HpcGraphExecutor {
         TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
             "permute", "expand", "reciprocal", "rsub", "rdiv",
             "gather", "scatter", "select", "slice", "narrow",
+            "cat", "contiguous",
             "batchNorm", "groupNorm"
         ));
     }
@@ -94,6 +96,7 @@ public final class HpcGraphExecutor {
         // Check unsupported ops
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
+                System.err.println("[HPC-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
                 if (log.isDebugEnabled()) {
                     int leafCount = 0;
                     for (RereDiffTensor n : order) {
@@ -117,6 +120,7 @@ public final class HpcGraphExecutor {
         // Try binary path first
         double binaryResult = tryExecuteTensorBinary(root, order, leaves);
         if (!Double.isNaN(binaryResult)) return binaryResult;
+        System.err.println("[HPC-DIAG] Binary path returned NaN for root=" + root.opTag() + " nodes=" + order.size() + " leaves=" + leaves.size() + " orderSize=" + order.size());
 
         // JSON fallback
         String json = TensorGraphExporter.toJson(root);
@@ -172,7 +176,10 @@ public final class HpcGraphExecutor {
             buf.get(data);
 
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
-            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+            if (resultBytes == null || resultBytes.length == 0) {
+                System.err.println("[HPC-DIAG] binary: tryExecuteGraphBinary returned null/empty");
+                return Double.NaN;
+            }
 
             ByteBuffer resultBuf = ByteBuffer.wrap(resultBytes).order(ByteOrder.LITTLE_ENDIAN);
 

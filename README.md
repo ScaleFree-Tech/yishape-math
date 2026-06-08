@@ -59,7 +59,7 @@
 - **混合模式 AD** / **Mixed-Mode AD**: `MixedMode.hvp()` 计算 Hessian-vector product，`MixedMode.hessian()` 计算完整 Hessian，forward-over-reverse 架构 / `MixedMode.hvp()` for HVP, `MixedMode.hessian()` for full Hessian, forward-over-reverse architecture
 - **高阶微分** / **Higher-order Differentiation**: `AD.grad()` tape-of-tape 架构支持任意阶梯度计算 / `AD.grad()` tape-of-tape architecture supports arbitrary-order gradients
 - **VJP / vmap** / **VJP & vmap**: `AD.vjp()` 可复用向量-Jacobian积算子，`AD.vmap()` 自动批处理，`AD.batchVjp()` 批量 VJP / `AD.vjp()` reusable VJP operator, `AD.vmap()` automatic batching, `AD.batchVjp()` batch VJP
-- **计算图工具** / **Graph Tools**: 常量折叠、JIT 算子融合（`AD.fuse()`）、DOT 可视化（`AD.render()`）、JSON 图导出（`AD.exportGraph()`）、HPC 执行桥接 / Constant folding, JIT operator fusion (`AD.fuse()`), DOT visualization (`AD.render()`), JSON export (`AD.exportGraph()`), HPC execution bridge
+- **计算图工具** / **Graph Tools**: 常量折叠、JIT 算子融合（`AD.fuse()`）、DOT 可视化（`AD.render()`）、JSON 调试导出（`AD.dumpGraphJson()`）、HPC 执行桥接 / Constant folding, JIT operator fusion (`AD.fuse()`), DOT visualization (`AD.render()`), JSON dump (`AD.dumpGraphJson()`), HPC execution bridge
 - **Neural ODE**: `AD.odeint()` 通过 adjoint method 反向传播梯度穿过 ODE 求解器，含 RK4 积分器 / `AD.odeint()` backpropagates through ODE solvers via adjoint method, includes RK4 integrator
 - **高级类型支持** / **Advanced Type Support**: 稀疏矩阵 autodiff（`IDiffSparseMatrix`）、复数 Wirtinger 导数（`IDiffComplex`）、可微张量（`IDiffTensor`）、混合精度 FP32（`AD.diffFloat()`）/ Sparse autodiff, complex Wirtinger derivatives, differentiable tensors, mixed precision FP32
 - **自定义操作** / **Custom Operations**: `CustomOp` / `TensorCustomOp` 自包含可微操作，反向嵌入图节点 / `CustomOp` / `TensorCustomOp` self-contained differentiable ops with backward embedded in graph nodes
