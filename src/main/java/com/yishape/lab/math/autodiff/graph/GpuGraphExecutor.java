@@ -163,6 +163,21 @@ public final class GpuGraphExecutor {
                 if ("linear".equals(v.opTag())) {
                     System.err.println("[GPU-LINEAR] shape=" + java.util.Arrays.toString(v.shape()));
                 }
+                if ("mha".equals(v.opTag())) {
+                    long bits = Double.doubleToRawLongBits(v.scalarParam());
+                    int nh = (int)((bits >> 32) & 0xFFFF);
+                    int nkvh = (int)((bits >> 16) & 0xFFFF);
+                    int dm = (int)(bits & 0xFFFF);
+                    long bits2 = Double.doubleToRawLongBits(v.scalarParam2());
+                    int sl = (int)((bits2 >> 32) & 0xFFFF);
+                    boolean causal = (bits2 & 0x2) != 0;
+                    boolean hasBias = (bits2 & 0x1) != 0;
+                    System.err.println("[GPU-MHA] shape=" + java.util.Arrays.toString(v.shape()) +
+                        " exportShape=" + java.util.Arrays.toString(v.exportShape()) +
+                        " scalarRaw=" + bits + " param2Raw=" + bits2 +
+                        " numHeads=" + nh + " numKVHeads=" + nkvh + " dModel=" + dm +
+                        " seqLen=" + sl + " causal=" + causal + " hasBias=" + hasBias);
+                }
                 if ("maxpool2d".equals(v.opTag())) {
                     long bits = Double.doubleToRawLongBits(v.scalarParam());
                     int kh = (int)((bits >> 16) & 0xFF);
@@ -196,7 +211,7 @@ public final class GpuGraphExecutor {
         // Try binary path first (production default — no JSON precision issues)
         double binaryResult = tryExecuteTensorBinary(root, order);
         if (!Double.isNaN(binaryResult)) return binaryResult;
-        System.err.println("[GRU-DIAG] binary path returned NaN, trying JSON...");
+        if (VERBOSE) System.err.println("[GPU-DIAG] binary path returned NaN, trying JSON...");
 
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
@@ -208,7 +223,7 @@ public final class GpuGraphExecutor {
 
         // Export and execute
         String json = TensorGraphExporter.toJson(root);
-        System.err.println("[GRU-DIAG] toJson returned " + (json != null ? json.length() + " chars" : "null"));
+        if (VERBOSE) System.err.println("[GPU-DIAG] toJson returned " + (json != null ? json.length() + " chars" : "null"));
         if (json == null) {
             log.debug("GPU tensor graph fallback: JSON export failed");
             return Double.NaN;
@@ -284,9 +299,9 @@ public final class GpuGraphExecutor {
     private static double tryExecuteTensorBinary(RereDiffTensor root,
             ArrayList<RereDiffTensor> order) {
         try {
-            System.err.println("[GRU-DIAG] serializing " + order.size() + " nodes...");
+            if (VERBOSE) System.err.println("[GPU-DIAG] serializing " + order.size() + " nodes...");
             java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
-            System.err.println("[GRU-DIAG] serialized " + buf.remaining() + " bytes");
+            if (VERBOSE) System.err.println("[GPU-DIAG] serialized " + buf.remaining() + " bytes");
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
 

@@ -2027,7 +2027,39 @@ public class RereDiffTensor implements IDiffTensor {
             }
             input.accGradFromPooled(inGrad, total);
         };
-        return new RereDiffTensor(result, resultShape, List.of(this), bw, "sum");
+        RereDiffTensor rd = new RereDiffTensor(result, resultShape, List.of(this), bw, "sum");
+        // ╔══════════════════════════════════════════════════════════════════════════╗
+        // ║  ☠️ STRIDE ENCODING PITFALL — ROOT CAUSE                              ║
+        // ║                                                                         ║
+        // ║  THE BUG (2026-06-08): GPU sum(dim) always reduced ALL elements to 1    ║
+        // ║  value because the Rust graph executor's sum/mean dispatch used         ║
+        // ║  outer=1 (flat reduce) for ALL cases. It didn't know the stride.        ║
+        // ║                                                                         ║
+        // ║  ROOT CAUSE: This method added dimension-specific sum with proper       ║
+        // ║  stride calculation (inner = product of dims after reduced dim), but     ║
+        // ║  the Rust GPU graph executor (`graph.rs`) was NOT updated to read       ║
+        // ║  the stride from scalarParam. It kept using outer=1 (flat sum) for      ║
+        // ║  every "sum" op node, ignoring the stride entirely.                     ║
+        // ║                                                                         ║
+        // ║  DEFENSE: This `inner` value (= stride = product of dims after the      ║
+        // ║  reduced dimension) is encoded as scalarParam on the sum tensor node.   ║
+        // ║  The Rust graph executor reads scalarParam as the stride parameter:     ║
+        // ║    n==1 (flat): outer=1, inner=in_size, stride=1                        ║
+        // ║    n>1  (dim):  outer=n, inner=in_size/n, stride=scalarParam            ║
+        // ║                                                                         ║
+        // ║  If scalarParam is NaN (sum() with no dim argument → flat), the Rust    ║
+        // ║  side defaults to stride=1 (contiguous flat reduction).                 ║
+        // ║                                                                         ║
+        // ║  RULE: Any modification to this encoding MUST also update:              ║
+        // ║  1. graph.rs → reduce::dispatch call (outer/inner/stride logic)         ║
+        // ║  2. reduce.wgsl → WGSL access formula                                   ║
+        // ║  3. reduce.rs → dispatch signature                                      ║
+        // ║  4. broadcast.wgsl → strided backward broadcast                         ║
+        // ║  5. broadcast.rs → dispatch_strided function                            ║
+        // ║  6. Test: SumDimGpuDiagnostic.java                                      ║
+        // ╚══════════════════════════════════════════════════════════════════════════╝
+        rd.setScalarParam((double) inner);
+        return rd;
     }
 
     @Override

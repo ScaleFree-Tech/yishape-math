@@ -89,14 +89,12 @@
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-hpc</artifactId>
             <version>0.5.0</version>
-            <classifier>${os.detected.classifier}</classifier>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-gpu</artifactId>
             <version>0.5.0</version>
-            <classifier>${os.detected.classifier}</classifier>
             <optional>true</optional>
         </dependency>
         
