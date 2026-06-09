@@ -170,7 +170,23 @@ public final class GpuOptionalRuntime {
             M_FLOAT_ABS = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
             M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_NORMALIZE = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null; M_GET_MEMORY_BUDGET = null;
         }
+
+        // Detect whether the process-isolated worker subprocess is available.
+        // When available, GPU graph execution runs in a separate process, avoiding
+        // wgpu Device creation in the JVM (which triggers Storage::remove abort).
+        boolean hasWorker = false;
+        if (GPU != null) {
+            try {
+                hasWorker = GPU.getMethod("executeGraphBinaryIsolated", byte[].class) != null;
+            } catch (NoSuchMethodException e) {
+                // Worker method not available in this version of yishape-math-gpu
+            }
+        }
+        HAS_ISOLATED_WORKER = hasWorker;
     }
+
+    /** True when YishapeGpu.executeGraphBinaryIsolated is available. */
+    private static final boolean HAS_ISOLATED_WORKER;
 
     private GpuOptionalRuntime() {}
 
@@ -180,6 +196,13 @@ public final class GpuOptionalRuntime {
     private static volatile Boolean gpuAvailable = null;
 
     public static boolean isExtensionPresent() { return GPU != null; }
+
+    /**
+     * Returns true if the process-isolated GPU worker subprocess is available.
+     * When true, GPU graph execution avoids creating a wgpu Device in the JVM
+     * (circumventing the wgpu 29.0.3 Storage::remove race condition).
+     */
+    public static boolean hasIsolatedWorker() { return HAS_ISOLATED_WORKER; }
 
     /**
      * 检测 GPU 是否可用（首次调用检测并缓存，后续直接返回缓存结果）。
@@ -468,9 +491,36 @@ public final class GpuOptionalRuntime {
         }
     }
 
-    /** Binary graph execution via YSGP protocol. Returns raw result bytes, or null. */
+    /**
+     * Binary graph execution via YSGP protocol. Returns raw result bytes, or null.
+     *
+     * <p>Tries the process-isolated worker subprocess first ({@code executeGraphBinaryIsolated}),
+     * which avoids creating a wgpu GPU context in the current process (circumventing the
+     * wgpu 29.0.3 Storage::remove race condition). If the isolated worker is available but
+     * fails, returns null immediately — does NOT fall back to in-process execution (which
+     * would create a wgpu Device in the JVM and trigger the Storage::remove abort).</p>
+     */
     public static byte[] tryExecuteGraphBinary(byte[] data) {
         if (GPU == null || !isGpuAvailable()) return null;
+        // Priority 1: Try process-isolated worker subprocess (no GPU context created)
+        try {
+            Method isolatedM = GPU.getMethod("executeGraphBinaryIsolated", byte[].class);
+            byte[] isolatedResult = (byte[]) isolatedM.invoke(null, (Object) data);
+            if (isolatedResult != null && isolatedResult.length > 0) {
+                return isolatedResult;
+            }
+            // Isolated worker exists but failed (worker crashed with Storage::remove).
+            // Do NOT fall back to in-process — that would create a wgpu Device in the
+            // JVM and trigger the same Storage::remove non-unwinding abort.
+            // Returning null lets callers fall back to CPU/HPC safely.
+            return null;
+        } catch (NoSuchMethodException e) {
+            // executeGraphBinaryIsolated not available (older yishape-math-gpu) — fall through
+        } catch (ReflectiveOperationException | LinkageError e) {
+            // log at debug level — reflective call failed
+        }
+        // Priority 2: Legacy in-process execution (creates GPU context in JVM)
+        // Only reached when executeGraphBinaryIsolated does NOT exist (old yishape-math-gpu).
         try {
             Method m = GPU.getMethod("executeGraphBinary", byte[].class);
             Object out = m.invoke(null, (Object) data);

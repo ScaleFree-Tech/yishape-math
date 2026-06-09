@@ -50,6 +50,48 @@ public final class ExportShapeValidator {
      */
     public static Result validate(List<RereDiffTensor> order) {
         Result result = new Result();
+
+        // ── Graph structure validation ──
+
+        // Root node (last in topological order) must be a non-leaf scalar loss
+        if (order.isEmpty()) {
+            result.addError("empty graph — no nodes to export");
+            return result;
+        }
+        RereDiffTensor root = order.get(order.size() - 1);
+        if (root.isLeaf()) {
+            result.addError(String.format(
+                "root node (last in topological order #%d, op='%s') is a leaf. " +
+                "The HPC/GPU backends expect the loss output as the last node.",
+                order.size() - 1, root.opTag()));
+        }
+        if (root.totalSize() != 1) {
+            result.addError(String.format(
+                "root node (last in topological order #%d, op='%s') has totalSize=%d, " +
+                "expected scalar (totalSize=1). The HPC/GPU backends " +
+                "initialize backward gradient as [1.0] for a scalar loss.",
+                order.size() - 1, root.opTag(), root.totalSize()));
+        }
+
+        // Build index map for input reference validation
+        java.util.Map<RereDiffTensor, Integer> posMap = new java.util.HashMap<>();
+        for (int i = 0; i < order.size(); i++) posMap.put(order.get(i), i);
+
+        // All input references must point to nodes in the graph
+        for (int i = 0; i < order.size(); i++) {
+            RereDiffTensor v = order.get(i);
+            if (v.inputs() == null) continue;
+            for (RereDiffTensor inp : v.inputs()) {
+                if (inp != null && !posMap.containsKey(inp)) {
+                    result.addError(String.format(
+                        "node#%d op='%s': input reference not found in topological order. " +
+                        "This would cause an out-of-bounds index in the HPC/GPU backend.",
+                        i, v.opTag()));
+                }
+            }
+        }
+
+        // ── Per-op shape validation (unchanged) ──
         for (int i = 0; i < order.size(); i++) {
             RereDiffTensor v = order.get(i);
             String op = v.opTag();

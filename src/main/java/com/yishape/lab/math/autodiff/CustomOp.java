@@ -81,6 +81,15 @@ public abstract class CustomOp {
     }
 
     /**
+     * Clear all cached forward contexts.
+     * Called after GPU/HPC graph execution (which bypasses {@code loss.backward()})
+     * to prevent the forward-data cache from growing unboundedly.
+     */
+    public void clearForwardCache() {
+        fwdCache.clear();
+    }
+
+    /**
      * Apply this operation to tensor inputs, creating a tensor-native graph node
      * with full gradient flow in the tensor graph (no vector bridge needed).
      *

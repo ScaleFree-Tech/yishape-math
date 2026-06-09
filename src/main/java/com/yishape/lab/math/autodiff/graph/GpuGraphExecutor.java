@@ -61,10 +61,19 @@ public final class GpuGraphExecutor {
         "expSum", "expMean", "squareSum", "squareMean",
         "mulSum", "mulMean", "powSum", "powMean",
         // DL CustomOp layers (graphOpTag-based)
-        "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
+        "linear", "conv2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
+        "batchNorm2d", "embedding", "mha", "lstmStep",
         "selectiveScan", "selectiveScan2", "depthwiseConv1d",
         "scaledDotProductAttention",
         "softmaxCrossEntropy",
+        // Normalization (graphOpTag-based)
+        "rmsNorm", "groupNorm", "instanceNorm",
+        // Interpolation + GridSample
+        "interpolate", "gridSample",
+        // Cross product
+        "cross",
+        // Mamba SSM
+        "trapezoidalScan",
         // Concatenation
         "cat"
     ));
@@ -211,6 +220,16 @@ public final class GpuGraphExecutor {
         // Try binary path first (production default — no JSON precision issues)
         double binaryResult = tryExecuteTensorBinary(root, order);
         if (!Double.isNaN(binaryResult)) return binaryResult;
+
+        // If the isolated worker subprocess is available but the binary path failed,
+        // skip the JSON fallback. The JSON path calls tryExecuteGraph() which creates
+        // a wgpu Device in the JVM via YishapeGpu.getOrCreateContext(), triggering
+        // the wgpu 29.0.3 Storage::remove non-unwinding abort.
+        if (GpuOptionalRuntime.hasIsolatedWorker()) {
+            if (VERBOSE) System.err.println("[GPU-DIAG] binary path failed, isolated worker available — skipping JSON to avoid wgpu context in JVM");
+            return Double.NaN;
+        }
+
         if (VERBOSE) System.err.println("[GPU-DIAG] binary path returned NaN, trying JSON...");
 
         // Collect leaves

@@ -218,6 +218,58 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public IDiffTensor batchNorm(IDiffTensor gamma, IDiffTensor beta, double eps) {
         return wrap(data.batchNorm(gamma, beta, eps));
     }
+    @Override public IDiffTensor rmsNorm(IDiffTensor gamma, double eps) {
+        return wrap(data.rmsNorm(gamma, eps));
+    }
+    @Override public IDiffTensor embedding(IDiffTensor indices) {
+        return wrap(data.embedding(indices));
+    }
+    @Override public IDiffTensor rope(int dim, int maxLen, double base) {
+        return wrap(data.rope(dim, maxLen, base));
+    }
+    @Override public IDiffTensor[] lstmCell(IDiffTensor x, IDiffTensor hPrev, IDiffTensor cPrev,
+            IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias) {
+        IDiffTensor[] result = data.lstmCell(x, hPrev, cPrev, wInput, wHidden, bias);
+        return new IDiffTensor[]{wrap(result[0]), wrap(result[1])};
+    }
+    @Override public IDiffTensor gruCell(IDiffTensor x, IDiffTensor hPrev,
+            IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias) {
+        return wrap(data.gruCell(x, hPrev, wInput, wHidden, bias));
+    }
+    @Override public IDiffTensor groupNorm(int numGroups, IDiffTensor gamma, IDiffTensor beta, double eps) {
+        return wrap(data.groupNorm(numGroups, gamma, beta, eps));
+    }
+    @Override public IDiffTensor flip(int... dims) { return wrap(data.flip(dims)); }
+    @Override public IDiffTensor roll(int[] shifts, int[] dims) { return wrap(data.roll(shifts, dims)); }
+    @Override public IDiffTensor repeatInterleave(int repeats, int dim) { return wrap(data.repeatInterleave(repeats, shift(dim))); }
+    @Override public IDiffTensor smoothL1Loss(IDiffTensor target, double beta) { return wrap(data.smoothL1Loss(target, beta)); }
+    @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) { return wrap(data.nllLoss(target, shift(classDim))); }
+    @Override public IDiffTensor maxPool2d(int kH, int kW, int stride, int padding) { return wrap(data.maxPool2d(kH, kW, stride, padding)); }
+    @Override public IDiffTensor avgPool2d(int kH, int kW, int stride, int padding) { return wrap(data.avgPool2d(kH, kW, stride, padding)); }
+    @Override public IDiffTensor adaptiveAvgPool2d(int outH, int outW) { return wrap(data.adaptiveAvgPool2d(outH, outW)); }
+    @Override public IDiffTensor oneHot(int numClasses) { return wrap(data.oneHot(numClasses)); }
+    @Override public IDiffTensor instanceNorm(IDiffTensor gamma, IDiffTensor beta, double eps) { return wrap(data.instanceNorm(gamma, beta, eps)); }
+    @Override public IDiffTensor diagEmbed(int offset, int dim1, int dim2) { return wrap(data.diagEmbed(offset, dim1, dim2)); }
+    @Override public IDiffTensor dropout2d(double p) { return wrap(data.dropout2d(p)); }
+    @Override public IDiffTensor depthwiseConv1d(IDiffTensor weight, int stride, int padding) { return wrap(data.depthwiseConv1d(weight, stride, padding)); }
+    @Override public IDiffTensor interpolate(double scaleFactor, String mode) { return wrap(data.interpolate(scaleFactor, mode)); }
+    @Override public IDiffTensor logDet() { return wrap(data.logDet()); }
+    @Override public IDiffTensor[] slogDet() {
+        IDiffTensor[] res = data.slogDet();
+        return new IDiffTensor[]{wrap(res[0]), wrap(res[1])};
+    }
+    @Override public IDiffTensor nuclearNorm() { return wrap(data.nuclearNorm()); }
+    @Override public IDiffTensor ctcLoss(IDiffTensor targets, IDiffTensor inputLengths, IDiffTensor targetLengths) {
+        return wrap(data.ctcLoss(targets, inputLengths, targetLengths));
+    }
+    @Override public IDiffTensor cross(IDiffTensor other) { return wrap(data.cross(other)); }
+    @Override public IDiffTensor gridSample(IDiffTensor grid, String mode, String paddingMode) {
+        return wrap(data.gridSample(grid, mode, paddingMode));
+    }
+    @Override public IDiffTensor trapezoidalScan(IDiffTensor delta, IDiffTensor A, IDiffTensor B,
+                                                  IDiffTensor C, IDiffTensor D) {
+        return wrap(data.trapezoidalScan(delta, A, B, C, D));
+    }
 
     // ==================== structural with dim (shift) ====================
 
@@ -604,6 +656,20 @@ public final class BatchedDiffTensor implements IDiffTensor {
     public IDiffTensor normalize(double p, int dim) {
         return wrap(data.normalize(p, shift(dim)));
     }
+
+    // ==================== Phase 0 new ops ====================
+
+    @Override public IDiffTensor triu(int diagonal) { return wrap(data.triu(diagonal)); }
+    @Override public IDiffTensor diag() { return wrap(data.diag()); }
+    @Override public IDiffTensor diagonal(int offset, int dim1, int dim2) {
+        return wrap(data.diagonal(offset, shift(dim1), shift(dim2)));
+    }
+    @Override public IDiffTensor trace() { return wrap(data.trace()); }
+    @Override public IDiffTensor logSumExp(int dim, boolean keepdim) { return wrap(data.logSumExp(shift(dim), keepdim)); }
+    @Override public IDiffTensor[] split(int splitSize, int dim) { return data.split(splitSize, shift(dim)); }
+    @Override public IDiffTensor[] split(int[] splitSizes, int dim) { return data.split(splitSizes, shift(dim)); }
+    @Override public IDiffTensor[] chunk(int chunks, int dim) { return data.chunk(chunks, shift(dim)); }
+    @Override public IDiffTensor[] unbind(int dim) { return data.unbind(shift(dim)); }
 
     // ==================== accessors ====================
 

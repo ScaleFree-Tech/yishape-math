@@ -93,6 +93,14 @@ public final class HpcGraphExecutor {
         visited.clear();
         root.buildTopo(order, visited);
 
+        // Validate graph structure before execution:
+        // root-is-scalar, non-leaf root, in-bounds input references.
+        ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
+        if (validation.hasErrors()) {
+            log.warn("HPC graph validation failed — falling back to CPU:\n{}", validation);
+            return Double.NaN;
+        }
+
         // Check unsupported ops
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
@@ -120,7 +128,7 @@ public final class HpcGraphExecutor {
         // Try binary path first
         double binaryResult = tryExecuteTensorBinary(root, order, leaves);
         if (!Double.isNaN(binaryResult)) return binaryResult;
-        System.err.println("[HPC-DIAG] Binary path returned NaN for root=" + root.opTag() + " nodes=" + order.size() + " leaves=" + leaves.size() + " orderSize=" + order.size());
+        if (log.isDebugEnabled()) log.debug("Binary path returned NaN, falling back to JSON (nodes={})", order.size());
 
         // JSON fallback
         String json = TensorGraphExporter.toJson(root);
@@ -174,10 +182,8 @@ public final class HpcGraphExecutor {
             ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
-
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
-                System.err.println("[HPC-DIAG] binary: tryExecuteGraphBinary returned null/empty");
                 return Double.NaN;
             }
 
@@ -198,7 +204,7 @@ public final class HpcGraphExecutor {
             }
             return loss;
         } catch (Exception e) {
-            log.debug("HPC graph execution failed", e);
+            if (log.isDebugEnabled()) log.debug("HPC graph execution failed", e);
             return Double.NaN;
         }
     }

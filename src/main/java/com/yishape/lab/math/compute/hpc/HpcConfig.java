@@ -356,4 +356,140 @@ public final class HpcConfig {
         Integer v = parseNonNegativeInt(System.getProperty(PROP_ACTIVATION_MIN_ELEMENTS));
         return v != null ? v : DEFAULT_ACTIVATION_MIN_ELEMENTS;
     }
+
+    // ===================== Pool thresholds =====================
+
+    /**
+     * Pool operations (maxPool2d, avgPool2d, adaptiveAvgPool2d) use HPC
+     * for input sizes >= this many elements; below, Java SIMD/SISD is faster.
+     */
+    public static final String PROP_POOL_MIN_ELEMENTS = "yishape.hpc.pool.minElements";
+
+    static final long DEFAULT_POOL_MIN_ELEMENTS = 4096L;
+
+    static long poolMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_POOL_MIN_ELEMENTS, Long.toString(DEFAULT_POOL_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_POOL_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== Norm thresholds (instanceNorm, groupNorm) =====================
+
+    /**
+     * Normalization operations (instanceNorm, groupNorm) use HPC
+     * for input sizes >= this many elements; below, Java SISD is faster.
+     */
+    public static final String PROP_NORM_MIN_ELEMENTS = "yishape.hpc.norm.minElements";
+
+    static final long DEFAULT_NORM_MIN_ELEMENTS = 4096L;
+
+    static long normMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_NORM_MIN_ELEMENTS, Long.toString(DEFAULT_NORM_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_NORM_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== RMSNorm threshold =====================
+
+    /**
+     * RMSNorm operations use HPC for input sizes >= this many elements.
+     * RMSNorm is on the LLM critical path, so the default threshold is lower.
+     */
+    public static final String PROP_RMSNORM_MIN_ELEMENTS = "yishape.hpc.rmsNorm.minElements";
+
+    static final long DEFAULT_RMSNORM_MIN_ELEMENTS = 2048L;
+
+    static long rmsNormMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_RMSNORM_MIN_ELEMENTS, Long.toString(DEFAULT_RMSNORM_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_RMSNORM_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== Interpolate threshold =====================
+
+    /**
+     * Interpolation operations (bilinear, nearest) use HPC
+     * for input sizes >= this many elements; below, Java SISD is faster.
+     */
+    public static final String PROP_INTERPOLATE_MIN_ELEMENTS = "yishape.hpc.interpolate.minElements";
+
+    static final long DEFAULT_INTERPOLATE_MIN_ELEMENTS = 16384L;
+
+    static long interpolateMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_INTERPOLATE_MIN_ELEMENTS, Long.toString(DEFAULT_INTERPOLATE_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_INTERPOLATE_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== Cross product threshold =====================
+
+    /**
+     * Cross product operations use HPC for input sizes >= this many elements.
+     * Cross product is memory-bound (3 mul + 3 sub per triplet); FFI overhead
+     * dominates below ~100K elements.
+     */
+    public static final String PROP_CROSS_MIN_ELEMENTS = "yishape.hpc.cross.minElements";
+
+    static final long DEFAULT_CROSS_MIN_ELEMENTS = 100_000L;
+
+    static long crossMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_CROSS_MIN_ELEMENTS, Long.toString(DEFAULT_CROSS_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_CROSS_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== Grid sample threshold =====================
+
+    /**
+     * Grid sample operations use HPC for input sizes >= this many elements.
+     * Grid sample involves coordinate computation and bilinear/nearest sampling;
+     * HPC is beneficial for larger spatial dimensions (e.g., >= 64x64 images).
+     */
+    public static final String PROP_GRID_SAMPLE_MIN_ELEMENTS = "yishape.hpc.gridSample.minElements";
+
+    static final long DEFAULT_GRID_SAMPLE_MIN_ELEMENTS = 16384L;
+
+    static long gridSampleMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_GRID_SAMPLE_MIN_ELEMENTS, Long.toString(DEFAULT_GRID_SAMPLE_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_GRID_SAMPLE_MIN_ELEMENTS;
+        }
+    }
+
+    // ===================== Trapezoidal scan threshold =====================
+
+    /**
+     * Trapezoidal scan operations use HPC for input sizes >= this many elements.
+     * The scan involves sequential recurrence with exp per element;
+     * HPC is beneficial for longer sequences.
+     */
+    public static final String PROP_TRAPEZOIDAL_SCAN_MIN_ELEMENTS = "yishape.hpc.trapezoidalScan.minElements";
+
+    static final long DEFAULT_TRAPEZOIDAL_SCAN_MIN_ELEMENTS = 4096L;
+
+    static long trapezoidalScanMinElements() {
+        try {
+            long v = Long.parseLong(System.getProperty(PROP_TRAPEZOIDAL_SCAN_MIN_ELEMENTS, Long.toString(DEFAULT_TRAPEZOIDAL_SCAN_MIN_ELEMENTS)));
+            return Math.max(0L, v);
+        } catch (NumberFormatException e) {
+            return DEFAULT_TRAPEZOIDAL_SCAN_MIN_ELEMENTS;
+        }
+    }
 }

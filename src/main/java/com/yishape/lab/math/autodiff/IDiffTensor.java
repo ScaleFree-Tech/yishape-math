@@ -84,9 +84,278 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor std(int dim, boolean keepdim);
     @Override IDiffTensor var(int dim, boolean keepdim);
 
+    /** Numerically stable log(sum(exp(x), dim)). */
+    IDiffTensor logSumExp(int dim, boolean keepdim);
+
     @Override IDiffTensor softmax(int dim);
     @Override IDiffTensor logSoftmax(int dim);
     IDiffTensor softmaxCrossEntropy(IDoubleTensor labels, int dim);
+
+    // ==================== Loss Functions ====================
+
+    /** Mean Squared Error loss: mean((this - target)^2). Returns scalar tensor [1]. */
+    default IDiffTensor mseLoss(IDoubleTensor target) {
+        IDiffTensor diff = this.sub(target).square();
+        return diff.sum().div(diff.totalSize());
+    }
+
+    /** L1 Loss: mean(|this - target|). Returns scalar tensor [1]. */
+    default IDiffTensor l1Loss(IDoubleTensor target) {
+        IDiffTensor diff = this.sub(target).abs();
+        return diff.sum().div(diff.totalSize());
+    }
+
+    /**
+     * Smooth L1 / Huber loss: 0.5*(diff^2)/beta if |diff|<=beta, |diff|-0.5*beta otherwise.
+     * Returns scalar tensor [1].
+     */
+    IDiffTensor smoothL1Loss(IDiffTensor target, double beta);
+
+    /**
+     * Binary Cross Entropy with Logits Loss (numerically stable).
+     * Computes: mean(log(1+exp(x)) - x*target), fused for stability.
+     * @param target binary labels, same shape as input
+     * @return scalar tensor [1]
+     */
+    default IDiffTensor bceWithLogitsLoss(IDiffTensor target) {
+        // Numerically stable: max(x,0) - x*target + log(1+exp(-|x|))
+        IDiffTensor posPart = this.relu();
+        IDiffTensor negAbs = this.abs().neg().exp().add(1.0).log();
+        IDiffTensor loss = posPart.sub(this.mul(target)).add(negAbs);
+        return loss.sum().div(loss.totalSize());
+    }
+
+    /**
+     * Negative Log-Likelihood loss (input = log-probabilities).
+     * Computes: -mean(gather(input, dim=classDim, target)).
+     * @param target   class indices (long/int tensor)
+     * @param classDim dimension containing class scores
+     * @return scalar tensor [1]
+     */
+    IDiffTensor nllLoss(IDiffTensor target, int classDim);
+
+    /**
+     * KL Divergence loss: sum(target * (log(target) - input_log_prob)).
+     * Input should be log-probabilities (logSoftmax output).
+     * @param target probability distribution, same shape as input
+     * @return scalar tensor [1]
+     */
+    default IDiffTensor klDivLoss(IDiffTensor target) {
+        // target * (log(target) - this); target is prob dist, this is log-prob
+        IDiffTensor logTarget = target.add(1e-12).log(); // epsilon for numerical stability
+        return target.mul(logTarget.sub(this)).sum();
+    }
+
+    // ==================== Pooling ====================
+
+    /**
+     * 2D Max Pooling. Input shape: [N, C, H, W].
+     * @param kH      kernel height
+     * @param kW      kernel width
+     * @param stride  stride (defaults to kernel size if 0)
+     * @param padding zero-padding
+     * @return pooled output [N, C, outH, outW]
+     */
+    IDiffTensor maxPool2d(int kH, int kW, int stride, int padding);
+
+    /**
+     * 2D Average Pooling. Input shape: [N, C, H, W].
+     * @param kH      kernel height
+     * @param kW      kernel width
+     * @param stride  stride (defaults to kernel size if 0)
+     * @param padding zero-padding
+     * @return pooled output [N, C, outH, outW]
+     */
+    IDiffTensor avgPool2d(int kH, int kW, int stride, int padding);
+
+    /**
+     * 2D Adaptive Average Pooling. Input shape: [N, C, H, W] or [N, C, H, W, ...].
+     * Output spatial dims are exactly (outH, outW) regardless of input size.
+     * @param outH target output height
+     * @param outW target output width
+     * @return pooled output [N, C, outH, outW]
+     */
+    IDiffTensor adaptiveAvgPool2d(int outH, int outW);
+
+    // ==================== Similarity & Distance ====================
+
+    /**
+     * Cosine similarity along a dimension.
+     * Returns per-sample cosine similarity: dot(x,y,dim) / (||x|| * ||y|| + eps).
+     * @param other tensor of same shape
+     * @param dim   dimension along which to compute similarity
+     * @param eps   small constant for numerical stability
+     * @return cosine similarity, shape = input shape with dim reduced
+     */
+    default IDiffTensor cosineSimilarity(IDiffTensor other, int dim, double eps) {
+        IDiffTensor dot = this.mul(other).sum(dim, true);
+        IDiffTensor normX = this.square().sum(dim, true).add(eps).sqrt();
+        IDiffTensor normY = other.square().sum(dim, true).add(eps).sqrt();
+        return dot.div(normX).div(normY);
+    }
+
+    // ==================== Matrix Ops ====================
+
+    /**
+     * Differentiable one-hot encoding. Input values are class indices (floored to int).
+     * Returns a tensor with an extra dimension of size numClasses.
+     * @param numClasses total number of classes
+     * @return one-hot tensor: shape = [*this.shape, numClasses]
+     */
+    IDiffTensor oneHot(int numClasses);
+
+    /**
+     * Fused addmm: alpha * this + beta * (mat1 @ mat2).
+     * @param mat1  left matrix
+     * @param alpha scalar multiplier for this
+     * @param beta  scalar multiplier for mat1 @ mat2
+     * @return result = alpha*this + beta*(this @ mat1)
+     */
+    default IDiffTensor addmm(IDiffTensor mat1, double alpha, double beta) {
+        return this.mul(alpha).add(this.mmul(mat1).mul(beta));
+    }
+
+    /**
+     * Fused baddbmm: alpha * this + beta * (batch1 @ batch2).
+     * @param batch1 left batched matrix
+     * @param alpha  scalar multiplier for this
+     * @param beta   scalar multiplier for batch1 @ batch2
+     * @return result = alpha*this + beta*(this @ batch1) via bmm
+     */
+    default IDiffTensor baddbmm(IDiffTensor batch1, double alpha, double beta) {
+        return this.mul(alpha).add(this.bmm(batch1).mul(beta));
+    }
+
+    // ==================== Normalization — Tier 3 ====================
+
+    /**
+     * Instance Normalization. Normalizes over spatial dims (H*W) per sample per channel.
+     * Input shape: [N, C, H, W] or [N, C, L].
+     * @param gamma scale parameter [C]
+     * @param beta  shift parameter [C] (can be null)
+     * @param eps   small constant for numerical stability
+     * @return normalized output with the same shape as input
+     */
+    IDiffTensor instanceNorm(IDiffTensor gamma, IDiffTensor beta, double eps);
+
+    // ==================== Matrix Ops — Tier 3 ====================
+
+    /** Frobenius norm: sqrt(sum(x^2)). For full Frobenius norm use sum() of square. */
+    default IDiffTensor frobeniusNorm(int... dims) {
+        IDiffTensor sq = this.square();
+        boolean keepdim = true;
+        return sq.sum(dims[0], keepdim).sqrt();
+    }
+
+    /**
+     * Create a diagonal embedding: expand input into a matrix with input along diagonal.
+     * Input shape: [..., D]. Output shape: [..., D, D] or specified dims.
+     * @param offset diagonal offset (0 = main diagonal)
+     * @param dim1   first dimension for the output matrix
+     * @param dim2   second dimension for the output matrix
+     * @return tensor with input placed along diagonal
+     */
+    IDiffTensor diagEmbed(int offset, int dim1, int dim2);
+
+    // ==================== Matrix Decomposition Ops ====================
+
+    /**
+     * Log absolute determinant of a square matrix (last two dims).
+     * log(|det(A)|). Numerically stable via LU decomposition.
+     * Input shape: [N, N] (2D square matrix).
+     * @return scalar tensor [1] containing log(|det|)
+     */
+    IDiffTensor logDet();
+
+    /**
+     * Sign and log-absolute-determinant of a square matrix.
+     * Returns [sign, log|det|] where sign is the determinant sign (±1).
+     * Input shape: [N, N] (2D square matrix). The sign entry does NOT receive gradient.
+     * @return two-element array: [sign_tensor, logDet_tensor] both shape [1]
+     */
+    IDiffTensor[] slogDet();
+
+    /**
+     * Nuclear norm (sum of singular values, aka trace norm / Schatten-1 norm).
+     * Computed via SVD: sum(s_i) where s_i are singular values of the input matrix.
+     * Input shape: [M, N] (2D matrix).
+     * @return scalar tensor [1] containing sum of singular values
+     */
+    IDiffTensor nuclearNorm();
+
+    /**
+     * CTC (Connectionist Temporal Classification) loss.
+     * Input (this): log-probabilities of shape [T, N, C] where
+     * T = time steps, N = batch size, C = number of classes.
+     * Uses GPU→HPC→SIMD→SISD fallback chain.
+     * @param targets       target label sequences [N, S] (padded with 0)
+     * @param inputLengths  lengths of each input sequence [N] (max T)
+     * @param targetLengths lengths of each target sequence [N] (max S)
+     * @return scalar tensor [1] containing the CTC loss
+     */
+    IDiffTensor ctcLoss(IDiffTensor targets, IDiffTensor inputLengths, IDiffTensor targetLengths);
+
+    /**
+     * Cross product of 3D vectors: a × b.
+     * Input tensors must have last dimension = 3. Supports arbitrary batch dims via broadcast.
+     * @param other tensor with last dim = 3
+     * @return cross product with same shape as broadcast(this, other)
+     */
+    IDiffTensor cross(IDiffTensor other);
+
+    /**
+     * Differentiable image sampling (spatial grid sampling).
+     * Input shape: [N, C, H, W]. Grid shape: [N, outH, outW, 2] with normalized coordinates in [-1, 1].
+     * @param grid         sampling grid [N, outH, outW, 2]
+     * @param mode         "bilinear" or "nearest"
+     * @param paddingMode  "zeros", "border", or "reflection"
+     * @return sampled output [N, C, outH, outW]
+     */
+    IDiffTensor gridSample(IDiffTensor grid, String mode, String paddingMode);
+
+    /**
+     * Trapezoidal selective scan (Mamba SSM core).
+     * Discretizes the continuous SSM using the trapezoidal rule.
+     * Input (this): U — input sequence [B, L, D].
+     * @param delta  time delta [B, L, D] or [B, 1, D]
+     * @param A      state matrix diagonal [D] or [B, D]
+     * @param B      input-to-state [B, L, D]
+     * @param C      state-to-output [B, L, D]
+     * @param D      skip connection [D] or scalar (broadcast)
+     * @return Y output [B, L, D]
+     */
+    IDiffTensor trapezoidalScan(IDiffTensor delta, IDiffTensor A, IDiffTensor B, IDiffTensor C, IDiffTensor D);
+
+    // ==================== Dropout — Tier 3 ====================
+
+    /**
+     * 2D Dropout: randomly zeroes entire channels with probability p.
+     * During training, each channel is dropped independently.
+     * Input shape: [N, C, H, W].
+     */
+    IDiffTensor dropout2d(double p);
+
+    // ==================== Convolution — Tier 3 ====================
+
+    /**
+     * Depthwise 1D Convolution: each input channel is convolved with its own kernel.
+     * Input shape: [N, C, L]. Weight shape: [C, kernelSize].
+     * @param weight   depthwise kernel [C, kernelSize]
+     * @param stride   convolution stride
+     * @param padding  zero-padding
+     * @return output [N, C, outL] where outL = (L + 2*padding - kernelSize) / stride + 1
+     */
+    IDiffTensor depthwiseConv1d(IDiffTensor weight, int stride, int padding);
+
+    // ==================== Interpolation — Tier 3 ====================
+
+    /**
+     * 2D interpolation (upsampling). Input shape: [N, C, H, W].
+     * @param scaleFactor scaling factor (>1 for upsample, <1 for downsample)
+     * @param mode        "bilinear" or "nearest"
+     * @return interpolated output [N, C, floor(H*scale), floor(W*scale)]
+     */
+    IDiffTensor interpolate(double scaleFactor, String mode);
 
     /**
      * 2D Convolution (im2col + gemm).
@@ -142,6 +411,103 @@ public interface IDiffTensor extends IDoubleTensor {
      */
     IDiffTensor batchNorm(IDiffTensor gamma, IDiffTensor beta, double eps);
 
+    /**
+     * RMS Normalization (LLaMA-style). Normalizes over the last dimension.
+     * y = x / sqrt(mean(x^2) + eps) * gamma
+     * @param gamma scale parameter (size = last dimension)
+     * @param eps   small constant for numerical stability
+     * @return normalized output with the same shape as input
+     */
+    IDiffTensor rmsNorm(IDiffTensor gamma, double eps);
+
+    /**
+     * Rotary Position Embedding (RoPE). Applies rotation to pairs of elements.
+     * @param dim    half-dimension for frequency computation (typically headDim)
+     * @param maxLen maximum sequence length (for pre-computing frequencies, unused if dynamic)
+     * @param base   base for frequency computation (default 10000.0)
+     * @return tensor with RoPE applied (same shape)
+     */
+    IDiffTensor rope(int dim, int maxLen, double base);
+
+    /**
+     * Group Normalization. Divides channels into groups, normalizes each group independently.
+     * Input shape: [N, C, H, W] or [N, C, L]. Channels are split into numGroups groups.
+     * gamma/beta shape: [C] (per-channel scale/shift broadcast across groups).
+     * @param numGroups number of groups to split channels into (must divide C)
+     * @param gamma     scale parameter [C]
+     * @param beta      shift parameter [C] (can be null)
+     * @param eps       small constant for numerical stability
+     * @return normalized output with the same shape as input
+     */
+    IDiffTensor groupNorm(int numGroups, IDiffTensor gamma, IDiffTensor beta, double eps);
+
+    /**
+     * Reverse the order of elements along specified dimensions.
+     * @param dims dimensions to flip (varargs)
+     * @return flipped tensor (same shape)
+     */
+    IDiffTensor flip(int... dims);
+
+    /**
+     * Roll (circular shift) elements along specified dimensions.
+     * @param shifts amount to shift by (positive = right/down, negative = left/up)
+     * @param dims   dimensions to roll along (same length as shifts)
+     * @return rolled tensor (same shape)
+     */
+    IDiffTensor roll(int[] shifts, int[] dims);
+
+    /**
+     * Repeat each element along a dimension the given number of times.
+     * Equivalent to torch.repeat_interleave.
+     * @param repeats number of repetitions per element
+     * @param dim     dimension along which to repeat
+     * @return tensor with dim expanded by factor repeats
+     */
+    IDiffTensor repeatInterleave(int repeats, int dim);
+
+    /**
+     * LSTM cell single timestep. Decomposes to existing differentiable ops.
+     * Gates: i = sigmoid(Wi·x + bi + Whi·h + bhi)
+     *        f = sigmoid(Wf·x + bf + Whf·h + bhf)
+     *        o = sigmoid(Wo·x + bo + Who·h + bho)
+     *        g = tanh(Wg·x + bg + Whg·h + bhg)
+     * Cell: c = f * cPrev + i * g
+     * Hidden: h = o * tanh(c)
+     * @param x       input [batch, inputSize]
+     * @param hPrev   previous hidden state [batch, hiddenSize]
+     * @param cPrev   previous cell state [batch, hiddenSize]
+     * @param wInput  input weights [4*hiddenSize, inputSize] (stacked i,f,o,g)
+     * @param wHidden hidden weights [4*hiddenSize, hiddenSize]
+     * @param bias    bias [4*hiddenSize] (optional, can be null)
+     * @return [h, c] as IDiffTensor[2]
+     */
+    IDiffTensor[] lstmCell(IDiffTensor x, IDiffTensor hPrev, IDiffTensor cPrev,
+                           IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias);
+
+    /**
+     * GRU cell single timestep. Decomposes to existing differentiable ops.
+     * Gates: z = sigmoid(Wz·x + bz + Whz·h + bhz)
+     *        r = sigmoid(Wr·x + br + Whr·h + bhr)
+     *        n = tanh(Wn·x + bn + r * (Whn·h + bhn))
+     * Hidden: h = (1 - z) * n + z * hPrev
+     * @param x       input [batch, inputSize]
+     * @param hPrev   previous hidden state [batch, hiddenSize]
+     * @param wInput  input weights [3*hiddenSize, inputSize] (stacked z,r,n)
+     * @param wHidden hidden weights [3*hiddenSize, hiddenSize]
+     * @param bias    bias [3*hiddenSize] (optional, can be null)
+     * @return h (new hidden state)
+     */
+    IDiffTensor gruCell(IDiffTensor x, IDiffTensor hPrev,
+                        IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias);
+
+    /**
+     * Differentiable embedding lookup: gathers rows from embedding table.
+     * Equivalent to gather(0, indices) but with optimized GPU/HPC support.
+     * @param indices integer indices tensor (any shape)
+     * @return gathered embeddings [*indices.shape, embeddingDim]
+     */
+    IDiffTensor embedding(IDiffTensor indices);
+
     @Override IDiffTensor mmul(IDoubleTensor other);
     @Override IDiffTensor bmm(IDoubleTensor other);
     @Override IDiffTensor einsum(String subscript, IDoubleTensor... others);
@@ -171,12 +537,29 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor topk(int k, int dim, boolean largest);
     @Override IDiffTensor pad(int[][] padding, String mode, double value);
     @Override IDiffTensor tril(int diagonal);
+    /** Upper triangular view (mirrors tril). Elements below diagonal are zeroed. */
+    IDiffTensor triu(int diagonal);
+    /** Extract the diagonal of a matrix (last two dims). Returns shape [min(M,N)]. */
+    IDiffTensor diag();
+    /** Extract a diagonal with offset from dim1/dim2. */
+    IDiffTensor diagonal(int offset, int dim1, int dim2);
+    /** Trace (sum of diagonal elements). Equivalent to diag().sum(). */
+    IDiffTensor trace();
     @Override IDiffTensor unfold(int dim, int size, int stride, int dilation);
     @Override IDiffTensor nonzero();
     @Override IDiffTensor maskedSelect(IDoubleTensor mask);
     @Override IDiffTensor maskedFill(IDoubleTensor mask, double value);
     @Override IDiffTensor cat(int dim, IDoubleTensor... others);
     @Override IDiffTensor stack(int dim, IDoubleTensor... others);
+
+    /** Split tensor into sections of size splitSize along dim. Last section may be smaller. */
+    IDiffTensor[] split(int splitSize, int dim);
+    /** Split tensor into sections of given sizes along dim. Sum of sizes must equal dim(dim). */
+    IDiffTensor[] split(int[] splitSizes, int dim);
+    /** Split tensor into chunks equally along dim (last may be smaller). */
+    IDiffTensor[] chunk(int chunks, int dim);
+    /** Unbind tensor along dim (remove dim, return array of slices). */
+    IDiffTensor[] unbind(int dim);
     @Override IDiffTensor normalize(double p, int dim);
 
     @Override IDiffTensor add_(IDoubleTensor other);
