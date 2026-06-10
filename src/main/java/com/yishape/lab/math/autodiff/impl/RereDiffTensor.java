@@ -2850,21 +2850,22 @@ public class RereDiffTensor implements IDiffTensor {
         // We pre-compute row indices so the GPU can do:
         //   output[row*dim+j] = weight[rowIdx[row] * dim + j]
         // The CPU backward uses closure-captured fGatherIndices and is unaffected.
-        List<RereDiffTensor> gatherInputs;
-        if (index instanceof RereDiffTensor rt) {
-            int trailingProduct = 1;
-            for (int i = d + 1; i < r; i++) trailingProduct *= s[i];
-            int numOutputRows = resultTotal / trailingProduct;
-            double[] rowIdxData = new double[numOutputRows];
-            for (int row = 0; row < numOutputRows; row++) {
-                rowIdxData[row] = (double) (flatSourcePos[row * trailingProduct] / trailingProduct);
-            }
-            RereDiffTensor rowIdxTensor = new RereDiffTensor(rowIdxData, numOutputRows);
-            rowIdxTensor.setRequiresGrad(false);
-            gatherInputs = List.of(this, rowIdxTensor);
-        } else {
-            gatherInputs = List.of(this);
+        //
+        // Always compute rowIdxTensor: flatSourcePos is already computed for forward,
+        // and index may be a ConstantDiffTensor (from toNonDiff() reshape on
+        // requiresGrad=false indices). The instanceof RereDiffTensor gate was
+        // incorrect — it skipped rowIdx creation for non-RereDiffTensor indices,
+        // causing "missing inputs" GPU worker errors.
+        int trailingProduct = 1;
+        for (int i = d + 1; i < r; i++) trailingProduct *= s[i];
+        int numOutputRows = resultTotal / trailingProduct;
+        double[] rowIdxData = new double[numOutputRows];
+        for (int row = 0; row < numOutputRows; row++) {
+            rowIdxData[row] = (double) (flatSourcePos[row * trailingProduct] / trailingProduct);
         }
+        RereDiffTensor rowIdxTensor = new RereDiffTensor(rowIdxData, numOutputRows);
+        rowIdxTensor.setRequiresGrad(false);
+        List<RereDiffTensor> gatherInputs = List.of(this, rowIdxTensor);
         return new RereDiffTensor(resultData, resultShape, gatherInputs, bw, "gather");
     }
 
@@ -4228,9 +4229,12 @@ public class RereDiffTensor implements IDiffTensor {
             }
             inp.accGrad(dx);
         };
-        RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(this), bw, "maxPool2d");
+        RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(this), bw, "maxpool2d");
         result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
         result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
+        // 6D exportShape lets HPC/GPU backends use actual input dims directly,
+        // avoiding incorrect derivation when stride does not divide evenly.
+        result.exportShape = new int[]{N, C, H, W, outH, outW};
         return result;
     }
 
@@ -4315,9 +4319,12 @@ public class RereDiffTensor implements IDiffTensor {
             }
             inp.accGrad(dx);
         };
-        RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(this), bw, "avgPool2d");
+        RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(this), bw, "avgpool2d");
         result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
         result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
+        // 6D exportShape lets HPC/GPU backends use actual input dims directly,
+        // avoiding incorrect derivation when stride does not divide evenly.
+        result.exportShape = new int[]{N, C, H, W, outH, outW};
         return result;
     }
 

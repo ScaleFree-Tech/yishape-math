@@ -106,7 +106,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public void backward(IDoubleVector initialGradient) {
         if (!tensor.requiresGrad()) return;
-        tensor.setGradData(initialGradient.getData());
+        tensor.setGradData(initialGradient.getData().clone());
         tensor.backwardImpl();
     }
 
@@ -984,8 +984,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
         double[] y = new double[fwd.length];
         for (int i = 0; i < fwd.length; i++) y[i] = fwd[i] % value;
         // straight-through estimator for remainder
-        RereDiffTensor result = new RereDiffTensor(y, new int[]{y.length});
-        return wrap(result);
+        RereDiffTensor self = this.tensor;
+        Consumer<RereDiffTensor> backwardFn = (gradOut) -> self.accGrad(gradOut.gradData());
+        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "remainder"));
     }
 
     // ==================== Reverse ====================

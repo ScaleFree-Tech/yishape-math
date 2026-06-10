@@ -96,6 +96,11 @@ public final class BatchedDiffTensor implements IDiffTensor {
         return (t instanceof IDiffTensor dt) ? dt.detach() : t;
     }
 
+    /** Unwrap nested BatchedDiffTensor for per-sample RNN ops inside vmap. */
+    private static IDiffTensor unwrapDiff(IDiffTensor t) {
+        return (t instanceof BatchedDiffTensor bdt) ? bdt.data : t;
+    }
+
     /** Get batch size from leading dimension. */
     private int batchSize() {
         return data.shape()[0];
@@ -229,12 +234,14 @@ public final class BatchedDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor[] lstmCell(IDiffTensor x, IDiffTensor hPrev, IDiffTensor cPrev,
             IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias) {
-        IDiffTensor[] result = data.lstmCell(x, hPrev, cPrev, wInput, wHidden, bias);
+        IDiffTensor[] result = data.lstmCell(unwrapDiff(x), unwrapDiff(hPrev), unwrapDiff(cPrev),
+            unwrapDiff(wInput), unwrapDiff(wHidden), bias != null ? unwrapDiff(bias) : null);
         return new IDiffTensor[]{wrap(result[0]), wrap(result[1])};
     }
     @Override public IDiffTensor gruCell(IDiffTensor x, IDiffTensor hPrev,
             IDiffTensor wInput, IDiffTensor wHidden, IDiffTensor bias) {
-        return wrap(data.gruCell(x, hPrev, wInput, wHidden, bias));
+        return wrap(data.gruCell(unwrapDiff(x), unwrapDiff(hPrev), unwrapDiff(wInput), unwrapDiff(wHidden),
+            bias != null ? unwrapDiff(bias) : null));
     }
     @Override public IDiffTensor groupNorm(int numGroups, IDiffTensor gamma, IDiffTensor beta, double eps) {
         return wrap(data.groupNorm(numGroups, gamma, beta, eps));

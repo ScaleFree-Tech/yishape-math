@@ -84,7 +84,7 @@ public final class GpuGemm {
         if (input == null || C <= 0 || H <= 0 || W <= 0 || outH <= 0 || outW <= 0 || kH <= 0 || kW <= 0)
             return null;
         long total = (long) C * kH * kW * outH * outW;
-        if (input.length < C * H * W) return null;
+        if (input.length < (long) C * H * W) return null;
 
         // Gate 2: threshold
         if (total < GpuConfig.im2colMinElements()) return null;
@@ -110,9 +110,9 @@ public final class GpuGemm {
     public static boolean tryFlatMatMulTransp(double[] a, double[] b, double[] cOut, int m, int k, int n, int transp) {
         // Gate 1: guard
         if (a == null || b == null || cOut == null || m <= 0 || n <= 0 || k <= 0) return false;
-        int aLen = ((transp & 1) != 0) ? k * m : m * k;
-        int bLen = ((transp & 2) != 0) ? n * k : k * n;
-        int cLen = m * n;
+        long aLen = ((transp & 1) != 0) ? (long) k * m : (long) m * k;
+        long bLen = ((transp & 2) != 0) ? (long) n * k : (long) k * n;
+        long cLen = (long) m * n;
         if (a.length < aLen || b.length < bLen || cOut.length < cLen) return false;
 
         // Gate 2: threshold
@@ -129,7 +129,7 @@ public final class GpuGemm {
         try {
             double[] cTmp = GpuOptionalRuntime.tryFlatMatMulTransp(a, b, m, k, n, transp);
             if (cTmp != null) {
-                System.arraycopy(cTmp, 0, cOut, 0, cLen);
+                System.arraycopy(cTmp, 0, cOut, 0, (int) cLen);
                 return true;
             }
             return false;
@@ -147,8 +147,15 @@ public final class GpuGemm {
                                          double[] cOut, int cOff) {
         // Gate 1: guard
         if (a == null || b == null || cOut == null || m <= 0 || n <= 0 || k <= 0) return false;
-        int aLen = m * k, bLen = k * n, cLen = m * n;
+        long aLen = (long) m * k, bLen = (long) k * n, cLen = (long) m * n;
         if (a.length < aOff + aLen || b.length < bOff + bLen || cOut.length < cOff + cLen) return false;
+
+        // Gate 1.5: GPU buffer size limit — wgpu panics (non-unwindable) if
+        // create_buffer exceeds device max_buffer_size (typically 256 MB).
+        // GPU uses f32 internally, so each double costs 4 bytes per element.
+        // Skip GPU path when largest array won't fit in a single GPU buffer.
+        long maxBufferElems = GpuConfig.maxBufferElements();
+        if (Math.max(Math.max(aLen, bLen), cLen) > maxBufferElems) return false;
 
         // Gate 2: threshold
         long flops = (long) m * n * k;
@@ -162,11 +169,11 @@ public final class GpuGemm {
 
         // Gate 5: call — GPU requires contiguous arrays, slice if offset > 0
         try {
-            double[] aSlice = (aOff == 0) ? a : java.util.Arrays.copyOfRange(a, aOff, aOff + aLen);
-            double[] bSlice = (bOff == 0) ? b : java.util.Arrays.copyOfRange(b, bOff, bOff + bLen);
-            double[] cTmp = new double[cLen];
+            double[] aSlice = (aOff == 0) ? a : java.util.Arrays.copyOfRange(a, aOff, (int)(aOff + aLen));
+            double[] bSlice = (bOff == 0) ? b : java.util.Arrays.copyOfRange(b, bOff, (int)(bOff + bLen));
+            double[] cTmp = new double[(int)cLen];
             if (GpuOptionalRuntime.tryFlatMatMul(aSlice, bSlice, cTmp, m, k, n)) {
-                System.arraycopy(cTmp, 0, cOut, cOff, cLen);
+                System.arraycopy(cTmp, 0, cOut, cOff, (int)cLen);
                 return true;
             }
             return false;

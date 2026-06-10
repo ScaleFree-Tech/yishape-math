@@ -111,16 +111,13 @@ final class AutodiffBufferPool {
      */
     private static int releaseBucketFor(int length) {
         if (length <= 0) return -1;
-        if (length <= SLAB_MAX_ELEMS) {
-            // Slab: find largest slab bucket ≤ length
-            int b = length / SLAB_SIZE - 1;
-            return Math.max(0, Math.min(b, SLAB_BUCKETS - 1));
+        // Match acquire bucket mapping, then walk down while alloc size exceeds buffer length.
+        int b = bucketFor(length);
+        if (b < 0) return -1;
+        while (b > 0 && allocSizeForBucket(b) > length) {
+            b--;
         }
-        // Power-of-2: find largest 2^n ≤ length
-        int p = 31 - Integer.numberOfLeadingZeros(length); // floor(log2(length))
-        if (p < 13) return SLAB_BUCKETS - 1; // should not happen (length > 8192 but log2 < 13)
-        if (p > 27) return -1; // > 128M, don't pool
-        return SLAB_BUCKETS + (p - 13);
+        return b;
     }
 
     /** Size allocated for a given bucket index. */

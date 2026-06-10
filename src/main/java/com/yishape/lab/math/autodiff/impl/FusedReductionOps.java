@@ -115,14 +115,18 @@ public class FusedReductionOps {
         int n = x.getValue().size();
         double[] xData = x.getValue().getData();
 
-        // Apply element-wise chain
-        double[] mid = forwardElementOps(xData, n);
         int numElem = elementOps.size();
         double[][] saved = null;
+        double[] mid;
+        final boolean midPooled;
         if (numElem > 0) {
             saved = new double[numElem][];
             for (int j = 0; j < numElem; j++) saved[j] = AutodiffBufferPool.acquire(n);
-            forwardElementOpsWithSaved(xData, n, saved);
+            mid = forwardElementOpsWithSaved(xData, n, saved);
+            midPooled = true;
+        } else {
+            mid = xData;
+            midPooled = false;
         }
 
         // Apply reduction
@@ -170,6 +174,7 @@ public class FusedReductionOps {
         final double[] fReduceSaved = reduceSaved;
         final double[] fResult = result;
         final double[] fMid = (reduceOp == ReduceOp.NORMALIZE) ? mid.clone() : mid;
+        final double[] fMidPooled = midPooled ? mid : null;
         final double[] fXData = (numElem > 0) ? xData : null;
 
         Consumer<IDoubleVector> backwardFn = (gradOut) -> {
@@ -212,6 +217,9 @@ public class FusedReductionOps {
                     AutodiffBufferPool.release(fSaved[j]);
                 }
             }
+            if (fMidPooled != null) {
+                AutodiffBufferPool.release(fMidPooled);
+            }
         };
 
         List<RereDiffVector> inputs = new ArrayList<>();
@@ -236,7 +244,7 @@ public class FusedReductionOps {
         return cur;
     }
 
-    private void forwardElementOpsWithSaved(double[] xData, int n, double[][] saved) {
+    private double[] forwardElementOpsWithSaved(double[] xData, int n, double[][] saved) {
         double[] cur = AutodiffBufferPool.acquire(n);
         System.arraycopy(xData, 0, cur, 0, n);
         double[] next = AutodiffBufferPool.acquire(n);
@@ -248,8 +256,8 @@ public class FusedReductionOps {
             }
             double[] tmp = cur; cur = next; next = tmp;
         }
-        AutodiffBufferPool.release(cur);
         AutodiffBufferPool.release(next);
+        return cur;
     }
 
     // ---- Reduction forward helpers ----

@@ -36,6 +36,7 @@ public final class HpcGraphExecutor {
         "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
         "siluSum", "siluMean", "mishSum", "mishMean",
         "expSum", "expMean", "powSum", "powMean", "mulSum", "mulMean",
+        "logSumExp",
         "dot", "broadcast", "matmul", "transpose", "reshape", "flatten",
         "squeeze", "unsqueeze",
         "softmaxCrossEntropy",
@@ -44,7 +45,7 @@ public final class HpcGraphExecutor {
         "mmul", // RereDiffTensor.mmul() uses "mmul" (not "matmul")
         "leaf", "constant",
         // DL CustomOp layers (graphOpTag-based)
-        "linear", "conv2d", "maxpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
+        "linear", "conv2d", "maxpool2d", "avgpool2d", "batchNorm2d", "embedding", "mha", "lstmStep",
         "selectiveScan", "selectiveScan2", "depthwiseConv1d"
     ));
 
@@ -97,6 +98,7 @@ public final class HpcGraphExecutor {
         // root-is-scalar, non-leaf root, in-bounds input references.
         ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
         if (validation.hasErrors()) {
+            System.err.println("[HPC-VALIDATE-FAIL] " + validation.toString().replace("\n", "\n[HPC-VALIDATE-FAIL] "));
             log.warn("HPC graph validation failed — falling back to CPU:\n{}", validation);
             return Double.NaN;
         }
@@ -133,6 +135,7 @@ public final class HpcGraphExecutor {
         // JSON fallback
         String json = TensorGraphExporter.toJson(root);
         if (json == null) {
+            System.err.println("[HPC-JSON-FAIL] TensorGraphExporter.toJson returned null for " + order.size() + " nodes");
             log.debug("HPC tensor graph fallback: JSON export failed");
             return Double.NaN;
         }
@@ -142,6 +145,7 @@ public final class HpcGraphExecutor {
         }
         double[][] result = HpcAutodiff.tryExecute(json);
         if (result == null || result.length < 2 || result[0] == null) {
+            System.err.println("[HPC-EXEC-FAIL] HpcAutodiff.tryExecute returned " + (result == null ? "null" : "invalid: len=" + result.length) + " for " + order.size() + " nodes, json=" + json.length() + " chars");
             log.debug("HPC tensor graph fallback: Rust execution returned null or invalid result");
             return Double.NaN;
         }
@@ -184,6 +188,7 @@ public final class HpcGraphExecutor {
             buf.get(data);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
+                System.err.println("[HPC-BINARY-FAIL] HpcOptionalRuntime.tryExecuteGraphBinary returned " + (resultBytes == null ? "null" : "empty") + " for " + order.size() + " nodes, " + data.length + " bytes");
                 return Double.NaN;
             }
 

@@ -65,8 +65,11 @@ public final class FloatFlatGemm {
     public static float[] flatMmul(float[] a, int m, int k, float[] b, int n) {
         boolean logFine = log.isDebugEnabled();
         float[] c = new float[m * n];
-        // 0. Try GPU f32 directly
-        if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()) {
+        // 0. Try GPU f32 directly (check buffer size first — wgpu panics if exceeded)
+        long maxBufferElems = GpuConfig.maxBufferElements();
+        long maxElems = Math.max(Math.max((long)m*k, (long)k*n), (long)m*n);
+        if (GpuConfig.allowAttempts() && GpuOptionalRuntime.isGpuAvailable()
+                && maxElems <= maxBufferElems) {
             float[] gpuResult = GpuOptionalRuntime.tryFloatFlatMatMul(a, b, m, k, n);
             if (gpuResult != null) {
                 if (logFine) log.debug("flatMmul GPU f32 [{},{}]@[{},{}]", m, k, k, n);

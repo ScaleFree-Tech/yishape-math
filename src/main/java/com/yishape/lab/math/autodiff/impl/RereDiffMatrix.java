@@ -83,7 +83,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
 
     @Override
     public void backward(IDoubleMatrix initialGradient) {
-        this.gradient = initialGradient;
+        this.gradient = initialGradient.copy();
 
         ArrayList<RereDiffMatrix> order = TOPO_LIST.get();
         order.clear();

@@ -30,7 +30,10 @@ public class CheckpointVariable extends RereDiffVector {
         this.tensor.setBackwardFn((self) -> {
             double[] g = self.gradData();
             IDiffVector recomputed = forwardFn.apply(originalInput);
-            RereDiffVector out = (RereDiffVector) recomputed;
+            if (!(recomputed instanceof RereDiffVector out)) {
+                throw new IllegalStateException(
+                    "Checkpoint forwardFn must return RereDiffVector, got " + recomputed.getClass().getName());
+            }
             if (!out.tensor.requiresGrad()) return;
             out.tensor.setGradData(g);
             out.tensor.backwardImpl();

@@ -428,7 +428,7 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
                 case SUBTRACT -> x1[i] - x2[i];
                 case MULTIPLY -> x1[i] * x2[i];
                 case DIVIDE -> x1[i] / x2[i];
-                case REMAINDER -> x1[i] - Math.floor(x1[i] / x2[i]) * x2[i];
+                case REMAINDER -> x1[i] % x2[i];
             };
         }
     }
@@ -559,7 +559,7 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
                 case SUBTRACT -> x1[i] - x2;
                 case MULTIPLY -> x1[i] * x2;
                 case DIVIDE -> x1[i] / x2;
-                case REMAINDER -> x1[i] - Math.floor(x1[i] / x2) * x2;
+                case REMAINDER -> x1[i] % x2;
             };
         }
     }

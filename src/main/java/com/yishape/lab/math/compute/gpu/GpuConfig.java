@@ -47,6 +47,22 @@ public final class GpuConfig {
     }
 
     /**
+     * Maximum number of f64 elements per GPU buffer. GPU stores data as f32
+     * (4 bytes/element), so this translates to maxBufferElements × 4 bytes.
+     * <p>
+     * The real limit is {@code max_storage_buffer_binding_size} (typically
+     * 128 MB = 134,217,728 bytes on consumer GPUs), NOT {@code max_buffer_size}
+     * (256 MB). A buffer that fits in allocation may still be rejected at
+     * bind-group creation time if it exceeds the storage binding cap.
+     * <p>
+     * Default 32M elements × 4 bytes = 128 MB, right at the typical storage
+     * binding limit. Set via {@code -Dyishape.gpu.maxBufferElements=N}.
+     */
+    public static long maxBufferElements() {
+        return parseLong("yishape.gpu.maxBufferElements", 32_000_000L);
+    }
+
+    /**
      * Returns the user-configured GPU memory budget in bytes from system property.
      * 0 = auto-detect (platform-specific VRAM query in Rust).
      * Set via {@code -Dyishape.gpu.maxMemoryBytes=N}.

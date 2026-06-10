@@ -60,6 +60,7 @@ public final class GpuGraphExecutor {
         "siluSum", "siluMean", "mishSum", "mishMean",
         "expSum", "expMean", "squareSum", "squareMean",
         "mulSum", "mulMean", "powSum", "powMean",
+        "logSumExp",
         // DL CustomOp layers (graphOpTag-based)
         "linear", "conv2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
         "batchNorm2d", "embedding", "mha", "lstmStep",
@@ -81,9 +82,12 @@ public final class GpuGraphExecutor {
     /** Ops supported in tensor-native GPU execution (superset). */
     private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(SUPPORTED_OPS);
     static {
+        // NOTE: Keep in sync with Rust gpu_worker's forward_dispatch/backward_dispatch.
+        // Ops NOT yet implemented in Rust: permute, expand, reciprocal, rsub, rdiv,
+        // scatter, slice, narrow. Adding them here before Rust supports them causes
+        // "unsupported forward op: <op>" worker errors and NaN GPU results.
         TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
-            "permute", "expand", "reciprocal", "rsub", "rdiv",
-            "gather", "scatter", "select", "slice", "narrow",
+            "gather", "select",
             "cat", "contiguous"
         ));
     }
@@ -140,8 +144,8 @@ public final class GpuGraphExecutor {
         // when a mismatched shape would produce silently wrong results.
         ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
         if (validation.hasErrors()) {
+            System.err.println("[GPU-VALIDATE-FAIL] " + validation.toString().replace("\n", "\n[GPU-VALIDATE-FAIL] "));
             log.error("GPU graph export BLOCKED: shape validation failed:\n{}", validation);
-            if (VERBOSE) System.err.println("[GPU-VALIDATE-FAIL] " + validation);
             return Double.NaN;
         }
         if (validation.hasWarnings() && VERBOSE) {
@@ -222,11 +226,14 @@ public final class GpuGraphExecutor {
         if (!Double.isNaN(binaryResult)) return binaryResult;
 
         // If the isolated worker subprocess is available but the binary path failed,
-        // skip the JSON fallback. The JSON path calls tryExecuteGraph() which creates
-        // a wgpu Device in the JVM via YishapeGpu.getOrCreateContext(), triggering
+        // skip the JSON fallback by default. The JSON path calls tryExecuteGraph() which
+        // creates a wgpu Device in the JVM via YishapeGpu.getOrCreateContext(), risking
         // the wgpu 29.0.3 Storage::remove non-unwinding abort.
-        if (GpuOptionalRuntime.hasIsolatedWorker()) {
-            if (VERBOSE) System.err.println("[GPU-DIAG] binary path failed, isolated worker available — skipping JSON to avoid wgpu context in JVM");
+        // Set -Dyishape.gpu.allowInProcessFallback=true to permit JSON fallback when the
+        // worker is unavailable (e.g. stale binary, worker bug) but GPU hardware is present.
+        if (GpuOptionalRuntime.hasIsolatedWorker()
+                && !Boolean.getBoolean("yishape.gpu.allowInProcessFallback")) {
+            System.err.println("[GPU-FALLBACK] binary path failed, isolated worker blocks JSON fallback. Set -Dyishape.gpu.allowInProcessFallback=true to permit in-process GPU execution as fallback.");
             return Double.NaN;
         }
 
@@ -325,7 +332,10 @@ public final class GpuGraphExecutor {
             buf.get(data);
 
             byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
-            if (resultBytes == null || resultBytes.length == 0) return Double.NaN;
+            if (resultBytes == null || resultBytes.length == 0) {
+                System.err.println("[GPU-BINARY-FAIL] GpuOptionalRuntime.tryExecuteGraphBinary returned " + (resultBytes == null ? "null" : "empty") + " for " + order.size() + " nodes, " + data.length + " bytes");
+                return Double.NaN;
+            }
 
             java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
 

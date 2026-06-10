@@ -99,6 +99,7 @@ public final class ExportShapeValidator {
 
             switch (op) {
                 case "maxpool2d":
+                case "avgpool2d":
                     validateMaxPool2d(v, order, i, result);
                     break;
                 case "conv2d":
