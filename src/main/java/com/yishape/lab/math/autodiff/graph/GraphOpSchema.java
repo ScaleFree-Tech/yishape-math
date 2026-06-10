@@ -1,5 +1,10 @@
 package com.yishape.lab.math.autodiff.graph;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Canonical input/output index schema for every {@code graphOpTag} used in
  * cross-backend graph execution (Java → JSON → HPC/GPU).
@@ -390,7 +395,106 @@ public final class GraphOpSchema {
             case "selectiveScan"     -> "Selective Scan (Mamba SSM)";
             case "selectiveScan2"    -> "Selective Scan 2 (Chunked)";
             case "trapezoidalScan"   -> "Trapezoidal Scan (Mamba SSM)";
+            case "bceLoss"           -> "Binary Cross Entropy Loss";
+            case "focalLoss"         -> "Focal Loss";
+            case "diceLoss"          -> "Dice Loss";
             default                  -> graphOpTag;
         };
+    }
+
+    // ========================================================================
+    // Supported operation sets — single source of truth
+    // Used by GpuGraphExecutor, HpcGraphExecutor, and yishape-dl GraphIntegrityChecker.
+    // When adding a new op, add its string to the appropriate set below.
+    // SUPPORTED_OPS = ops for vector-based execution (legacy path)
+    // TENSOR_SUPPORTED_OPS = SUPPORTED_OPS + tensor-native extras
+    // ========================================================================
+
+    /** All ops that have GPU WGSL shader implementations (tensor-native path). */
+    public static final class Gpu {
+        public static final Set<String> SUPPORTED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "add", "sub", "mul", "div",
+            "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
+            "neg", "pow", "exp", "log", "sin", "cos", "tan",
+            "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
+            "sum", "mean", "dot", "matmul",
+            "gelu", "softmax", "logSoftmax", "silu", "mish",
+            "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
+            "softmaxCrossEntropy", "softmaxCrossEntropySparse",
+            // NOTE: bceLoss, focalLoss, diceLoss are HPC-only (not yet in GPU Rust backend).
+            "normalize", "layerNorm",
+            "broadcast", "transpose", "reshape", "flatten",
+            "squeeze", "unsqueeze",
+            "mmul",
+            "leaf", "constant",
+            "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
+            "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
+            "siluSum", "siluMean", "mishSum", "mishMean",
+            "expSum", "expMean", "squareSum", "squareMean",
+            "mulSum", "mulMean", "powSum", "powMean",
+            "geluSum", "geluMean", "sinSum", "sinMean", "cosSum", "cosMean",
+            "leakyReluSum", "leakyReluMean", "eluSum", "eluMean",
+            "seluSum", "seluMean", "softplusSum", "softplusMean",
+            "hardtanhSum", "hardtanhMean",
+            "logSumExp",
+            "linear", "conv2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
+            "batchNorm2d", "embedding", "mha", "lstmStep",
+            "selectiveScan", "selectiveScan2", "depthwiseConv1d",
+            "scaledDotProductAttention",
+            "rmsNorm", "groupNorm", "instanceNorm",
+            "interpolate", "gridSample",
+            "cross", "trapezoidalScan", "cat",
+            "gather", "select", "contiguous",
+            "permute", "slice"
+        )));
+    }
+
+    /** All ops that have HPC faer-based implementations (tensor-native path). */
+    public static final class Hpc {
+        public static final Set<String> SUPPORTED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "add", "sub", "mul", "div",
+            "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
+            "neg", "pow", "exp", "log", "sin", "cos", "tan",
+            "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
+            "sum", "mean", "dot", "matmul",
+            "gelu", "softmax", "logSoftmax", "silu", "mish",
+            "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
+            "layerNorm",
+            "broadcast", "transpose", "reshape", "flatten",
+            "squeeze", "unsqueeze",
+            "mmul",
+            "leaf", "constant",
+            "softmaxCrossEntropy", "softmaxCrossEntropySparse",
+            "bceLoss", "focalLoss", "diceLoss",
+            "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
+            "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
+            "siluSum", "siluMean", "mishSum", "mishMean",
+            "expSum", "expMean", "squareSum", "squareMean",
+            "mulSum", "mulMean", "powSum", "powMean",
+            "geluSum", "geluMean", "sinSum", "sinMean", "cosSum", "cosMean",
+            "leakyReluSum", "leakyReluMean", "eluSum", "eluMean",
+            "seluSum", "seluMean", "softplusSum", "softplusMean",
+            "hardtanhSum", "hardtanhMean",
+            "logSumExp",
+            "linear", "conv2d", "maxpool2d", "avgpool2d", "batchNorm2d",
+            "embedding", "mha", "lstmStep",
+            "selectiveScan", "selectiveScan2", "depthwiseConv1d",
+            "permute", "expand", "reciprocal", "rsub", "rdiv",
+            "gather", "scatter", "select", "slice", "narrow",
+            "cat", "contiguous",
+            "batchNorm", "groupNorm"
+        )));
+    }
+
+    /**
+     * Union of GPU + HPC tensor-supported ops.
+     * Used by GraphIntegrityChecker for graph integrity validation.
+     * An op must appear in GPU_TENSOR or HPC_TENSOR to pass the check.
+     */
+    public static final Set<String> COMMON_TENSOR;
+    static {
+        HashSet<String> u = new HashSet<>(Gpu.SUPPORTED);
+        u.addAll(Hpc.SUPPORTED);
+        COMMON_TENSOR = Collections.unmodifiableSet(u);
     }
 }

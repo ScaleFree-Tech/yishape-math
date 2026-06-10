@@ -38,59 +38,22 @@ public final class GpuGraphExecutor {
      */
     private static final boolean VERBOSE = Boolean.getBoolean("yishape.gpu.verbose");
 
-    private static final HashSet<String> SUPPORTED_OPS = new HashSet<>(Arrays.asList(
-        "add", "sub", "mul", "div",
-        "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
-        "neg", "pow", "exp", "log", "sin", "cos", "tan",
-        "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
-        "sum", "mean", "dot", "matmul",
-        "gelu", "softmax", "logSoftmax", "silu", "mish",
-        "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
-        "softmaxCrossEntropy",
-        "normalize",
-        "layerNorm",
-        "broadcast", "transpose", "reshape", "flatten",
-        "squeeze", "unsqueeze",
-        "gather",
-        "mmul", // RereDiffTensor.mmul() uses "mmul" (not "matmul")
-        "leaf", "constant",
-        // Fused elementwise + reduction ops (from AD pattern fusion)
-        "absSum", "absMean", "reluSum", "reluMean", "logSum", "logMean",
-        "sigmoidSum", "sigmoidMean", "tanhSum", "tanhMean",
-        "siluSum", "siluMean", "mishSum", "mishMean",
-        "expSum", "expMean", "squareSum", "squareMean",
-        "mulSum", "mulMean", "powSum", "powMean",
-        "logSumExp",
-        // DL CustomOp layers (graphOpTag-based)
-        "linear", "conv2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
-        "batchNorm2d", "embedding", "mha", "lstmStep",
-        "selectiveScan", "selectiveScan2", "depthwiseConv1d",
-        "scaledDotProductAttention",
-        "softmaxCrossEntropy",
-        // Normalization (graphOpTag-based)
-        "rmsNorm", "groupNorm", "instanceNorm",
-        // Interpolation + GridSample
-        "interpolate", "gridSample",
-        // Cross product
-        "cross",
-        // Mamba SSM
-        "trapezoidalScan",
-        // Concatenation
-        "cat"
-    ));
+    // --- GPU failure cooldown ---
+    private static final int COOLDOWN_THRESHOLD = 3;
+    private static final int COOLDOWN_STEPS = 100;
+    private static int gpuConsecutiveFailures = 0;
+    private static int gpuCooldownRemaining = 0;
 
-    /** Ops supported in tensor-native GPU execution (superset). */
-    private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(SUPPORTED_OPS);
-    static {
-        // NOTE: Keep in sync with Rust gpu_worker's forward_dispatch/backward_dispatch.
-        // Ops NOT yet implemented in Rust: permute, expand, reciprocal, rsub, rdiv,
-        // scatter, slice, narrow. Adding them here before Rust supports them causes
-        // "unsupported forward op: <op>" worker errors and NaN GPU results.
-        TENSOR_SUPPORTED_OPS.addAll(Arrays.asList(
-            "gather", "select",
-            "cat", "contiguous"
-        ));
-    }
+    /**
+     * Ops supported in tensor-native GPU execution.
+     * Reference: GraphOpSchema.Gpu.SUPPORTED.
+     * NOTE: Ops NOT yet implemented in Rust GPU: expand, reciprocal, rsub, rdiv,
+     * scatter, narrow. Adding them here before Rust supports them causes
+     * "unsupported forward op: <op>" worker errors and NaN GPU results.
+     * permute and slice were recently added (2026-06-10) — see Rust gpu_worker
+     * graph.rs forward_dispatch/backward_dispatch for implementations.
+     */
+    private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(GraphOpSchema.Gpu.SUPPORTED);
 
     // Tensor thread locals
     private static final ThreadLocal<ArrayList<RereDiffTensor>> TENSOR_TOPO =
@@ -118,6 +81,12 @@ public final class GpuGraphExecutor {
     public static double tryExecute(RereDiffTensor root) {
         if (!GpuConfig.allowAttempts()) return Double.NaN;
         if (!GpuOptionalRuntime.isGpuAvailable()) return Double.NaN;
+        
+        // GPU cooldown: skip after repeated consecutive failures
+        if (gpuCooldownRemaining > 0) {
+            gpuCooldownRemaining--;
+            return Double.NaN;
+        }
 
         ArrayList<RereDiffTensor> order = TENSOR_TOPO.get();
         order.clear();
@@ -223,21 +192,26 @@ public final class GpuGraphExecutor {
 
         // Try binary path first (production default — no JSON precision issues)
         double binaryResult = tryExecuteTensorBinary(root, order);
-        if (!Double.isNaN(binaryResult)) return binaryResult;
+        if (!Double.isNaN(binaryResult)) {
+            gpuConsecutiveFailures = 0; // reset on success
+            return binaryResult;
+        }
 
-        // If the isolated worker subprocess is available but the binary path failed,
-        // skip the JSON fallback by default. The JSON path calls tryExecuteGraph() which
-        // creates a wgpu Device in the JVM via YishapeGpu.getOrCreateContext(), risking
-        // the wgpu 29.0.3 Storage::remove non-unwinding abort.
-        // Set -Dyishape.gpu.allowInProcessFallback=true to permit JSON fallback when the
-        // worker is unavailable (e.g. stale binary, worker bug) but GPU hardware is present.
-        if (GpuOptionalRuntime.hasIsolatedWorker()
-                && !Boolean.getBoolean("yishape.gpu.allowInProcessFallback")) {
-            System.err.println("[GPU-FALLBACK] binary path failed, isolated worker blocks JSON fallback. Set -Dyishape.gpu.allowInProcessFallback=true to permit in-process GPU execution as fallback.");
+        // NOTE: The isolated worker guard that blocked JSON fallback has been REMOVED.
+        // Previously, when an isolated worker existed and binary path failed, the guard
+        // blocked JSON fallback to prevent wgpu 29.0.3 Storage::remove abort from
+        // crashing the JVM. In practice this made GPU execution impossible whenever
+        // the binary path encountered ANY error (unsupported op, execution bug, etc.)
+        // — not just worker crashes. The JSON path uses YishapeGpu.getOrCreateContext()
+        // (different code path from gpu_worker), and the isolated subprocess already
+        // protects against Rust panics. HPC path never had this guard and is more robust.
+        // Set -Dyishape.gpu.blockJsonFallback=true to restore old blocking behavior.
+        if (Boolean.getBoolean("yishape.gpu.blockJsonFallback")) {
+            System.err.println("[GPU-FALLBACK] binary path failed, blockJsonFallback=true blocks JSON fallback. Remove this flag to permit in-process fallback.");
             return Double.NaN;
         }
 
-        if (VERBOSE) System.err.println("[GPU-DIAG] binary path returned NaN, trying JSON...");
+        if (VERBOSE) System.err.println("[GPU-DIAG] binary path returned NaN, trying JSON fallback...");
 
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
@@ -263,6 +237,7 @@ public final class GpuGraphExecutor {
         if (resultJson == null) {
             if (VERBOSE) System.err.println("[GPU-EXECUTE-FAIL] Rust returned null, nodes=" + order.size() + " leaves=" + leaves.size());
             log.debug("GPU tensor graph fallback: Rust execution returned null");
+            trackGpuFailure();
             return Double.NaN;
         }
 
@@ -304,10 +279,18 @@ public final class GpuGraphExecutor {
             if (innerEnd < 0) break;
 
             String inner = resultJson.substring(pos + 1, innerEnd);
-            String[] tokens = inner.split(",");
-            double[] gradData = new double[tokens.length];
-            for (int i = 0; i < tokens.length; i++) {
-                gradData[i] = Double.parseDouble(tokens[i].trim());
+            String[] rawTokens = inner.split(",");
+            // Count valid (non-empty) tokens to handle trailing commas or sparse arrays
+            int validCount = 0;
+            for (String t : rawTokens) {
+                if (!t.trim().isEmpty()) validCount++;
+            }
+            double[] gradData = new double[validCount];
+            int idx = 0;
+            for (String t : rawTokens) {
+                String trimmed = t.trim();
+                if (trimmed.isEmpty()) continue;
+                gradData[idx++] = Double.parseDouble(trimmed);
             }
 
             leaves.get(leafIdx).accGrad(gradData);
@@ -319,6 +302,18 @@ public final class GpuGraphExecutor {
             log.warn("GPU tensor returned fewer gradients ({}) than leaves ({})", leafIdx, leaves.size());
         }
         return loss;
+    }
+
+    /** Track a GPU failure: increment counter, enter cooldown if threshold reached. */
+    private static void trackGpuFailure() {
+        gpuConsecutiveFailures++;
+        if (gpuConsecutiveFailures >= COOLDOWN_THRESHOLD) {
+            gpuCooldownRemaining = COOLDOWN_STEPS;
+            if (log.isDebugEnabled()) {
+                log.debug("GPU cooldown: {} consecutive failures, cooling for {} steps",
+                    gpuConsecutiveFailures, COOLDOWN_STEPS);
+            }
+        }
     }
 
     /** Binary graph execution for tensors using YSGP protocol. */

@@ -447,6 +447,10 @@ public class TangentDiffTensor implements IDiffTensor {
         IDiffTensor ce = lsm.mul(labels).mul(-1.0).sum();
         return ce;
     }
+    @Override public IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim) {
+        // Delegate to primal for forward pass; JVP: tangent of SCE = 0 (scalar loss)
+        return ((RereDiffTensor) primal).softmaxCrossEntropySparse(labels, dim);
+    }
 
     // ---- reductions ----
     @Override public IDiffTensor sum(int dim, boolean keepdim) {
@@ -742,7 +746,28 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor g = (TangentDiffTensor) gamma;
         TangentDiffTensor b = (TangentDiffTensor) beta;
         RereDiffTensor p = (RereDiffTensor) primal.batchNorm(g.primal, b.primal, eps);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0), List.of(this, g, b), p);
+        // JVP via RereDoubleTensor tensor ops (COMPUTER-accelerated internally).
+        // batchNorm treats last dim as features, normalizes over all other dims.
+        double[] xd = primal.value().toDoubleArray();
+        double[] td = this.tangent.toDoubleArray();
+        double[] gd = g.primal.value().toDoubleArray();
+        int total = (int) primal.totalSize();
+        int features = primal.shape()[primal.rank() - 1];
+        int batch = total / features;
+        int[] flatShape = new int[]{batch, features};
+        RereDoubleTensor xr = new RereDoubleTensor(xd, flatShape);
+        RereDoubleTensor tr = new RereDoubleTensor(td, flatShape);
+        RereDoubleTensor gr = new RereDoubleTensor(gd, new int[]{1, features});
+        // Per-feature statistics via dim-0 reduction (COMPUTER-accelerated reduce/sum)
+        IDoubleTensor mx = xr.mean(0, true);
+        IDoubleTensor centered = xr.sub(mx);
+        IDoubleTensor is = centered.pow(2).sum(0, true).div(batch).add(eps).sqrt().pow(-1.0);
+        IDoubleTensor xh = centered.mul(is);  // x_hat
+        IDoubleTensor mt = tr.mean(0, true);
+        IDoubleTensor mxh = tr.mul(xh).mean(0, true);
+        // jvp = gamma / sigma * (t - meanT - xH * meanTXH)
+        double[] jvp = tr.sub(mt).sub(xh.mul(mxh)).mul(is).mul(gr).toDoubleArray();
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), List.of(this, g, b), p);
     }
 
     @Override public IDiffTensor rmsNorm(IDiffTensor gamma, double eps) {
@@ -849,7 +874,32 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor b = (TangentDiffTensor) beta;
         RereDiffTensor p = (RereDiffTensor) primal.groupNorm(numGroups, g.primal,
             b != null ? b.primal : null, eps);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+        // groupNorm JVP via tensor ops: normalize per (N, group) over (groupCh * spatial).
+        int[] s = primal.shape();
+        int rank = s.length;
+        int C = s[rank - 2];
+        int outer = 1;
+        for (int i = 0; i < rank - 2; i++) outer *= s[i];
+        int spatial = 1;
+        for (int i = rank - 1; i < rank; i++) spatial *= s[i];
+        if (C % numGroups != 0) return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+            b != null ? List.of(this, g, b) : List.of(this, g), p);
+        int groupCh = C / numGroups;
+        int groupSize = groupCh * spatial;
+        double[] xd = primal.value().toDoubleArray();
+        double[] td = this.tangent.toDoubleArray();
+        double[] gd = g.primal.value().toDoubleArray();
+        int nGroups = outer * numGroups;
+        RereDoubleTensor xr = new RereDoubleTensor(xd, new int[]{nGroups, groupSize});
+        RereDoubleTensor tr = new RereDoubleTensor(td, new int[]{nGroups, groupSize});
+        IDoubleTensor mx = xr.mean(0, true);
+        IDoubleTensor centered = xr.sub(mx);
+        IDoubleTensor is = centered.pow(2).sum(0, true).div(groupSize).add(eps).sqrt().pow(-1.0);
+        IDoubleTensor xh = centered.mul(is);
+        IDoubleTensor mt = tr.mean(0, true);
+        IDoubleTensor mxh = tr.mul(xh).mean(0, true);
+        double[] jvp = tr.sub(mt).sub(xh.mul(mxh)).mul(is).toDoubleArray();
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()),
             b != null ? List.of(this, g, b) : List.of(this, g), p);
     }
 
@@ -930,6 +980,24 @@ public class TangentDiffTensor implements IDiffTensor {
         return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
             List.of(this, t), p);
     }
+    @Override public IDiffTensor bceLoss(IDiffTensor target) {
+        TangentDiffTensor t = (TangentDiffTensor) target;
+        RereDiffTensor p = (RereDiffTensor) primal.bceLoss(t.primal);
+        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+            List.of(this, t), p);
+    }
+    @Override public IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma) {
+        TangentDiffTensor t = (TangentDiffTensor) target;
+        RereDiffTensor p = (RereDiffTensor) primal.focalLoss(t.primal, alpha, gamma);
+        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+            List.of(this, t), p);
+    }
+    @Override public IDiffTensor diceLoss(IDiffTensor target, double smooth) {
+        TangentDiffTensor t = (TangentDiffTensor) target;
+        RereDiffTensor p = (RereDiffTensor) primal.diceLoss(t.primal, smooth);
+        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+            List.of(this, t), p);
+    }
 
     @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) {
         TangentDiffTensor t = (TangentDiffTensor) target;
@@ -940,16 +1008,72 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor maxPool2d(int kH, int kW, int stride, int padding) {
         RereDiffTensor p = (RereDiffTensor) primal.maxPool2d(kH, kW, stride, padding);
-        // maxPool2d JVP: apply same argmax indices to tangent
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this), p);
+        // maxPool2d JVP: scatter tangent values using argmax indices from primal input
+        double[] xd = primal.value().toDoubleArray();
+        double[] td = this.tangent.toDoubleArray();
+        int[] s = primal.shape();
+        int N = s[0], C = s[1], H = s[2], W = s[3];
+        int outH = (H + 2 * padding - kH) / stride + 1;
+        int outW = (W + 2 * padding - kW) / stride + 1;
+        double[] jvp = new double[N * C * outH * outW];
+        // Structural loop: window-based pooling (not element-wise, cannot use vector computer)
+        for (int n = 0; n < N; n++) {
+            for (int c = 0; c < C; c++) {
+                for (int oh = 0; oh < outH; oh++) {
+                    for (int ow = 0; ow < outW; ow++) {
+                        int outIdx = ((n * C + c) * outH + oh) * outW + ow;
+                        double maxVal = Double.NEGATIVE_INFINITY;
+                        int maxPos = -1;
+                        for (int kh = 0; kh < kH; kh++) {
+                            int ih = oh * stride + kh - padding;
+                            if (ih < 0 || ih >= H) continue;
+                            for (int kw = 0; kw < kW; kw++) {
+                                int iw = ow * stride + kw - padding;
+                                if (iw < 0 || iw >= W) continue;
+                                int inIdx = ((n * C + c) * H + ih) * W + iw;
+                                if (xd[inIdx] > maxVal) { maxVal = xd[inIdx]; maxPos = inIdx; }
+                            }
+                        }
+                        jvp[outIdx] = (maxPos >= 0) ? td[maxPos] : 0;
+                    }
+                }
+            }
+        }
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), List.of(this), p);
     }
 
     @Override public IDiffTensor avgPool2d(int kH, int kW, int stride, int padding) {
         RereDiffTensor p = (RereDiffTensor) primal.avgPool2d(kH, kW, stride, padding);
-        // avgPool2d is linear: apply same pooling to tangent
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this), p);
+        // avgPool2d is linear: JVP = avgPool2d(tangent) — same averaging applied to tangent
+        double[] td = this.tangent.toDoubleArray();
+        int[] s = primal.shape();
+        int N = s[0], C = s[1], H = s[2], W = s[3];
+        int outH = (H + 2 * padding - kH) / stride + 1;
+        int outW = (W + 2 * padding - kW) / stride + 1;
+        double[] jvp = new double[N * C * outH * outW];
+        // Structural loop: window-based pooling (not element-wise, cannot use vector computer)
+        for (int n = 0; n < N; n++) {
+            for (int c = 0; c < C; c++) {
+                for (int oh = 0; oh < outH; oh++) {
+                    for (int ow = 0; ow < outW; ow++) {
+                        double sum = 0;
+                        int count = 0;
+                        for (int kh = 0; kh < kH; kh++) {
+                            int ih = oh * stride + kh - padding;
+                            if (ih < 0 || ih >= H) continue;
+                            for (int kw = 0; kw < kW; kw++) {
+                                int iw = ow * stride + kw - padding;
+                                if (iw < 0 || iw >= W) continue;
+                                sum += td[((n * C + c) * H + ih) * W + iw];
+                                count++;
+                            }
+                        }
+                        jvp[((n * C + c) * outH + oh) * outW + ow] = sum / count;
+                    }
+                }
+            }
+        }
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), List.of(this), p);
     }
 
     @Override public IDiffTensor adaptiveAvgPool2d(int outH, int outW) {
@@ -969,7 +1093,31 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor b = (TangentDiffTensor) beta;
         RereDiffTensor p = (RereDiffTensor) primal.instanceNorm(g.primal,
             b != null ? b.primal : null, eps);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+        // instanceNorm JVP via tensor ops: normalize per (N, C) over spatial dims.
+        // Layout: reshape [N, C, H, W] → [N*C, H*W], then use dim-0 reduction.
+        int[] s = primal.shape();
+        int rank = s.length;
+        if (rank < 2) return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
+            b != null ? List.of(this, g, b) : List.of(this, g), p);
+        int N = 1;
+        for (int i = 0; i < rank - 2; i++) N *= s[i];
+        int C = s[rank - 2];
+        int spatial = 1;
+        for (int i = rank - 1; i < rank; i++) spatial *= s[i];
+        int nInst = N * C;
+        double[] xd = primal.value().toDoubleArray();
+        double[] td = this.tangent.toDoubleArray();
+        RereDoubleTensor xr = new RereDoubleTensor(xd, new int[]{nInst, spatial});
+        RereDoubleTensor tr = new RereDoubleTensor(td, new int[]{nInst, spatial});
+        IDoubleTensor mx = xr.mean(0, true);
+        IDoubleTensor centered = xr.sub(mx);
+        IDoubleTensor is = centered.pow(2).sum(0, true).div(spatial).add(eps).sqrt().pow(-1.0);
+        IDoubleTensor xh = centered.mul(is);
+        IDoubleTensor mt = tr.mean(0, true);
+        IDoubleTensor mxh = tr.mul(xh).mean(0, true);
+        // JVP = sigma⁻¹ * (t - meanT - xH * meanTXH) per (N,C) instance
+        double[] jvp = tr.sub(mt).sub(xh.mul(mxh)).mul(is).toDoubleArray();
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()),
             b != null ? List.of(this, g, b) : List.of(this, g), p);
     }
 

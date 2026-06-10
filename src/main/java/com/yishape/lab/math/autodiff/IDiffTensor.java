@@ -91,6 +91,15 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor logSoftmax(int dim);
     IDiffTensor softmaxCrossEntropy(IDoubleTensor labels, int dim);
 
+    /**
+     * Fused softmax + cross-entropy with sparse integer labels (class indices).
+     * Single fused node — avoids the 6-node logSumExp→sub→gather→sum→div→neg chain.
+     * @param labels integer class indices, one per sample, each in [0, classSize)
+     * @param dim    the class dimension
+     * @return scalar loss = mean(-log(softmax[target]))
+     */
+    IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim);
+
     // ==================== Loss Functions ====================
 
     /** Mean Squared Error loss: mean((this - target)^2). Returns scalar tensor [1]. */
@@ -110,6 +119,36 @@ public interface IDiffTensor extends IDoubleTensor {
      * Returns scalar tensor [1].
      */
     IDiffTensor smoothL1Loss(IDiffTensor target, double beta);
+
+    /**
+     * Binary Cross Entropy loss (fused single-node).
+     * Computes: -mean(y*log(clamp(p,eps,1-eps)) + (1-y)*log(clamp(1-p,eps,1-eps))).
+     * Prediction p must be in (0,1) — applies clamp internally for numerical stability.
+     * @param target binary labels, same shape as input
+     * @return scalar tensor [1]
+     */
+    IDiffTensor bceLoss(IDiffTensor target);
+
+    /**
+     * Focal Loss (Lin et al., RetinaNet) — fused single-node.
+     * FL(p_t) = mean(α_t * (1 - p_t)^γ * (-log(p_t)))
+     * where p_t = p if y=1 else 1-p, α_t = α if y=1 else 1-α.
+     * Prediction p must be in (0,1) — applies clamp internally.
+     * @param target binary labels, same shape as input
+     * @param alpha class weighting (α for foreground)
+     * @param gamma focusing parameter (γ ≥ 0)
+     * @return scalar tensor [1]
+     */
+    IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma);
+
+    /**
+     * Dice Loss for segmentation — fused single-node.
+     * Computes: 1 - (2*sum(p*t) + smooth) / (sum(p) + sum(t) + smooth)
+     * @param target binary labels, same shape as input
+     * @param smooth Laplace smoothing constant (prevents division by zero)
+     * @return scalar tensor [1]
+     */
+    IDiffTensor diceLoss(IDiffTensor target, double smooth);
 
     /**
      * Binary Cross Entropy with Logits Loss (numerically stable).

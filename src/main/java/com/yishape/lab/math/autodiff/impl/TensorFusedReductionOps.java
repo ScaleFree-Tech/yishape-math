@@ -1,8 +1,12 @@
 package com.yishape.lab.math.autodiff.impl;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
@@ -25,6 +29,8 @@ import java.util.function.DoubleUnaryOperator;
  */
 public final class TensorFusedReductionOps {
 
+    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
+
     private final RereDiffTensor root;
     private final int totalSize;
     private final int[] originalShape;
@@ -42,6 +48,19 @@ public final class TensorFusedReductionOps {
 
     // ── Element-wise builder methods ──
 
+    /** Register a unary op with a universal operation (SIMD-accelerated forward). */
+    private TensorFusedReductionOps addOp(UniversalOperation uop,
+                                           DoubleBinaryOperator backward, String tag) {
+        double[] input = cur;
+        double[] output = COMPUTER.universalOperate(input, uop, 0.0);
+        opInputs.add(input);
+        opBackwards.add(backward);
+        opTags.add(tag);
+        cur = output;
+        return this;
+    }
+
+    /** Register a unary op with a custom lambda forward (no SIMD). */
     private TensorFusedReductionOps addOp(DoubleUnaryOperator forward,
                                            DoubleBinaryOperator backward, String tag) {
         double[] input = cur;
@@ -54,30 +73,33 @@ public final class TensorFusedReductionOps {
         return this;
     }
 
-    // ---- Standard element-wise ops ----
+    // ---- Standard element-wise ops (SIMD-accelerated where universal op exists) ----
 
-    public TensorFusedReductionOps exp()    { return addOp(Math::exp,  (g, x) -> g * Math.exp(x), "exp"); }
-    public TensorFusedReductionOps log()    { return addOp(Math::log,  (g, x) -> g / x, "log"); }
-    public TensorFusedReductionOps sqrt()   { return addOp(Math::sqrt, (g, x) -> g / (2.0 * Math.sqrt(x)), "sqrt"); }
-    public TensorFusedReductionOps neg()    { return addOp(x -> -x,    (g, x) -> -g, "neg"); }
-    public TensorFusedReductionOps relu()   { return addOp(x -> x > 0 ? x : 0, (g, x) -> x > 0 ? g : 0, "relu"); }
-    public TensorFusedReductionOps square() { return addOp(x -> x*x, (g, x) -> g * 2.0 * x, "square"); }
-    public TensorFusedReductionOps sigmoid(){ return addOp(x -> 1.0/(1.0+Math.exp(-x)), (g, x) -> { double s = 1.0/(1.0+Math.exp(-x)); return g * s * (1-s); }, "sigmoid"); }
-    public TensorFusedReductionOps tanh()   { return addOp(Math::tanh, (g, x) -> { double t = Math.tanh(x); return g * (1.0 - t*t); }, "tanh"); }
-    public TensorFusedReductionOps abs()    { return addOp(Math::abs,  (g, x) -> x >= 0 ? g : -g, "abs"); }
-    public TensorFusedReductionOps sin()    { return addOp(Math::sin,  (g, x) -> g * Math.cos(x), "sin"); }
-    public TensorFusedReductionOps cos()    { return addOp(Math::cos,  (g, x) -> -g * Math.sin(x), "cos"); }
-    public TensorFusedReductionOps silu()   { return addOp(x -> x / (1.0 + Math.exp(-x)), (g, x) -> {
-            double s = 1.0/(1.0+Math.exp(-x));
-            return g * (s + x * s * (1.0 - s));
-        }, "silu"); }
-    public TensorFusedReductionOps gelu()   { return addOp(x -> x * 0.5 * (1.0 + Math.tanh(Math.sqrt(2.0 / Math.PI) * (x + 0.044715 * x * x * x))), (g, x) -> {
+    public TensorFusedReductionOps exp()    { return addOp(UniversalOperation.EXP,  (g, x) -> g * Math.exp(x), "exp"); }
+    public TensorFusedReductionOps log()    { return addOp(UniversalOperation.LOG,  (g, x) -> g / x, "log"); }
+    public TensorFusedReductionOps sqrt()   { return addOp(UniversalOperation.SQRT, (g, x) -> g / (2.0 * Math.sqrt(x)), "sqrt"); }
+    public TensorFusedReductionOps relu()   { return addOp(UniversalOperation.RELU, (g, x) -> x > 0 ? g : 0, "relu"); }
+    public TensorFusedReductionOps sigmoid(){ return addOp(UniversalOperation.SIGMOID, (g, x) -> { double s = 1.0/(1.0+Math.exp(-x)); return g * s * (1-s); }, "sigmoid"); }
+    public TensorFusedReductionOps tanh()   { return addOp(UniversalOperation.TANH, (g, x) -> { double t = Math.tanh(x); return g * (1.0 - t*t); }, "tanh"); }
+    public TensorFusedReductionOps abs()    { return addOp(UniversalOperation.ABS,  (g, x) -> x >= 0 ? g : -g, "abs"); }
+    public TensorFusedReductionOps sin()    { return addOp(UniversalOperation.SIN,  (g, x) -> g * Math.cos(x), "sin"); }
+    public TensorFusedReductionOps cos()    { return addOp(UniversalOperation.COS,  (g, x) -> -g * Math.sin(x), "cos"); }
+    public TensorFusedReductionOps gelu()   { return addOp(UniversalOperation.GELU, (g, x) -> {
             double c = Math.sqrt(2.0 / Math.PI);
             double t = Math.tanh(c * (x + 0.044715 * x * x * x));
             double dt = 1.0 - t * t;
             double dx = c * (1.0 + 3.0 * 0.044715 * x * x);
             return g * (0.5 * (1.0 + t) + 0.5 * x * dt * dx);
         }, "gelu"); }
+
+    // ---- Scalar-fallback ops (no UniversalOperation) ----
+
+    public TensorFusedReductionOps neg()    { return addOp(x -> -x,    (g, x) -> -g, "neg"); }
+    public TensorFusedReductionOps square() { return addOp(x -> x*x, (g, x) -> g * 2.0 * x, "square"); }
+    public TensorFusedReductionOps silu()   { return addOp(x -> x / (1.0 + Math.exp(-x)), (g, x) -> {
+            double s = 1.0/(1.0+Math.exp(-x));
+            return g * (s + x * s * (1.0 - s));
+        }, "silu"); }
     public TensorFusedReductionOps mish()   { return addOp(x -> x * Math.tanh(Math.log1p(Math.exp(x))), (g, x) -> {
             double sp = Math.log1p(Math.exp(x));
             double t = Math.tanh(sp);
@@ -98,6 +120,45 @@ public final class TensorFusedReductionOps {
         return addOp(x -> x * s, (g, x) -> g * s, "mulScalar");
     }
 
+    // ---- Extended unary ops (no UniversalOperation) ----
+
+    public TensorFusedReductionOps leakyRelu(double alpha) {
+        return addOp(x -> x > 0 ? x : alpha * x,
+                     (g, x) -> x > 0 ? g : g * alpha, "leakyRelu");
+    }
+
+    public TensorFusedReductionOps elu(double alpha) {
+        return addOp(x -> x > 0 ? x : alpha * (Math.exp(x) - 1),
+                     (g, x) -> x > 0 ? g : g * alpha * Math.exp(x), "elu");
+    }
+
+    public TensorFusedReductionOps selu() {
+        final double lambda = 1.0507009873554804934193349852946;
+        final double alpha = 1.6732632423543772848170429916717;
+        return addOp(x -> x > 0 ? lambda * x : lambda * alpha * (Math.exp(x) - 1),
+                     (g, x) -> x > 0 ? g * lambda : g * lambda * alpha * Math.exp(x), "selu");
+    }
+
+    public TensorFusedReductionOps softplus() {
+        return addOp(x -> x > 20 ? x : Math.log1p(Math.exp(x)),
+                     (g, x) -> x > 20 ? g : g / (1.0 + Math.exp(-x)), "softplus");
+    }
+
+    public TensorFusedReductionOps hardtanh(double min, double max) {
+        return addOp(x -> x < min ? min : (x > max ? max : x),
+                     (g, x) -> (x < min || x > max) ? 0 : g, "hardtanh");
+    }
+
+    // ---- Scalar binary ops ----
+
+    public TensorFusedReductionOps sub(double s) {
+        return addOp(x -> x - s, (g, x) -> g, "subScalar");
+    }
+
+    public TensorFusedReductionOps div(double s) {
+        return addOp(x -> x / s, (g, x) -> g / s, "divScalar");
+    }
+
     // ── Reduction terminators ──
 
     /**
@@ -112,10 +173,9 @@ public final class TensorFusedReductionOps {
         return buildFusedNode(result, outShape, chainTag, "sum", dim, keepdim);
     }
 
-    /** Reduce-sum over all elements. */
+    /** Reduce-sum over all elements (SIMD-accelerated). */
     public IDiffTensor sum() {
-        double s = 0;
-        for (int i = 0; i < totalSize; i++) s += cur[i];
+        double s = COMPUTER.reduceOperate(cur, ReduceOperation.SUM);
         String chainTag = opTags.isEmpty() ? "sum" : String.join("_", opTags) + "_sum";
         return buildFusedNode(new double[]{s}, new int[]{1}, chainTag, "sumAll", -1, false);
     }
@@ -129,19 +189,16 @@ public final class TensorFusedReductionOps {
         int[] outShape = reducedShape(originalShape, dim, keepdim);
         double scale = 1.0 / originalShape[dim];
         double[] summed = reduceSum(cur, originalShape, dim);
-        double[] result = new double[summed.length];
-        for (int i = 0; i < summed.length; i++) result[i] = summed[i] * scale;
+        double[] result = COMPUTER.binaryOperate(summed, scale, com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
         String chainTag = opTags.isEmpty() ? "mean" : String.join("_", opTags) + "_mean";
         return buildFusedNode(result, outShape, chainTag, "mean", dim, keepdim);
     }
 
-    /** Reduce-mean over all elements. */
+    /** Reduce-mean over all elements (SIMD-accelerated). */
     public IDiffTensor mean() {
-        double s = 0;
-        for (int i = 0; i < totalSize; i++) s += cur[i];
-        double meanVal = s / totalSize;
+        double s = COMPUTER.reduceOperate(cur, ReduceOperation.SUM) / totalSize;
         String chainTag = opTags.isEmpty() ? "mean" : String.join("_", opTags) + "_mean";
-        return buildFusedNode(new double[]{meanVal}, new int[]{1}, chainTag, "meanAll", -1, false);
+        return buildFusedNode(new double[]{s}, new int[]{1}, chainTag, "meanAll", -1, false);
     }
 
     /**
@@ -152,6 +209,17 @@ public final class TensorFusedReductionOps {
         double[] result = softmaxForward(cur, originalShape, dim);
         String chainTag = opTags.isEmpty() ? "softmax" : String.join("_", opTags) + "_softmax";
         return buildFusedNode(result, outShape, chainTag, "softmax", dim, false);
+    }
+
+    /**
+     * Log-softmax along a specific dimension.
+     * Numerically stable: x - logSumExp(x) = log(softmax(x)).
+     */
+    public IDiffTensor logSoftmax(int dim) {
+        int[] outShape = originalShape.clone();
+        double[] result = logSoftmaxForward(cur, originalShape, dim);
+        String chainTag = opTags.isEmpty() ? "logSoftmax" : String.join("_", opTags) + "_logSoftmax";
+        return buildFusedNode(result, outShape, chainTag, "logSoftmax", dim, false);
     }
 
     // ── Internal: reduction forward ──
@@ -220,6 +288,37 @@ public final class TensorFusedReductionOps {
         return result;
     }
 
+    static double[] logSoftmaxForward(double[] data, int[] shape, int dim) {
+        int d = dim;
+        int rank = shape.length;
+        int outer = 1, reduce = shape[d], inner = 1;
+        for (int i = 0; i < d; i++) outer *= shape[i];
+        for (int i = d + 1; i < rank; i++) inner *= shape[i];
+
+        double[] result = new double[data.length];
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                // Find max for numerical stability
+                double maxVal = Double.NEGATIVE_INFINITY;
+                for (int r = 0; r < reduce; r++) {
+                    double v = data[(o * reduce + r) * inner + i];
+                    if (v > maxVal) maxVal = v;
+                }
+                // Compute logSumExp = max + log(sum(exp(x - max)))
+                double sumExp = 0;
+                for (int r = 0; r < reduce; r++) {
+                    sumExp += Math.exp(data[(o * reduce + r) * inner + i] - maxVal);
+                }
+                double lse = maxVal + Math.log(sumExp);
+                // logSoftmax = x - logSumExp
+                for (int r = 0; r < reduce; r++) {
+                    result[(o * reduce + r) * inner + i] = data[(o * reduce + r) * inner + i] - lse;
+                }
+            }
+        }
+        return result;
+    }
+
     // ── Internal: fused node construction ──
 
     private IDiffTensor buildFusedNode(double[] result, int[] outShape,
@@ -231,7 +330,8 @@ public final class TensorFusedReductionOps {
 
         int n = totalSize;
         double[] inData = cur; // element-wise output = input to reduction
-        double[] softmaxOut = "softmax".equals(reduceTag) ? result : null; // softmax probabilities for backward
+        double[] softmaxOut = "softmax".equals(reduceTag) ? result : null;
+        double[] logSoftmaxOut = "logSoftmax".equals(reduceTag) ? result : null;
         int[] origShape = originalShape;
 
         // Capture for backward
@@ -246,14 +346,15 @@ public final class TensorFusedReductionOps {
                 case "sum" -> reductionBackwardSum(self.gradData(), gradBuf, origShape, reduceDim);
                 case "sumAll" -> {
                     double g = self.gradData()[0];
-                    for (int i = 0; i < n; i++) gradBuf[i] = g;
+                    Arrays.fill(gradBuf, 0, n, g);
                 }
                 case "mean" -> reductionBackwardMean(self.gradData(), gradBuf, origShape, reduceDim);
                 case "meanAll" -> {
                     double g = self.gradData()[0] / n;
-                    for (int i = 0; i < n; i++) gradBuf[i] = g;
+                    Arrays.fill(gradBuf, 0, n, g);
                 }
                 case "softmax" -> reductionBackwardSoftmax(self.gradData(), softmaxOut, gradBuf, origShape, reduceDim);
+                case "logSoftmax" -> reductionBackwardLogSoftmax(self.gradData(), logSoftmaxOut, gradBuf, origShape, reduceDim);
             }
 
             // Step 2: Element-wise backward chain (reverse order)
@@ -330,6 +431,32 @@ public final class TensorFusedReductionOps {
                 for (int r = 0; r < reduce; r++) {
                     int idx = (o * reduce + r) * inner + i;
                     buf[idx] = softmaxOut[idx] * (grad[idx] - dot);
+                }
+            }
+        }
+    }
+
+    /** Backward for logSoftmax: grad_input_i = grad_i - softmax_i * sum_j(grad_j). */
+    static void reductionBackwardLogSoftmax(double[] grad, double[] logSoftmaxOut,
+                                           double[] buf, int[] shape, int dim) {
+        int d = dim;
+        int rank = shape.length;
+        int outer = 1, reduce = shape[d], inner = 1;
+        for (int i = 0; i < d; i++) outer *= shape[i];
+        for (int i = d + 1; i < rank; i++) inner *= shape[i];
+
+        for (int o = 0; o < outer; o++) {
+            for (int i = 0; i < inner; i++) {
+                // Compute softmax from logSoftmax: softmax[i] = exp(logSoftmax[i])
+                double sumGrad = 0;
+                for (int r = 0; r < reduce; r++) {
+                    int idx = (o * reduce + r) * inner + i;
+                    sumGrad += grad[idx];
+                }
+                for (int r = 0; r < reduce; r++) {
+                    int idx = (o * reduce + r) * inner + i;
+                    double sm = Math.exp(logSoftmaxOut[idx]); // softmax = exp(logSoftmax)
+                    buf[idx] = grad[idx] - sm * sumGrad;
                 }
             }
         }

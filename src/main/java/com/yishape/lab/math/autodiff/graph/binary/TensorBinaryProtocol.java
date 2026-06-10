@@ -104,7 +104,7 @@ public final class TensorBinaryProtocol {
         buf.putInt(grads.size());
         for (double[] g : grads) {
             buf.putInt(g.length);
-            for (double v : g) buf.putDouble(v);
+            bulkPutDoubles(buf, g);
         }
         buf.flip();
         return buf;
@@ -197,11 +197,12 @@ public final class TensorBinaryProtocol {
         if ((flags & FLAG_HAS_DATA) != 0) {
             double[] data = v.value().toDoubleArray();
             buf.putInt(data.length);
-            for (double d : data) buf.putDouble(d);
+            bulkPutDoubles(buf, data);
         }
         if ((flags & FLAG_HAS_INDICES) != 0) {
-            buf.putInt(v.backwardIndices().length);
-            for (int idx : v.backwardIndices()) buf.putInt(idx);
+            int[] indices = v.backwardIndices();
+            buf.putInt(indices.length);
+            bulkPutInts(buf, indices);
         }
     }
 
@@ -217,6 +218,113 @@ public final class TensorBinaryProtocol {
      * Converts a direct ByteBuffer to a byte array for JNI/FFM transfer.
      * The buffer position is reset after this call.
      */
+    // ── Graph skeleton cache ──
+
+    /**
+     * Cached graph skeleton with leaf data offset tracking.
+     * First pass records leaf positions via buffer parsing; subsequent calls
+     * clone the skeleton byte[] and overwrite leaf data at known offsets,
+     * avoiding topology re-serialization (~5-15ms saving per step).
+     */
+    public static final class CachedGraph {
+        final byte[] skeleton;
+        final int[] dataOffsets;  // [leafIdx] = byte offset of data_len field in skeleton
+        private final int structureHash;
+
+        CachedGraph(byte[] skeleton, int[] dataOffsets, int structureHash) {
+            this.skeleton = skeleton;
+            this.dataOffsets = dataOffsets;
+            this.structureHash = structureHash;
+        }
+
+        public int structureHash() { return structureHash; }
+
+        /**
+         * Clone skeleton and overwrite leaf data at pre-recorded offsets.
+         * @return ready-to-send byte[] (658KB clone ~0.1ms)
+         */
+        public byte[] updateLeafData(java.util.List<RereDiffTensor> order) {
+            byte[] buf = skeleton.clone();
+            int leafIdx = 0;
+            for (RereDiffTensor v : order) {
+                if (v.isLeaf()) {
+                    double[] data = v.value().toDoubleArray();
+                    int off = dataOffsets[leafIdx++];
+                    // ⚠️ ByteBuffer.wrap() defaults to BIG_ENDIAN. The YSGP binary protocol
+                    // uses LITTLE_ENDIAN. Without .order(LITTLE_ENDIAN), data_len is written
+                    // as {0x00,0x00,0x00,0x80} instead of {0x80,0x00,0x00,0x00}, and Rust
+                    // read_u32 LE interprets it as 0x80000000 (~2GB) → instant EOF crash.
+                    java.nio.ByteBuffer.wrap(buf, off, 4)
+                        .order(java.nio.ByteOrder.LITTLE_ENDIAN).putInt(data.length);
+                    // Same LE fix for the double data values
+                    java.nio.ByteBuffer db = java.nio.ByteBuffer.wrap(buf, off + 4, data.length * 8)
+                        .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                    db.asDoubleBuffer().put(data);
+                }
+            }
+            return buf;
+        }
+    }
+
+    /**
+     * First-pass serialization: records byte offsets of each leaf's data_len field.
+     * The full buffer is serialized normally, then scanned to locate leaf data.
+     */
+    public static CachedGraph serializeGraphCached(RereDiffTensor root,
+            java.util.List<RereDiffTensor> order, int structureHash) {
+        ByteBuffer buf = serializeGraph(root, order);
+        byte[] fullBytes = toByteArray(buf);
+
+        // Count leaves
+        int leafCount = 0;
+        for (RereDiffTensor v : order) { if (v.isLeaf()) leafCount++; }
+        int[] dataOffsets = new int[leafCount];
+
+        // Scan buffer to find leaf data locations
+        int pos = 12; // skip magic(4) + version(4) + num_nodes(4)
+        int leafIdx = 0;
+        for (int nodeIdx = 0; nodeIdx < order.size(); nodeIdx++) {
+            int flags = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+            int opLen = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+            pos += 4; // id (u32)
+            pos += opLen; // op string
+            int numDims = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+            pos += numDims * 4; // shape
+            int numInputs = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+            pos += numInputs * 4; // inputs
+            if ((flags & 2) != 0) pos += 8; // scalar
+            if ((flags & 4) != 0) pos += 8; // param2
+            if ((flags & 1) != 0) { // has_data
+                dataOffsets[leafIdx++] = pos;
+                int dataLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
+                            | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+                pos += 4 + dataLen * 8;
+            }
+            if ((flags & 8) != 0) { // has_indices
+                int idxLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
+                           | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+                pos += 4 + idxLen * 4;
+            }
+        }
+        return new CachedGraph(fullBytes, dataOffsets, structureHash);
+    }
+
+    // ── Bulk write helpers    // ── Bulk write helpers (avoid per-element loop overhead) ──
+
+    /** Bulk-write double[] via DoubleBuffer view (single boundary check). */
+    private static void bulkPutDoubles(ByteBuffer buf, double[] data) {
+        int pos = buf.position();
+        buf.asDoubleBuffer().put(data);
+        buf.position(pos + data.length * 8);
+    }
+
+    /** Bulk-write int[] via IntBuffer view (single boundary check). */
+    private static void bulkPutInts(ByteBuffer buf, int[] data) {
+        int pos = buf.position();
+        buf.asIntBuffer().put(data);
+        buf.position(pos + data.length * 4);
+    }
+
     public static byte[] toByteArray(ByteBuffer buf) {
         byte[] bytes = new byte[buf.remaining()];
         buf.get(bytes);

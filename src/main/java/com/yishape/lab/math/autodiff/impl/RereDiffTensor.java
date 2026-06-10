@@ -331,21 +331,34 @@ public class RereDiffTensor implements IDiffTensor {
 
     /** Iterative DFS post-order topological sort. */
     public void buildTopo(List<RereDiffTensor> order, HashSet<RereDiffTensor> visited) {
-        java.util.ArrayDeque<Object[]> stack = new java.util.ArrayDeque<>();
-        stack.push(new Object[]{this, Boolean.TRUE});
-        while (!stack.isEmpty()) {
-            Object[] entry = stack.peek();
-            RereDiffTensor node = (RereDiffTensor) entry[0];
-            boolean childrenNotPushed = (Boolean) entry[1];
-            if (childrenNotPushed) {
-                entry[1] = Boolean.FALSE;
-                if (!visited.add(node)) { stack.pop(); continue; }
-                for (int i = node.inputs.size() - 1; i >= 0; i--) {
-                    RereDiffTensor inp = node.inputs.get(i);
-                    if (!visited.contains(inp)) stack.push(new Object[]{inp, Boolean.TRUE});
+        // Primitive stack eliminates Object[] + Boolean boxing (was ~2-3µs per call for 55 nodes).
+        // Initial capacity 64 covers most graphs without resize.
+        RereDiffTensor[] stack = new RereDiffTensor[64];
+        byte[] state = new byte[64];  // 0=pending, 1=children_pushed
+        int sp = 0;  // stack pointer
+        stack[sp] = this;
+        state[sp] = 0;
+        sp++;
+        while (sp > 0) {
+            RereDiffTensor node = stack[sp - 1];
+            if (state[sp - 1] == 0) {
+                state[sp - 1] = 1;
+                if (!visited.add(node)) { sp--; continue; }
+                var inputs = node.inputs;
+                for (int i = inputs.size() - 1; i >= 0; i--) {
+                    RereDiffTensor inp = inputs.get(i);
+                    if (!visited.contains(inp)) {
+                        if (sp >= stack.length) {
+                            stack = java.util.Arrays.copyOf(stack, stack.length * 2);
+                            state = java.util.Arrays.copyOf(state, state.length * 2);
+                        }
+                        stack[sp] = inp;
+                        state[sp] = 0;
+                        sp++;
+                    }
                 }
             } else {
-                stack.pop();
+                sp--;
                 order.add(node);
             }
         }
@@ -357,10 +370,10 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public void clipGradNorm(double maxNorm) {
         if (grad == null || !requiresGrad || maxNorm <= 0) return;
-        double norm = 0;
         double[] g = grad;
-        for (int i = 0; i < g.length; i++) norm += g[i] * g[i];
-        norm = Math.sqrt(norm);
+        // Compute L2 norm: sum of squares → sqrt
+        double[] sq = COMPUTER.binaryOperate(g, g, BinaryOperation.MULTIPLY);
+        double norm = Math.sqrt(COMPUTER.reduceOperate(sq, ReduceOperation.SUM));
         if (norm > maxNorm) {
             double scale = maxNorm / norm;
             double[] scaled = COMPUTER.binaryOperate(g, scale, BinaryOperation.MULTIPLY);
@@ -424,7 +437,7 @@ public class RereDiffTensor implements IDiffTensor {
         if (grad == null) {
             grad = incoming;
         } else {
-            for (int i = 0; i < grad.length; i++) grad[i] += incoming[i];
+            grad = COMPUTER.binaryOperate(grad, incoming, BinaryOperation.ADD);
         }
     }
 
@@ -437,7 +450,7 @@ public class RereDiffTensor implements IDiffTensor {
     public void accGradFromPooled(double[] pooledBuf, int n) {
         if (grad != null) {
             double[] g = grad;
-            for (int i = 0; i < n; i++) g[i] += pooledBuf[i];
+            grad = COMPUTER.binaryOperate(g, pooledBuf, BinaryOperation.ADD);
             AutodiffBufferPool.release(pooledBuf);
         } else {
             double[] dx = new double[n];
@@ -691,6 +704,198 @@ public class RereDiffTensor implements IDiffTensor {
             }
             return r;
         }
+        // -- gelu().sum() --
+        if ("gelu".equals(opTag)) {
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) {
+                    double xi = xData[i];
+                    double c = 0.7978845608028654; // sqrt(2/PI)
+                    double arg = c * (xi + 0.044715 * xi * xi * xi);
+                    double t = Math.tanh(arg);
+                    double dt = 1.0 - t * t;
+                    double darg = c * (1.0 + 3.0 * 0.044715 * xi * xi);
+                    dxBuf[i] = g * (0.5 * (1.0 + t) + 0.5 * xi * dt * darg);
+                }
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "geluSum");
+            r.exportShape = x.shape();
+            int[] geluShape = x.shape().clone();
+            double[] geluFactor = new double[m];
+            for (int i = 0; i < m; i++) {
+                double xi = xData[i];
+                double c = 0.7978845608028654;
+                double arg = c * (xi + 0.044715 * xi * xi * xi);
+                double t = Math.tanh(arg);
+                double dt = 1.0 - t * t;
+                double darg = c * (1.0 + 3.0 * 0.044715 * xi * xi);
+                geluFactor[i] = 0.5 * (1.0 + t) + 0.5 * xi * dt * darg;
+            }
+            RereDiffTensor xRefGelu = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefGelu.mul(0.0).add(IDiffTensor.constantTensor(geluFactor, geluShape)))};
+            return r;
+        }
+        // -- mish().sum() --
+        if ("mish".equals(opTag)) {
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) {
+                    double xi = xData[i];
+                    double sp = Math.log1p(Math.exp(xi));
+                    double t = Math.tanh(sp);
+                    double sig = 1.0 / (1.0 + Math.exp(-xi));
+                    dxBuf[i] = g * (t + xi * (1.0 - t * t) * sig);
+                }
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "mishSum");
+            r.exportShape = x.shape();
+            int[] mishShape = x.shape().clone();
+            double[] mishFactor = new double[m];
+            for (int i = 0; i < m; i++) {
+                double xi = xData[i];
+                double sp = Math.log1p(Math.exp(xi));
+                double t = Math.tanh(sp);
+                double sig = 1.0 / (1.0 + Math.exp(-xi));
+                mishFactor[i] = t + xi * (1.0 - t * t) * sig;
+            }
+            RereDiffTensor xRefMish = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefMish.mul(0.0).add(IDiffTensor.constantTensor(mishFactor, mishShape)))};
+            return r;
+        }
+        // -- sin().sum() --
+        if ("sin".equals(opTag)) {
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = g * Math.cos(xData[i]);
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "sinSum");
+            r.exportShape = x.shape();
+            int[] sinShape = x.shape().clone();
+            double[] sinFactor = new double[m];
+            for (int i = 0; i < m; i++) sinFactor[i] = Math.cos(xData[i]);
+            RereDiffTensor xRefSin = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefSin.mul(0.0).add(IDiffTensor.constantTensor(sinFactor, sinShape)))};
+            return r;
+        }
+        // -- cos().sum() --
+        if ("cos".equals(opTag)) {
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = g * (-Math.sin(xData[i]));
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "cosSum");
+            r.exportShape = x.shape();
+            int[] cosShape = x.shape().clone();
+            double[] cosFactor = new double[m];
+            for (int i = 0; i < m; i++) cosFactor[i] = -Math.sin(xData[i]);
+            RereDiffTensor xRefCos = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefCos.mul(0.0).add(IDiffTensor.constantTensor(cosFactor, cosShape)))};
+            return r;
+        }
+        // -- leakyRelu().sum() --
+        if ("leakyRelu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
+            double a = alpha;
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = xData[i] > 0 ? g : g * a;
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "leakyReluSum");
+            r.exportShape = x.shape();
+            int[] lrShape = x.shape().clone();
+            double[] lrFactor = new double[m];
+            for (int i = 0; i < m; i++) lrFactor[i] = xData[i] > 0 ? 1.0 : a;
+            RereDiffTensor xRefLR = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefLR.mul(0.0).add(IDiffTensor.constantTensor(lrFactor, lrShape)))};
+            return r;
+        }
+        // -- elu().sum() --
+        if ("elu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
+            double a = alpha;
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = xData[i] > 0 ? g : g * a * Math.exp(xData[i]);
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "eluSum");
+            r.exportShape = x.shape();
+            int[] eluShape = x.shape().clone();
+            double[] eluFactor = new double[m];
+            for (int i = 0; i < m; i++) eluFactor[i] = xData[i] > 0 ? 1.0 : a * Math.exp(xData[i]);
+            RereDiffTensor xRefElu = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefElu.mul(0.0).add(IDiffTensor.constantTensor(eluFactor, eluShape)))};
+            return r;
+        }
+        // -- selu().sum() --
+        if ("selu".equals(opTag)) {
+            final double seluLambda = 1.0507009873554804934193349852946;
+            final double seluAlpha = 1.6732632423543772848170429916717;
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++)
+                    dxBuf[i] = xData[i] > 0 ? g * seluLambda : g * seluLambda * seluAlpha * Math.exp(xData[i]);
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "seluSum");
+            r.exportShape = x.shape();
+            int[] seluShape = x.shape().clone();
+            double[] seluFactor = new double[m];
+            for (int i = 0; i < m; i++)
+                seluFactor[i] = xData[i] > 0 ? seluLambda : seluLambda * seluAlpha * Math.exp(xData[i]);
+            RereDiffTensor xRefSelu = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefSelu.mul(0.0).add(IDiffTensor.constantTensor(seluFactor, seluShape)))};
+            return r;
+        }
+        // -- softplus().sum() --
+        if ("softplus".equals(opTag)) {
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = g / (1.0 + Math.exp(-xData[i]));
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "softplusSum");
+            r.exportShape = x.shape();
+            int[] spShape = x.shape().clone();
+            double[] spFactor = new double[m];
+            for (int i = 0; i < m; i++) spFactor[i] = 1.0 / (1.0 + Math.exp(-xData[i]));
+            RereDiffTensor xRefSP = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefSP.mul(0.0).add(IDiffTensor.constantTensor(spFactor, spShape)))};
+            return r;
+        }
+        // -- hardtanh().sum() --
+        if ("hardtanh".equals(opTag)) {
+            double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
+            double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
+            double mn = hmin, mx = hmax;
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = (xData[i] > mn && xData[i] < mx) ? g : 0;
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "hardtanhSum");
+            r.exportShape = x.shape();
+            int[] htShape = x.shape().clone();
+            double[] htFactor = new double[m];
+            for (int i = 0; i < m; i++) htFactor[i] = (xData[i] > mn && xData[i] < mx) ? 1.0 : 0.0;
+            RereDiffTensor xRefHT = x;
+            r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefHT.mul(0.0).add(IDiffTensor.constantTensor(htFactor, htShape)))};
+            return r;
+        }
         return null;
     }
 
@@ -793,6 +998,78 @@ public class RereDiffTensor implements IDiffTensor {
             r.scalarParam = param;
             return r;
         }
+        // -- gelu().sum(dim) --
+        if ("gelu".equals(opTag)) {
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "geluSum",
+                (g, xv) -> {
+                    double c = 0.7978845608028654;
+                    double arg = c * (xv + 0.044715 * xv * xv * xv);
+                    double t = Math.tanh(arg);
+                    double dt = 1.0 - t * t;
+                    double darg = c * (1.0 + 3.0 * 0.044715 * xv * xv);
+                    return g * (0.5 * (1.0 + t) + 0.5 * xv * dt * darg);
+                }, xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- mish().sum(dim) --
+        if ("mish".equals(opTag)) {
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "mishSum",
+                (g, xv) -> {
+                    double sp_m = Math.log1p(Math.exp(xv));
+                    double t = Math.tanh(sp_m);
+                    double sig = 1.0 / (1.0 + Math.exp(-xv));
+                    return g * (t + xv * (1.0 - t * t) * sig);
+                }, xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- sin().sum(dim) --
+        if ("sin".equals(opTag)) {
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "sinSum",
+                (g, xv) -> g * Math.cos(xv), xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- cos().sum(dim) --
+        if ("cos".equals(opTag)) {
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "cosSum",
+                (g, xv) -> g * (-Math.sin(xv)), xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- leakyRelu().sum(dim) --
+        if ("leakyRelu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "leakyReluSum",
+                (g, xv) -> xv > 0 ? g : g * alpha, xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- elu().sum(dim) --
+        if ("elu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "eluSum",
+                (g, xv) -> xv > 0 ? g : g * alpha * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- selu().sum(dim) --
+        if ("selu".equals(opTag)) {
+            final double seluL = 1.0507009873554804934193349852946;
+            final double seluA = 1.6732632423543772848170429916717;
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "seluSum",
+                (g, xv) -> xv > 0 ? g * seluL : g * seluL * seluA * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- softplus().sum(dim) --
+        if ("softplus".equals(opTag)) {
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "softplusSum",
+                (g, xv) -> g / (1.0 + Math.exp(-xv)), xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
+        // -- hardtanh().sum(dim) --
+        if ("hardtanh".equals(opTag)) {
+            double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
+            double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "hardtanhSum",
+                (g, xv) -> (xv > hmin && xv < hmax) ? g : 0, xData, fOuter, fReduce, fInner, total);
+            return r;
+        }
         return null;
     }
 
@@ -829,6 +1106,164 @@ public class RereDiffTensor implements IDiffTensor {
         }
         node.symbolicBackwardFn = dimSumGradFn(x.shape(), dim, factor, x);
         return node;
+    }
+
+    /** Try to fuse unaryOp + mean(dim) into a single fused node. Returns null if no pattern matches.
+     *  Mirrors {@link #tryFuseSumDim(int, boolean)} but produces "reluMean" etc. tags
+     *  and scales the backward gradient by 1/reduce. */
+    private IDiffTensor tryFuseMeanDim(int dim, boolean keepdim) {
+        if (inputs.size() != 1) return null;
+        RereDiffTensor x = inputs.get(0);
+        if (x == null || !x.requiresGrad) return null;
+        int[] s = shape();
+        int outer = 1;
+        for (int i = 0; i < dim; i++) outer *= s[i];
+        int reduce = s[dim];
+        int inner = 1;
+        for (int i = dim + 1; i < rank(); i++) inner *= s[i];
+        double invR = 1.0 / reduce;
+        double[] vals = value.toDoubleArray();
+        double[] sumResult = new double[outer * inner];
+        for (int o = 0; o < outer; o++)
+            for (int i = 0; i < inner; i++) {
+                double sum = 0;
+                for (int r = 0; r < reduce; r++)
+                    sum += vals[(o * reduce + r) * inner + i];
+                sumResult[o * inner + i] = sum;
+            }
+        int[] resultShape = reducedShape(dim, keepdim);
+        int total = outer * reduce * inner;
+        double[] xData = x.value.toDoubleArray();
+        double[] result = new double[sumResult.length];
+        for (int i = 0; i < result.length; i++) result[i] = sumResult[i] * invR;
+
+        // -- square().mean(dim) --
+        if ("square".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "squareMean",
+                (g, xv) -> g * invR * 2.0 * xv, xData, outer, reduce, inner, total);
+        }
+        // -- relu().mean(dim) --
+        if ("relu".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "reluMean",
+                (g, xv) -> xv > 0 ? g * invR : 0, xData, outer, reduce, inner, total);
+        }
+        // -- exp().mean(dim) --
+        if ("exp".equals(opTag)) {
+            double[] eData = value.toDoubleArray();
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "expMean",
+                (g, xv) -> g * invR * Math.exp(xv), xData, outer, reduce, inner, total);
+            double[] expFactor = new double[total];
+            for (int i = 0; i < total; i++) expFactor[i] = eData[i] * invR;
+            r.symbolicBackwardFn = dimSumGradFn(x.shape(), dim, expFactor, x);
+            return r;
+        }
+        // -- sigmoid().mean(dim) --
+        if ("sigmoid".equals(opTag)) {
+            double[] sigData = value.toDoubleArray();
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "sigmoidMean",
+                (g, xv) -> { double sv = 1.0/(1.0+Math.exp(-xv)); return g * invR * sv * (1-sv); },
+                xData, outer, reduce, inner, total);
+            double[] sigFactor = new double[total];
+            for (int i = 0; i < total; i++) { double sv = sigData[i]; sigFactor[i] = sv * (1-sv) * invR; }
+            r.symbolicBackwardFn = dimSumGradFn(x.shape(), dim, sigFactor, x);
+            return r;
+        }
+        // -- abs().mean(dim) --
+        if ("abs".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "absMean",
+                (g, xv) -> xv >= 0 ? g * invR : -g * invR, xData, outer, reduce, inner, total);
+        }
+        // -- tanh().mean(dim) --
+        if ("tanh".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "tanhMean",
+                (g, xv) -> { double t = Math.tanh(xv); return g * invR * (1.0 - t*t); },
+                xData, outer, reduce, inner, total);
+        }
+        // -- silu().mean(dim) --
+        if ("silu".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "siluMean",
+                (g, xv) -> { double sig = 1.0/(1.0+Math.exp(-xv)); return g * invR * (sig + xv * sig * (1-sig)); },
+                xData, outer, reduce, inner, total);
+        }
+        // -- log().mean(dim) --
+        if ("log".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "logMean",
+                (g, xv) -> g * invR / xv, xData, outer, reduce, inner, total);
+        }
+        // -- pow(n).mean(dim) --
+        double spp = scalarParam;
+        if ("pow".equals(opTag) && !Double.isNaN(spp)) {
+            double param = spp;
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "powMean",
+                (g, xv) -> g * invR * param * Math.pow(xv, param - 1), xData, outer, reduce, inner, total);
+            r.scalarParam = param;
+            return r;
+        }
+        // -- gelu().mean(dim) --
+        if ("gelu".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "geluMean",
+                (g, xv) -> {
+                    double c = 0.7978845608028654;
+                    double arg = c * (xv + 0.044715 * xv * xv * xv);
+                    double t = Math.tanh(arg);
+                    double dt = 1.0 - t * t;
+                    double darg = c * (1.0 + 3.0 * 0.044715 * xv * xv);
+                    return g * invR * (0.5 * (1.0 + t) + 0.5 * xv * dt * darg);
+                }, xData, outer, reduce, inner, total);
+        }
+        // -- mish().mean(dim) --
+        if ("mish".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "mishMean",
+                (g, xv) -> {
+                    double sp_m = Math.log1p(Math.exp(xv));
+                    double t = Math.tanh(sp_m);
+                    double sig = 1.0 / (1.0 + Math.exp(-xv));
+                    return g * invR * (t + xv * (1.0 - t * t) * sig);
+                }, xData, outer, reduce, inner, total);
+        }
+        // -- sin().mean(dim) --
+        if ("sin".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "sinMean",
+                (g, xv) -> g * invR * Math.cos(xv), xData, outer, reduce, inner, total);
+        }
+        // -- cos().mean(dim) --
+        if ("cos".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "cosMean",
+                (g, xv) -> g * invR * (-Math.sin(xv)), xData, outer, reduce, inner, total);
+        }
+        // -- leakyRelu().mean(dim) --
+        if ("leakyRelu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "leakyReluMean",
+                (g, xv) -> xv > 0 ? g * invR : g * invR * alpha, xData, outer, reduce, inner, total);
+        }
+        // -- elu().mean(dim) --
+        if ("elu".equals(opTag)) {
+            double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "eluMean",
+                (g, xv) -> xv > 0 ? g * invR : g * invR * alpha * Math.exp(xv), xData, outer, reduce, inner, total);
+        }
+        // -- selu().mean(dim) --
+        if ("selu".equals(opTag)) {
+            final double seluL = 1.0507009873554804934193349852946;
+            final double seluA = 1.6732632423543772848170429916717;
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "seluMean",
+                (g, xv) -> xv > 0 ? g * invR * seluL : g * invR * seluL * seluA * Math.exp(xv),
+                xData, outer, reduce, inner, total);
+        }
+        // -- softplus().mean(dim) --
+        if ("softplus".equals(opTag)) {
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "softplusMean",
+                (g, xv) -> g * invR / (1.0 + Math.exp(-xv)), xData, outer, reduce, inner, total);
+        }
+        // -- hardtanh().mean(dim) --
+        if ("hardtanh".equals(opTag)) {
+            double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
+            double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "hardtanhMean",
+                (g, xv) -> (xv > hmin && xv < hmax) ? g * invR : 0, xData, outer, reduce, inner, total);
+        }
+        return null;
     }
 
     /** symbolicBackwardFn for sum(dim)-fused ops: broadcast g along dim, multiply by factor.
@@ -1696,14 +2131,23 @@ public class RereDiffTensor implements IDiffTensor {
             pIdx[d] += (int) start;
             parentIdx[i] = flatIndex(pIdx, parentShape);
         }
+        // Store parentIdx for GPU/HPC backend graph serialization (same pattern as select())
+        int[] bi = parentIdx;
         Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor parent = self.inputs.get(0);
             int pt = (int) parent.value.totalSize();
             double[] pGrad = AutodiffBufferPool.acquire(pt);
-            for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
+            int[] idx = self.backwardIndices();
+            if (idx != null) {
+                for (int i = 0; i < viewTotal; i++) pGrad[idx[i]] += self.grad[i];
+            } else {
+                for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
+            }
             parent.accGradFromPooled(pGrad, pt);
         };
-        return new RereDiffTensor(view, List.of(this), bw, "slice");
+        RereDiffTensor result = new RereDiffTensor(view, List.of(this), bw, "slice");
+        result.setBackwardIndices(bi);
+        return result;
     }
 
     @Override
@@ -2072,6 +2516,9 @@ public class RereDiffTensor implements IDiffTensor {
     public IDiffTensor mean(int dim, boolean keepdim) {
         int d = (dim < 0 ? dim + rank() : dim);
         if (!requiresGrad) return toNonDiff(value.mean(d, keepdim));
+        // Pattern fusion: detect unaryOp + mean(dim) → single fused node (e.g. "reluMean")
+        IDiffTensor fused = tryFuseMeanDim(d, keepdim);
+        if (fused != null) return fused;
         IDiffTensor s = sum(d, keepdim);
         double scale = 1.0 / dim(d);
         return s.mul(scale);
@@ -2486,6 +2933,100 @@ public class RereDiffTensor implements IDiffTensor {
             input.accGradFromPooled(inGrad, m);
         };
         return new RereDiffTensor(resultData, resultShape, List.of(this), bw, "softmaxCrossEntropy");
+    }
+
+    /**
+     * Fused softmax + cross-entropy with sparse integer labels (class indices).
+     * Memory: O(B*C) for softmax probabilities (required for backward), but avoids
+     * allocating a [B, C] one-hot tensor. Saves 5 intermediate graph nodes vs
+     * the manual logSumExp→sub→gather→sum→div→neg chain.
+     *
+     * @param labels integer class indices, length = outerSize * innerSize, each in [0, classSize)
+     * @param dim    the class dimension
+     * @return scalar loss = mean(-log(softmax[target]))
+     */
+    public IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim) {
+        int d = (dim < 0 ? dim + rank() : dim);
+        int[] s = shape();
+        int r = rank();
+        int outerSize = 1;
+        for (int i = 0; i < d; i++) outerSize *= s[i];
+        int classSize = s[d];
+        int innerSize = 1;
+        for (int i = d + 1; i < r; i++) innerSize *= s[i];
+        int totalSamples = outerSize * innerSize;
+        if (labels.length != totalSamples) {
+            throw new IllegalArgumentException(
+                "labels length " + labels.length + " != totalSamples " + totalSamples);
+        }
+
+        double[] logits = value.toDoubleArray();
+
+        // Forward: softmax → -log(softmax[target]) → mean
+        double[] softmax = new double[logits.length];
+        double totalLoss = 0;
+        for (int o = 0; o < outerSize; o++) {
+            for (int in = 0; in < innerSize; in++) {
+                int base = (o * classSize) * innerSize + in;
+                double mx = Double.NEGATIVE_INFINITY;
+                for (int c = 0; c < classSize; c++) {
+                    double v = logits[base + c * innerSize];
+                    if (v > mx) mx = v;
+                }
+                double sumExp = 0;
+                for (int c = 0; c < classSize; c++) {
+                    double ex = Math.exp(logits[base + c * innerSize] - mx);
+                    softmax[base + c * innerSize] = ex;
+                    sumExp += ex;
+                }
+                double invSum = 1.0 / sumExp;
+                int t = labels[o * innerSize + in];
+                if (t < 0 || t >= classSize) {
+                    throw new IllegalArgumentException(
+                        "Label " + t + " out of range [0, " + classSize + ") at sample " + (o * innerSize + in));
+                }
+                for (int c = 0; c < classSize; c++) {
+                    softmax[base + c * innerSize] *= invSum;
+                }
+                double pt = softmax[base + t * innerSize];
+                totalLoss += -Math.log(Math.max(pt, 1e-30));
+            }
+        }
+        double meanLoss = totalLoss / totalSamples;
+        double[] resultData = new double[] { meanLoss };
+        int[] resultShape = new int[] { 1 };
+
+        if (!requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(resultData, resultShape));
+
+        // Convert int[] labels to double[] leaf tensor for graph export (GPU/HPC need labels as input data).
+        // This replaces the old closure-only pattern that made labels invisible to graph serialization.
+        double[] labelData = new double[labels.length];
+        for (int i = 0; i < labels.length; i++) labelData[i] = labels[i];
+        RereDiffTensor labelTensor = new RereDiffTensor(labelData, new int[]{totalSamples});
+        labelTensor.requiresGrad = false;
+
+        int fOuter = outerSize, fClassSize = classSize, fInner = innerSize, fTotal = totalSamples;
+        double[] fSoftmax = softmax;
+        Consumer<RereDiffTensor> bw = self -> {
+            RereDiffTensor input = self.inputs.get(0);
+            RereDiffTensor labelInput = self.inputs.get(1);
+            double[] labelVals = labelInput.value.toDoubleArray();
+            double gradScale = self.grad[0] / fTotal;
+            int m = fSoftmax.length;
+            double[] inGrad = AutodiffBufferPool.acquire(m);
+            System.arraycopy(fSoftmax, 0, inGrad, 0, m);
+            // Subtract 1 at target positions: grad = (softmax - oneHot) / totalSamples
+            for (int o = 0; o < fOuter; o++) {
+                for (int in = 0; in < fInner; in++) {
+                    int t = (int) Math.round(labelVals[o * fInner + in]);
+                    int idx = (o * fClassSize + t) * fInner + in;
+                    inGrad[idx] -= 1.0;
+                }
+            }
+            for (int i = 0; i < m; i++) inGrad[i] *= gradScale;
+            input.accGradFromPooled(inGrad, m);
+        };
+        return new RereDiffTensor(resultData, resultShape, List.of(this, labelTensor), bw, "softmaxCrossEntropySparse");
     }
 
     // ==================== cumsum / cumprod ====================
@@ -4145,6 +4686,130 @@ public class RereDiffTensor implements IDiffTensor {
             inpT.accGrad(dt);
         };
         return new RereDiffTensor(loss, new int[]{1}, List.of(this, tgt), bw, "smoothL1Loss");
+    }
+    @Override
+    public IDiffTensor bceLoss(IDiffTensor target) {
+        RereDiffTensor tgt = (RereDiffTensor) target;
+        double[] xd = value.toDoubleArray();
+        double[] td = tgt.value.toDoubleArray();
+        long n = value.totalSize();
+        double[] loss = new double[1];
+        double[] clamped = new double[(int) n];
+        double totalLoss = 0;
+        final double eps = 1e-7;
+        for (int i = 0; i < n; i++) {
+            double p = Math.max(eps, Math.min(1.0 - eps, xd[i]));
+            clamped[i] = p;
+            double y = td[i];
+            totalLoss += -y * Math.log(p) - (1.0 - y) * Math.log(1.0 - p);
+        }
+        loss[0] = totalLoss / n;
+        if (!requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(loss, new int[]{1}));
+        Consumer<RereDiffTensor> bw = self -> {
+            RereDiffTensor inpX = self.inputs.get(0);
+            RereDiffTensor inpT = self.inputs.get(1);
+            double[] g = self.grad;
+            double scale = g[0] / n;
+            double[] dx = new double[(int) n];
+            double[] dt = new double[(int) n];
+            for (int i = 0; i < n; i++) {
+                double p = clamped[i];
+                double y = td[i];
+                dx[i] = scale * (p - y) / (p * (1.0 - p));
+                dt[i] = scale * (Math.log(1.0 - p) - Math.log(p));
+            }
+            inpX.accGrad(dx);
+            inpT.accGrad(dt);
+        };
+        return new RereDiffTensor(loss, new int[]{1}, List.of(this, tgt), bw, "bceLoss");
+    }
+
+    @Override
+    public IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma) {
+        RereDiffTensor tgt = (RereDiffTensor) target;
+        double[] xd = value.toDoubleArray();
+        double[] td = tgt.value.toDoubleArray();
+        long n = value.totalSize();
+        double[] loss = new double[1];
+        double[] clamped = new double[(int) n];
+        double totalLoss = 0;
+        final double eps = 1e-7;
+        double oneMinusAlpha = 1.0 - alpha;
+        for (int i = 0; i < n; i++) {
+            double p = Math.max(eps, Math.min(1.0 - eps, xd[i]));
+            clamped[i] = p;
+            double y = td[i];
+            double pT = (y > 0.5) ? p : 1.0 - p;
+            double aT = (y > 0.5) ? alpha : oneMinusAlpha;
+            double focalWeight = Math.pow(1.0 - pT, gamma);
+            totalLoss += aT * focalWeight * (-Math.log(pT));
+        }
+        loss[0] = totalLoss / n;
+        if (!requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(loss, new int[]{1}));
+        Consumer<RereDiffTensor> bw = self -> {
+            RereDiffTensor inpX = self.inputs.get(0);
+            RereDiffTensor inpT = self.inputs.get(1);
+            double[] g = self.grad;
+            double scale = g[0] / n;
+            double[] dx = new double[(int) n];
+            double[] dt = new double[(int) n];
+            for (int i = 0; i < n; i++) {
+                double p = clamped[i];
+                double y = td[i];
+                if (y > 0.5) {
+                    double oneMinusP = 1.0 - p;
+                    double term1 = gamma * Math.pow(oneMinusP, gamma - 1.0) * (-Math.log(p));
+                    double term2 = Math.pow(oneMinusP, gamma) / p;
+                    dx[i] = scale * alpha * (term1 - term2);
+                    dt[i] = scale * alpha * Math.pow(oneMinusP, gamma) * Math.log(p);
+                } else {
+                    double term1 = gamma * Math.pow(p, gamma - 1.0) * (-Math.log(1.0 - p));
+                    double term2 = Math.pow(p, gamma) / (1.0 - p);
+                    dx[i] = scale * oneMinusAlpha * (term1 + term2);
+                    dt[i] = scale * oneMinusAlpha * Math.pow(p, gamma) * Math.log(1.0 - p);
+                }
+            }
+            inpX.accGrad(dx);
+            inpT.accGrad(dt);
+        };
+        return new RereDiffTensor(loss, new int[]{1}, List.of(this, tgt), bw, "focalLoss");
+    }
+
+    @Override
+    public IDiffTensor diceLoss(IDiffTensor target, double smooth) {
+        RereDiffTensor tgt = (RereDiffTensor) target;
+        double[] xd = value.toDoubleArray();
+        double[] td = tgt.value.toDoubleArray();
+        long n = value.totalSize();
+        double[] loss = new double[1];
+        double I = 0, Sp = 0, St = 0;
+        for (int i = 0; i < n; i++) {
+            I += xd[i] * td[i];
+            Sp += xd[i];
+            St += td[i];
+        }
+        double denom = Sp + St + smooth;
+        double dice = (2.0 * I + smooth) / denom;
+        final double If = I;
+        final double denomf = denom;
+        loss[0] = 1.0 - dice;
+        if (!requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(loss, new int[]{1}));
+        Consumer<RereDiffTensor> bw = self -> {
+            RereDiffTensor inpX = self.inputs.get(0);
+            RereDiffTensor inpT = self.inputs.get(1);
+            double g = self.grad[0];
+            double invDenom2 = 1.0 / (denomf * denomf);
+            double twoIplusSmooth = 2.0 * If + smooth;
+            double[] dx = new double[(int) n];
+            double[] dt = new double[(int) n];
+            for (int i = 0; i < n; i++) {
+                dx[i] = g * (twoIplusSmooth - 2.0 * td[i] * denomf) * invDenom2;
+                dt[i] = g * (twoIplusSmooth - 2.0 * xd[i] * denomf) * invDenom2;
+            }
+            inpX.accGrad(dx);
+            inpT.accGrad(dt);
+        };
+        return new RereDiffTensor(loss, new int[]{1}, List.of(this, tgt), bw, "diceLoss");
     }
 
     @Override
@@ -5928,18 +6593,23 @@ public class RereDiffTensor implements IDiffTensor {
         RereDiffTensor idx = (RereDiffTensor) indices;
         int[] idxShape = idx.shape();
         int embeddingDim = dim(rank() - 1);
-        // Flatten indices to 1D, gather, then reshape
+        // Flatten indices to 1D, gather, then reshape.
+        // NOTE: opTag is deliberately NOT overridden to "embedding" on the reshape node.
+        // The previous setOpTag caused GPU graph execution to crash at yishape_math_gpu
+        // graph.rs:906 (index out of bounds: len 1, idx 1) because the Rust GPU handler
+        // for "embedding" expected 2 direct inputs (weight + indices), but the tag was on
+        // the reshape node which has only 1 input (the gather result).
+        // Individual indexSelect(gather) + reshape are both fully supported by GPU/HPC.
         IDiffTensor flatIdx = idx.reshape((int) idx.totalSize());
-        IDiffTensor gathered = this.indexSelect(0, flatIdx);
-        // Build output shape: indices.shape + [embeddingDim]
+        return this.indexSelect(0, flatIdx).reshape(outShape(idxShape, embeddingDim));
+    }
+
+    /** Helper: compute output shape [*idxShape, embeddingDim]. */
+    private static int[] outShape(int[] idxShape, int embeddingDim) {
         int[] outShape = new int[idxShape.length + 1];
         System.arraycopy(idxShape, 0, outShape, 0, idxShape.length);
         outShape[idxShape.length] = embeddingDim;
-        IDiffTensor result = gathered.reshape(outShape);
-        if (result instanceof RereDiffTensor rt) {
-            rt.setOpTag("embedding");
-        }
-        return result;
+        return outShape;
     }
 
     @Override
@@ -6632,6 +7302,26 @@ public class RereDiffTensor implements IDiffTensor {
             int totalSamples = smData.length / value.dim(d);
             return wrap(new RereDoubleTensor(new double[]{totalLoss / totalSamples}, new int[]{1}));
         }
+        @Override public IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim) {
+            int d = (dim < 0 ? dim + value.rank() : dim);
+            IDoubleTensor sm = value.softmax(d);
+            double[] smData = sm.toDoubleArray();
+            int outer = 1;
+            for (int i = 0; i < d; i++) outer *= value.dim(i);
+            int C = value.dim(d);
+            int inner = 1;
+            for (int i = d + 1; i < value.rank(); i++) inner *= value.dim(i);
+            double totalLoss = 0;
+            for (int o = 0; o < outer; o++) {
+                for (int in = 0; in < inner; in++) {
+                    int t = labels[o * inner + in];
+                    int idx = (o * C + t) * inner + in;
+                    totalLoss += -Math.log(Math.max(smData[idx], 1e-30));
+                }
+            }
+            int totalSamples = outer * inner;
+            return wrap(new RereDoubleTensor(new double[]{totalLoss / totalSamples}, new int[]{1}));
+        }
         @Override public IDiffTensor conv2d(IDiffTensor weight, IDiffTensor bias,
                 int stride, int padding, int dilation) {
             throw new UnsupportedOperationException("conv2d is not available on constant tensors");
@@ -6701,6 +7391,48 @@ public class RereDiffTensor implements IDiffTensor {
             }
             return wrap(new RereDoubleTensor(new double[]{total / xd.length}, new int[]{1}));
         }
+	        @Override public IDiffTensor bceLoss(IDiffTensor target) {
+	            double[] xd = value.toDoubleArray();
+	            double[] td = target.toDoubleArray();
+	            double total = 0;
+	            final double eps = 1e-7;
+	            for (int i = 0; i < xd.length; i++) {
+	                double p = Math.max(eps, Math.min(1.0 - eps, xd[i]));
+	                double y = td[i];
+	                total += -y * Math.log(p) - (1.0 - y) * Math.log(1.0 - p);
+	            }
+	            return wrap(new RereDoubleTensor(new double[]{total / xd.length}, new int[]{1}));
+	        }
+	        @Override public IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma) {
+	            double[] xd = value.toDoubleArray();
+	            double[] td = target.toDoubleArray();
+	            double total = 0;
+	            final double eps = 1e-7;
+	            double oma = 1.0 - alpha;
+	            for (int i = 0; i < xd.length; i++) {
+	                double p = Math.max(eps, Math.min(1.0 - eps, xd[i]));
+	                double y = td[i];
+	                double pT = (y > 0.5) ? p : 1.0 - p;
+	                double aT = (y > 0.5) ? alpha : oma;
+	                total += aT * Math.pow(1.0 - pT, gamma) * (-Math.log(pT));
+	            }
+	            return wrap(new RereDoubleTensor(new double[]{total / xd.length}, new int[]{1}));
+	        }
+	        @Override public IDiffTensor diceLoss(IDiffTensor target, double smooth) {
+	            double[] xd = value.toDoubleArray();
+	            double[] td = target.toDoubleArray();
+	            double I = 0, Sp = 0, St = 0;
+	            for (int i = 0; i < xd.length; i++) {
+	                I += xd[i] * td[i];
+	                Sp += xd[i];
+	                St += td[i];
+	            }
+	            double denom = Sp + St + smooth;
+	            double dice = (2.0 * I + smooth) / denom;
+        final double If = I;
+        final double denomf = denom;
+	            return wrap(new RereDoubleTensor(new double[]{1.0 - dice}, new int[]{1}));
+	        }
         @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) {
             int d = (classDim < 0 ? classDim + value.rank() : classDim);
             IDoubleTensor gathered = value.gather(d, target);

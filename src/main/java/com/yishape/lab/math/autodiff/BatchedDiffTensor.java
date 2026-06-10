@@ -250,6 +250,9 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public IDiffTensor roll(int[] shifts, int[] dims) { return wrap(data.roll(shifts, dims)); }
     @Override public IDiffTensor repeatInterleave(int repeats, int dim) { return wrap(data.repeatInterleave(repeats, shift(dim))); }
     @Override public IDiffTensor smoothL1Loss(IDiffTensor target, double beta) { return wrap(data.smoothL1Loss(target, beta)); }
+    @Override public IDiffTensor bceLoss(IDiffTensor target) { return wrap(data.bceLoss(target)); }
+    @Override public IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma) { return wrap(data.focalLoss(target, alpha, gamma)); }
+    @Override public IDiffTensor diceLoss(IDiffTensor target, double smooth) { return wrap(data.diceLoss(target, smooth)); }
     @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) { return wrap(data.nllLoss(target, shift(classDim))); }
     @Override public IDiffTensor maxPool2d(int kH, int kW, int stride, int padding) { return wrap(data.maxPool2d(kH, kW, stride, padding)); }
     @Override public IDiffTensor avgPool2d(int kH, int kW, int stride, int padding) { return wrap(data.avgPool2d(kH, kW, stride, padding)); }
@@ -321,6 +324,11 @@ public final class BatchedDiffTensor implements IDiffTensor {
             return wrap(data.softmaxCrossEntropy(bl.data, shift(dim)));
         }
         return wrap(data.softmaxCrossEntropy(labels, shift(dim)));
+    }
+
+    @Override
+    public IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim) {
+        return wrap(data.softmaxCrossEntropySparse(labels, shift(dim)));
     }
 
     @Override

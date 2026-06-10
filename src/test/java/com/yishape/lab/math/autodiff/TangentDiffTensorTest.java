@@ -493,4 +493,102 @@ public class TangentDiffTensorTest {
         assertNotNull(y);
         assertEquals(3, y.totalSize());
     }
+
+    // ── Defensive JVP correctness tests (regression: all returning zeros previously) ──
+
+    @Test
+    void testAvgPool2dJvpNonZero() {
+        // avgPool2d is linear: JVP = avgPool2d(tangent). Verify tangent ≠ 0.
+        double[] data = new double[]{1, 2, 3, 4, 5, 6, 7, 8};
+        double[] tang = new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 1, 2, 4);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 1, 2, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        IDiffTensor y = x.avgPool2d(1, 3, 1, 0);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        // avgPool2d kernel 1x3 on [1,1,2,4] → [1,1,2,2] output
+        assertEquals(4, jvp.length);
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "avgPool2d JVP must not be all-zeros");
+    }
+
+    @Test
+    void testMaxPool2dJvpNonZero() {
+        double[] data = new double[]{1, 3, 2, 4, 5, 7, 6, 8};
+        double[] tang = new double[]{0.1, 0.3, 0.2, 0.4, 0.5, 0.7, 0.6, 0.8};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 1, 2, 4);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 1, 2, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        IDiffTensor y = x.maxPool2d(1, 3, 1, 0);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(4, jvp.length);
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "maxPool2d JVP must not be all-zeros");
+    }
+
+    @Test
+    void testBatchNormJvpNonZero() {
+        // [batch=3, features=2] shape
+        double[] data = new double[]{1, 4, 2, 5, 3, 6};
+        double[] tang = new double[]{0.1, 0.4, 0.2, 0.5, 0.3, 0.6};
+        double[] gamma = new double[]{1, 1};
+        double[] beta = new double[]{0, 0};
+        RereDiffTensor primal = new RereDiffTensor(data, 3, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 3, 2);
+        IDoubleTensor gTan = ITensor.tensor(new double[]{0, 0}, 2);
+        IDoubleTensor bTan = ITensor.tensor(new double[]{0, 0}, 2);
+        RereDiffTensor gPrimal = new RereDiffTensor(gamma, 2);
+        RereDiffTensor bPrimal = new RereDiffTensor(beta, 2);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor g = TangentDiffTensor.seed(gPrimal, gTan);
+        TangentDiffTensor b = TangentDiffTensor.seed(bPrimal, bTan);
+        IDiffTensor y = x.batchNorm(g, b, 1e-5);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(6, jvp.length);
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "batchNorm JVP must not be all-zeros");
+    }
+
+    @Test
+    void testInstanceNormJvpNonZero() {
+        // [batch=1, C=2, H=2, W=2]
+        double[] data = new double[]{1, 2, 3, 4, 5, 6, 7, 8};
+        double[] tang = new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+        double[] gamma = new double[]{1, 1};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 2, 2, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 2, 2, 2);
+        IDoubleTensor gTan = ITensor.tensor(new double[]{0, 0}, 2);
+        RereDiffTensor gPrimal = new RereDiffTensor(gamma, 2);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor g = TangentDiffTensor.seed(gPrimal, gTan);
+        IDiffTensor y = x.instanceNorm(g, null, 1e-5);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(8, jvp.length);
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "instanceNorm JVP must not be all-zeros");
+    }
+
+    @Test
+    void testGroupNormJvpNonZero() {
+        // [batch=1, C=4, H=2, W=1] with numGroups=2 → 2 groups of 2 channels each
+        double[] data = new double[]{1, 2, 3, 4, 5, 6, 7, 8};
+        double[] tang = new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+        double[] gamma = new double[]{1, 1, 1, 1};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 4, 2, 1);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 4, 2, 1);
+        IDoubleTensor gTan = ITensor.tensor(new double[]{0, 0, 0, 0}, 4);
+        RereDiffTensor gPrimal = new RereDiffTensor(gamma, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor g = TangentDiffTensor.seed(gPrimal, gTan);
+        IDiffTensor y = x.groupNorm(2, g, null, 1e-5);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(8, jvp.length);
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "groupNorm JVP must not be all-zeros");
+    }
 }

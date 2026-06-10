@@ -135,6 +135,7 @@ public final class ExportShapeValidator {
         int[] shape = node.serializationShape();
         long bits = Double.doubleToRawLongBits(node.scalarParam());
         int kh = (int) ((bits >> 16) & 0xFF);
+        int kw = (int) ((bits >> 8) & 0xFF);
         int stride = (int) (bits & 0xFF);
         long bits2 = Double.doubleToRawLongBits(node.scalarParam2());
         int pad = (int) ((bits2 >> 16) & 0xFFFF);
@@ -147,7 +148,7 @@ public final class ExportShapeValidator {
 
             // Verify derived out dims match the 6D out dims
             int expectedOutH = (inH + 2 * pad - kh) / stride + 1;
-            int expectedOutW = (inW + 2 * pad - kh) / stride + 1;
+            int expectedOutW = (inW + 2 * pad - kw) / stride + 1;
             if (expectedOutH != outH || expectedOutW != outW) {
                 result.addError(String.format(
                     "node#%d maxpool2d: 6D shape out dims [%d,%d] don't match derived [%d,%d] " +
@@ -175,7 +176,7 @@ public final class ExportShapeValidator {
 
             // Derive what the backend WILL compute for input dims
             int derivedInH = (outH - 1) * stride + kh - 2 * pad;
-            int derivedInW = (outW - 1) * stride + kh - 2 * pad;
+            int derivedInW = (outW - 1) * stride + kw - 2 * pad;
 
             // Find the actual input size from the input node
             int actualInputSize = getInputBufferSize(node, order);
@@ -276,5 +277,32 @@ public final class ExportShapeValidator {
             }
             return sb.toString().stripTrailing();
         }
+    }
+
+
+    /**
+     * Hash graph structure (op tags, shapes, connectivity) excluding data values.
+     * Used to skip redundant ExportShapeValidator validation when topology is unchanged.
+     */
+    public static int computeStructureHash(java.util.List<RereDiffTensor> order) {
+        int h = 0;
+        for (RereDiffTensor v : order) {
+            String tag = v.opTag();
+            h = h * 31 + (tag != null ? tag.hashCode() : 0);
+            int[] shape = v.serializationShape();
+            if (shape != null) {
+                for (int d : shape) h = h * 31 + d;
+            }
+            java.util.List<RereDiffTensor> inputs = v.inputs();
+            if (inputs != null) {
+                for (RereDiffTensor inp : inputs) {
+                    h = h * 31 + System.identityHashCode(inp);
+                }
+            }
+            h = h * 31 + (v.isLeaf() ? 1 : 0);
+            h = h * 31 + Float.floatToIntBits((float) v.scalarParam());
+            h = h * 31 + Float.floatToIntBits((float) v.scalarParam2());
+        }
+        return h;
     }
 }
