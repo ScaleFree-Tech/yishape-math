@@ -879,7 +879,12 @@ public static IDiffTensor cat(RereDiffTensor tensor, int dim, IDoubleTensor... o
             inp.accGrad(subGrad);
         }
     };
-    return new RereDiffTensor(resultData, resultShape, allInputs, bw, "cat");
+    RereDiffTensor result = new RereDiffTensor(resultData, resultShape, allInputs, bw, "cat");
+    // Encode concatenation dimension for GPU/HPC backends.
+    // GPU cat forward uses scalar to perform block-interleaved concatenation;
+    // dim=0 is equivalent to flat concatenation (the legacy GPU path).
+    result.setScalarParam((double) d);
+    return result;
 }
 
 public static IDiffTensor stack(RereDiffTensor tensor, int dim, IDoubleTensor... others) {

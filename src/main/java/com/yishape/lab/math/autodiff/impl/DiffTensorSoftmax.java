@@ -261,6 +261,15 @@ public static IDiffTensor softmaxCrossEntropySparse(RereDiffTensor tensor, int[]
 
     if (!tensor.requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(resultData, resultShape));
 
+    // Convert sparse int[] labels to a double[] tensor for GPU graph serialization.
+    // GPU expects 2 inputs: (logits, labels). Labels are float(d) class indices.
+    double[] labelsDouble = new double[labels.length];
+    for (int i = 0; i < labels.length; i++) labelsDouble[i] = labels[i];
+    RereDiffTensor labelsTensor = new RereDiffTensor(labelsDouble, new int[]{labels.length});
+    // Labels are non-differentiable: detach ensures graph executor doesn't accumulate
+    // gradient to them (Rust zeroes the labels grad buffer).
+    labelsTensor.setRequiresGrad(false);
+
     int fOuter = outerSize, fClassSize = classSize, fInner = innerSize, fTotal = totalSamples;
     double[] fSoftmax = softmax;
     int[] fLabels = labels.clone();
@@ -281,7 +290,7 @@ public static IDiffTensor softmaxCrossEntropySparse(RereDiffTensor tensor, int[]
         for (int i = 0; i < m; i++) inGrad[i] *= gradScale;
         input.accGradFromPooled(inGrad, m);
     };
-    return new RereDiffTensor(resultData, resultShape, List.of(tensor), bw, "softmaxCrossEntropySparse");
+    return new RereDiffTensor(resultData, resultShape, List.of(tensor, labelsTensor), bw, "softmaxCrossEntropySparse");
 }
 
 // ==================== cumsum / cumprod ====================
