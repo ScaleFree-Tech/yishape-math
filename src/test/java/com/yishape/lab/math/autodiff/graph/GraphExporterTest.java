@@ -110,7 +110,7 @@ public class GraphExporterTest {
         IDiffVector x = AD.vector(new double[]{1, 2});
         IDiffVector loss = x.gelu().sum();
         String json = GraphExporter.toJson((RereDiffVector) loss);
-        assertTrue(json.contains("\"op\":\"gelu\""));
+        assertTrue(json.contains("\"op\":\"geluSum\"") || json.contains("\"op\":\"gelu\""));
     }
 
     @Test

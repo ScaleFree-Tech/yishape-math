@@ -325,7 +325,7 @@ public final class TensorFusedReductionOps {
                                         String chainTag, String reduceTag,
                                         int reduceDim, boolean keepdim) {
         if (!root.requiresGrad()) {
-            return new RereDiffTensor.ConstantDiffTensor(new RereDoubleTensor(result, outShape));
+            return new ConstantDiffTensor(new RereDoubleTensor(result, outShape));
         }
 
         int n = totalSize;

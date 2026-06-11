@@ -1359,7 +1359,7 @@ public class TangentDiffTensor implements IDiffTensor {
                     for (int j = r - 1; j > Math.max(dim1, dim2); j--) {
                         idx[j] = remaining % s[j]; remaining /= s[j];
                     }
-                    resultData[(o * effSize + k) * inner + i] = vals[RereDiffTensor.flatIndex(idx, s)];
+                    resultData[(o * effSize + k) * inner + i] = vals[DiffTensorUtil.flatIndex(idx, s)];
                 }
             }
         }

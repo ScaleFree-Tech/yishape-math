@@ -421,7 +421,8 @@ public final class GraphOpSchema {
             "gelu", "softmax", "logSoftmax", "silu", "mish",
             "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
             "softmaxCrossEntropy", "softmaxCrossEntropySparse",
-            // NOTE: bceLoss, focalLoss, diceLoss are HPC-only (not yet in GPU Rust backend).
+            "bceLoss",
+            // NOTE: focalLoss, diceLoss are HPC-only (not yet in GPU Rust backend).
             "normalize", "layerNorm",
             "broadcast", "transpose", "reshape", "flatten",
             "squeeze", "unsqueeze",

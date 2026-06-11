@@ -110,7 +110,7 @@ public final class TensorFusedOps {
      */
     public IDiffTensor done() {
         if (!root.requiresGrad()) {
-            return new RereDiffTensor.ConstantDiffTensor(new RereDoubleTensor(cur, root.shape()));
+            return new ConstantDiffTensor(new RereDoubleTensor(cur, root.shape()));
         }
         int n = totalSize;
         double[] out = cur;
