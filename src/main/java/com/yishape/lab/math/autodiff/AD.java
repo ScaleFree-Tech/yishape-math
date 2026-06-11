@@ -3,7 +3,7 @@ package com.yishape.lab.math.autodiff;
 import com.yishape.lab.math.autodiff.vjp.BatchVjpResult;
 import com.yishape.lab.math.autodiff.vjp.VjpFunction;
 import com.yishape.lab.math.autodiff.vjp.VjpResult;
-import com.yishape.lab.math.autodiff.vmap.VMap;
+import com.yishape.lab.math.autodiff.vmap.VMapTransform;
 import com.yishape.lab.util.Messages;
 import java.util.ArrayList;
 import java.util.List;
@@ -1157,41 +1157,7 @@ public class AD {
      * @return array of per-element outputs, each of length M
      */
     public static IDiffVector[] vmap(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-        int d = xs.get(0).size();
-
-        // Validate uniform dimension
-        for (int i = 1; i < n; i++) {
-            if (xs.get(i).size() != d) {
-                throw new IllegalArgumentException(
-                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
-            }
-        }
-
-        // Stack inputs into a single flat array
-        double[][] raw = new double[n][];
-        for (int i = 0; i < n; i++) {
-            raw[i] = xs.get(i).getValue().getData();
-        }
-        double[] stacked = VMap.INSTANCE.stack(raw);
-
-        // Single-graph batched execution
-        IDiffVector batchedInput = vector(stacked);
-        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
-        IDiffVector batchedResult = fn.apply(bdv);
-
-        // Unstack results: split flat output into per-sample slices
-        IDiffVector flat = (batchedResult instanceof BatchedDiffVector b)
-            ? b.unwrap() : batchedResult;
-        int outDim = flat.size() / n;
-        IDiffVector[] ys = new IDiffVector[n];
-        for (int i = 0; i < n; i++) {
-            ys[i] = flat.slice(i * outDim, (i + 1) * outDim);
-        }
-        return ys;
+        return VMapTransform.vmap(fn, xs);
     }
 
     /**
@@ -1203,34 +1169,7 @@ public class AD {
      * <p>便捷方法：对每个样本应用 fn 并求和结果。
      */
     public static IDiffVector vmapSum(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-        int d = xs.get(0).size();
-
-        for (int i = 1; i < n; i++) {
-            if (xs.get(i).size() != d) {
-                throw new IllegalArgumentException(
-                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
-            }
-        }
-
-        double[][] raw = new double[n][];
-        for (int i = 0; i < n; i++) raw[i] = xs.get(i).getValue().getData();
-        double[] stacked = VMap.INSTANCE.stack(raw);
-
-        IDiffVector batchedInput = vector(stacked);
-        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
-        IDiffVector result = fn.apply(bdv);
-
-        // Sum across batch dimension
-        IDiffVector flat = (result instanceof BatchedDiffVector b) ? b.unwrap() : result;
-        int outDim = flat.size() / n;
-        if (outDim == 1) {
-            return flat.sum();
-        }
-        return flat.reshape(n, outDim).sum(0);
+        return VMapTransform.vmapSum(fn, xs);
     }
 
     /**
@@ -1242,34 +1181,7 @@ public class AD {
      * <p>便捷方法：对每个样本应用 fn 并返回均值。
      */
     public static IDiffVector vmapMean(Function<IDiffVector, IDiffVector> fn, List<? extends IDiffVector> xs) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-        int d = xs.get(0).size();
-
-        for (int i = 1; i < n; i++) {
-            if (xs.get(i).size() != d) {
-                throw new IllegalArgumentException(
-                    Messages.get("vmap.dimension_mismatch", d, xs.get(i).size()));
-            }
-        }
-
-        double[][] raw = new double[n][];
-        for (int i = 0; i < n; i++) raw[i] = xs.get(i).getValue().getData();
-        double[] stacked = VMap.INSTANCE.stack(raw);
-
-        IDiffVector batchedInput = vector(stacked);
-        BatchedDiffVector bdv = new BatchedDiffVector(batchedInput, n, d);
-        IDiffVector result = fn.apply(bdv);
-
-        // Mean across batch dimension
-        IDiffVector flat = (result instanceof BatchedDiffVector b) ? b.unwrap() : result;
-        int outDim = flat.size() / n;
-        if (outDim == 1) {
-            return flat.mean();
-        }
-        return flat.reshape(n, outDim).sum(0).div(n);
+        return VMapTransform.vmapMean(fn, xs);
     }
 
     // ==================== IDiffTensor vmap overloads ====================
@@ -1300,55 +1212,7 @@ public class AD {
     public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn,
                                       List<? extends IDiffTensor> xs,
                                       int inAxes, int outAxes) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-
-        // Stack all tensors along inAxes → batch dim
-        IDiffTensor[] rest = new IDiffTensor[n - 1];
-        for (int i = 1; i < n; i++) {
-            rest[i - 1] = xs.get(i);
-        }
-        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
-
-        // Move batch dim to position 0 for BatchedDiffTensor
-        if (inAxes != 0) {
-            int ndim = batched.rank();
-            int[] perm = new int[ndim];
-            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
-            int idx = 1;
-            for (int d = 0; d < ndim; d++) {
-                if (d != perm[0]) perm[idx++] = d;
-            }
-            batched = batched.permute(perm);
-        }
-
-        // Single-graph batched execution
-        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
-        IDiffTensor result = fn.apply(bdt);
-
-        // Unwrap and move batch dim to outAxes
-        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
-
-        if (outAxes != 0) {
-            int ndim = flat.rank();
-            int targetOut = outAxes < 0 ? ndim + outAxes : outAxes;
-            int[] perm = new int[ndim];
-            int idx = 0;
-            for (int d = 1; d <= targetOut; d++) perm[idx++] = d;
-            perm[idx++] = 0;
-            for (int d = targetOut + 1; d < ndim; d++) perm[idx++] = d;
-            flat = flat.permute(perm);
-        }
-
-        // Unstack results along outAxes (which is now at position outAxes after permute)
-        int unstackDim = outAxes < 0 ? flat.rank() + outAxes : outAxes;
-        IDiffTensor[] ys = new IDiffTensor[n];
-        for (int i = 0; i < n; i++) {
-            ys[i] = flat.select(unstackDim, i);
-        }
-        return ys;
+        return VMapTransform.vmapT(fn, xs, inAxes, outAxes);
     }
 
     /**
@@ -1366,7 +1230,7 @@ public class AD {
      * dim shifted by +1 transparently.
      */
     public static IDiffTensor[] vmapT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
-        return vmapT(fn, xs, 0, 0);
+        return VMapTransform.vmapT(fn, xs);
     }
 
     /**
@@ -1401,46 +1265,13 @@ public class AD {
     public static IDiffTensor vmapStackedT(Function<IDiffTensor, IDiffTensor> fn,
                                             List<? extends IDiffTensor> xs,
                                             int inAxes) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-
-        // Stack all tensors along inAxes → batch dim
-        IDiffTensor[] rest = new IDiffTensor[n - 1];
-        for (int i = 1; i < n; i++) {
-            rest[i - 1] = xs.get(i);
-        }
-        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
-
-        // Move batch dim to position 0
-        if (inAxes != 0) {
-            int ndim = batched.rank();
-            int[] perm = new int[ndim];
-            perm[0] = inAxes;
-            int idx = 1;
-            for (int d = 0; d < ndim; d++) {
-                if (d != inAxes) perm[idx++] = d;
-            }
-            batched = batched.permute(perm);
-        }
-
-        // Wrap and execute
-        BatchedDiffTensor wrapper = new BatchedDiffTensor(batched);
-        IDiffTensor result = fn.apply(wrapper);
-
-        // Return still-batched (unwrap if fn returned a BatchedDiffTensor)
-        if (result instanceof BatchedDiffTensor bdt) {
-            return bdt;
-        }
-        // Re-wrap if fn returned raw tensor (retaining batch semantics)
-        return new BatchedDiffTensor(result);
+        return VMapTransform.vmapStackedT(fn, xs, inAxes);
     }
 
     /** Shorthand for {@code vmapStackedT(fn, xs, 0)}. */
     public static IDiffTensor vmapStackedT(Function<IDiffTensor, IDiffTensor> fn,
                                             List<? extends IDiffTensor> xs) {
-        return vmapStackedT(fn, xs, 0);
+        return VMapTransform.vmapStackedT(fn, xs);
     }
 
     /**
@@ -1473,69 +1304,7 @@ public class AD {
     public static IDiffTensor[] vmapMultiT(Function<List<IDiffTensor>, IDiffTensor> fn,
                                             List<? extends IDiffTensor> xs,
                                             int[] inAxes, int outAxes) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        if (inAxes.length != xs.size()) {
-            throw new IllegalArgumentException(
-                "inAxes.length=" + inAxes.length + " but xs.size()=" + xs.size());
-        }
-        int n = xs.size();
-
-        // Step 1: For each input, move its batch dim to position 0, then wrap in
-        // BatchedDiffTensor. All BatchedDiffTensors share the same batch size.
-        List<IDiffTensor> batchedInputs = new ArrayList<>(n);
-        int batchSize = -1;
-        for (int i = 0; i < n; i++) {
-            IDiffTensor x = xs.get(i);
-            int ax = inAxes[i];
-            int ndim = x.rank();
-            int batchAxis = ax < 0 ? ndim + ax : ax;
-
-            // Verify batch size consistency
-            int bs = x.dim(batchAxis);
-            if (batchSize < 0) batchSize = bs;
-            else if (batchSize != bs) {
-                throw new IllegalArgumentException(
-                    "Inconsistent batch sizes: input[0] batch=" + batchSize
-                    + " but input[" + i + "] batch=" + bs + " at axis " + ax);
-            }
-
-            // Permute batch dim to position 0
-            if (batchAxis != 0) {
-                int[] perm = new int[ndim];
-                perm[0] = batchAxis;
-                int idx = 1;
-                for (int d = 0; d < ndim; d++) {
-                    if (d != batchAxis) perm[idx++] = d;
-                }
-                x = x.permute(perm);
-            }
-            batchedInputs.add(new BatchedDiffTensor(x));
-        }
-
-        // Step 2: Execute fn with per-input BatchedDiffTensors
-        IDiffTensor result = fn.apply(batchedInputs);
-        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
-
-        // Step 3: Move batch dim to outAxes and unstack
-        if (outAxes != 0) {
-            int ndim = flat.rank();
-            int targetOut = outAxes < 0 ? ndim + outAxes : outAxes;
-            int[] perm = new int[ndim];
-            int idx = 0;
-            for (int d = 1; d <= targetOut; d++) perm[idx++] = d;
-            perm[idx++] = 0;
-            for (int d = targetOut + 1; d < ndim; d++) perm[idx++] = d;
-            flat = flat.permute(perm);
-        }
-
-        int unstackDim = outAxes < 0 ? flat.rank() + outAxes : outAxes;
-        IDiffTensor[] ys = new IDiffTensor[batchSize];
-        for (int i = 0; i < batchSize; i++) {
-            ys[i] = flat.select(unstackDim, i);
-        }
-        return ys;
+        return VMapTransform.vmapMultiT(fn, xs, inAxes, outAxes);
     }
 
     /**
@@ -1553,33 +1322,7 @@ public class AD {
     public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn,
                                         List<? extends IDiffTensor> xs,
                                         int inAxes) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-
-        IDiffTensor[] rest = new IDiffTensor[n - 1];
-        for (int i = 1; i < n; i++) {
-            rest[i - 1] = xs.get(i);
-        }
-        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
-
-        if (inAxes != 0) {
-            int ndim = batched.rank();
-            int[] perm = new int[ndim];
-            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
-            int idx = 1;
-            for (int d = 0; d < ndim; d++) {
-                if (d != perm[0]) perm[idx++] = d;
-            }
-            batched = batched.permute(perm);
-        }
-
-        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
-        IDiffTensor result = fn.apply(bdt);
-
-        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
-        return flat.sum(0, false);
+        return VMapTransform.vmapSumT(fn, xs, inAxes);
     }
 
     /**
@@ -1587,7 +1330,7 @@ public class AD {
      * Equivalent to {@code vmapSumT(fn, xs, 0)}.
      */
     public static IDiffTensor vmapSumT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
-        return vmapSumT(fn, xs, 0);
+        return VMapTransform.vmapSumT(fn, xs);
     }
 
     /**
@@ -1597,33 +1340,7 @@ public class AD {
     public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn,
                                          List<? extends IDiffTensor> xs,
                                          int inAxes) {
-        if (xs.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = xs.size();
-
-        IDiffTensor[] rest = new IDiffTensor[n - 1];
-        for (int i = 1; i < n; i++) {
-            rest[i - 1] = xs.get(i);
-        }
-        IDiffTensor batched = xs.get(0).stack(inAxes, rest);
-
-        if (inAxes != 0) {
-            int ndim = batched.rank();
-            int[] perm = new int[ndim];
-            perm[0] = inAxes < 0 ? ndim - 1 + inAxes : inAxes;
-            int idx = 1;
-            for (int d = 0; d < ndim; d++) {
-                if (d != perm[0]) perm[idx++] = d;
-            }
-            batched = batched.permute(perm);
-        }
-
-        BatchedDiffTensor bdt = new BatchedDiffTensor(batched);
-        IDiffTensor result = fn.apply(bdt);
-
-        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
-        return flat.sum(0, false).div(n);
+        return VMapTransform.vmapMeanT(fn, xs, inAxes);
     }
 
     /**
@@ -1631,7 +1348,7 @@ public class AD {
      * Equivalent to {@code vmapMeanT(fn, xs, 0)}.
      */
     public static IDiffTensor vmapMeanT(Function<IDiffTensor, IDiffTensor> fn, List<? extends IDiffTensor> xs) {
-        return vmapMeanT(fn, xs, 0);
+        return VMapTransform.vmapMeanT(fn, xs);
     }
 
     // ==================== vmap with multiple inputs ====================
@@ -1665,52 +1382,6 @@ public class AD {
     public static IDiffTensor[] vmapMultiT(Function<IDiffTensor[], IDiffTensor> fn,
                                             int[] inAxes,
                                             List<? extends IDiffTensor>... inputs) {
-        if (inputs.length == 0) {
-            throw new IllegalArgumentException(Messages.get("vmap.input_empty"));
-        }
-        int n = inputs[0].size();
-        for (int i = 1; i < inputs.length; i++) {
-            if (inputs[i].size() != n) {
-                throw new IllegalArgumentException(
-                    "All input lists must have the same size. Expected " + n
-                    + " but input[" + i + "] has " + inputs[i].size());
-            }
-        }
-
-        // Stack each input along its specified axis
-        IDiffTensor[] batched = new IDiffTensor[inputs.length];
-        for (int j = 0; j < inputs.length; j++) {
-            List<? extends IDiffTensor> list = inputs[j];
-            int ax = inAxes != null && j < inAxes.length ? inAxes[j] : 0;
-            IDiffTensor[] rest = new IDiffTensor[n - 1];
-            for (int i = 1; i < n; i++) rest[i - 1] = list.get(i);
-            batched[j] = list.get(0).stack(ax, rest);
-            if (ax != 0) {
-                int ndim = batched[j].rank();
-                int[] perm = new int[ndim];
-                perm[0] = ax < 0 ? ndim - 1 + ax : ax;
-                int idx = 1;
-                for (int d = 0; d < ndim; d++) {
-                    if (d != perm[0]) perm[idx++] = d;
-                }
-                batched[j] = batched[j].permute(perm);
-            }
-        }
-
-        // Wrap all in BatchedDiffTensor
-        BatchedDiffTensor[] bdts = new BatchedDiffTensor[batched.length];
-        for (int j = 0; j < batched.length; j++) {
-            bdts[j] = new BatchedDiffTensor(batched[j]);
-        }
-
-        IDiffTensor result = fn.apply(bdts);
-        IDiffTensor flat = (result instanceof BatchedDiffTensor b) ? b.unwrap() : result;
-
-        // Unstack
-        IDiffTensor[] ys = new IDiffTensor[n];
-        for (int i = 0; i < n; i++) {
-            ys[i] = flat.select(0, i);
-        }
-        return ys;
+        return VMapTransform.vmapMultiT(fn, inAxes, inputs);
     }
 }

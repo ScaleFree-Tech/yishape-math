@@ -28,19 +28,19 @@ import com.yishape.lab.math.linalg.IVector;
  *
  * @author lteb2
  */
-final class BatchedDiffVector implements IDiffVector {
+public final class BatchedDiffVector implements IDiffVector {
 
     private final IDiffVector data;
     private final int batch;
     private final int dim;
 
-    BatchedDiffVector(IDiffVector data, int batch, int dim) {
+    public BatchedDiffVector(IDiffVector data, int batch, int dim) {
         this.data = data;
         this.batch = batch;
         this.dim = dim;
     }
 
-    IDiffVector unwrap() {
+    public IDiffVector unwrap() {
         return data;
     }
 
