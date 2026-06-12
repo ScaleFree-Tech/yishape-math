@@ -4,8 +4,7 @@ import java.util.List;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
-import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.DoubleFlatGemm;
 
 /**
  * Gradient scaler for Automatic Mixed Precision (AMP) training.
@@ -31,7 +30,7 @@ public class GradScaler {
     public static final double MAX_SCALE = 65536.0;
     public static final double MIN_SCALE = 1e-8;
 
-    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
+    // In-place scaling uses DoubleFlatGemm.fusedDaxpyInPlace (HPC → SISD chain).
 
     private double scaleFactor;
     private final double growthFactor;
@@ -90,8 +89,9 @@ public class GradScaler {
         for (IDiffTensor p : params) {
             double[] g = ((RereDiffTensor) p).gradData();
             if (g != null && g.length > 0) {
-                double[] scaled = COMPUTER.binaryOperate(g, invScale, BinaryOperation.MULTIPLY);
-                System.arraycopy(scaled, 0, g, 0, g.length);
+                // In-place scale via fused Daxpy: y = a*x + b*y with a=0, b=invScale → y = invScale * y.
+                // Dispatches HPC (Rust FFM) → SISD, no temporary array allocation.
+                DoubleFlatGemm.fusedDaxpyInPlace(0, g, invScale, g);
             }
         }
     }
