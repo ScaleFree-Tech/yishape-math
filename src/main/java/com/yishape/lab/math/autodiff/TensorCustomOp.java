@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
+import com.yishape.lab.math.autodiff.impl.ConstantDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
 /**
@@ -63,7 +64,18 @@ public abstract class TensorCustomOp {
         RereDiffTensor[] tensorNodes = new RereDiffTensor[inputs.length];
         IDoubleTensor[] rawTensors = new IDoubleTensor[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
-            tensorNodes[i] = (RereDiffTensor) inputs[i];
+            IDiffTensor in = inputs[i];
+            if (in instanceof RereDiffTensor rt) {
+                tensorNodes[i] = rt;
+            } else if (in instanceof ConstantDiffTensor ct) {
+                // Wrap non-differentiable tensor as a non-diff leaf
+                tensorNodes[i] = new RereDiffTensor(ct.toDoubleArray(), ct.shape());
+                tensorNodes[i].setRequiresGrad(false);
+            } else {
+                throw new IllegalArgumentException(
+                    "TensorCustomOp requires RereDiffTensor or ConstantDiffTensor, got "
+                    + in.getClass().getSimpleName());
+            }
             rawTensors[i] = inputs[i].detach();
         }
 

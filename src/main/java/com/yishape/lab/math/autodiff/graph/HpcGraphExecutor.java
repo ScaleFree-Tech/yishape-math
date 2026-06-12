@@ -38,6 +38,9 @@ public final class HpcGraphExecutor {
     private static int hpcConsecutiveFailures = 0;
     private static int hpcCooldownRemaining = 0;
 
+    /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
+    private static final HashSet<String> REPORTED_UNSUPPORTED_OPS = new HashSet<>();
+
     // --- Graph structure hash cache ---
     private static int hpcLastStructureHash = 0;
     private static com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph hpcCachedGraph = null;
@@ -96,14 +99,16 @@ public final class HpcGraphExecutor {
         // Check unsupported ops
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
-                System.err.println("[HPC-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
-                if (log.isDebugEnabled()) {
-                    int leafCount = 0;
-                    for (RereDiffTensor n : order) {
-                        if (n.isLeaf()) leafCount++;
+                if (REPORTED_UNSUPPORTED_OPS.add(v.opTag())) {
+                    System.err.println("[HPC-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
+                    if (log.isDebugEnabled()) {
+                        int leafCount = 0;
+                        for (RereDiffTensor n : order) {
+                            if (n.isLeaf()) leafCount++;
+                        }
+                        log.debug("HPC tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
+                            v.opTag(), order.size(), leafCount);
                     }
-                    log.debug("HPC tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
-                        v.opTag(), order.size(), leafCount);
                 }
                 return Double.NaN;
             }

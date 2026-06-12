@@ -1,5 +1,6 @@
 package com.yishape.lab.math.autodiff.impl;
 
+import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -534,7 +535,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = 2.0 * g * xData[i];
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "squareSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("square", "sum"));
             r.exportShape = x.shape();
             // Symbolic backward for tape-of-tape: d/dx 2*x = 2, use x_ref for
             // chain-rule propagation. 2.0 * g broadcast via scalar-op mul.
@@ -550,7 +551,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = xData[i] > 0 ? g : 0;
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "reluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("relu", "sum"));
             r.exportShape = x.shape();
             double[] reluFactor = new double[m];
             for (int i = 0; i < m; i++) reluFactor[i] = xData[i] > 0 ? 1.0 : 0.0;
@@ -573,7 +574,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * eData[i];
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "expSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("exp", "sum"));
             r.exportShape = x.shape();
             // tape-of-tape: d²(exp(x)·sum)/dx² = exp(x). Use x.exp() to preserve
             // graph connection for MixedMode.hvp().
@@ -590,7 +591,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * sData[i] * (1.0 - sData[i]);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "sigmoidSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("sigmoid", "sum"));
             r.exportShape = x.shape();
             // tape-of-tape: d²σ(x)/dx² = σ(x)(1-σ(x))(1-2σ(x)).
             // Use tensor ops on x so MixedMode.hvp() gradients flow back.
@@ -609,7 +610,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = xData[i] >= 0 ? g : -g;
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "absSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("abs", "sum"));
             r.exportShape = x.shape();
             double[] absFactor = new double[m];
             for (int i = 0; i < m; i++) absFactor[i] = xData[i] >= 0 ? 1.0 : -1.0;
@@ -631,7 +632,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * (1.0 - tData[i] * tData[i]);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "tanhSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("tanh", "sum"));
             r.exportShape = x.shape();
             // tape-of-tape: d²tanh(x)/dx² = -2·tanh(x)·(1-tanh²(x)).
             // Use tensor ops on x so MixedMode.hvp() gradients flow back.
@@ -654,7 +655,7 @@ public class RereDiffTensor implements IDiffTensor {
                 }
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "siluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("silu", "sum"));
             r.exportShape = x.shape();
             // tape-of-tape: use tensor ops on x so MixedMode.hvp() gradients flow back.
             RereDiffTensor xRefSilu = x;
@@ -672,7 +673,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g / xData[i];
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "logSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("log", "sum"));
             r.exportShape = x.shape();
             // tape-of-tape: d²log(x)/dx² = -1/x². Use x.reciprocal() so
             // MixedMode.hvp() gradients flow back through the symbolic graph.
@@ -691,7 +692,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * scalarP * Math.pow(xData[i], scalarP - 1);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "powSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("pow", "sum"));
             r.exportShape = x.shape();
             r.scalarParam = scalarP;  // op parameter (exponent), NOT batchSize
             // Symbolic backward for tape-of-tape: d/dx n*x^(n-1)
@@ -725,7 +726,7 @@ public class RereDiffTensor implements IDiffTensor {
                 }
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "geluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("gelu", "sum"));
             r.exportShape = x.shape();
             int[] geluShape = x.shape().clone();
             double[] geluFactor = new double[m];
@@ -756,7 +757,7 @@ public class RereDiffTensor implements IDiffTensor {
                 }
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "mishSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("mish", "sum"));
             r.exportShape = x.shape();
             int[] mishShape = x.shape().clone();
             double[] mishFactor = new double[m];
@@ -779,7 +780,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * Math.cos(xData[i]);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "sinSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("sin", "sum"));
             r.exportShape = x.shape();
             int[] sinShape = x.shape().clone();
             double[] sinFactor = new double[m];
@@ -796,7 +797,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g * (-Math.sin(xData[i]));
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "cosSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("cos", "sum"));
             r.exportShape = x.shape();
             int[] cosShape = x.shape().clone();
             double[] cosFactor = new double[m];
@@ -815,7 +816,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = xData[i] > 0 ? g : g * a;
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "leakyReluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("leakyRelu", "sum"));
             r.exportShape = x.shape();
             int[] lrShape = x.shape().clone();
             double[] lrFactor = new double[m];
@@ -834,7 +835,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = xData[i] > 0 ? g : g * a * Math.exp(xData[i]);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "eluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("elu", "sum"));
             r.exportShape = x.shape();
             int[] eluShape = x.shape().clone();
             double[] eluFactor = new double[m];
@@ -854,7 +855,7 @@ public class RereDiffTensor implements IDiffTensor {
                     dxBuf[i] = xData[i] > 0 ? g * seluLambda : g * seluLambda * seluAlpha * Math.exp(xData[i]);
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "seluSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("selu", "sum"));
             r.exportShape = x.shape();
             int[] seluShape = x.shape().clone();
             double[] seluFactor = new double[m];
@@ -872,7 +873,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = g / (1.0 + Math.exp(-xData[i]));
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "softplusSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("softplus", "sum"));
             r.exportShape = x.shape();
             int[] spShape = x.shape().clone();
             double[] spFactor = new double[m];
@@ -892,7 +893,7 @@ public class RereDiffTensor implements IDiffTensor {
                 for (int i = 0; i < m; i++) dxBuf[i] = (xData[i] > mn && xData[i] < mx) ? g : 0;
                 x.accGradFromPooled(dxBuf, m);
             };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, "hardtanhSum");
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("hardtanh", "sum"));
             r.exportShape = x.shape();
             int[] htShape = x.shape().clone();
             double[] htFactor = new double[m];
@@ -936,20 +937,20 @@ public class RereDiffTensor implements IDiffTensor {
 
         // -- square().sum(dim) --
         if ("square".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "squareSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("square", "sum"),
                 (g, xv) -> g * 2.0 * xv, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- relu().sum(dim) --
         if ("relu".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "reluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("relu", "sum"),
                 (g, xv) -> xv > 0 ? g : 0, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- exp().sum(dim) --
         if ("exp".equals(opTag)) {
             double[] eData = value.toDoubleArray();
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "expSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("exp", "sum"),
                 (g, xv) -> g * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
             // Override: use the exp(x) values for backward factor
             double[] expFactor = new double[total];
@@ -960,7 +961,7 @@ public class RereDiffTensor implements IDiffTensor {
         // -- sigmoid().sum(dim) --
         if ("sigmoid".equals(opTag)) {
             double[] sigData = value.toDoubleArray();
-            RereDiffTensor rt = buildFusedSumDim(x, result, resultShape, dim, keepdim, "sigmoidSum",
+            RereDiffTensor rt = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sigmoid", "sum"),
                 (g, xv) -> { double sv = 1.0/(1.0+Math.exp(-xv)); return g * sv * (1-sv); },
                 xData, fOuter, fReduce, fInner, total);
             double[] sigFactor = new double[total];
@@ -970,27 +971,27 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- abs().sum(dim) --
         if ("abs".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "absSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("abs", "sum"),
                 (g, xv) -> xv >= 0 ? g : -g, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- tanh().sum(dim) --
         if ("tanh".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "tanhSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("tanh", "sum"),
                 (g, xv) -> { double t = Math.tanh(xv); return g * (1.0 - t*t); },
                 xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- silu().sum(dim) --
         if ("silu".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "siluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("silu", "sum"),
                 (g, xv) -> { double sig = 1.0/(1.0+Math.exp(-xv)); return g * (sig + xv * sig * (1-sig)); },
                 xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- log().sum(dim) --
         if ("log".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "logSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("log", "sum"),
                 (g, xv) -> g / xv, xData, fOuter, fReduce, fInner, total);
             return r;
         }
@@ -998,14 +999,14 @@ public class RereDiffTensor implements IDiffTensor {
         double sp = scalarParam;
         if ("pow".equals(opTag) && !Double.isNaN(sp)) {
             double param = sp;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "powSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("pow", "sum"),
                 (g, xv) -> g * param * Math.pow(xv, param - 1), xData, fOuter, fReduce, fInner, total);
             r.scalarParam = param;
             return r;
         }
         // -- gelu().sum(dim) --
         if ("gelu".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "geluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("gelu", "sum"),
                 (g, xv) -> {
                     double c = 0.7978845608028654;
                     double arg = c * (xv + 0.044715 * xv * xv * xv);
@@ -1018,7 +1019,7 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- mish().sum(dim) --
         if ("mish".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "mishSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("mish", "sum"),
                 (g, xv) -> {
                     double sp_m = Math.log1p(Math.exp(xv));
                     double t = Math.tanh(sp_m);
@@ -1029,27 +1030,27 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- sin().sum(dim) --
         if ("sin".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "sinSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sin", "sum"),
                 (g, xv) -> g * Math.cos(xv), xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- cos().sum(dim) --
         if ("cos".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "cosSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("cos", "sum"),
                 (g, xv) -> g * (-Math.sin(xv)), xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- leakyRelu().sum(dim) --
         if ("leakyRelu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "leakyReluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("leakyRelu", "sum"),
                 (g, xv) -> xv > 0 ? g : g * alpha, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- elu().sum(dim) --
         if ("elu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "eluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("elu", "sum"),
                 (g, xv) -> xv > 0 ? g : g * alpha * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
             return r;
         }
@@ -1057,13 +1058,13 @@ public class RereDiffTensor implements IDiffTensor {
         if ("selu".equals(opTag)) {
             final double seluL = 1.0507009873554804934193349852946;
             final double seluA = 1.6732632423543772848170429916717;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "seluSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("selu", "sum"),
                 (g, xv) -> xv > 0 ? g * seluL : g * seluL * seluA * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- softplus().sum(dim) --
         if ("softplus".equals(opTag)) {
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "softplusSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("softplus", "sum"),
                 (g, xv) -> g / (1.0 + Math.exp(-xv)), xData, fOuter, fReduce, fInner, total);
             return r;
         }
@@ -1071,7 +1072,7 @@ public class RereDiffTensor implements IDiffTensor {
         if ("hardtanh".equals(opTag)) {
             double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
             double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "hardtanhSum",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("hardtanh", "sum"),
                 (g, xv) -> (xv > hmin && xv < hmax) ? g : 0, xData, fOuter, fReduce, fInner, total);
             return r;
         }
@@ -1114,7 +1115,7 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /** Try to fuse unaryOp + mean(dim) into a single fused node. Returns null if no pattern matches.
-     *  Mirrors {@link #tryFuseSumDim(int, boolean)} but produces "reluMean" etc. tags
+     *  Mirrors {@link #tryFuseSumDim(int, boolean)} but produces GraphOpSchema.FusedTag.of("relu", "mean") etc. tags
      *  and scales the backward gradient by 1/reduce. */
     IDiffTensor tryFuseMeanDim(int dim, boolean keepdim) {
         if (inputs.size() != 1) return null;
@@ -1144,18 +1145,18 @@ public class RereDiffTensor implements IDiffTensor {
 
         // -- square().mean(dim) --
         if ("square".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "squareMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("square", "mean"),
                 (g, xv) -> g * invR * 2.0 * xv, xData, outer, reduce, inner, total);
         }
         // -- relu().mean(dim) --
         if ("relu".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "reluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("relu", "mean"),
                 (g, xv) -> xv > 0 ? g * invR : 0, xData, outer, reduce, inner, total);
         }
         // -- exp().mean(dim) --
         if ("exp".equals(opTag)) {
             double[] eData = value.toDoubleArray();
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "expMean",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("exp", "mean"),
                 (g, xv) -> g * invR * Math.exp(xv), xData, outer, reduce, inner, total);
             double[] expFactor = new double[total];
             for (int i = 0; i < total; i++) expFactor[i] = eData[i] * invR;
@@ -1165,7 +1166,7 @@ public class RereDiffTensor implements IDiffTensor {
         // -- sigmoid().mean(dim) --
         if ("sigmoid".equals(opTag)) {
             double[] sigData = value.toDoubleArray();
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "sigmoidMean",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sigmoid", "mean"),
                 (g, xv) -> { double sv = 1.0/(1.0+Math.exp(-xv)); return g * invR * sv * (1-sv); },
                 xData, outer, reduce, inner, total);
             double[] sigFactor = new double[total];
@@ -1175,38 +1176,38 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- abs().mean(dim) --
         if ("abs".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "absMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("abs", "mean"),
                 (g, xv) -> xv >= 0 ? g * invR : -g * invR, xData, outer, reduce, inner, total);
         }
         // -- tanh().mean(dim) --
         if ("tanh".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "tanhMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("tanh", "mean"),
                 (g, xv) -> { double t = Math.tanh(xv); return g * invR * (1.0 - t*t); },
                 xData, outer, reduce, inner, total);
         }
         // -- silu().mean(dim) --
         if ("silu".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "siluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("silu", "mean"),
                 (g, xv) -> { double sig = 1.0/(1.0+Math.exp(-xv)); return g * invR * (sig + xv * sig * (1-sig)); },
                 xData, outer, reduce, inner, total);
         }
         // -- log().mean(dim) --
         if ("log".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "logMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("log", "mean"),
                 (g, xv) -> g * invR / xv, xData, outer, reduce, inner, total);
         }
         // -- pow(n).mean(dim) --
         double spp = scalarParam;
         if ("pow".equals(opTag) && !Double.isNaN(spp)) {
             double param = spp;
-            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, "powMean",
+            RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("pow", "mean"),
                 (g, xv) -> g * invR * param * Math.pow(xv, param - 1), xData, outer, reduce, inner, total);
             r.scalarParam = param;
             return r;
         }
         // -- gelu().mean(dim) --
         if ("gelu".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "geluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("gelu", "mean"),
                 (g, xv) -> {
                     double c = 0.7978845608028654;
                     double arg = c * (xv + 0.044715 * xv * xv * xv);
@@ -1218,7 +1219,7 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- mish().mean(dim) --
         if ("mish".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "mishMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("mish", "mean"),
                 (g, xv) -> {
                     double sp_m = Math.log1p(Math.exp(xv));
                     double t = Math.tanh(sp_m);
@@ -1228,44 +1229,44 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- sin().mean(dim) --
         if ("sin".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "sinMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sin", "mean"),
                 (g, xv) -> g * invR * Math.cos(xv), xData, outer, reduce, inner, total);
         }
         // -- cos().mean(dim) --
         if ("cos".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "cosMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("cos", "mean"),
                 (g, xv) -> g * invR * (-Math.sin(xv)), xData, outer, reduce, inner, total);
         }
         // -- leakyRelu().mean(dim) --
         if ("leakyRelu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "leakyReluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("leakyRelu", "mean"),
                 (g, xv) -> xv > 0 ? g * invR : g * invR * alpha, xData, outer, reduce, inner, total);
         }
         // -- elu().mean(dim) --
         if ("elu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "eluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("elu", "mean"),
                 (g, xv) -> xv > 0 ? g * invR : g * invR * alpha * Math.exp(xv), xData, outer, reduce, inner, total);
         }
         // -- selu().mean(dim) --
         if ("selu".equals(opTag)) {
             final double seluL = 1.0507009873554804934193349852946;
             final double seluA = 1.6732632423543772848170429916717;
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "seluMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("selu", "mean"),
                 (g, xv) -> xv > 0 ? g * invR * seluL : g * invR * seluL * seluA * Math.exp(xv),
                 xData, outer, reduce, inner, total);
         }
         // -- softplus().mean(dim) --
         if ("softplus".equals(opTag)) {
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "softplusMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("softplus", "mean"),
                 (g, xv) -> g * invR / (1.0 + Math.exp(-xv)), xData, outer, reduce, inner, total);
         }
         // -- hardtanh().mean(dim) --
         if ("hardtanh".equals(opTag)) {
             double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
             double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
-            return buildFusedSumDim(x, result, resultShape, dim, keepdim, "hardtanhMean",
+            return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("hardtanh", "mean"),
                 (g, xv) -> (xv > hmin && xv < hmax) ? g * invR : 0, xData, outer, reduce, inner, total);
         }
         return null;

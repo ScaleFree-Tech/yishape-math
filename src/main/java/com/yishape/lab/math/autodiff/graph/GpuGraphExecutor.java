@@ -44,6 +44,9 @@ public final class GpuGraphExecutor {
     private static int gpuConsecutiveFailures = 0;
     private static int gpuCooldownRemaining = 0;
 
+    /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
+    private static final HashSet<String> REPORTED_UNSUPPORTED_OPS = new HashSet<>();
+
     /**
      * Ops supported in tensor-native GPU execution.
      * Reference: GraphOpSchema.Gpu.SUPPORTED.
@@ -183,9 +186,11 @@ public final class GpuGraphExecutor {
         }
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
-                System.err.println("[GPU-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
-                log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes",
-                    v.opTag(), order.size());
+                if (REPORTED_UNSUPPORTED_OPS.add(v.opTag())) {
+                    System.err.println("[GPU-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
+                    log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes",
+                        v.opTag(), order.size());
+                }
                 return Double.NaN;
             }
         }

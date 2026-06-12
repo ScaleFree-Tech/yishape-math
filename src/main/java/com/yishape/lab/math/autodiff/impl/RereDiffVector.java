@@ -1,5 +1,6 @@
 package com.yishape.lab.math.autodiff.impl;
 
+import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -449,7 +450,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "squareMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("square", "mean");
                         symFactor = sf;
                     }
                     case "relu" -> {
@@ -462,7 +463,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "reluMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("relu", "mean");
                         symFactor = sf;
                     }
                     case "exp" -> {
@@ -475,7 +476,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "expMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("exp", "mean");
                         symFactor = sf;
                     }
                     case "abs" -> {
@@ -488,7 +489,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "absMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("abs", "mean");
                         symFactor = sf;
                     }
                     case "log" -> {
@@ -501,7 +502,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "logMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("log", "mean");
                         symFactor = sf;
                     }
                     case "sigmoid" -> {
@@ -514,7 +515,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "sigmoidMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("sigmoid", "mean");
                         symFactor = sf;
                     }
                     case "tanh" -> {
@@ -527,7 +528,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "tanhMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("tanh", "mean");
                         symFactor = sf;
                     }
                     case "silu" -> {
@@ -544,7 +545,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "siluMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("silu", "mean");
                         symFactor = sf;
                     }
                     case "pow" -> {
@@ -559,7 +560,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
                             inp.accGradFromPooled(buf, m);
                         };
                         fusedInput = inp;
-                        fusedTag = "powMean";
+                        fusedTag = GraphOpSchema.FusedTag.of("pow", "mean");
                         symFactor = sf;
                     }
                 }
@@ -696,11 +697,18 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector cat(IDiffVector... others) {
+        // Flatten to 1D for vector-level concatenation.
+        // Vectors may wrap multi-dim tensors (e.g. from flattenValue()),
+        // which would cause DiffTensorAdvanced.cat to compute wrong innerSize.
+        RereDiffTensor self1d = (tensor.rank() == 1) ? tensor
+            : (RereDiffTensor) tensor.reshape(new int[]{(int) tensor.totalSize()});
         IDiffTensor[] otherTensors = new IDiffTensor[others.length];
         for (int i = 0; i < others.length; i++) {
-            otherTensors[i] = ((RereDiffVector) others[i]).tensor;
+            RereDiffTensor ot = ((RereDiffVector) others[i]).tensor;
+            otherTensors[i] = (ot.rank() == 1) ? ot
+                : (RereDiffTensor) ot.reshape(new int[]{(int) ot.totalSize()});
         }
-        return wrap((RereDiffTensor) tensor.cat(0, otherTensors));
+        return wrap((RereDiffTensor) self1d.cat(0, otherTensors));
     }
 
     // ==================== In-place operations ====================

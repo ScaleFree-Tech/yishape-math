@@ -416,9 +416,20 @@ public class AD {
      * }</pre>
      */
     public static TensorFusedReductionOps fuseReduceTensor(IDiffTensor t) {
-        if (!(t instanceof com.yishape.lab.math.autodiff.impl.RereDiffTensor rt)) {
+        com.yishape.lab.math.autodiff.impl.RereDiffTensor rt;
+        if (t instanceof com.yishape.lab.math.autodiff.impl.RereDiffTensor r) {
+            rt = r;
+        } else if (t instanceof com.yishape.lab.math.autodiff.impl.ConstantDiffTensor ct) {
+            // Wrap constant data in a non-differentiable RereDiffTensor leaf.
+            // The fused chain computes eagerly on the data; buildFusedNode()
+            // detects !requiresGrad and returns a ConstantDiffTensor directly.
+            rt = new com.yishape.lab.math.autodiff.impl.RereDiffTensor(
+                t.toDoubleArray(), t.shape());
+            rt.setRequiresGrad(false);
+        } else {
             throw new IllegalArgumentException(
-                "fuseReduceTensor requires RereDiffTensor, got " + t.getClass().getSimpleName());
+                "fuseReduceTensor requires RereDiffTensor or ConstantDiffTensor, got "
+                + t.getClass().getSimpleName());
         }
         return new TensorFusedReductionOps(rt);
     }

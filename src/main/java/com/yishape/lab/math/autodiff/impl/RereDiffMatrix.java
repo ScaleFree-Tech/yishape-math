@@ -1,5 +1,6 @@
 package com.yishape.lab.math.autodiff.impl;
 
+import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -1018,7 +1019,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(x), backwardFn);
-            node.opTag = "squareSum";
+            node.opTag = GraphOpSchema.FusedTag.of("square", "sum");
             return node;
         }
         // Pattern fusion: exp().sum() → single fused node
@@ -1041,7 +1042,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(x), backwardFn);
-            node.opTag = "expSum";
+            node.opTag = GraphOpSchema.FusedTag.of("exp", "sum");
             return node;
         }
         double s = this.value.sumValue();
@@ -1090,7 +1091,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(x), backwardFn);
-            node.opTag = "squareMean";
+            node.opTag = GraphOpSchema.FusedTag.of("square", "mean");
             return node;
         }
         double m = this.value.meanValue();
@@ -1139,7 +1140,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.setOpTag("squareSum");
+            node.tensor.setOpTag(GraphOpSchema.FusedTag.of("square", "sum"));
             return node;
         }
         // Pattern fusion: exp().sumAsVector() → single fused node
@@ -1162,7 +1163,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.setOpTag("expSum");
+            node.tensor.setOpTag(GraphOpSchema.FusedTag.of("exp", "sum"));
             return node;
         }
         double s = this.value.sumValue();
@@ -1213,7 +1214,7 @@ public class RereDiffMatrix implements IDiffMatrix, Serializable {
                 x.accGradDirect(fused);
             };
             RereDiffVector node = RereDiffVector.createNonLeaf(resultVal.getData(), List.of(), backwardFn);
-            node.tensor.setOpTag("squareMean");
+            node.tensor.setOpTag(GraphOpSchema.FusedTag.of("square", "mean"));
             return node;
         }
         double m = this.value.meanValue();

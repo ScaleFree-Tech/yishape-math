@@ -1,6 +1,7 @@
 package com.yishape.lab.math.autodiff.impl;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
@@ -169,14 +170,14 @@ public final class TensorFusedReductionOps {
     public IDiffTensor sum(int dim, boolean keepdim) {
         int[] outShape = reducedShape(originalShape, dim, keepdim);
         double[] result = reduceSum(cur, originalShape, dim);
-        String chainTag = opTags.isEmpty() ? "sum" : String.join("_", opTags) + "_sum";
+        String chainTag = toChainTag(opTags, "sum");
         return buildFusedNode(result, outShape, chainTag, "sum", dim, keepdim);
     }
 
     /** Reduce-sum over all elements (SIMD-accelerated). */
     public IDiffTensor sum() {
         double s = COMPUTER.reduceOperate(cur, ReduceOperation.SUM);
-        String chainTag = opTags.isEmpty() ? "sum" : String.join("_", opTags) + "_sum";
+        String chainTag = toChainTag(opTags, "sum");
         return buildFusedNode(new double[]{s}, new int[]{1}, chainTag, "sumAll", -1, false);
     }
 
@@ -190,14 +191,14 @@ public final class TensorFusedReductionOps {
         double scale = 1.0 / originalShape[dim];
         double[] summed = reduceSum(cur, originalShape, dim);
         double[] result = COMPUTER.binaryOperate(summed, scale, com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
-        String chainTag = opTags.isEmpty() ? "mean" : String.join("_", opTags) + "_mean";
+        String chainTag = toChainTag(opTags, "mean");
         return buildFusedNode(result, outShape, chainTag, "mean", dim, keepdim);
     }
 
     /** Reduce-mean over all elements (SIMD-accelerated). */
     public IDiffTensor mean() {
         double s = COMPUTER.reduceOperate(cur, ReduceOperation.SUM) / totalSize;
-        String chainTag = opTags.isEmpty() ? "mean" : String.join("_", opTags) + "_mean";
+        String chainTag = toChainTag(opTags, "mean");
         return buildFusedNode(new double[]{s}, new int[]{1}, chainTag, "meanAll", -1, false);
     }
 
@@ -207,7 +208,7 @@ public final class TensorFusedReductionOps {
     public IDiffTensor softmax(int dim) {
         int[] outShape = originalShape.clone();
         double[] result = softmaxForward(cur, originalShape, dim);
-        String chainTag = opTags.isEmpty() ? "softmax" : String.join("_", opTags) + "_softmax";
+        String chainTag = toChainTag(opTags, "softmax");
         return buildFusedNode(result, outShape, chainTag, "softmax", dim, false);
     }
 
@@ -218,7 +219,7 @@ public final class TensorFusedReductionOps {
     public IDiffTensor logSoftmax(int dim) {
         int[] outShape = originalShape.clone();
         double[] result = logSoftmaxForward(cur, originalShape, dim);
-        String chainTag = opTags.isEmpty() ? "logSoftmax" : String.join("_", opTags) + "_logSoftmax";
+        String chainTag = toChainTag(opTags, "logSoftmax");
         return buildFusedNode(result, outShape, chainTag, "logSoftmax", dim, false);
     }
 
@@ -319,7 +320,16 @@ public final class TensorFusedReductionOps {
         return result;
     }
 
-    // ── Internal: fused node construction ──
+    // ── Internal: tag and node construction ──
+
+    /**
+     * Builds a camelCase chain tag from element-wise op tags and a reduce tag.
+     * Delegates to {@link GraphOpSchema.FusedTag#ofChain(List, String)} — the
+     * single authority for fused tag naming.
+     */
+    private static String toChainTag(List<String> opTags, String reduceTag) {
+        return GraphOpSchema.FusedTag.ofChain(opTags, reduceTag);
+    }
 
     private IDiffTensor buildFusedNode(double[] result, int[] outShape,
                                         String chainTag, String reduceTag,
