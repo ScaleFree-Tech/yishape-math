@@ -2514,6 +2514,13 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     @Override
+    public double[] fill(int size, double value) {
+        double[] result = new double[size];
+        java.util.Arrays.fill(result, value);
+        return result;
+    }
+
+    @Override
     public double[] diff(double[] array, int stride) {
         if (stride <= 0) {
             throw new IllegalArgumentException("步长必须为正整数");

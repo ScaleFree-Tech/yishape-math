@@ -32,9 +32,8 @@ public final class HpcInterpolate {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateBilinearForward(
-                input, B, C, H, W, outH, outW, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateBilinearForward(
+                input, B, C, H, W, outH, outW, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -59,9 +58,8 @@ public final class HpcInterpolate {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateBilinearBackward(
-                gradOutput, B, C, H, W, outH, outW, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateBilinearBackward(
+                gradOutput, B, C, H, W, outH, outW, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     // ==================== nearest ====================
@@ -88,9 +86,8 @@ public final class HpcInterpolate {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateNearestForward(
-                input, B, C, H, W, outH, outW, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateNearestForward(
+                input, B, C, H, W, outH, outW, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -115,8 +112,7 @@ public final class HpcInterpolate {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateNearestBackward(
-                gradOutput, B, C, H, W, outH, outW, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.interpolateNearestBackward(
+                gradOutput, B, C, H, W, outH, outW, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

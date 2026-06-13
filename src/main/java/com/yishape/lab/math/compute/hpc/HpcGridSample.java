@@ -40,9 +40,8 @@ public final class HpcGridSample {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.gridSampleForward(
-                input, grid, N, C, H, W, outH, outW, mode, paddingMode, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.gridSampleForward(
+                input, grid, N, C, H, W, outH, outW, mode, paddingMode, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -70,8 +69,7 @@ public final class HpcGridSample {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.gridSampleBackward(
-                gradOutput, input, grid, N, C, H, W, outH, outW, mode, paddingMode, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.gridSampleBackward(
+                gradOutput, input, grid, N, C, H, W, outH, outW, mode, paddingMode, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

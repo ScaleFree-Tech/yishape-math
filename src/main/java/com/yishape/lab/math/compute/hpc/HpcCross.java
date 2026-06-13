@@ -32,8 +32,7 @@ public final class HpcCross {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.crossForward(a, b, numTriplets, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.crossForward(a, b, numTriplets, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -63,8 +62,7 @@ public final class HpcCross {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.crossBackward(
-                gradOutput, a, b, numTriplets, gradA, gradB);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.crossBackward(
+                gradOutput, a, b, numTriplets, gradA, gradB); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

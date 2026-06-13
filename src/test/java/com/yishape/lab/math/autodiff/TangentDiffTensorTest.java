@@ -591,4 +591,250 @@ public class TangentDiffTensorTest {
         for (double v : jvp) { if (v != 0) { allZero = false; break; } }
         assertFalse(allZero, "groupNorm JVP must not be all-zeros");
     }
+
+    @Test
+    void testInterpolateBilinearJvpNonZero() {
+        // interpolate is linear: JVP = interpolate(tangent). Verify bilinear mode.
+        // Input [1,1,4,4] -> scaleFactor=0.5 -> output [1,1,2,2]
+        double[] data = new double[]{
+             1,  2,  3,  4,
+             5,  6,  7,  8,
+             9, 10, 11, 12,
+            13, 14, 15, 16
+        };
+        double[] tang = new double[]{
+            0.1, 0.2, 0.3, 0.4,
+            0.5, 0.6, 0.7, 0.8,
+            0.9, 1.0, 1.1, 1.2,
+            1.3, 1.4, 1.5, 1.6
+        };
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 1, 4, 4);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 1, 4, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        IDiffTensor y = x.interpolate(0.5, "bilinear");
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(4, jvp.length, "output should be [1,1,2,2] = 4 elements");
+        // Each output pixel averages 4 tangent elements with equal weight (0.25 each)
+        // JVP[0,0] = 0.25*(0.1+0.2+0.5+0.6) = 0.35
+        // JVP[0,1] = 0.25*(0.3+0.4+0.7+0.8) = 0.55
+        // JVP[1,0] = 0.25*(0.9+1.0+1.3+1.4) = 1.15
+        // JVP[1,1] = 0.25*(1.1+1.2+1.5+1.6) = 1.35
+        assertEquals(0.35, jvp[0], 1e-12);
+        assertEquals(0.55, jvp[1], 1e-12);
+        assertEquals(1.15, jvp[2], 1e-12);
+        assertEquals(1.35, jvp[3], 1e-12);
+    }
+
+    @Test
+    void testInterpolateNearestJvpNonZero() {
+        // nearest mode: JVP = nearest(tangent). scaleFactor=2.0 on [1,1,2,2] -> [1,1,4,4]
+        double[] data = new double[]{1, 2, 3, 4};
+        double[] tang = new double[]{0.1, 0.2, 0.3, 0.4};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 1, 2, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 1, 2, 2);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        IDiffTensor y = x.interpolate(2.0, "nearest");
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(16, jvp.length, "output should be [1,1,4,4] = 16 elements");
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "interpolate nearest JVP must not be all-zeros");
+    }
+
+    @Test
+    void testSmoothL1LossJvp() {
+        // JVP of smoothL1Loss = dot(grad_input, tangent_input) + dot(grad_target, tangent_target)
+        double[] data = new double[]{1.0, 2.0, 3.0, 4.0};
+        double[] tang = new double[]{0.1, 0.2, 0.3, 0.4};
+        double[] targetData = new double[]{0.5, 1.5, 2.5, 3.5};
+        double[] targetTang = new double[]{0.05, 0.15, 0.25, 0.35};
+        RereDiffTensor primal = new RereDiffTensor(data, 4);
+        RereDiffTensor targetPrimal = new RereDiffTensor(targetData, 4);
+        IDoubleTensor tan = ITensor.tensor(tang, 4);
+        IDoubleTensor tTan = ITensor.tensor(targetTang, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor t = TangentDiffTensor.seed(targetPrimal, tTan);
+        IDiffTensor y = x.smoothL1Loss(t, 1.0);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(1, jvp.length, "loss output is scalar");
+        assertNotEquals(0.0, jvp[0], 1e-15, "smoothL1Loss JVP must not be zero");
+    }
+
+    @Test
+    void testBceLossJvp() {
+        // sigmoid outputs for BCE
+        double[] data = new double[]{0.8, 0.2, 0.6, 0.4};
+        double[] tang = new double[]{0.1, 0.0, 0.0, 0.0};
+        double[] targetData = new double[]{1.0, 0.0, 1.0, 0.0};
+        double[] targetTang = new double[]{0.0, 0.0, 0.0, 0.0};
+        RereDiffTensor primal = new RereDiffTensor(data, 4);
+        RereDiffTensor targetPrimal = new RereDiffTensor(targetData, 4);
+        IDoubleTensor tan = ITensor.tensor(tang, 4);
+        IDoubleTensor tTan = ITensor.tensor(targetTang, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor t = TangentDiffTensor.seed(targetPrimal, tTan);
+        IDiffTensor y = x.bceLoss(t);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(1, jvp.length);
+        assertNotEquals(0.0, jvp[0], 1e-15, "bceLoss JVP must not be zero");
+    }
+
+    @Test
+    void testNllLossJvp() {
+        // log-softmax outputs for NLL
+        double[] data = new double[]{
+            -0.2, -1.5, -2.0,  // class 0 highest
+            -2.0, -0.3, -1.5,  // class 1 highest
+        };
+        double[] tang = new double[]{
+            0.1, 0.0, 0.0,
+            0.0, 0.1, 0.0,
+        };
+        // target: class indices (0, 1)
+        double[] targetData = new double[]{0.0, 1.0};
+        double[] targetTang = new double[]{0.0, 0.0};
+        RereDiffTensor primal = new RereDiffTensor(data, 2, 3);
+        RereDiffTensor targetPrimal = new RereDiffTensor(targetData, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 2, 3);
+        IDoubleTensor tTan = ITensor.tensor(targetTang, 2);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor t = TangentDiffTensor.seed(targetPrimal, tTan);
+        IDiffTensor y = x.nllLoss(t, 1);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(1, jvp.length);
+        assertNotEquals(0.0, jvp[0], 1e-15, "nllLoss JVP must not be zero");
+    }
+
+    @Test
+    void testDepthwiseConv1dJvpNonZero() {
+        // depthwiseConv1d is bilinear: JVP = conv1d(tangent_input, weight) + conv1d(input, tangent_weight)
+        // Input [N=1, C=2, L=5], kernel size 3, stride=1, pad=0
+        double[] data = new double[]{
+            1, 2, 3, 4, 5,  // channel 0
+            2, 3, 4, 5, 6   // channel 1
+        };
+        double[] tang = new double[]{
+            0.1, 0.2, 0.3, 0.4, 0.5,
+            0.6, 0.7, 0.8, 0.9, 1.0
+        };
+        double[] weightData = new double[]{
+            1, 0, -1,  // channel 0 kernel
+            0, 1, 0    // channel 1 kernel
+        };
+        double[] weightTang = new double[]{
+            0.1, 0.2, 0.3,
+            0.4, 0.5, 0.6
+        };
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 2, 5);
+        RereDiffTensor weightPrimal = new RereDiffTensor(weightData, 2, 3);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 2, 5);
+        IDoubleTensor wTan = ITensor.tensor(weightTang, 2, 3);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor w = TangentDiffTensor.seed(weightPrimal, wTan);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 0);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(6, jvp.length, "output [1,2,3] = 6 elements");
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "depthwiseConv1d JVP must not be all-zeros");
+    }
+
+    @Test
+    void testGridSampleJvpNonZero() {
+        // gridSample is linear in input: JVP = gridSample(tangent, grid). bilinear mode.
+        // Input [1,1,4,4], grid [1,2,2,2] (identity + offset)
+        double[] data = new double[]{
+             1,  2,  3,  4,
+             5,  6,  7,  8,
+             9, 10, 11, 12,
+            13, 14, 15, 16
+        };
+        double[] tang = new double[]{
+            0.1, 0.2, 0.3, 0.4,
+            0.5, 0.6, 0.7, 0.8,
+            0.9, 1.0, 1.1, 1.2,
+            1.3, 1.4, 1.5, 1.6
+        };
+        // grid: identity mapping (no change) for 2x2 output
+        // grid[n,oh,ow,:] = normalized coord [-1,1]
+        // For oh=0,ow=0: px=-1,py=-1 (top-left corner)
+        // For oh=0,ow=1: px=1,py=-1 (top-right corner)
+        // etc.
+        double[] gridData = new double[]{
+            -1, -1,   1, -1,
+            -1,  1,   1,  1,
+        };
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 1, 4, 4);
+        RereDiffTensor gridPrimal = new RereDiffTensor(gridData, 1, 2, 2, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 1, 4, 4);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        IDiffTensor y = x.gridSample(gridPrimal, "bilinear", "zeros");
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertEquals(4, jvp.length, "output [1,1,2,2] = 4 elements");
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "gridSample JVP must not be all-zeros");
+    }
+
+    @Test
+    void testConv2dJvpNonZero() {
+        // conv2d is bilinear: JVP = conv2d(tangent_input, weight) + conv2d(input, tangent_weight) + tangent_bias
+        // Weight [outC=2, inC=2, kH=1, kW=1] = 1x1 conv with 2→2 channels
+        double[] data = new double[]{
+            1, 2,   3, 4,     // ch0: 2x2 input
+            5, 6,   7, 8      // ch1: 2x2 input
+        };
+        double[] tang = new double[]{
+            0.1, 0.2,  0.3, 0.4,
+            0.5, 0.6,  0.7, 0.8
+        };
+        // weight [2,2,1,1] = 4 elements
+        double[] weightData = new double[]{1, 0,  0, 1};
+        double[] weightTang = new double[]{0.1, 0.2,  0.3, 0.4};
+        double[] biasData = new double[]{0.5, -0.5};
+        double[] biasTang = new double[]{0.1, 0.2};
+        RereDiffTensor primal = new RereDiffTensor(data, 1, 2, 2, 2);
+        RereDiffTensor weightPrimal = new RereDiffTensor(weightData, 2, 2, 1, 1);
+        RereDiffTensor biasPrimal = new RereDiffTensor(biasData, 2);
+        IDoubleTensor tan = ITensor.tensor(tang, 1, 2, 2, 2);
+        IDoubleTensor wTan = ITensor.tensor(weightTang, 2, 2, 1, 1);
+        IDoubleTensor bTan = ITensor.tensor(biasTang, 2);
+        TangentDiffTensor x = TangentDiffTensor.seed(primal, tan);
+        TangentDiffTensor w = TangentDiffTensor.seed(weightPrimal, wTan);
+        TangentDiffTensor b = TangentDiffTensor.seed(biasPrimal, bTan);
+        IDiffTensor y = x.conv2d(w, b, 1, 0, 1);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertTrue(jvp.length > 0, "output must have elements");
+        boolean allZero = true;
+        for (double v : jvp) { if (v != 0) { allZero = false; break; } }
+        assertFalse(allZero, "conv2d JVP must not be all-zeros");
+    }
+
+    @Test
+    void testAttentionJvpNonZero() {
+        // attention is linear in V: JVP_V = attention(Q, K, tangent_V)
+        // Q/K tangents deferred (require softmax JVP). Verify V-tangent contribution.
+        // [batch=1, seq=2, dim=2] for Q, K, V
+        double[] qData = new double[]{1, 0,  0, 1};
+        double[] qTang = new double[]{0, 0,  0, 0};  // zero Q tangent
+        double[] kData = new double[]{1, 0,  0, 1};
+        double[] kTang = new double[]{0, 0,  0, 0};  // zero K tangent
+        double[] vData = new double[]{1, 2,  3, 4};
+        double[] vTang = new double[]{0.1, 0.2,  0.3, 0.4};  // non-zero V tangent
+        RereDiffTensor qPrimal = new RereDiffTensor(qData, 1, 2, 2);
+        RereDiffTensor kPrimal = new RereDiffTensor(kData, 1, 2, 2);
+        RereDiffTensor vPrimal = new RereDiffTensor(vData, 1, 2, 2);
+        IDoubleTensor qTan = ITensor.tensor(qTang, 1, 2, 2);
+        IDoubleTensor kTan = ITensor.tensor(kTang, 1, 2, 2);
+        IDoubleTensor vTan = ITensor.tensor(vTang, 1, 2, 2);
+        TangentDiffTensor q = TangentDiffTensor.seed(qPrimal, qTan);
+        TangentDiffTensor k = TangentDiffTensor.seed(kPrimal, kTan);
+        TangentDiffTensor v = TangentDiffTensor.seed(vPrimal, vTan);
+        IDiffTensor y = q.scaledDotProductAttention(k, v, null, 0.0);
+        double[] jvp = ((TangentDiffTensor) y).getTangent().toDoubleArray();
+        assertTrue(jvp.length > 0, "output must have elements");
+        boolean allZero = true;
+        for (double vv : jvp) { if (vv != 0) { allZero = false; break; } }
+        assertFalse(allZero, "attention JVP must not be all-zeros (V tangent is linear)");
+    }
 }

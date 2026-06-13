@@ -33,9 +33,8 @@ public final class HpcRnn {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.lstmFusedStep(
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.lstmFusedStep(
                 input, hidden, cell, weightI, weightH, biasI, biasH,
-                inputSize, hiddenSize, hiddenOut, cellOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+                inputSize, hiddenSize, hiddenOut, cellOut); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

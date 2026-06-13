@@ -223,7 +223,13 @@ public final class ExportShapeValidator {
         if (node.inputs() == null || node.inputs().isEmpty()) return 0;
         RereDiffTensor input = node.inputs().get(0);
         if (input == null) return 0;
-        return (int) input.totalSize();
+        long totalSize = input.totalSize();
+        // D19: guard against int overflow for very large tensors (>2^31 elements)
+        if (totalSize > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                "Input tensor too large for buffer allocation: " + totalSize + " elements");
+        }
+        return (int) totalSize;
     }
 
     private static void verifyInputBufferSize(RereDiffTensor node, List<RereDiffTensor> order,
@@ -300,8 +306,8 @@ public final class ExportShapeValidator {
                 }
             }
             h = h * 31 + (v.isLeaf() ? 1 : 0);
-            h = h * 31 + Float.floatToIntBits((float) v.scalarParam());
-            h = h * 31 + Float.floatToIntBits((float) v.scalarParam2());
+        h = h * 31 + Double.hashCode(v.scalarParam());
+        h = h * 31 + Double.hashCode(v.scalarParam2());
         }
         return h;
     }

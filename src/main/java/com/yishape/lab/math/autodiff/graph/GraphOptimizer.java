@@ -109,7 +109,16 @@ public class GraphOptimizer {
                     if (n.inputs() != null) {
                         List<RereDiffTensor> inList = n.inputs();
                         for (int j = 0; j < inList.size(); j++) {
-                            if (inList.get(j) == node) inList.set(j, existing);
+                            if (inList.get(j) == node) {
+                                try {
+                                    inList.set(j, existing);
+                                } catch (UnsupportedOperationException e) {
+                                    // C25: immutable list (e.g. List.of()) — replace with mutable copy
+                                    List<RereDiffTensor> mutable = new ArrayList<>(inList);
+                                    mutable.set(j, existing);
+                                    n.setInputs(mutable);
+                                }
+                            }
                         }
                     }
                 }
@@ -127,6 +136,7 @@ public class GraphOptimizer {
         }
         h = h * 31 + Double.hashCode(Double.isNaN(node.scalarParam()) ? 0 : node.scalarParam());
         h = h * 31 + Double.hashCode(Double.isNaN(node.scalarParam2()) ? 0 : node.scalarParam2());
+        h = h * 31 + java.util.Arrays.hashCode(node.shape()); // C24: shape prevents merging differently-shaped nodes
         return h;
     }
 
@@ -203,29 +213,30 @@ public class GraphOptimizer {
 
             String tag = node.opTag();
             double sp = node.scalarParam();
-            int nInputs = node.inputs().size();
+            List<RereDiffTensor> inputs = node.inputs();
+            int nInputs = inputs != null ? inputs.size() : 0;
 
             // addScalar(0) → pass-through input
             if ("addScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+                RereDiffTensor rep = replacements.getOrDefault(inputs.get(0), inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // subScalar(0) → pass-through input
             if ("subScalar".equals(tag) && sp == 0.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+                RereDiffTensor rep = replacements.getOrDefault(inputs.get(0), inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // mulScalar(1) → pass-through input
             if ("mulScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+                RereDiffTensor rep = replacements.getOrDefault(inputs.get(0), inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
             // divScalar(1) → pass-through input
             if ("divScalar".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+                RereDiffTensor rep = replacements.getOrDefault(inputs.get(0), inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
@@ -239,7 +250,7 @@ public class GraphOptimizer {
             }
             // pow(1) → pass-through input
             if ("pow".equals(tag) && sp == 1.0 && nInputs == 1) {
-                RereDiffTensor rep = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+                RereDiffTensor rep = replacements.getOrDefault(inputs.get(0), inputs.get(0));
                 replacements.put(node, rep);
                 continue;
             }
@@ -247,10 +258,10 @@ public class GraphOptimizer {
             // Rewrite inputs to use replacements (transitive folding)
             boolean changed = false;
             for (int i = 0; i < nInputs; i++) {
-                RereDiffTensor replaced = replacements.get(node.inputs().get(i));
-                if (replaced != null && replaced != node.inputs().get(i)) {
+                RereDiffTensor replaced = replacements.get(inputs.get(i));
+                if (replaced != null && replaced != inputs.get(i)) {
                     if (!changed) {
-                        node.setInputs(new ArrayList<>(node.inputs()));
+                        node.setInputs(new ArrayList<>(inputs));
                         changed = true;
                     }
                     node.inputs().set(i, replaced);

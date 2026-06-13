@@ -5,6 +5,12 @@ import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.ITensor;
+import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.gpu.GpuActivation;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
+import com.yishape.lab.math.compute.DoubleFlatGemm;
 import java.util.List;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -995,36 +1001,61 @@ public class TangentDiffTensor implements IDiffTensor {
         return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), List.of(this), p);
     }
 
+
+    /**
+     * Compute scalar JVP for loss functions: JVP = dot(grad_input, tangent_input) + dot(grad_target, tangent_target).
+     * Backpropagates through the loss node p, then computes dot product of input gradients with their tangents.
+     */
+    private static double[] lossJVP(RereDiffTensor lossNode, TangentDiffTensor input, TangentDiffTensor target) {
+        lossNode.backward();
+        DoubleVectorComputer comp = new DoubleVectorComputer();
+        double jvp = 0;
+        IDoubleTensor gx = input.primal.grad();
+        if (gx != null) {
+            double[] gxd = gx.toDoubleArray();
+            double[] tx = input.tangent.toDoubleArray();
+            double[] prod = comp.binaryOperate(gxd, tx, BinaryOperation.MULTIPLY);
+            jvp += comp.reduceOperate(prod, ReduceOperation.SUM);
+        }
+        IDoubleTensor gt = target.primal.grad();
+        if (gt != null) {
+            double[] gtd = gt.toDoubleArray();
+            double[] ty = target.tangent.toDoubleArray();
+            double[] prod = comp.binaryOperate(gtd, ty, BinaryOperation.MULTIPLY);
+            jvp += comp.reduceOperate(prod, ReduceOperation.SUM);
+        }
+        return new double[]{jvp};
+    }
     @Override public IDiffTensor smoothL1Loss(IDiffTensor target, double beta) {
         TangentDiffTensor t = (TangentDiffTensor) target;
         RereDiffTensor p = (RereDiffTensor) primal.smoothL1Loss(t.primal, beta);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, t), p);
+        double[] jvpVal = lossJVP(p, this, t);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvpVal, 1), List.of(this, t), p);
     }
     @Override public IDiffTensor bceLoss(IDiffTensor target) {
         TangentDiffTensor t = (TangentDiffTensor) target;
         RereDiffTensor p = (RereDiffTensor) primal.bceLoss(t.primal);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, t), p);
+        double[] jvpVal = lossJVP(p, this, t);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvpVal, 1), List.of(this, t), p);
     }
     @Override public IDiffTensor focalLoss(IDiffTensor target, double alpha, double gamma) {
         TangentDiffTensor t = (TangentDiffTensor) target;
         RereDiffTensor p = (RereDiffTensor) primal.focalLoss(t.primal, alpha, gamma);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, t), p);
+        double[] jvpVal = lossJVP(p, this, t);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvpVal, 1), List.of(this, t), p);
     }
     @Override public IDiffTensor diceLoss(IDiffTensor target, double smooth) {
         TangentDiffTensor t = (TangentDiffTensor) target;
         RereDiffTensor p = (RereDiffTensor) primal.diceLoss(t.primal, smooth);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, t), p);
+        double[] jvpVal = lossJVP(p, this, t);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvpVal, 1), List.of(this, t), p);
     }
 
     @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) {
         TangentDiffTensor t = (TangentDiffTensor) target;
         RereDiffTensor p = (RereDiffTensor) primal.nllLoss(t.primal, classDim);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, t), p);
+        double[] jvpVal = lossJVP(p, this, t);
+        return new TangentDiffTensor(p, new RereDoubleTensor(jvpVal, 1), List.of(this, t), p);
     }
 
     @Override public IDiffTensor maxPool2d(int kH, int kW, int stride, int padding) {
@@ -1188,14 +1219,24 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public IDiffTensor depthwiseConv1d(IDiffTensor weight, int stride, int padding) {
         TangentDiffTensor w = (TangentDiffTensor) weight;
         RereDiffTensor p = (RereDiffTensor) primal.depthwiseConv1d(w.primal, stride, padding);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this, w), p);
+        // depthwiseConv1d is bilinear: JVP = conv1d(tangent_input, weight) + conv1d(input, tangent_weight)
+        double[] td = this.tangent.toDoubleArray();
+        double[] wd = w.tangent.toDoubleArray();
+        RereDiffTensor tInput = new RereDiffTensor(td, primal.shape());
+        RereDiffTensor tWeight = new RereDiffTensor(wd, w.primal.shape());
+        IDiffTensor jvpInput = tInput.depthwiseConv1d(w.primal, stride, padding);
+        IDiffTensor jvpWeight = primal.depthwiseConv1d(tWeight, stride, padding);
+        IDiffTensor jvp = jvpInput.add(jvpWeight);
+        return new TangentDiffTensor(p, jvp, List.of(this, w), p);
     }
 
     @Override public IDiffTensor interpolate(double scaleFactor, String mode) {
         RereDiffTensor p = (RereDiffTensor) primal.interpolate(scaleFactor, mode);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int)p.totalSize()], p.shape()).fill_(0),
-            List.of(this), p);
+        // interpolate is linear in input: JVP = interpolate(tangent, scaleFactor, mode)
+        double[] td = this.tangent.toDoubleArray();
+        RereDiffTensor tInput = new RereDiffTensor(td, primal.shape());
+        IDiffTensor jvpTerm = tInput.interpolate(scaleFactor, mode);
+        return new TangentDiffTensor(p, jvpTerm, List.of(this), p);
     }
 
     @Override public IDiffTensor logDet() {
@@ -1260,8 +1301,11 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor gridSample(IDiffTensor grid, String mode, String paddingMode) {
         RereDiffTensor p = (RereDiffTensor) primal.gridSample(grid, mode, paddingMode);
-        return new TangentDiffTensor(p, new RereDoubleTensor(new double[(int) p.totalSize()], p.shape()).fill_(0),
-            List.of(this), p);
+        // gridSample is linear in input: JVP = gridSample(tangent, grid, mode, paddingMode)
+        double[] td = this.tangent.toDoubleArray();
+        RereDiffTensor tInput = new RereDiffTensor(td, primal.shape());
+        IDiffTensor jvpTerm = tInput.gridSample(grid, mode, paddingMode);
+        return new TangentDiffTensor(p, jvpTerm, List.of(this), p);
     }
 
     @Override public IDiffTensor trapezoidalScan(IDiffTensor delta, IDiffTensor A, IDiffTensor B,
@@ -1273,20 +1317,26 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor conv2d(IDiffTensor weight, IDiffTensor bias,
             int stride, int padding, int dilation) {
-        // Forward-mode JVP for conv2d: use primal forward, tangents via linearization.
+        // Forward-mode JVP for conv2d: bilinear = conv2d(tangent_input, weight, bias) + conv2d(input, tangent_weight, tangent_bias)
         TangentDiffTensor w = (TangentDiffTensor) weight;
         TangentDiffTensor b = (TangentDiffTensor) bias;
         RereDiffTensor p = (RereDiffTensor) primal.conv2d(w.primal,
             b != null ? b.primal : null, stride, padding, dilation);
-        // JVP: im2col(tangent_input) @ weight + im2col(input) @ tangent_weight + tangent_bias
-        // For now, fall back to finite-difference via the primal graph
-        int size = (int) p.totalSize();
-        double[] jvp = new double[size];
-        List<TangentDiffTensor> inputs = new java.util.ArrayList<>();
-        inputs.add(this);
-        inputs.add(w);
-        if (b != null) inputs.add(b);
-        return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), inputs, p);
+        double[] td = this.tangent.toDoubleArray();
+        double[] wd = w.tangent.toDoubleArray();
+        RereDiffTensor tInput = new RereDiffTensor(td, primal.shape());
+        RereDiffTensor tWeight = new RereDiffTensor(wd, w.primal.shape());
+        IDiffTensor jvpInput = tInput.conv2d(w.primal, b != null ? b.primal : null, stride, padding, dilation);
+        IDiffTensor jvpWeight = primal.conv2d(tWeight, b != null ? b.primal : null, stride, padding, dilation);
+        IDiffTensor jvp = jvpInput.add(jvpWeight);
+        if (b != null) {
+            // Bias JVP: tangent_bias [outC] broadcast to output [N, outC, outH, outW]
+            // unsqueeze to [1, outC, 1, 1] then expand for broadcast-add
+            RereDiffTensor tBias = new RereDiffTensor(b.tangent.toDoubleArray(), b.primal.shape());
+            IDiffTensor biasTerm = tBias.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand(p.shape());
+            jvp = jvp.add(biasTerm);
+        }
+        return new TangentDiffTensor(p, jvp, List.of(this, w, b).stream().filter(java.util.Objects::nonNull).toList(), p);
     }
 
     @Override public IDiffTensor scaledDotProductAttention(IDiffTensor key, IDiffTensor vTensor,
@@ -1296,13 +1346,55 @@ public class TangentDiffTensor implements IDiffTensor {
         TangentDiffTensor m = (TangentDiffTensor) mask;
         RereDiffTensor p = (RereDiffTensor) primal.scaledDotProductAttention(
             k.primal, v.primal, m != null ? m.primal : null, dropout);
-        // JVP for attention: complex — use primal graph for now
-        int size = (int) p.totalSize();
-        double[] jvp = new double[size];
+        // JVP for attention: Q and K tangents are zero → softmax derivative term = 0.
+        // JVP = attn_weights @ tangent_V where attn_weights = softmax(Q @ K^T / sqrt(d_k))
+        // Use raw arrays via DoubleFlatGemm + DoubleVectorComputer for acceleration.
+        int[] qShape = primal.shape();
+        int[] kShape = k.primal.shape();
+        int[] vShape = v.primal.shape();
+        int batch = qShape[0], seqQ = qShape[1], dk = qShape[2];
+        int seqK = kShape[1], dv = vShape[2];
+        double[] qd = primal.value().toDoubleArray();
+        double[] kd = k.primal.value().toDoubleArray();
+        double scale = 1.0 / Math.sqrt(dk);
+        int qStride = seqQ * dk;
+        int kStride = seqK * dk;
+        int scoresStride = seqQ * seqK;
+        DoubleVectorComputer vc = new DoubleVectorComputer();
+        double[] scoresFlat = new double[batch * scoresStride];
+        for (int b = 0; b < batch; b++) {
+            double[] qSlice = java.util.Arrays.copyOfRange(qd, b * qStride, b * qStride + qStride);
+            double[] kSlice = java.util.Arrays.copyOfRange(kd, b * kStride, b * kStride + kStride);
+            double[] kT = DoubleFlatGemm.flatTranspose(kSlice, seqK, dk);
+            double[] rawScores = DoubleFlatGemm.flatMmul(qSlice, seqQ, dk, kT, seqK);
+            double[] scaled = vc.binaryOperate(rawScores, scale, BinaryOperation.MULTIPLY);
+            // Row-wise softmax via DoubleVectorComputer (GPU→SIMD→SISD)
+            double[] ones = vc.fill(seqK, 1.0);
+            for (int r = 0; r < seqQ; r++) {
+                int offset = r * seqK;
+                double[] row = java.util.Arrays.copyOfRange(scaled, offset, offset + seqK);
+                double rowMax = vc.reduceOperate(row, ReduceOperation.MAX);
+                double[] shifted = vc.binaryOperate(row, rowMax, BinaryOperation.SUBTRACT);
+                double[] expVals = vc.universalOperate(shifted, UniversalOperation.EXP, 0.0);
+                double sumExp = vc.reduceOperate(expVals, ReduceOperation.SUM);
+                double[] invSum = vc.binaryOperate(ones, sumExp, BinaryOperation.DIVIDE);
+                double[] probs = vc.binaryOperate(expVals, invSum, BinaryOperation.MULTIPLY);
+                System.arraycopy(probs, 0, scoresFlat, b * scoresStride + offset, seqK);
+            }
+        }
+        // JVP = attn @ tangent_V
+        double[] vd = v.tangent.toDoubleArray();
+        int vStride = seqK * dv;
+        double[] jvp = new double[batch * seqQ * dv];
+        for (int b = 0; b < batch; b++) {
+            double[] attnSlice = java.util.Arrays.copyOfRange(scoresFlat, b * scoresStride, b * scoresStride + scoresStride);
+            double[] vSlice = java.util.Arrays.copyOfRange(vd, b * vStride, b * vStride + vStride);
+            double[] vT = DoubleFlatGemm.flatTranspose(vSlice, seqK, dv);
+            double[] result = DoubleFlatGemm.flatMmul(attnSlice, seqQ, seqK, vT, dv);
+            System.arraycopy(result, 0, jvp, b * seqQ * dv, seqQ * dv);
+        }
         List<TangentDiffTensor> inputs = new java.util.ArrayList<>();
-        inputs.add(this);
-        inputs.add(k);
-        inputs.add(v);
+        inputs.add(this); inputs.add(k); inputs.add(v);
         return new TangentDiffTensor(p, new RereDoubleTensor(jvp, p.shape()), inputs, p);
     }
 

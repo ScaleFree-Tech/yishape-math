@@ -36,9 +36,8 @@ public final class HpcNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.instanceNormForward(
-                x, gamma, beta, N, C, spatial, eps, out);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.instanceNormForward(
+                x, gamma, beta, N, C, spatial, eps, out); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -69,9 +68,8 @@ public final class HpcNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.instanceNormBackward(
-                x, gamma, gradOutput, N, C, spatial, eps, dx, dgamma, dbeta);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.instanceNormBackward(
+                x, gamma, gradOutput, N, C, spatial, eps, dx, dgamma, dbeta); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     // ==================== rmsNorm ====================
@@ -100,9 +98,8 @@ public final class HpcNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.rmsNormForward(
-                x, gamma, rows, dim, eps, out, rmsOut);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.rmsNormForward(
+                x, gamma, rows, dim, eps, out, rmsOut); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -133,8 +130,7 @@ public final class HpcNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.rmsNormBackward(
-                x, gamma, gradOutput, rms, rows, dim, eps, dx, dgamma);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.rmsNormBackward(
+                x, gamma, gradOutput, rms, rows, dim, eps, dx, dgamma); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

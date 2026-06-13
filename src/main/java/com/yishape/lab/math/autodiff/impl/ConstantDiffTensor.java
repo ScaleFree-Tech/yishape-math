@@ -265,8 +265,6 @@ public final class ConstantDiffTensor implements IDiffTensor {
 	            }
 	            double denom = Sp + St + smooth;
 	            double dice = (2.0 * I + smooth) / denom;
-    final double If = I;
-    final double denomf = denom;
 	            return wrap(new RereDoubleTensor(new double[]{1.0 - dice}, new int[]{1}));
 	        }
     @Override public IDiffTensor nllLoss(IDiffTensor target, int classDim) {

@@ -28,16 +28,18 @@ public class GraphRenderer {
 
         for (int idx = 0; idx < order.size(); idx++) {
             RereDiffTensor t = order.get(idx);
-            String id = "n" + System.identityHashCode(t);
+            String id = "n" + Integer.toUnsignedString(System.identityHashCode(t));
             long size = t.value().totalSize();
             String label = "node" + idx + "\\n" + (t.isLeaf() ? "leaf" : "op") + " [" + size + "]";
             String color = t.isLeaf() ? "lightblue" : "lightyellow";
             sb.append("  ").append(id).append(" [label=\"").append(label)
                     .append("\", fillcolor=").append(color).append("];\n");
 
-            for (RereDiffTensor in : t.inputs()) {
-                String inId = "n" + System.identityHashCode(in);
-                sb.append("  ").append(id).append(" -> ").append(inId).append(";\n");
+            if (t.inputs() != null) {
+                for (RereDiffTensor in : t.inputs()) {
+                    String inId = "n" + Integer.toUnsignedString(System.identityHashCode(in));
+                    sb.append("  ").append(id).append(" -> ").append(inId).append(";\n");
+                }
             }
         }
 
@@ -63,9 +65,11 @@ public class GraphRenderer {
             sb.append("  ").append(id).append(" [label=\"").append(label)
                     .append("\", fillcolor=").append(color).append("];\n");
 
-            for (RereDiffMatrix in : v.inputs) {
-                String inId = "m" + System.identityHashCode(in);
-                sb.append("  ").append(id).append(" -> ").append(inId).append(";\n");
+            if (v.inputs != null) {
+                for (RereDiffMatrix in : v.inputs) {
+                    String inId = "m" + Integer.toUnsignedString(System.identityHashCode(in));
+                    sb.append("  ").append(id).append(" -> ").append(inId).append(";\n");
+                }
             }
         }
 

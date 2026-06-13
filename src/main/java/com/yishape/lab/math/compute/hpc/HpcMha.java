@@ -39,8 +39,7 @@ public final class HpcMha {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.mhaAttention(
-                q, k, v, seqLen, dModel, numHeads, numKvHeads, causal ? 1 : 0, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.mhaAttention(
+                q, k, v, seqLen, dModel, numHeads, numKvHeads, causal ? 1 : 0, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

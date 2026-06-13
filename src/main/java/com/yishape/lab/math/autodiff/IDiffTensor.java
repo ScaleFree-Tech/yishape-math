@@ -244,10 +244,13 @@ public interface IDiffTensor extends IDoubleTensor {
     IDiffTensor oneHot(int numClasses);
 
     /**
-     * Fused addmm: alpha * this + beta * (mat1 @ mat2).
-     * @param mat1  left matrix
-     * @param alpha scalar multiplier for this
-     * @param beta  scalar multiplier for mat1 @ mat2
+     * Fused addmm: alpha * this + beta * (this @ mat1).
+     * D13: Note this differs from PyTorch's addmm(bias, mat1, mat2, beta, alpha)
+     * which computes beta * bias + alpha * (mat1 @ mat2). The current signature
+     * uses `this` as both the bias and the left mmul operand for simplicity.
+     * @param mat1  right matrix
+     * @param alpha scalar multiplier for this (bias)
+     * @param beta  scalar multiplier for this @ mat1
      * @return result = alpha*this + beta*(this @ mat1)
      */
     default IDiffTensor addmm(IDiffTensor mat1, double alpha, double beta) {
@@ -712,7 +715,11 @@ public interface IDiffTensor extends IDoubleTensor {
         if (val == null) {
             throw new IllegalArgumentException("vec.getValue() returned null — cannot create tensor from null vector");
         }
-        return new RereDiffTensor(val.toDoubleArray(), shape);
+        // C2: non-RereDiffVector types (e.g. TangentDiffVector) cannot be safely unwrapped
+        // to a properly-connected tensor. Throw rather than creating a disconnected leaf.
+        throw new UnsupportedOperationException(
+            "fromDiffVector does not support " + vec.getClass().getSimpleName()
+            + " — only RereDiffVector is supported. Use AD.leafTensor() for detached tensors.");
     }
 
     /** 从 IDoubleTensor + requiresGrad 创建可微张量（注：不会追踪前序梯度） */

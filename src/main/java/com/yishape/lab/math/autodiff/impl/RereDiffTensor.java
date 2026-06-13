@@ -453,9 +453,8 @@ public class RereDiffTensor implements IDiffTensor {
     public void accGradFromPooled(double[] pooledBuf, int n) {
         if (grad != null) {
             double[] g = grad;
-            // pooledBuf may be larger than n due to slab-aligned pool allocation.
-            // Slice to n elements for correct-length binaryOperate.
-            double[] sliced = Arrays.copyOf(pooledBuf, n);
+            // D3: avoid copyOf when buffer is already exact size; only slice when slab-aligned pool oversizes
+            double[] sliced = (pooledBuf.length == n) ? pooledBuf : Arrays.copyOf(pooledBuf, n);
             AutodiffBufferPool.release(pooledBuf);
             grad = COMPUTER.binaryOperate(g, sliced, BinaryOperation.ADD);
         } else {
@@ -480,13 +479,9 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public IDiffTensor sum() {
         if (!requiresGrad) {
-            // Scalar sum for non-differentiable tensors — avoids empty-shape bug
-            // in RereDoubleTensor.sum(dim, false) for rank-1 tensors
-            double total = 0;
-            long n = value.totalSize();
-            for (long i = 0; i < n; i++) total += value.linearGet(i);
-            IDoubleTensor r = new RereDoubleTensor(new double[]{total}, new int[]{1});
-            return toNonDiff(r);
+            // Scalar sum for non-differentiable tensors — delegate to value's sumAll
+            double total = value.sumAll();
+            return toNonDiff(new RereDoubleTensor(new double[]{total}, new int[]{1}));
         }
         // Pattern fusion: detect common unaryOp + sum patterns
         IDiffTensor fused = tryFuseSum();
@@ -1426,9 +1421,9 @@ public class RereDiffTensor implements IDiffTensor {
             for (int i = sortedDims.length - 1; i >= 0; i--) {
                 result = result.sum(sortedDims[i], spec.outputLabels.indexOf(spec.inputLabels[0].charAt(sortedDims[i])) >= 0);
             }
-            // If output is scalar (empty), squeeze remaining dims
+            // C4: single fused sum over all dims instead of sequential per-dim sum nodes
             if (spec.outputLabels.isEmpty()) {
-                while (result.rank() > 1) result = result.sum(0, false);
+                result = result.sum();
             }
             return result;
         }
@@ -1658,6 +1653,10 @@ public class RereDiffTensor implements IDiffTensor {
             int[] bc = TensorShape.broadcastShape(shape(), other.shape());
             long n = 1;
             for (int d : bc) n *= d;
+            // C1: guard against (int) index truncation for large tensors (>2^31 elements)
+            if (n > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("copy_ broadcast too large: " + n + " elements");
+            }
             double[] oData = detOther.toDoubleArray();
             for (long i = 0; i < n; i++) {
                 int[] bcIdx = DiffTensorUtil.unlinearizeInt((int) i, bc);
@@ -1684,6 +1683,10 @@ public class RereDiffTensor implements IDiffTensor {
         IDoubleTensor detSrc = (src instanceof IDiffTensor dt) ? dt.detach() : src;
         double[] sData = detSrc.toDoubleArray();
         long n = value.totalSize();
+        if (sData.length != n) {
+            throw new IllegalArgumentException(
+                "copy_ source length " + sData.length + " != target size " + n);
+        }
         for (long i = 0; i < n && i < sData.length; i++) value.linearSet(i, sData[(int) i]);
         this.grad = null;
         return this;
@@ -1788,18 +1791,20 @@ public class RereDiffTensor implements IDiffTensor {
         double[] rowMax = GpuReduce.tryReduce(GpuReduce.MAX, scores, rows, cols);
         if (rowMax == null) {
             rowMax = new double[rows];
+            double[] rowBuf = new double[cols]; // C9: reuse buffer, avoid copyOfRange per row
             for (int r = 0; r < rows; r++) {
-                double[] rowSlice = java.util.Arrays.copyOfRange(scores, r * cols, r * cols + cols);
-                rowMax[r] = vc.reduceOperate(rowSlice, ReduceOperation.MAX);
+                System.arraycopy(scores, r * cols, rowBuf, 0, cols);
+                rowMax[r] = vc.reduceOperate(rowBuf, ReduceOperation.MAX);
             }
         }
 
-        // Step 2: Subtract row max (per-row scalar add) → collect into shifted for batch exp
+        // Step 2: Subtract row max (per-row scalar add)
         double[] shifted = new double[total];
+        double[] shiftBuf = new double[cols];
         for (int r = 0; r < rows; r++) {
             int rowOff = r * cols;
-            double[] rowSlice = java.util.Arrays.copyOfRange(scores, rowOff, rowOff + cols);
-            double[] shiftRow = vc.binaryOperate(rowSlice, -rowMax[r], BinaryOperation.ADD);
+            System.arraycopy(scores, rowOff, shiftBuf, 0, cols);
+            double[] shiftRow = vc.binaryOperate(shiftBuf, -rowMax[r], BinaryOperation.ADD);
             System.arraycopy(shiftRow, 0, shifted, rowOff, cols);
         }
 
@@ -1813,9 +1818,10 @@ public class RereDiffTensor implements IDiffTensor {
         double[] rowSum = GpuReduce.tryReduce(GpuReduce.SUM, exped, rows, cols);
         if (rowSum == null) {
             rowSum = new double[rows];
+            double[] sumBuf = new double[cols];
             for (int r = 0; r < rows; r++) {
-                double[] rowSlice = java.util.Arrays.copyOfRange(exped, r * cols, r * cols + cols);
-                rowSum[r] = vc.reduceOperate(rowSlice, ReduceOperation.SUM);
+                System.arraycopy(exped, r * cols, sumBuf, 0, cols);
+                rowSum[r] = vc.reduceOperate(sumBuf, ReduceOperation.SUM);
             }
         }
 

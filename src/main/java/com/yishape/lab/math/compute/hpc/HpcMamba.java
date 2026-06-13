@@ -31,9 +31,8 @@ public final class HpcMamba {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.mambaSelectiveScan(
-                input, dt, aLog, B, C, L, innerDim, N, output, hCache);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.mambaSelectiveScan(
+                input, dt, aLog, B, C, L, innerDim, N, output, hCache); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -63,9 +62,8 @@ public final class HpcMamba {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.mambaScanBackward(
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.mambaScanBackward(
                 gradOutput, input, dt, aLog, B, C, hCache,
-                L, innerDim, N, gradInput, gradDt, gradALog, gradB, gradC);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+                L, innerDim, N, gradInput, gradDt, gradALog, gradB, gradC); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

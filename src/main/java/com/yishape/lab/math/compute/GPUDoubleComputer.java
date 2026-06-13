@@ -258,6 +258,11 @@ final class GPUDoubleComputer implements IDoubleVectorComputer {
     }
 
     @Override
+    public double[] fill(int size, double value) {
+        return delegate.fill(size, value);
+    }
+
+    @Override
     public double[][] sign(double[][] array) {
         return delegate.sign(array);
     }

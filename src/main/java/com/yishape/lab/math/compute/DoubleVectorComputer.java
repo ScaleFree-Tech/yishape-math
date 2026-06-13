@@ -280,6 +280,12 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
     }
 
     @Override
+    public double[] fill(int size, double value) {
+        var computer = this.fetchComputer(size);
+        return computer.fill(size, value);
+    }
+
+    @Override
     public double[][] sign(double[][] array) {
         var computer = this.fetchComputer((long) array.length * array[0].length);
         return computer.sign(array);

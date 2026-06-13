@@ -594,6 +594,8 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
     };
 
     RereDiffTensor result = new RereDiffTensor(y, outShape, inputs, bw, "conv2d");
+    // B13: 6D exportShape provides actual H/W to HPC/GPU backends, avoiding stride-divisibility bugs
+    result.exportShape = new int[]{N, C, H, W_in, outH, outW};
     result.scalarParam = Double.longBitsToDouble(
         ((long) stride << 32) | ((long) padding & 0xFFFFFFFFL));
     result.scalarParam2 = Double.longBitsToDouble(
@@ -736,18 +738,20 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
         System.arraycopy(attnB, 0, attnWeights, b * scoresStride, scoresStride);
     }
 
-    // Dropout
+    // Dropout with per-element mask (stored for backward)
     double[] attnOut = attnWeights;
     double dropoutScale = 1.0;
+    double[] dropoutMask = null;
     if (dropout > 0 && dropout < 1) {
         dropoutScale = 1.0 / (1.0 - dropout);
-        attnOut = new double[batch * scoresStride];
-        java.util.Random rng = new java.util.Random(42L);
-        for (int i = 0; i < batch * scoresStride; i++) {
-            if (rng.nextDouble() > dropout) {
-                attnOut[i] = attnWeights[i] * dropoutScale;
-            }
+        int totalScores = batch * scoresStride;
+        dropoutMask = new double[totalScores];
+        // SISD: dropout mask generation — Random.nextDouble() has no accelerated alternative (§7a exception)
+        java.util.Random rng = new java.util.Random(RereDiffVector.DROPOUT_SEED_COUNTER.incrementAndGet());
+        for (int i = 0; i < totalScores; i++) {
+            dropoutMask[i] = (rng.nextDouble() > dropout) ? dropoutScale : 0.0;
         }
+        attnOut = vc.binaryOperate(attnWeights, dropoutMask, BinaryOperation.MULTIPLY);
     }
 
     // output = attn @ V → [batch, seqQ, dv]
@@ -768,11 +772,12 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
     // Capture for backward
     DoubleVectorComputer fvc = vc;
     double[] savedAttn = attnWeights;
+    double[] savedAttnOut = attnOut;
     double[] savedQd = qd;
     double[] savedKd = kd;
     double[] savedVd = vd;
     double fScale = scale;
-    double fDropoutScale = dropoutScale;
+    double[] fDropoutMask = dropoutMask;
     int fBatch = batch, fSeqQ = seqQ, fSeqK = seqK, fDk = dk, fDv = dv;
 
     Consumer<RereDiffTensor> bw = self -> {
@@ -799,22 +804,27 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
 
             // Extract slices
             double[] attnSlice = java.util.Arrays.copyOfRange(savedAttn, attnOff, attnOff + fSoStride);
+            double[] attnOutSlice = fDropoutMask != null
+                ? java.util.Arrays.copyOfRange(savedAttnOut, attnOff, attnOff + fSoStride)
+                : attnSlice;
             double[] vSlice = java.util.Arrays.copyOfRange(savedVd, b * fVStride, b * fVStride + fVStride);
             double[] kSlice = java.util.Arrays.copyOfRange(savedKd, b * fKStride, b * fKStride + fKStride);
             double[] qSlice = java.util.Arrays.copyOfRange(savedQd, b * fQStride, b * fQStride + fQStride);
             double[] gSlice = java.util.Arrays.copyOfRange(self.grad, gOff, gOff + fOutStride);
 
-            // dV = attn^T @ d_output → [seqK, dv]
-            double[] attnT = DoubleFlatGemm.flatTranspose(attnSlice, fSeqQ, fSeqK);
-            double[] dVB = DoubleFlatGemm.flatMmul(attnT, fSeqK, fSeqQ, gSlice, fDv);
+            // dV = attn_dropped^T @ d_output → [seqK, dv] (uses post-dropout attention when dropout>0)
+            double[] attnOutT = DoubleFlatGemm.flatTranspose(attnOutSlice, fSeqQ, fSeqK);
+            double[] dVB = DoubleFlatGemm.flatMmul(attnOutT, fSeqK, fSeqQ, gSlice, fDv);
             System.arraycopy(dVB, 0, dV, b * fVStride, fVStride);
 
             // d_attn = d_output @ V^T → [seqQ, seqK]
             double[] vT = DoubleFlatGemm.flatTranspose(vSlice, fSeqK, fDv);
             double[] dAttnB = DoubleFlatGemm.flatMmul(gSlice, fSeqQ, fDv, vT, fSeqK);
 
-            if (fDropoutScale != 1.0) {
-                dAttnB = fvc.binaryOperate(dAttnB, fDropoutScale, BinaryOperation.MULTIPLY);
+            // Dropout backward: apply per-element mask (not uniform scale)
+            if (fDropoutMask != null) {
+                double[] maskSlice = java.util.Arrays.copyOfRange(fDropoutMask, attnOff, attnOff + fSoStride);
+                dAttnB = fvc.binaryOperate(dAttnB, maskSlice, BinaryOperation.MULTIPLY);
             }
 
             // Softmax backward: ds_i = p_i * (dp_i - sum_j(p_j * dp_j))

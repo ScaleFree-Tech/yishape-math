@@ -292,15 +292,15 @@ public final class TensorBinaryProtocol {
             pos += numDims * 4; // shape
             int numInputs = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
             pos += numInputs * 4; // inputs
-            if ((flags & 2) != 0) pos += 8; // scalar
-            if ((flags & 4) != 0) pos += 8; // param2
-            if ((flags & 1) != 0) { // has_data
+            if ((flags & FLAG_HAS_SCALAR) != 0) pos += 8; // scalar
+            if ((flags & FLAG_HAS_PARAM2) != 0) pos += 8; // param2
+            if ((flags & FLAG_HAS_DATA) != 0) { // has_data
                 dataOffsets[leafIdx++] = pos;
                 int dataLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
                             | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
                 pos += 4 + dataLen * 8;
             }
-            if ((flags & 8) != 0) { // has_indices
+            if ((flags & FLAG_HAS_INDICES) != 0) { // has_indices
                 int idxLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
                            | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
                 pos += 4 + idxLen * 4;

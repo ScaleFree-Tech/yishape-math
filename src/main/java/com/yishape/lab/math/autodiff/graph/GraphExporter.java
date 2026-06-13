@@ -3,6 +3,8 @@ package com.yishape.lab.math.autodiff.graph;
 import com.yishape.lab.math.autodiff.impl.RereDiffMatrix;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
+import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
+import com.yishape.lab.util.YishapeLogger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +25,8 @@ import java.util.Set;
  * update all three implementations simultaneously.</p>
  */
 public final class GraphExporter {
+
+    private static final YishapeLogger log = YishapeLogger.getLogger(GraphExporter.class);
 
     private GraphExporter() {
     }
@@ -88,7 +92,11 @@ public final class GraphExporter {
         sb.append(t.opTag() != null ? t.opTag() : (t.isLeaf() ? "leaf" : "unknown"));
         sb.append('"');
         if (t.isLeaf()) {
-            appendLeafData(sb, t.value().toDoubleArray());
+            // D10: avoid full array copy by using getStorageData() where possible
+            IDoubleTensor val = t.value();
+            double[] leafData = (val instanceof com.yishape.lab.math.linalg.tensor.RereDoubleTensor rt)
+                ? rt.getStorageData() : val.toDoubleArray();
+            appendLeafData(sb, leafData);
         }
         appendScalarParam(sb, t.scalarParam());
         appendScalarParam2(sb, t.scalarParam2());
@@ -101,12 +109,24 @@ public final class GraphExporter {
             sb.append(']');
         }
         if (t.inputs() != null && !t.inputs().isEmpty()) {
-            sb.append(",\"inputs\":[");
+            List<RereDiffTensor> validInputs = new ArrayList<>();
             for (int j = 0; j < t.inputs().size(); j++) {
-                if (j > 0) sb.append(',');
-                sb.append(indexMap.get(t.inputs().get(j)));
+                RereDiffTensor inp = t.inputs().get(j);
+                if (inp != null && indexMap.containsKey(inp)) {
+                    validInputs.add(inp);
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Dropping input not in index map: node={} op={} inputIdx={}",
+                        id, t.opTag(), j);
+                }
             }
-            sb.append(']');
+            if (!validInputs.isEmpty()) {
+                sb.append(",\"inputs\":[");
+                for (int j = 0; j < validInputs.size(); j++) {
+                    if (j > 0) sb.append(',');
+                    sb.append(indexMap.get(validInputs.get(j)));
+                }
+                sb.append(']');
+            }
         }
         sb.append('}');
     }
@@ -136,12 +156,24 @@ public final class GraphExporter {
         appendScalarParam(sb, v.scalarParam);
         appendScalarParam2(sb, v.scalarParam2);
         if (v.inputs != null && !v.inputs.isEmpty()) {
-            sb.append(",\"inputs\":[");
+            List<RereDiffMatrix> validInputs = new ArrayList<>();
             for (int j = 0; j < v.inputs.size(); j++) {
-                if (j > 0) sb.append(',');
-                sb.append(indexMap.get(v.inputs.get(j)));
+                RereDiffMatrix inp = v.inputs.get(j);
+                if (inp != null && indexMap.containsKey(inp)) {
+                    validInputs.add(inp);
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Dropping matrix input not in index map: node={} op={} inputIdx={}",
+                        id, v.opTag, j);
+                }
             }
-            sb.append(']');
+            if (!validInputs.isEmpty()) {
+                sb.append(",\"inputs\":[");
+                for (int j = 0; j < validInputs.size(); j++) {
+                    if (j > 0) sb.append(',');
+                    sb.append(indexMap.get(validInputs.get(j)));
+                }
+                sb.append(']');
+            }
         }
         sb.append('}');
     }

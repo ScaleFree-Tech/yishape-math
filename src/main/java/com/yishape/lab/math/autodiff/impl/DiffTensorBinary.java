@@ -277,6 +277,8 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
             RereDiffTensor inpA = self.inputs.get(idx++);
             int aTotal = (int) DiffTensorUtil.computeSize(sA);
             double[] dA = AutodiffBufferPool.acquire(aTotal);
+            // C5: zero-initialize pooled buffer — pool may return used memory with stale values
+            java.util.Arrays.fill(dA, 0, aTotal, 0.0);
             for (int i = 0; i < n; i++) {
                 int flatA = DiffTensorUtil.flatIndexFromBroadcast(DiffTensorUtil.unlinearizeInt(i, resultShape), sA, resultShape);
                 dA[flatA] += gradA.apply(self.grad[i], bcA[i], bcB[i]);
@@ -287,6 +289,8 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
             RereDiffTensor inpB = self.inputs.get(idx);
             int bTotal = (int) DiffTensorUtil.computeSize(sB);
             double[] dB = AutodiffBufferPool.acquire(bTotal);
+            // C5: zero-initialize pooled buffer
+            java.util.Arrays.fill(dB, 0, bTotal, 0.0);
             for (int i = 0; i < n; i++) {
                 int flatB = DiffTensorUtil.flatIndexFromBroadcast(DiffTensorUtil.unlinearizeInt(i, resultShape), sB, resultShape);
                 dB[flatB] += gradB.apply(self.grad[i], bcA[i], bcB[i]);

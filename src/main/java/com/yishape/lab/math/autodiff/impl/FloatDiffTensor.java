@@ -52,6 +52,9 @@ public class FloatDiffTensor extends RereDiffTensor {
 
     // ---- Master weight sync ----
 
+    // C16: ThreadLocal buffer to avoid repeated allocation on every syncFloatToDouble call
+    private static final ThreadLocal<double[]> SYNC_BUF = ThreadLocal.withInitial(() -> new double[0]);
+
     /**
      * Copy master FP32 weights into the FP64 value buffer (for forward pass).
      * Must be called before forward when using master weight optimization.
@@ -59,7 +62,11 @@ public class FloatDiffTensor extends RereDiffTensor {
      * auto-vectorizes the loop. No GPU/HPC/SIMD equivalent exists.
      */
     public void syncFloatToDouble() {
-        double[] dv = new double[floatValue.length];
+        double[] dv = SYNC_BUF.get();
+        if (dv.length != floatValue.length) {
+            dv = new double[floatValue.length];
+            SYNC_BUF.set(dv);
+        }
         for (int i = 0; i < dv.length; i++) dv[i] = floatValue[i];
         setValue(new com.yishape.lab.math.linalg.tensor.RereDoubleTensor(dv, shape()));
     }

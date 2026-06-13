@@ -41,11 +41,11 @@ public final class GpuGraphExecutor {
     // --- GPU failure cooldown ---
     private static final int COOLDOWN_THRESHOLD = 3;
     private static final int COOLDOWN_STEPS = 100;
-    private static int gpuConsecutiveFailures = 0;
-    private static int gpuCooldownRemaining = 0;
+    private static final java.util.concurrent.atomic.AtomicInteger gpuConsecutiveFailures = new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final java.util.concurrent.atomic.AtomicInteger gpuCooldownRemaining = new java.util.concurrent.atomic.AtomicInteger(0);
 
     /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
-    private static final HashSet<String> REPORTED_UNSUPPORTED_OPS = new HashSet<>();
+    private static final java.util.Set<String> REPORTED_UNSUPPORTED_OPS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Ops supported in tensor-native GPU execution.
@@ -86,8 +86,9 @@ public final class GpuGraphExecutor {
         if (!GpuOptionalRuntime.isGpuAvailable()) return Double.NaN;
         
         // GPU cooldown: skip after repeated consecutive failures
-        if (gpuCooldownRemaining > 0) {
-            gpuCooldownRemaining--;
+        int cooldown = gpuCooldownRemaining.get();
+        if (cooldown > 0) {
+            gpuCooldownRemaining.decrementAndGet();
             return Double.NaN;
         }
 
@@ -198,7 +199,7 @@ public final class GpuGraphExecutor {
         // Try binary path first (production default — no JSON precision issues)
         double binaryResult = tryExecuteTensorBinary(root, order);
         if (!Double.isNaN(binaryResult)) {
-            gpuConsecutiveFailures = 0; // reset on success
+            gpuConsecutiveFailures.set(0); // reset on success
             return binaryResult;
         }
 
@@ -299,6 +300,14 @@ public final class GpuGraphExecutor {
             }
 
             leaves.get(leafIdx).accGrad(gradData);
+            // C23: verify gradient length matches leaf tensor size
+            long leafSize = leaves.get(leafIdx).totalSize();
+            if (gradData.length != leafSize) {
+                log.warn("GPU tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                    leafIdx, gradData.length, leafSize);
+                trackGpuFailure();
+                return Double.NaN;
+            }
             leafIdx++;
             pos = innerEnd + 1;
         }
@@ -311,12 +320,12 @@ public final class GpuGraphExecutor {
 
     /** Track a GPU failure: increment counter, enter cooldown if threshold reached. */
     private static void trackGpuFailure() {
-        gpuConsecutiveFailures++;
-        if (gpuConsecutiveFailures >= COOLDOWN_THRESHOLD) {
-            gpuCooldownRemaining = COOLDOWN_STEPS;
+        int failures = gpuConsecutiveFailures.incrementAndGet();
+        if (failures >= COOLDOWN_THRESHOLD) {
+            gpuCooldownRemaining.set(COOLDOWN_STEPS);
             if (log.isDebugEnabled()) {
                 log.debug("GPU cooldown: {} consecutive failures, cooling for {} steps",
-                    gpuConsecutiveFailures, COOLDOWN_STEPS);
+                    failures, COOLDOWN_STEPS);
             }
         }
     }
@@ -353,6 +362,14 @@ public final class GpuGraphExecutor {
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
+                // C23: verify gradient length matches leaf tensor size
+                long leafSize = leaves.get(i).totalSize();
+                if (g.length != leafSize) {
+                    log.warn("GPU binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                        i, g.length, leafSize);
+                    trackGpuFailure();
+                    return Double.NaN;
+                }
                 leaves.get(i).accGrad(g);
             }
             return loss;

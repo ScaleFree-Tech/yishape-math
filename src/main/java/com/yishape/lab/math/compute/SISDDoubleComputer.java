@@ -1235,6 +1235,13 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     @Override
+    public double[] fill(int size, double value) {
+        double[] result = new double[size];
+        java.util.Arrays.fill(result, value);
+        return result;
+    }
+
+    @Override
     public double[][] sign(double[][] array) {
         // 参数验证
         if (array == null) {

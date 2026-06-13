@@ -41,9 +41,8 @@ public final class HpcGroupNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.groupNormForward(
-                x, gamma, beta, numChannels, numGroups, H, W, eps, out);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.groupNormForward(
+                x, gamma, beta, numChannels, numGroups, H, W, eps, out); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -79,8 +78,7 @@ public final class HpcGroupNorm {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.groupNormBackward(
-                x, gamma, gradOutput, numChannels, numGroups, H, W, eps, dx, dgamma, dbeta);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.groupNormBackward(
+                x, gamma, gradOutput, numChannels, numGroups, H, W, eps, dx, dgamma, dbeta); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

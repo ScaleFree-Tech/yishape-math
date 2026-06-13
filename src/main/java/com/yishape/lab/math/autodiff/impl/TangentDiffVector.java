@@ -647,14 +647,22 @@ public class TangentDiffVector implements IDiffVector {
 
     /**
      * Creates a forward-mode AD node with both primal and tangent propagation.
-     * The primal is created as a leaf node (disconnected from the backward graph)
-     * because forward-mode AD only needs JVP, not reverse-mode gradient flow.
-     * Use {@link #backward()} on the original primal for reverse-mode.
+     *
+     * <p><b>IMPORTANT:</b> The primal created here is a leaf node (disconnected from the
+     * backward graph). Forward-mode AD only needs JVP, not reverse-mode gradient flow.
+     * Calling {@link #backward()} on the primal returned by this method will NOT
+     * propagate gradients to upstream parameters.</p>
+     *
+     * <p>For mixed-mode usage (HVP via {@link MixedMode}), use the original primal
+     * (not the TangentDiffVector's primal) for backward pass.</p>
+     *
+     * @see com.yishape.lab.math.autodiff.MixedMode#hvp(Function, IDiffVector, IDiffVector)
      */
     private IDiffVector unaryWithTangent(java.util.function.Function<IDoubleVector, IDoubleVector> forward,
             java.util.function.Function<IDoubleVector, IDoubleVector> tangentFn) {
         IDoubleVector resultVal = forward.apply(primal.getValue());
         RereDiffVector p = new RereDiffVector(resultVal);
+        p.tensor.setIsLeaf(true); // explicitly leaf — see Javadoc above
         IDoubleVector t = tangentFn.apply(this.tangent);
         return new TangentDiffVector(p, t, List.of(this), p);
     }

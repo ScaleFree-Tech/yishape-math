@@ -105,6 +105,7 @@ public static IDiffTensor maxPool2d(RereDiffTensor tensor, int kH, int kW, int s
         inp.accGrad(dx);
     };
     RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "maxpool2d");
+    // D8: Bit layout — scalarParam[47:32]=kH [31:16]=kW [15:0]=stride; scalarParam2[31:16]=padding
     result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
     result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
     // 6D exportShape lets HPC/GPU backends use actual input dims directly,
@@ -194,6 +195,7 @@ public static IDiffTensor avgPool2d(RereDiffTensor tensor, int kH, int kW, int s
         inp.accGrad(dx);
     };
     RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "avgpool2d");
+    // D8: Bit layout — scalarParam[47:32]=kH [31:16]=kW [15:0]=stride; scalarParam2[31:16]=padding
     result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
     result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
     // 6D exportShape lets HPC/GPU backends use actual input dims directly,

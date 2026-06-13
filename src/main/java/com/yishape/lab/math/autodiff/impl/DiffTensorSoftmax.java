@@ -365,16 +365,17 @@ public static IDiffTensor cumprod(RereDiffTensor tensor, int dim) {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
         double[] inGrad = AutodiffBufferPool.acquire(total);
+        // C11: pre-allocate reusable buffers outside loops to avoid per-(outer,inner) allocation
+        double[] cp = new double[fReduce];
+        double[] q = new double[fReduce];
         for (int o = 0; o < fOuter; o++) {
             for (int i = 0; i < fInner; i++) {
-                double[] cp = new double[fReduce];
                 double p = 1;
                 for (int r = 0; r < fReduce; r++) {
                     int idx = (o * fReduce + r) * fInner + i;
                     p *= savedVals[idx];
                     cp[r] = p;
                 }
-                double[] q = new double[fReduce];
                 for (int r = 0; r < fReduce; r++) {
                     int idx = (o * fReduce + r) * fInner + i;
                     double xi = savedVals[idx];

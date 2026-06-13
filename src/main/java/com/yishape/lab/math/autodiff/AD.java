@@ -5,6 +5,7 @@ import com.yishape.lab.math.autodiff.vjp.VjpFunction;
 import com.yishape.lab.math.autodiff.vjp.VjpResult;
 import com.yishape.lab.math.autodiff.vmap.VMapTransform;
 import com.yishape.lab.util.Messages;
+import com.yishape.lab.util.YishapeLogger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -68,6 +69,8 @@ import com.yishape.lab.math.autodiff.IDiffSparseMatrix;
  */
 public class AD {
 
+    private static final YishapeLogger log = YishapeLogger.getLogger(AD.class);
+
     private AD() {
     }
 
@@ -125,9 +128,11 @@ public class AD {
                     break;
                 }
             }
-            System.err.println("[AD-DEBUG] AD.vector() called at " + trace[callerIdx]);
-            if (callerIdx + 2 < trace.length) {
-                System.err.println("           from " + trace[callerIdx + 1]);
+            if (log.isDebugEnabled()) {
+                log.debug("AD.vector() called at {}", trace[callerIdx]);
+                if (callerIdx + 2 < trace.length) {
+                    log.debug("           from {}", trace[callerIdx + 1]);
+                }
             }
         }
         return new RereDiffVector(data);
@@ -303,6 +308,10 @@ public class AD {
 
     public static IDiffVector constant(IDoubleVector value) {
         IDoubleVector copy = value.copy();
+        // NOTE: returns a leaf variable with requiresGrad=true intentionally.
+        // This is correct for tape-of-tape higher-order AD where constants carry
+        // forward values through symbolic backward functions without introducing
+        // spurious gradient paths to original variables.
         return new RereDiffVector(copy.getData());
     }
 

@@ -240,18 +240,21 @@ public static IDiffTensor depthwiseConv1d(RereDiffTensor tensor, IDiffTensor wei
     double[] wd = w.value.toDoubleArray();
     double[] y = new double[N * C * outL];
 
-    // SISD depthwise convolution: per-channel conv1d
-    for (int n = 0; n < N; n++) {
-        for (int c = 0; c < C; c++) {
-            for (int ol = 0; ol < outL; ol++) {
-                double sum = 0;
-                for (int k = 0; k < kSize; k++) {
-                    int inIdx = ol * effStride + k - padding;
-                    if (inIdx >= 0 && inIdx < L) {
-                        sum += xd[(n * C + c) * L + inIdx] * wd[c * kSize + k];
+    // C14: try HPC-accelerated forward first, fall back to SISD
+    if (!com.yishape.lab.math.compute.hpc.HpcDepthwiseConv1d.tryForward(
+            xd, wd, null, L, C, kSize, y)) {
+        for (int n = 0; n < N; n++) {
+            for (int c = 0; c < C; c++) {
+                for (int ol = 0; ol < outL; ol++) {
+                    double sum = 0;
+                    for (int k = 0; k < kSize; k++) {
+                        int inIdx = ol * effStride + k - padding;
+                        if (inIdx >= 0 && inIdx < L) {
+                            sum += xd[(n * C + c) * L + inIdx] * wd[c * kSize + k];
+                        }
                     }
+                    y[(n * C + c) * outL + ol] = sum;
                 }
-                y[(n * C + c) * outL + ol] = sum;
             }
         }
     }

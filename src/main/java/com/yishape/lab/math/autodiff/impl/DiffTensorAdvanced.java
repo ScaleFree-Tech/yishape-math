@@ -132,25 +132,17 @@ public static IDiffTensor argsort(RereDiffTensor tensor, int dim, boolean descen
     for (int outer = 0; outer < outerTotal; outer++) {
         for (int inner = 0; inner < innerTotal; inner++) {
             double[] sliceVals = new double[dimSize];
-            int[] origIdx = new int[dimSize];
+            Integer[] indices = new Integer[dimSize];
             for (int i = 0; i < dimSize; i++) {
                 sliceVals[i] = inData[(outer * dimSize + i) * innerTotal + inner];
-                origIdx[i] = i;
+                indices[i] = i;
             }
-            for (int i = 1; i < dimSize; i++) {
-                int keyIdx = origIdx[i];
-                double keyVal = sliceVals[i];
-                int j = i - 1;
-                while (j >= 0 && (descending ? sliceVals[j] < keyVal : sliceVals[j] > keyVal)) {
-                    origIdx[j + 1] = origIdx[j];
-                    sliceVals[j + 1] = sliceVals[j];
-                    j--;
-                }
-                origIdx[j + 1] = keyIdx;
-                sliceVals[j + 1] = keyVal;
-            }
+            java.util.Arrays.sort(indices, (a, b) -> {
+                int cmp = Double.compare(sliceVals[a], sliceVals[b]);
+                return descending ? -cmp : cmp;
+            });
             for (int i = 0; i < dimSize; i++) {
-                outData[(outer * dimSize + i) * innerTotal + inner] = origIdx[i];
+                outData[(outer * dimSize + i) * innerTotal + inner] = indices[i];
             }
         }
     }
@@ -441,18 +433,19 @@ public static IDiffTensor tril(RereDiffTensor tensor, int diagonal) {
         RereDiffTensor input = self.inputs.get(0);
         int bStride = fShape[fShape.length - 2] * fShape[fShape.length - 1];
         int bCount = fTotalElements / bStride;
-        // gradient flows only for non-zeroed elements (col <= row + diagonal)
+        // C6: clone grad to avoid mutating self.grad in-place (violates immutability contract)
+        double[] maskedGrad = self.grad.clone();
         for (int b = 0; b < bCount; b++) {
             int base = b * bStride;
             for (int i = 0; i < fShape[fShape.length - 2]; i++) {
                 for (int j = 0; j < fShape[fShape.length - 1]; j++) {
                     if (j > i + fDiagonal) {
-                        self.grad[base + i * fShape[fShape.length - 1] + j] = 0.0;
+                        maskedGrad[base + i * fShape[fShape.length - 1] + j] = 0.0;
                     }
                 }
             }
         }
-        input.accGrad(self.grad);
+        input.accGrad(maskedGrad);
     };
     return new RereDiffTensor(resultData, s, List.of(tensor), bw, "tril");
 }
@@ -505,18 +498,21 @@ public static IDiffTensor triu(RereDiffTensor tensor, int diagonal) {
         RereDiffTensor input = self.inputs.get(0);
         int bStride = fShape[fShape.length - 2] * fShape[fShape.length - 1];
         int bCount = fTotalElements / bStride;
-        // gradient flows only for non-zeroed elements (col >= row + diagonal)
+        // C6: clone to avoid mutating self.grad in-place
+        // SISD: triangular masking is a structural loop over batch/row/col with a positional
+        // condition (j < i + diagonal), not element-wise arithmetic (§7a structural-loop exception)
+        double[] gradCopy = self.grad.clone();
         for (int b = 0; b < bCount; b++) {
             int base = b * bStride;
             for (int i = 0; i < fShape[fShape.length - 2]; i++) {
                 for (int j = 0; j < fShape[fShape.length - 1]; j++) {
                     if (j < i + fDiagonal) {
-                        self.grad[base + i * fShape[fShape.length - 1] + j] = 0.0;
+                        gradCopy[base + i * fShape[fShape.length - 1] + j] = 0.0;
                     }
                 }
             }
         }
-        input.accGrad(self.grad);
+        input.accGrad(gradCopy);
     };
     return new RereDiffTensor(resultData, s, List.of(tensor), bw, "triu");
 }

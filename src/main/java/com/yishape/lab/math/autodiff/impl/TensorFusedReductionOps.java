@@ -233,13 +233,25 @@ public final class TensorFusedReductionOps {
         for (int i = d + 1; i < rank; i++) inner *= shape[i];
 
         double[] result = new double[outer * inner];
-        for (int o = 0; o < outer; o++) {
-            for (int i = 0; i < inner; i++) {
-                double s = 0;
-                for (int r = 0; r < reduce; r++) {
-                    s += data[(o * reduce + r) * inner + i];
+        // B15: delegate per-slice summation to DoubleVectorComputer (GPU/HPC/SIMD chain)
+        // Slice extraction from non-contiguous memory is structural data-movement (§7a structural exception)
+        com.yishape.lab.math.compute.DoubleVectorComputer vc = new com.yishape.lab.math.compute.DoubleVectorComputer();
+        if (inner == 1) {
+            // Contiguous along reduce dim: direct slice via System.arraycopy
+            for (int o = 0; o < outer; o++) {
+                double[] slice = new double[reduce];
+                System.arraycopy(data, o * reduce, slice, 0, reduce);
+                result[o] = vc.reduceOperate(slice, com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
+            }
+        } else {
+            for (int o = 0; o < outer; o++) {
+                for (int i = 0; i < inner; i++) {
+                    double[] slice = new double[reduce];
+                    for (int r = 0; r < reduce; r++) {
+                        slice[r] = data[(o * reduce + r) * inner + i];
+                    }
+                    result[o * inner + i] = vc.reduceOperate(slice, com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
                 }
-                result[o * inner + i] = s;
             }
         }
         return result;
@@ -466,6 +478,8 @@ public final class TensorFusedReductionOps {
                 for (int r = 0; r < reduce; r++) {
                     int idx = (o * reduce + r) * inner + i;
                     double sm = Math.exp(logSoftmaxOut[idx]); // softmax = exp(logSoftmax)
+                    // C8: guard NaN from forward NaN or overflow/underflow
+                    if (sm != sm) sm = 0.0;
                     buf[idx] = grad[idx] - sm * sumGrad;
                 }
             }

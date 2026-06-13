@@ -29,8 +29,7 @@ public final class HpcLoss {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.ctcForwardBackward(
-                logProbs, labels, labelLen, T, C, loss, grad);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.ctcForwardBackward(
+                logProbs, labels, labelLen, T, C, loss, grad); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

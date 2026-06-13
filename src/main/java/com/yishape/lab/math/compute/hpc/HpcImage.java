@@ -20,8 +20,7 @@ public final class HpcImage {
         }
         if (!HpcConfig.allowAttempts()) return false;
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.imageDecode(data, len, outW, outH, outC, out);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.imageDecode(data, len, outW, outH, outC, out); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -37,8 +36,7 @@ public final class HpcImage {
         if (total < 1024) return false; // too small, skip HPC
         if (!HpcConfig.allowAttempts()) return false;
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.imageResize(input, C, H, W, newH, newW, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.imageResize(input, C, H, W, newH, newW, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -52,8 +50,7 @@ public final class HpcImage {
         }
         if (!HpcConfig.allowAttempts()) return false;
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.imageCrop(input, C, H, W, x, y, cropW, cropH, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.imageCrop(input, C, H, W, x, y, cropW, cropH, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -68,7 +65,6 @@ public final class HpcImage {
         }
         if (!HpcConfig.allowAttempts()) return false;
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) return false;
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.imageNormalize(input, C, H, W, mean, std, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.imageNormalize(input, C, H, W, mean, std, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

@@ -35,15 +35,15 @@ public final class HpcGraphExecutor {
     // --- HPC failure cooldown ---
     private static final int COOLDOWN_THRESHOLD = 3;
     private static final int COOLDOWN_STEPS = 100;
-    private static int hpcConsecutiveFailures = 0;
-    private static int hpcCooldownRemaining = 0;
+    private static final java.util.concurrent.atomic.AtomicInteger hpcConsecutiveFailures = new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final java.util.concurrent.atomic.AtomicInteger hpcCooldownRemaining = new java.util.concurrent.atomic.AtomicInteger(0);
 
     /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
-    private static final HashSet<String> REPORTED_UNSUPPORTED_OPS = new HashSet<>();
+    private static final java.util.Set<String> REPORTED_UNSUPPORTED_OPS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    // --- Graph structure hash cache ---
-    private static int hpcLastStructureHash = 0;
-    private static com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph hpcCachedGraph = null;
+    // --- Graph structure hash cache (volatile for cross-thread visibility) ---
+    private static volatile int hpcLastStructureHash = 0;
+    private static volatile com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph hpcCachedGraph = null;
 
     // Tensor thread locals
     private static final ThreadLocal<ArrayList<RereDiffTensor>> HPC_TENSOR_TOPO =
@@ -73,8 +73,9 @@ public final class HpcGraphExecutor {
         if (!com.yishape.lab.math.compute.hpc.HpcConfig.allowAttempts()) return Double.NaN;
 
         // HPC cooldown: skip after repeated consecutive failures
-        if (hpcCooldownRemaining > 0) {
-            hpcCooldownRemaining--;
+        int cooldown = hpcCooldownRemaining.get();
+        if (cooldown > 0) {
+            hpcCooldownRemaining.decrementAndGet();
             return Double.NaN;
         }
 
@@ -130,7 +131,7 @@ public final class HpcGraphExecutor {
             binaryResult = tryExecuteTensorBinaryFull(root, order, leaves, structureHash);
         }
         if (!Double.isNaN(binaryResult)) {
-            hpcConsecutiveFailures = 0;
+            hpcConsecutiveFailures.set(0);
             return binaryResult;
         }
         if (log.isDebugEnabled()) log.debug("Binary path returned NaN, falling back to JSON (nodes={})", order.size());
@@ -188,9 +189,9 @@ public final class HpcGraphExecutor {
 
     /** Track HPC failure for cooldown. */
     private static void trackHpcFailure() {
-        hpcConsecutiveFailures++;
-        if (hpcConsecutiveFailures >= COOLDOWN_THRESHOLD) {
-            hpcCooldownRemaining = COOLDOWN_STEPS;
+        int failures = hpcConsecutiveFailures.incrementAndGet();
+        if (failures >= COOLDOWN_THRESHOLD) {
+            hpcCooldownRemaining.set(COOLDOWN_STEPS);
         }
     }
 

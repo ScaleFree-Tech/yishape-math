@@ -330,12 +330,14 @@ public class GpuGraphExecutorTest {
     @Test
     void testGeluSumFusionFallsBack() {
         // gelu().sum() is fused to geluSum by the AD system. The Rust GPU backend
-        // doesn't implement geluSum yet, so GPU should return NaN (triggering CPU fallback).
+        // now implements geluSum, so GPU should execute it and return the correct result.
         if (!gpuPresent) return;
         IDiffVector x = AD.vector(new double[]{0, 1});
         RereDiffVector loss = (RereDiffVector) x.gelu().sum();
         double result = GpuGraphExecutor.tryExecute(loss);
-        assertTrue(Double.isNaN(result), "geluSum should fall back to CPU when GPU doesn't support it");
+        assertFalse(Double.isNaN(result), "geluSum should execute on GPU");
+        // gelu(0)=0, gelu(1)≈0.841191, sum≈0.841191
+        assertEquals(0.841191, result, 1e-4);
     }
 
     // ==================== Scalar Ops ====================

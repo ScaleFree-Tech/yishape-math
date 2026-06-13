@@ -282,11 +282,8 @@ public static IDiffTensor contiguous(RereDiffTensor tensor) {
     int[] s = tensor.shape();
     int n = (int) tensor.value.totalSize();
     double[] contigData = new double[n];
-    // Precompute source storage positions
-    int[] srcIdx = new int[n];
     for (int i = 0; i < n; i++) {
         contigData[i] = tensor.value.linearGet(i);
-        srcIdx[i] = i; // view logical position → parent logical position
     }
     // For contiguous(), the view IS the same logical elements, just reordered in storage.
     // Since grad is indexed by logical position, the backward is just identity.

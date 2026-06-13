@@ -186,6 +186,16 @@ public interface IDoubleVectorComputer {
     public double[] negate(double[] x);
 
     /**
+     * Create a new vector filled with a scalar value.
+     * 创建填充指定标量值的新向量。
+     *
+     * @param size vector size / 向量大小
+     * @param value fill value / 填充值
+     * @return new vector with all elements set to value / 所有元素为value的新向量
+     */
+    public double[] fill(int size, double value);
+
+    /**
      * Compute element-wise negation of a matrix.
      * 计算矩阵的逐元素取反。
      *

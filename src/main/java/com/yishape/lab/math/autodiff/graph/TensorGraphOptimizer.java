@@ -105,16 +105,24 @@ public class TensorGraphOptimizer {
     }
 
     public static int countNodes(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rt)) {
+            throw new UnsupportedOperationException(
+                "countNodes only supports RereDiffTensor, got " + root.getClass().getSimpleName());
+        }
         List<RereDiffTensor> order = new ArrayList<>();
         HashSet<RereDiffTensor> visited = new HashSet<>();
-        ((RereDiffTensor) root).buildTopo(order, visited);
+        rt.buildTopo(order, visited);
         return order.size();
     }
 
     public static int countLeaves(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rt)) {
+            throw new UnsupportedOperationException(
+                "countLeaves only supports RereDiffTensor, got " + root.getClass().getSimpleName());
+        }
         List<RereDiffTensor> order = new ArrayList<>();
         HashSet<RereDiffTensor> visited = new HashSet<>();
-        ((RereDiffTensor) root).buildTopo(order, visited);
+        rt.buildTopo(order, visited);
         int count = 0;
         for (RereDiffTensor v : order) {
             if (v.isLeaf()) count++;
@@ -123,9 +131,13 @@ public class TensorGraphOptimizer {
     }
 
     public static GraphStats stats(IDiffTensor root) {
+        if (!(root instanceof RereDiffTensor rt)) {
+            throw new UnsupportedOperationException(
+                "stats only supports RereDiffTensor, got " + root.getClass().getSimpleName());
+        }
         List<RereDiffTensor> order = new ArrayList<>();
         HashSet<RereDiffTensor> visited = new HashSet<>();
-        ((RereDiffTensor) root).buildTopo(order, visited);
+        rt.buildTopo(order, visited);
         int leaves = 0, nonLeaf = 0;
         for (RereDiffTensor v : order) {
             if (v.isLeaf()) leaves++;

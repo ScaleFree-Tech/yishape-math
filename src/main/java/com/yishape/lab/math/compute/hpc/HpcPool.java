@@ -34,9 +34,8 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.maxPool2dForward(
-                input, B, C, H, W, kH, kW, stride, pad, output, argmax);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.maxPool2dForward(
+                input, B, C, H, W, kH, kW, stride, pad, output, argmax); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -63,9 +62,8 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.maxPool2dBackward(
-                gradOutput, argmax, B, C, H, W, outH, outW, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.maxPool2dBackward(
+                gradOutput, argmax, B, C, H, W, outH, outW, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     // ==================== avgPool2d ====================
@@ -93,9 +91,8 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.avgPool2dForward(
-                input, B, C, H, W, kH, kW, stride, pad, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.avgPool2dForward(
+                input, B, C, H, W, kH, kW, stride, pad, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -121,9 +118,8 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.avgPool2dBackward(
-                gradOutput, B, C, H, W, kH, kW, stride, pad, outH, outW, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.avgPool2dBackward(
+                gradOutput, B, C, H, W, kH, kW, stride, pad, outH, outW, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     // ==================== adaptiveAvgPool2d ====================
@@ -150,9 +146,8 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.adaptiveAvgPool2dForward(
-                input, B, C, H, W, outH, outW, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.adaptiveAvgPool2dForward(
+                input, B, C, H, W, outH, outW, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -177,8 +172,7 @@ public final class HpcPool {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.adaptiveAvgPool2dBackward(
-                gradOutput, B, C, H, W, outH, outW, gradInput);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.adaptiveAvgPool2dBackward(
+                gradOutput, B, C, H, W, outH, outW, gradInput); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

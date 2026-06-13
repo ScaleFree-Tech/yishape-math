@@ -35,9 +35,8 @@ public final class HpcDepthwiseConv1d {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.depthwiseConv1d(
-                input, weight, bias, seqLen, channels, kDim, output);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.depthwiseConv1d(
+                input, weight, bias, seqLen, channels, kDim, output); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -73,8 +72,7 @@ public final class HpcDepthwiseConv1d {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.depthwiseConv1dBackward(
-                input, weight, gradOutput, seqLen, channels, kDim, stride, pad, dInput, dWeight);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.depthwiseConv1dBackward(
+                input, weight, gradOutput, seqLen, channels, kDim, stride, pad, dInput, dWeight); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

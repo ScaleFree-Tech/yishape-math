@@ -126,11 +126,11 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
         if (aNeedsGrad) {
             RereDiffTensor inpA = self.inputs.get(idx++);
             double[] dA = new double[fB * aStride];
+            double[] bSliceBuf = new double[bStride]; // C13: reuse buffer, avoid copyOfRange per batch
             for (int bi = 0; bi < fB; bi++) {
                 int aOff = bi * aStride, bOff = bi * bStride, gOff = bi * gStride;
-                // Compute bT on-the-fly for this batch element
-                double[] bSlice = Arrays.copyOfRange(bData, bOff, bOff + bStride);
-                double[] bT = DoubleFlatGemm.flatTranspose(bSlice, fK, fN);
+                System.arraycopy(bData, bOff, bSliceBuf, 0, bStride);
+                double[] bT = DoubleFlatGemm.flatTranspose(bSliceBuf, fK, fN);
                 double[] dASlice = DoubleFlatGemm.flatMmul(self.grad, gOff, fM, fN, bT, 0, fK);
                 System.arraycopy(dASlice, 0, dA, aOff, aStride);
             }
@@ -139,11 +139,11 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
         if (bNeedsGrad) {
             RereDiffTensor inpB = self.inputs.get(idx);
             double[] dB = new double[fB * bStride];
+            double[] aSliceBuf = new double[aStride];
             for (int bi = 0; bi < fB; bi++) {
                 int aOff = bi * aStride, bOff = bi * bStride, gOff = bi * gStride;
-                // Compute aT on-the-fly for this batch element
-                double[] aSlice = Arrays.copyOfRange(aData, aOff, aOff + aStride);
-                double[] aT = DoubleFlatGemm.flatTranspose(aSlice, fM, fK);
+                System.arraycopy(aData, aOff, aSliceBuf, 0, aStride);
+                double[] aT = DoubleFlatGemm.flatTranspose(aSliceBuf, fM, fK);
                 double[] dBSlice = DoubleFlatGemm.flatMmul(aT, 0, fK, fM, self.grad, gOff, fN);
                 System.arraycopy(dBSlice, 0, dB, bOff, bStride);
             }

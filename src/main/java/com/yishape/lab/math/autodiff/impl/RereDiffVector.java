@@ -18,6 +18,8 @@ import com.yishape.lab.util.YishapeLogger;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffMatrix;
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
 
 /**
  * Default reverse-mode AD implementation for {@link IDiffVector}.
@@ -181,7 +183,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     // ==================== Static helpers ====================
 
-    static IDiffVector constant(double[] data) {
+    public static IDiffVector constant(double[] data) {
         RereDiffTensor t = new RereDiffTensor(data.clone(), new int[]{data.length});
         t.setRequiresGrad(false);
         return new RereDiffVector(t);
@@ -332,8 +334,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector layerNorm(IDiffVector gamma, IDiffVector beta, double eps) {
-        RereDiffVector gr = (RereDiffVector) gamma;
-        RereDiffVector br = (RereDiffVector) beta;
+        RereDiffVector gr = resolveToRere(gamma);
+        RereDiffVector br = resolveToRere(beta);
         int features = (int) gr.tensor.value().totalSize();
         int total = (int) tensor.value().totalSize();
         int batch = total / features;
@@ -348,8 +350,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector batchNorm(IDiffVector gamma, IDiffVector beta, double eps) {
-        RereDiffVector gr = (RereDiffVector) gamma;
-        RereDiffVector br = (RereDiffVector) beta;
+        RereDiffVector gr = resolveToRere(gamma);
+        RereDiffVector br = resolveToRere(beta);
         int features = (int) gr.tensor.value().totalSize();
         int total = (int) tensor.value().totalSize();
         int batch = total / features;
@@ -368,8 +370,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
      */
     public IDiffVector conv2d(IDiffVector weight, IDiffVector bias,
                                int[] inShape, int stride, int padding, int dilation) {
-        RereDiffVector wv = (RereDiffVector) weight;
-        RereDiffVector bv = (RereDiffVector) bias;
+        RereDiffVector wv = resolveToRere(weight);
+        RereDiffVector bv = resolveToRere(bias);
         IDiffTensor reshaped = tensor.reshape(inShape);
         IDiffTensor result = reshaped.conv2d(wv.tensor, bv != null ? bv.tensor : null,
             stride, padding, dilation);
@@ -385,9 +387,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
     public IDiffVector scaledDotProductAttention(IDiffVector key, IDiffVector vTensor,
                                                    IDiffVector mask, int[] shape,
                                                    double dropout) {
-        RereDiffVector kv = (RereDiffVector) key;
-        RereDiffVector vv = (RereDiffVector) vTensor;
-        RereDiffVector mv = (RereDiffVector) mask;
+        RereDiffVector kv = resolveToRere(key);
+        RereDiffVector vv = resolveToRere(vTensor);
+        RereDiffVector mv = resolveToRere(mask);
         IDiffTensor reshaped = tensor.reshape(shape);
         IDiffTensor result = reshaped.scaledDotProductAttention(
             kv.tensor, vv.tensor, mv != null ? mv.tensor : null, dropout);
@@ -749,6 +751,10 @@ public class RereDiffVector implements IDiffVector, Serializable {
         }
         IDoubleMatrix resultVal = IDoubleMatrix.fromArray(tensor.value().toDoubleArray(), rows, cols);
         RereDiffTensor self = this.tensor;
+        // B2: create a source matrix node so the matrix-level graph has proper "inputs" edges.
+        // The tensor-level graph remains the canonical gradient propagation path via propagateGrad().
+        RereDiffMatrix sourceMat = new RereDiffMatrix(
+            IDoubleMatrix.fromArray(tensor.value().toDoubleArray(), origSize, 1));
         Consumer<IDoubleMatrix> backwardFn = (matrixGrad) -> {
             double[] flatGrad = ((IDoubleVector) matrixGrad.flatten()).getData();
             self.accGrad(flatGrad);
@@ -756,7 +762,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         };
         Function<IDiffVector, IDiffVector[]> symbolicBackwardFn = (matrixGrad) ->
             new IDiffVector[] { matrixGrad };
-        RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(), backwardFn);
+        RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(sourceMat), backwardFn);
         node.opTag = "reshape";
         node.symbolicBackwardFn = symbolicBackwardFn;
         return node;
@@ -876,9 +882,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
         int n = xd.length;
         double[] out = new double[n];
         for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(xd[i]);
+        // D6: pre-allocate zero array once, reuse across backward calls
+        final double[] zeroGrad = new double[n];
         Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs().get(0);
-            input.accGrad(new double[n]); // gradient is zero everywhere
+            input.accGrad(zeroGrad);
         };
         RereDiffTensor node = new RereDiffTensor(out, new int[]{n}, List.of(tensor), bw, tag);
         return wrap(node);
@@ -1171,10 +1179,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
         RereDiffTensor self = this.tensor;
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] go = gradOut.gradData();
+            // dL/da = -(g × b), dL/db = -(g × a) — cross product gradient has negative sign
             double[] dx = new double[]{
-                go[1] * oData[2] - go[2] * oData[1],
-                go[2] * oData[0] - go[0] * oData[2],
-                go[0] * oData[1] - go[1] * oData[0]
+                go[2] * oData[1] - go[1] * oData[2],
+                go[0] * oData[2] - go[2] * oData[0],
+                go[1] * oData[0] - go[0] * oData[1]
             };
             self.accGrad(dx);
         };
@@ -1201,20 +1210,41 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector where(boolean[] condition, IVector<Double> x, IVector<Double> y) {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] xd = x.toDoubleArray();
-        double[] yd = y.toDoubleArray();
-        int n = fwd.length;
-        double[] result = new double[n];
-        for (int i = 0; i < n; i++) result[i] = condition[i] ? xd[i] : yd[i];
-        RereDiffTensor self = this.tensor;
+        if (x instanceof IDiffVector dx && y instanceof IDiffVector dy) {
+            return where(condition, dx, dy);
+        }
+        throw new UnsupportedOperationException(
+            "where(IVector) with non-differentiable vectors is not supported");
+    }
+
+    @Override
+    public IDiffVector where(boolean[] condition, IDiffVector x, IDiffVector y) {
+        RereDiffVector xv = resolveToRere(x);
+        RereDiffVector yv = resolveToRere(y);
+        RereDiffTensor xt = xv.tensor;
+        RereDiffTensor yt = yv.tensor;
+        double[] xd = xv.tensor.value().toDoubleArray();
+        double[] yd = yv.tensor.value().toDoubleArray();
+        int n = xd.length;
+        // Build condition masks via Arrays.setAll (functional, no raw loop)
+        double[] condTrue = java.util.Arrays.copyOf(xd, n); // allocate
+        double[] condFalse = java.util.Arrays.copyOf(yd, n); // allocate
+        java.util.Arrays.setAll(condTrue, i -> condition[i] ? 1.0 : 0.0);
+        java.util.Arrays.setAll(condFalse, i -> condition[i] ? 0.0 : 1.0);
+        DoubleVectorComputer vc = new DoubleVectorComputer();
+        double[] xTerm = vc.binaryOperate(xd, condTrue, BinaryOperation.MULTIPLY);
+        double[] yTerm = vc.binaryOperate(yd, condFalse, BinaryOperation.MULTIPLY);
+        double[] result = vc.binaryOperate(xTerm, yTerm, BinaryOperation.ADD);
+        // B3: forward uses x and y values, NOT self's value. Wire both as graph inputs.
+        // Backward: condition[i]=true → gradient to x; false → gradient to y.
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] gd = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) if (condition[i]) dx[i] += gd[i];
-            self.accGrad(dx);
+            double[] dxGrad = vc.binaryOperate(gd, condTrue, BinaryOperation.MULTIPLY);
+            double[] dyGrad = vc.binaryOperate(gd, condFalse, BinaryOperation.MULTIPLY);
+            xt.accGrad(dxGrad);
+            yt.accGrad(dyGrad);
         };
-        return wrap(new RereDiffTensor(result, new int[]{n}, List.of(self), backwardFn, "where"));
+        return wrap(new RereDiffTensor(result, new int[]{n}, List.of(xt, yt), backwardFn, "where"));
     }
 
     // ==================== Cumulative operations ====================
@@ -1251,12 +1281,12 @@ public class RereDiffVector implements IDiffVector, Serializable {
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] go = gradOut.gradData();
             double[] dx = new double[n];
-            for (int j = 0; j < n; j++) {
-                for (int k = j; k < n; k++) {
-                    if (Math.abs(fwd[j]) > 1e-15) {
-                        dx[j] += go[k] * y[k] / fwd[j];
-                    }
-                }
+            // SISD: cumprod backward is a reverse-scan (running suffix sum), inherently sequential.
+            // No accelerated scan primitive exists in the current chain (§7a structural-loop exception).
+            double running = 0;
+            for (int i = n - 1; i >= 0; i--) {
+                running += go[i] * y[i];
+                dx[i] = (Math.abs(fwd[i]) > 1e-15) ? running / fwd[i] : 0;
             }
             self.accGrad(dx);
         };

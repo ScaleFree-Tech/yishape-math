@@ -44,10 +44,9 @@ public final class HpcTrapezoidalScan {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.trapezoidalScanForward(
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.trapezoidalScanForward(
                 u, delta, a, b, c, d, B, L, D, aIsVec, dIsScalar, deltaBroadcast,
-                output, savedH, savedABar, savedBBarU);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+                output, savedH, savedABar, savedBBarU); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 
     /**
@@ -93,10 +92,9 @@ public final class HpcTrapezoidalScan {
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
             return false;
         }
-        int rc = com.yishape.lab.math.hpc.YishapeHpc.trapezoidalScanBackward(
+        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.trapezoidalScanBackward(
                 gradOutput, u, delta, a, b, c, d, savedH, savedABar, savedBBarU,
                 B, L, D, aIsVec, dIsScalar, deltaBroadcast,
-                gradU, gradDelta, gradA, gradB, gradC, gradD);
-        return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+                gradU, gradDelta, gradA, gradB, gradC, gradD); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
     }
 }

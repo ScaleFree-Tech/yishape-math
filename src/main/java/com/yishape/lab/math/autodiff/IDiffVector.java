@@ -439,8 +439,17 @@ public interface IDiffVector extends IDoubleVector {
 
     @Override
     default IDiffVector where(boolean[] condition, IVector<Double> x, IVector<Double> y) {
+        if (x instanceof IDiffVector dx && y instanceof IDiffVector dy) {
+            return where(condition, dx, dy);
+        }
         throw new UnsupportedOperationException(
             "where(IVector) not supported on " + this.getClass().getSimpleName());
+    }
+
+    /** B3 fix: where() overload accepting differentiable vectors with correct gradient routing. */
+    default IDiffVector where(boolean[] condition, IDiffVector x, IDiffVector y) {
+        throw new UnsupportedOperationException(
+            "where(IDiffVector,IDiffVector) not supported on " + this.getClass().getSimpleName());
     }
 
     @Override
@@ -485,7 +494,12 @@ public interface IDiffVector extends IDoubleVector {
     default IDiffVector cat(IDiffVector... others) {
         // Default: delegate to RereDiffVector implementation (which has access to internal methods).
         // TangentDiffVector and TracerDiffVector override this method directly.
-        return ((com.yishape.lab.math.autodiff.impl.RereDiffVector) this).cat(others);
+        if (!(this instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rv)) {
+            throw new UnsupportedOperationException(
+                "cat() default implementation only supports RereDiffVector, got " + this.getClass().getSimpleName()
+                + ". Override cat() in your implementation.");
+        }
+        return rv.cat(others);
     }
 
     @Override
