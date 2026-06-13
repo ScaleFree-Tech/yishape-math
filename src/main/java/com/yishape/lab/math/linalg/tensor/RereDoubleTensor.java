@@ -123,7 +123,7 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     @Override
     public ITensor fill(double value) {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             Arrays.fill(data, value);
         } else {
             int nElem = (int) totalSize();
@@ -473,7 +473,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         if (newSize != totalSize()) {
             throw new IllegalArgumentException("Cannot reshape " + totalSize() + " to " + newSize);
         }
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(data, offset, newShape,
                 TensorShape.computeCStrides(newShape));
         }
@@ -496,73 +496,73 @@ public class RereDoubleTensor implements IDoubleTensor {
     }
 
     @Override public IDoubleTensor neg() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.negate(data), shape());
         }
         return applyUnary(v -> -v);
     }
     @Override public IDoubleTensor abs() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.ABS, 0), shape());
         }
         return applyUnary(Math::abs);
     }
     @Override public IDoubleTensor sqrt() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.SQRT, 0), shape());
         }
         return applyUnary(Math::sqrt);
     }
     @Override public IDoubleTensor exp() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.EXP, 0), shape());
         }
         return applyUnary(Math::exp);
     }
     @Override public IDoubleTensor log() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.LOG, 0), shape());
         }
         return applyUnary(Math::log);
     }
     @Override public IDoubleTensor sin() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.SIN, 0), shape());
         }
         return applyUnary(Math::sin);
     }
     @Override public IDoubleTensor cos() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.COS, 0), shape());
         }
         return applyUnary(Math::cos);
     }
     @Override public IDoubleTensor tan() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.TAN, 0), shape());
         }
         return applyUnary(Math::tan);
     }
     @Override public IDoubleTensor square() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.POW, 2.0), shape());
         }
         return applyUnary(v -> v * v);
     }
     @Override public IDoubleTensor sigmoid() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.SIGMOID, 0), shape());
         }
         return applyUnary(v -> 1.0 / (1.0 + Math.exp(-v)));
     }
     @Override public IDoubleTensor relu() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.RELU, 0), shape());
         }
         return applyUnary(v -> v > 0 ? v : 0);
     }
     @Override public IDoubleTensor tanh() {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.universalOperate(data, UniversalOperation.TANH, 0), shape());
         }
         return applyUnary(Math::tanh);
@@ -608,25 +608,25 @@ public class RereDoubleTensor implements IDoubleTensor {
     // ==================== 逐元素运算（标量） ====================
 
     @Override public IDoubleTensor add(double scalar) {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.ADD), shape());
         }
         return applyUnary(v -> v + scalar);
     }
     @Override public IDoubleTensor sub(double scalar) {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.SUBTRACT), shape());
         }
         return applyUnary(v -> v - scalar);
     }
     @Override public IDoubleTensor mul(double scalar) {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.MULTIPLY), shape());
         }
         return applyUnary(v -> v * scalar);
     }
     @Override public IDoubleTensor div(double scalar) {
-        if (isContiguous() && offset == 0) {
+        if (isContiguous() && offset == 0 && data.length == totalSize()) {
             return new RereDoubleTensor(COMPUTER.binaryOperate(data, scalar, BinaryOperation.DIVIDE), shape());
         }
         return applyUnary(v -> v / scalar);
