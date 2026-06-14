@@ -364,16 +364,16 @@ public class Phase2_5OpsTest {
     @Test public void testInstanceNormForward() {
         IDiffTensor x = AD.leafTensor(new double[]{
             1, 2, 3, 4, 5, 6, 7, 8
-        }, 1, 2, 4);
+        }, 1, 2, 2, 2);
         IDiffTensor gamma = AD.leafTensor(new double[]{1, 1}, 2);
         IDiffTensor y = x.instanceNorm(gamma, null, 1e-5);
-        assertArrayEquals(new int[]{1, 2, 4}, y.shape());
+        assertArrayEquals(new int[]{1, 2, 2, 2}, y.shape());
     }
 
     @Test public void testInstanceNormBackward() {
         IDiffTensor x = AD.leafTensor(new double[]{
             1, 2, 3, 4, 5, 6, 7, 8
-        }, 1, 2, 4);
+        }, 1, 2, 2, 2);
         IDiffTensor gamma = AD.leafTensor(new double[]{1, 1}, 2);
         IDiffTensor y = x.instanceNorm(gamma, null, 1e-5);
         y.sum().backward();
@@ -384,7 +384,7 @@ public class Phase2_5OpsTest {
     @Test public void testInstanceNormWithBias() {
         IDiffTensor x = AD.leafTensor(new double[]{
             1, 2, 3, 4, 5, 6, 7, 8
-        }, 2, 1, 4);
+        }, 2, 1, 2, 2);
         IDiffTensor gamma = AD.leafTensor(new double[]{1}, 1);
         IDiffTensor beta = AD.leafTensor(new double[]{0}, 1);
         IDiffTensor y = x.instanceNorm(gamma, beta, 1e-5);
