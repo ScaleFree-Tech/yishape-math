@@ -19,6 +19,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
  * All methods are static, taking the tensor as first parameter.
  */
 public final class DiffTensorBinary {
+    private static final double DIV_EPS = 1e-15;
     private DiffTensorBinary() { /* utility class */ }
 
 // ==================== Element-wise binary ops — scalar ====================
@@ -64,12 +65,12 @@ public static IDiffTensor rdiv(RereDiffTensor tensor, double scalar) {
     int n = (int) tensor.value.totalSize();
     double[] out = new double[n];
     double[] xd = tensor.value.toDoubleArray();
-    for (int i = 0; i < n; i++) out[i] = scalar / xd[i];
+    for (int i = 0; i < n; i++) out[i] = scalar / Math.max(Math.abs(xd[i]), DIV_EPS);
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) inGrad[i] = -self.grad[i] * scalar / (xd[i] * xd[i]);
+        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = -self.grad[i] * scalar / Math.max(xAbs * xAbs, DIV_EPS * DIV_EPS); }
         input.accGradFromPooled(inGrad, m);
     };
     RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rdiv", scalar);
@@ -92,12 +93,12 @@ public static IDiffTensor reciprocal(RereDiffTensor tensor) {
     int n = (int) tensor.value.totalSize();
     double[] out = new double[n];
     double[] xd = tensor.value.toDoubleArray();
-    for (int i = 0; i < n; i++) out[i] = 1.0 / xd[i];
+    for (int i = 0; i < n; i++) out[i] = 1.0 / Math.max(Math.abs(xd[i]), DIV_EPS);
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) inGrad[i] = -self.grad[i] / (xd[i] * xd[i]);
+        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = -self.grad[i] / Math.max(xAbs * xAbs, DIV_EPS * DIV_EPS); }
         input.accGradFromPooled(inGrad, m);
     };
     RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "reciprocal");

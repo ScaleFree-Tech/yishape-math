@@ -104,7 +104,7 @@ public static IDiffTensor logSoftmax(RereDiffTensor tensor, int dim) {
     // Compute log(sm) forward, with proper backward
     double[] smData = rsm.value.toDoubleArray();
     double[] logData = new double[smData.length];
-    for (int i = 0; i < smData.length; i++) logData[i] = Math.log(smData[i]);
+    for (int i = 0; i < smData.length; i++) logData[i] = Math.log(Math.max(smData[i], 1e-15));
 
     int[] s = tensor.shape();
     int outer = 1;

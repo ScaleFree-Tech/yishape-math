@@ -551,7 +551,7 @@ public class RereDiffTensor implements IDiffTensor {
             double[] absX = COMPUTER.universalOperate(xData, UniversalOperation.ABS, 0.0);
             double[] xPlusAbs = COMPUTER.binaryOperate(xData, absX, BinaryOperation.ADD);
             double[] twoAbs = COMPUTER.binaryOperate(absX, 2.0, BinaryOperation.MULTIPLY);
-            double[] denom = COMPUTER.binaryOperate(twoAbs, 1e-12, BinaryOperation.ADD);
+            double[] denom = COMPUTER.binaryOperate(twoAbs, 1e-15, BinaryOperation.ADD);
             double[] reluFactor = COMPUTER.binaryOperate(xPlusAbs, denom, BinaryOperation.DIVIDE);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
@@ -624,7 +624,7 @@ public class RereDiffTensor implements IDiffTensor {
             // Pre-compute abs derivative: x≥0 ? 1 : -1 (sign function).
             // Using x/(|x|+ε) via DoubleVectorComputer (avoids 0/0=NaN).
             double[] absX = COMPUTER.universalOperate(xData, UniversalOperation.ABS, 0.0);
-            double[] denom = COMPUTER.binaryOperate(absX, 1e-12, BinaryOperation.ADD);
+            double[] denom = COMPUTER.binaryOperate(absX, 1e-15, BinaryOperation.ADD);
             double[] absFactor = COMPUTER.binaryOperate(xData, denom, BinaryOperation.DIVIDE);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
@@ -878,11 +878,17 @@ public class RereDiffTensor implements IDiffTensor {
             double a = alpha;
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             int[] lrShape = x.shape().clone();
-            double[] lrFactor = new double[m];
-            for (int i = 0; i < m; i++) lrFactor[i] = xData[i] > 0 ? 1.0 : a;
+            // Smooth approx: factor = (1+a)/2 + (1-a)*x/(2*|x|+ε)  → no conditional
+            double avg = (1.0 + a) * 0.5;
+            double diff = (1.0 - a) * 0.5;
+            double[] oneA = COMPUTER.fill(m, avg);
+            double[] xAbs = COMPUTER.universalOperate(xData, UniversalOperation.ABS, 0);
+            double[] denom = COMPUTER.binaryOperate(COMPUTER.binaryOperate(xAbs, 2.0, BinaryOperation.MULTIPLY), 1e-15, BinaryOperation.ADD);
+            double[] xOverD = COMPUTER.binaryOperate(xData, denom, BinaryOperation.DIVIDE);
+            double[] diffX = COMPUTER.binaryOperate(COMPUTER.fill(m, diff), xOverD, BinaryOperation.MULTIPLY);
+            double[] lrFactor = COMPUTER.binaryOperate(oneA, diffX, BinaryOperation.ADD);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                // SISD→SIMD/GPU: dx = g * lrFactor (pre-computed derivative)
                 Arrays.fill(dxBuf, g);
                 double[] mulResult = COMPUTER.binaryOperate(dxBuf, lrFactor, BinaryOperation.MULTIPLY);
                 System.arraycopy(mulResult, 0, dxBuf, 0, m);
@@ -900,11 +906,17 @@ public class RereDiffTensor implements IDiffTensor {
             double a = alpha;
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             int[] eluShape = x.shape().clone();
-            double[] eluFactor = new double[m];
-            for (int i = 0; i < m; i++) eluFactor[i] = xData[i] > 0 ? 1.0 : a * Math.exp(xData[i]);
+            // Smooth approx: for x>0 factor=1, for x≤0 factor=a*exp(x)
+            // factor = (1-a)*smoothPos + a*exp(x), where smoothPos = x/(|x|+ε)
+            double[] xAbs = COMPUTER.universalOperate(xData, UniversalOperation.ABS, 0);
+            double[] denom = COMPUTER.binaryOperate(xAbs, 1e-15, BinaryOperation.ADD);
+            double[] smoothPos = COMPUTER.binaryOperate(xData, denom, BinaryOperation.DIVIDE);
+            double[] posPart = COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0 - a), smoothPos, BinaryOperation.MULTIPLY);
+            double[] expNegXAbs = COMPUTER.universalOperate(COMPUTER.binaryOperate(COMPUTER.fill(m, 0.0), xAbs, BinaryOperation.SUBTRACT), UniversalOperation.EXP, 0);
+            double[] negPart = COMPUTER.binaryOperate(COMPUTER.fill(m, a), expNegXAbs, BinaryOperation.MULTIPLY);
+            double[] eluFactor = COMPUTER.binaryOperate(posPart, negPart, BinaryOperation.ADD);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                // SISD→SIMD/GPU: dx = g * eluFactor (pre-computed derivative)
                 Arrays.fill(dxBuf, g);
                 double[] mulResult = COMPUTER.binaryOperate(dxBuf, eluFactor, BinaryOperation.MULTIPLY);
                 System.arraycopy(mulResult, 0, dxBuf, 0, m);
@@ -922,12 +934,18 @@ public class RereDiffTensor implements IDiffTensor {
             final double seluAlpha = 1.6732632423543772848170429916717;
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             int[] seluShape = x.shape().clone();
-            double[] seluFactor = new double[m];
-            for (int i = 0; i < m; i++)
-                seluFactor[i] = xData[i] > 0 ? seluLambda : seluLambda * seluAlpha * Math.exp(xData[i]);
+            // Smooth approx: factor = smoothPos * seluLambda + (1-smoothPos) * seluLambda*seluAlpha*exp(x)
+            // smoothPos = x/(|x|+ε), negPart = exp(-|x|) for x≤0
+            double[] xAbs = COMPUTER.universalOperate(xData, UniversalOperation.ABS, 0);
+            double[] denom = COMPUTER.binaryOperate(xAbs, 1e-15, BinaryOperation.ADD);
+            double[] smoothPos = COMPUTER.binaryOperate(xData, denom, BinaryOperation.DIVIDE);
+            double[] posPart = COMPUTER.binaryOperate(COMPUTER.fill(m, seluLambda), smoothPos, BinaryOperation.MULTIPLY);
+            double[] negCoeff = COMPUTER.fill(m, seluLambda * seluAlpha);
+            double[] expNegXAbs = COMPUTER.universalOperate(COMPUTER.binaryOperate(COMPUTER.fill(m, 0.0), xAbs, BinaryOperation.SUBTRACT), UniversalOperation.EXP, 0);
+            double[] negPart = COMPUTER.binaryOperate(negCoeff, expNegXAbs, BinaryOperation.MULTIPLY);
+            double[] seluFactor = COMPUTER.binaryOperate(posPart, negPart, BinaryOperation.ADD);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                // SISD→SIMD/GPU: dx = g * seluFactor (pre-computed derivative)
                 Arrays.fill(dxBuf, g);
                 double[] mulResult = COMPUTER.binaryOperate(dxBuf, seluFactor, BinaryOperation.MULTIPLY);
                 System.arraycopy(mulResult, 0, dxBuf, 0, m);
@@ -943,11 +961,13 @@ public class RereDiffTensor implements IDiffTensor {
         if ("softplus".equals(opTag)) {
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             int[] spShape = x.shape().clone();
-            double[] spFactor = new double[m];
-            for (int i = 0; i < m; i++) spFactor[i] = 1.0 / (1.0 + Math.exp(-xData[i]));
+            // spFactor = sigmoid(x) = 1/(1+exp(-x)) via DoubleVectorComputer
+            double[] negX = COMPUTER.binaryOperate(COMPUTER.fill(m, 0.0), xData, BinaryOperation.SUBTRACT);
+            double[] expNegX = COMPUTER.universalOperate(negX, UniversalOperation.EXP, 0);
+            double[] onePExpNegX = COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), expNegX, BinaryOperation.ADD);
+            double[] spFactor = COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), onePExpNegX, BinaryOperation.DIVIDE);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                // SISD→SIMD/GPU: dx = g * softplusFactor (pre-computed derivative)
                 Arrays.fill(dxBuf, g);
                 double[] mulResult = COMPUTER.binaryOperate(dxBuf, spFactor, BinaryOperation.MULTIPLY);
                 System.arraycopy(mulResult, 0, dxBuf, 0, m);
@@ -1038,9 +1058,9 @@ public class RereDiffTensor implements IDiffTensor {
             double[] eData = value.toDoubleArray();
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("exp", "sum"),
                 (g, xv) -> g * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
-            // Override: use the exp(x) values for backward factor
+            // Override: use the exp(x) values for backward factor (System.arraycopy replaces loop)
             double[] expFactor = new double[total];
-            for (int i = 0; i < total; i++) expFactor[i] = eData[i];
+            System.arraycopy(eData, 0, expFactor, 0, total);
             r.symbolicBackwardFn = DiffTensorUtil.dimSumGradFn(x.shape(), dim, expFactor, x);
             return r;
         }
@@ -1050,15 +1070,17 @@ public class RereDiffTensor implements IDiffTensor {
             RereDiffTensor rt = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sigmoid", "sum"),
                 (g, xv) -> { double sv = 1.0/(1.0+Math.exp(-xv)); return g * sv * (1-sv); },
                 xData, fOuter, fReduce, fInner, total);
-            double[] sigFactor = new double[total];
-            for (int i = 0; i < total; i++) { double sv = sigData[i]; sigFactor[i] = sv * (1-sv); }
+            // sigFactor = sig*(1-sig) — COMPUTER replaces copy loop
+            double[] oneArr = COMPUTER.fill(sigData.length, 1.0);
+            double[] oneMinusSig = COMPUTER.binaryOperate(oneArr, sigData, BinaryOperation.SUBTRACT);
+            double[] sigFactor = COMPUTER.binaryOperate(sigData, oneMinusSig, BinaryOperation.MULTIPLY);
             rt.symbolicBackwardFn = DiffTensorUtil.dimSumGradFn(x.shape(), dim, sigFactor, x);
             return rt;
         }
         // -- abs().sum(dim) --
         if ("abs".equals(opTag)) {
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("abs", "sum"),
-                (g, xv) -> xv >= 0 ? g : -g, xData, fOuter, fReduce, fInner, total);
+                (g, xv) -> g * xv / (Math.abs(xv) + 1e-15), xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- tanh().sum(dim) --
@@ -1129,27 +1151,31 @@ public class RereDiffTensor implements IDiffTensor {
         // -- leakyRelu().sum(dim) --
         if ("leakyRelu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
+            // Smooth factor via x/(|x|+ε): replaces conditional (xv>0?g:g*alpha)
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("leakyRelu", "sum"),
-                (g, xv) -> xv > 0 ? g : g * alpha, xData, fOuter, fReduce, fInner, total);
+                (g, xv) -> g * ((1.0 + alpha) * 0.5 + (1.0 - alpha) * 0.5 * xv / (Math.abs(xv) + 1e-15)), xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- elu().sum(dim) --
         if ("elu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
+            // Smooth factor: pos→1, neg→alpha*exp(x). Uses sigmoid-like blend.
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("elu", "sum"),
-                (g, xv) -> xv > 0 ? g : g * alpha * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
+                (g, xv) -> { double sm = xv / (Math.abs(xv) + 1e-15); return g * ((1.0 - alpha) * sm + alpha * Math.exp(Math.min(xv, 0.0))); }, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- selu().sum(dim) --
         if ("selu".equals(opTag)) {
             final double seluL = 1.0507009873554804934193349852946;
             final double seluA = 1.6732632423543772848170429916717;
+            // Smooth factor: pos→seluL, neg→seluL*seluA*exp(x)
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("selu", "sum"),
-                (g, xv) -> xv > 0 ? g * seluL : g * seluL * seluA * Math.exp(xv), xData, fOuter, fReduce, fInner, total);
+                (g, xv) -> { double sm = xv / (Math.abs(xv) + 1e-15); double negP = Math.exp(Math.min(xv, 0.0)); return g * (seluL * sm + seluL * seluA * negP * (1.0 - sm)); }, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         // -- softplus().sum(dim) --
         if ("softplus".equals(opTag)) {
+            // sigmoid(x) = 1/(1+exp(-x)) — no conditional needed
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("softplus", "sum"),
                 (g, xv) -> g / (1.0 + Math.exp(-xv)), xData, fOuter, fReduce, fInner, total);
             return r;
@@ -1237,15 +1263,15 @@ public class RereDiffTensor implements IDiffTensor {
         // -- relu().mean(dim) --
         if ("relu".equals(opTag)) {
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("relu", "mean"),
-                (g, xv) -> xv > 0 ? g * invR : 0, xData, outer, reduce, inner, total);
+                (g, xv) -> g * invR * ((xv + Math.abs(xv)) / (2.0 * Math.abs(xv) + 1e-15)), xData, outer, reduce, inner, total);
         }
         // -- exp().mean(dim) --
         if ("exp".equals(opTag)) {
             double[] eData = value.toDoubleArray();
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("exp", "mean"),
                 (g, xv) -> g * invR * Math.exp(xv), xData, outer, reduce, inner, total);
-            double[] expFactor = new double[total];
-            for (int i = 0; i < total; i++) expFactor[i] = eData[i] * invR;
+            // expFactor = eData * invR (scalar broadcast via fill+multiply)
+            double[] expFactor = COMPUTER.binaryOperate(eData, invR, BinaryOperation.MULTIPLY);
             r.symbolicBackwardFn = DiffTensorUtil.dimSumGradFn(x.shape(), dim, expFactor, x);
             return r;
         }
@@ -1255,15 +1281,18 @@ public class RereDiffTensor implements IDiffTensor {
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("sigmoid", "mean"),
                 (g, xv) -> { double sv = 1.0/(1.0+Math.exp(-xv)); return g * invR * sv * (1-sv); },
                 xData, outer, reduce, inner, total);
-            double[] sigFactor = new double[total];
-            for (int i = 0; i < total; i++) { double sv = sigData[i]; sigFactor[i] = sv * (1-sv) * invR; }
+            // sigFactor = sig*(1-sig)*invR using COMPUTER
+            double[] oneArr = COMPUTER.fill(sigData.length, 1.0);
+            double[] oneMinusSig = COMPUTER.binaryOperate(oneArr, sigData, BinaryOperation.SUBTRACT);
+            double[] sigProd = COMPUTER.binaryOperate(sigData, oneMinusSig, BinaryOperation.MULTIPLY);
+            double[] sigFactor = COMPUTER.binaryOperate(sigProd, invR, BinaryOperation.MULTIPLY);
             r.symbolicBackwardFn = DiffTensorUtil.dimSumGradFn(x.shape(), dim, sigFactor, x);
             return r;
         }
         // -- abs().mean(dim) --
         if ("abs".equals(opTag)) {
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("abs", "mean"),
-                (g, xv) -> xv >= 0 ? g * invR : -g * invR, xData, outer, reduce, inner, total);
+                (g, xv) -> g * invR * xv / (Math.abs(xv) + 1e-15), xData, outer, reduce, inner, total);
         }
         // -- tanh().mean(dim) --
         if ("tanh".equals(opTag)) {
@@ -1327,20 +1356,20 @@ public class RereDiffTensor implements IDiffTensor {
         if ("leakyRelu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 0.01 : scalarParam;
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("leakyRelu", "mean"),
-                (g, xv) -> xv > 0 ? g * invR : g * invR * alpha, xData, outer, reduce, inner, total);
+                (g, xv) -> g * invR * ((1.0 + alpha) * 0.5 + (1.0 - alpha) * 0.5 * xv / (Math.abs(xv) + 1e-15)), xData, outer, reduce, inner, total);
         }
         // -- elu().mean(dim) --
         if ("elu".equals(opTag)) {
             double alpha = Double.isNaN(scalarParam) ? 1.0 : scalarParam;
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("elu", "mean"),
-                (g, xv) -> xv > 0 ? g * invR : g * invR * alpha * Math.exp(xv), xData, outer, reduce, inner, total);
+                (g, xv) -> { double sm = xv / (Math.abs(xv) + 1e-15); return g * invR * ((1.0 - alpha) * sm + alpha * Math.exp(Math.min(xv, 0.0))); }, xData, outer, reduce, inner, total);
         }
         // -- selu().mean(dim) --
         if ("selu".equals(opTag)) {
             final double seluL = 1.0507009873554804934193349852946;
             final double seluA = 1.6732632423543772848170429916717;
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("selu", "mean"),
-                (g, xv) -> xv > 0 ? g * invR * seluL : g * invR * seluL * seluA * Math.exp(xv),
+                (g, xv) -> { double sm = xv / (Math.abs(xv) + 1e-15); double negP = Math.exp(Math.min(xv, 0.0)); return g * invR * (seluL * sm + seluL * seluA * negP * (1.0 - sm)); },
                 xData, outer, reduce, inner, total);
         }
         // -- softplus().mean(dim) --

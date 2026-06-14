@@ -89,22 +89,27 @@ public static IDiffTensor layerNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
         double[] dx = AutodiffBufferPool.acquire(m);
         double[] dGamma = AutodiffBufferPool.acquire(features);
         double[] dBeta = AutodiffBufferPool.acquire(features);
+        // Fix: clone captured arrays inside closure to prevent stale reads
+        double[] lMn = means.clone();
+        double[] lSi = sigmas.clone();
+        double[] lXH = xHat.clone();
         for (int p = 0; p < batch; p++) {
             int off = p * features;
-            double sigma = sigmas[p];
+            double sigma = lSi[p];
+            double mean = lMn[p];
             double sumGT = 0, sumGTXH = 0;
             for (int j = 0; j < features; j++) {
                 double gt = g[off + j] * cg[j];
                 sumGT += gt;
-                sumGTXH += gt * xHat[off + j];
+                sumGTXH += gt * lXH[off + j];
             }
             double invFS = 1.0 / (features * sigma);
             for (int j = 0; j < features; j++) {
                 double gt = g[off + j] * cg[j];
-                dx[off + j] = (features * gt - sumGT - xHat[off + j] * sumGTXH) * invFS;
+                dx[off + j] = (features * gt - sumGT - lXH[off + j] * sumGTXH) * invFS;
             }
             for (int j = 0; j < features; j++) {
-                dGamma[j] += g[off + j] * xHat[off + j];
+                dGamma[j] += g[off + j] * lXH[off + j];
                 dBeta[j] += g[off + j];
             }
         }
@@ -238,14 +243,17 @@ public static IDiffTensor rmsNorm(RereDiffTensor tensor, IDiffTensor gamma, doub
         int m = (int) inpX.value.totalSize();
         double[] dx = AutodiffBufferPool.acquire(m);
         double[] dGamma = AutodiffBufferPool.acquire(features);
-
+        // Clone rmsVals inside backward closure to prevent stale reads
+        double[] lRms = rmsVals.clone();
         if (!com.yishape.lab.math.compute.hpc.HpcNorm.tryRMSNormBackward(
-                xd, gd, g, rmsVals, batch, features, eps, dx, dGamma)) {
+                xd, gd, g, lRms, batch, features, eps, dx, dGamma)) {
             // SISD fallback
             for (int p = 0; p < batch; p++) {
                 int off = p * features;
-                double rms = rmsVals[p];
-                double invRms = 1.0 / rms;
+                double rms = lRms[p];
+                // Guard: clamp rms to prevent Infinity/NaN when eps=0 and all-zero input
+                double rmsClamped = Math.max(rms, 1e-15);
+                double invRms = 1.0 / rmsClamped;
                 double invRms3 = invRms * invRms * invRms; // 1/rms^3
                 double sumGX = 0;
                 for (int j = 0; j < features; j++) {

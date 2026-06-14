@@ -82,9 +82,10 @@ public final class GpuGraphExecutor {
      * @return loss value, or {@link Double#NaN} if GPU is unavailable or fails
      */
     public static double tryExecute(RereDiffTensor root) {
-        if (!GpuConfig.allowAttempts()) return Double.NaN;
-        if (!GpuOptionalRuntime.isGpuAvailable()) return Double.NaN;
-        
+        System.err.println("[GPU-TRACE] tryExecute called for op=" + root.opTag() + " shape=" + java.util.Arrays.toString(root.shape()));
+        if (!GpuConfig.allowAttempts()) { System.err.println("[GPU-TRACE] BLOCKED: GpuConfig.allowAttempts()=false"); return Double.NaN; }
+        if (!GpuOptionalRuntime.isGpuAvailable()) { System.err.println("[GPU-TRACE] BLOCKED: GPU not available"); return Double.NaN; }
+
         // GPU cooldown: skip after repeated consecutive failures
         int cooldown = gpuCooldownRemaining.get();
         if (cooldown > 0) {
@@ -202,6 +203,7 @@ public final class GpuGraphExecutor {
             gpuConsecutiveFailures.set(0); // reset on success
             return binaryResult;
         }
+        System.err.println("[GPU-BINARY] Binary path returned NaN, falling through to next path");
 
         // NOTE: The isolated worker guard that blocked JSON fallback has been REMOVED.
         // Previously, when an isolated worker existed and binary path failed, the guard
@@ -334,17 +336,17 @@ public final class GpuGraphExecutor {
     private static double tryExecuteTensorBinary(RereDiffTensor root,
             ArrayList<RereDiffTensor> order) {
         try {
-            if (VERBOSE) System.err.println("[GPU-DIAG] serializing " + order.size() + " nodes...");
             java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
-            if (VERBOSE) System.err.println("[GPU-DIAG] serialized " + buf.remaining() + " bytes");
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
+            System.err.println("[GPU-BINARY] Serialized " + order.size() + " nodes, " + data.length + " bytes");
 
             byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
-                System.err.println("[GPU-BINARY-FAIL] GpuOptionalRuntime.tryExecuteGraphBinary returned " + (resultBytes == null ? "null" : "empty") + " for " + order.size() + " nodes, " + data.length + " bytes");
+                System.err.println("[GPU-BINARY] FAIL: null/empty result");
                 return Double.NaN;
             }
+            System.err.println("[GPU-BINARY] Got " + resultBytes.length + " bytes result");
 
             java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
 
@@ -358,7 +360,23 @@ public final class GpuGraphExecutor {
             java.util.ArrayList<RereDiffTensor> leaves = new java.util.ArrayList<>();
             for (RereDiffTensor v : order) { if (v.isLeaf()) leaves.add(v); }
             java.util.List<double[]> grads = parsed.grads();
-            if (grads.size() != leaves.size()) return Double.NaN;
+            if (grads.size() != leaves.size()) {
+                System.err.println("[GPU-BINARY-DIAG] grad count mismatch: got " + grads.size() + " leaves, expected " + leaves.size());
+                return Double.NaN;
+            }
+
+            // DEBUG: log gradients before applying (always for small graphs)
+            if (order.size() <= 5) {
+                System.err.println("[GPU-BINARY-DIAG] loss=" + loss + " numGrads=" + grads.size() + " orderSize=" + order.size());
+                for (int i = 0; i < Math.min(grads.size(), 5); i++) {
+                    double[] g = grads.get(i);
+                    StringBuilder sb = new StringBuilder();
+                    for (int j = 0; j < Math.min(g.length, 10); j++) {
+                        sb.append(j > 0 ? " " : "").append(String.format("%.6f", g[j]));
+                    }
+                    System.err.println("[GPU-BINARY-DIAG] leaf[" + i + "] grad=[" + sb + "] len=" + g.length);
+                }
+            }
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);

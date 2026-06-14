@@ -30,6 +30,8 @@ public class ADGpuIntegrationTest {
 
     @BeforeAll
     static void detectEnvironment() {
+        // Disable minElements threshold so GPU path is exercised even for tiny test graphs
+        System.setProperty("yishape.gpu.minElements", "0");
         gpuPresent = GpuOptionalRuntime.isGpuAvailable();
         System.out.println("GPU available: " + gpuPresent);
     }
