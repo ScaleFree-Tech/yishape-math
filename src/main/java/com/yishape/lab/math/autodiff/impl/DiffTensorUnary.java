@@ -22,9 +22,20 @@ public final class DiffTensorUnary {
 
     public static IDiffTensor neg(RereDiffTensor tensor) { return unaryOp(tensor, x -> -x, (g, x) -> -g, "neg"); }
     public static IDiffTensor abs(RereDiffTensor tensor) { return unaryOp(tensor, Math::abs, (g, x) -> x >= 0 ? g : -g, "abs"); }
-    public static IDiffTensor sqrt(RereDiffTensor tensor) { return unaryOp(tensor, Math::sqrt, (g, x) -> g / (2.0 * Math.sqrt(x)), "sqrt"); }
+    private static final double SQRT_EPS = 1e-15;
+    public static IDiffTensor sqrt(RereDiffTensor tensor) {
+        return unaryOp(tensor, Math::sqrt,
+            (g, x) -> g / (2.0 * Math.sqrt(Math.max(x, SQRT_EPS))),
+            "sqrt");
+    }
     public static IDiffTensor exp(RereDiffTensor tensor) { return unaryOpSelf(tensor, Math::exp, (g, y) -> g * y, "exp"); }
-    public static IDiffTensor log(RereDiffTensor tensor) { return unaryOp(tensor, Math::log, (g, x) -> g / x, "log"); }
+    private static final double LOG_EPS = 1e-15;
+    public static IDiffTensor log(RereDiffTensor tensor) {
+        return unaryOp(tensor,
+            x -> Math.log(Math.max(x, LOG_EPS)),
+            (g, x) -> g / Math.max(Math.abs(x), LOG_EPS),
+            "log");
+    }
     public static IDiffTensor sin(RereDiffTensor tensor) { return unaryOp(tensor, Math::sin, (g, x) -> g * Math.cos(x), "sin"); }
     public static IDiffTensor cos(RereDiffTensor tensor) { return unaryOp(tensor, Math::cos, (g, x) -> -g * Math.sin(x), "cos"); }
     public static IDiffTensor tan(RereDiffTensor tensor) { return unaryOp(tensor, Math::tan, (g, x) -> { double c = Math.cos(x); return g / (c * c); }, "tan"); }

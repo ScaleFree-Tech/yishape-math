@@ -253,25 +253,45 @@ public class TensorShape {
     }
 
     /**
-     * 计算广播后的 shape（自动左对齐不同秩）.
+     * 计算广播后的 shape.
+     *
+     * <p>Rank-1 张量右对齐到结果最后一维（平铺），rank ≥ 2 左对齐。
+     * 见 {@link #broadcastShape(int[], int[])} 的静态版本。</p>
      */
     public int[] broadcastShape(TensorShape other) {
         return broadcastShape(this.shape, other.shape);
     }
 
     /**
-     * 静态广播方法: 左对齐后逐维取 max，任一维须为 1.
+     * 静态广播方法.
      *
-     * <p><b>⚠️ Left-alignment trap:</b> Broadcasting uses NumPy/PyTorch-style
-     * left-alignment — the smaller-rank shape is padded with 1s on the <b>left</b>.
-     * This means {@code [64]} vs {@code [4, 4, 4]} becomes
-     * {@code [1, 1, 64]} vs {@code [4, 4, 4]}, and axis 2 fails because
-     * 4 ≠ 64 and neither is 1.</p>
+     * <p><b>Rank-1 broadcasting:</b> When one or both operands are rank-1 (e.g. {@code [C]}),
+     * the rank-1 tensor broadcasts by tiling along the <b>last axis</b> of the result.
+     * This matches the common DL pattern of a 1-D bias vector applied per spatial position.
+     * For example, {@code [2] + [4]} is compatible and produces a {@code [4]} result
+     * where the smaller rank-1 operand tiles: {@code [a, b, a, b]}.
+     * A scalar {@code [1]} broadcasts to any rank-1 size.</p>
      *
-     * <p><b>Workaround:</b> Explicitly reshape to matching rank, e.g.,
-     * {@code reshape(1, 1, 64)} before the operation.</p>
+     * <p>For rank ≥ 2 operands, standard left-alignment is used (smaller-rank shape
+     * is padded with 1s on the left).</p>
      */
     public static int[] broadcastShape(int[] shapeA, int[] shapeB) {
+        // Rank-1 broadcasts by tiling along last axis of the higher-rank (or larger) result
+        if (shapeA.length == 1 || shapeB.length == 1) {
+            int maxRank = Math.max(shapeA.length, shapeB.length);
+            int[] result = new int[maxRank];
+            if (shapeA.length == 1 && shapeB.length == 1) {
+                // Both rank-1: result size is max (scalar [1] broadcasts to any rank-1 size)
+                result[0] = Math.max(shapeA[0], shapeB[0]);
+            } else if (shapeA.length == 1) {
+                // rank-1 + rank-N: result is rank-N (shapeB), rank-1 tiles along last axis
+                System.arraycopy(shapeB, 0, result, 0, shapeB.length);
+            } else {
+                // rank-N + rank-1: result is rank-N (shapeA), rank-1 tiles along last axis
+                System.arraycopy(shapeA, 0, result, 0, shapeA.length);
+            }
+            return result;
+        }
         int maxRank = Math.max(shapeA.length, shapeB.length);
         int[] a = alignLeft(shapeA, maxRank);
         int[] b = alignLeft(shapeB, maxRank);

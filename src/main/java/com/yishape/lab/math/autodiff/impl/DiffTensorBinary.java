@@ -8,6 +8,8 @@ import java.util.function.DoubleBinaryOperator;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.impl.DiffTensorUtil.BinaryBackward;
+import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 import com.yishape.lab.math.linalg.tensor.TensorShape;
@@ -249,16 +251,24 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
     double[] aData = tensor.value.toDoubleArray();
     double[] bData = detOther.toDoubleArray();
     double[] out = new double[n];
+    // Fix 2.3: broadcast via DiffTensorUtil.broadcastTo (§7a exception: index mapping required)
+    // then element-wise apply via DoubleVectorComputer (no hand-written element-wise loop)
     double[] bcA = new double[n];
     double[] bcB = new double[n];
-
-    for (int i = 0; i < n; i++) {
-        int[] idx = DiffTensorUtil.unlinearizeInt(i, resultShape);
-        int flatA = DiffTensorUtil.flatIndexFromBroadcast(idx, sA, resultShape);
-        int flatB = DiffTensorUtil.flatIndexFromBroadcast(idx, sB, resultShape);
-        bcA[i] = aData[flatA];
-        bcB[i] = bData[flatB];
-        out[i] = forward.applyAsDouble(bcA[i], bcB[i]);
+    DiffTensorUtil.broadcastTo(aData, sA, bcA, resultShape);
+    DiffTensorUtil.broadcastTo(bData, sB, bcB, resultShape);
+    DoubleVectorComputer vc = new DoubleVectorComputer();
+    // Fix 2.3a: map tag to BinaryOperation for vectorized forward pass
+    BinaryOperation fwdOp = switch (tag) {
+        case "add"       -> BinaryOperation.ADD;
+        case "sub"       -> BinaryOperation.SUBTRACT;
+        case "mul"       -> BinaryOperation.MULTIPLY;
+        case "div"       -> BinaryOperation.DIVIDE;
+        case "addScalar" -> BinaryOperation.ADD;
+        default          -> null;
+    };
+    if (fwdOp != null) {
+        out = vc.binaryOperate(bcA, bcB, fwdOp);
     }
 
     if (!tensor.requiresGrad && !otherDiff) return tensor.toNonDiff(new RereDoubleTensor(out, resultShape));
@@ -277,11 +287,19 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
             RereDiffTensor inpA = self.inputs.get(idx++);
             int aTotal = (int) DiffTensorUtil.computeSize(sA);
             double[] dA = AutodiffBufferPool.acquire(aTotal);
-            // C5: zero-initialize pooled buffer — pool may return used memory with stale values
             java.util.Arrays.fill(dA, 0, aTotal, 0.0);
-            for (int i = 0; i < n; i++) {
-                int flatA = DiffTensorUtil.flatIndexFromBroadcast(DiffTensorUtil.unlinearizeInt(i, resultShape), sA, resultShape);
-                dA[flatA] += gradA.apply(self.grad[i], bcA[i], bcB[i]);
+            // Fix 2.3c: use unbroadcastSum (§7a exception) + DoubleVectorComputer
+            switch (tag) {
+                case "add", "sub" ->
+                    DiffTensorUtil.unbroadcastSum(self.grad, resultShape, dA, sA);
+                case "mul" -> {
+                    double[] ga = vc.binaryOperate(self.grad, bcB, BinaryOperation.MULTIPLY);
+                    DiffTensorUtil.unbroadcastSum(ga, resultShape, dA, sA);
+                }
+                case "div" -> {
+                    double[] ga = vc.binaryOperate(self.grad, bcB, BinaryOperation.DIVIDE);
+                    DiffTensorUtil.unbroadcastSum(ga, resultShape, dA, sA);
+                }
             }
             inpA.accGradFromPooled(dA, aTotal);
         }
@@ -289,11 +307,25 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
             RereDiffTensor inpB = self.inputs.get(idx);
             int bTotal = (int) DiffTensorUtil.computeSize(sB);
             double[] dB = AutodiffBufferPool.acquire(bTotal);
-            // C5: zero-initialize pooled buffer
             java.util.Arrays.fill(dB, 0, bTotal, 0.0);
-            for (int i = 0; i < n; i++) {
-                int flatB = DiffTensorUtil.flatIndexFromBroadcast(DiffTensorUtil.unlinearizeInt(i, resultShape), sB, resultShape);
-                dB[flatB] += gradB.apply(self.grad[i], bcA[i], bcB[i]);
+            switch (tag) {
+                case "add" ->
+                    DiffTensorUtil.unbroadcastSum(self.grad, resultShape, dB, sB);
+                case "sub" -> {
+                    double[] negGrad = vc.binaryOperate(self.grad, -1.0, BinaryOperation.MULTIPLY);
+                    DiffTensorUtil.unbroadcastSum(negGrad, resultShape, dB, sB);
+                }
+                case "mul" -> {
+                    double[] gb = vc.binaryOperate(self.grad, bcA, BinaryOperation.MULTIPLY);
+                    DiffTensorUtil.unbroadcastSum(gb, resultShape, dB, sB);
+                }
+                case "div" -> {
+                    double[] negGrad = vc.binaryOperate(self.grad, -1.0, BinaryOperation.MULTIPLY);
+                    double[] gbMulA = vc.binaryOperate(negGrad, bcA, BinaryOperation.MULTIPLY);
+                    double[] bSq = vc.binaryOperate(bcB, bcB, BinaryOperation.MULTIPLY);
+                    double[] gb = vc.binaryOperate(gbMulA, bSq, BinaryOperation.DIVIDE);
+                    DiffTensorUtil.unbroadcastSum(gb, resultShape, dB, sB);
+                }
             }
             inpB.accGradFromPooled(dB, bTotal);
         }

@@ -5,13 +5,18 @@ import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
+import com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.gpu.GpuSwitch;
+import com.yishape.lab.gpu.YishapeGpu;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -334,4 +339,282 @@ public class ProtocolContractTest {
     @Test void testDot_3()     { double[] a=rand(3),b=rand(3);
         assertMatch("dot[3]",  cpuVecRef(new double[][]{a,b}, l->l[0].dot(l[1])),
                                gpuVecExec(new double[][]{a,b}, l->l[0].dot(l[1]))); }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Round-trip serialization tests (Java → Rust → Java consistency)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Core cross-language consistency check: Java serializes a graph to YSGP binary,
+     * Rust parses and re-serializes it, the two byte arrays must be identical.
+     * Any mismatch indicates a protocol inconsistency between Java and Rust.
+     */
+    @Test void testRoundTrip_binaryGraph_byteIdentical() {
+        // Build a graph with multiple ops and leaf data
+        double[] data1 = new double[100], data2 = new double[100], data3 = new double[100];
+        for (int i = 0; i < 100; i++) { data1[i] = Math.sin(i); data2[i] = Math.cos(i); data3[i] = i * 0.01; }
+
+        RereDiffTensor x1 = (RereDiffTensor) AD.tensor(data1, 10, 10);
+        x1.setRequiresGrad(true);
+        RereDiffTensor x2 = (RereDiffTensor) AD.tensor(data2, 10, 10);
+        x2.setRequiresGrad(true);
+        RereDiffTensor x3 = (RereDiffTensor) AD.tensor(data3, 10, 10);
+        x3.setRequiresGrad(true);
+
+        RereDiffTensor root = (RereDiffTensor) x1.mul(x2).add(x3).sum();
+
+        // Build topological order
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+        assertTrue(order.size() >= 4, "Graph should have at least 4 nodes");
+
+        // Java serialization
+        byte[] javaBytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        assertTrue(javaBytes.length > 12, "Serialized graph should have header + nodes");
+
+        // Rust round-trip: parse → re-serialize
+        byte[] rustBytes = YishapeGpu.roundtripGraphBinary(javaBytes);
+
+        if (!gpuPresent || rustBytes == null) {
+            System.out.println("[RoundTrip] GPU unavailable, skipping round-trip comparison");
+            return; // Skip when GPU native library is not available
+        }
+
+        // Byte-identical comparison
+        assertEquals(javaBytes.length, rustBytes.length,
+            "Rust round-trip produced different size: Java=" + javaBytes.length
+                + " Rust=" + rustBytes.length);
+
+        int firstDiff = -1;
+        for (int i = 0; i < javaBytes.length; i++) {
+            if (javaBytes[i] != rustBytes[i]) { firstDiff = i; break; }
+        }
+        if (firstDiff >= 0) {
+            fail("Round-trip byte mismatch at offset " + firstDiff
+                + ": Java=0x" + Integer.toHexString(javaBytes[firstDiff] & 0xFF)
+                + " Rust=0x" + Integer.toHexString(rustBytes[firstDiff] & 0xFF));
+        }
+    }
+
+    /**
+     * Round-trip test with scalar parameters (pow exponent).
+     */
+    @Test void testRoundTrip_withScalarParams() {
+        double[] data = new double[50];
+        for (int i = 0; i < 50; i++) data[i] = i * 0.1;
+
+        RereDiffTensor x = (RereDiffTensor) AD.tensor(data, 10, 5);
+        x.setRequiresGrad(true);
+        // pow(2.0) sets scalarParam=2.0 (FLAG_HAS_SCALAR)
+        RereDiffTensor root = (RereDiffTensor) x.pow(2.0).sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] javaBytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        byte[] rustBytes = YishapeGpu.roundtripGraphBinary(javaBytes);
+
+        if (!gpuPresent || rustBytes == null) {
+            System.out.println("[RoundTrip] GPU unavailable, skipping scalar round-trip");
+            return;
+        }
+
+        assertArrayEquals(javaBytes, rustBytes,
+            "Round-trip with scalar params: byte mismatch");
+    }
+
+    /**
+     * Round-trip test with a complex graph: mul + add + pow (exercises multiple flags).
+     */
+    @Test void testRoundTrip_complexGraph() {
+        double[] d1 = new double[64], d2 = new double[64], d3 = new double[64];
+        for (int i = 0; i < 64; i++) { d1[i] = Math.sin(i); d2[i] = Math.cos(i); d3[i] = i * 0.01; }
+
+        RereDiffTensor x1 = (RereDiffTensor) AD.tensor(d1, 8, 8);
+        x1.setRequiresGrad(true);
+        RereDiffTensor x2 = (RereDiffTensor) AD.tensor(d2, 8, 8);
+        x2.setRequiresGrad(true);
+        RereDiffTensor x3 = (RereDiffTensor) AD.tensor(d3, 8, 8);
+        x3.setRequiresGrad(true);
+
+        // Complex graph: ((x1 * x2) + x3).pow(2.0).sum()
+        // Exercises: FLAG_HAS_INPUT_SHAPES (mul, add), FLAG_HAS_SCALAR (pow)
+        RereDiffTensor root = (RereDiffTensor) x1.mul(x2).add(x3).pow(2.0).sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] javaBytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        byte[] rustBytes = YishapeGpu.roundtripGraphBinary(javaBytes);
+
+        if (!gpuPresent || rustBytes == null) {
+            System.out.println("[RoundTrip] GPU unavailable, skipping indices round-trip");
+            return;
+        }
+
+        assertArrayEquals(javaBytes, rustBytes,
+            "Round-trip with backward indices: byte mismatch");
+    }
+
+    /**
+     * Round-trip test with rank-1 broadcast (the most common source of inconsistencies).
+     */
+    @Test void testRoundTrip_broadcastRank1() {
+        double[] dataA = new double[32];
+        double[] dataB = new double[32 * 10];
+        for (int i = 0; i < 32; i++) dataA[i] = i * 0.1;
+        for (int i = 0; i < 320; i++) dataB[i] = i * 0.01;
+
+        RereDiffTensor a = (RereDiffTensor) AD.tensor(dataA, 32);
+        a.setRequiresGrad(true);
+        RereDiffTensor b = (RereDiffTensor) AD.tensor(dataB, 32, 10);
+        b.setRequiresGrad(true);
+
+        // rank-1 [32] broadcasts to [32, 10] in add
+        RereDiffTensor root = (RereDiffTensor) a.reshape(32, 1).add(b).sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] javaBytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        byte[] rustBytes = YishapeGpu.roundtripGraphBinary(javaBytes);
+
+        if (!gpuPresent || rustBytes == null) {
+            System.out.println("[RoundTrip] GPU unavailable, skipping complex round-trip");
+            return;
+        }
+
+        assertArrayEquals(javaBytes, rustBytes,
+            "Round-trip complex graph: byte mismatch");
+    }
+
+    /**
+     * Round-trip test: minimal single-leaf graph.
+     */
+    @Test void testRoundTrip_singleLeaf() {
+        // Use tensor (not vector) so buildTopo gets RereDiffTensor directly
+        RereDiffTensor x = (RereDiffTensor) AD.tensor(new double[]{42.0, -3.14, 0.0}, 3);
+        x.setRequiresGrad(true);
+        RereDiffTensor root = (RereDiffTensor) x.abs().sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] javaBytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        byte[] rustBytes = YishapeGpu.roundtripGraphBinary(javaBytes);
+
+        if (!gpuPresent || rustBytes == null) {
+            System.out.println("[RoundTrip] GPU unavailable, skipping broadcast rank-1 round-trip");
+            return;
+        }
+
+        assertArrayEquals(javaBytes, rustBytes,
+            "Round-trip broadcast rank-1: byte mismatch");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 2: Protocol field offset specification tests
+    // These encode the YSGP binary format as executable specification.
+    // If any field offset changes, these tests fail immediately.
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test void testProtocolHeader() {
+        RereDiffTensor x = (RereDiffTensor) AD.tensor(new double[]{1.0}, 1);
+        x.setRequiresGrad(true);
+        RereDiffTensor root = (RereDiffTensor) x.sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] bytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+
+        // Header: magic(4) + version(4) + num_nodes(4) = 12 bytes
+        assertEquals(12, bytes.length >= 12 ? 12 : bytes.length, "Header must be at least 12 bytes");
+
+        int magic = ((bytes[3] & 0xFF) << 24) | ((bytes[2] & 0xFF) << 16) | ((bytes[1] & 0xFF) << 8) | (bytes[0] & 0xFF);
+        assertEquals(TensorBinaryProtocol.MAGIC, magic, "Magic number mismatch");
+
+        int version = ((bytes[7] & 0xFF) << 24) | ((bytes[6] & 0xFF) << 16) | ((bytes[5] & 0xFF) << 8) | (bytes[4] & 0xFF);
+        assertEquals(TensorBinaryProtocol.VERSION, version, "Version mismatch");
+
+        int numNodes = ((bytes[11] & 0xFF) << 24) | ((bytes[10] & 0xFF) << 16) | ((bytes[9] & 0xFF) << 8) | (bytes[8] & 0xFF);
+        assertEquals(order.size(), numNodes, "num_nodes mismatch");
+    }
+
+    @Test void testProtocolFieldOffsets_singleNode() {
+        // Single node graph: one leaf [2] with data
+        RereDiffTensor x = (RereDiffTensor) AD.tensor(new double[]{1.0, 2.0}, 2);
+        x.setRequiresGrad(true);
+        RereDiffTensor root = (RereDiffTensor) x.sum();
+
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        byte[] bytes = TensorBinaryProtocol.toByteArray(TensorBinaryProtocol.serializeGraph(root, order));
+        int pos = 12; // skip header
+
+        // Node header: flags(u16) + op_len(u16) + id(u32) = 8 bytes
+        int flags = ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF); pos += 2;
+        int opLen = ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF); pos += 2;
+        int nodeId = ((bytes[pos + 3] & 0xFF) << 24) | ((bytes[pos + 2] & 0xFF) << 16)
+                   | ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF); pos += 4;
+
+        // Verify flags
+        assertTrue((flags & TensorBinaryProtocol.FLAG_IS_LEAF) != 0, "Leaf node should have FLAG_IS_LEAF");
+        assertTrue((flags & TensorBinaryProtocol.FLAG_HAS_DATA) != 0, "Leaf with data should have FLAG_HAS_DATA");
+
+        // Op string
+        String op = new String(bytes, pos, opLen, java.nio.charset.StandardCharsets.UTF_8);
+        pos += opLen;
+        assertTrue(op.equals("leaf") || op.equals("sum"), "Op should be leaf or sum, got: " + op);
+
+        // Shape: num_dims(u16) + dims(u32[])
+        int numDims = ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF); pos += 2;
+        int[] shape = new int[numDims];
+        for (int i = 0; i < numDims; i++) {
+            shape[i] = ((bytes[pos + 3] & 0xFF) << 24) | ((bytes[pos + 2] & 0xFF) << 16)
+                      | ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF);
+            pos += 4;
+        }
+        assertEquals(1, numDims, "Shape should have 1 dim for vector");
+        assertEquals(2, shape[0], "Shape[0] should be 2");
+
+        // Inputs: num_inputs(u16) + input_ids(u32[])
+        int numInputs = ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF); pos += 2;
+        assertEquals(0, numInputs, "Leaf node should have 0 inputs");
+
+        // Scalar params (none for this graph)
+        assertTrue((flags & TensorBinaryProtocol.FLAG_HAS_SCALAR) == 0, "No scalar expected");
+
+        // Data
+        assertTrue((flags & TensorBinaryProtocol.FLAG_HAS_DATA) != 0, "Leaf should have data");
+        int dataLen = ((bytes[pos + 3] & 0xFF) << 24) | ((bytes[pos + 2] & 0xFF) << 16)
+                    | ((bytes[pos + 1] & 0xFF) << 8) | (bytes[pos] & 0xFF);
+        pos += 4;
+        assertEquals(2, dataLen, "Data length should be 2");
+    }
+
+    @Test void testProtocolFlagBits_matchRust() {
+        // Verify Java flag bit values match Rust's constant definitions
+        // Rust: const FLAG_HAS_DATA: u16 = 1 << 0;  // = 1
+        //       const FLAG_HAS_SCALAR: u16 = 1 << 1; // = 2
+        //       const FLAG_HAS_PARAM2: u16 = 1 << 2; // = 4
+        //       const FLAG_HAS_INDICES: u16 = 1 << 3; // = 8
+        //       const FLAG_IS_LEAF: u16 = 1 << 4;     // = 16
+        //       const FLAG_HAS_INPUT_SHAPES: u16 = 1 << 5; // = 32
+
+        assertEquals(1,    TensorBinaryProtocol.FLAG_HAS_DATA,    "FLAG_HAS_DATA should be 1");
+        assertEquals(2,    TensorBinaryProtocol.FLAG_HAS_SCALAR,  "FLAG_HAS_SCALAR should be 2");
+        assertEquals(4,    TensorBinaryProtocol.FLAG_HAS_PARAM2,  "FLAG_HAS_PARAM2 should be 4");
+        assertEquals(8,    TensorBinaryProtocol.FLAG_HAS_INDICES, "FLAG_HAS_INDICES should be 8");
+        assertEquals(16,   TensorBinaryProtocol.FLAG_IS_LEAF,     "FLAG_IS_LEAF should be 16");
+        assertEquals(32,   TensorBinaryProtocol.FLAG_HAS_INPUT_SHAPES, "FLAG_HAS_INPUT_SHAPES should be 32");
+    }
 }

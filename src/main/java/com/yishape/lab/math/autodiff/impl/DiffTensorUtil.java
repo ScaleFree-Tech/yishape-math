@@ -42,7 +42,7 @@ public final class DiffTensorUtil {
             r[dim] = 1;
             return r;
         }
-        if (shape.length == 1) return new int[]{1};
+        if (shape.length == 1) return new int[]{};
         int[] r = new int[shape.length - 1];
         int idx = 0;
         for (int i = 0; i < shape.length; i++) if (i != dim) r[idx++] = shape[i];
@@ -104,6 +104,11 @@ public final class DiffTensorUtil {
      * Standard NumPy broadcast semantics: dimensions of size 1 are stretched.
      */
     public static int flatIndexFromBroadcast(int[] resultIdx, int[] srcShape, int[] resultShape) {
+        // Rank-1 source broadcasts by tiling along the last axis of the result
+        if (srcShape.length == 1) {
+            int axis = (resultShape.length > 1) ? resultShape.length - 1 : 0;
+            return resultIdx[axis] % srcShape[0];
+        }
         int diff = resultShape.length - srcShape.length;
         int srcFlat = 0;
         int srcStride = 1;
@@ -124,6 +129,12 @@ public final class DiffTensorUtil {
         int diff = dstShape.length - srcShape.length;
         long dstSize = 1;
         for (int d : dstShape) dstSize *= d;
+        if (dstSize > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                "broadcastTo: tensor too large for int-indexed broadcast (" + dstSize + " elements)");
+        }
+        // §7a exception: broadcast requires per-element index mapping (non-contiguous access).
+        // No accelerated alternative exists; DoubleVectorComputer operates on contiguous arrays.
         for (long flat = 0; flat < dstSize; flat++) {
             int[] dstIdx = unlinearizeInt((int) flat, dstShape);
             int srcFlat = flatIndexFromBroadcast(dstIdx, srcShape, dstShape);
@@ -139,6 +150,13 @@ public final class DiffTensorUtil {
     public static void unbroadcastSum(double[] gradBC, int[] bcShape, double[] gradOrig, int[] origShape) {
         long bcSize = 1;
         for (int d : bcShape) bcSize *= d;
+        // Guard: int-indexed broadcast cannot handle >2^31 elements (silent int overflow)
+        if (bcSize > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                "unbroadcastSum: tensor too large for int-indexed broadcast (" + bcSize + " elements)");
+        }
+        // §7a exception: unbroadcast requires per-element index mapping (non-contiguous access).
+        // No accelerated alternative exists; DoubleVectorComputer operates on contiguous arrays.
         for (long bcFlat = 0; bcFlat < bcSize; bcFlat++) {
             int[] bcIdx = unlinearizeInt((int) bcFlat, bcShape);
             int origFlat = flatIndexFromBroadcast(bcIdx, origShape, bcShape);

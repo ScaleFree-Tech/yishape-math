@@ -125,6 +125,22 @@ public final class TensorGraphExporter {
                     sb.append(indexMap.get(inputs.get(j)));
                 }
                 sb.append(']');
+
+                // Input shapes: original shapes of each input, needed by GPU/HPC backends
+                // to determine correct broadcast mode (rank-1 right-align vs rank-2+ left-align).
+                // This is the single source of truth for broadcast alignment in the backend.
+                sb.append(",\"input_shapes\":[");
+                for (int j = 0; j < inputs.size(); j++) {
+                    if (j > 0) sb.append(',');
+                    int[] inShape = inputs.get(j).shape();
+                    sb.append('[');
+                    for (int k = 0; k < inShape.length; k++) {
+                        if (k > 0) sb.append(',');
+                        sb.append(inShape[k]);
+                    }
+                    sb.append(']');
+                }
+                sb.append(']');
             }
         }
 

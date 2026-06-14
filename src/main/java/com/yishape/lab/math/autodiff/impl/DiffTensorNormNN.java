@@ -37,6 +37,7 @@ import com.yishape.lab.math.compute.ops.ReduceOperation;
  * All methods are static, taking the tensor as first parameter.
  */
 public final class DiffTensorNormNN {
+    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
     private DiffTensorNormNN() { /* utility class */ }
 
 // ==================== Layer/Batch Normalization ====================
@@ -162,9 +163,12 @@ public static IDiffTensor batchNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
         double[] dx = AutodiffBufferPool.acquire(m);
         double[] dGamma = AutodiffBufferPool.acquire(features);
         double[] dBeta = AutodiffBufferPool.acquire(features);
+        // Fix 2.2: clone inside backward closure — each backward() call gets its own copy
+        double[] lMn = means.clone();
+        double[] lIS = invSigmas.clone();
         for (int j = 0; j < features; j++) {
-            double invSig = invSigmas[j];
-            double mean = means[j];
+            double invSig = lIS[j];
+            double mean = lMn[j];
             double dg = 0, db = 0, sumG = 0, sumGXHat = 0;
             double[] xHatCache = new double[batch];
             for (int i = 0; i < batch; i++) {
@@ -233,7 +237,7 @@ public static IDiffTensor rmsNorm(RereDiffTensor tensor, IDiffTensor gamma, doub
         double[] g = self.grad;
         int m = (int) inpX.value.totalSize();
         double[] dx = AutodiffBufferPool.acquire(m);
-        double[] dGamma = new double[features];
+        double[] dGamma = AutodiffBufferPool.acquire(features);
 
         if (!com.yishape.lab.math.compute.hpc.HpcNorm.tryRMSNormBackward(
                 xd, gd, g, rmsVals, batch, features, eps, dx, dGamma)) {
@@ -484,7 +488,7 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
         for (int i = 0; i < mM; i++) {
             System.arraycopy(bd, 0, biasTiled, i * outC, outC);
         }
-        outCol = new DoubleVectorComputer().binaryOperate(outCol, biasTiled, BinaryOperation.ADD);
+        outCol = COMPUTER.binaryOperate(outCol, biasTiled, BinaryOperation.ADD);
     }
 
     int[] outShape = {N, outC, outH, outW};
@@ -548,7 +552,7 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
             double[] dB = GpuReduce.tryReduce(GpuReduce.SUM, dOutT, fOutC, fM);
             if (dB == null) {
                 dB = new double[fOutC];
-                DoubleVectorComputer bwVc2 = new DoubleVectorComputer();
+                DoubleVectorComputer bwVc2 = COMPUTER;
                 for (int oc = 0; oc < fOutC; oc++) {
                     dB[oc] = bwVc2.reduceOperate(
                         java.util.Arrays.copyOfRange(dOutT, oc * fM, (oc + 1) * fM),
@@ -608,14 +612,15 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
  * Uses GPU→SIMD→SISD acceleration chain for row-reduce (max/sum),
  * element-wise exp, and per-row scalar arithmetic.
  *
- * @param scores  flat row-major array [rows, cols], modified in-place
+ * @param scores  flat row-major array [rows, cols], NOT modified in-place
  * @param rows    number of rows
  * @param cols    number of columns (softmax dim)
- * @return the same {@code scores} array, now containing row-wise softmax probabilities
+ * @return a new array containing row-wise softmax probabilities
  */
 private static double[] softmaxRowsStable(double[] scores, int rows, int cols) {
     int total = rows * cols;
-    DoubleVectorComputer vc = new DoubleVectorComputer();
+    DoubleVectorComputer vc = COMPUTER;
+    double[] result = new double[total];
 
     // Step 1: Row-wise max via GPU reduce → SISD fallback
     double[] rowMax = GpuReduce.tryReduce(GpuReduce.MAX, scores, rows, cols);
@@ -652,14 +657,14 @@ private static double[] softmaxRowsStable(double[] scores, int rows, int cols) {
         }
     }
 
-    // Step 5: Normalize (per-row scalar multiply) into scores
+    // Step 5: Normalize (per-row scalar multiply) into result
     for (int r = 0; r < rows; r++) {
         int rowOff = r * cols;
         double[] rowSlice = java.util.Arrays.copyOfRange(exped, rowOff, rowOff + cols);
         double[] normRow = vc.binaryOperate(rowSlice, 1.0 / rowSum[r], BinaryOperation.MULTIPLY);
-        System.arraycopy(normRow, 0, scores, rowOff, cols);
+        System.arraycopy(normRow, 0, result, rowOff, cols);
     }
-    return scores;
+    return result;
 }
 
 public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiffTensor key, IDiffTensor vTensor,
@@ -700,7 +705,7 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
     int scoresStride = seqQ * seqK;
     double[] attnWeights = new double[batch * scoresStride];
 
-    DoubleVectorComputer vc = new DoubleVectorComputer();
+    DoubleVectorComputer vc = COMPUTER;
     for (int b = 0; b < batch; b++) {
         // scores = Q @ K^T / sqrt(dk)
         double[] qSlice = java.util.Arrays.copyOfRange(qd, b * qStride, b * qStride + qStride);

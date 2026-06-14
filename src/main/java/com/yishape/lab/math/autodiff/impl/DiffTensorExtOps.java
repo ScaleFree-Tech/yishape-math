@@ -44,14 +44,15 @@ public static IDiffTensor instanceNorm(RereDiffTensor tensor, IDiffTensor gamma,
     int[] s = tensor.shape();
     int rank = tensor.rank();
     if (rank < 2) throw new IllegalArgumentException("instanceNorm requires rank >= 2, got " + rank);
-    // Input: [N, C, ...spatial...] or [N, C, H, W]
-    int N, C;
-    if (rank >= 2) { N = 1; for (int i = 0; i < rank - 1; i++) N *= s[i]; C = s[rank - 1]; }
-    N = 1;
-    for (int i = 0; i < rank - 2; i++) N *= s[i];
-    C = s[rank - 2];
-    int spatial = 1;
-    for (int i = rank - 1; i < rank; i++) spatial *= s[i];
+    // instanceNorm currently supports rank-4 [N, C, H, W].
+    // rank-3 [N, C, L] and rank-5+ [N, C, D, H, W] need generalized spatial computation.
+    if (rank != 4) {
+        throw new IllegalArgumentException(
+            "instanceNorm requires rank=4 [N,C,H,W], got rank=" + rank
+            + ", shape=" + java.util.Arrays.toString(s));
+    }
+    int N = s[0], C = s[1], H = s[2], W = s[3];
+    int spatial = H * W;
 
     double[] xd = tensor.value.toDoubleArray();
     double[] gd = gr.value.toDoubleArray();

@@ -381,14 +381,29 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor expand(int... shape) {
         int[] current = shape();
+        int[] currentStrides = strides;
+        // Support rank expansion: left-pad current shape with 1s to match target rank
         if (shape.length != current.length) {
-            throw new IllegalArgumentException("expand: target rank " + shape.length + " != current rank " + current.length);
+            if (shape.length < current.length) {
+                throw new IllegalArgumentException("expand: target rank " + shape.length + " < current rank " + current.length);
+            }
+            int diff = shape.length - current.length;
+            int[] padded = new int[shape.length];
+            int[] paddedStrides = new int[shape.length];
+            for (int i = 0; i < diff; i++) {
+                padded[i] = 1;
+                paddedStrides[i] = 0;
+            }
+            System.arraycopy(current, 0, padded, diff, current.length);
+            System.arraycopy(currentStrides, 0, paddedStrides, diff, currentStrides.length);
+            current = padded;
+            currentStrides = paddedStrides;
         }
-        int[] newStrides = strides.clone();
+        int[] newStrides = currentStrides.clone();
         int[] newShape = shape.clone();
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] == current[i]) {
-                // keep stride
+                // keep current stride
             } else if (current[i] == 1) {
                 newStrides[i] = 0; // broadcast
             } else {

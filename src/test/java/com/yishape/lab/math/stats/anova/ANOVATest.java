@@ -49,7 +49,19 @@ class ANOVATest {
 
         ANOVA anova = new ANOVA();
         ANOVAResult result = anova.performOneWayANOVA(g1, g2);
-        assertEquals(result.ssBetween + result.ssWithin, result.ssTotal, EPS);
+
+        // Independently compute total SS from raw data
+        double[] all = {1, 2, 3, 4, 5, 6};
+        double grandMean = (1+2+3+4+5+6) / 6.0;
+        double ssTotalIndependent = 0;
+        for (double v : all) ssTotalIndependent += (v - grandMean) * (v - grandMean);
+
+        // Verify: ssBetween + ssWithin == ssTotal (ANOVA identity)
+        assertEquals(result.ssBetween + result.ssWithin, result.ssTotal, EPS,
+            "ssBetween + ssWithin should equal ssTotal");
+        // Also verify ssTotal matches independent computation
+        assertEquals(ssTotalIndependent, result.ssTotal, EPS,
+            "ssTotal should match independent computation from raw data");
     }
 
     @Test

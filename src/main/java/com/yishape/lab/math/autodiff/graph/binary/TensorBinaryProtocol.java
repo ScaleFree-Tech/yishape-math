@@ -50,6 +50,8 @@ public final class TensorBinaryProtocol {
     public static final int FLAG_HAS_PARAM2  = 1 << 2;
     public static final int FLAG_HAS_INDICES = 1 << 3;
     public static final int FLAG_IS_LEAF     = 1 << 4;
+    /** Input shapes are included after standard node fields (for broadcast mode selection). */
+    public static final int FLAG_HAS_INPUT_SHAPES = 1 << 5;
 
     private TensorBinaryProtocol() {}
 
@@ -68,8 +70,10 @@ public final class TensorBinaryProtocol {
 
         // Pass 1: compute total size
         int size = 12; // header: magic + version + num_nodes
-        for (RereDiffTensor v : order) {
-            size += nodeSize(v, posMap);
+        int[] nodeSizes = new int[order.size()];
+        for (int i = 0; i < order.size(); i++) {
+            nodeSizes[i] = nodeSize(order.get(i), posMap);
+            size += nodeSizes[i];
         }
 
         ByteBuffer buf = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
@@ -141,9 +145,28 @@ public final class TensorBinaryProtocol {
         s += shape.length * 4; // shape (u32[])
         s += 2; // num_inputs (u16)
         // Only count inputs that are in posMap (safe for Rust deserialization)
+        int validInputCount = 0;
         if (v.inputs() != null) {
             for (RereDiffTensor inp : v.inputs()) {
-                if (posMap.containsKey(inp)) s += 4; // inputs (u32[])
+                if (posMap.containsKey(inp)) validInputCount++;
+            }
+        }
+        s += validInputCount * 4; // inputs (u32[])
+
+        // Input shapes: for each valid input, u16 num_dims + num_dims * u32
+        if (v.inputs() != null) {
+            boolean anyValid = false;
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) { anyValid = true; break; }
+            }
+            if (anyValid) {
+                s += 2; // count field (u16)
+                for (RereDiffTensor inp : v.inputs()) {
+                    if (posMap.containsKey(inp)) {
+                        int[] inShape = inp.shape();
+                        s += 2 + inShape.length * 4;
+                    }
+                }
             }
         }
 
@@ -163,12 +186,29 @@ public final class TensorBinaryProtocol {
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
         int[] shape = v.serializationShape();
 
+        // Check if we have valid inputs that need shape info for broadcast mode
+        boolean hasInputShapes = false;
+        if (v.inputs() != null) {
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) { hasInputShapes = true; break; }
+            }
+        }
+
         // Flags
         int flags = (v.isLeaf() ? FLAG_IS_LEAF : 0)
                   | (v.isLeaf() ? FLAG_HAS_DATA : 0)
                   | (!Double.isNaN(v.scalarParam()) ? FLAG_HAS_SCALAR : 0)
                   | (!Double.isNaN(v.scalarParam2()) ? FLAG_HAS_PARAM2 : 0)
-                  | (v.backwardIndices() != null && v.backwardIndices().length > 0 ? FLAG_HAS_INDICES : 0);
+                  | (v.backwardIndices() != null && v.backwardIndices().length > 0 ? FLAG_HAS_INDICES : 0)
+                  | (hasInputShapes ? FLAG_HAS_INPUT_SHAPES : 0);
+
+        int inputCount = 0;
+        if (v.inputs() != null) {
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) { inputCount++; }
+            }
+        }
+
         buf.putShort((short) flags);
         buf.putShort((short) opBytes.length);
         buf.putInt(posMap.getOrDefault(v, -1)); // id = position in order
@@ -178,11 +218,7 @@ public final class TensorBinaryProtocol {
 
         // Input references — only write inputs that are in posMap (matching JSON exporter behavior)
         if (v.inputs() != null && !v.inputs().isEmpty()) {
-            int validCount = 0;
-            for (RereDiffTensor inp : v.inputs()) {
-                if (posMap.containsKey(inp)) validCount++;
-            }
-            buf.putShort((short) validCount);
+            buf.putShort((short) inputCount);
             for (RereDiffTensor inp : v.inputs()) {
                 if (posMap.containsKey(inp)) {
                     buf.putInt(posMap.get(inp));
@@ -192,8 +228,20 @@ public final class TensorBinaryProtocol {
             buf.putShort((short) 0);
         }
 
-        if ((flags & FLAG_HAS_SCALAR) != 0) buf.putDouble(v.scalarParam());
-        if ((flags & FLAG_HAS_PARAM2) != 0) buf.putDouble(v.scalarParam2());
+        // Input shapes (for GPU/HPC broadcast mode selection)
+        if (hasInputShapes) {
+            buf.putShort((short) inputCount);
+            for (RereDiffTensor inp : v.inputs()) {
+                if (posMap.containsKey(inp)) {
+                    int[] inShape = inp.shape();
+                    buf.putShort((short) inShape.length);
+                    for (int d : inShape) buf.putInt(d);
+                }
+            }
+        }
+
+        if ((flags & FLAG_HAS_SCALAR) != 0) { buf.putDouble(v.scalarParam()); }
+        if ((flags & FLAG_HAS_PARAM2) != 0) { buf.putDouble(v.scalarParam2()); }
         if ((flags & FLAG_HAS_DATA) != 0) {
             double[] data = v.value().toDoubleArray();
             buf.putInt(data.length);
@@ -292,6 +340,14 @@ public final class TensorBinaryProtocol {
             pos += numDims * 4; // shape
             int numInputs = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
             pos += numInputs * 4; // inputs
+            // Input shapes (FLAG_HAS_INPUT_SHAPES = bit 5 = 32): skip if present
+            if ((flags & FLAG_HAS_INPUT_SHAPES) != 0) {
+                int numInShapes = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+                for (int s = 0; s < numInShapes; s++) {
+                    int nd = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
+                    pos += nd * 4;
+                }
+            }
             if ((flags & FLAG_HAS_SCALAR) != 0) pos += 8; // scalar
             if ((flags & FLAG_HAS_PARAM2) != 0) pos += 8; // param2
             if ((flags & FLAG_HAS_DATA) != 0) { // has_data
@@ -309,7 +365,7 @@ public final class TensorBinaryProtocol {
         return new CachedGraph(fullBytes, dataOffsets, structureHash);
     }
 
-    // ── Bulk write helpers    // ── Bulk write helpers (avoid per-element loop overhead) ──
+    // ── Bulk write helpers (avoid per-element loop overhead) ──
 
     /** Bulk-write double[] via DoubleBuffer view (single boundary check). */
     private static void bulkPutDoubles(ByteBuffer buf, double[] data) {

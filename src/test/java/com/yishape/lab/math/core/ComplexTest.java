@@ -348,9 +348,14 @@ class ComplexTest {
 
     @Test
     void equals_withinEpsilon() {
+        // Values within EPSILON (1e-12) should be equal
         Complex a = new Complex(1, 2);
-        Complex b = new Complex(1 + 1e-14, 2);
-        assertEquals(a, b);
+        Complex b = new Complex(1 + 1e-13, 2);
+        assertEquals(a, b, "Values within EPSILON (1e-12) should be equal");
+
+        // Values just outside EPSILON should NOT be equal — boundary check
+        Complex c = new Complex(1 + 1e-11, 2);
+        assertNotEquals(a, c, "Values outside EPSILON should not be equal");
     }
 
     // ==================== String ====================

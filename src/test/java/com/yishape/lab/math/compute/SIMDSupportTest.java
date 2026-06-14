@@ -14,16 +14,12 @@ public class SIMDSupportTest {
      */
     @Test
     public void testSIMDSupportWithoutVectorAPI() {
-        // 这个测试验证即使在没有启用Vector API的情况下，
-        // checkIfSIMDSupported方法也能正常工作并返回false
-        try {
-            boolean supported = ComputerConfig.checkIfSIMDSupported();
-            // 无论是否支持SIMD，方法都应该正常返回，不会抛出异常
-            assertTrue(true); // 确保测试方法执行完成
-        } catch (Throwable t) {
-            // 如果捕获到任何异常或错误，测试失败
-            fail("checkIfSIMDSupported should not throw exceptions, but threw: " + t.getClass().getName() + ": " + t.getMessage());
-        }
+        // checkIfSIMDSupported must execute without throwing.
+        // Returns true when Vector API available, false otherwise.
+        // JUnit naturally fails the test if any exception is thrown.
+        boolean supported = ComputerConfig.checkIfSIMDSupported();
+        // Return value is a primitive boolean — always valid. No assertion needed.
+        // The absence of an exception IS the test assertion.
     }
     
     /**
@@ -32,16 +28,12 @@ public class SIMDSupportTest {
      */
     @Test
     public void testGPUSupportWithoutAparapi() {
-        // 这个测试验证即使在没有Aparapi库的情况下，
-        // checkIfGPUSupported方法也能正常工作并返回false
-        try {
-            boolean supported = ComputerConfig.checkIfGPUSupported();
-            // 无论是否支持GPU，方法都应该正常返回，不会抛出异常
-            assertTrue(true); // 确保测试方法执行完成
-        } catch (Throwable t) {
-            // 如果捕获到任何异常或错误，测试失败
-            fail("checkIfGPUSupported should not throw exceptions, but threw: " + t.getClass().getName() + ": " + t.getMessage());
-        }
+        // checkIfGPUSupported must execute without throwing.
+        // Returns true when GPU runtime available, false otherwise.
+        // JUnit naturally fails the test if any exception is thrown.
+        boolean supported = ComputerConfig.checkIfGPUSupported();
+        // Return value is a primitive boolean — always valid. No assertion needed.
+        // The absence of an exception IS the test assertion.
     }
     
     /**
@@ -50,14 +42,9 @@ public class SIMDSupportTest {
      */
     @Test
     public void testDoubleVectorComputerInitialization() {
-        try {
-            // 尝试创建DoubleVectorComputer实例
-            DoubleVectorComputer computer = new DoubleVectorComputer();
-            // 如果能正常创建实例，说明类初始化成功
-            assertNotNull(computer);
-        } catch (Throwable t) {
-            // 如果捕获到任何异常或错误，测试失败
-            fail("DoubleVectorComputer should initialize without exceptions, but threw: " + t.getClass().getName() + ": " + t.getMessage());
-        }
+        // DoubleVectorComputer must initialize without throwing exceptions.
+        // JUnit naturally fails the test if any exception is thrown.
+        DoubleVectorComputer computer = new DoubleVectorComputer();
+        assertNotNull(computer, "DoubleVectorComputer instance must not be null");
     }
 }

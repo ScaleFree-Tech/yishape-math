@@ -166,6 +166,14 @@ public class HpcGraphExecutorTest {
             pos += numDims * 4;
             int numInputs = ((freshBytes[pos + 1] & 0xFF) << 8) | (freshBytes[pos] & 0xFF); pos += 2;
             pos += numInputs * 4;
+            // Input shapes (FLAG_HAS_INPUT_SHAPES = bit 5 = 32): skip if present
+            if ((flags & 32) != 0) {
+                int numInShapes = ((freshBytes[pos + 1] & 0xFF) << 8) | (freshBytes[pos] & 0xFF); pos += 2;
+                for (int s = 0; s < numInShapes; s++) {
+                    int nd = ((freshBytes[pos + 1] & 0xFF) << 8) | (freshBytes[pos] & 0xFF); pos += 2;
+                    pos += nd * 4;
+                }
+            }
             if ((flags & 2) != 0) pos += 8; // scalar
             if ((flags & 4) != 0) pos += 8; // param2
             if ((flags & 1) != 0) { // has_data

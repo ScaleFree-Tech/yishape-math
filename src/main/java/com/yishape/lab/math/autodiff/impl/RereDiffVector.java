@@ -31,6 +31,7 @@ import com.yishape.lab.math.compute.ops.BinaryOperation;
  * entirely in the tensor domain.</p>
  */
 public class RereDiffVector implements IDiffVector, Serializable {
+    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
 
     private static final long serialVersionUID = 5L;
     private static final YishapeLogger log = YishapeLogger.getLogger(RereDiffVector.class);
@@ -91,7 +92,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDoubleVector getGradient() {
-        return tensor.gradData() != null ? IDoubleVector.of(tensor.gradData()) : null;
+        return tensor.gradData() != null ? IDoubleVector.of(tensor.gradData().clone()) : null;
     }
 
     @Override
@@ -426,9 +427,10 @@ public class RereDiffVector implements IDiffVector, Serializable {
         int n = (int) t.value().totalSize();
         double[] tData = t.value().toDoubleArray();
 
-        // Compute mean value in forward pass
-        double sum = 0;
-        for (int i = 0; i < n; i++) sum += tData[i];
+        // Compute mean value via accelerated reduce (GPU→HPC→SIMD→SISD)
+        com.yishape.lab.math.compute.DoubleVectorComputer vc =
+            new com.yishape.lab.math.compute.DoubleVectorComputer();
+        double sum = vc.reduceOperate(tData, com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
         double meanVal = sum / n;
 
         // Detect pending fusable unary op for fused tags like "reluMean"
@@ -631,8 +633,13 @@ public class RereDiffVector implements IDiffVector, Serializable {
         int m = (int) a.value().totalSize();
         double[] aData = a.value().toDoubleArray();
         double[] bData = b.value().toDoubleArray();
-        double total = 0;
-        for (int i = 0; i < m; i++) total += aData[i] * bData[i];
+        // Dot product: sum(a*b) via accelerated multiply + reduce
+        com.yishape.lab.math.compute.DoubleVectorComputer vc =
+            new com.yishape.lab.math.compute.DoubleVectorComputer();
+        double[] prod = vc.binaryOperate(aData, bData,
+            com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+        double total = vc.reduceOperate(prod,
+            com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
 
         double[] bCopy = bData.clone();
         double[] aCopy = aData.clone();
@@ -640,10 +647,13 @@ public class RereDiffVector implements IDiffVector, Serializable {
             double g = self.gradData()[0];
             double[] daBuf = AutodiffBufferPool.acquire(m);
             double[] dbBuf = AutodiffBufferPool.acquire(m);
-            for (int i = 0; i < m; i++) {
-                daBuf[i] = g * bCopy[i];  // d/da = b * grad
-                dbBuf[i] = g * aCopy[i];  // d/db = a * grad
-            }
+            // Accelerated: d/da = g*b, d/db = g*a
+            double[] gb = vc.binaryOperate(bCopy, g,
+                com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+            double[] ga = vc.binaryOperate(aCopy, g,
+                com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+            System.arraycopy(gb, 0, daBuf, 0, m);
+            System.arraycopy(ga, 0, dbBuf, 0, m);
             a.accGradFromPooled(daBuf, m);
             b.accGradFromPooled(dbBuf, m);
         };
@@ -919,7 +929,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
             double[] gd = gradOut.gradData();
             double[] dx = new double[fwd.length];
             for (int i = 0; i < fwd.length; i++) {
-                dx[i] = gd[i] / Math.sqrt(1.0 - fwd[i] * fwd[i]);
+                double denom = 1.0 - fwd[i] * fwd[i];
+                dx[i] = gd[i] / Math.sqrt(Math.max(denom, 1e-15));
             }
             self.accGrad(dx);
         };
@@ -940,7 +951,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
             double[] gd = gradOut.gradData();
             double[] dx = new double[fwd.length];
             for (int i = 0; i < fwd.length; i++) {
-                dx[i] = -gd[i] / Math.sqrt(1.0 - fwd[i] * fwd[i]);
+                double denom = 1.0 - fwd[i] * fwd[i];
+                dx[i] = -gd[i] / Math.sqrt(Math.max(denom, 1e-15));
             }
             self.accGrad(dx);
         };
@@ -964,11 +976,13 @@ public class RereDiffVector implements IDiffVector, Serializable {
         return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "arctan"));
     }
 
+    private static final double SINH_COSH_MAX = 709.0; // Math.sinh(710) overflows to Infinity
+
     @Override
     public IDiffVector sinh() {
         double[] fwd = tensor.value().toDoubleArray();
         double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = Math.sinh(fwd[i]);
+        for (int i = 0; i < fwd.length; i++) y[i] = Math.sinh(Math.max(-SINH_COSH_MAX, Math.min(fwd[i], SINH_COSH_MAX)));
         RereDiffTensor self = this.tensor;
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] gd = gradOut.gradData();
@@ -983,7 +997,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
     public IDiffVector cosh() {
         double[] fwd = tensor.value().toDoubleArray();
         double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = Math.cosh(fwd[i]);
+        for (int i = 0; i < fwd.length; i++) y[i] = Math.cosh(Math.max(-SINH_COSH_MAX, Math.min(fwd[i], SINH_COSH_MAX)));
         RereDiffTensor self = this.tensor;
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] gd = gradOut.gradData();
@@ -1231,7 +1245,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         double[] condFalse = java.util.Arrays.copyOf(yd, n); // allocate
         java.util.Arrays.setAll(condTrue, i -> condition[i] ? 1.0 : 0.0);
         java.util.Arrays.setAll(condFalse, i -> condition[i] ? 0.0 : 1.0);
-        DoubleVectorComputer vc = new DoubleVectorComputer();
+        DoubleVectorComputer vc = COMPUTER;
         double[] xTerm = vc.binaryOperate(xd, condTrue, BinaryOperation.MULTIPLY);
         double[] yTerm = vc.binaryOperate(yd, condFalse, BinaryOperation.MULTIPLY);
         double[] result = vc.binaryOperate(xTerm, yTerm, BinaryOperation.ADD);
