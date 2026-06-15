@@ -19,6 +19,8 @@ import com.yishape.lab.math.compute.hpc.HpcLoss;
 import com.yishape.lab.math.compute.hpc.HpcCross;
 import com.yishape.lab.math.compute.hpc.HpcGridSample;
 import com.yishape.lab.math.compute.hpc.HpcTrapezoidalScan;
+import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.IMatrix;
@@ -36,6 +38,8 @@ import com.yishape.lab.math.autodiff.AD;
  */
 public final class DiffTensorLoss {
     private DiffTensorLoss() { /* utility class */ }
+
+    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
 
 // ==================== Phase 3: Loss Functions ====================
 
@@ -120,6 +124,61 @@ public static IDiffTensor bceLoss(RereDiffTensor tensor, IDiffTensor target) {
     };
     return new RereDiffTensor(loss, new int[]{1}, List.of(tensor, tgt), bw, "bceLoss");
 }
+
+    /**
+     * Numerically stable BCE with logits (fused custom op).
+     * Uses log-sum-exp trick: max(x,0) - x*t + log(1+exp(-|x|)).
+     * Backward: (sigmoid(x) - target) / n — no division by p*(1-p).
+     * Prefer this over {@link #bceLoss} when inputs are raw logits.
+     */
+    public static IDiffTensor bceWithLogitsLoss(RereDiffTensor tensor, IDiffTensor target) {
+        RereDiffTensor tgt = (RereDiffTensor) target;
+        double[] xd = tensor.value.toDoubleArray();
+        double[] td = tgt.value.toDoubleArray();
+        long n = tensor.value.totalSize();
+        int ni = Math.toIntExact(n);
+        double[] loss = new double[1];
+        // Save logits for backward sigmoid recompute
+        double[] logits = new double[ni];
+        System.arraycopy(xd, 0, logits, 0, ni);
+        DoubleVectorComputer vc = COMPUTER;
+        // Forward: posPart = relu(x)
+        double[] posPart = GpuActivation.tryRelu(xd);
+        if (posPart == null) posPart = vc.universalOperate(xd, UniversalOperation.RELU, 0);
+        // xTarget = x * target
+        double[] xTarget = vc.binaryOperate(xd, td, BinaryOperation.MULTIPLY);
+        // absX = |x|; negAbsX = -absX; expNegAbsX = exp(-|x|)
+        double[] absX = vc.universalOperate(xd, UniversalOperation.ABS, 0);
+        double[] negAbsX = vc.binaryOperate(absX, -1.0, BinaryOperation.MULTIPLY);
+        double[] expNegAbsX = GpuActivation.tryExp(negAbsX);
+        if (expNegAbsX == null) expNegAbsX = vc.universalOperate(negAbsX, UniversalOperation.EXP, 0);
+        // log1p = log(1 + exp(-|x|)) = log1p(exp(-|x|)) for better precision
+        double[] log1pArg = vc.binaryOperate(expNegAbsX, 1.0, BinaryOperation.ADD);
+        double[] logTerm = GpuActivation.tryLog(log1pArg);
+        if (logTerm == null) logTerm = vc.universalOperate(log1pArg, UniversalOperation.LOG, 0);
+        // lossPerElem = posPart - xTarget + logTerm
+        double[] lossElem = vc.binaryOperate(posPart, xTarget, BinaryOperation.SUBTRACT);
+        lossElem = vc.binaryOperate(lossElem, logTerm, BinaryOperation.ADD);
+        loss[0] = vc.reduceOperate(lossElem, ReduceOperation.SUM) / n;
+        if (!tensor.requiresGrad) return new ConstantDiffTensor(new RereDoubleTensor(loss, new int[]{1}));
+        Consumer<RereDiffTensor> bw = self -> {
+            RereDiffTensor inpX = self.inputs.get(0);
+            RereDiffTensor inpT = self.inputs.get(1);
+            double[] g = self.grad;
+            double scale = g[0] / n;
+            // probs = sigmoid(logits) via acceleration chain
+            double[] probs = GpuActivation.trySigmoid(logits);
+            if (probs == null) probs = vc.universalOperate(logits, UniversalOperation.SIGMOID, 0);
+            // dx = scale * (probs - target)
+            double[] diff = vc.binaryOperate(probs, td, BinaryOperation.SUBTRACT);
+            double[] dx = vc.binaryOperate(diff, scale, BinaryOperation.MULTIPLY);
+            inpX.accGrad(dx);
+            // dt: dL/dtarget = -logits / n
+            double[] dt = vc.binaryOperate(logits, -scale, BinaryOperation.MULTIPLY);
+            inpT.accGrad(dt);
+        };
+        return new RereDiffTensor(loss, new int[]{1}, List.of(tensor, tgt), bw, "bceWithLogitsLoss");
+    }
 
 public static IDiffTensor focalLoss(RereDiffTensor tensor, IDiffTensor target, double alpha, double gamma) {
     RereDiffTensor tgt = (RereDiffTensor) target;

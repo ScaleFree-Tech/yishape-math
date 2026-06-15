@@ -38,6 +38,7 @@ public final class GpuOptionalRuntime {
     private static final Method M_EXP;
     private static final Method M_LOG;
     private static final Method M_ABS;
+    private static final Method M_SIGN;
     private static final Method M_SQRT;
     private static final Method M_SIN;
     private static final Method M_COS;
@@ -69,6 +70,7 @@ public final class GpuOptionalRuntime {
     private static final Method M_FLOAT_EXP;
     private static final Method M_FLOAT_LOG;
     private static final Method M_FLOAT_ABS;
+    private static final Method M_FLOAT_SIGN;
     private static final Method M_FLOAT_SQRT;
     private static final Method M_FLOAT_SIN;
     private static final Method M_FLOAT_COS;
@@ -113,6 +115,7 @@ public final class GpuOptionalRuntime {
             M_EXP = probe(c, "exp", double[].class);
             M_LOG = probe(c, "log", double[].class);
             M_ABS = probe(c, "abs", double[].class);
+            M_SIGN = probe(c, "sign", double[].class);
             M_SQRT = probe(c, "sqrt", double[].class);
             M_SIN = probe(c, "sin", double[].class);
             M_COS = probe(c, "cos", double[].class);
@@ -143,6 +146,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_EXP = probe(c, "floatExp", float[].class);
             M_FLOAT_LOG = probe(c, "floatLog", float[].class);
             M_FLOAT_ABS = probe(c, "floatAbs", float[].class);
+            M_FLOAT_SIGN = probe(c, "floatSign", float[].class);
             M_FLOAT_SQRT = probe(c, "floatSqrt", float[].class);
             M_FLOAT_SIN = probe(c, "floatSin", float[].class);
             M_FLOAT_COS = probe(c, "floatCos", float[].class);
@@ -158,7 +162,7 @@ public final class GpuOptionalRuntime {
             M_ELEMENTWISE = null; M_ADD = null; M_SUB = null; M_MUL = null; M_DIV = null;
             M_ACTIVATION = null; M_RELU = null; M_GELU = null; M_SIGMOID = null; M_TANH = null;
             M_ELU = null; M_LEAKY_RELU = null; M_SILU = null; M_SOFTPLUS = null; M_SELU = null;
-            M_HARDTANH = null; M_EXP = null; M_LOG = null; M_ABS = null; M_SQRT = null;
+            M_HARDTANH = null; M_EXP = null; M_LOG = null; M_ABS = null; M_SIGN = null; M_SQRT = null;
             M_SIN = null; M_COS = null;
             M_REDUCE = null; M_LAYER_NORM = null; M_LAYER_NORM_BACKWARD = null; M_GROUP_NORM_BACKWARD = null; M_BATCH_NORM = null; M_SHUTDOWN = null;
             M_FLOAT_MAT_MUL = null; M_FLOAT_ADD = null; M_FLOAT_SUB = null;
@@ -167,7 +171,7 @@ public final class GpuOptionalRuntime {
             M_FLOAT_RELU = null; M_FLOAT_GELU = null; M_FLOAT_SIGMOID = null; M_FLOAT_TANH = null;
             M_FLOAT_ELU = null; M_FLOAT_LEAKY_RELU = null; M_FLOAT_SILU = null; M_FLOAT_SOFTPLUS = null;
             M_FLOAT_SELU = null; M_FLOAT_HARDTANH = null; M_FLOAT_EXP = null; M_FLOAT_LOG = null;
-            M_FLOAT_ABS = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
+            M_FLOAT_ABS = null; M_FLOAT_SIGN = null; M_FLOAT_SQRT = null; M_FLOAT_SIN = null; M_FLOAT_COS = null;
             M_SOFTMAX = null; M_LOG_SOFTMAX = null; M_NORMALIZE = null; M_GATHER = null; M_IM2COL = null; M_FLAT_MAT_MUL_TRANSP = null; M_GET_MEMORY_BUDGET = null;
         }
 
@@ -329,6 +333,10 @@ public final class GpuOptionalRuntime {
 
     public static double[] tryAbs(double[] input) {
         return tryInvoke(M_ABS, "tryAbs", input);
+    }
+
+    public static double[] trySign(double[] input) {
+        return tryInvoke(M_SIGN, "trySign", input);
     }
 
     public static double[] trySqrt(double[] input) {
@@ -649,6 +657,10 @@ public final class GpuOptionalRuntime {
 
     public static float[] tryFloatAbs(float[] input) {
         return tryFloatInvoke(M_FLOAT_ABS, "tryFloatAbs", input);
+    }
+
+    public static float[] tryFloatSign(float[] input) {
+        return tryFloatInvoke(M_FLOAT_SIGN, "tryFloatSign", input);
     }
 
     public static float[] tryFloatSqrt(float[] input) {

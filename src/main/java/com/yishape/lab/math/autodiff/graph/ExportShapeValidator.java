@@ -306,8 +306,8 @@ public final class ExportShapeValidator {
                 }
             }
             h = h * 31 + (v.isLeaf() ? 1 : 0);
-        h = h * 31 + Double.hashCode(v.scalarParam());
-        h = h * 31 + Double.hashCode(v.scalarParam2());
+            h = h * 31 + Double.hashCode(v.scalarParam());
+            h = h * 31 + Double.hashCode(v.scalarParam2());
         }
         return h;
     }

@@ -253,6 +253,7 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
                     case ATAN -> result[i] = (float) Math.atan(x[i]);
                     case SQRT -> result[i] = (float) Math.sqrt(x[i]);
                     case ABS -> result[i] = Math.abs(x[i]);
+                    case SIGN -> result[i] = signumF(x[i]);
                     case POW -> result[i] = (float) Math.pow(x[i], additionalParam);
                     case CBRT -> result[i] = (float) Math.cbrt(x[i]);
                     case COSH -> result[i] = (float) Math.cosh(x[i]);
@@ -771,6 +772,24 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[] logicalCompare(float[] x, float scalar, LogicalCompare operation) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            switch (operation) {
+                case EQUALS:               result[i] = x[i] == scalar; break;
+                case NOT_EQUALS:           result[i] = x[i] != scalar; break;
+                case LESS_THAN:            result[i] = x[i] < scalar; break;
+                case LESS_THAN_OR_EQUALS:  result[i] = x[i] <= scalar; break;
+                case GREATER_THAN:         result[i] = x[i] > scalar; break;
+                case GREATER_THAN_OR_EQUALS: result[i] = x[i] >= scalar; break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[] logicalOperate(float[] x1, float[] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -829,6 +848,16 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
             }
         }
 
+        return result;
+    }
+
+    @Override
+    public boolean[] logicalOperate(float[] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = predicate.test(x[i]);
+        }
         return result;
     }
 
@@ -1197,6 +1226,45 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
+    public float[] where(boolean[] mask, float[] a, float[] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array lengths must match");
+        }
+        int n = mask.length;
+        float[] result = new float[n];
+        for (int i = 0; i < n; i++) {
+            result[i] = mask[i] ? a[i] : b[i];
+        }
+        return result;
+    }
+
+    @Override
+    public float[][] where(boolean[][] mask, float[][] a, float[][] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array row counts must match");
+        }
+        int rows = mask.length;
+        float[][] result = new float[rows][];
+        for (int r = 0; r < rows; r++) {
+            if (mask[r].length != a[r].length || mask[r].length != b[r].length) {
+                throw new IllegalArgumentException("Row " + r + " length mismatch");
+            }
+            int n = mask[r].length;
+            result[r] = new float[n];
+            for (int i = 0; i < n; i++) {
+                result[r][i] = mask[r][i] ? a[r][i] : b[r][i];
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[][] logicalCompare(float[][] x1, float[][] x2, LogicalCompare operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -1279,6 +1347,19 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[][] logicalOperate(float[][] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入矩阵不能为null");
+        boolean[][] result = new boolean[x.length][];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = new boolean[x[i].length];
+            for (int j = 0; j < x[i].length; j++) {
+                result[i][j] = predicate.test(x[i][j]);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[][] logicalOperate(float[][] x1, float[][] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -1323,7 +1404,10 @@ public class SISDFloatComputer implements IFloatVectorComputer,Serializable {
 
         return result;
     }
-    
+    private static float signumF(float v) {
+        return Float.isNaN(v) ? Float.NaN : Math.signum(v);
+    }
+
     
 
 }

@@ -30,6 +30,9 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
     /** Cached base computer (SIMD or SISD) to avoid repeated dispatch after first resolution. */
     private static volatile IDoubleVectorComputer resolvedBase = null;
 
+    /** Lock for one-time initialization of computer backends (SIMD/GPU). */
+    private static final Object INIT_LOCK = new Object();
+
     static {
         // 延迟检测支持，只在需要时才检测
         // ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
@@ -42,11 +45,16 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
      * @return
      */
     private static boolean checkIfSIMDSupported() {
-        if (ifSIMDSupported == null) {
-            // 只在第一次调用时检测SIMD支持
-            ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+        Boolean result = ifSIMDSupported;
+        if (result == null) {
+            synchronized (INIT_LOCK) {
+                if (ifSIMDSupported == null) {
+                    ifSIMDSupported = ComputerConfig.checkIfSIMDSupported();
+                }
+                result = ifSIMDSupported;
+            }
         }
-        return ifSIMDSupported;
+        return result;
     }
 
     /**
@@ -55,11 +63,16 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
      * @return
      */
     private static boolean checkIfGPUSupported() {
-        if (ifGPUSupported == null) {
-            // 只在第一次调用时检测GPU支持
-            ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+        Boolean result = ifGPUSupported;
+        if (result == null) {
+            synchronized (INIT_LOCK) {
+                if (ifGPUSupported == null) {
+                    ifGPUSupported = ComputerConfig.checkIfGPUSupported();
+                }
+                result = ifGPUSupported;
+            }
         }
-        return ifGPUSupported;
+        return result;
     }
 
     /**
@@ -81,58 +94,67 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
             return base;
         }
 
-        // Slow path: resolve base computer
-        IDoubleVectorComputer baseComputer = null;
-        if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {
-            if (simd == null) {
-                try {
-                    Class<?> simdClass = Class.forName("com.yishape.lab.math.compute.SIMDDoubleComputer");
-                    simd = (IDoubleVectorComputer) simdClass.getDeclaredConstructor().newInstance();
-                    log.info("SIMD vector computer initialized");
-                } catch (Throwable t) {
-                    log.debug("SIMD unavailable, using SISD: {}", t.toString());
-                    ifSIMDSupported = false;
-                    simd = null;
-                }
+        // Slow path: synchronized one-time initialization of SIMD/GPU backends.
+        // Double-checked locking with volatile fields for safe publication.
+        synchronized (INIT_LOCK) {
+            // Re-check after acquiring lock — another thread may have initialized
+            IDoubleVectorComputer baseComputer = resolvedBase;
+            if (baseComputer != null && !(ComputerConfig.USE_GPU && checkIfGPUSupported()
+                    && size > ComputerConfig.GPU_VECTOR_THRESHOLD)) {
+                return baseComputer;
             }
-            if (simd != null) {
-                baseComputer = simd;
+
+            if (ComputerConfig.USE_SIMD && checkIfSIMDSupported()) {
+                if (simd == null) {
+                    try {
+                        Class<?> simdClass = Class.forName("com.yishape.lab.math.compute.SIMDDoubleComputer");
+                        simd = (IDoubleVectorComputer) simdClass.getDeclaredConstructor().newInstance();
+                        log.info("SIMD vector computer initialized");
+                    } catch (Throwable t) {
+                        log.debug("SIMD unavailable, using SISD: {}", t.toString());
+                        ifSIMDSupported = false;
+                        simd = null;
+                    }
+                }
+                if (simd != null) {
+                    baseComputer = simd;
+                } else {
+                    if (sisd == null) {
+                        sisd = new SISDDoubleComputer();
+                    }
+                    baseComputer = sisd;
+                }
             } else {
                 if (sisd == null) {
                     sisd = new SISDDoubleComputer();
                 }
                 baseComputer = sisd;
             }
-        } else {
-            if (sisd == null) {
-                sisd = new SISDDoubleComputer();
-            }
-            baseComputer = sisd;
-        }
-        resolvedBase = baseComputer;
+            resolvedBase = baseComputer;
 
-        // Step 2: wrap with GPU if available and enabled
-        if (ComputerConfig.USE_GPU && checkIfGPUSupported() && size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
-            if (gpu == null) {
-                try {
-                    Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUDoubleComputer");
-                    gpu = (IDoubleVectorComputer) gpuClass
-                            .getDeclaredConstructor(IDoubleVectorComputer.class)
-                            .newInstance(baseComputer);
-                    log.info("GPU vector computer initialized, wrapping {}",
-                            simd != null ? "SIMD" : "SISD");
-                } catch (Throwable t) {
-                    log.debug("GPU wrapper unavailable, using base computer: {}", t.toString());
-                    ifGPUSupported = false;
-                    gpu = null;
+            // Step 2: wrap with GPU if available and enabled
+            if (ComputerConfig.USE_GPU && checkIfGPUSupported() && size > ComputerConfig.GPU_VECTOR_THRESHOLD) {
+                if (gpu == null) {
+                    try {
+                        Class<?> gpuClass = Class.forName("com.yishape.lab.math.compute.GPUDoubleComputer");
+                        gpu = (IDoubleVectorComputer) gpuClass
+                                .getDeclaredConstructor(IDoubleVectorComputer.class)
+                                .newInstance(baseComputer);
+                        log.info("GPU vector computer initialized, wrapping {}",
+                                simd != null ? "SIMD" : "SISD");
+                    } catch (Throwable t) {
+                        log.debug("GPU wrapper unavailable, using base computer: {}", t.toString());
+                        ifGPUSupported = false;
+                        gpu = null;
+                    }
+                }
+                if (gpu != null) {
+                    return gpu;
                 }
             }
-            if (gpu != null) {
-                return gpu;
-            }
-        }
 
-        return baseComputer;
+            return baseComputer;
+        }
     }
 
     @Override
@@ -238,9 +260,27 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
     }
 
     @Override
+    public boolean[] logicalCompare(double[] x, double scalar, LogicalCompare operation) {
+        var computer = this.fetchComputer(x.length);
+        return computer.logicalCompare(x, scalar, operation);
+    }
+
+    @Override
     public boolean[] logicalOperate(double[] x1, LogicalOperation operation) {
         var computer = this.fetchComputer(x1.length);
         return computer.logicalOperate(x1, operation);
+    }
+
+    @Override
+    public boolean[] logicalOperate(double[] x, java.util.function.DoublePredicate predicate) {
+        var computer = this.fetchComputer(x.length);
+        return computer.logicalOperate(x, predicate);
+    }
+
+    @Override
+    public boolean[][] logicalOperate(double[][] x, java.util.function.DoublePredicate predicate) {
+        var computer = this.fetchComputer((long) x.length * x[0].length);
+        return computer.logicalOperate(x, predicate);
     }
 
     @Override
@@ -295,6 +335,18 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
     public double[] diff(double[] array, int stride) {
         var computer = this.fetchComputer(array.length);
         return computer.diff(array, stride);
+    }
+
+    @Override
+    public double[] where(boolean[] mask, double[] a, double[] b) {
+        var computer = this.fetchComputer(mask.length);
+        return computer.where(mask, a, b);
+    }
+
+    @Override
+    public double[][] where(boolean[][] mask, double[][] a, double[][] b) {
+        var computer = this.fetchComputer((long) mask.length * mask[0].length);
+        return computer.where(mask, a, b);
     }
 
     @Override

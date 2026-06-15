@@ -148,7 +148,14 @@ public class RereFloatTensor implements IFloatTensor {
 
     @Override
     public float[] toFloatArray() {
-        if (isContiguous() && offset == 0 && totalSize() == data.length) {
+        // Only skip materialization when this tensor OWNS its data: contiguous C-order
+        // strides matching the shape, zero offset, and full data buffer. A view created
+        // by reshape/permute/slice shares the parent's backing array but has different
+        // strides; returning data.clone() would yield the FULL backing array (wrong size
+        // for downstream ops like CustomOp.tensorApply).
+        int[] expectedStrides = TensorShape.computeCStrides(shape());
+        if (isContiguous() && offset == 0 && totalSize() == data.length
+            && Arrays.equals(strides, expectedStrides)) {
             return data.clone();
         }
         int n = (int) totalSize();
@@ -415,7 +422,7 @@ public class RereFloatTensor implements IFloatTensor {
             resultShape[i] = dim(i) * repeats[i];
             total *= resultShape[i];
         }
-        float[] result = new float[(int) total];
+        float[] result = new float[Math.toIntExact(total)];
         int[] indices = new int[rank()];
         int[] srcIndices = new int[rank()];
         for (long flat = 0; flat < total; flat++) {
@@ -665,7 +672,7 @@ public class RereFloatTensor implements IFloatTensor {
         int[] resultShape = TensorShape.broadcastShape(shapeA, shapeB);
         long total = 1;
         for (int d : resultShape) total *= d;
-        float[] result = new float[(int) total];
+        float[] result = new float[Math.toIntExact(total)];
         int rank = resultShape.length;
 
         // 对齐两个输入到结果秩
@@ -692,7 +699,6 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor sum(int dim, boolean keepdim) {
         if (dim < 0) dim += rank();
-        long total = totalSize();
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -710,62 +716,34 @@ public class RereFloatTensor implements IFloatTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        float[] result = new float[(int) computeSize(newShape)];
+        float[] result = new float[Math.toIntExact(computeSize(newShape))];
 
-        for (int o = 0; o < outer; o++) {
-            for (int i = 0; i < inner; i++) {
-                float sum = 0;
-                for (int r = 0; r < reduce; r++) {
-                    int[] indices = new int[rank()];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        indices[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    indices[dim] = r;
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        indices[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    sum += get(indices);
+        // Iterate OUTPUT in C-order to match result[] layout
+        int resultLen = result.length;
+        for (int k = 0; k < resultLen; k++) {
+            int[] outPos = flatToIndex(k, newShape);
+            int oIdx = 0;
+            for (int j = 0; j < dim; j++) oIdx = oIdx * dim(j) + outPos[j];
+            int iIdx = 0;
+            // inner dims: use C-order strides (same as reduceDim).
+            int innerCount = rank() - dim - 1;
+            if (innerCount > 0) {
+                int innerStart = keepdim ? dim + 1 : dim;
+                int[] mult = new int[innerCount];
+                int s = 1;
+                for (int p = innerCount - 1; p >= 0; p--) {
+                    mult[p] = s;
+                    s = s * dim(dim + 1 + p);
                 }
-                // write to result
-                int[] outIdx;
-                if (keepdim) {
-                    outIdx = new int[rank()];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    outIdx[dim] = 0;
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                } else {
-                    outIdx = new int[rank() - 1];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        outIdx[j - 1] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
+                for (int p = 0; p < innerCount; p++) {
+                    iIdx = iIdx + mult[p] * outPos[innerStart + p];
                 }
-                long linear = 0;
-                int stride = 1;
-                for (int j = newShape.length - 1; j >= 0; j--) {
-                    linear += outIdx[j] * stride;
-                    stride *= newShape[j];
-                }
-                result[(int) linear] = sum;
             }
+            float sum = 0;
+            for (int r = 0; r < reduce; r++) {
+                sum += getStrided(oIdx, dim, r, iIdx);
+            }
+            result[k] = sum;
         }
         return new RereFloatTensor(result, newShape);
     }
@@ -815,41 +793,72 @@ public class RereFloatTensor implements IFloatTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        float[] result = new float[(int) computeSize(newShape)];
+        float[] result = new float[Math.toIntExact(computeSize(newShape))];
         Arrays.fill(result, init);
 
-        for (int o = 0; o < outer; o++) {
-            for (int i = 0; i < inner; i++) {
-                float val = init;
-                for (int r = 0; r < reduce; r++) {
-                    val = reducer.apply(val, getStrided(o, dim, r, i));
-                }
-                // write to result
-                long linear;
-                if (keepdim) {
-                    linear = flatIndexKeepdim(o, dim, i, newShape);
-                } else {
-                    linear = flatIndexReduce(o, dim, i, newShape);
-                }
-                result[(int) linear] = val;
+        // Iterate OUTPUT in C-order to match result[] layout
+        int resultLen = result.length;
+        for (int k = 0; k < resultLen; k++) {
+            int[] outPos = flatToIndex(k, newShape);
+            int oIdx = 0;
+            for (int j = 0; j < dim; j++) oIdx = oIdx * dim(j) + outPos[j];
+            // Compute iIdx: flat index into inner dims (C-order).
+            // innerStart maps output position to input dim: keepdim skips the size-1 slot at outPos[dim].
+            // Multipliers are C-order strides of inner dims at input positions dim+1..rank-1.
+            int innerStart = keepdim ? dim + 1 : dim;
+            int innerCount = rank() - (dim + 1);
+            int[] mult = new int[innerCount];
+            int s = 1;
+            for (int p = innerCount - 1; p >= 0; p--) {
+                mult[p] = s;
+                s = s * dim(dim + 1 + p);
             }
+            int iIdx = 0;
+            for (int p = 0; p < innerCount; p++) {
+                int srcIdx = innerStart + p;
+                iIdx = iIdx + mult[p] * outPos[srcIdx];
+            }
+            if (dim == rank() - 1 && !keepdim) {
+                iIdx = outPos[dim - 1];
+            }
+            float val = init;
+            for (int r = 0; r < reduce; r++) {
+                val = reducer.apply(val, getStrided(oIdx, dim, r, iIdx));
+            }
+            result[k] = val;
         }
         return new RereFloatTensor(result, newShape);
+    }
+
+    /** Convert flat C-order index to multi-dimensional coordinates */
+    private int[] flatToIndex(int flat, int[] shape) {
+        int[] idx = new int[shape.length];
+        int rem = flat;
+        for (int j = shape.length - 1; j >= 0; j--) {
+            idx[j] = rem % shape[j];
+            rem /= shape[j];
+        }
+        return idx;
     }
 
     /** 使用 stride 获取元素（o=outer index, dim=target, r=reduce index, i=inner index） */
     private float getStrided(int o, int dim, int r, int i) {
         long off = offset;
-        // outer
-        for (int j = 0; j < dim; j++) {
-            off += (o % dim(j)) * (long) strides[j];
-            o /= dim(j);
+        // Decompose flat outer index o: idx_j = (o / prod(dim[0..j-1])) % dim(j)
+        // Key: save the mod result BEFORE dividing, so each dim uses the unscaled index.
+        int rem = o;
+        for (int j = dim - 1; j >= 0; j--) {
+            int idx = rem % dim(j);
+            off += (long) idx * strides[j];
+            rem /= dim(j);
         }
         off += r * (long) strides[dim];
-        // inner
+        // Decompose flat inner index i: idx_j = (i / prod(dim[j+1..])) % dim(j)
+        int iRem = i;
         for (int j = rank() - 1; j > dim; j--) {
-            off += (i % dim(j)) * (long) strides[j];
-            i /= dim(j);
+            int idx = iRem % dim(j);
+            off += (long) idx * strides[j];
+            iRem /= dim(j);
         }
         return data[(int) off];
     }
@@ -858,7 +867,7 @@ public class RereFloatTensor implements IFloatTensor {
         // Pre-compute mixed-radix decomposition of o for dimensions 0..dim-1
         int[] outerVals = new int[dim];
         int tmp = o;
-        for (int j = 0; j < dim; j++) {
+        for (int j = dim - 1; j >= 0; j--) {
             outerVals[j] = tmp % dim(j);
             tmp /= dim(j);
         }
@@ -884,7 +893,7 @@ public class RereFloatTensor implements IFloatTensor {
         // Pre-compute mixed-radix decomposition of o for outer dims
         int[] outerVals = new int[dim];
         int tmp = o;
-        for (int j = 0; j < dim; j++) {
+        for (int j = dim - 1; j >= 0; j--) {
             outerVals[j] = tmp % dim(j);
             tmp /= dim(j);
         }
@@ -949,7 +958,7 @@ public class RereFloatTensor implements IFloatTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        float[] result = new float[(int) computeSize(newShape)];
+        float[] result = new float[Math.toIntExact(computeSize(newShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -988,7 +997,7 @@ public class RereFloatTensor implements IFloatTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        float[] result = new float[(int) computeSize(newShape)];
+        float[] result = new float[Math.toIntExact(computeSize(newShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -1018,7 +1027,7 @@ public class RereFloatTensor implements IFloatTensor {
     public IFloatTensor cumsum(int dim) {
         // cumulative sum along dim
         int[] resultShape = shape();
-        float[] result = new float[(int) totalSize()];
+        float[] result = new float[Math.toIntExact(totalSize())];
         int n = dim(dim);
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
@@ -1042,7 +1051,7 @@ public class RereFloatTensor implements IFloatTensor {
     @Override
     public IFloatTensor cumprod(int dim) {
         int[] resultShape = shape();
-        float[] result = new float[(int) totalSize()];
+        float[] result = new float[Math.toIntExact(totalSize())];
         int n = dim(dim);
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
@@ -1154,7 +1163,7 @@ public class RereFloatTensor implements IFloatTensor {
         // Flat batch iteration
         long batchTotal = 1;
         for (int bd : batchShape) batchTotal *= bd;
-        float[] result = new float[(int) (batchTotal * m * n)];
+        float[] result = new float[Math.toIntExact(batchTotal * m * n)];
 
         boolean bothContig = isContiguous() && other.isContiguous()
             && offset == 0 && ((RereFloatTensor) other).offset == 0;
@@ -1333,7 +1342,7 @@ public class RereFloatTensor implements IFloatTensor {
     public IFloatTensor where(IFloatTensor condition, IFloatTensor other) {
         int[] resultShape = TensorShape.broadcastShape(
             shape(), TensorShape.broadcastShape(other.shape(), condition.shape()));
-        float[] result = new float[(int) computeSize(resultShape)];
+        float[] result = new float[Math.toIntExact(computeSize(resultShape))];
         for (long i = 0; i < result.length; i++) {
             int[] idx = unlinearize(i, resultShape);
             float condVal = getWithBroadcast(idx, condition);
@@ -1349,8 +1358,8 @@ public class RereFloatTensor implements IFloatTensor {
         int n = dim(dim);
         int[] resultShape = shape().clone();
         resultShape[dim] = k;
-        float[] values = new float[(int) computeSize(resultShape)];
-        float[] indices = new float[(int) computeSize(resultShape)];
+        float[] values = new float[Math.toIntExact(computeSize(resultShape))];
+        float[] indices = new float[Math.toIntExact(computeSize(resultShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int inner = 1;
@@ -1375,7 +1384,7 @@ public class RereFloatTensor implements IFloatTensor {
                     } else {
                         outIdx = new int[rank()];
                         int tmp = o;
-                        for (int j = 0; j < dim; j++) {
+                        for (int j = dim - 1; j >= 0; j--) {
                             outIdx[j] = tmp % dim(j);
                             tmp /= dim(j);
                         }
@@ -1407,7 +1416,7 @@ public class RereFloatTensor implements IFloatTensor {
         }
         long total = 1;
         for (int d : newShape) total *= d;
-        float[] result = new float[(int) total];
+        float[] result = new float[Math.toIntExact(total)];
         if (!"constant".equals(mode)) {
             throw new UnsupportedOperationException("pad mode not implemented: " + mode);
         }
@@ -1442,7 +1451,7 @@ public class RereFloatTensor implements IFloatTensor {
         resultShape[rank()] = size;
         long total = 1;
         for (int d : resultShape) total *= d;
-        float[] result = new float[(int) total];
+        float[] result = new float[Math.toIntExact(total)];
         for (long i = 0; i < result.length; i++) {
             int[] idx = unlinearize((int) i, resultShape);
             int[] srcIdx = new int[rank()];
@@ -1511,7 +1520,7 @@ public class RereFloatTensor implements IFloatTensor {
         for (IFloatTensor t : others) totalDim += t.dim(dim);
         int[] newShape = shape().clone();
         newShape[dim] = totalDim;
-        float[] result = new float[(int) computeSize(newShape)];
+        float[] result = new float[Math.toIntExact(computeSize(newShape))];
         // Copy this tensor
         copyInto(result, this, newShape, 0, dim);
         int offset = dim(dim);
@@ -1807,7 +1816,7 @@ public class RereFloatTensor implements IFloatTensor {
     private static int[] mixedIndex(int o, int dim, int r, int i, int[] shape) {
         int[] idx = new int[shape.length];
         int tmp = o;
-        for (int j = 0; j < dim; j++) {
+        for (int j = dim - 1; j >= 0; j--) {
             idx[j] = tmp % shape[j];
             tmp /= shape[j];
         }

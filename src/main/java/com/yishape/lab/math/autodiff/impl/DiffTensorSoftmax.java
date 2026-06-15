@@ -50,8 +50,8 @@ public static IDiffTensor softmax(RereDiffTensor tensor, int dim) {
     for (int i = d + 1; i < tensor.rank(); i++) inner *= s[i];
 
     double[] inData = tensor.value.toDoubleArray();
-    double[] out = new double[inData.length];
     // Compute softmax: out = exp(x - max) / sum(exp(x - max))
+    double[] out = new double[inData.length];
     for (int o = 0; o < outer; o++) {
         for (int i = 0; i < inner; i++) {
             double maxVal = Double.NEGATIVE_INFINITY;

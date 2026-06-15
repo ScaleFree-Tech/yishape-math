@@ -46,7 +46,18 @@ public final class BinaryProtocol {
     /** Magic number: "YSGP" in little-endian ASCII */
     public static final int MAGIC = 0x50535359;
 
-    public static final int VERSION = 1;
+    /** Current protocol version we can read (supports V1-V2). */
+    public static final int VERSION = 2;
+
+    /** Oldest protocol version we can read. */
+    public static final int MIN_SUPPORTED_VERSION = 1;
+
+    /**
+     * Wire format version actually written. Default is 1 for backward
+     * compatibility with existing Rust binaries (GPU/HPC). Opt into V2
+     * (TLV extension blocks) via {@code -Dyishape.ysgp.version=2}.
+     */
+    public static int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
 
     // Flag bits
     public static final int FLAG_HAS_DATA    = 1 << 0;
@@ -77,6 +88,36 @@ public final class BinaryProtocol {
         }
         buf.flip();
         return buf;
+    }
+
+    // ── Header Validation ──
+
+    /**
+     * Validates a YSGP binary buffer header (magic + version).
+     * Call before {@link #deserializeResult} to fail-fast on corrupt/mismatched data.
+     *
+     * @throws ProtocolVersionException if magic or version is unsupported
+     */
+    public static void validateHeader(ByteBuffer buf) {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        int magic = buf.getInt();
+        if (magic != MAGIC) {
+            throw new ProtocolVersionException(
+                String.format("Invalid YSGP magic: expected 0x%08X, got 0x%08X", MAGIC, magic));
+        }
+        int version = buf.getInt();
+        if (version < MIN_SUPPORTED_VERSION || version > VERSION) {
+            throw new ProtocolVersionException(
+                String.format("Unsupported YSGP protocol version %d (supported: %d-%d)",
+                    version, MIN_SUPPORTED_VERSION, VERSION));
+        }
+    }
+
+    /**
+     * Thrown when a YSGP binary buffer has an unsupported magic or version.
+     */
+    public static final class ProtocolVersionException extends IllegalArgumentException {
+        public ProtocolVersionException(String message) { super(message); }
     }
 
     // ── Result Deserialization ──

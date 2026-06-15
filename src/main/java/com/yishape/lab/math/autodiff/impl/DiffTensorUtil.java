@@ -42,7 +42,9 @@ public final class DiffTensorUtil {
             r[dim] = 1;
             return r;
         }
-        if (shape.length == 1) return new int[]{};
+        // Reducing a 1D tensor produces a scalar (shape [1]), not an empty shape.
+        // Empty shape is invalid for TensorShape (throws "Shape cannot be null or empty").
+        if (shape.length == 1) return new int[]{1};
         int[] r = new int[shape.length - 1];
         int idx = 0;
         for (int i = 0; i < shape.length; i++) if (i != dim) r[idx++] = shape[i];
@@ -243,7 +245,7 @@ public final class DiffTensorUtil {
         for (int d : inputShape) n *= d;
         long totalN = n;
         return g -> {
-            double[] ones = new double[(int) totalN];
+            double[] ones = new double[Math.toIntExact(totalN)];
             Arrays.fill(ones, 1.0);
             return new IDiffTensor[]{ g.mul(IDiffTensor.constantTensor(ones, shapeCopy)) };
         };

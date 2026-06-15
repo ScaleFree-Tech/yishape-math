@@ -46,14 +46,17 @@ public static IDiffTensor mmul(RereDiffTensor tensor, IDoubleTensor other) {
         return tensor.toNonDiff(tensor.value.mmul(detOther));
     }
     if (tensor.rank() != 2 || other.rank() != 2) {
-        return tensor.toNonDiff(tensor.value.mmul(((IDiffTensor) other).detach()));
+        IDoubleTensor detOther = (other instanceof IDiffTensor dt) ? dt.detach() : other;
+        return tensor.toNonDiff(tensor.value.mmul(detOther));
     }
     int M = tensor.dim(0), K = tensor.dim(1), N = other.dim(1);
     if (K != other.dim(0)) {
         throw new IllegalArgumentException("mmul: shape mismatch " + M + "x" + K + " @ " + other.dim(0) + "x" + N);
     }
     double[] aData = tensor.value.toDoubleArray();
-    double[] bData = ((RereDiffTensor) other).value.toDoubleArray();
+    IDoubleTensor bVal = (other instanceof RereDiffTensor rt) ? rt.value
+        : (other instanceof IDiffTensor dt) ? dt.detach() : other;
+    double[] bData = bVal.toDoubleArray();
     double[] resultData = DoubleFlatGemm.flatMmul(aData, M, K, bData, N);
     int[] resultShape = {M, N};
 
@@ -96,7 +99,10 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
         IDoubleTensor detOther = (other instanceof IDiffTensor dt) ? dt.detach() : other;
         return tensor.toNonDiff(tensor.value.bmm(detOther));
     }
-    if (tensor.rank() != 3 || other.rank() != 3) return tensor.toNonDiff(tensor.value.bmm(((IDiffTensor) other).detach()));
+    if (tensor.rank() != 3 || other.rank() != 3) {
+        IDoubleTensor detOther = (other instanceof IDiffTensor dt) ? dt.detach() : other;
+        return tensor.toNonDiff(tensor.value.bmm(detOther));
+    }
     int B = tensor.dim(0), M = tensor.dim(1), K = tensor.dim(2);
     int B2 = other.dim(0), K2 = other.dim(1), N = other.dim(2);
     if (B != B2 || K != K2) {
@@ -104,7 +110,9 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
     }
     int[] resultShape = {B, M, N};
     double[] aData = tensor.value.toDoubleArray();
-    double[] bData = ((RereDiffTensor) other).value.toDoubleArray();
+    IDoubleTensor bTensor = (other instanceof RereDiffTensor rt) ? rt.value
+        : (other instanceof IDiffTensor dt) ? dt.detach() : other;
+    double[] bData = bTensor.toDoubleArray();
     double[] resultData = DoubleFlatGemm.flatMmulBatched(aData, bData, B, M, K, N);
 
     // Lazy transpose: only pre-allocate slices for operands that need gradients;
@@ -116,7 +124,7 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
     // Dynamic inputs list
     List<RereDiffTensor> inputs = new ArrayList<>();
     if (aNeedsGrad) inputs.add(tensor);
-    RereDiffTensor otherNode = bNeedsGrad ? (RereDiffTensor) other : null;
+    RereDiffTensor otherNode = (bNeedsGrad && other instanceof RereDiffTensor) ? (RereDiffTensor) other : null;
     if (otherNode != null) inputs.add(otherNode);
 
     int fB = B, fM = M, fK = K, fN = N;

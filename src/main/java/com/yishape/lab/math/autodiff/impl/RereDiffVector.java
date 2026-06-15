@@ -20,6 +20,8 @@ import com.yishape.lab.math.autodiff.IDiffMatrix;
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.LogicalCompare;
+import com.yishape.lab.math.compute.ops.UniversalOperation;
 
 /**
  * Default reverse-mode AD implementation for {@link IDiffVector}.
@@ -445,108 +447,110 @@ public class RereDiffVector implements IDiffVector, Serializable {
                 int m = n;
                 switch (t.opTag()) {
                     case "square" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = 2.0 * xData[i] / m;
+                        double[] sf = COMPUTER.binaryOperate(xData, 2.0 / m, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("square", "mean");
                         symFactor = sf;
                     }
                     case "relu" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = xData[i] > 0 ? 1.0 / m : 0;
+                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, 0.0));
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("relu", "mean");
                         symFactor = sf;
                     }
                     case "exp" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = tData[i] / m;
+                        double[] sf = COMPUTER.binaryOperate(tData, 1.0 / m, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("exp", "mean");
                         symFactor = sf;
                     }
                     case "abs" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = (xData[i] >= 0 ? 1.0 : -1.0) / m;
+                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, -1.0 / m));
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("abs", "mean");
                         symFactor = sf;
                     }
                     case "log" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = 1.0 / m / xData[i];
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.fill(m, 1.0 / m), xData, BinaryOperation.DIVIDE);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("log", "mean");
                         symFactor = sf;
                     }
                     case "sigmoid" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) { double s = tData[i]; sf[i] = s * (1.0 - s) / m; }
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.binaryOperate(tData,
+                                COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), tData, BinaryOperation.SUBTRACT),
+                                BinaryOperation.MULTIPLY),
+                            1.0 / m, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("sigmoid", "mean");
                         symFactor = sf;
                     }
                     case "tanh" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) { double th = tData[i]; sf[i] = (1.0 - th * th) / m; }
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
+                                COMPUTER.binaryOperate(tData, tData, BinaryOperation.MULTIPLY),
+                                BinaryOperation.SUBTRACT),
+                            1.0 / m, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("tanh", "mean");
                         symFactor = sf;
                     }
                     case "silu" -> {
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) {
-                            double xi = xData[i];
-                            double sig = 1.0 / (1.0 + Math.exp(-xi));
-                            sf[i] = (sig + xi * sig * (1.0 - sig)) / m;
-                        }
+                        double[] negX = COMPUTER.binaryOperate(COMPUTER.fill(m, -1.0), xData, BinaryOperation.MULTIPLY);
+                        double[] sig = COMPUTER.universalOperate(negX, UniversalOperation.EXP, 0.0);
+                        sig = COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
+                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), sig, BinaryOperation.ADD),
+                            BinaryOperation.DIVIDE);
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.binaryOperate(sig,
+                                COMPUTER.binaryOperate(xData, sig, BinaryOperation.MULTIPLY),
+                                BinaryOperation.ADD),
+                            1.0 / m, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("silu", "mean");
@@ -555,16 +559,167 @@ public class RereDiffVector implements IDiffVector, Serializable {
                     case "pow" -> {
                         double scalarP = t.scalarParam();
                         if (Double.isNaN(scalarP)) break;
-                        double[] buf = AutodiffBufferPool.acquire(m);
-                        double[] sf = new double[m];
-                        for (int i = 0; i < m; i++) sf[i] = scalarP * Math.pow(xData[i], scalarP - 1) / m;
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.universalOperate(xData, UniversalOperation.POW, scalarP),
+                            1.0 / m * scalarP, BinaryOperation.MULTIPLY);
                         fusedBw = self -> {
                             double g = self.gradData()[0];
-                            for (int i = 0; i < m; i++) buf[i] = g * sf[i];
-                            inp.accGradFromPooled(buf, m);
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
                         };
                         fusedInput = inp;
                         fusedTag = GraphOpSchema.FusedTag.of("pow", "mean");
+                        symFactor = sf;
+                    }
+                    case "elu" -> {
+                        double alpha = Double.isNaN(t.scalarParam()) ? 1.0 : t.scalarParam();
+                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
+                        double[] negX = COMPUTER.binaryOperate(COMPUTER.fill(m, -1.0), xData, BinaryOperation.MULTIPLY);
+                        double[] expNeg = COMPUTER.universalOperate(negX, UniversalOperation.EXP, 0.0);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, 1.0 / m),
+                            COMPUTER.binaryOperate(
+                                COMPUTER.binaryOperate(COMPUTER.fill(m, alpha), expNeg, BinaryOperation.MULTIPLY),
+                                1.0 / m, BinaryOperation.MULTIPLY));
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("elu", "mean");
+                        symFactor = sf;
+                    }
+                    case "leakyRelu" -> {
+                        double alpha = Double.isNaN(t.scalarParam()) ? 0.01 : t.scalarParam();
+                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, 1.0 / m),
+                            COMPUTER.fill(m, alpha / m));
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("leakyRelu", "mean");
+                        symFactor = sf;
+                    }
+                    case "softplus" -> {
+                        double beta = Double.isNaN(t.scalarParam()) ? 1.0 : t.scalarParam();
+                        double[] negBetaX = COMPUTER.binaryOperate(xData,
+                            COMPUTER.fill(m, -beta), BinaryOperation.MULTIPLY);
+                        double[] expNegBetaX = COMPUTER.universalOperate(negBetaX, UniversalOperation.EXP, 0.0);
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), expNegBetaX, BinaryOperation.ADD),
+                            1.0 / m, BinaryOperation.MULTIPLY);
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("softplus", "mean");
+                        symFactor = sf;
+                    }
+                    case "gelu" -> {
+                        double c = 0.7978845608028654;
+                        double c3 = 0.044715 * c;
+                        double[] arg = COMPUTER.binaryOperate(
+                            COMPUTER.fill(m, c),
+                            COMPUTER.binaryOperate(xData,
+                                COMPUTER.binaryOperate(
+                                    COMPUTER.binaryOperate(xData, xData, BinaryOperation.MULTIPLY),
+                                    COMPUTER.fill(m, 3.0 * 0.044715), BinaryOperation.MULTIPLY),
+                                BinaryOperation.ADD),
+                            BinaryOperation.MULTIPLY);
+                        double[] tanhVal = COMPUTER.universalOperate(arg, UniversalOperation.TANH, 0.0);
+                        double[] dt = COMPUTER.binaryOperate(
+                            COMPUTER.fill(m, 1.0),
+                            COMPUTER.binaryOperate(tanhVal, tanhVal, BinaryOperation.MULTIPLY),
+                            BinaryOperation.SUBTRACT);
+                        double[] dArg = COMPUTER.binaryOperate(
+                            COMPUTER.fill(m, c),
+                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
+                                COMPUTER.binaryOperate(xData, xData, BinaryOperation.MULTIPLY),
+                                BinaryOperation.MULTIPLY),
+                            BinaryOperation.MULTIPLY);
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.binaryOperate(
+                                COMPUTER.binaryOperate(COMPUTER.fill(m, 0.5),
+                                    COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), tanhVal, BinaryOperation.ADD),
+                                    BinaryOperation.MULTIPLY),
+                                COMPUTER.binaryOperate(xData,
+                                    COMPUTER.binaryOperate(dt, dArg, BinaryOperation.MULTIPLY),
+                                    BinaryOperation.MULTIPLY),
+                                BinaryOperation.ADD),
+                            1.0 / m, BinaryOperation.MULTIPLY);
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("gelu", "mean");
+                        symFactor = sf;
+                    }
+                    case "sin" -> {
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.universalOperate(xData, UniversalOperation.COS, 0.0),
+                            1.0 / m, BinaryOperation.MULTIPLY);
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("sin", "mean");
+                        symFactor = sf;
+                    }
+                    case "cos" -> {
+                        double[] sf = COMPUTER.binaryOperate(
+                            COMPUTER.universalOperate(xData, UniversalOperation.SIN, 0.0),
+                            -1.0 / m, BinaryOperation.MULTIPLY);
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("cos", "mean");
+                        symFactor = sf;
+                    }
+                    case "selu" -> {
+                        final double seluL = 1.0507009873554804;
+                        final double seluA = 1.6732632423543772;
+                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
+                        double[] expX = COMPUTER.universalOperate(xData, UniversalOperation.EXP, 0.0);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, seluL / m),
+                            COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, seluL * seluA / m), expX, BinaryOperation.MULTIPLY));
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("selu", "mean");
+                        symFactor = sf;
+                    }
+                    case "hardtanh" -> {
+                        double hmin = Double.isNaN(t.scalarParam()) ? -1.0 : t.scalarParam();
+                        double hmax = Double.isNaN(t.scalarParam2()) ? 1.0 : t.scalarParam2();
+                        boolean[] mask = COMPUTER.logicalOperate(xData, x -> x > hmin && x < hmax);
+                        double[] sf = COMPUTER.where(mask,
+                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, 0.0));
+                        fusedBw = self -> {
+                            double g = self.gradData()[0];
+                            inp.accGrad(COMPUTER.binaryOperate(
+                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
+                        };
+                        fusedInput = inp;
+                        fusedTag = GraphOpSchema.FusedTag.of("hardtanh", "mean");
                         symFactor = sf;
                     }
                 }
@@ -574,7 +729,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         if (fusedTag != null && fusedBw != null && symFactor != null) {
             RereDiffTensor rt = new RereDiffTensor(new double[]{meanVal}, new int[]{1},
                 List.of(fusedInput), fusedBw, fusedTag);
-            rt.setExportShape(fusedInput.shape());
+            rt.setExportShape(new int[]{1});
             if ("powMean".equals(fusedTag)) {
                 rt.setScalarParam(t.scalarParam());
             }
@@ -602,8 +757,8 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
         RereDiffTensor rt = new RereDiffTensor(new double[]{meanVal}, new int[]{1},
             List.of(t), bw, "mean");
-        // exportShape = input shape so GPU/HPC backends know the reduction dimension.
-        rt.setExportShape(t.shape());
+        // exportShape = [1] for scalar mean (HPC backends need scalar output shape).
+        rt.setExportShape(new int[]{1});
         // tape-of-tape symbolic backward: g * (ones/n) broadcast → required for AD.grad().
         double[] meanSymFactor = new double[n];
         Arrays.fill(meanSymFactor, gDivN);

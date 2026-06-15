@@ -853,7 +853,8 @@ public final class ConstantDiffTensor implements IDiffTensor {
     @Override public void clipGradValue(double maxValue) {}
     @Override public IDiffVector flattenGrad() { return null; }
     @Override public IDiffVector flattenValue() {
-        return new RereDiffVector(value.toDoubleArray());
+        double[] arr = value.toDoubleArray();
+        return new RereDiffVector(arr);
     }
     @Override public IDoubleTensor detach() { return new RereDoubleTensor(value.toDoubleArray(), shape()); }
     @Override public boolean requiresGrad() { return false; }

@@ -216,6 +216,37 @@ public interface IDoubleVectorComputer {
     public boolean[] logicalCompare(double[] x1, double[] x2, LogicalCompare operation);
 
     /**
+     * Perform element-wise logical comparison between a vector and a scalar.
+     * 对向量和标量执行逐元素逻辑比较。
+     *
+     * @param x input vector / 输入向量
+     * @param scalar scalar value to compare against / 比较标量
+     * @param operation the logical comparison operation / 逻辑比较运算
+     * @return boolean array with comparison results / 比较结果的布尔数组
+     */
+    public boolean[] logicalCompare(double[] x, double scalar, LogicalCompare operation);
+
+    /**
+     * Perform logical operation on a vector with a custom predicate.
+     * 使用自定义谓词对向量执行逻辑运算。
+     *
+     * @param x input vector / 输入向量
+     * @param predicate element-wise predicate / 逐元素谓词
+     * @return boolean array with predicate results / 谓词结果的布尔数组
+     */
+    public boolean[] logicalOperate(double[] x, java.util.function.DoublePredicate predicate);
+
+    /**
+     * Perform logical operation on a 2D vector array with a custom predicate.
+     * 使用自定义谓词对二维向量数组执行逻辑运算。
+     *
+     * @param x input 2D vector array / 输入二维向量数组
+     * @param predicate element-wise predicate / 逐元素谓词
+     * @return boolean 2D array with predicate results / 谓词结果的布尔二维数组
+     */
+    public boolean[][] logicalOperate(double[][] x, java.util.function.DoublePredicate predicate);
+
+    /**
      * Perform logical operation on a vector.
      * 对向量执行逻辑运算。
      *
@@ -333,5 +364,23 @@ public interface IDoubleVectorComputer {
      * @return array of differences / 差分数组
      */
     public double[] diff(double[] array, int stride);
+
+    /**
+     * Element-wise conditional selection: result[i] = mask[i] ? a[i] : b[i].
+     * Equivalent to numpy.where(mask, a, b).
+     * 逐元素条件选择：mask 为 true 取 a，false 取 b。
+     *
+     * @param mask boolean mask array / 布尔掩码数组
+     * @param a    values where mask is true / mask 为 true 时的取值
+     * @param b    values where mask is false / mask 为 false 时的取值
+     * @return result array / 结果数组
+     */
+    public double[] where(boolean[] mask, double[] a, double[] b);
+
+    /**
+     * Element-wise conditional selection for matrices.
+     * 矩阵逐元素条件选择。
+     */
+    public double[][] where(boolean[][] mask, double[][] a, double[][] b);
 
 }

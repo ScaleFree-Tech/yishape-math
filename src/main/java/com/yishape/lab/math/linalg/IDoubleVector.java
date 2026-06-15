@@ -258,7 +258,7 @@ public interface IDoubleVector extends IVector<Double> {
     public static IDoubleVector ones(int len) {
         double[] v = new double[len];
         for (int i = 0; i < len; i++) {
-            v[i] = 1f;
+            v[i] = 1.0;
         }
         return IDoubleVector.of(v);
     }
@@ -401,7 +401,7 @@ public interface IDoubleVector extends IVector<Double> {
         double[] v = new double[num];
         Double step = (stop - start) / (num - 1);
         for (int i = 0; i < num; i++) {
-            v[i] = (float) Math.pow(10, start + i * step);
+            v[i] = Math.pow(10, start + i * step);
         }
         return IDoubleVector.of(v);
     }

@@ -706,7 +706,7 @@ public final class DoubleMatrixView implements IMatrixView<Double>, IDoubleMatri
     }
 
     private double[][] otherData(IMatrix<Double> other) {
-        return other instanceof RereDoubleMatrix ? ((RereDoubleMatrix) other).data : other.toDoubleArray();
+        return other instanceof RereDoubleMatrix ? ((RereDoubleMatrix) other).getData() : other.toDoubleArray();
     }
 
     @Override

@@ -98,19 +98,20 @@ public final class GraphOpSchema {
         public static int woIdx(boolean hasBias) { return hasBias ? WO_WITH_BIAS : WO_NO_BIAS; }
 
         // --- Scalar bit packing ---
-        /** scalarParam bit ranges: [63-29 reserved] [28-25 numHeads] [24-21 numKVHeads] [20-0 dModel]
-         *  All values fit in f64 53-bit mantissa: max packed = (255<<28)|(15<<24)|1048575 < 2^53 */
-        public static final int SCALAR_NUMHEADS_SHIFT = 28;
-        public static final long SCALAR_NUMHEADS_MASK = 0xFL;
-        public static final int SCALAR_NUMKVHEADS_SHIFT = 24;
-        public static final long SCALAR_NUMKVHEADS_MASK = 0xFL;
+        /** scalarParam bit ranges: [63-48 reserved] [47-32 numHeads] [31-16 numKVHeads] [15-0 dModel]
+         *  Raw values (no v-1 encoding — 16-bit fields cover 0..65535).
+         *  All values fit in f64 53-bit mantissa. */
+        public static final int SCALAR_NUMHEADS_SHIFT = 32;
+        public static final long SCALAR_NUMHEADS_MASK = 0xFFFFL;
+        public static final int SCALAR_NUMKVHEADS_SHIFT = 16;
+        public static final long SCALAR_NUMKVHEADS_MASK = 0xFFFFL;
         public static final int SCALAR_DMODEL_SHIFT = 0;
-        public static final long SCALAR_DMODEL_MASK = 0x1FFFFFL;
+        public static final long SCALAR_DMODEL_MASK = 0xFFFFL;
 
-        /** scalarParam2 bit ranges: [63-36 reserved] [35-19 seqLen] [18-2 reserved] [1 causal] [0 hasBias]
-         *  Max seqLen=131071 at bit 19: 131071<<19 = 68_719_476_736 < 2^53 */
-        public static final int SCALAR2_SEQLEN_SHIFT = 19;
-        public static final long SCALAR2_SEQLEN_MASK = 0x1FFFFL;
+        /** scalarParam2 bit ranges: [63-48 reserved] [47-32 seqLen] [31-2 reserved] [1 causal] [0 hasBias]
+         *  Raw seqLen (no v-1 encoding — 16-bit field covers 0..65535). */
+        public static final int SCALAR2_SEQLEN_SHIFT = 32;
+        public static final long SCALAR2_SEQLEN_MASK = 0xFFFFL;
         public static final int SCALAR2_CAUSAL_BIT = 1;
         public static final int SCALAR2_HASBIAS_BIT = 0;
 
@@ -598,8 +599,8 @@ public final class GraphOpSchema {
             "rmsNorm", "groupNorm", "instanceNorm",
             "interpolate", "gridSample",
             "cross", "trapezoidalScan", "cat",
-            "gather", "select", "contiguous",
-            "permute", "slice"
+            "gather", "select", "slice", "narrow", "contiguous",
+            "permute"
         )));
 
         public static final Set<String> SUPPORTED;
@@ -631,7 +632,12 @@ public final class GraphOpSchema {
             "permute", "expand", "reciprocal", "rsub", "rdiv",
             "gather", "scatter", "select", "slice", "narrow",
             "cat", "contiguous",
-            "batchNorm", "groupNorm"
+            "batchNorm", "groupNorm",
+            "normalize", "adaptiveAvgPool2d",
+            "scaledDotProductAttention",
+            "rmsNorm", "instanceNorm",
+            "interpolate", "gridSample",
+            "cross", "trapezoidalScan"
         )));
 
         public static final Set<String> SUPPORTED;

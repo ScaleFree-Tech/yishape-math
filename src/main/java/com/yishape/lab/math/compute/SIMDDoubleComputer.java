@@ -698,6 +698,16 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
                     c = a.lanewise(VectorOperators.SQRT);
                 case ABS ->
                     c = a.abs(); // Use the abs() method directly
+                case SIGN -> {
+                    // sign(x): 1 for x>0, -1 for x<0, 0 for x=0, NaN→NaN
+                    VectorMask<Double> gtZ = a.compare(VectorOperators.GT, 0.0);
+                    VectorMask<Double> ltZ = a.compare(VectorOperators.LT, 0.0);
+                    VectorMask<Double> isNaN = a.compare(VectorOperators.NE, a);
+                    DoubleVector zv = DoubleVector.zero(a.species());
+                    DoubleVector ov = DoubleVector.broadcast(a.species(), 1.0);
+                    DoubleVector nv = DoubleVector.broadcast(a.species(), -1.0);
+                    c = zv.blend(ov, gtZ).blend(nv, ltZ).blend(a, isNaN);
+                }
                 case POW ->
                     c = a.lanewise(VectorOperators.POW, additionalParam);
                 case CBRT ->
@@ -767,6 +777,11 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
                 case ABS:
                     result[i] = Math.abs(x[i]);
                     break;
+                case SIGN: {
+                    double v = x[i];
+                    result[i] = v > 0 ? 1.0 : (v < 0 ? -1.0 : 0.0);
+                    break;
+                }
                 case POW:
                     result[i] = Math.pow(x[i], additionalParam);
                     break;
@@ -1784,6 +1799,42 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[] logicalCompare(double[] x, double scalar, LogicalCompare operation) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        VectorSpecies<Double> species = DoubleVector.SPECIES_PREFERRED;
+        boolean[] result = new boolean[x.length];
+        DoubleVector sVec = DoubleVector.broadcast(species, scalar);
+        int i = 0;
+        int upperBound = species.loopBound(x.length);
+        for (; i < upperBound; i += species.length()) {
+            DoubleVector a = DoubleVector.fromArray(species, x, i);
+            VectorMask<Double> mask;
+            switch (operation) {
+                case EQUALS:               mask = a.compare(VectorOperators.EQ, sVec); break;
+                case NOT_EQUALS:           mask = a.compare(VectorOperators.NE, sVec); break;
+                case LESS_THAN:            mask = a.compare(VectorOperators.LT, sVec); break;
+                case LESS_THAN_OR_EQUALS:  mask = a.compare(VectorOperators.LE, sVec); break;
+                case GREATER_THAN:         mask = a.compare(VectorOperators.GT, sVec); break;
+                case GREATER_THAN_OR_EQUALS: mask = a.compare(VectorOperators.GE, sVec); break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+            mask.intoArray(result, i);
+        }
+        for (; i < x.length; i++) {
+            switch (operation) {
+                case EQUALS:               result[i] = x[i] == scalar; break;
+                case NOT_EQUALS:           result[i] = x[i] != scalar; break;
+                case LESS_THAN:            result[i] = x[i] < scalar; break;
+                case LESS_THAN_OR_EQUALS:  result[i] = x[i] <= scalar; break;
+                case GREATER_THAN:         result[i] = x[i] > scalar; break;
+                case GREATER_THAN_OR_EQUALS: result[i] = x[i] >= scalar; break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[] logicalOperate(double[] x1, double[] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -1926,6 +1977,26 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
             result[row] = logicalCompare(x1[row], x2[row], operation);
         }
 
+        return result;
+    }
+
+    @Override
+    public boolean[] logicalOperate(double[] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = predicate.test(x[i]);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean[][] logicalOperate(double[][] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入矩阵不能为null");
+        boolean[][] result = new boolean[x.length][];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = logicalOperate(x[i], predicate);
+        }
         return result;
     }
 
@@ -2582,6 +2653,59 @@ public class SIMDDoubleComputer implements IDoubleVectorComputer,Serializable {
             result[i] = array[i + stride] - array[i];
         }
 
+        return result;
+    }
+
+    @Override
+    public double[] where(boolean[] mask, double[] a, double[] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array lengths must match");
+        }
+        int n = mask.length;
+        double[] result = new double[n];
+        final VectorSpecies<Double> species = selectOptimalSpecies();
+        int vectorLength = species.length();
+
+        // Convert boolean mask to double mask (1.0/0.0) via scalar pass
+        // (mask arrays are typically small for conditional selections)
+        double[] maskD = new double[n];
+        for (int i = 0; i < n; i++) {
+            maskD[i] = mask[i] ? 1.0 : 0.0;
+        }
+        // result = maskD .* a + (1-maskD) .* b  (vectorized)
+        DoubleVector onesVec = DoubleVector.broadcast(species, 1.0);
+        int i = 0;
+        int vecEnd = (n / vectorLength) * vectorLength;
+        for (; i < vecEnd; i += vectorLength) {
+            DoubleVector maskVec = DoubleVector.fromArray(species, maskD, i);
+            DoubleVector aVec = DoubleVector.fromArray(species, a, i);
+            DoubleVector bVec = DoubleVector.fromArray(species, b, i);
+            DoubleVector notMask = onesVec.sub(maskVec);
+            DoubleVector resultVec = maskVec.mul(aVec).add(notMask.mul(bVec));
+            resultVec.intoArray(result, i);
+        }
+        for (; i < n; i++) {
+            result[i] = maskD[i] * a[i] + (1.0 - maskD[i]) * b[i];
+        }
+        return result;
+    }
+
+    @Override
+    public double[][] where(boolean[][] mask, double[][] a, double[][] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array row counts must match");
+        }
+        int rows = mask.length;
+        double[][] result = new double[rows][];
+        for (int r = 0; r < rows; r++) {
+            result[r] = where(mask[r], a[r], b[r]);
+        }
         return result;
     }
 

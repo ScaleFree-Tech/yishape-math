@@ -16,8 +16,9 @@ import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
  * <h3>Usage pattern</h3>
  * <ol>
  *   <li>Create accumulator: {@code GradientAccumulator acc = new GradientAccumulator(params, 4);}</li>
- *   <li>Each micro-step: {@code acc.step(loss);} — accumulates gradients</li>
- *   <li>Every N steps: {@code acc.step(loss, true);} — accumulates + optimizer step + zero grads</li>
+ *   <li>Each micro-step: call {@code loss.backward()} then {@code acc.step(loss);} — accumulates gradients</li>
+ *   <li>After step triggers: gradients are scaled to mean. Call {@code optimizer.step()} then
+ *       {@code acc.zeroGrads();} to use scaled gradients and reset for next accumulation cycle.</li>
  * </ol>
  *
  * <p>Thread-safety: not thread-safe. Use one accumulator per training thread.</p>
@@ -66,8 +67,13 @@ public class GradientAccumulator {
     /**
      * Record one accumulation step with optional optimizer step trigger.
      *
+     * <p>When accumulation steps complete, scales gradients by 1/N to compute the mean.
+     * <b>Gradients are NOT zeroed by this method</b> — the caller must invoke
+     * {@link #zeroGrads()} after the optimizer step to prevent gradient leakage into
+     * the next accumulation cycle.</p>
+     *
      * @param loss      the loss tensor (backward must be called BEFORE this method)
-     * @param doStep    if true, also performs the optimizer step (scales grads + step + zero)
+     * @param doStep    if true, also triggers the accumulation cycle regardless of step count
      */
     public void step(IDiffTensor loss, boolean doStep) {
         currentStep++;
@@ -75,7 +81,7 @@ public class GradientAccumulator {
             // Scale accumulated gradients by 1/N to compute the mean
             double scale = 1.0 / accumulationSteps;
             for (IDiffTensor p : params) {
-                RereDiffTensor rp = (RereDiffTensor) p;
+                if (!(p instanceof RereDiffTensor rp)) continue;
                 double[] g = rp.gradData();
                 if (g != null && g.length > 0) {
                     // In-place: g[i] *= scale using binaryOperate for acceleration

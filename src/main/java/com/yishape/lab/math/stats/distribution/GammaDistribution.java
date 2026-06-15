@@ -60,9 +60,9 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
         this.beta = beta;
         this.gammaFunction = RereMathUtil.gamma(alpha);
         
-        // 计算统计量
-        this.mean = alpha / beta;
-        this.variance = alpha / (beta * beta);
+        // beta is the scale parameter: mean = alpha * beta, variance = alpha * beta^2
+        this.mean = alpha * beta;
+        this.variance = alpha * beta * beta;
         this.stdDev = Math.sqrt(variance);
     }
     
@@ -355,11 +355,11 @@ public class GammaDistribution implements IContinuousDistribution, Serializable 
             double u = Math.random();
             
             if (u < 1.0 - 0.0331 * x * x * x * x) {
-                return d * v / scale;
+                return d * v * scale;
             }
-            
+
             if (Math.log(u) < 0.5 * x * x + d * (1.0 - v + Math.log(v))) {
-                return d * v / scale;
+                return d * v * scale;
             }
         }
     }

@@ -212,7 +212,7 @@ public class AD {
     public static IDiffTensor fullTensor(double value, int... shape) {
         long total = 1;
         for (int s : shape) total *= s;
-        double[] data = new double[(int) total];
+        double[] data = new double[Math.toIntExact(total)];
         java.util.Arrays.fill(data, value);
         return IDiffTensor.fromDiffVector(vector(data), shape);
     }

@@ -469,9 +469,11 @@ public static IDiffTensor trapezoidalScan(RereDiffTensor tensor, IDiffTensor del
         // Fallback: leave gradients zero.
     };
 
-    return new RereDiffTensor(y, s, List.of(tensor, (RereDiffTensor) delta,
+    RereDiffTensor result = new RereDiffTensor(y, s, List.of(tensor, (RereDiffTensor) delta,
         (RereDiffTensor) A, (RereDiffTensor) B, (RereDiffTensor) C, (RereDiffTensor) D),
         bw, "trapezoidalScan");
+    result.scalarParam = Double.longBitsToDouble(((long) fAIsVec << 2) | ((long) fDIsScalar << 1) | (long) fDeltaBroadcast);
+    return result;
 }
 
 }

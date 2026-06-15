@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
@@ -13,12 +14,12 @@ import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
  * {@link RereDiffTensor} nodes. Tensors carry shape information via {@code shape()} which
  * is serialized naturally, supporting N-D tensors without flattening.
  *
- * <p>Format (identical to BinaryProtocol — all little-endian):
+ * <h3>Format (all little-endian)</h3>
  * <pre>
- * Header: u32 magic="YSGP", u32 version=1, u32 num_nodes
+ * Header: u32 magic="YSGP", u32 version, u32 num_nodes
  *
  * Per node:
- *   u16 flags   — bit0=has_data, bit1=has_scalar, bit2=has_param2, bit3=has_indices, bit4=is_leaf
+ *   u16 flags   — see flag bits below
  *   u16 op_len  — length of op string in bytes (UTF-8)
  *   u32 id
  *   [op_len] op_string (UTF-8, not null-terminated)
@@ -26,25 +27,59 @@ import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
  *   [num_dims × u32] shape
  *   u16 num_inputs
  *   [num_inputs × u32] inputs (refer to other nodes by id)
+ *   if has_input_shapes: u16 count, then per input: u16 ndim, [ndim × u32]
  *   if has_scalar: f64 (raw IEEE 754 bits)
  *   if has_param2: f64
  *   if has_data: u32 data_len, [data_len × f64]
  *   if has_indices: u32 indices_len, [indices_len × i32]
+ *   [VERSION≥2 only:] u16 extension_block_len, [extension_block_len bytes]
  *
  * Result (Rust→Java):
  *   f64 loss
  *   u32 num_grads
  *   for each: u32 grad_len, [grad_len × f64]
  * </pre>
+ *
+ * <h3>Version policy</h3>
+ * <ul>
+ *   <li><b>V1</b> (wire default): fixed flag layout. Unknown flags cause parse errors on
+ *       the Rust side if the crate doesn't handle them.</li>
+ *   <li><b>V2</b> (opt-in via {@code -Dyishape.ysgp.version=2}): adds a trailing
+ *       {@code u16 extension_block_len} per node. Extensions use inner TLV
+ *       {@code (u16 type_tag, u16 data_len, data_len bytes)}. Unknown extensions
+ *       are skipped safely.</li>
+ * </ul>
+ *
+ * <h3>Flag metadata registry</h3>
+ * All known flags are registered in {@link #FLAG_METADATA}. The scanner uses this
+ * metadata to skip flag-dependent data correctly. Adding a new flag requires:
+ * <ol>
+ *   <li>Define the flag constant here</li>
+ *   <li>Add a {@link FlagMeta} entry to {@link #FLAG_METADATA}</li>
+ *   <li>Update {@code nodeSize()} and {@code writeNode()} to account for the new data</li>
+ *   <li>Update the Rust parsers (GPU and HPC crates)</li>
+ * </ol>
  */
 public final class TensorBinaryProtocol {
 
     /** Magic number: "YSGP" in little-endian ASCII */
     public static final int MAGIC = 0x50535359;
 
-    public static final int VERSION = 1;
+    /** Current protocol version we can read (supports V1-V2). */
+    public static final int VERSION = 2;
 
-    // Flag bits
+    /** Oldest protocol version we can read. */
+    public static final int MIN_SUPPORTED_VERSION = 1;
+
+    /**
+     * Wire format version actually written. Default is 1 for backward
+     * compatibility with existing Rust binaries (GPU/HPC). Opt into V2
+     * (TLV extension blocks) via {@code -Dyishape.ysgp.version=2}.
+     */
+    /** Default wire format version (1 = backward-compat with old Rust). Overridable via system property or direct mutation for testing. */
+    public static int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
+
+    // Flag bits — keep in sync with BinaryProtocol + Rust parsers
     public static final int FLAG_HAS_DATA    = 1 << 0;
     public static final int FLAG_HAS_SCALAR  = 1 << 1;
     public static final int FLAG_HAS_PARAM2  = 1 << 2;
@@ -53,12 +88,49 @@ public final class TensorBinaryProtocol {
     /** Input shapes are included after standard node fields (for broadcast mode selection). */
     public static final int FLAG_HAS_INPUT_SHAPES = 1 << 5;
 
+    // ── Flag metadata registry (A2) ──
+
+    /** Describes how the data for a flag bit is structured in the binary stream. */
+    public enum FlagDataKind {
+        /** No trailing data (flag is purely a marker, e.g., IS_LEAF). */
+        NONE,
+        /** Fixed-size trailing data (e.g., FLAG_HAS_SCALAR = 8 bytes f64). */
+        FIXED,
+        /** u32-prefixed variable-length f64 data (e.g., FLAG_HAS_DATA). */
+        LENGTH_PREFIXED_U32,
+        /** u32-prefixed variable-length i32 data (e.g., FLAG_HAS_INDICES). */
+        LENGTH_PREFIXED_I32,
+        /**
+         * u16 count + per-input (u16 ndim + ndim×u32 shape).
+         * Used by FLAG_HAS_INPUT_SHAPES for broadcast mode selection.
+         */
+        INPUT_SHAPES,
+    }
+
+    /** Metadata for each defined flag bit. */
+    public record FlagMeta(int bit, FlagDataKind kind, int fixedLength, String description) {}
+
+    /**
+     * All known flag bits mapped by their integer value (1, 2, 4, 8, 16, 32).
+     * The scanner uses this to skip flag-dependent data deterministically.
+     * Unknown bits not in this map are an error in V1 and skippable in V2.
+     */
+    public static final Map<Integer, FlagMeta> FLAG_METADATA = Map.of(
+        FLAG_HAS_DATA,         new FlagMeta(0, FlagDataKind.LENGTH_PREFIXED_U32,  0, "leaf data (f64[])"),
+        FLAG_HAS_SCALAR,       new FlagMeta(1, FlagDataKind.FIXED,                8, "scalar param (f64)"),
+        FLAG_HAS_PARAM2,       new FlagMeta(2, FlagDataKind.FIXED,                8, "second scalar param (f64)"),
+        FLAG_HAS_INDICES,      new FlagMeta(3, FlagDataKind.LENGTH_PREFIXED_I32,  0, "backward indices (i32[])"),
+        FLAG_IS_LEAF,          new FlagMeta(4, FlagDataKind.NONE,                 0, "is leaf node"),
+        FLAG_HAS_INPUT_SHAPES, new FlagMeta(5, FlagDataKind.INPUT_SHAPES,         0, "input shapes for broadcast")
+    );
+
     private TensorBinaryProtocol() {}
 
     // ── Graph Export ──
 
     /**
      * Serializes a tensor computation graph rooted at {@code root} into a binary buffer.
+     * Writes {@link #WIRE_VERSION} (default V1 for backward compat with existing Rust).
      *
      * @param root   the root of the computation graph
      * @param order  nodes in topological order (output positions = indices in this list)
@@ -78,9 +150,9 @@ public final class TensorBinaryProtocol {
 
         ByteBuffer buf = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
 
-        // Header
+        // Header — write WIRE_VERSION for backward compat
         buf.putInt(MAGIC);
-        buf.putInt(VERSION);
+        buf.putInt(WIRE_VERSION);
         buf.putInt(order.size());
 
         // Nodes
@@ -134,6 +206,69 @@ public final class TensorBinaryProtocol {
         return new BinaryProtocol.GraphResult(loss, grads);
     }
 
+    // ── Header validation ──
+
+    /**
+     * Validates YSGP graph binary buffer header (magic + version).
+     * Delegates to {@link BinaryProtocol#validateHeader}.
+     */
+    public static void validateGraphHeader(ByteBuffer buf) {
+        BinaryProtocol.validateHeader(buf);
+        // num_nodes is read but not validated here — caller consumes it
+    }
+
+    // ── Flag-aware scanner helper (A3) ──
+
+    /**
+     * Skip flag-dependent data for one flag bit using the metadata registry.
+     *
+     * @param buf     the full byte array
+     * @param pos     current buffer position
+     * @param flagBit the flag bit value (1, 2, 4, 8, ...)
+     * @param flags   the full flags u16 for this node
+     * @return new buffer position after skipping this flag's data (if set)
+     * @throws IllegalArgumentException if an unknown flag is set and we can't determine its size
+     */
+    public static int skipFlagData(byte[] buf, int pos, int flagBit, int flags, int wireVersion) {
+        if ((flags & flagBit) == 0) return pos; // flag not set
+
+        FlagMeta meta = FLAG_METADATA.get(flagBit);
+        if (meta == null) {
+            // Unknown flag — cannot determine data size in V1. In V2, unknown flags
+            // go in the TLV extension block and we should never reach here for them.
+            throw new IllegalArgumentException(
+                "Unknown YSGP flag bit 0x" + Integer.toHexString(flagBit)
+                + " at buffer position " + pos
+                + " — protocol version " + wireVersion
+                + " cannot skip unknown flag data. "
+                + "Upgrade to V2 (TLV extensions) for forward-compatible flag handling.");
+        }
+
+        return switch (meta.kind()) {
+            case NONE -> pos;
+            case FIXED -> pos + meta.fixedLength();
+            case LENGTH_PREFIXED_U32 -> {
+                int len = ((buf[pos + 3] & 0xFF) << 24) | ((buf[pos + 2] & 0xFF) << 16)
+                         | ((buf[pos + 1] & 0xFF) << 8) | (buf[pos] & 0xFF);
+                yield pos + 4 + len * 8;
+            }
+            case LENGTH_PREFIXED_I32 -> {
+                int len = ((buf[pos + 3] & 0xFF) << 24) | ((buf[pos + 2] & 0xFF) << 16)
+                         | ((buf[pos + 1] & 0xFF) << 8) | (buf[pos] & 0xFF);
+                yield pos + 4 + len * 4;
+            }
+            case INPUT_SHAPES -> {
+                int count = ((buf[pos + 1] & 0xFF) << 8) | (buf[pos] & 0xFF);
+                pos += 2;
+                for (int i = 0; i < count; i++) {
+                    int nd = ((buf[pos + 1] & 0xFF) << 8) | (buf[pos] & 0xFF);
+                    pos += 2 + nd * 4;
+                }
+                yield pos;
+            }
+        };
+    }
+
     // ── Internal: node sizing ──
 
     private static int nodeSize(RereDiffTensor v, java.util.Map<RereDiffTensor, Integer> posMap) {
@@ -153,13 +288,17 @@ public final class TensorBinaryProtocol {
         }
         s += validInputCount * 4; // inputs (u32[])
 
-        // Input shapes: for each valid input, u16 num_dims + num_dims * u32
+        // Input shapes: only for broadcast nodes (shape mismatch)
         if (v.inputs() != null) {
-            boolean anyValid = false;
+            boolean anyDiff = false;
+            int[] vShape = v.serializationShape();
             for (RereDiffTensor inp : v.inputs()) {
-                if (posMap.containsKey(inp)) { anyValid = true; break; }
+                if (posMap.containsKey(inp) && !java.util.Arrays.equals(inp.shape(), vShape)) {
+                    anyDiff = true;
+                    break;
+                }
             }
-            if (anyValid) {
+            if (anyDiff) {
                 s += 2; // count field (u16)
                 for (RereDiffTensor inp : v.inputs()) {
                     if (posMap.containsKey(inp)) {
@@ -176,6 +315,11 @@ public final class TensorBinaryProtocol {
         if (v.backwardIndices() != null && v.backwardIndices().length > 0)
             s += 4 + v.backwardIndices().length * 4; // indices_len + indices (i32[])
 
+        // V2: extension block — currently 2 bytes (u16 length = 0)
+        if (WIRE_VERSION >= 2) {
+            s += 2;
+        }
+
         return s;
     }
 
@@ -186,11 +330,21 @@ public final class TensorBinaryProtocol {
         byte[] opBytes = opTag(v).getBytes(StandardCharsets.UTF_8);
         int[] shape = v.serializationShape();
 
-        // Check if we have valid inputs that need shape info for broadcast mode
+        // FLAG_HAS_INPUT_SHAPES: only set when at least one input shape differs
+        // from the output shape — i.e., broadcasting is actually needed. Previously
+        // this was set for every node with any valid input, which broke HPC Rust
+        // parsers that don't know about bit 5 (unexpected EOF reading u32). GPU
+        // Rust handles this flag correctly; HPC falls back to JSON on broadcast nodes.
         boolean hasInputShapes = false;
         if (v.inputs() != null) {
             for (RereDiffTensor inp : v.inputs()) {
-                if (posMap.containsKey(inp)) { hasInputShapes = true; break; }
+                if (posMap.containsKey(inp)) {
+                    int[] inShape = inp.shape();
+                    if (!java.util.Arrays.equals(inShape, shape)) {
+                        hasInputShapes = true;
+                        break;
+                    }
+                }
             }
         }
 
@@ -252,6 +406,11 @@ public final class TensorBinaryProtocol {
             buf.putInt(indices.length);
             bulkPutInts(buf, indices);
         }
+
+        // V2: extension block (TLV container for future flag additions)
+        if (WIRE_VERSION >= 2) {
+            buf.putShort((short) 0); // extension_block_length = 0 (no extensions yet)
+        }
     }
 
     // ── Internal: op tag resolution ──
@@ -260,12 +419,6 @@ public final class TensorBinaryProtocol {
         return v.opTag() != null ? v.opTag() : (v.isLeaf() ? "leaf" : "unknown");
     }
 
-    // ── Helpers for Rust FFI compatibility ──
-
-    /**
-     * Converts a direct ByteBuffer to a byte array for JNI/FFM transfer.
-     * The buffer position is reset after this call.
-     */
     // ── Graph skeleton cache ──
 
     /**
@@ -323,15 +476,30 @@ public final class TensorBinaryProtocol {
         ByteBuffer buf = serializeGraph(root, order);
         byte[] fullBytes = toByteArray(buf);
 
+        // Validate header
+        int pos = 0;
+        int magic = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
+                  | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+        if (magic != MAGIC) {
+            throw new BinaryProtocol.ProtocolVersionException(
+                "CachedGraph scanner: bad magic 0x" + Integer.toHexString(magic));
+        }
+        pos += 4;
+        int wireVersion = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
+                        | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+        pos += 4;
+        int numNodes = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
+                      | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+        pos += 4;
+
         // Count leaves
         int leafCount = 0;
         for (RereDiffTensor v : order) { if (v.isLeaf()) leafCount++; }
         int[] dataOffsets = new int[leafCount];
 
-        // Scan buffer to find leaf data locations
-        int pos = 12; // skip magic(4) + version(4) + num_nodes(4)
+        // Scan buffer using flag metadata registry (A3)
         int leafIdx = 0;
-        for (int nodeIdx = 0; nodeIdx < order.size(); nodeIdx++) {
+        for (int nodeIdx = 0; nodeIdx < numNodes; nodeIdx++) {
             int flags = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
             int opLen = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
             pos += 4; // id (u32)
@@ -340,26 +508,21 @@ public final class TensorBinaryProtocol {
             pos += numDims * 4; // shape
             int numInputs = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
             pos += numInputs * 4; // inputs
-            // Input shapes (FLAG_HAS_INPUT_SHAPES = bit 5 = 32): skip if present
-            if ((flags & FLAG_HAS_INPUT_SHAPES) != 0) {
-                int numInShapes = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
-                for (int s = 0; s < numInShapes; s++) {
-                    int nd = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF); pos += 2;
-                    pos += nd * 4;
+
+            // Skip flag-dependent data using the metadata registry for all 16 bits
+            for (int bit = 0; bit < 16; bit++) {
+                int flagVal = 1 << bit;
+                // FLAG_HAS_DATA needs special handling to capture leaf offsets
+                if (flagVal == FLAG_HAS_DATA && (flags & FLAG_HAS_DATA) != 0) {
+                    dataOffsets[leafIdx++] = pos;
                 }
+                pos = skipFlagData(fullBytes, pos, flagVal, flags, wireVersion);
             }
-            if ((flags & FLAG_HAS_SCALAR) != 0) pos += 8; // scalar
-            if ((flags & FLAG_HAS_PARAM2) != 0) pos += 8; // param2
-            if ((flags & FLAG_HAS_DATA) != 0) { // has_data
-                dataOffsets[leafIdx++] = pos;
-                int dataLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
-                            | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
-                pos += 4 + dataLen * 8;
-            }
-            if ((flags & FLAG_HAS_INDICES) != 0) { // has_indices
-                int idxLen = ((fullBytes[pos + 3] & 0xFF) << 24) | ((fullBytes[pos + 2] & 0xFF) << 16)
-                           | ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
-                pos += 4 + idxLen * 4;
+
+            // V2: skip extension block
+            if (wireVersion >= 2) {
+                int extLen = ((fullBytes[pos + 1] & 0xFF) << 8) | (fullBytes[pos] & 0xFF);
+                pos += 2 + extLen;
             }
         }
         return new CachedGraph(fullBytes, dataOffsets, structureHash);

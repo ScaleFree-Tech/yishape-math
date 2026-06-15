@@ -204,6 +204,17 @@ public interface IFloatVectorComputer {
     public boolean[] logicalCompare(float[] x1, float[] x2,LogicalCompare operation);
 
     /**
+     * Perform element-wise logical comparison between a float vector and a scalar.
+     * 对单精度向量和标量执行逐元素逻辑比较。
+     *
+     * @param x input vector / 输入向量
+     * @param scalar scalar value to compare against / 比较标量
+     * @param operation the logical comparison operation / 逻辑比较运算
+     * @return boolean array with comparison results / 比较结果的布尔数组
+     */
+    public boolean[] logicalCompare(float[] x, float scalar, LogicalCompare operation);
+
+    /**
      * Perform logical operation on a float vector.
      * 对单精度向量执行逻辑运算。
      *
@@ -212,6 +223,26 @@ public interface IFloatVectorComputer {
      * @return boolean array with operation results / 运算结果的布尔数组
      */
     public boolean[] logicalOperate(float[] x1, LogicalOperation operation);
+
+    /**
+     * Perform logical operation on a float vector with a custom predicate.
+     * 使用自定义谓词对单精度向量执行逻辑运算。
+     *
+     * @param x input vector / 输入向量
+     * @param predicate element-wise predicate / 逐元素谓词
+     * @return boolean array with predicate results / 谓词结果的布尔数组
+     */
+    public boolean[] logicalOperate(float[] x, java.util.function.DoublePredicate predicate);
+
+    /**
+     * Perform logical operation on a 2D float vector array with a custom predicate.
+     * 使用自定义谓词对二维单精度向量数组执行逻辑运算。
+     *
+     * @param x input 2D vector array / 输入二维向量数组
+     * @param predicate element-wise predicate / 逐元素谓词
+     * @return boolean 2D array with predicate results / 谓词结果的布尔二维数组
+     */
+    public boolean[][] logicalOperate(float[][] x, java.util.function.DoublePredicate predicate);
 
     /**
      * Perform logical operation between two float vectors.
@@ -321,5 +352,18 @@ public interface IFloatVectorComputer {
      * @return array of differences / 差分数组
      */
     public float[] diff(float[] array, int stride);
- 
+
+    /**
+     * Element-wise conditional selection: result[i] = mask[i] ? a[i] : b[i].
+     * Equivalent to numpy.where(mask, a, b).
+     * 逐元素条件选择：mask 为 true 取 a，false 取 b。
+     */
+    public float[] where(boolean[] mask, float[] a, float[] b);
+
+    /**
+     * Element-wise conditional selection for matrices.
+     * 矩阵逐元素条件选择。
+     */
+    public float[][] where(boolean[][] mask, float[][] a, float[][] b);
+
 }

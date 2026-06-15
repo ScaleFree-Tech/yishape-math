@@ -87,7 +87,8 @@ public class GradScaler {
     public void unscale(List<IDiffTensor> params) {
         double invScale = 1.0 / scaleFactor;
         for (IDiffTensor p : params) {
-            double[] g = ((RereDiffTensor) p).gradData();
+            if (!(p instanceof RereDiffTensor rp)) continue;
+            double[] g = rp.gradData();
             if (g != null && g.length > 0) {
                 // In-place scale via fused Daxpy: y = a*x + b*y with a=0, b=invScale → y = invScale * y.
                 // Dispatches HPC (Rust FFM) → SISD, no temporary array allocation.
@@ -103,7 +104,8 @@ public class GradScaler {
      */
     public boolean hasNanOrInf(List<IDiffTensor> params) {
         for (IDiffTensor p : params) {
-            double[] g = ((RereDiffTensor) p).gradData();
+            if (!(p instanceof RereDiffTensor rp)) continue;
+            double[] g = rp.gradData();
             if (g == null) continue;
             for (int i = 0; i < g.length; i++) {
                 if (Double.isNaN(g[i]) || Double.isInfinite(g[i])) return true;
@@ -120,7 +122,8 @@ public class GradScaler {
         boolean hasOverflow = false;
         double invScale = 1.0 / scaleFactor;
         for (IDiffTensor p : params) {
-            double[] g = ((RereDiffTensor) p).gradData();
+            if (!(p instanceof RereDiffTensor rp)) continue;
+            double[] g = rp.gradData();
             if (g == null) continue;
             for (int i = 0; i < g.length; i++) {
                 double v = g[i] * invScale;

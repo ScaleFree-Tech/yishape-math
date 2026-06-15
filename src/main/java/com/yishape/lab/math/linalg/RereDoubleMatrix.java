@@ -85,7 +85,7 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      * matrix data, data[i][j] represents element at row i, column j
      * </p>
      */
-    double[][] data;
+    private double[][] data;
     
     /**
      * 对于空矩阵（行数为0），存储列数信息 / For empty matrices (0 rows), store column count information

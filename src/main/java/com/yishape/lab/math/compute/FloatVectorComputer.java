@@ -236,9 +236,27 @@ public class FloatVectorComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[] logicalCompare(float[] x, float scalar, LogicalCompare operation) {
+        var computer = this.fetchComputer(x.length);
+        return computer.logicalCompare(x, scalar, operation);
+    }
+
+    @Override
     public boolean[] logicalOperate(float[] x1, LogicalOperation operation) {
         var computer = this.fetchComputer(x1.length);
         return computer.logicalOperate(x1, operation);
+    }
+
+    @Override
+    public boolean[] logicalOperate(float[] x, java.util.function.DoublePredicate predicate) {
+        var computer = this.fetchComputer(x.length);
+        return computer.logicalOperate(x, predicate);
+    }
+
+    @Override
+    public boolean[][] logicalOperate(float[][] x, java.util.function.DoublePredicate predicate) {
+        var computer = this.fetchComputer((long) x.length * x[0].length);
+        return computer.logicalOperate(x, predicate);
     }
 
     @Override
@@ -287,6 +305,18 @@ public class FloatVectorComputer implements IFloatVectorComputer,Serializable {
     public float[] diff(float[] array, int stride) {
         var computer = this.fetchComputer(array.length);
         return computer.diff(array, stride);
+    }
+
+    @Override
+    public float[] where(boolean[] mask, float[] a, float[] b) {
+        var computer = this.fetchComputer(mask.length);
+        return computer.where(mask, a, b);
+    }
+
+    @Override
+    public float[][] where(boolean[][] mask, float[][] a, float[][] b) {
+        var computer = this.fetchComputer((long) mask.length * mask[0].length);
+        return computer.where(mask, a, b);
     }
 
     @Override

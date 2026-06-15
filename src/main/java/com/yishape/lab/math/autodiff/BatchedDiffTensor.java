@@ -488,8 +488,23 @@ public final class BatchedDiffTensor implements IDiffTensor {
         }
 
         if (thisRank == 2 && otherRank == 2) {
+            // [B, M] @ [M, N] → [B, N] broadcast matmul (common inside vmap)
+            int M = unwrappedThis.dim(1);
+            if (M == otherData.dim(0)) {
+                int N = otherData.dim(1);
+                IDiffTensor otherExpanded;
+                if (otherData instanceof IDiffTensor od) {
+                    otherExpanded = od.unsqueeze(0).expand(B, M, N);
+                } else {
+                    otherExpanded = IDiffTensor.constantTensor(otherData.toDoubleArray(), otherData.shape())
+                        .unsqueeze(0).expand(B, M, N);
+                }
+                IDiffTensor this3d = unwrappedThis.unsqueeze(1); // [B, 1, M]
+                IDiffTensor result = this3d.bmm(otherExpanded);   // [B, 1, N]
+                return wrap(result.squeeze(1));                    // [B, N]
+            }
             // [B, K] @ [M, K]^T style — less common, unsqueeze to 3D
-            int K1 = unwrappedThis.dim(1), M = otherData.dim(0), K2 = otherData.dim(1);
+            int K1 = unwrappedThis.dim(1), K2 = otherData.dim(1);
             if (K1 != K2) throw new IllegalArgumentException(
                 "mmul inside vmap: shape mismatch [" + B + "," + K1 + "] @ [" + M + "," + K2 + "]");
             // Treat as [B, 1, K] @ [B, K, M] → [B, 1, M] → squeeze

@@ -429,8 +429,8 @@ public static IDiffTensor interpolate(RereDiffTensor tensor, double scaleFactor,
         inp.accGrad(dx);
     };
     RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "interpolate");
-    result.scalarParam = scaleFactor;
-    result.scalarParam2 = "bilinear".equals(mode) ? 0.0 : 1.0;
+    result.scalarParam = Double.longBitsToDouble(((long) H << 32) | ((long) W & 0xFFFF_FFFFL));
+    result.scalarParam2 = bilinear ? 0.0 : 1.0;
     return result;
 }
 

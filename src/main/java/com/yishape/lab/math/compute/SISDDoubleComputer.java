@@ -261,6 +261,7 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
                     case ATAN -> result[i] = Math.atan(x[i]);
                     case SQRT -> result[i] = Math.sqrt(x[i]);
                     case ABS -> result[i] = Math.abs(x[i]);
+                    case SIGN -> { result[i] = Math.signum(x[i]); }
                     case POW -> result[i] = Math.pow(x[i], additionalParam);
                     case CBRT -> result[i] = Math.cbrt(x[i]);
                     case COSH -> result[i] = Math.cosh(x[i]);
@@ -309,6 +310,7 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
                         case ATAN -> out[j] = Math.atan(xr[j]);
                         case SQRT -> out[j] = Math.sqrt(xr[j]);
                         case ABS -> out[j] = Math.abs(xr[j]);
+                        case SIGN -> { out[j] = Math.signum(xr[j]); }
                         case POW -> out[j] = Math.pow(xr[j], additionalParam);
                         case CBRT -> out[j] = Math.cbrt(xr[j]);
                         case COSH -> out[j] = Math.cosh(xr[j]);
@@ -823,6 +825,24 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[] logicalCompare(double[] x, double scalar, LogicalCompare operation) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            switch (operation) {
+                case EQUALS:        result[i] = x[i] == scalar; break;
+                case NOT_EQUALS:    result[i] = x[i] != scalar; break;
+                case LESS_THAN:     result[i] = x[i] < scalar; break;
+                case LESS_THAN_OR_EQUALS: result[i] = x[i] <= scalar; break;
+                case GREATER_THAN:  result[i] = x[i] > scalar; break;
+                case GREATER_THAN_OR_EQUALS: result[i] = x[i] >= scalar; break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[] logicalOperate(double[] x1, double[] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -881,6 +901,16 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
             }
         }
 
+        return result;
+    }
+
+    @Override
+    public boolean[] logicalOperate(double[] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = predicate.test(x[i]);
+        }
         return result;
     }
 
@@ -1287,6 +1317,48 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
     }
 
     @Override
+    public double[] where(boolean[] mask, double[] a, double[] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array lengths must match: mask=" + mask.length
+                + " a=" + a.length + " b=" + b.length);
+        }
+        int n = mask.length;
+        double[] result = new double[n];
+        parallelForEach(n, (start, end) -> {
+            for (int i = start; i < end; i++) {
+                result[i] = mask[i] ? a[i] : b[i];
+            }
+        });
+        return result;
+    }
+
+    @Override
+    public double[][] where(boolean[][] mask, double[][] a, double[][] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array row counts must match");
+        }
+        int rows = mask.length;
+        double[][] result = new double[rows][];
+        for (int r = 0; r < rows; r++) {
+            if (mask[r].length != a[r].length || mask[r].length != b[r].length) {
+                throw new IllegalArgumentException("Row " + r + " length mismatch");
+            }
+            int n = mask[r].length;
+            result[r] = new double[n];
+            for (int i = 0; i < n; i++) {
+                result[r][i] = mask[r][i] ? a[r][i] : b[r][i];
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[][] logicalCompare(double[][] x1, double[][] x2, LogicalCompare operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -1365,6 +1437,19 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
             }
         }
 
+        return result;
+    }
+
+    @Override
+    public boolean[][] logicalOperate(double[][] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入矩阵不能为null");
+        boolean[][] result = new boolean[x.length][];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = new boolean[x[i].length];
+            for (int j = 0; j < x[i].length; j++) {
+                result[i][j] = predicate.test(x[i][j]);
+            }
+        }
         return result;
     }
 

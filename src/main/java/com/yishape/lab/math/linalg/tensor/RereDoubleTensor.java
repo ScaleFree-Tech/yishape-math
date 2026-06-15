@@ -28,6 +28,8 @@ public class RereDoubleTensor implements IDoubleTensor {
     protected TensorShape shape;
     protected int[] strides;
     protected int offset;
+    /** True when this tensor's backing array is exclusively owned (not shared with a parent view). */
+    private boolean ownsData = true;
     private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
 
     // ==================== 构造方法 ====================
@@ -39,10 +41,16 @@ public class RereDoubleTensor implements IDoubleTensor {
         this.shape = new TensorShape(shape);
         this.strides = TensorShape.computeCStrides(shape);
         this.offset = 0;
+        this.ownsData = true;
     }
 
     /** 视图构造：共享数据 */
     RereDoubleTensor(double[] data, int offset, int[] shape, int[] strides) {
+        this(data, offset, shape, strides, false);
+    }
+
+    /** 视图构造：共享数据，指定 ownsData 标记 */
+    RereDoubleTensor(double[] data, int offset, int[] shape, int[] strides, boolean ownsData) {
         if (shape.length != strides.length) {
             throw new IllegalArgumentException("shape and strides must have same length");
         }
@@ -53,6 +61,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         this.shape = new TensorShape(shape);
         this.strides = strides.clone();
         this.offset = offset;
+        this.ownsData = ownsData;
     }
 
     /** View constructor with TensorShape */
@@ -136,7 +145,11 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     @Override
     public double[] toDoubleArray() {
-        if (isContiguous() && offset == 0 && totalSize() == data.length) {
+        // If this tensor owns its data (backing array length == total elements and was
+        // allocated for this tensor's shape), we can safely clone the full array.
+        // Views (created by reshape/permute/slice) share a parent's backing array which
+        // may be larger; materialize via linearGet to extract only the viewed portion.
+        if (ownsData && isContiguous() && offset == 0 && data.length == totalSize()) {
             return data.clone();
         }
         int n = (int) totalSize();
@@ -443,7 +456,7 @@ public class RereDoubleTensor implements IDoubleTensor {
             resultShape[i] = dim(i) * repeats[i];
             total *= resultShape[i];
         }
-        double[] result = new double[(int) total];
+        double[] result = new double[Math.toIntExact(total)];
         int[] indices = new int[rank()];
         int[] srcIndices = new int[rank()];
         for (long flat = 0; flat < total; flat++) {
@@ -695,7 +708,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         int[] resultShape = TensorShape.broadcastShape(shapeA, shapeB);
         long total = 1;
         for (int d : resultShape) total *= d;
-        double[] result = new double[(int) total];
+        double[] result = new double[Math.toIntExact(total)];
         int rank = resultShape.length;
 
         // 对齐两个输入到结果秩
@@ -722,7 +735,6 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor sum(int dim, boolean keepdim) {
         if (dim < 0) dim += rank();
-        long total = totalSize();
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -740,62 +752,38 @@ public class RereDoubleTensor implements IDoubleTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        double[] result = new double[(int) computeSize(newShape)];
+        double[] result = new double[Math.toIntExact(computeSize(newShape))];
 
-        for (int o = 0; o < outer; o++) {
-            for (int i = 0; i < inner; i++) {
-                double sum = 0;
-                for (int r = 0; r < reduce; r++) {
-                    int[] indices = new int[rank()];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        indices[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    indices[dim] = r;
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        indices[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    sum += get(indices);
+        // Iterate OUTPUT in C-order to match result[] layout.
+        // Decompose each output position to (o, r, i) input indices via getStrided.
+        int resultLen = result.length;
+        for (int k = 0; k < resultLen; k++) {
+            int[] outPos = flatToIndex(k, newShape);
+            int oIdx = 0;
+            for (int j = 0; j < dim; j++) oIdx = oIdx * dim(j) + outPos[j];
+            int iIdx = 0;
+            // inner dims: use C-order strides (same as reduceDim).
+            // Right-to-left sequential multiplication produces wrong results
+            // when innerCount >= 2. Pre-compute strides: stride[p] = product
+            // of dim sizes for all inner dims after position p.
+            int innerCount = rank() - dim - 1;
+            if (innerCount > 0) {
+                int innerStart = keepdim ? dim + 1 : dim;
+                int[] mult = new int[innerCount];
+                int s = 1;
+                for (int p = innerCount - 1; p >= 0; p--) {
+                    mult[p] = s;
+                    s = s * dim(dim + 1 + p);
                 }
-                // write to result
-                int[] outIdx;
-                if (keepdim) {
-                    outIdx = new int[rank()];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    outIdx[dim] = 0;
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                } else {
-                    outIdx = new int[rank() - 1];
-                    int tmp = o;
-                    for (int j = 0; j < dim; j++) {
-                        outIdx[j] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
-                    tmp = i;
-                    for (int j = rank() - 1; j > dim; j--) {
-                        outIdx[j - 1] = tmp % dim(j);
-                        tmp /= dim(j);
-                    }
+                for (int p = 0; p < innerCount; p++) {
+                    iIdx = iIdx + mult[p] * outPos[innerStart + p];
                 }
-                long linear = 0;
-                int stride = 1;
-                for (int j = newShape.length - 1; j >= 0; j--) {
-                    linear += outIdx[j] * stride;
-                    stride *= newShape[j];
-                }
-                result[(int) linear] = sum;
             }
+            double sum = 0;
+            for (int r = 0; r < reduce; r++) {
+                sum += getStrided(oIdx, dim, r, iIdx);
+            }
+            result[k] = sum;
         }
         return new RereDoubleTensor(result, newShape);
     }
@@ -845,64 +833,118 @@ public class RereDoubleTensor implements IDoubleTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        double[] result = new double[(int) computeSize(newShape)];
+        double[] result = new double[Math.toIntExact(computeSize(newShape))];
         Arrays.fill(result, init);
 
-        for (int o = 0; o < outer; o++) {
-            for (int i = 0; i < inner; i++) {
-                double val = init;
-                for (int r = 0; r < reduce; r++) {
-                    val = reducer.applyAsDouble(val, getStrided(o, dim, r, i));
-                }
-                // write to result
-                long linear;
-                if (keepdim) {
-                    linear = flatIndexKeepdim(o, dim, i, newShape);
-                } else {
-                    linear = flatIndexReduce(o, dim, i, newShape);
-                }
-                result[(int) linear] = val;
+        // Iterate OUTPUT tensor in C-order to match result[] layout
+        int resultLen = result.length;
+        for (int k = 0; k < resultLen; k++) {
+            int[] outPos = flatToIndex(k, newShape);
+            int oIdx = 0;
+            for (int j = 0; j < dim; j++) oIdx = oIdx * dim(j) + outPos[j];
+            // Compute iIdx: flat index into inner dims (C-order).
+            // innerStart maps output position to input dim: keepdim skips the size-1 slot at outPos[dim].
+            // Multipliers are C-order strides of inner dims at input positions dim+1..rank-1.
+            int innerStart = keepdim ? dim + 1 : dim;
+            int innerCount = rank() - (dim + 1);
+            int[] mult = new int[innerCount];
+            int s = 1;
+            for (int p = innerCount - 1; p >= 0; p--) {
+                mult[p] = s;
+                s = s * dim(dim + 1 + p);
             }
+            int iIdx = 0;
+            for (int p = 0; p < innerCount; p++) {
+                int srcIdx = innerStart + p;
+                iIdx = iIdx + mult[p] * outPos[srcIdx];
+            }
+            if (dim == rank() - 1 && !keepdim) {
+                iIdx = outPos[dim - 1];
+            }
+            double val = init;
+            for (int r = 0; r < reduce; r++) {
+                val = reducer.applyAsDouble(val, getStrided(oIdx, dim, r, iIdx));
+            }
+            result[k] = val;
         }
         return new RereDoubleTensor(result, newShape);
     }
 
-    /** 使用 stride 获取元素（o=outer index, dim=target, r=reduce index, i=inner index） */
+    /** 使用 stride 获取元素（o=outer flat index, dim=target, r=reduce index, i=inner flat index） */
     private double getStrided(int o, int dim, int r, int i) {
         long off = offset;
-        // outer
-        for (int j = 0; j < dim; j++) {
-            off += (o % dim(j)) * (long) strides[j];
-            o /= dim(j);
+        // Decompose flat outer index o (C-order): last dim varies fastest.
+        // Extract from rightmost dim to leftmost to match oIdx encoding.
+        int rem = o;
+        for (int j = dim - 1; j >= 0; j--) {
+            int idx = rem % dim(j);
+            off += (long) idx * strides[j];
+            rem /= dim(j);
         }
         off += r * (long) strides[dim];
-        // inner
+        // Decompose flat inner index i: idx_j = (i / prod(dim[j+1..])) % dim(j)
+        int iRem = i;
         for (int j = rank() - 1; j > dim; j--) {
-            off += (i % dim(j)) * (long) strides[j];
-            i /= dim(j);
+            int idx = iRem % dim(j);
+            off += (long) idx * strides[j];
+            iRem /= dim(j);
         }
-        return data[(int) off];
+        double result = data[(int) off];
+        // DEBUG: uncomment to trace getStrided calls
+        // System.out.println("getStrided(" + o + "," + dim + "," + r + "," + i + ") off=" + off + " val=" + result);
+        return result;
     }
 
     private long flatIndexKeepdim(int o, int dim, int i, int[] shape) {
         long idx = 0;
         int stride = 1;
         for (int j = shape.length - 1; j >= 0; j--) {
-            int v = (j == dim) ? 0 : (j < dim ? o % dim(j) : i % dim(j));
-            idx += v * stride;
-            stride *= shape[j];
+            int v = (j == dim) ? 0 : (j < dim ? o % shape[j] : i % shape[j]);
+            idx += (long) v * stride;
+            if (j != dim) stride *= shape[j];
+        }
+        // DEBUG
+        System.out.println("  flatIndexKeepdim(" + o + "," + dim + "," + i + "," + java.util.Arrays.toString(shape) + ") = " + idx + " [j-loop trace: j=" + (shape.length-1) + "..0]");
+        return idx;
+    }
+
+    /** Convert flat C-order index to multi-dimensional coordinates */
+    private int[] flatToIndex(int flat, int[] shape) {
+        int[] idx = new int[shape.length];
+        int rem = flat;
+        for (int j = shape.length - 1; j >= 0; j--) {
+            idx[j] = rem % shape[j];
+            rem /= shape[j];
         }
         return idx;
     }
 
     private long flatIndexReduce(int o, int dim, int i, int[] shape) {
+        // The bug: stride must be computed from ORIGINAL tensor dimensions,
+        // not from the already-reduced output shape.
+        // When dim != rank-1, shape[j] is missing the reduced dim's contribution,
+        // causing wrong output positions.
+        // Correct stride for original dim j = prod(dims[j+1..rank-1], skip dim).
         long idx = 0;
-        int stride = 1;
-        for (int j = shape.length - 1; j >= 0; j--) {
-            int actualDim = (j < dim) ? j : j + 1;
-            int v = (actualDim < dim) ? o % dim(actualDim) : i % dim(actualDim);
-            idx += v * stride;
-            stride *= shape[j];
+        // Compute stride by scanning original rank, skipping reduced dim
+        long[] strideMap = new long[rank()];
+        long s = 1;
+        for (int j = rank() - 1; j >= 0; j--) {
+            if (j == dim) continue;
+            strideMap[j] = s;
+            s *= dim(j);
+        }
+        // Decompose outer index o into dims 0..dim-1
+        long oRem = o;
+        for (int j = 0; j < dim; j++) {
+            idx += (oRem % dim(j)) * strideMap[j];
+            oRem /= dim(j);
+        }
+        // Decompose inner index i into dims dim+1..rank-1
+        long iRem = i;
+        for (int j = rank() - 1; j > dim; j--) {
+            idx += (iRem % dim(j)) * strideMap[j];
+            iRem /= dim(j);
         }
         return idx;
     }
@@ -951,7 +993,7 @@ public class RereDoubleTensor implements IDoubleTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        double[] result = new double[(int) computeSize(newShape)];
+        double[] result = new double[Math.toIntExact(computeSize(newShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -990,7 +1032,7 @@ public class RereDoubleTensor implements IDoubleTensor {
                 if (i != dim) newShape[idx++] = dim(i);
             }
         }
-        double[] result = new double[(int) computeSize(newShape)];
+        double[] result = new double[Math.toIntExact(computeSize(newShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int reduce = dim(dim);
@@ -1020,7 +1062,7 @@ public class RereDoubleTensor implements IDoubleTensor {
     public IDoubleTensor cumsum(int dim) {
         // cumulative sum along dim
         int[] resultShape = shape();
-        double[] result = new double[(int) totalSize()];
+        double[] result = new double[Math.toIntExact(totalSize())];
         int n = dim(dim);
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
@@ -1044,7 +1086,7 @@ public class RereDoubleTensor implements IDoubleTensor {
     @Override
     public IDoubleTensor cumprod(int dim) {
         int[] resultShape = shape();
-        double[] result = new double[(int) totalSize()];
+        double[] result = new double[Math.toIntExact(totalSize())];
         int n = dim(dim);
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
@@ -1382,7 +1424,7 @@ public class RereDoubleTensor implements IDoubleTensor {
     public IDoubleTensor where(IDoubleTensor condition, IDoubleTensor other) {
         int[] resultShape = TensorShape.broadcastShape(
             shape(), TensorShape.broadcastShape(other.shape(), condition.shape()));
-        double[] result = new double[(int) computeSize(resultShape)];
+        double[] result = new double[Math.toIntExact(computeSize(resultShape))];
         for (long i = 0; i < result.length; i++) {
             int[] idx = unlinearize(i, resultShape);
             double condVal = getWithBroadcast(idx, condition);
@@ -1398,8 +1440,8 @@ public class RereDoubleTensor implements IDoubleTensor {
         int n = dim(dim);
         int[] resultShape = shape().clone();
         resultShape[dim] = k;
-        double[] values = new double[(int) computeSize(resultShape)];
-        double[] indices = new double[(int) computeSize(resultShape)];
+        double[] values = new double[Math.toIntExact(computeSize(resultShape))];
+        double[] indices = new double[Math.toIntExact(computeSize(resultShape))];
         int outer = 1;
         for (int i = 0; i < dim; i++) outer *= dim(i);
         int inner = 1;
@@ -1456,7 +1498,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         }
         long total = 1;
         for (int d : newShape) total *= d;
-        double[] result = new double[(int) total];
+        double[] result = new double[Math.toIntExact(total)];
         if (!"constant".equals(mode)) {
             throw new UnsupportedOperationException("pad mode not implemented: " + mode);
         }
@@ -1506,6 +1548,11 @@ public class RereDoubleTensor implements IDoubleTensor {
         if (dim < 0) dim += rank();
         int n = dim(dim);
         int outSize = (n - dilation * (size - 1) - 1) / stride + 1;
+        if (outSize <= 0) {
+            throw new IllegalArgumentException(
+                "unfold: outSize=" + outSize + " <= 0 (n=" + n + ", size=" + size
+                + ", stride=" + stride + ", dilation=" + dilation + ")");
+        }
         int[] resultShape = new int[rank() + 1];
         for (int i = 0; i < rank(); i++) {
             resultShape[i] = i == dim ? outSize : dim(i);
@@ -1513,18 +1560,20 @@ public class RereDoubleTensor implements IDoubleTensor {
         resultShape[rank()] = size;
         long total = 1;
         for (int d : resultShape) total *= d;
-        double[] result = new double[(int) total];
+        double[] result = new double[Math.toIntExact(total)];
+        // SISD: unfold is a structural sparse remap — no accelerated path exists.
+        // Each output position maps to a strided source position; cannot batch.
+        int[] maxSrc = new int[rank()];
+        for (int j = 0; j < rank(); j++) maxSrc[j] = dim(j) - 1;
         for (long i = 0; i < result.length; i++) {
             int[] idx = unlinearize((int) i, resultShape);
             int[] srcIdx = new int[rank()];
+            boolean valid = true;
             for (int j = 0; j < rank(); j++) {
-                if (j == dim) {
-                    srcIdx[j] = idx[j] * stride + idx[rank()] * dilation;
-                } else {
-                    srcIdx[j] = idx[j];
-                }
+                srcIdx[j] = (j == dim) ? idx[j] * stride + idx[rank()] * dilation : idx[j];
+                if (srcIdx[j] < 0 || srcIdx[j] > maxSrc[j]) valid = false;
             }
-            result[(int) i] = get(srcIdx);
+            result[(int) i] = valid ? get(srcIdx) : 0.0;
         }
         return new RereDoubleTensor(result, resultShape);
     }
@@ -1582,7 +1631,7 @@ public class RereDoubleTensor implements IDoubleTensor {
         for (IDoubleTensor t : others) totalDim += t.dim(dim);
         int[] newShape = shape().clone();
         newShape[dim] = totalDim;
-        double[] result = new double[(int) computeSize(newShape)];
+        double[] result = new double[Math.toIntExact(computeSize(newShape))];
         // Copy this tensor
         copyInto(result, this, newShape, 0, dim);
         int offset = dim(dim);

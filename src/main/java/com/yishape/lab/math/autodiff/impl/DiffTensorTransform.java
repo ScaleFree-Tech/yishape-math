@@ -318,6 +318,7 @@ public static IDiffTensor groupNorm(RereDiffTensor tensor, int numGroups, IDiffT
         : List.of(tensor, gr);
     RereDiffTensor result = new RereDiffTensor(y, s, inputs, bw, "groupNorm");
     result.scalarParam = eps;
+    result.scalarParam2 = numGroups;
     return result;
 }
 

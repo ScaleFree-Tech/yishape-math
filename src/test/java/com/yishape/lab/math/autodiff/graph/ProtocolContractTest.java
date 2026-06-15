@@ -5,6 +5,7 @@ import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
+import com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol;
 import com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol;
 import com.yishape.lab.math.compute.gpu.GpuOptionalRuntime;
 import com.yishape.lab.math.compute.gpu.GpuSwitch;
@@ -541,7 +542,7 @@ public class ProtocolContractTest {
         assertEquals(TensorBinaryProtocol.MAGIC, magic, "Magic number mismatch");
 
         int version = ((bytes[7] & 0xFF) << 24) | ((bytes[6] & 0xFF) << 16) | ((bytes[5] & 0xFF) << 8) | (bytes[4] & 0xFF);
-        assertEquals(TensorBinaryProtocol.VERSION, version, "Version mismatch");
+        assertEquals(TensorBinaryProtocol.WIRE_VERSION, version, "Version mismatch");
 
         int numNodes = ((bytes[11] & 0xFF) << 24) | ((bytes[10] & 0xFF) << 16) | ((bytes[9] & 0xFF) << 8) | (bytes[8] & 0xFF);
         assertEquals(order.size(), numNodes, "num_nodes mismatch");
@@ -616,5 +617,258 @@ public class ProtocolContractTest {
         assertEquals(8,    TensorBinaryProtocol.FLAG_HAS_INDICES, "FLAG_HAS_INDICES should be 8");
         assertEquals(16,   TensorBinaryProtocol.FLAG_IS_LEAF,     "FLAG_IS_LEAF should be 16");
         assertEquals(32,   TensorBinaryProtocol.FLAG_HAS_INPUT_SHAPES, "FLAG_HAS_INPUT_SHAPES should be 32");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Protocol hardening tests (A7)
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test void testFlagMetadata_complete() {
+        // Every known flag bit must have a FlagMeta entry
+        int[] knownBits = {1, 2, 4, 8, 16, 32};
+        for (int bit : knownBits) {
+            assertNotNull(TensorBinaryProtocol.FLAG_METADATA.get(bit),
+                () -> "FLAG_METADATA missing entry for bit 0x" + Integer.toHexString(bit));
+        }
+        // Verify the map size matches (no extra phantom entries)
+        assertEquals(knownBits.length, TensorBinaryProtocol.FLAG_METADATA.size(),
+            "FLAG_METADATA size should match known flag count");
+    }
+
+    @Test void testProtocolVersionConstants() {
+        // VERSION defines what we can READ
+        assertEquals(2, TensorBinaryProtocol.VERSION, "VERSION should be 2");
+        assertEquals(1, TensorBinaryProtocol.MIN_SUPPORTED_VERSION, "MIN_SUPPORTED_VERSION should be 1");
+        // WIRE_VERSION defaults to 1 for backward compat
+        assertEquals(1, TensorBinaryProtocol.WIRE_VERSION,
+            "Default WIRE_VERSION should be 1 (backward compat)");
+        // Version range is non-empty
+        assertTrue(TensorBinaryProtocol.VERSION >= TensorBinaryProtocol.MIN_SUPPORTED_VERSION);
+    }
+
+    @Test void testCachedGraphScanner_roundTripAllFlags() {
+        // Build a graph that exercises as many flag types as possible:
+        // FLAG_HAS_DATA (leaf), FLAG_HAS_SCALAR (pow), FLAG_HAS_PARAM2 (none in simple graph),
+        // FLAG_HAS_INDICES (none), FLAG_IS_LEAF, FLAG_HAS_INPUT_SHAPES (broadcast add)
+        double[] d1 = rand(6);  // [2, 3]
+        double[] d2 = rand(3);  // [3] — broadcast
+        RereDiffTensor a = (RereDiffTensor) AD.tensor(d1, 2, 3);
+        a.setRequiresGrad(true);
+        RereDiffTensor b = (RereDiffTensor) AD.tensor(d2, 3);
+        b.setRequiresGrad(true);
+
+        // add([2,3], [3]) → pow(2.0) → sum → scalar
+        RereDiffTensor root = (RereDiffTensor) a.add(b).pow(2.0).sum();
+
+        ArrayList<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        // Serialize + scan via CachedGraph (exercises the flag-aware scanner)
+        TensorBinaryProtocol.CachedGraph cg =
+            TensorBinaryProtocol.serializeGraphCached(root, order, 0);
+
+        assertNotNull(cg, "CachedGraph should not be null");
+        // Verify updateLeafData works (doesn't throw, produces non-empty buffer)
+        byte[] updated = cg.updateLeafData(order);
+        assertNotNull(updated);
+        assertTrue(updated.length > 100, "Updated buffer should be >100 bytes, got " + updated.length);
+
+        // Verify byte-identical round-trip: fresh serialize vs CachedGraph update
+        java.nio.ByteBuffer freshBuf = TensorBinaryProtocol.serializeGraph(root, order);
+        byte[] freshBytes = TensorBinaryProtocol.toByteArray(freshBuf);
+        assertEquals(freshBytes.length, updated.length,
+            "Round-trip: fresh serialize and CachedGraph update should have same length");
+        for (int i = 0; i < freshBytes.length; i++) {
+            final int idx = i;
+            assertEquals(freshBytes[idx], updated[idx],
+                () -> "Byte mismatch at offset " + idx);
+        }
+    }
+
+    @Test void testV2WireFormat_byteIdenticalToV1() {
+        // V2 with no extensions adds 2 bytes per node for extension_block_len=0,
+        // plus the header version field changes from 1 to 2
+        double[] d1 = rand(8);
+        RereDiffTensor a = (RereDiffTensor) AD.tensor(d1, 8);
+        a.setRequiresGrad(true);
+        RereDiffTensor root = (RereDiffTensor) a.pow(2.0).sum();
+
+        ArrayList<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.buildTopo(order, visited);
+
+        int savedWire = TensorBinaryProtocol.WIRE_VERSION;
+        TensorBinaryProtocol.WIRE_VERSION = 1;
+        try {
+            byte[] v1Bytes = TensorBinaryProtocol.toByteArray(
+                TensorBinaryProtocol.serializeGraph(root, order));
+
+            TensorBinaryProtocol.WIRE_VERSION = 2;
+            byte[] v2Bytes = TensorBinaryProtocol.toByteArray(
+                TensorBinaryProtocol.serializeGraph(root, order));
+
+            // V2 adds 2 bytes per node (u16 extension_block_len=0)
+            assertEquals(v1Bytes.length + order.size() * 2, v2Bytes.length,
+                "V2 should be exactly " + (order.size() * 2) + " bytes larger than V1");
+
+            // Verify prefix is identical EXCEPT the version field (bytes 4-7)
+            for (int j = 0; j < 4; j++) { // magic only
+                final int idx = j;
+                assertEquals(v1Bytes[idx], v2Bytes[idx],
+                    () -> "Magic byte mismatch at offset " + idx);
+            }
+            for (int j = 8; j < 12; j++) { // num_nodes
+                final int idx = j;
+                assertEquals(v1Bytes[idx], v2Bytes[idx],
+                    () -> "Header byte mismatch at offset " + idx);
+            }
+
+            // Scan V2 buffer with CachedGraph — should not throw
+            TensorBinaryProtocol.CachedGraph cg =
+                TensorBinaryProtocol.serializeGraphCached(root, order, 42);
+            assertNotNull(cg);
+        } finally {
+            TensorBinaryProtocol.WIRE_VERSION = savedWire;
+        }
+    }
+
+    @Test void testValidateHeader_rejectsBadMagic() {
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(12)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        buf.putInt(0xDEADBEEF); // bad magic
+        buf.putInt(1);
+        buf.putInt(0);
+        buf.flip();
+        assertThrows(BinaryProtocol.ProtocolVersionException.class,
+            () -> BinaryProtocol.validateHeader(buf));
+    }
+
+    @Test void testValidateHeader_rejectsUnsupportedVersion() {
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(12)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        buf.putInt(TensorBinaryProtocol.MAGIC);
+        buf.putInt(99); // unsupported version
+        buf.putInt(0);
+        buf.flip();
+        assertThrows(BinaryProtocol.ProtocolVersionException.class,
+            () -> BinaryProtocol.validateHeader(buf));
+    }
+
+    @Test void testValidateHeader_acceptsVersion1() {
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(12)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        buf.putInt(TensorBinaryProtocol.MAGIC);
+        buf.putInt(1);
+        buf.putInt(0);
+        buf.flip();
+        assertDoesNotThrow(() -> BinaryProtocol.validateHeader(buf));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // B2: Pure-Java protocol round-trip (no native code)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Build a multi-op tensor graph, serialize to binary, scan the bytes
+     * with the flag registry, verify no overruns and all node IDs are valid.
+     * Runs without any native code — catches protocol bugs early.
+     */
+    @Test void testPureJavaRoundTrip_multiOpGraph() {
+        int B = 2, C = 4;
+        double[] d1 = rand(B * C);
+        double[] d2 = rand(B * C);
+
+        RereDiffTensor a = (RereDiffTensor) AD.leafTensor(d1, B, C);
+        RereDiffTensor b = (RereDiffTensor) AD.leafTensor(d2, B, C);
+
+        // Chain: a + b → pow(2) → sum
+        RereDiffTensor ab = (RereDiffTensor) a.add(b);
+        RereDiffTensor pow = (RereDiffTensor) ab.pow(2.0);
+        RereDiffTensor loss = (RereDiffTensor) pow.sum();
+
+        // Build topology
+        ArrayList<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        loss.buildTopo(order, visited);
+
+        // Serialize and scan
+        TensorBinaryProtocol.CachedGraph cg =
+            TensorBinaryProtocol.serializeGraphCached(loss, order, 0xCAFE);
+        assertNotNull(cg);
+        byte[] data = cg.updateLeafData(order);
+        assertNotNull(data);
+        assertTrue(data.length > 12, "binary data too short: " + data.length);
+
+        // Verify header
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(data)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        int magic = buf.getInt();
+        assertEquals(TensorBinaryProtocol.MAGIC, magic, "bad magic");
+        int version = buf.getInt();
+        assertTrue(version >= 1 && version <= TensorBinaryProtocol.VERSION,
+            "unsupported version: " + version);
+        int numNodes = buf.getInt();
+        assertEquals(order.size(), numNodes, "node count mismatch");
+
+        // Scan each node's bytes manually, verifying no overrun
+        java.util.Set<Integer> nodeIds = new java.util.HashSet<>();
+        for (int n = 0; n < numNodes; n++) {
+            int nodeStart = buf.position();
+            int flags = buf.getShort() & 0xFFFF;
+            int opLen = buf.getShort() & 0xFFFF;
+            int id = buf.getInt();
+            assertTrue(id >= 0 && id < numNodes, "invalid node id " + id + " at node " + n);
+            nodeIds.add(id);
+
+            // Read op tag
+            byte[] opBytes = new byte[opLen];
+            buf.get(opBytes);
+            String op = new String(opBytes, java.nio.charset.StandardCharsets.UTF_8);
+            assertNotNull(op);
+            assertFalse(op.isEmpty(), "empty op tag at node " + n);
+
+            // Read shape
+            int ndim = buf.getShort() & 0xFFFF;
+            int[] shape = new int[ndim];
+            for (int d = 0; d < ndim; d++) shape[d] = buf.getInt();
+
+            // Read inputs
+            int numInputs = buf.getShort() & 0xFFFF;
+            for (int i = 0; i < numInputs; i++) {
+                int inputId = buf.getInt();
+                assertTrue(nodeIds.contains(inputId) || inputId < numNodes,
+                    "input " + inputId + " not yet seen at node " + n);
+            }
+
+            // Skip flag-dependent data using the registry (validates no overrun)
+            for (int bit = 0; bit < 16; bit++) {
+                int bitVal = 1 << bit;
+                if ((flags & bitVal) != 0) {
+                    buf.position(TensorBinaryProtocol.skipFlagData(
+                        data, buf.position(), bitVal, flags, version));
+                }
+            }
+
+            // V2 extension block
+            if (version >= 2) {
+                int extLen = buf.getShort() & 0xFFFF;
+                buf.position(buf.position() + extLen);
+            }
+
+            // Safety: ensure we didn't overrun
+            assertTrue(buf.position() <= data.length,
+                "buffer overrun at node " + n);
+        }
+
+        // All nodes should have unique IDs
+        assertEquals(numNodes, nodeIds.size(), "duplicate node IDs");
+        // Verify we consumed most of the buffer (allow small implementation-dependent padding)
+        assertTrue(buf.position() <= data.length,
+            "buffer overrun: pos=" + buf.position() + " > len=" + data.length);
+        int remaining = data.length - buf.position();
+        assertTrue(remaining < 16,
+            "too many unconsumed bytes: " + remaining + " (pos=" + buf.position()
+            + " len=" + data.length + ")");
     }
 }

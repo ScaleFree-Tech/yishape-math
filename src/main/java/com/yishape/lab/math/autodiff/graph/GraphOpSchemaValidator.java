@@ -97,6 +97,11 @@ public final class GraphOpSchemaValidator {
             lstmStep(),
             embedding(),
             maxPool2d(),
+            avgPool2d(),
+            adaptiveAvgPool2d(),
+            scaledDotProductAttention(),
+            groupNorm(),
+            instanceNorm(),
             depthwiseConv1d(),
             selectiveScan()
         );
@@ -419,6 +424,112 @@ public final class GraphOpSchemaValidator {
                 new GradDef("d_D", 5, "hasD")
             ),
             5, 6, "Selective Scan (Mamba SSM)"
+        );
+    }
+
+    // ---- 12. AvgPool2d ----
+
+    private static OpSchema avgPool2d() {
+        return new OpSchema(
+            "avgpool2d",
+            List.of(new InputDef("x", 0, "[B * C * H * W]", "Input (flat)")),
+            List.of(new InputDef("x", 0, "[B * C * H * W]", "Input (flat)")),
+            List.of(new ScalarField("kH_kW_stride", 0, 0xFFFFFFFFFFFFFFFFL, "kH<<16 | kW<<8 | stride")),
+            List.of(new ScalarField("padding", 0, 0xFFFFFFFFFFFFFFFFL, "padding<<16")),
+            List.of(new GradDef("d_x", 0, "always")),
+            1, 1, "Average Pooling 2D"
+        );
+    }
+
+    // ---- 13. AdaptiveAvgPool2d ----
+
+    private static OpSchema adaptiveAvgPool2d() {
+        return new OpSchema(
+            "adaptiveAvgPool2d",
+            List.of(new InputDef("x", 0, "[B * C * H * W]", "Input (flat)")),
+            List.of(new InputDef("x", 0, "[B * C * H * W]", "Input (flat)")),
+            List.of(new ScalarField("outH_outW", 0, 0xFFFFFFFFFFFFFFFFL, "outH<<16 | outW")),
+            List.of(),
+            List.of(new GradDef("d_x", 0, "always")),
+            1, 1, "Adaptive Average Pooling 2D"
+        );
+    }
+
+    // ---- 14. ScaledDotProductAttention ----
+
+    private static OpSchema scaledDotProductAttention() {
+        return new OpSchema(
+            "scaledDotProductAttention",
+            List.of(
+                new InputDef("q", 0, "[batch * seqQ * dk]", "Query (flat)"),
+                new InputDef("k", 1, "[batch * seqK * dk]", "Key (flat)"),
+                new InputDef("v", 2, "[batch * seqK * dv]", "Value (flat)")
+            ),
+            List.of(
+                new InputDef("q", 0, "[batch * seqQ * dk]", "Query (flat)"),
+                new InputDef("k", 1, "[batch * seqK * dk]", "Key (flat)"),
+                new InputDef("v", 2, "[batch * seqK * dv]", "Value (flat)")
+            ),
+            List.of(new ScalarField("dropout", 0, 0xFFFFFFFFFFFFFFFFL, "Dropout rate (as f64)")),
+            List.of(),
+            List.of(
+                new GradDef("d_q", 0, "always"),
+                new GradDef("d_k", 1, "always"),
+                new GradDef("d_v", 2, "always")
+            ),
+            3, 3, "Scaled Dot-Product Attention (Q·K^T + softmax + V)"
+        );
+    }
+
+    // ---- 15. GroupNorm ----
+
+    private static OpSchema groupNorm() {
+        return new OpSchema(
+            "groupNorm",
+            List.of(
+                new InputDef("x", 0, "[B * C * H * W]", "Input (flat)"),
+                new InputDef("gamma", 1, "[C]", "Scale per channel"),
+                new InputDef("beta", 2, "[C]", "Shift per channel")
+            ),
+            List.of(
+                new InputDef("x", 0, "[B * C * H * W]", "Input (flat)"),
+                new InputDef("gamma", 1, "[C]", "Scale per channel"),
+                new InputDef("beta", 2, "[C]", "Shift per channel")
+            ),
+            List.of(new ScalarField("numGroups", 0, 0xFFFFFFFFFFFFFFFFL, "Number of groups")),
+            List.of(),
+            List.of(
+                new GradDef("d_x", 0, "always"),
+                new GradDef("d_gamma", 1, "always"),
+                new GradDef("d_beta", 2, "always")
+            ),
+            3, 3, "Group Normalization"
+        );
+    }
+
+    // ---- 16. InstanceNorm ----
+
+    private static OpSchema instanceNorm() {
+        return new OpSchema(
+            "instanceNorm",
+            List.of(
+                new InputDef("x", 0, "[N * C * H * W]", "Input (flat)"),
+                new InputDef("gamma", 1, "[C]", "Scale per channel (optional)"),
+                new InputDef("beta", 2, "[C]", "Shift per channel (optional)")
+            ),
+            List.of(
+                new InputDef("x", 0, "[N * C * H * W]", "Input (flat)"),
+                new InputDef("gamma", 1, "[C]", "Scale per channel (optional)"),
+                new InputDef("beta", 2, "[C]", "Shift per channel (optional)")
+            ),
+            List.of(new ScalarField("features", 0, 0xFFFFFFFFFFFFFFFFL, "Number of features (C)")),
+            List.of(),
+            List.of(
+                new GradDef("d_x", 0, "always"),
+                new GradDef("d_gamma", 1, "always"),
+                new GradDef("d_beta", 2, "always")
+            ),
+            3, 3, "Instance Normalization (per-sample, per-channel)"
         );
     }
 

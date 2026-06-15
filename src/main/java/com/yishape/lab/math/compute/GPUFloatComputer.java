@@ -210,8 +210,23 @@ final class GPUFloatComputer implements IFloatVectorComputer {
     }
 
     @Override
+    public boolean[] logicalCompare(float[] x, float scalar, LogicalCompare operation) {
+        return delegate.logicalCompare(x, scalar, operation);
+    }
+
+    @Override
     public boolean[] logicalOperate(float[] x1, LogicalOperation operation) {
         return delegate.logicalOperate(x1, operation);
+    }
+
+    @Override
+    public boolean[] logicalOperate(float[] x, java.util.function.DoublePredicate predicate) {
+        return delegate.logicalOperate(x, predicate);
+    }
+
+    @Override
+    public boolean[][] logicalOperate(float[][] x, java.util.function.DoublePredicate predicate) {
+        return delegate.logicalOperate(x, predicate);
     }
 
     @Override
@@ -262,6 +277,16 @@ final class GPUFloatComputer implements IFloatVectorComputer {
     @Override
     public float[] diff(float[] array, int stride) {
         return delegate.diff(array, stride);
+    }
+
+    @Override
+    public float[] where(boolean[] mask, float[] a, float[] b) {
+        return delegate.where(mask, a, b);
+    }
+
+    @Override
+    public float[][] where(boolean[][] mask, float[][] a, float[][] b) {
+        return delegate.where(mask, a, b);
     }
 
     // ==================== HPC helper methods ====================
@@ -350,6 +375,7 @@ final class GPUFloatComputer implements IFloatVectorComputer {
                 case EXP -> GpuOptionalRuntime.tryFloatExp(x);
                 case LOG -> GpuOptionalRuntime.tryFloatLog(x);
                 case ABS -> GpuOptionalRuntime.tryFloatAbs(x);
+                case SIGN -> GpuOptionalRuntime.tryFloatSign(x);
                 case SQRT -> GpuOptionalRuntime.tryFloatSqrt(x);
                 case SIN -> GpuOptionalRuntime.tryFloatSin(x);
                 case COS -> GpuOptionalRuntime.tryFloatCos(x);
@@ -372,6 +398,7 @@ final class GPUFloatComputer implements IFloatVectorComputer {
             case EXP -> "expF64";
             case LOG -> "logF64";
             case ABS -> "absF64";
+            case SIGN -> "signF64";
             case SQRT -> "sqrtF64";
             case SIN -> "sinF64";
             case COS -> "cosF64";

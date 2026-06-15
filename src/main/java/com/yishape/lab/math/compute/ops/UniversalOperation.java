@@ -31,4 +31,5 @@ public enum UniversalOperation {
         RELU,
         SIGMOID,
         GELU,
+        SIGN,
 }

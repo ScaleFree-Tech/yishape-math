@@ -399,16 +399,44 @@ public interface ISparseMatrix {
             if (rows != other.rows() || cols != other.cols()) {
                 throw new IllegalArgumentException("Matrix dimensions must match for addition");
             }
-
-            double[][] a = this.toDenseArray();
-            double[][] b = other.toDenseArray();
-            double[][] c = new double[rows][cols];
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < cols; j++) {
-                    c[i][j] = a[i][j] + b[i][j];
-                }
+            // Sparse addition via hash accumulation — avoids O(rows*cols) dense intermediate.
+            // Iterates only over non-zero entries (structural), not element-wise numerical.
+            java.util.HashMap<Long, Double> acc = new java.util.HashMap<>(nnz() + other.nnz());
+            // Accumulate this matrix's non-zero entries
+            RereSparseDoubleMatrix selfCopy = (RereSparseDoubleMatrix) this.copy();
+            selfCopy.ensureCOO();
+            for (int i = 0; i < selfCopy.values.length; i++) { // structural: only non-zeros
+                long key = (long) selfCopy.rowPtr[i] * cols + selfCopy.colInd[i];
+                acc.merge(key, selfCopy.values[i], Double::sum);
             }
-            return ISparseMatrix.fromDense(c);
+            // Accumulate other matrix's non-zero entries (avoid mutating other)
+            RereSparseDoubleMatrix o = (RereSparseDoubleMatrix) other.copy();
+            o.ensureCOO();
+            for (int i = 0; i < o.values.length; i++) { // structural: only non-zeros
+                long key = (long) o.rowPtr[i] * cols + o.colInd[i];
+                acc.merge(key, o.values[i], Double::sum);
+            }
+            // Build result from accumulated map
+            int nnz = acc.size();
+            int[] resRow = new int[nnz];
+            int[] resCol = new int[nnz];
+            double[] resVal = new double[nnz];
+            int idx = 0;
+            for (var e : acc.entrySet()) {
+                double v = e.getValue();
+                if (Math.abs(v) < 1e-30) { nnz--; continue; } // drop numerical zeros
+                long key = e.getKey();
+                resRow[idx] = (int) (key / cols);
+                resCol[idx] = (int) (key % cols);
+                resVal[idx] = v;
+                idx++;
+            }
+            if (idx < nnz) {
+                resRow = java.util.Arrays.copyOf(resRow, idx);
+                resCol = java.util.Arrays.copyOf(resCol, idx);
+                resVal = java.util.Arrays.copyOf(resVal, idx);
+            }
+            return new RereSparseDoubleMatrix(rows, cols, resRow, resCol, resVal, SparseFormat.COO);
         }
 
         @Override

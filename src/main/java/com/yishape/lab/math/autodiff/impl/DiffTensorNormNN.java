@@ -57,8 +57,8 @@ public static IDiffTensor layerNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
     double[] gd = gr.value.toDoubleArray();
     double[] bd = br.value.toDoubleArray();
 
-    double[] y = new double[(int) totalSize];
-    double[] xHat = new double[(int) totalSize];
+    double[] y = new double[Math.toIntExact(totalSize)];
+    double[] xHat = new double[Math.toIntExact(totalSize)];
     double[] means = new double[batch];
     double[] sigmas = new double[batch];
 
@@ -137,7 +137,7 @@ public static IDiffTensor batchNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
     double[] gd = gr.value.toDoubleArray();
     double[] bd = br.value.toDoubleArray();
 
-    double[] y = new double[(int) totalSize];
+    double[] y = new double[Math.toIntExact(totalSize)];
     double[] means = new double[features];
     double[] invSigmas = new double[features];
 
@@ -171,6 +171,7 @@ public static IDiffTensor batchNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
         // Fix 2.2: clone inside backward closure — each backward() call gets its own copy
         double[] lMn = means.clone();
         double[] lIS = invSigmas.clone();
+        double[] lxd = xd.clone();
         for (int j = 0; j < features; j++) {
             double invSig = lIS[j];
             double mean = lMn[j];
@@ -178,7 +179,7 @@ public static IDiffTensor batchNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
             double[] xHatCache = new double[batch];
             for (int i = 0; i < batch; i++) {
                 int idx = i * features + j;
-                double xHat = (xd[idx] - mean) * invSig;
+                double xHat = (lxd[idx] - mean) * invSig;
                 xHatCache[i] = xHat;
                 dg += g[idx] * xHat;
                 db += g[idx];
@@ -214,7 +215,7 @@ public static IDiffTensor rmsNorm(RereDiffTensor tensor, IDiffTensor gamma, doub
 
     double[] xd = tensor.value.toDoubleArray();
     double[] gd = gr.value.toDoubleArray();
-    double[] y = new double[(int) totalSize];
+    double[] y = new double[Math.toIntExact(totalSize)];
     double[] rmsVals = new double[batch];
 
     // Try HPC accelerated path first
@@ -310,19 +311,32 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
     // dim is typically headDim/2 (half the actual dimension).
     // Uses structural loops over positions (OK per CLAUDE.md exception for structural loops).
     int[] sh = tensor.shape();
-    int lastDim = sh[tensor.rank() - 1];
+    int rank = tensor.rank();
     long totalSize = tensor.value.totalSize();
-    int headDim = lastDim;
+    int headDim = sh[rank - 1];
     if (headDim != dim * 2) {
         // If dim doesn't match half of last dim, use dim as-is
         headDim = dim * 2;
     }
 
+    // Compute seqLen from shape, not total/lastDim (which absorbs batch for rank > 2)
+    int seqLen;
+    long batchSize;
+    if (rank == 2) {
+        seqLen = sh[0];
+        batchSize = 1;
+    } else {
+        seqLen = sh[rank - 2];
+        batchSize = totalSize / (seqLen * headDim);
+    }
+    int batchStride = seqLen * headDim;
+
     int fHeadDim = headDim; // final copy for lambda
+    int fSeqLen = seqLen;   // final copy for lambda
+    long fBatchSize = batchSize;
+    int fBatchStride = batchStride;
     double[] xd = tensor.value.toDoubleArray();
-    double[] y = new double[(int) totalSize];
-    int seqLen = (int) (totalSize / fHeadDim);
-    int fSeqLen = seqLen; // final copy for lambda
+    double[] y = new double[Math.toIntExact(totalSize)];
 
     // Pre-compute sin/cos tables for all positions and all pairs
     // Each position pos and pair i uses angle = pos / base^(2i/dim)
@@ -340,19 +354,22 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
         }
     }
 
-    // Apply rotation: for each position pair, [x1, x2] → [x1*c - x2*s, x1*s + x2*c]
-    for (int pos = 0; pos < seqLen; pos++) {
-        int baseOff = pos * fHeadDim;
-        int tblOff = pos * fHalfDim;
-        for (int i = 0; i < fHalfDim; i++) {
-            int idx2i = baseOff + 2 * i;
-            int idx2i1 = idx2i + 1;
-            double x1 = xd[idx2i];
-            double x2 = xd[idx2i1];
-            double c = cosTable[tblOff + i];
-            double s = sinTable[tblOff + i];
-            y[idx2i] = x1 * c - x2 * s;
-            y[idx2i1] = x1 * s + x2 * c;
+    // Apply rotation per batch element
+    for (int b = 0; b < batchSize; b++) {
+        int batchOff = b * fBatchStride;
+        for (int pos = 0; pos < seqLen; pos++) {
+            int posOff = batchOff + pos * fHeadDim;
+            int tblOff = pos * fHalfDim;
+            for (int i = 0; i < fHalfDim; i++) {
+                int idx2i = posOff + 2 * i;
+                int idx2i1 = idx2i + 1;
+                double x1 = xd[idx2i];
+                double x2 = xd[idx2i1];
+                double c = cosTable[tblOff + i];
+                double s = sinTable[tblOff + i];
+                y[idx2i] = x1 * c - x2 * s;
+                y[idx2i1] = x1 * s + x2 * c;
+            }
         }
     }
 
@@ -360,20 +377,23 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
         RereDiffTensor inpX = self.inputs.get(0);
         double[] g = self.grad;
         double[] dx = new double[g.length];
-        for (int pos = 0; pos < fSeqLen; pos++) {
-            int baseOff = pos * fHeadDim;
-            int tblOff = pos * fHalfDim;
-            for (int i = 0; i < fHalfDim; i++) {
-                int idx2i = baseOff + 2 * i;
-                int idx2i1 = idx2i + 1;
-                double dY1 = g[idx2i];
-                double dY2 = g[idx2i1];
-                double c = cosTable[tblOff + i];
-                double s = sinTable[tblOff + i];
-                // Forward: [y1, y2] = [c, -s; s, c] @ [x1, x2]
-                // dL/d[x1,x2] = R^T @ [dY1, dY2] = [c, s; -s, c] @ [dY1, dY2]
-                dx[idx2i] = dY1 * c + dY2 * s;
-                dx[idx2i1] = -dY1 * s + dY2 * c;
+        for (int b = 0; b < fBatchSize; b++) {
+            int batchOff = b * fBatchStride;
+            for (int pos = 0; pos < fSeqLen; pos++) {
+                int posOff = batchOff + pos * fHeadDim;
+                int tblOff = pos * fHalfDim;
+                for (int i = 0; i < fHalfDim; i++) {
+                    int idx2i = posOff + 2 * i;
+                    int idx2i1 = idx2i + 1;
+                    double dY1 = g[idx2i];
+                    double dY2 = g[idx2i1];
+                    double c = cosTable[tblOff + i];
+                    double s = sinTable[tblOff + i];
+                    // Forward: [y1, y2] = [c, -s; s, c] @ [x1, x2]
+                    // dL/d[x1,x2] = R^T @ [dY1, dY2] = [c, s; -s, c] @ [dY1, dY2]
+                    dx[idx2i] = dY1 * c + dY2 * s;
+                    dx[idx2i1] = -dY1 * s + dY2 * c;
+                }
             }
         }
         inpX.accGrad(dx);

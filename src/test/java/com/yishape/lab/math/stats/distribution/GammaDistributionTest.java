@@ -34,19 +34,22 @@ class GammaDistributionTest {
     @Test
     void mean() {
         GammaDistribution d = new GammaDistribution(3, 2);
-        assertEquals(1.5, d.mean(), EPS);
+        // mean = alpha * beta = 3 * 2 = 6 (beta is scale, not rate)
+        assertEquals(6.0, d.mean(), EPS);
     }
 
     @Test
     void var() {
         GammaDistribution d = new GammaDistribution(3, 2);
-        assertEquals(0.75, d.var(), EPS);
+        // variance = alpha * beta^2 = 3 * 4 = 12
+        assertEquals(12.0, d.var(), EPS);
     }
 
     @Test
     void std() {
         GammaDistribution d = new GammaDistribution(3, 2);
-        assertEquals(Math.sqrt(0.75), d.std(), EPS);
+        // std = sqrt(alpha * beta^2) = sqrt(12)
+        assertEquals(Math.sqrt(12.0), d.std(), EPS);
     }
 
     @Test

@@ -695,6 +695,15 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
                     c = a.lanewise(VectorOperators.SQRT);
                 case ABS ->
                     c = a.abs(); // Use the abs() method directly
+                case SIGN -> {
+                    VectorMask<Float> gtZ = a.compare(VectorOperators.GT, 0.0f);
+                    VectorMask<Float> ltZ = a.compare(VectorOperators.LT, 0.0f);
+                    VectorMask<Float> isNaN = a.compare(VectorOperators.NE, a);
+                    FloatVector zv = FloatVector.zero(a.species());
+                    FloatVector ov = FloatVector.broadcast(a.species(), 1.0f);
+                    FloatVector nv = FloatVector.broadcast(a.species(), -1.0f);
+                    c = zv.blend(ov, gtZ).blend(nv, ltZ).blend(a, isNaN);
+                }
                 case POW ->
                     c = a.lanewise(VectorOperators.POW, additionalParam);
                 case CBRT ->
@@ -765,6 +774,11 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
                 case ABS:
                     result[i] = Math.abs(x[i]);
                     break;
+                case SIGN: {
+                    float v = x[i];
+                    result[i] = v > 0.0f ? 1.0f : (v < 0.0f ? -1.0f : 0.0f);
+                    break;
+                }
                 case POW:
                     result[i] = (float)Math.pow(x[i], additionalParam);
                     break;
@@ -1783,6 +1797,42 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
     }
 
     @Override
+    public boolean[] logicalCompare(float[] x, float scalar, LogicalCompare operation) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        VectorSpecies<Float> species = FloatVector.SPECIES_PREFERRED;
+        boolean[] result = new boolean[x.length];
+        FloatVector sVec = FloatVector.broadcast(species, scalar);
+        int i = 0;
+        int upperBound = species.loopBound(x.length);
+        for (; i < upperBound; i += species.length()) {
+            FloatVector a = FloatVector.fromArray(species, x, i);
+            VectorMask<Float> mask;
+            switch (operation) {
+                case EQUALS:               mask = a.compare(VectorOperators.EQ, sVec); break;
+                case NOT_EQUALS:           mask = a.compare(VectorOperators.NE, sVec); break;
+                case LESS_THAN:            mask = a.compare(VectorOperators.LT, sVec); break;
+                case LESS_THAN_OR_EQUALS:  mask = a.compare(VectorOperators.LE, sVec); break;
+                case GREATER_THAN:         mask = a.compare(VectorOperators.GT, sVec); break;
+                case GREATER_THAN_OR_EQUALS: mask = a.compare(VectorOperators.GE, sVec); break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+            mask.intoArray(result, i);
+        }
+        for (; i < x.length; i++) {
+            switch (operation) {
+                case EQUALS:               result[i] = x[i] == scalar; break;
+                case NOT_EQUALS:           result[i] = x[i] != scalar; break;
+                case LESS_THAN:            result[i] = x[i] < scalar; break;
+                case LESS_THAN_OR_EQUALS:  result[i] = x[i] <= scalar; break;
+                case GREATER_THAN:         result[i] = x[i] > scalar; break;
+                case GREATER_THAN_OR_EQUALS: result[i] = x[i] >= scalar; break;
+                default: throw new IllegalArgumentException("不支持的操作: " + operation);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean[] logicalOperate(float[] x1, float[] x2, LogicalOperation operation) {
         // 参数验证
         if (x1 == null || x2 == null) {
@@ -1899,6 +1949,26 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
             }
         }
 
+        return result;
+    }
+
+    @Override
+    public boolean[] logicalOperate(float[] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入向量不能为null");
+        boolean[] result = new boolean[x.length];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = predicate.test(x[i]);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean[][] logicalOperate(float[][] x, java.util.function.DoublePredicate predicate) {
+        if (x == null) throw new IllegalArgumentException("输入矩阵不能为null");
+        boolean[][] result = new boolean[x.length][];
+        for (int i = 0; i < x.length; i++) {
+            result[i] = logicalOperate(x[i], predicate);
+        }
         return result;
     }
 
@@ -2758,6 +2828,57 @@ public class SIMDFloatComputer implements IFloatVectorComputer,Serializable {
             result[i] = array[i + stride] - array[i];
         }
 
+        return result;
+    }
+
+    @Override
+    public float[] where(boolean[] mask, float[] a, float[] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array lengths must match");
+        }
+        int n = mask.length;
+        float[] result = new float[n];
+        final VectorSpecies<Float> species = selectOptimalSpecies();
+        int vectorLength = species.length();
+
+        // Convert boolean mask to float mask (1.0f/0.0f) via scalar pass
+        float[] maskF = new float[n];
+        for (int i = 0; i < n; i++) {
+            maskF[i] = mask[i] ? 1.0f : 0.0f;
+        }
+        FloatVector onesVec = FloatVector.broadcast(species, 1.0f);
+        int i = 0;
+        int vecEnd = (n / vectorLength) * vectorLength;
+        for (; i < vecEnd; i += vectorLength) {
+            FloatVector maskVec = FloatVector.fromArray(species, maskF, i);
+            FloatVector aVec = FloatVector.fromArray(species, a, i);
+            FloatVector bVec = FloatVector.fromArray(species, b, i);
+            FloatVector notMask = onesVec.sub(maskVec);
+            FloatVector resultVec = maskVec.mul(aVec).add(notMask.mul(bVec));
+            resultVec.intoArray(result, i);
+        }
+        for (; i < n; i++) {
+            result[i] = maskF[i] * a[i] + (1.0f - maskF[i]) * b[i];
+        }
+        return result;
+    }
+
+    @Override
+    public float[][] where(boolean[][] mask, float[][] a, float[][] b) {
+        if (mask == null || a == null || b == null) {
+            throw new IllegalArgumentException("Input arrays cannot be null");
+        }
+        if (mask.length != a.length || mask.length != b.length) {
+            throw new IllegalArgumentException("Array row counts must match");
+        }
+        int rows = mask.length;
+        float[][] result = new float[rows][];
+        for (int r = 0; r < rows; r++) {
+            result[r] = where(mask[r], a[r], b[r]);
+        }
         return result;
     }
 }
