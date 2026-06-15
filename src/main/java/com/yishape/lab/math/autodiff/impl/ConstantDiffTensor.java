@@ -110,7 +110,7 @@ public final class ConstantDiffTensor implements IDiffTensor {
                 for (int r = 0; r < reduce; r++) {
                     sumExp += Math.exp(vals[(o * reduce + r) * inner + i] - max);
                 }
-                result[o * inner + i] = Math.log(sumExp) + max;
+                result[o * inner + i] = Math.log(sumExp + 1e-15) + max;
             }
         }
         int[] reducedShape = new int[s.length];
@@ -307,7 +307,21 @@ public final class ConstantDiffTensor implements IDiffTensor {
                 }
             }
         }
-        int[] outShape = (rank == 4) ? new int[]{N, C, outH, outW} : new int[]{C, outH, outW};
+        // Build output shape preserving all leading batch dimensions
+        int[] outShape;
+        if (rank == 4) {
+            outShape = new int[]{N, C, outH, outW};
+        } else if (rank == 3) {
+            outShape = new int[]{C, outH, outW};
+        } else {
+            // rank > 4: preserve leading dims [B1,...,Bn, C, outH, outW]
+            int leadingDims = rank - 3;
+            outShape = new int[rank];
+            System.arraycopy(s, 0, outShape, 0, leadingDims);
+            outShape[leadingDims] = C;
+            outShape[leadingDims + 1] = outH;
+            outShape[leadingDims + 2] = outW;
+        }
         return wrap(new RereDoubleTensor(y, outShape));
     }
     @Override public IDiffTensor oneHot(int numClasses) {

@@ -117,6 +117,9 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     private static final int MAX_POOL_SIZE = 100;
 
+    /** Atomic counter to avoid O(n) size() calls on ConcurrentLinkedQueue and ensure atomic check-and-offer. */
+    private static final java.util.concurrent.atomic.AtomicInteger matrixPoolSize = new java.util.concurrent.atomic.AtomicInteger(0);
+
     /**
      * 是否启用并行计算 / Whether parallel computation is enabled
      */
@@ -128,6 +131,7 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      */
     public static RereFloatMatrix borrowMatrix(int rows, int cols) {
         RereFloatMatrix matrix = MATRIX_POOL.poll();
+        if (matrix != null) matrixPoolSize.decrementAndGet();
         if (matrix == null || matrix.data.length != rows || matrix.data[0].length != cols) {
             return new RereFloatMatrix(rows, cols);
         }
@@ -138,9 +142,12 @@ public class RereFloatMatrix implements IFloatMatrix,Serializable {
      * 将矩阵返回到对象池 / Return matrix to object pool
      */
     public void returnToPool() {
-        if (this.data != null && this.data.length > 0 && this.data[0].length > 0
-                && MATRIX_POOL.size() < MAX_POOL_SIZE) {
-            MATRIX_POOL.offer(this);
+        if (this.data != null && this.data.length > 0 && this.data[0].length > 0) {
+            if (matrixPoolSize.incrementAndGet() <= MAX_POOL_SIZE) {
+                MATRIX_POOL.offer(this);
+            } else {
+                matrixPoolSize.decrementAndGet();
+            }
         }
     }
 

@@ -354,4 +354,58 @@ public final class DoubleFlatGemm {
             }
         }
     }
+
+    // ======================== Fused GEMM+activation dispatch ========================
+
+    /**
+     * Fused GEMM+ReLU: C = relu(A × B).
+     * Dispatch: HPC native fused kernel → sequential GEMM+ReLU.
+     * GPU and fused HPC kernels are PLANNED (native symbols not yet in DLL).
+     */
+    public static void flatMmulRelu(double[] a, double[] b, double[] cOut, int m, int n, int k) {
+        // Tier 1: HPC native fused kernel (PLANNED)
+        if (com.yishape.lab.math.compute.hpc.HpcIm2col.isFusedGemmReluAvailable()) {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmRelu(m, n, k, a, b, cOut);
+            if (rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK) return;
+        }
+        // Fallback: sequential GEMM + ReLU
+        flatMmul(a, m, k, b, n, cOut);
+        for (int i = 0; i < cOut.length; i++) {
+            if (cOut[i] < 0) cOut[i] = 0;
+        }
+    }
+
+    /**
+     * Fused GEMM+GELU: C = gelu(A × B).
+     * Dispatch: HPC native fused kernel → sequential GEMM+GELU.
+     */
+    public static void flatMmulGelu(double[] a, double[] b, double[] cOut, int m, int n, int k) {
+        if (com.yishape.lab.math.compute.hpc.HpcIm2col.isFusedGemmGeluAvailable()) {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmGelu(m, n, k, a, b, cOut);
+            if (rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK) return;
+        }
+        flatMmul(a, m, k, b, n, cOut);
+        for (int i = 0; i < cOut.length; i++) {
+            double x = cOut[i];
+            // GELU approximation: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+            double cbrt = 0.044715 * x * x * x;
+            cOut[i] = 0.5 * x * (1.0 + Math.tanh(0.7978845608028654 * (x + cbrt)));
+        }
+    }
+
+    /**
+     * Fused GEMM+SiLU: C = silu(A × B) = (A×B) * sigmoid(A×B).
+     * Dispatch: HPC native fused kernel → sequential GEMM+SiLU.
+     */
+    public static void flatMmulSilu(double[] a, double[] b, double[] cOut, int m, int n, int k) {
+        if (com.yishape.lab.math.compute.hpc.HpcIm2col.isFusedGemmSiluAvailable()) {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.flatDgemmSilu(m, n, k, a, b, cOut);
+            if (rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK) return;
+        }
+        flatMmul(a, m, k, b, n, cOut);
+        for (int i = 0; i < cOut.length; i++) {
+            double x = cOut[i];
+            cOut[i] = x / (1.0 + Math.exp(-x)); // x * sigmoid(x)
+        }
+    }
 }

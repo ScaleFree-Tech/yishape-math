@@ -340,4 +340,18 @@ public final class HpcIm2col {
             return false;
         }
     }
+
+    // ==================== Fused GEMM+activation availability ====================
+
+    public static boolean isFusedGemmReluAvailable() {
+        return com.yishape.lab.math.hpc.YishapeHpc.isFusedGemmReluAvailable();
+    }
+
+    public static boolean isFusedGemmGeluAvailable() {
+        return com.yishape.lab.math.hpc.YishapeHpc.isFusedGemmGeluAvailable();
+    }
+
+    public static boolean isFusedGemmSiluAvailable() {
+        return com.yishape.lab.math.hpc.YishapeHpc.isFusedGemmSiluAvailable();
+    }
 }

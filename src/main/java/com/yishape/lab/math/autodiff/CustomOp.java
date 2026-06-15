@@ -56,6 +56,9 @@ public abstract class CustomOp {
     // Uses ConcurrentHashMap to avoid the 256-slot overflow bug and synchronized bottleneck.
     private final ConcurrentHashMap<Long, Object> fwdCache = new ConcurrentHashMap<>();
 
+    /** Maximum number of uncollected backward contexts before forced cleanup. */
+    private static final int MAX_FWD_CACHE = 10_000;
+
     /**
      * When set, propagated to the graph node's opTag so the GPU/HPC graph executor
      * can dispatch a native kernel for this CustomOp instead of falling back to CPU.
@@ -79,6 +82,10 @@ public abstract class CustomOp {
 
     void putCache(long id, Object ctx) {
         if (ctx != null) {
+            // Prevent unbounded growth when backward is never called (e.g. inference)
+            if (fwdCache.size() >= MAX_FWD_CACHE) {
+                fwdCache.clear();
+            }
             fwdCache.put(id, ctx);
         }
     }

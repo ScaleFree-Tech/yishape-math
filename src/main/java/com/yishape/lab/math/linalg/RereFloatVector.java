@@ -386,18 +386,16 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public IFloatVector addScalarInPlace(double p) {
         float pf = (float) p;
-        for (int i = 0; i < data.length; i++) {
-            data[i] += pf;
-        }
+        float[] result = this.computer.binaryOperate(data, pf, BinaryOperation.ADD);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
     @Override
     public IFloatVector subScalarInPlace(double p) {
         float pf = (float) p;
-        for (int i = 0; i < data.length; i++) {
-            data[i] -= pf;
-        }
+        float[] result = this.computer.binaryOperate(data, pf, BinaryOperation.SUBTRACT);
+        System.arraycopy(result, 0, this.data, 0, this.data.length);
         return this;
     }
 
@@ -617,7 +615,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public int argMin() {
         int len = this.data.length;
-        float min = Float.MAX_VALUE;
+        float min = Float.POSITIVE_INFINITY;
         int ind = -1;
         for (int i = 0; i < len; i++) {
             if (data[i] < min) {
@@ -640,7 +638,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     @Override
     public int argMax() {
         int len = this.data.length;
-        float max = -Float.MAX_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         int ind = -1;
         for (int i = 0; i < len; i++) {
             if (data[i] > max) {
@@ -1413,11 +1411,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector sigmoid() {
-        float[] result = new float[data.length];
-        for (int i = 0; i < data.length; i++) {
-            result[i] = (float) RereMathUtil.sigmoid((double) data[i]);
-        }
-        return IFloatVector.of(result);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.SIGMOID, 0.0f);
+        return IFloatVector.of(v1);
     }
 
     /**
@@ -1431,11 +1426,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
      */
     @Override
     public IFloatVector relu() {
-        float[] result = new float[data.length];
-        for (int i = 0; i < data.length; i++) {
-            result[i] = (float) Math.max(0.0, (double) data[i]);
-        }
-        return IFloatVector.of(result);
+        var v1 = this.computer.universalOperate(data, UniversalOperation.RELU, 0.0f);
+        return IFloatVector.of(v1);
     }
 
     /**
@@ -1641,7 +1633,7 @@ public class RereFloatVector implements IFloatVector,Serializable {
     public  IFloatVector trunc() {
         float[] result = new float[this.data.length];
         for (int i = 0; i < this.data.length; i++) {
-            result[i] = (float)Math.rint(this.data[i]);
+            result[i] = (float)(int)this.data[i];
         }
         return IFloatVector.of(result);
     }
@@ -1872,14 +1864,8 @@ public class RereFloatVector implements IFloatVector,Serializable {
 
     @Override
     public double normInf() {
-        float maxAbs = 0.0f;
-        for (int i = 0; i < this.data.length; i++) {
-            float abs = Math.abs(this.data[i]);
-            if (abs > maxAbs) {
-                maxAbs = abs;
-            }
-        }
-        return maxAbs;
+        float[] absVals = computer.universalOperate(data, UniversalOperation.ABS, 0.0f);
+        return computer.reduceOperate(absVals, ReduceOperation.MAX);
     }
 
     @Override

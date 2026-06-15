@@ -205,36 +205,31 @@ public class HpcContractTest {
     // Broadcast ops
     // ═══════════════════════════════════════════════════════════════
 
-    // BUG(hpc-rust): broadcast-add binary path fails with "input index out of
-    // bounds" (rc=-2), JSON fallback also produces wrong result (diff ~48).
-    // Requires fix in HPC Rust broadcast handling.
-    // @Test void testBroadcastAdd_dim1() {
-    //     int B = 32, C = 10;
-    //     double[] d1 = rand(B * C);
-    //     double[] d2 = rand(B);
-    //     CpuResult cpu = cpuRef(new double[][]{d1, d2}, new int[][]{{B, C}, {B}},
-    //         leaves -> leaves[0].add(leaves[1]).sum());
-    //     HpcResult hpc = hpcExec(new double[][]{d1, d2}, new int[][]{{B, C}, {B}},
-    //         leaves -> leaves[0].add(leaves[1]).sum());
-    //     if (!hpcPresent || Double.isNaN(hpc.loss)) return;
-    //     assertMatch("bcastAdd_dim1", cpu, hpc);
-    // }
+    @Test void testBroadcastAdd_dim1() {
+        int B = 32, C = 10;
+        double[] d1 = rand(B * C);
+        double[] d2 = rand(B);
+        CpuResult cpu = cpuRef(new double[][]{d1, d2}, new int[][]{{B, C}, {B}},
+            leaves -> leaves[0].add(leaves[1]).sum());
+        HpcResult hpc = hpcExec(new double[][]{d1, d2}, new int[][]{{B, C}, {B}},
+            leaves -> leaves[0].add(leaves[1]).sum());
+        if (!hpcPresent || Double.isNaN(hpc.loss)) return;
+        assertMatch("bcastAdd_dim1", cpu, hpc);
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // HPC-unique ops (not available on GPU)
     // ═══════════════════════════════════════════════════════════════
 
-    // BUG(hpc-rust): expand produces wrong result (diff ~3.2) — both binary
-    // and JSON paths compute incorrectly. Requires fix in HPC Rust expand op.
-    // @Test void testExpand() {
-    //     double[] d = rand(12);
-    //     CpuResult cpu = cpuRef(new double[][]{d}, new int[][]{{3, 4}},
-    //         leaves -> leaves[0].unsqueeze(0).expand(2, 3, 4).sum());
-    //     HpcResult hpc = hpcExec(new double[][]{d}, new int[][]{{3, 4}},
-    //         leaves -> leaves[0].unsqueeze(0).expand(2, 3, 4).sum());
-    //     if (!hpcPresent || Double.isNaN(hpc.loss)) return;
-    //     assertMatch("expand", cpu, hpc);
-    // }
+    @Test void testExpand() {
+        double[] d = rand(12);
+        CpuResult cpu = cpuRef(new double[][]{d}, new int[][]{{3, 4}},
+            leaves -> leaves[0].unsqueeze(0).expand(2, 3, 4).sum());
+        HpcResult hpc = hpcExec(new double[][]{d}, new int[][]{{3, 4}},
+            leaves -> leaves[0].unsqueeze(0).expand(2, 3, 4).sum());
+        if (!hpcPresent || Double.isNaN(hpc.loss)) return;
+        assertMatch("expand", cpu, hpc);
+    }
 
     @Test void testReciprocal() {
         // HPC may not support reciprocal natively; NaN is acceptable fallback

@@ -871,4 +871,118 @@ public class ProtocolContractTest {
             "too many unconsumed bytes: " + remaining + " (pos=" + buf.position()
             + " len=" + data.length + ")");
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // HPC cross-check: GPU equivalents of HPC-failing ops
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * GPU equivalent of HpcContractTest broadcast-add: [B,C] + [B]
+     * (rank-1 broadcast to rank-2, no explicit reshape).
+     *
+     * Fixed 2026-06-15: shape-based tiled mode selection in GPU graph.rs.
+     */
+    @Test
+    void testGpuBroadcastAdd_rank1to2() {
+        int B = 32, C = 10;
+        double[] d1 = rand(B * C);
+        double[] d2 = rand(B);
+
+        RereDiffTensor a = (RereDiffTensor) AD.leafTensor(d1, B, C);
+        RereDiffTensor b = (RereDiffTensor) AD.leafTensor(d2, B);
+        RereDiffTensor loss = (RereDiffTensor) a.add(b).sum();
+        loss.backward();
+        double cpuLoss = loss.value().toDoubleArray()[0];
+        double[] cpuGradA = a.gradData().clone();
+        double[] cpuGradB = b.gradData().clone();
+
+        if (!gpuPresent) return;
+        RereDiffTensor a2 = (RereDiffTensor) AD.leafTensor(d1, B, C);
+        RereDiffTensor b2 = (RereDiffTensor) AD.leafTensor(d2, B);
+        RereDiffTensor loss2 = (RereDiffTensor) a2.add(b2).sum();
+        double gpuLoss = GpuGraphExecutor.tryExecute(loss2);
+        assertFalse(Double.isNaN(gpuLoss),
+            "GPU broadcast-add [32,10]+[32]: execution failed (NaN)");
+        assertEquals(cpuLoss, gpuLoss, LOSS_TOL,
+            () -> String.format("GPU=%.8f CPU=%.8f diff=%.2e",
+                gpuLoss, cpuLoss, Math.abs(gpuLoss - cpuLoss)));
+    }
+
+    /**
+     * GPU expand: [3,4] → unsqueeze(0) → expand(2,3,4).
+     *
+     * Fixed 2026-06-16: CPU-side coord-mapping in GPU graph.rs (same algorithm as HPC).
+     */
+    @Test
+    void testGpuExpand_3x4_to_2x3x4() {
+        double[] d = rand(12);
+
+        RereDiffTensor a = (RereDiffTensor) AD.leafTensor(d, 3, 4);
+        RereDiffTensor loss = (RereDiffTensor) a.unsqueeze(0).expand(2, 3, 4).sum();
+        loss.backward();
+        double cpuLoss = loss.value().toDoubleArray()[0];
+        double[] cpuGrad = a.gradData().clone();
+
+        if (!gpuPresent) return;
+        RereDiffTensor a2 = (RereDiffTensor) AD.leafTensor(d, 3, 4);
+        RereDiffTensor loss2 = (RereDiffTensor) a2.unsqueeze(0).expand(2, 3, 4).sum();
+        double gpuLoss = GpuGraphExecutor.tryExecute(loss2);
+        assertFalse(Double.isNaN(gpuLoss),
+            "GPU expand [3,4]→[2,3,4]: execution failed (NaN)");
+        assertEquals(cpuLoss, gpuLoss, LOSS_TOL,
+            () -> String.format("GPU=%.8f CPU=%.8f diff=%.2e",
+                gpuLoss, cpuLoss, Math.abs(gpuLoss - cpuLoss)));
+    }
+
+    /**
+     * GPU: [B,C] + [B] broadcast with backward gradient verification.
+     * Full CPU vs GPU comparison including per-element gradient match.
+     *
+     * Fixed 2026-06-15: shape-based tiled mode selection in GPU graph.rs.
+     */
+    @Test
+    void testGpuBroadcastAdd_rank1to2_fullGrad() {
+        int B = 32, C = 10;
+        double[] d1 = rand(B * C);
+        double[] d2 = rand(B);
+
+        // CPU
+        RereDiffTensor a = (RereDiffTensor) AD.leafTensor(d1, B, C);
+        RereDiffTensor b = (RereDiffTensor) AD.leafTensor(d2, B);
+        RereDiffTensor cpuLoss = (RereDiffTensor) a.add(b).sum();
+        cpuLoss.backward();
+        double cpuL = cpuLoss.value().toDoubleArray()[0];
+        double[] cpuGa = a.gradData().clone();
+        double[] cpuGb = b.gradData().clone();
+
+        if (!gpuPresent) return;
+
+        // GPU
+        RereDiffTensor a2 = (RereDiffTensor) AD.leafTensor(d1, B, C);
+        RereDiffTensor b2 = (RereDiffTensor) AD.leafTensor(d2, B);
+        RereDiffTensor gpuLoss = (RereDiffTensor) a2.add(b2).sum();
+        double gpuL = GpuGraphExecutor.tryExecute(gpuLoss);
+        assertFalse(Double.isNaN(gpuL), "GPU broadcast-add execution failed");
+        assertEquals(cpuL, gpuL, LOSS_TOL, "loss mismatch");
+
+        double[] gpuGa = a2.gradData().clone();
+        double[] gpuGb = b2.gradData().clone();
+
+        // Grad a: [B,C] — sum of each row should be 1 (grad of add w.r.t. a)
+        for (int j = 0; j < B * C; j++) {
+            final int idx = j;
+            final double cga = cpuGa[idx];
+            final double gga = gpuGa[idx];
+            assertEquals(cga, gga, GRAD_TOL,
+                () -> String.format("gradA[%d] GPU=%.8f CPU=%.8f", idx, gga, cga));
+        }
+        // Grad b: [B] — should be C (broadcast sum)
+        for (int j = 0; j < B; j++) {
+            final int idx = j;
+            final double cgb = cpuGb[idx];
+            final double ggb = gpuGb[idx];
+            assertEquals(cgb, ggb, GRAD_TOL,
+                () -> String.format("gradB[%d] GPU=%.8f CPU=%.8f", idx, ggb, cgb));
+        }
+    }
 }

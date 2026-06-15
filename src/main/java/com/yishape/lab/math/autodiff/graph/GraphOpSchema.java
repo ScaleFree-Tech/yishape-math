@@ -588,7 +588,7 @@ public final class GraphOpSchema {
             "gelu", "softmax", "logSoftmax", "silu", "mish",
             "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
             "normalize", "layerNorm",
-            "broadcast", "transpose", "reshape", "flatten",
+            "broadcast", "expand", "transpose", "reshape", "flatten",
             "squeeze", "unsqueeze",
             "mmul",
             "leaf", "constant",

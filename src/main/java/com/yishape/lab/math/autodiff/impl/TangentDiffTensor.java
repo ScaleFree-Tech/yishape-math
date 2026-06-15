@@ -498,8 +498,20 @@ public class TangentDiffTensor implements IDiffTensor {
         return ce;
     }
     @Override public IDiffTensor softmaxCrossEntropySparse(int[] labels, int dim) {
-        // Delegate to primal for forward pass; JVP: tangent of SCE = 0 (scalar loss)
-        return ((RereDiffTensor) primal).softmaxCrossEntropySparse(labels, dim);
+        RereDiffTensor p = (RereDiffTensor) primal.softmaxCrossEntropySparse(labels, dim);
+        // JVP = dot(d(loss)/d(input), tangent_input)
+        // Backprop through the fused SCE loss node to get input gradients, then dot with tangent.
+        p.backward();
+        IDoubleTensor gx = primal.grad();
+        double jvp = 0;
+        if (gx != null) {
+            double[] gxd = gx.toDoubleArray();
+            double[] tx = this.tangent.toDoubleArray();
+            double[] prod = COMPUTER.binaryOperate(gxd, tx, BinaryOperation.MULTIPLY);
+            jvp = COMPUTER.reduceOperate(prod, ReduceOperation.SUM);
+        }
+        RereDoubleTensor tangentResult = new RereDoubleTensor(new double[]{jvp}, new int[]{1});
+        return new TangentDiffTensor(p, tangentResult, List.of(this), p);
     }
 
     // ---- reductions ----

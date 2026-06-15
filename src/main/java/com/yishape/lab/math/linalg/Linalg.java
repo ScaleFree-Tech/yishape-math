@@ -479,20 +479,20 @@ public class Linalg {
     }
 
     @SafeVarargs
+    @SuppressWarnings("unchecked")
     public static <T extends Number> IMatrix<T> average(IMatrix<T>... matrices) {
         if (matrices.length < 2) {
             throw new IllegalArgumentException("至少需要两个矩阵 / At least two matrices required");
         }
         // Split into two arrays for the existing average method
         int half = matrices.length / 2;
-        @SuppressWarnings("unchecked")
         IMatrix<T>[] firstHalf = new IMatrix[half];
-        @SuppressWarnings("unchecked")
         IMatrix<T>[] secondHalf = new IMatrix[matrices.length - half];
         System.arraycopy(matrices, 0, firstHalf, 0, half);
         System.arraycopy(matrices, half, secondHalf, 0, matrices.length - half);
-        @SuppressWarnings("unchecked")
-        Class<T> type = (Class<T>) Double.class;
+        // Derive element type from the first matrix rather than hardcoding Double.class
+        Number sample = matrices[0].get(0, 0);
+        Class<T> type = (Class<T>) (sample instanceof Float ? Float.class : Double.class);
         return IMatrix.average(firstHalf, secondHalf, type);
     }
 

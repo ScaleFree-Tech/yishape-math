@@ -452,6 +452,117 @@ public class Phase2_5OpsTest {
         assertNotNull(w.grad());
     }
 
+    // --- Defensive: N>1 batch, padding>0, numerical gradient checks ---
+
+    @Test public void testDepthwiseConv1dN2Forward() {
+        // N=2, C=2, L=5, kernelSize=3, stride=1, padding=0
+        IDiffTensor x = AD.leafTensor(new double[]{
+            // sample 0
+            1, 2, 3, 4, 5,
+            6, 7, 8, 9, 10,
+            // sample 1
+            11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20
+        }, 2, 2, 5);
+        IDiffTensor w = AD.leafTensor(new double[]{1, 1, 1, 2, 2, 2}, 2, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 0);
+        assertArrayEquals(new int[]{2, 2, 3}, y.shape());
+    }
+
+    @Test public void testDepthwiseConv1dN2Backward() {
+        IDiffTensor x = AD.leafTensor(new double[]{
+            1, 2, 3, 4, 5,
+            6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20
+        }, 2, 2, 5);
+        IDiffTensor w = AD.leafTensor(new double[]{1, 1, 1, 2, 2, 2}, 2, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 0);
+        y.sum().backward();
+        assertNotNull(x.grad());
+        assertNotNull(w.grad());
+        // dWeight should accumulate across both samples
+        double[] dw = w.grad().toDoubleArray();
+        for (double v : dw) assertTrue(Math.abs(v) > 0, "dWeight should be non-zero for N=2");
+    }
+
+    @Test public void testDepthwiseConv1dPadding1Forward() {
+        // N=1, C=1, L=3, kernelSize=3, stride=1, padding=1
+        IDiffTensor x = AD.leafTensor(new double[]{1, 2, 3}, 1, 1, 3);
+        IDiffTensor w = AD.leafTensor(new double[]{1, 2, 3}, 1, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 1);
+        // outL = (3 + 2*1 - 3) / 1 + 1 = 3
+        assertArrayEquals(new int[]{1, 1, 3}, y.shape());
+        // Manual: out[0] = 0*1 + 1*2 + 2*3 = 8
+        //         out[1] = 1*1 + 2*2 + 3*3 = 14
+        //         out[2] = 2*1 + 3*2 + 0*3 = 8
+        double[] yArr = y.toDoubleArray();
+        assertEquals(8.0, yArr[0], 1e-10);
+        assertEquals(14.0, yArr[1], 1e-10);
+        assertEquals(8.0, yArr[2], 1e-10);
+    }
+
+    @Test public void testDepthwiseConv1dPadding1Backward() {
+        IDiffTensor x = AD.leafTensor(new double[]{1, 2, 3}, 1, 1, 3);
+        IDiffTensor w = AD.leafTensor(new double[]{1, 2, 3}, 1, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 1);
+        y.sum().backward();
+        assertNotNull(x.grad());
+        assertNotNull(w.grad());
+    }
+
+    @Test public void testDepthwiseConv1dN2Padding1Forward() {
+        // N=2, C=2, L=4, kernelSize=3, stride=1, padding=1
+        IDiffTensor x = AD.leafTensor(new double[]{
+            1, 2, 3, 4,
+            5, 6, 7, 8,
+            9, 10, 11, 12,
+            13, 14, 15, 16
+        }, 2, 2, 4);
+        IDiffTensor w = AD.leafTensor(new double[]{0, 1, 0, 1, 0, 1}, 2, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 1);
+        // outL = (4 + 2*1 - 3) / 1 + 1 = 4
+        assertArrayEquals(new int[]{2, 2, 4}, y.shape());
+    }
+
+    @Test public void testDepthwiseConv1dN2Padding1Backward() {
+        IDiffTensor x = AD.leafTensor(new double[]{
+            1, 2, 3, 4,
+            5, 6, 7, 8,
+            9, 10, 11, 12,
+            13, 14, 15, 16
+        }, 2, 2, 4);
+        IDiffTensor w = AD.leafTensor(new double[]{0, 1, 0, 1, 0, 1}, 2, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 1);
+        y.sum().backward();
+        assertNotNull(x.grad());
+        assertNotNull(w.grad());
+        double[] dw = w.grad().toDoubleArray();
+        for (double v : dw) assertTrue(Math.abs(v) > 0, "dWeight should be non-zero for N=2, padding=1");
+    }
+
+    @Test public void testDepthwiseConv1dNumericalGradient() {
+        // Finite-difference verification of weight gradient.
+        double eps = 1e-5;
+        IDiffTensor x = AD.leafTensor(new double[]{1, 2, 3, 4, 5}, 1, 1, 5);
+        IDiffTensor w = AD.leafTensor(new double[]{0.5, 1.0, 0.5}, 1, 3);
+        IDiffTensor y = x.depthwiseConv1d(w, 1, 0);
+        y.sum().backward();
+        double[] analyticalDw = w.grad().toDoubleArray().clone();
+
+        // Finite difference for w[1] (the middle weight)
+        IDiffTensor wPlus = AD.leafTensor(new double[]{0.5, 1.0 + eps, 0.5}, 1, 3);
+        IDiffTensor yPlus = x.depthwiseConv1d(wPlus, 1, 0);
+        double fPlus = yPlus.sum().get(0);
+
+        IDiffTensor wMinus = AD.leafTensor(new double[]{0.5, 1.0 - eps, 0.5}, 1, 3);
+        IDiffTensor yMinus = x.depthwiseConv1d(wMinus, 1, 0);
+        double fMinus = yMinus.sum().get(0);
+
+        double numericalDw = (fPlus - fMinus) / (2 * eps);
+        assertEquals(numericalDw, analyticalDw[1], 1e-4);
+    }
+
     // ==================== Phase 5: interpolate ====================
 
     @Test public void testInterpolateBilinear() {

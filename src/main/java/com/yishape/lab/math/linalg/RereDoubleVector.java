@@ -316,10 +316,8 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector norm2() {
-        double sum = 0.0;
-        for (double v : data) {
-            sum += v * v;
-        }
+        double[] squared = computer.binaryOperate(data, data, BinaryOperation.MULTIPLY);
+        double sum = computer.reduceOperate(squared, ReduceOperation.SUM);
         return IDoubleVector.of(Math.sqrt(sum));
     }
 
@@ -334,10 +332,8 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
      */
     @Override
     public IDoubleVector norm1() {
-        double sum = 0.0;
-        for (double v : data) {
-            sum += Math.abs(v);
-        }
+        double[] absVals = computer.universalOperate(data, UniversalOperation.ABS, 0);
+        double sum = computer.reduceOperate(absVals, ReduceOperation.SUM);
         return IDoubleVector.of(sum);
     }
 
@@ -1897,14 +1893,8 @@ public class RereDoubleVector implements IDoubleVector,Serializable {
 
     @Override
     public double normInf() {
-        double maxAbs = 0.0;
-        for (int i = 0; i < this.data.length; i++) {
-            double abs = Math.abs(this.data[i]);
-            if (abs > maxAbs) {
-                maxAbs = abs;
-            }
-        }
-        return maxAbs;
+        double[] absVals = computer.universalOperate(data, UniversalOperation.ABS, 0);
+        return computer.reduceOperate(absVals, ReduceOperation.MAX);
     }
 
     @Override

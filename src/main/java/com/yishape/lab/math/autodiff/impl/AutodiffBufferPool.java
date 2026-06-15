@@ -3,6 +3,8 @@ package com.yishape.lab.math.autodiff.impl;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * Thread-local double[] buffer pool for autodiff fused ops.
@@ -48,6 +50,12 @@ final class AutodiffBufferPool {
         return qs;
     });
 
+    /**
+     * Tracks buffers acquired but not yet released per thread.
+     * Used for leak detection and cleanup after backward graph execution.
+     */
+    private static final ThreadLocal<Map<double[], Boolean>> LEASED = ThreadLocal.withInitial(IdentityHashMap::new);
+
     private AutodiffBufferPool() {}
 
     /**
@@ -65,10 +73,13 @@ final class AutodiffBufferPool {
         double[] buf = q.pollFirst();
         if (buf != null && buf.length >= minSize) {
             Arrays.fill(buf, 0.0);
+            LEASED.get().put(buf, Boolean.TRUE);
             return buf;
         }
         // Allocate slab-aligned or exact — never round up to next power-of-2
-        return new double[allocSize];
+        buf = new double[allocSize];
+        LEASED.get().put(buf, Boolean.TRUE);
+        return buf;
     }
 
     /**
@@ -78,11 +89,28 @@ final class AutodiffBufferPool {
      */
     static void release(double[] buf) {
         if (buf == null || buf.length == 0) return;
+        LEASED.get().remove(buf);
         int bucket = releaseBucketFor(buf.length);
         if (bucket < 0) return; // too large or too small to pool
         Deque<double[]> q = POOLS.get()[bucket];
         if (q.size() < MAX_PER_BUCKET) {
             q.offerLast(buf);
+        }
+    }
+
+    /**
+     * Release all buffers acquired by this thread that were not explicitly released.
+     * Called after backward graph execution to prevent leaks from exception paths.
+     */
+    static void cleanupThread() {
+        Map<double[], Boolean> leased = LEASED.get();
+        if (!leased.isEmpty()) {
+            // Copy keys before iterating: release() calls leased.remove() which would
+            // ConcurrentModify the keySet being iterated.
+            for (double[] buf : leased.keySet().toArray(new double[0][])) {
+                release(buf);
+            }
+            leased.clear();
         }
     }
 

@@ -449,8 +449,19 @@ public final class TensorBinaryProtocol {
             int leafIdx = 0;
             for (RereDiffTensor v : order) {
                 if (v.isLeaf()) {
+                    if (leafIdx >= dataOffsets.length) {
+                        throw new IllegalStateException(
+                            "CachedGraph leaf count mismatch: graph has more leaves than cached skeleton");
+                    }
                     double[] data = v.value().toDoubleArray();
                     int off = dataOffsets[leafIdx++];
+                    int dataEnd = off + 4 + data.length * 8;
+                    if (dataEnd > buf.length) {
+                        throw new IllegalStateException(
+                            "CachedGraph buffer overflow: leaf data (" + data.length
+                            + " elements, " + dataEnd + " bytes) exceeds skeleton buffer ("
+                            + buf.length + " bytes). Leaf tensor size increased since caching.");
+                    }
                     // ⚠️ ByteBuffer.wrap() defaults to BIG_ENDIAN. The YSGP binary protocol
                     // uses LITTLE_ENDIAN. Without .order(LITTLE_ENDIAN), data_len is written
                     // as {0x00,0x00,0x00,0x80} instead of {0x80,0x00,0x00,0x00}, and Rust

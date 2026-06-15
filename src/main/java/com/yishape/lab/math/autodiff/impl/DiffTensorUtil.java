@@ -103,13 +103,38 @@ public final class DiffTensorUtil {
 
     /**
      * Map a result index to a flat index in the source array under broadcast alignment.
-     * Standard NumPy broadcast semantics: dimensions of size 1 are stretched.
+     * Left-aligned (DL/PyTorch) broadcast semantics: dimensions of size 1 are stretched.
+     *
+     * <p>For rank-1 sources, the broadcast axis is determined by comparing the source dim
+     * size against the output's first and last dimensions (same heuristic as HPC's
+     * {@code broadcast_is_left_aligned}):</p>
+     * <ul>
+     *   <li>Matches output first dim → left-aligned (contiguous blocks along dim 0)</li>
+     *   <li>Matches output last dim  → right-aligned (cyclic along last dim)</li>
+     *   <li>Both match (square)       → either works; use dim 0</li>
+     *   <li>Neither match             → fallback to last dim (legacy)</li>
+     * </ul>
      */
     public static int flatIndexFromBroadcast(int[] resultIdx, int[] srcShape, int[] resultShape) {
-        // Rank-1 source broadcasts by tiling along the last axis of the result
+        // Rank-1 source: determine broadcast axis by dim matching
         if (srcShape.length == 1) {
-            int axis = (resultShape.length > 1) ? resultShape.length - 1 : 0;
-            return resultIdx[axis] % srcShape[0];
+            if (resultShape.length == 1) {
+                return resultIdx[0] % srcShape[0];
+            }
+            int firstDim = resultShape[0];
+            int lastDim = resultShape[resultShape.length - 1];
+            if (srcShape[0] == firstDim && srcShape[0] == lastDim) {
+                // Both match (square or repeated dims) — either axis equivalent
+                return resultIdx[0] % srcShape[0];
+            } else if (srcShape[0] == firstDim) {
+                // Left-aligned: rank-1 dim matches first output dim → contiguous blocks
+                return resultIdx[0] % srcShape[0];
+            } else if (srcShape[0] == lastDim) {
+                // Right-aligned: rank-1 dim matches last output dim → cyclic
+                return resultIdx[resultShape.length - 1] % srcShape[0];
+            }
+            // Fallback: dim doesn't match either end; use last dim (legacy behavior)
+            return resultIdx[resultShape.length - 1] % srcShape[0];
         }
         int diff = resultShape.length - srcShape.length;
         int srcFlat = 0;

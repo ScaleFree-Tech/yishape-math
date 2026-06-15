@@ -90,7 +90,6 @@ public final class HpcGraphExecutor {
         if (structureHash != hpcLastStructureHash) {
             ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
             if (validation.hasErrors()) {
-                System.err.println("[HPC-VALIDATE-FAIL] " + validation.toString().replace("\n", "\n[HPC-VALIDATE-FAIL] "));
                 log.warn("HPC graph validation failed — falling back to CPU:\n{}", validation);
                 return Double.NaN;
             }
@@ -100,18 +99,18 @@ public final class HpcGraphExecutor {
         // Check unsupported ops
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
+                String msg = String.format("unsupported op='%s' (graph has %d nodes)",
+                    v.opTag(), order.size());
                 if (REPORTED_UNSUPPORTED_OPS.add(v.opTag())) {
-                    System.err.println("[HPC-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
                     if (log.isDebugEnabled()) {
                         int leafCount = 0;
                         for (RereDiffTensor n : order) {
                             if (n.isLeaf()) leafCount++;
                         }
-                        log.debug("HPC tensor graph fallback: unsupported op='{}', graph has {} nodes ({} leaves)",
-                            v.opTag(), order.size(), leafCount);
+                        log.debug("HPC tensor graph fallback: {}", msg);
                     }
                 }
-                return Double.NaN;
+                return NativeStrictMode.failOrNaN("HPC", msg);
             }
         }
 
@@ -134,14 +133,20 @@ public final class HpcGraphExecutor {
             hpcConsecutiveFailures.set(0);
             return binaryResult;
         }
+        // In strict mode, binary path failure is a bug — surface it immediately
+        if (NativeStrictMode.isStrict()) {
+            throw new NativeStrictMode.NativeExecutionException("HPC",
+                "Binary protocol execution returned NaN for op='" + root.opTag()
+                + "' — likely unsupported op, protocol mismatch, or Rust bug. "
+                + "Run without -Dyishape.strictNative to fall back to JSON.");
+        }
         if (log.isDebugEnabled()) log.debug("Binary path returned NaN, falling back to JSON (nodes={})", order.size());
 
         // JSON fallback
         String json = TensorGraphExporter.toJson(root);
         if (json == null) {
-            System.err.println("[HPC-JSON-FAIL] TensorGraphExporter.toJson returned null for " + order.size() + " nodes");
-            log.debug("HPC tensor graph fallback: JSON export failed");
-            return Double.NaN;
+            log.debug("HPC tensor graph fallback: JSON export failed for {} nodes", order.size());
+            return NativeStrictMode.failOrNaN("HPC", "JSON export failed (nodes=%d)", order.size());
         }
         if (order.size() > BINARY_THRESHOLD) {
             log.warn("HPC graph has {} nodes (>{}); JSON path should be avoided — "
@@ -149,10 +154,12 @@ public final class HpcGraphExecutor {
         }
         double[][] result = HpcAutodiff.tryExecute(json);
         if (result == null || result.length < 2 || result[0] == null) {
-            System.err.println("[HPC-EXEC-FAIL] HpcAutodiff.tryExecute returned " + (result == null ? "null" : "invalid: len=" + result.length) + " for " + order.size() + " nodes, json=" + json.length() + " chars");
-            log.debug("HPC tensor graph fallback: Rust execution returned null or invalid result");
+            log.debug("HPC tensor graph fallback: Rust execution returned null or invalid result (nodes={})",
+                order.size());
             trackHpcFailure();
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("HPC",
+                "Rust execution returned null/invalid (nodes=%d) — likely faer error or unsupported op",
+                order.size());
         }
 
         // NOTE: Do NOT derive batchSize from root.scalarParam.
@@ -166,7 +173,9 @@ public final class HpcGraphExecutor {
             log.warn("HPC tensor gradient count mismatch: got {} gradients for {} leaves — falling back to CPU",
                     result.length - 1, leaves.size());
             trackHpcFailure();
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("HPC",
+                "gradient count mismatch: got %d gradients for %d leaves",
+                result.length - 1, leaves.size());
         }
         for (int i = 0; i < leaves.size(); i++) {
             if (result[i + 1] == null) {
@@ -184,6 +193,7 @@ public final class HpcGraphExecutor {
             }
             leaves.get(i).accGrad(result[i + 1]);
         }
+        hpcConsecutiveFailures.set(0); // reset cooldown on success
         return loss;
     }
 
@@ -205,17 +215,27 @@ public final class HpcGraphExecutor {
             byte[] data = hpcCachedGraph.updateLeafData(order);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
-                System.err.println("[HPC-BINARY-FAIL] full exec returned " + (resultBytes == null ? "null" : "empty") + " for " + order.size() + " nodes, " + data.length + " bytes");
+                log.debug("HPC binary full execution returned null/empty for {} nodes", order.size());
+                trackHpcFailure();
+                hpcCachedGraph = null; // invalidate cached skeleton on failure
                 return Double.NaN;
             }
 
             ByteBuffer resultBuf = ByteBuffer.wrap(resultBytes).order(ByteOrder.LITTLE_ENDIAN);
             var parsed = BinaryProtocol.deserializeResult(resultBuf);
             double loss = parsed.loss();
-            if (Double.isNaN(loss)) return Double.NaN;
+            if (Double.isNaN(loss)) {
+                trackHpcFailure();
+                hpcCachedGraph = null;
+                return Double.NaN;
+            }
 
             List<double[]> grads = parsed.grads();
-            if (grads.size() != leaves.size()) return Double.NaN;
+            if (grads.size() != leaves.size()) {
+                trackHpcFailure();
+                hpcCachedGraph = null;
+                return Double.NaN;
+            }
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
@@ -224,6 +244,8 @@ public final class HpcGraphExecutor {
             return loss;
         } catch (Exception e) {
             if (log.isDebugEnabled()) log.debug("HPC graph execution failed", e);
+            trackHpcFailure();
+            hpcCachedGraph = null; // invalidate cached skeleton on failure
             return Double.NaN;
         }
     }
@@ -235,17 +257,27 @@ public final class HpcGraphExecutor {
             byte[] data = hpcCachedGraph.updateLeafData(order);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
-                System.err.println("[HPC-BINARY-FAIL] incremental exec returned " + (resultBytes == null ? "null" : "empty") + " for " + order.size() + " nodes, " + data.length + " bytes");
+                log.debug("HPC binary incremental execution returned null/empty for {} nodes", order.size());
+                trackHpcFailure();
+                hpcCachedGraph = null; // invalidate cached skeleton on failure
                 return Double.NaN;
             }
 
             ByteBuffer resultBuf = ByteBuffer.wrap(resultBytes).order(ByteOrder.LITTLE_ENDIAN);
             var parsed = BinaryProtocol.deserializeResult(resultBuf);
             double loss = parsed.loss();
-            if (Double.isNaN(loss)) return Double.NaN;
+            if (Double.isNaN(loss)) {
+                trackHpcFailure();
+                hpcCachedGraph = null;
+                return Double.NaN;
+            }
 
             List<double[]> grads = parsed.grads();
-            if (grads.size() != leaves.size()) return Double.NaN;
+            if (grads.size() != leaves.size()) {
+                trackHpcFailure();
+                hpcCachedGraph = null;
+                return Double.NaN;
+            }
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
@@ -254,6 +286,8 @@ public final class HpcGraphExecutor {
             return loss;
         } catch (Exception e) {
             if (log.isDebugEnabled()) log.debug("HPC incremental graph execution failed", e);
+            trackHpcFailure();
+            hpcCachedGraph = null; // invalidate cached skeleton on failure
             return Double.NaN;
         }
     }

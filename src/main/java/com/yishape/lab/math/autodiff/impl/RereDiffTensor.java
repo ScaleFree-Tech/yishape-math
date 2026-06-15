@@ -280,28 +280,52 @@ public class RereDiffTensor implements IDiffTensor {
                     v.backwardFn.accept(v);
                 }
             }
+            // Release graph references so GC can reclaim intermediate nodes immediately.
+            // After backward, only gradient values matter — graph edges are stale.
+            for (int i = order.size() - 1; i >= 0; i--) {
+                RereDiffTensor v = order.get(i);
+                if (v != this && !v.isLeaf) {
+                    v.inputs = null;
+                    v.backwardFn = null;
+                    v.symbolicBackwardFn = null;
+                }
+            }
         } finally {
             IN_BACKWARD_IMPL.set(false);
             TOPO_LIST.get().clear();
             TOPO_SET.get().clear();
+            AutodiffBufferPool.cleanupThread();
         }
     }
 
     /** Reentrant-safe backward using local collections — avoids corrupting the outer
      *  backwardImpl()'s ThreadLocal TOPO_LIST/TOPO_SET during nested backward(). */
     private void backwardImplLocal() {
-        ArrayList<RereDiffTensor> order = new ArrayList<>();
-        HashSet<RereDiffTensor> visited = new HashSet<>();
-        buildTopo(order, visited);
-        for (int i = order.size() - 1; i >= 0; i--) {
-            RereDiffTensor v = order.get(i);
-            if (v != this) v.grad = null;
-        }
-        for (int i = order.size() - 1; i >= 0; i--) {
-            RereDiffTensor v = order.get(i);
-            if (v.grad != null && v.backwardFn != null) {
-                v.backwardFn.accept(v);
+        try {
+            ArrayList<RereDiffTensor> order = new ArrayList<>();
+            HashSet<RereDiffTensor> visited = new HashSet<>();
+            buildTopo(order, visited);
+            for (int i = order.size() - 1; i >= 0; i--) {
+                RereDiffTensor v = order.get(i);
+                if (v != this) v.grad = null;
             }
+            for (int i = order.size() - 1; i >= 0; i--) {
+                RereDiffTensor v = order.get(i);
+                if (v.grad != null && v.backwardFn != null) {
+                    v.backwardFn.accept(v);
+                }
+            }
+            // Release graph references to prevent cross-iteration memory accumulation.
+            for (int i = order.size() - 1; i >= 0; i--) {
+                RereDiffTensor v = order.get(i);
+                if (v != this && !v.isLeaf) {
+                    v.inputs = null;
+                    v.backwardFn = null;
+                    v.symbolicBackwardFn = null;
+                }
+            }
+        } finally {
+            AutodiffBufferPool.cleanupThread();
         }
     }
 
@@ -328,6 +352,15 @@ public class RereDiffTensor implements IDiffTensor {
             RereDiffTensor v = order.get(i);
             if (v.grad != null && v.backwardFn != null) {
                 v.backwardFn.accept(v);
+            }
+        }
+        // Release graph references to prevent cross-iteration memory accumulation.
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (v != this && !v.isLeaf) {
+                v.inputs = null;
+                v.backwardFn = null;
+                v.symbolicBackwardFn = null;
             }
         }
     }
@@ -368,7 +401,40 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     @Override
-    public void zeroGradient() { this.grad = null; }
+    public void zeroGradient() {
+        this.grad = null;
+        // Also release graph references so GC can reclaim intermediate nodes.
+        if (!this.isLeaf) {
+            this.inputs = null;
+            this.backwardFn = null;
+            this.symbolicBackwardFn = null;
+        }
+    }
+
+    /**
+     * Detach this tensor and all reachable non-leaf nodes from the computation graph.
+     *
+     * <p>After calling this method, {@link #backward()} will have no effect because all
+     * graph edges ({@code inputs}, {@code backwardFn}, {@code symbolicBackwardFn}) have
+     * been released. Use this to explicitly free graph memory before GC runs.</p>
+     */
+    public void detachGraph() {
+        java.util.ArrayDeque<RereDiffTensor> queue = new java.util.ArrayDeque<>();
+        java.util.HashSet<RereDiffTensor> seen = new java.util.HashSet<>();
+        queue.add(this);
+        while (!queue.isEmpty()) {
+            RereDiffTensor node = queue.poll();
+            if (!seen.add(node)) continue;
+            if (node.inputs != null && !node.isLeaf) {
+                for (RereDiffTensor inp : node.inputs) {
+                    if (inp != null && !seen.contains(inp)) queue.add(inp);
+                }
+                node.inputs = null;
+            }
+            node.backwardFn = null;
+            node.symbolicBackwardFn = null;
+        }
+    }
 
     @Override
     public void clipGradNorm(double maxNorm) {

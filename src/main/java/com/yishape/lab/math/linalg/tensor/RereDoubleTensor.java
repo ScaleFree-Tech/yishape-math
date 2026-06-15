@@ -903,8 +903,6 @@ public class RereDoubleTensor implements IDoubleTensor {
             idx += (long) v * stride;
             if (j != dim) stride *= shape[j];
         }
-        // DEBUG
-        System.out.println("  flatIndexKeepdim(" + o + "," + dim + "," + i + "," + java.util.Arrays.toString(shape) + ") = " + idx + " [j-loop trace: j=" + (shape.length-1) + "..0]");
         return idx;
     }
 
@@ -1074,9 +1072,7 @@ public class RereDoubleTensor implements IDoubleTensor {
                 double cum = 0;
                 for (int r = 0; r < n; r++) {
                     cum += getStrided(o, dim, r, i);
-                    int[] outIdx = mixedIndex(o, dim, r, i, resultShape);
-                    long linear = linearIndex(outIdx, resultShape);
-                    result[(int) linear] = cum;
+                    result[(o * n + r) * inner + i] = cum;
                 }
             }
         }
@@ -1098,9 +1094,8 @@ public class RereDoubleTensor implements IDoubleTensor {
                 double cum = 1;
                 for (int r = 0; r < n; r++) {
                     cum *= getStrided(o, dim, r, i);
-                    int[] outIdx = mixedIndex(o, dim, r, i, resultShape);
-                    long linear = linearIndex(outIdx, resultShape);
-                    result[(int) linear] = cum;
+                    // Flat index for [o, r, i] in result shape (no allocation)
+                    result[(int)((long)(o * n + r) * inner + i)] = cum;
                 }
             }
         }

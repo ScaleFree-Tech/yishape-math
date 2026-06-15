@@ -112,6 +112,12 @@ public class RereDoubleMatrix implements IDoubleMatrix ,Serializable{
      */
     private static final ForkJoinPool DECOMPOSITION_POOL = createDecompositionPool();
 
+    static {
+        // Register JVM shutdown hook to cleanly terminate decomposition pool
+        Runtime.getRuntime().addShutdownHook(new Thread(DECOMPOSITION_POOL::shutdown,
+            "decomposition-pool-shutdown"));
+    }
+
     private static ForkJoinPool createDecompositionPool() {
         int threads = Integer.getInteger("yishape.decomposition.threads",
                 Math.min(8, Runtime.getRuntime().availableProcessors()));

@@ -50,10 +50,10 @@ public final class GpuGraphExecutor {
     /**
      * Ops supported in tensor-native GPU execution.
      * Reference: GraphOpSchema.Gpu.SUPPORTED.
-     * NOTE: Ops NOT yet implemented in Rust GPU: expand, reciprocal, rsub, rdiv,
+     * NOTE: Ops NOT yet implemented in Rust GPU: reciprocal, rsub, rdiv,
      * scatter, narrow. Adding them here before Rust supports them causes
      * "unsupported forward op: <op>" worker errors and NaN GPU results.
-     * permute and slice were recently added (2026-06-10) — see Rust gpu_worker
+     * expand, permute and slice were recently added (2026-06-16) — see Rust gpu_worker
      * graph.rs forward_dispatch/backward_dispatch for implementations.
      */
     private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(GraphOpSchema.Gpu.SUPPORTED);
@@ -82,9 +82,11 @@ public final class GpuGraphExecutor {
      * @return loss value, or {@link Double#NaN} if GPU is unavailable or fails
      */
     public static double tryExecute(RereDiffTensor root) {
-        System.err.println("[GPU-TRACE] tryExecute called for op=" + root.opTag() + " shape=" + java.util.Arrays.toString(root.shape()));
-        if (!GpuConfig.allowAttempts()) { System.err.println("[GPU-TRACE] BLOCKED: GpuConfig.allowAttempts()=false"); return Double.NaN; }
-        if (!GpuOptionalRuntime.isGpuAvailable()) { System.err.println("[GPU-TRACE] BLOCKED: GPU not available"); return Double.NaN; }
+        if (log.isDebugEnabled()) {
+            log.debug("tryExecute called for op={} shape={}", root.opTag(), java.util.Arrays.toString(root.shape()));
+        }
+        if (!GpuConfig.allowAttempts()) { return Double.NaN; }
+        if (!GpuOptionalRuntime.isGpuAvailable()) { return Double.NaN; }
 
         // GPU cooldown: skip after repeated consecutive failures
         int cooldown = gpuCooldownRemaining.get();
@@ -118,22 +120,23 @@ public final class GpuGraphExecutor {
         // when a mismatched shape would produce silently wrong results.
         ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
         if (validation.hasErrors()) {
-            System.err.println("[GPU-VALIDATE-FAIL] " + validation.toString().replace("\n", "\n[GPU-VALIDATE-FAIL] "));
             log.error("GPU graph export BLOCKED: shape validation failed:\n{}", validation);
             return Double.NaN;
         }
         if (validation.hasWarnings() && VERBOSE) {
-            System.err.println("[GPU-VALIDATE-WARN] " + validation);
+            log.debug("GPU shape validation warning: {}", validation);
         }
-        if (VERBOSE) {
+        if (VERBOSE && log.isDebugEnabled()) {
             java.util.LinkedHashSet<String> seenOps = new java.util.LinkedHashSet<>();
             for (RereDiffTensor v : order) {
                 if (v.opTag() != null) seenOps.add(v.opTag());
             }
-            System.err.println("[GPU-OPS] Graph ops: " + seenOps + " nodes=" + order.size());
+            log.debug("GPU graph ops: {} nodes={}", seenOps, order.size());
             for (RereDiffTensor v : order) {
                 if (v.totalSize() == 0) {
-                    System.err.println("[GPU-ZERO-SIZE] op='" + v.opTag() + "' shape=" + java.util.Arrays.toString(v.shape()) + " exportShape=" + java.util.Arrays.toString(v.exportShape()) + " scalar=" + v.scalarParam() + " isLeaf=" + v.isLeaf());
+                    log.debug("GPU zero-size node: op='{}' shape={} exportShape={} scalar={} isLeaf={}",
+                        v.opTag(), java.util.Arrays.toString(v.shape()),
+                        java.util.Arrays.toString(v.exportShape()), v.scalarParam(), v.isLeaf());
                 }
                 if ("conv2d".equals(v.opTag())) {
                     long bits = Double.doubleToRawLongBits(v.scalarParam());
@@ -143,12 +146,12 @@ public final class GpuGraphExecutor {
                     long bits2 = Double.doubleToRawLongBits(v.scalarParam2());
                     int pad = (int)((bits2 >> 16) & 0xFFFF);
                     int outCh = (int)(bits2 & 0xFFFF);
-                    System.err.println("[GPU-CONV] kh=" + kh + " kw=" + kw + " stride=" + stride +
-                        " pad=" + pad + " outCh=" + outCh + " shape=" + java.util.Arrays.toString(v.shape()) +
-                        " exportShape=" + java.util.Arrays.toString(v.exportShape()));
+                    log.debug("GPU conv2d params: kh={} kw={} stride={} pad={} outCh={} shape={} exportShape={}",
+                        kh, kw, stride, pad, outCh, java.util.Arrays.toString(v.shape()),
+                        java.util.Arrays.toString(v.exportShape()));
                 }
                 if ("linear".equals(v.opTag())) {
-                    System.err.println("[GPU-LINEAR] shape=" + java.util.Arrays.toString(v.shape()));
+                    log.debug("GPU linear shape={}", java.util.Arrays.toString(v.shape()));
                 }
                 if ("mha".equals(v.opTag())) {
                     long bits = Double.doubleToRawLongBits(v.scalarParam());
@@ -159,11 +162,9 @@ public final class GpuGraphExecutor {
                     int sl = (int)((bits2 >> 32) & 0xFFFF);
                     boolean causal = (bits2 & 0x2) != 0;
                     boolean hasBias = (bits2 & 0x1) != 0;
-                    System.err.println("[GPU-MHA] shape=" + java.util.Arrays.toString(v.shape()) +
-                        " exportShape=" + java.util.Arrays.toString(v.exportShape()) +
-                        " scalarRaw=" + bits + " param2Raw=" + bits2 +
-                        " numHeads=" + nh + " numKVHeads=" + nkvh + " dModel=" + dm +
-                        " seqLen=" + sl + " causal=" + causal + " hasBias=" + hasBias);
+                    log.debug("GPU mha params: shape={} exportShape={} numHeads={} numKVHeads={} dModel={} seqLen={} causal={} hasBias={}",
+                        java.util.Arrays.toString(v.shape()), java.util.Arrays.toString(v.exportShape()),
+                        nh, nkvh, dm, sl, causal, hasBias);
                 }
                 if ("maxpool2d".equals(v.opTag())) {
                     long bits = Double.doubleToRawLongBits(v.scalarParam());
@@ -172,28 +173,29 @@ public final class GpuGraphExecutor {
                     int stride = (int)(bits & 0xFF);
                     long bits2 = Double.doubleToRawLongBits(v.scalarParam2());
                     int pad = (int)((bits2 >> 16) & 0xFFFF);
-                    int ch = (int)(bits2 & 0xFFFF);
-                    System.err.println("[GPU-MAXPOOL] kh=" + kh + " kw=" + kw + " stride=" + stride +
-                        " pad=" + pad + " ch=" + ch + " shape=" + java.util.Arrays.toString(v.shape()) +
-                        " exportShape=" + java.util.Arrays.toString(v.exportShape()));
+                    // C is from shape[1], not packed in param2 (param2 only carries padding)
+                    log.debug("GPU maxpool2d params: kh={} kw={} stride={} pad={} shape={} exportShape={}",
+                        kh, kw, stride, pad, java.util.Arrays.toString(v.shape()),
+                        java.util.Arrays.toString(v.exportShape()));
                 }
             }
         }
         // Guard: reject graphs with zero-size nodes (would cause wgpu crash)
         for (RereDiffTensor v : order) {
             if (v.totalSize() == 0 && !v.isLeaf()) {
-                System.err.println("[GPU-ZERO-SIZE-BLOCK] op='" + v.opTag() + "' shape=" + java.util.Arrays.toString(v.shape()) + " — skipping GPU to prevent wgpu crash");
+                log.warn("GPU skipped: zero-size node op='{}' shape={} — would crash wgpu",
+                    v.opTag(), java.util.Arrays.toString(v.shape()));
                 return Double.NaN;
             }
         }
         for (RereDiffTensor v : order) {
             if (v.opTag() != null && !TENSOR_SUPPORTED_OPS.contains(v.opTag())) {
+                String msg = String.format("unsupported op='%s' (graph has %d nodes)",
+                    v.opTag(), order.size());
                 if (REPORTED_UNSUPPORTED_OPS.add(v.opTag())) {
-                    System.err.println("[GPU-UNSUPPORTED-OP] op='" + v.opTag() + "' nodes=" + order.size());
-                    log.warn("GPU tensor graph fallback: unsupported op='{}', graph has {} nodes",
-                        v.opTag(), order.size());
+                    log.warn("GPU tensor graph fallback: {}", msg);
                 }
-                return Double.NaN;
+                return NativeStrictMode.failOrNaN("GPU", msg);
             }
         }
 
@@ -203,7 +205,14 @@ public final class GpuGraphExecutor {
             gpuConsecutiveFailures.set(0); // reset on success
             return binaryResult;
         }
-        System.err.println("[GPU-BINARY] Binary path returned NaN, falling through to next path");
+        // In strict mode, binary path failure is a bug — surface it immediately
+        if (NativeStrictMode.isStrict()) {
+            throw new NativeStrictMode.NativeExecutionException("GPU",
+                "Binary protocol execution returned NaN for op='" + root.opTag()
+                + "' — likely unsupported op, protocol mismatch, or Rust bug. "
+                + "Run without -Dyishape.strictNative to fall back to JSON.");
+        }
+        log.debug("GPU binary path returned NaN for op={}, trying JSON fallback", root.opTag());
 
         // NOTE: The isolated worker guard that blocked JSON fallback has been REMOVED.
         // Previously, when an isolated worker existed and binary path failed, the guard
@@ -215,11 +224,14 @@ public final class GpuGraphExecutor {
         // protects against Rust panics. HPC path never had this guard and is more robust.
         // Set -Dyishape.gpu.blockJsonFallback=true to restore old blocking behavior.
         if (Boolean.getBoolean("yishape.gpu.blockJsonFallback")) {
-            System.err.println("[GPU-FALLBACK] binary path failed, blockJsonFallback=true blocks JSON fallback. Remove this flag to permit in-process fallback.");
+            log.warn("GPU binary path failed, blockJsonFallback=true blocks JSON fallback. "
+                + "Remove -Dyishape.gpu.blockJsonFallback to permit in-process fallback.");
             return Double.NaN;
         }
 
-        if (VERBOSE) System.err.println("[GPU-DIAG] binary path returned NaN, trying JSON fallback...");
+        if (VERBOSE && log.isDebugEnabled()) {
+            log.debug("GPU binary path returned NaN for op={}, trying JSON fallback", root.opTag());
+        }
 
         // Collect leaves
         ArrayList<RereDiffTensor> leaves = new ArrayList<>();
@@ -231,10 +243,12 @@ public final class GpuGraphExecutor {
 
         // Export and execute
         String json = TensorGraphExporter.toJson(root);
-        if (VERBOSE) System.err.println("[GPU-DIAG] toJson returned " + (json != null ? json.length() + " chars" : "null"));
+        if (VERBOSE && log.isDebugEnabled()) {
+            log.debug("GPU toJson returned {} chars", json != null ? json.length() : 0);
+        }
         if (json == null) {
             log.debug("GPU tensor graph fallback: JSON export failed");
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("GPU", "JSON export failed for op='%s'", root.opTag());
         }
         if (order.size() > BINARY_THRESHOLD) {
             log.warn("GPU graph has {} nodes (>{}); JSON path should be avoided — "
@@ -243,10 +257,13 @@ public final class GpuGraphExecutor {
 
         String resultJson = GpuOptionalRuntime.tryExecuteGraph(json);
         if (resultJson == null) {
-            if (VERBOSE) System.err.println("[GPU-EXECUTE-FAIL] Rust returned null, nodes=" + order.size() + " leaves=" + leaves.size());
-            log.debug("GPU tensor graph fallback: Rust execution returned null");
+            if (VERBOSE && log.isDebugEnabled()) {
+                log.debug("GPU Rust execution returned null, nodes={} leaves={}", order.size(), leaves.size());
+            }
             trackGpuFailure();
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("GPU",
+                "Rust execution returned null (nodes=%d, leaves=%d) — likely wgpu crash or unsupported op",
+                order.size(), leaves.size());
         }
 
         try {
@@ -255,10 +272,15 @@ public final class GpuGraphExecutor {
             //   exponent for pow/powSum, divisor n for mean/div, alpha for activations.
             // Treating it as batchSize would incorrectly divide loss/grads (e.g. powSum
             // with scalarParam=2 gives halved results). Each GPU op must be self-contained.
-            return applyTensorGradientsFromJson(root, leaves, resultJson);
+            double loss = applyTensorGradientsFromJson(root, leaves, resultJson);
+            if (!Double.isNaN(loss)) {
+                gpuConsecutiveFailures.set(0); // reset cooldown on success
+            }
+            return loss;
         } catch (Exception e) {
             log.debug("GPU graph execution failed", e);
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("GPU",
+                "JSON result parsing failed: %s", e.getMessage());
         }
     }
 
@@ -339,14 +361,18 @@ public final class GpuGraphExecutor {
             java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
-            System.err.println("[GPU-BINARY] Serialized " + order.size() + " nodes, " + data.length + " bytes");
+            if (log.isDebugEnabled()) {
+                log.debug("GPU binary serialized {} nodes, {} bytes", order.size(), data.length);
+            }
 
             byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
-                System.err.println("[GPU-BINARY] FAIL: null/empty result");
+                log.debug("GPU binary execution returned null/empty result");
                 return Double.NaN;
             }
-            System.err.println("[GPU-BINARY] Got " + resultBytes.length + " bytes result");
+            if (log.isDebugEnabled()) {
+                log.debug("GPU binary execution returned {} bytes", resultBytes.length);
+            }
 
             java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
 
@@ -361,21 +387,14 @@ public final class GpuGraphExecutor {
             for (RereDiffTensor v : order) { if (v.isLeaf()) leaves.add(v); }
             java.util.List<double[]> grads = parsed.grads();
             if (grads.size() != leaves.size()) {
-                System.err.println("[GPU-BINARY-DIAG] grad count mismatch: got " + grads.size() + " leaves, expected " + leaves.size());
+                log.warn("GPU binary grad count mismatch: got {} leaves, expected {}",
+                    grads.size(), leaves.size());
                 return Double.NaN;
             }
 
-            // DEBUG: log gradients before applying (always for small graphs)
-            if (order.size() <= 5) {
-                System.err.println("[GPU-BINARY-DIAG] loss=" + loss + " numGrads=" + grads.size() + " orderSize=" + order.size());
-                for (int i = 0; i < Math.min(grads.size(), 5); i++) {
-                    double[] g = grads.get(i);
-                    StringBuilder sb = new StringBuilder();
-                    for (int j = 0; j < Math.min(g.length, 10); j++) {
-                        sb.append(j > 0 ? " " : "").append(String.format("%.6f", g[j]));
-                    }
-                    System.err.println("[GPU-BINARY-DIAG] leaf[" + i + "] grad=[" + sb + "] len=" + g.length);
-                }
+            if (log.isDebugEnabled()) {
+                log.debug("GPU binary result: loss={} numGrads={} orderSize={}",
+                    loss, grads.size(), order.size());
             }
 
             for (int i = 0; i < grads.size(); i++) {
@@ -393,7 +412,8 @@ public final class GpuGraphExecutor {
             return loss;
         } catch (Exception e) {
             log.debug("GPU graph execution failed", e);
-            return Double.NaN;
+            return NativeStrictMode.failOrNaN("GPU",
+                "JSON result parsing failed: %s", e.getMessage());
         }
     }
 
