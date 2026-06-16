@@ -2,7 +2,8 @@ package com.yishape.lab.math.compute.hpc;
 
 /**
  * HPC-accelerated loss functions (CTC, etc.).
- * Follows the same four-gate optional-native pattern as {@link HpcIm2col}.
+ * Attempts the native HPC call only — returns boolean.
+ * Java fallback is handled by the caller (DiffTensorDecomp).
  */
 public final class HpcLoss {
 
@@ -27,10 +28,14 @@ public final class HpcLoss {
             return false;
         }
         if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
-            return com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
-                    logProbs, labels, labelLen, T, C, loss, grad);
+            return false;
         }
-        try { int rc = com.yishape.lab.math.hpc.YishapeHpc.ctcForwardBackward(
-                logProbs, labels, labelLen, T, C, loss, grad); return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK; } catch (Throwable t) { return false; }
+        try {
+            int rc = com.yishape.lab.math.hpc.YishapeHpc.ctcForwardBackward(
+                    logProbs, labels, labelLen, T, C, loss, grad);
+            return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 }

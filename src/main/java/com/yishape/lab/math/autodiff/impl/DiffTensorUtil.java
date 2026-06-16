@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.function.DoubleBinaryOperator;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
 
 /**
@@ -395,7 +396,7 @@ public final class DiffTensorUtil {
     // ==================== diagEmbed helpers ====================
 
     /** Decompose a flat row-major index into multi-dimensional coordinates. */
-    static int[] decomposeFlatIndex(long flat, int[] shape) {
+    public static int[] decomposeFlatIndex(long flat, int[] shape) {
         int[] coord = new int[shape.length];
         long rem = flat;
         for (int i = shape.length - 1; i >= 0; i--) {
@@ -406,7 +407,7 @@ public final class DiffTensorUtil {
     }
 
     /** Build flat output index for diagEmbed: batchCoords with (row,col) at dim1/dim2. */
-    static int buildDiagEmbedOutputIndex(int[] batchCoord, int row, int col,
+    public static int buildDiagEmbedOutputIndex(int[] batchCoord, int row, int col,
                                          int dim1, int dim2, int[] outShape) {
         int[] coord = new int[outShape.length];
         for (int i = 0, bi = 0; i < coord.length; i++) {

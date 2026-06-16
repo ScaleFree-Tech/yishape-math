@@ -750,7 +750,7 @@ public class Phase2_5OpsTest {
         double[] loss = new double[1];
         double[] grad = new double[T * C];
 
-        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+        boolean ok = com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                 logProbs, labels, 1, T, C, loss, grad);
         assertTrue(ok, "CTC Java forward-backward should succeed");
         assertTrue(loss[0] > 0, "CTC loss should be > 0, got " + loss[0]);
@@ -770,7 +770,7 @@ public class Phase2_5OpsTest {
 
         double[] loss = new double[1];
         double[] grad = new double[T * C];
-        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+        boolean ok = com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                 logProbs, new int[]{1}, labelLen, T, C, loss, grad);
         assertTrue(ok);
         // With perfect prediction, loss ≈ -ln(1*1) = 0
@@ -782,7 +782,7 @@ public class Phase2_5OpsTest {
         double[] logProbs = new double[]{-0.5, -0.5};
         double[] loss = new double[1];
         double[] grad = new double[2];
-        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+        boolean ok = com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                 logProbs, new int[0], 0, 1, 2, loss, grad);
         assertFalse(ok, "CTC with empty target should return false");
     }
@@ -799,7 +799,7 @@ public class Phase2_5OpsTest {
 
         double[] loss = new double[1];
         double[] grad = new double[T * C];
-        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+        boolean ok = com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                 logProbs, labels, labelLen, T, C, loss, grad);
         assertTrue(ok);
 
@@ -809,13 +809,13 @@ public class Phase2_5OpsTest {
             double[] lpPlus = logProbs.clone();
             lpPlus[idx] += eps;
             double[] lossPlus = new double[1];
-            com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+            com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                     lpPlus, labels, labelLen, T, C, lossPlus, new double[T * C]);
 
             double[] lpMinus = logProbs.clone();
             lpMinus[idx] -= eps;
             double[] lossMinus = new double[1];
-            com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+            com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                     lpMinus, labels, labelLen, T, C, lossMinus, new double[T * C]);
 
             double numericGrad = (lossPlus[0] - lossMinus[0]) / (2 * eps);
@@ -836,7 +836,7 @@ public class Phase2_5OpsTest {
 
         double[] javaLoss = new double[1];
         double[] javaGrad = new double[T * C];
-        boolean javaOk = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+        boolean javaOk = com.yishape.lab.math.autodiff.loss.CtcLossJava.tryForwardBackward(
                 logProbs, labels, labelLen, T, C, javaLoss, javaGrad);
         assertTrue(javaOk, "Java CTC should always succeed");
 

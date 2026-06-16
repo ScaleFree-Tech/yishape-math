@@ -1,4 +1,6 @@
-package com.yishape.lab.math.autodiff.support;
+package com.yishape.lab.math.autodiff.loss;
+
+import com.yishape.lab.math.compute.gpu.GpuActivation;
 
 /**
  * Pure-Java (SISD) CTC Loss forward-backward implementation.
@@ -7,7 +9,7 @@ package com.yishape.lab.math.autodiff.support;
  * <p>Implements the standard CTC algorithm (Graves et al., 2006):
  * forward-backward dynamic programming over extended label sequence
  * with blank-augmented state space. The loops here are structural DP
- * iterations over the (T × L') state lattice with conditional transitions;
+ * iterations over the (T &times; L') state lattice with conditional transitions;
  * each state depends on 2-3 predecessor/successor states. These are NOT
  * element-wise numerical loops — they cannot be vectorized via
  * DoubleVectorComputer or equivalent.</p>
@@ -60,24 +62,30 @@ public final class CtcLossJava {
         }
 
         // --- y = exp(logProbs), pre-computed once ---
-        // Structural: per-element exp is unavoidable for the DP table setup;
-        // GpuActivation.tryExp could be used here but the overhead of the GPU
-        // dispatch dominates for typical CTC batch sizes. Each batch element
-        // undergoes this only once.
-        double[] y = new double[tc];
-        for (int i = 0; i < tc; i++) {
-            y[i] = Math.exp(logProbs[i]);
+        // Try GPU activation first (GPU→SIMD→SISD fallback inside GpuActivation).
+        // For typical CTC sizes (T*C potentially large for long sequences),
+        // the GPU dispatch overhead is amortized. Falls back to SISD if GPU
+        // unavailable or array below activationMinElements threshold.
+        double[] y = GpuActivation.tryExp(logProbs);
+        if (y == null) {
+            // SISD fallback: GpuActivation returned null (GPU unavailable or
+            // array below threshold). This is the correct fallback path —
+            // replacing the raw loop with an accelerated call would be wrong.
+            y = new double[tc];
+            for (int i = 0; i < tc; i++) {
+                y[i] = Math.exp(logProbs[i]);
+            }
         }
 
-        // --- forward (α) ---
-        // Structural DP: α[t][s] depends on α[t-1][s], α[t-1][s-1], α[t-1][s-2]
+        // --- forward (alpha) ---
+        // Structural DP: alpha[t][s] depends on alpha[t-1][s], alpha[t-1][s-1], alpha[t-1][s-2]
         // with conditional skip logic. Cannot be vectorized.
         double[] alpha = new double[T * lpLen];
 
-        // Initialize: α[0][ext[0]] = y[0][ext[0]]
+        // Initialize: alpha[0][ext[0]] = y[ext[0]]
         alpha[ext[0]] = y[ext[0]];
         if (lpLen > 1) {
-            alpha[lpLen + ext[1]] = y[ext[1]]; // α[0][ext[1]]
+            alpha[lpLen + ext[1]] = y[ext[1]]; // alpha[0][ext[1]]
         }
 
         for (int t = 1; t < T; t++) {
@@ -96,12 +104,12 @@ public final class CtcLossJava {
             }
         }
 
-        // --- backward (β) ---
-        // Structural DP: β[t][s] depends on β[t+1][s], β[t+1][s+1], β[t+1][s+2]
+        // --- backward (beta) ---
+        // Structural DP: beta[t][s] depends on beta[t+1][s], beta[t+1][s+1], beta[t+1][s+2]
         // with conditional skip logic. Cannot be vectorized.
         double[] beta = new double[T * lpLen];
 
-        // Initialize: β[T-1][s] = y[T-1][ext[s]]
+        // Initialize: beta[T-1][s] = y[T-1][ext[s]]
         int offLast = (T - 1) * lpLen;
         int yOffLast = (T - 1) * C;
         for (int s = 0; s < lpLen; s++) {
@@ -124,7 +132,10 @@ public final class CtcLossJava {
             }
         }
 
-        // --- loss = -ln(Z), Z = sum_s α[T-1][s] ---
+        // --- loss = -ln(Z), Z = sum_s alpha[T-1][s] ---
+        // SISD reduce kept: alpha is a slice of a larger array (T*lpLen),
+        // lpLen = 2*labelLen+1 is typically small — SIMD dispatch overhead
+        // dominates any gain from vectorizing a 10-20 element reduction.
         double z = 0;
         for (int s = 0; s < lpLen; s++) {
             z += alpha[offLast + s];
@@ -134,9 +145,9 @@ public final class CtcLossJava {
 
         // --- gradient ---
         // Input is log-probabilities x[t][k]; y[t][k] = exp(x[t][k]).
-        // ∂L/∂x[t][k] = -(1/Z) * Σ_{s:ext[s]=k} α[t][s]·β[t][s] / y[t][k]
-        // = -sum_ab / (Z * y[t][k])
-        // Structural: per-class accumulation of α·β products across the state lattice.
+        // dL/dx[t][k] = -(1/Z) * Sigma_{s:ext[s]=k} alpha[t][s] * beta[t][s] / y[t][k]
+        // = -sumAb / (Z * y[t][k])
+        // Structural: per-class accumulation of alpha*beta products across the state lattice.
         double invZ = 1.0 / zClamped;
         for (int t = 0; t < T; t++) {
             int off = t * lpLen;

@@ -22,7 +22,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
 public final class ConstantDiffTensor implements IDiffTensor {
     final RereDoubleTensor value;
 
-    ConstantDiffTensor(RereDoubleTensor value) { this.value = value; }
+    public ConstantDiffTensor(RereDoubleTensor value) { this.value = value; }
 
     // Shape delegation
     @Override public int rank() { return value.rank(); }

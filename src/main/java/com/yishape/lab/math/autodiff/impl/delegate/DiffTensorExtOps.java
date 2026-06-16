@@ -1,5 +1,6 @@
-package com.yishape.lab.math.autodiff.impl;
+package com.yishape.lab.math.autodiff.impl.delegate;
 
+import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
 import com.yishape.lab.math.compute.gpu.GpuGroupNorm;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.autodiff.AD;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
 /**
  * Extracted from {@link RereDiffTensor}.

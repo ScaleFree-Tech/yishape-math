@@ -31,7 +31,7 @@ import java.util.Map;
  *   AutodiffBufferPool.release(buf);
  * </pre></p>
  */
-final class AutodiffBufferPool {
+public final class AutodiffBufferPool {
 
     // --- slab region ---
     private static final int SLAB_SIZE = 256;            // 256 doubles = 2 KB
@@ -62,7 +62,7 @@ final class AutodiffBufferPool {
      * Acquire a buffer of at least {@code minSize} elements.
      * Returns a zeroed array (either from pool or freshly allocated).
      */
-    static double[] acquire(int minSize) {
+    public static double[] acquire(int minSize) {
         if (minSize <= 0) return new double[0];
         int bucket = bucketFor(minSize);
         if (bucket < 0) {
@@ -87,7 +87,7 @@ final class AutodiffBufferPool {
      * Finds the largest bucket whose allocate-size ≤ buf.length so non-power-of-2
      * arrays can be recycled (POOL-2 fix). Previously these were dropped for GC.
      */
-    static void release(double[] buf) {
+    public static void release(double[] buf) {
         if (buf == null || buf.length == 0) return;
         LEASED.get().remove(buf);
         int bucket = releaseBucketFor(buf.length);
@@ -102,7 +102,7 @@ final class AutodiffBufferPool {
      * Release all buffers acquired by this thread that were not explicitly released.
      * Called after backward graph execution to prevent leaks from exception paths.
      */
-    static void cleanupThread() {
+    public static void cleanupThread() {
         Map<double[], Boolean> leased = LEASED.get();
         if (!leased.isEmpty()) {
             // Copy keys before iterating: release() calls leased.remove() which would
@@ -158,14 +158,14 @@ final class AutodiffBufferPool {
 
     // --- diagnostics (package-private for testing) ---
 
-    static int bucketCount() { return TOTAL_BUCKETS; }
-    static int slabBuckets() { return SLAB_BUCKETS; }
-    static int pow2Buckets() { return POW2_BUCKETS; }
-    static int slabSize() { return SLAB_SIZE; }
-    static int slabMaxElems() { return SLAB_MAX_ELEMS; }
+    public static int bucketCount() { return TOTAL_BUCKETS; }
+    public static int slabBuckets() { return SLAB_BUCKETS; }
+    public static int pow2Buckets() { return POW2_BUCKETS; }
+    public static int slabSize() { return SLAB_SIZE; }
+    public static int slabMaxElems() { return SLAB_MAX_ELEMS; }
 
     /** Clear all per-thread pools. Safe to call from shutdown hooks. */
-    static void resetThreadLocals() {
+    public static void resetThreadLocals() {
         POOLS.remove();
     }
 }

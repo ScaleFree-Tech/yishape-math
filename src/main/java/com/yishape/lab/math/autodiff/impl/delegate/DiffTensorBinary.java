@@ -1,5 +1,6 @@
-package com.yishape.lab.math.autodiff.impl;
+package com.yishape.lab.math.autodiff.impl.delegate;
 
+import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,7 +8,9 @@ import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
 import com.yishape.lab.math.autodiff.impl.DiffTensorUtil.BinaryBackward;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;

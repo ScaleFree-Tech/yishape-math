@@ -1,10 +1,13 @@
-package com.yishape.lab.math.autodiff.impl;
+package com.yishape.lab.math.autodiff.impl.delegate;
 
+import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 
 /**

@@ -1,5 +1,6 @@
-package com.yishape.lab.math.autodiff.impl;
+package com.yishape.lab.math.autodiff.impl.delegate;
 
+import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -8,6 +9,9 @@ import java.util.function.DoubleUnaryOperator;
 
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.IDiffVector;
+import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
+import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
+import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 

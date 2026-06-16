@@ -1,5 +1,19 @@
 package com.yishape.lab.math.autodiff.impl;
 
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorDecomp;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorSoftmax;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorSpatial;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorReduce;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorBinary;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorMatrix;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorExtOps;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorPooling;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorView;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorUnary;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorNormNN;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorTransform;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorLoss;
+import com.yishape.lab.math.autodiff.impl.delegate.DiffTensorAdvanced;
 import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,7 +27,6 @@ import com.yishape.lab.math.autodiff.AD;
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
-import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import com.yishape.lab.math.autodiff.impl.DiffTensorUtil.BinaryBackward;
 import com.yishape.lab.math.compute.DoubleFlatGemm;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
@@ -55,13 +68,13 @@ public class RereDiffTensor implements IDiffTensor {
 
     // ==================== Fields ====================
 
-    RereDoubleTensor value;
-    double[] grad;
-    List<RereDiffTensor> inputs;
-    Consumer<RereDiffTensor> backwardFn;
-    String opTag;
-    boolean requiresGrad = true;
-    boolean isLeaf;
+    public RereDoubleTensor value;
+    public double[] grad;
+    public List<RereDiffTensor> inputs;
+    public Consumer<RereDiffTensor> backwardFn;
+    public String opTag;
+    public boolean requiresGrad = true;
+    public boolean isLeaf;
     /**
      * Op-specific scalar parameter. Semantics depend on {@link #opTag()}:
      * <ul>
@@ -73,21 +86,21 @@ public class RereDiffTensor implements IDiffTensor {
      * <b>WARNING:</b> This is NOT batch size. Executors must NOT divide loss
      * or gradients by this value. Each GPU/HPC op must produce correctly-scaled results.
      */
-    double scalarParam = Double.NaN;
+    public double scalarParam = Double.NaN;
     /** Secondary scalar parameter (e.g. beta in activation variants). */
-    double scalarParam2 = Double.NaN;
+    public double scalarParam2 = Double.NaN;
 
     /**
      * Override shape in JSON export. When non-null, used instead of the tensor's own shape
      * for GPU/HPC graph export (e.g. fused pattern nodes where the logical shape differs).
      */
-    int[] exportShape;
+    public int[] exportShape;
 
     /**
      * Auxiliary backward data exported to GPU/HPC backends (e.g. MaxPool2d argmax indices).
      * When non-null, included in the binary/JSON graph serialization.
      */
-    int[] backwardIndices;
+    public int[] backwardIndices;
 
     /**
      * Symbolic backward function for higher-order AD.
@@ -95,7 +108,7 @@ public class RereDiffTensor implements IDiffTensor {
      * When non-null, enables {@code AD.grad(output, inputs)} to build a new
      * computation graph whose nodes are themselves differentiable.
      */
-    java.util.function.Function<IDiffTensor, IDiffTensor[]> symbolicBackwardFn;
+    public java.util.function.Function<IDiffTensor, IDiffTensor[]> symbolicBackwardFn;
 
     // ==================== Accessors ====================
 
@@ -197,14 +210,14 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /** Intermediate node with scalar param. */
-    RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
+    public RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
                    Consumer<RereDiffTensor> backwardFn, String opTag, double scalarParam) {
         this(data, shape, inputs, backwardFn, opTag);
         this.scalarParam = scalarParam;
     }
 
     /** Intermediate node with two scalar params. */
-    RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
+    public RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
                    Consumer<RereDiffTensor> backwardFn, String opTag,
                    double scalarParam, double scalarParam2) {
         this(data, shape, inputs, backwardFn, opTag);
@@ -213,7 +226,7 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /** View node — value is a pre-built RereDoubleTensor view sharing parent storage. */
-    RereDiffTensor(RereDoubleTensor value, List<RereDiffTensor> inputs,
+    public RereDiffTensor(RereDoubleTensor value, List<RereDiffTensor> inputs,
                    Consumer<RereDiffTensor> backwardFn, String opTag) {
         this.value = value;
         this.isLeaf = false;
@@ -538,7 +551,7 @@ public class RereDiffTensor implements IDiffTensor {
 
     // ==================== toNonDiff ====================
 
-    IDiffTensor toNonDiff(IDoubleTensor t) {
+    public IDiffTensor toNonDiff(IDoubleTensor t) {
         if (t instanceof RereDiffTensor rdt) return rdt;
         if (t instanceof ConstantDiffTensor cdt) return cdt;
         if (t instanceof RereDoubleTensor rdt) return new ConstantDiffTensor(rdt);
@@ -977,7 +990,7 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /** Try to fuse unaryOp + sum(dim) into a single fused node. Returns null if no pattern matches. */
-    IDiffTensor tryFuseSumDim(int dim, boolean keepdim) {
+    public IDiffTensor tryFuseSumDim(int dim, boolean keepdim) {
         if (inputs.size() != 1) return null;
         RereDiffTensor x = inputs.get(0);
         if (x == null || !x.requiresGrad) return null;
@@ -1151,7 +1164,7 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /** Build a fused unaryOp+sum(dim) graph node. Shared across all 9 patterns. */
-    RereDiffTensor buildFusedSumDim(RereDiffTensor x, double[] result, int[] resultShape,
+    public RereDiffTensor buildFusedSumDim(RereDiffTensor x, double[] result, int[] resultShape,
                                              int dim, boolean keepdim, String tag,
                                              DoubleBinaryOperator gradFn, double[] xData,
                                              int outer, int reduce, int inner, int total) {
@@ -1190,7 +1203,7 @@ public class RereDiffTensor implements IDiffTensor {
     /** Try to fuse unaryOp + mean(dim) into a single fused node. Returns null if no pattern matches.
      *  Mirrors {@link #tryFuseSumDim(int, boolean)} but produces GraphOpSchema.FusedTag.of("relu", "mean") etc. tags
      *  and scales the backward gradient by 1/reduce. */
-    IDiffTensor tryFuseMeanDim(int dim, boolean keepdim) {
+    public IDiffTensor tryFuseMeanDim(int dim, boolean keepdim) {
         if (inputs.size() != 1) return null;
         RereDiffTensor x = inputs.get(0);
         if (x == null || !x.requiresGrad) return null;
@@ -1662,7 +1675,7 @@ public class RereDiffTensor implements IDiffTensor {
     @Override public IDiffTensor oneHot(int numClasses) { return DiffTensorPooling.oneHot(this, numClasses); }
 
     /** Build output shape for adaptiveAvgPool2d with non-standard input rank. */
-    static int[] buildOutShape(int[] inShape, int N, int C, int outH, int outW) {
+    public static int[] buildOutShape(int[] inShape, int N, int C, int outH, int outW) {
         if (inShape.length <= 3) return new int[]{C, outH, outW};
         int prefixRank = inShape.length - 3;
         int prefix = 1;
@@ -1819,7 +1832,7 @@ public class RereDiffTensor implements IDiffTensor {
 
     // ==================== Utility helpers ====================
 
-    int[] reducedShape(int dim, boolean keepdim) {
+    public int[] reducedShape(int dim, boolean keepdim) {
         return DiffTensorUtil.reducedShape(shape(), dim, keepdim);
     }
 
