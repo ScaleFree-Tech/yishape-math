@@ -205,7 +205,16 @@ public static IDiffTensor scatter(RereDiffTensor tensor, int dim, IDoubleTensor 
             inpSrc.accGrad(dxSrc);
         }
     };
-    return new RereDiffTensor(resultData, resultShape, inputs, bw, "scatter");
+    RereDiffTensor result = new RereDiffTensor(resultData, resultShape, inputs, bw, "scatter");
+    // Encode scatter indices for HPC binary protocol: interleaved [src,tgt,src,tgt,...]
+    int[] bi = new int[idxTotal * 2];
+    for (int i = 0; i < idxTotal; i++) {
+        bi[i * 2] = scatterSrcFlat[i];
+        bi[i * 2 + 1] = scatterTgtFlat[i];
+    }
+    result.setBackwardIndices(bi);
+    result.scalarParam = d; // dim for HPC
+    return result;
 }
 
 public static IDiffTensor scatterAdd(RereDiffTensor tensor, int dim, IDoubleTensor index, IDoubleTensor source) {
