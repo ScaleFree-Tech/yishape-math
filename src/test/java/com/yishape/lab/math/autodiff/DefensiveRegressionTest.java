@@ -489,10 +489,13 @@ public class DefensiveRegressionTest {
         y.backward();
         double[] wGradCpu = w.grad().toDoubleArray();
 
-        // Reset and try HPC path
-        w.setRequiresGrad(true);
+        // Reset gradients and re-create graph for HPC path.
+        // backward() releases intermediate node references (inputs=null)
+        // in the graph; HPC execution needs an intact graph, so we rebuild it.
+        x.zeroGradient();
         w.zeroGradient();
-        boolean hpcOk = AD.tryHpcExecute(y);
+        var y2 = x.mul(w).sum();
+        boolean hpcOk = AD.tryHpcExecute(y2);
         if (hpcOk) {
             double[] wGradHpc = w.grad().toDoubleArray();
             for (int i = 0; i < 4; i++) {

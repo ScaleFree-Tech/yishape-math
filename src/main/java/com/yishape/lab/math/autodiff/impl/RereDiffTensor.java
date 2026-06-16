@@ -381,16 +381,21 @@ public class RereDiffTensor implements IDiffTensor {
                 state[sp - 1] = 1;
                 if (!visited.add(node)) { sp--; continue; }
                 var inputs = node.inputs;
-                for (int i = inputs.size() - 1; i >= 0; i--) {
-                    RereDiffTensor inp = inputs.get(i);
-                    if (!visited.contains(inp)) {
-                        if (sp >= stack.length) {
-                            stack = java.util.Arrays.copyOf(stack, stack.length * 2);
-                            state = java.util.Arrays.copyOf(state, state.length * 2);
+                // Guard: inputs may be null if the graph was released after backward()
+                // (see backwardImpl() lines 285-292). Nodes with null inputs are terminal
+                // — they have no predecessors to traverse.
+                if (inputs != null) {
+                    for (int i = inputs.size() - 1; i >= 0; i--) {
+                        RereDiffTensor inp = inputs.get(i);
+                        if (!visited.contains(inp)) {
+                            if (sp >= stack.length) {
+                                stack = java.util.Arrays.copyOf(stack, stack.length * 2);
+                                state = java.util.Arrays.copyOf(state, state.length * 2);
+                            }
+                            stack[sp] = inp;
+                            state[sp] = 0;
+                            sp++;
                         }
-                        stack[sp] = inp;
-                        state[sp] = 0;
-                        sp++;
                     }
                 }
             } else {

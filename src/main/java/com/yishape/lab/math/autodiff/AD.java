@@ -358,7 +358,8 @@ public class AD {
             if (nodeGrad != null && node.symbolicBackwardFn() != null) {
                 IDiffTensor[] localGrads = node.symbolicBackwardFn().apply(nodeGrad);
                 List<RereDiffTensor> nodeInputs = node.inputs();
-                for (int j = 0; j < nodeInputs.size() && j < localGrads.length; j++) {
+                if (nodeInputs != null) {
+                    for (int j = 0; j < nodeInputs.size() && j < localGrads.length; j++) {
                     RereDiffTensor inputNode = nodeInputs.get(j);
                     IDiffTensor existing = nodeGrads.get(inputNode);
                     if (existing == null) {
@@ -367,6 +368,7 @@ public class AD {
                         nodeGrads.put(inputNode, existing.add(localGrads[j]));
                     }
                 }
+            }
             }
         }
 
@@ -851,8 +853,11 @@ public class AD {
             RereDiffTensor node = queue.pollFirst();
             if (!visited.add(node)) continue;
             order.add(node);
-            for (RereDiffTensor in : node.inputs()) {
-                if (!visited.contains(in)) queue.addLast(in);
+            java.util.List<RereDiffTensor> nodeInputs = node.inputs();
+            if (nodeInputs != null) {
+                for (RereDiffTensor in : nodeInputs) {
+                    if (!visited.contains(in)) queue.addLast(in);
+                }
             }
         }
 

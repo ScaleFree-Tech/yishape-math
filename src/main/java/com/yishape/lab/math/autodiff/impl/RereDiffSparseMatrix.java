@@ -99,10 +99,14 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
                     stack.pop();
                     continue;
                 }
-                for (int i = node.inputs.size() - 1; i >= 0; i--) {
-                    RereDiffSparseMatrix inp = node.inputs.get(i);
-                    if (!visited.contains(inp)) {
-                        stack.push(new Object[]{inp, Boolean.TRUE});
+                // Guard against null inputs (graph may have been released after backward)
+                var inpList = node.inputs;
+                if (inpList != null) {
+                    for (int i = inpList.size() - 1; i >= 0; i--) {
+                        RereDiffSparseMatrix inp = inpList.get(i);
+                        if (!visited.contains(inp)) {
+                            stack.push(new Object[]{inp, Boolean.TRUE});
+                        }
                     }
                 }
             } else {
