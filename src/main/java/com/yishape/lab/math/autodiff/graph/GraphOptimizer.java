@@ -173,8 +173,11 @@ public class GraphOptimizer {
             case "square":  return COMPUTER.binaryOperate(a, a, BinaryOperation.MULTIPLY);
             case "pow":     if (Double.isNaN(p)) return null;
                             return COMPUTER.universalOperate(a, UniversalOperation.POW, p);
-            case "sum":     return new double[]{COMPUTER.reduceOperate(a, ReduceOperation.SUM)};
-            case "mean":    return new double[]{COMPUTER.reduceOperate(a, ReduceOperation.MEAN)};
+            case "sum":     // Only fold flat sum (scalarParam NaN). Axis-specific sum has non-NaN stride → skip.
+                            if (!Double.isNaN(p)) return null;
+                            return new double[]{COMPUTER.reduceOperate(a, ReduceOperation.SUM)};
+            case "mean":    if (!Double.isNaN(p)) return null;
+                            return new double[]{COMPUTER.reduceOperate(a, ReduceOperation.MEAN)};
             default:        return null;
         }
     }

@@ -291,7 +291,7 @@ public class FusedMatrixOps {
                 yield grad * (0.5 * (1.0 + tanhI) + 0.5 * inputV * sechSq * din_dx);
             }
             case LEAKY_RELU -> grad * (inputV >= 0 ? 1.0 : op.param);
-            case ELU     -> grad * (inputV >= 0 ? 1.0 : outputV + op.param);
+            case ELU     -> grad * (inputV >= 0 ? 1.0 : op.param * Math.exp(inputV));
             case SELU    -> grad * (inputV >= 0 ? 1.0507009873554805 : 1.0507009873554805 * 1.6732632423543772 * Math.exp(inputV));
             case SILU -> {
                 double sig = 1.0 / (1.0 + Math.exp(-inputV));

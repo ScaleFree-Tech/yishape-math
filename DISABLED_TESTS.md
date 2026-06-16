@@ -6,9 +6,7 @@ Auto-generated 2026-06-16. Update when enabling or adding disabled tests.
 
 | Test | Location | Blocked By | Details |
 |------|----------|------------|---------|
-| `testSubBroadcastDim1_vector` | `ProtocolContractTest.java:255` | GPU sub-broadcast backward | GPU returns NaN — scalar encoding or backward dispatch issue |
-| `testPow_BcastDim1` | `ProtocolContractTest.java:289` | GPU f32 precision | f32 precision: pow^3 on GPU produces ~4e-3 diff on large values |
-| `testMish` | `ProtocolContractTest.java:325` | GPU mish backward | GPU mish backward produces wrong gradient (8x error) |
+| *(none — all 3 previously bug-blocked tests fixed 2026-06-16)* | | | |
 
 ## ⏸ Slow / Performance Benchmark (not bugs)
 

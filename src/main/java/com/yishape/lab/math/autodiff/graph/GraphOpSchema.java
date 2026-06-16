@@ -629,7 +629,7 @@ public final class GraphOpSchema {
             "linear", "conv2d", "convTranspose2d", "maxpool2d", "avgpool2d", "batchNorm2d",
             "embedding", "mha", "lstmStep",
             "selectiveScan", "selectiveScan2", "depthwiseConv1d",
-            "permute", "expand", "reciprocal", "rsub", "rdiv",
+            "permute", "expand", "reciprocal",
             "gather", "scatter", "select", "slice", "narrow",
             "cat", "contiguous",
             "batchNorm", "groupNorm",

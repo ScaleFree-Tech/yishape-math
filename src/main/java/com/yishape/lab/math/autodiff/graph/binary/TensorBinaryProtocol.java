@@ -77,7 +77,7 @@ public final class TensorBinaryProtocol {
      * (TLV extension blocks) via {@code -Dyishape.ysgp.version=2}.
      */
     /** Default wire format version (1 = backward-compat with old Rust). Overridable via system property or direct mutation for testing. */
-    public static int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
+    public static volatile int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
 
     // Flag bits — keep in sync with BinaryProtocol + Rust parsers
     public static final int FLAG_HAS_DATA    = 1 << 0;

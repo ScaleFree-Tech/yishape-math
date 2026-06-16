@@ -1262,7 +1262,7 @@ public class RereDiffTensor implements IDiffTensor {
         // -- log().mean(dim) --
         if ("log".equals(opTag)) {
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("log", "mean"),
-                (g, xv) -> g * invR / xv, xData, outer, reduce, inner, total);
+                (g, xv) -> g * invR / Math.max(Math.abs(xv), 1e-15), xData, outer, reduce, inner, total);
         }
         // -- pow(n).mean(dim) --
         double spp = scalarParam;

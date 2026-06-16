@@ -116,7 +116,7 @@ public final class DiffTensorUnary {
             double[] inGrad = AutodiffBufferPool.acquire(m);
             for (int i = 0; i < total; i++) {
                 double x = input.value.linearGet(i);
-                inGrad[i] = self.grad[i] * n * Math.pow(x, n - 1);
+                inGrad[i] = (n == 0) ? 0 : self.grad[i] * n * Math.pow(x, n - 1);
             }
             input.accGradFromPooled(inGrad, m);
         };

@@ -102,26 +102,32 @@ public static IDiffTensor instanceNorm(RereDiffTensor tensor, IDiffTensor gamma,
         double[] dx = new double[(int) inpX.value.totalSize()];
         double[] dGamma = new double[fC];
         double[] dBeta = (bd != null) ? new double[fC] : null;
+        // Clone captured arrays inside backward closure to prevent stale reads
+        // on backward re-entry (HPC fail → SISD retry or multi-thread graph exec)
+        double[] lMeans = means.clone();
+        double[] lSigmas = sigmas.clone();
+        double[] lXd = xd.clone();
+        double[] lGd = gd.clone();
 
         if (!com.yishape.lab.math.compute.hpc.HpcNorm.tryInstanceNormBackward(
-                xd, gd, g, fN, fC, fSpatial, eps, dx, dGamma, dBeta != null ? dBeta : new double[fC])) {
+                lXd, lGd, g, fN, fC, fSpatial, eps, dx, dGamma, dBeta != null ? dBeta : new double[fC])) {
             // SISD fallback
             for (int n2 = 0; n2 < fN; n2++) {
                 for (int c2 = 0; c2 < fC; c2++) {
                     int instIdx = n2 * fC + c2;
-                    double sigma = sigmas[instIdx];
+                    double sigma = lSigmas[instIdx];
                     double invSigma = 1.0 / sigma;
                     double sumG = 0, sumGXH = 0;
                     for (int sp2 = 0; sp2 < fSpatial; sp2++) {
                         int idx2 = (n2 * fC + c2) * fSpatial + sp2;
-                        double gScaled = g[idx2] * gd[c2];
+                        double gScaled = g[idx2] * lGd[c2];
                         sumG += gScaled;
-                        sumGXH += gScaled * (xd[idx2] - means[instIdx]) / sigma;
+                        sumGXH += gScaled * (lXd[idx2] - lMeans[instIdx]) / sigma;
                     }
                     for (int sp2 = 0; sp2 < fSpatial; sp2++) {
                         int idx2 = (n2 * fC + c2) * fSpatial + sp2;
-                        dx[idx2] = (g[idx2] * gd[c2] - sumG / fSpatial - (xd[idx2] - means[instIdx]) / sigma * sumGXH / fSpatial) * invSigma;
-                        dGamma[c2] += g[idx2] * (xd[idx2] - means[instIdx]) / sigma;
+                        dx[idx2] = (g[idx2] * lGd[c2] - sumG / fSpatial - (lXd[idx2] - lMeans[instIdx]) / sigma * sumGXH / fSpatial) * invSigma;
+                        dGamma[c2] += g[idx2] * (lXd[idx2] - lMeans[instIdx]) / sigma;
                         if (dBeta != null) dBeta[c2] += g[idx2];
                     }
                 }

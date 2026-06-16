@@ -57,7 +57,7 @@ public final class BinaryProtocol {
      * compatibility with existing Rust binaries (GPU/HPC). Opt into V2
      * (TLV extension blocks) via {@code -Dyishape.ysgp.version=2}.
      */
-    public static int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
+    public static volatile int WIRE_VERSION = Integer.getInteger("yishape.ysgp.version", 1);
 
     // Flag bits
     public static final int FLAG_HAS_DATA    = 1 << 0;

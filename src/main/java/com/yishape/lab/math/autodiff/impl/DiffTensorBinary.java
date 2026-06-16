@@ -44,7 +44,7 @@ public static IDiffTensor rsub(RereDiffTensor tensor, double scalar) {
         for (int i = 0; i < n; i++) inGrad[i] = -self.grad[i];
         input.accGradFromPooled(inGrad, n);
     };
-    RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rsub", scalar);
+    RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rsubScalar", scalar);
     // tape-of-tape: d²(rsub)/dx² = 0. Connect to input via mul(0).
     RereDiffTensor xRefRsub = tensor;
     int[] rsubShape = tensor.shape().clone();
@@ -70,10 +70,10 @@ public static IDiffTensor rdiv(RereDiffTensor tensor, double scalar) {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = -self.grad[i] * scalar / Math.max(xAbs * xAbs, DIV_EPS * DIV_EPS); }
+        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = xAbs < DIV_EPS ? 0 : -self.grad[i] * scalar / (xAbs * xAbs); }
         input.accGradFromPooled(inGrad, m);
     };
-    RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rdiv", scalar);
+    RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rdivScalar", scalar);
     // tape-of-tape: d²(scalar/x)/dx² = 2*scalar/x³ ≠ 0.
     // Use tensor ops on xRef so MixedMode.hvp() gradients flow back.
     RereDiffTensor xRefRdiv = tensor;
@@ -98,7 +98,7 @@ public static IDiffTensor reciprocal(RereDiffTensor tensor) {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = -self.grad[i] / Math.max(xAbs * xAbs, DIV_EPS * DIV_EPS); }
+        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = xAbs < DIV_EPS ? 0 : -self.grad[i] / (xAbs * xAbs); }
         input.accGradFromPooled(inGrad, m);
     };
     RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "reciprocal");

@@ -26,17 +26,30 @@ public final class HpcOptionalRuntime {
 
     // Cache for dynamic method lookups (tryActivationF64, tryElementwiseF64, etc.)
     // and result accessor methods (status, lLower, u, etc.)
+    // ConcurrentHashMap prohibits null values, so absent methods are tracked
+    // separately via ABSENT_METHODS to avoid NPE from computeIfAbsent.
     private static final ConcurrentHashMap<String, Method> METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> ABSENT_METHODS = ConcurrentHashMap.newKeySet();
 
+    /**
+     * Looks up a method reflectively, caching both successful and failed lookups.
+     * Failed lookups are cached so repeated calls don't re-throw.
+     *
+     * @return the Method, or {@code null} if not found (now or previously)
+     */
     private static Method cachedMethod(Class<?> clazz, String name, Class<?>... paramTypes) {
         String key = clazz.getName() + "." + name + ":" + java.util.Arrays.toString(paramTypes);
-        return METHOD_CACHE.computeIfAbsent(key, k -> {
-            try {
-                return clazz.getMethod(name, paramTypes);
-            } catch (NoSuchMethodException e) {
-                return null;
-            }
-        });
+        if (ABSENT_METHODS.contains(key)) return null;
+        Method m = METHOD_CACHE.get(key);
+        if (m != null) return m;
+        try {
+            m = clazz.getMethod(name, paramTypes);
+            Method existing = METHOD_CACHE.putIfAbsent(key, m);
+            return existing != null ? existing : m;
+        } catch (NoSuchMethodException e) {
+            ABSENT_METHODS.add(key);
+            return null;
+        }
     }
     private static final Method M_CHOLESKY;
     private static final Method M_SVD;
@@ -289,7 +302,7 @@ public final class HpcOptionalRuntime {
         try {
             Object out = M_TRY_MATMUL.invoke(null, a, b);
             return (out instanceof double[][]) ? (double[][]) out : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("tryMatMul", e);
             return null;
         }
@@ -308,7 +321,7 @@ public final class HpcOptionalRuntime {
             int st = (Integer) cachedMethod(rc, "status").invoke(res);
             double[][] l = (double[][]) cachedMethod(rc, "lLower").invoke(res);
             return new RCholesky(st, l);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("cholesky", e);
             return null;
         }
@@ -329,7 +342,7 @@ public final class HpcOptionalRuntime {
             double[] s = (double[]) cachedMethod(rc, "singularValues").invoke(res);
             double[][] vt = (double[][]) cachedMethod(rc, "vt").invoke(res);
             return new RSvd(st, u, s, vt);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("svd", e);
             return null;
         }
@@ -359,7 +372,7 @@ public final class HpcOptionalRuntime {
             }
             double[] x = (double[]) xRaw;
             return new RSolveSquare(st, ok, x);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("solveSquare", e);
             return null;
         }
@@ -417,7 +430,7 @@ public final class HpcOptionalRuntime {
             double obj = (Double) cachedMethod(rc, "objective").invoke(res);
             double[] x = (double[]) cachedMethod(rc, "x").invoke(res);
             return new HpcDenseLpResult(st, obj, x);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("toLp", e);
             return null;
         }
@@ -519,7 +532,7 @@ public final class HpcOptionalRuntime {
             double[] w = (double[]) cachedMethod(rc, "eigenvaluesAscending").invoke(res);
             double[][] vecs = (double[][]) cachedMethod(rc, "eigenvectors").invoke(res);
             return new REigenSymmetric(st, w, vecs);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("eigenSymmetric", e);
             return null;
         }
@@ -538,7 +551,7 @@ public final class HpcOptionalRuntime {
             int st = (Integer) cachedMethod(rc, "status").invoke(res);
             double[][] x = (double[][]) cachedMethod(rc, "x").invoke(res);
             return new RSolveMultiRhs(st, x);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("solveMultiRhs", e);
             return null;
         }
@@ -557,7 +570,7 @@ public final class HpcOptionalRuntime {
             int st = (Integer) cachedMethod(rc, "status").invoke(res);
             double[][] inv = (double[][]) cachedMethod(rc, "inv").invoke(res);
             return new RInverse(st, inv);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("inverse", e);
             return null;
         }
@@ -577,7 +590,7 @@ public final class HpcOptionalRuntime {
             double[][] q = (double[][]) cachedMethod(rc, "q").invoke(res);
             double[][] r = (double[][]) cachedMethod(rc, "r").invoke(res);
             return new RQr(st, q, r);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("qr", e);
             return null;
         }
@@ -598,7 +611,7 @@ public final class HpcOptionalRuntime {
             double[][] u = (double[][]) cachedMethod(rc, "u").invoke(res);
             int[] p = (int[]) cachedMethod(rc, "p").invoke(res);
             return new RLu(st, l, u, p);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("lu", e);
             return null;
         }
@@ -620,7 +633,7 @@ public final class HpcOptionalRuntime {
             double[][] vr = (double[][]) cachedMethod(rc, "eigenvectorsReal").invoke(res);
             double[][] vi = (double[][]) cachedMethod(rc, "eigenvectorsImag").invoke(res);
             return new REigenNonsymmetric(st, er, ei, vr, vi);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("eigenNonsymmetric", e);
             return null;
         }
@@ -640,7 +653,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_BUILD.invoke(null, dims, data, ids, metricType, m, efConstruction, efSearch);
             return (res instanceof Long) ? (Long) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswBuildF32", e);
             return null;
         }
@@ -653,7 +666,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_ADD.invoke(null, handle, id, data);
             return (res instanceof Integer) ? (Integer) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswAddF32", e);
             return null;
         }
@@ -676,7 +689,7 @@ public final class HpcOptionalRuntime {
             float[] distances = (float[]) M_RESULT_DISTANCES.invoke(res);
             int    found     = (Integer) M_RESULT_FOUND.invoke(res);
             return new RHnswSearch(st, ids, distances, found);
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswSearchF32", e);
             return null;
         }
@@ -689,7 +702,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_GET.invoke(null, handle, id, dataOut);
             return (res instanceof Integer) ? (Integer) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswGetF32", e);
             return null;
         }
@@ -702,7 +715,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_SIZE.invoke(null, handle);
             return (res instanceof Integer) ? (Integer) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswSize", e);
             return null;
         }
@@ -715,7 +728,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_SET_EF.invoke(null, handle, ef);
             return (res instanceof Integer) ? (Integer) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswSetEf", e);
             return null;
         }
@@ -728,7 +741,7 @@ public final class HpcOptionalRuntime {
         try {
             Object res = M_HNSW_FREE.invoke(null, handle);
             return (res instanceof Integer) ? (Integer) res : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("hnswFree", e);
             return null;
         }
@@ -760,7 +773,7 @@ public final class HpcOptionalRuntime {
                 out[i + 1] = grads[i];
             }
             return out;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("tryExecuteGraph", e);
             return null;
         }
@@ -776,7 +789,7 @@ public final class HpcOptionalRuntime {
         try {
             Object out = M_EXECUTE_GRAPH_BINARY.invoke(null, (Object) data);
             return (out instanceof byte[] b) ? b : null;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException | NullPointerException e) {
             logHpcError("tryExecuteGraphBinary", e);
             return null;
         }

@@ -192,9 +192,11 @@ public static IDiffTensor scatter(RereDiffTensor tensor, int dim, IDoubleTensor 
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor inpSelf = self.inputs.get(0);
         // Self gradient: pass through except at overwritten positions
-        double[] dxSelf = self.grad.clone();
+        int selfN = self.grad.length;
+        double[] dxSelf = AutodiffBufferPool.acquire(selfN);
+        System.arraycopy(self.grad, 0, dxSelf, 0, selfN);
         for (int i = 0; i < fIdxTotal; i++) dxSelf[fScatterTgtFlat[i]] = 0.0;
-        inpSelf.accGrad(dxSelf);
+        inpSelf.accGradFromPooled(dxSelf, selfN);
         // Source gradient
         if (srcNode != null) {
             RereDiffTensor inpSrc = self.inputs.get(1);
