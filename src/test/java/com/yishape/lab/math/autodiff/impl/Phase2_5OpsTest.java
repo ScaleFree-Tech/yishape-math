@@ -396,7 +396,7 @@ public class Phase2_5OpsTest {
 
     @Test public void testDiagEmbedForward() {
         IDiffTensor x = AD.leafTensor(new double[]{1, 2, 3}, 3);
-        IDiffTensor y = x.diagEmbed(0, 0, 0);
+        IDiffTensor y = x.diagEmbed(0, 0, 1);
         assertArrayEquals(new int[]{3, 3}, y.shape());
         double[] data = y.toDoubleArray();
         assertEquals(1, data[0], 1e-10);  // [0,0]
@@ -407,7 +407,7 @@ public class Phase2_5OpsTest {
 
     @Test public void testDiagEmbedBackward() {
         IDiffTensor x = AD.leafTensor(new double[]{1, 2, 3}, 3);
-        IDiffTensor y = x.diagEmbed(0, 0, 0);
+        IDiffTensor y = x.diagEmbed(0, 0, 1);
         y.sum().backward();
         assertNotNull(x.grad());
         assertEquals(1, x.grad().toDoubleArray()[0], 1e-10);
@@ -614,7 +614,7 @@ public class Phase2_5OpsTest {
         assertNotNull(c.l1Loss(c));
         assertNotNull(c.cosineSimilarity(c, 0, 1e-8));
         assertNotNull(c.oneHot(3));
-        assertNotNull(c.diagEmbed(0, 0, 0));
+        assertNotNull(c.diagEmbed(0, 0, 1));
         assertNotNull(c.dropout2d(0.0));
         // frobeniusNorm on 2D tensor
         IDiffTensor c2d = AD.constantTensor(new double[]{3, 4, 0, 0}, 2, 2);

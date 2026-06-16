@@ -341,18 +341,43 @@ public final class ConstantDiffTensor implements IDiffTensor {
     @Override public IDiffTensor instanceNorm(IDiffTensor gamma, IDiffTensor beta, double eps) {
         return computeInstanceNorm(gamma, beta, eps);
     }
-    @Override public IDiffTensor diagEmbed(int offset, int dim1, int dim2) {
-        long n = value.totalSize();
-        int M = (int) n + Math.abs(offset);
-        double[] xd = value.toDoubleArray();
-        double[] y = new double[M * M];
-        for (int i = 0; i < n; i++) {
-            int row = (offset >= 0) ? i : i - offset;
-            int col = (offset >= 0) ? i + offset : i;
-            if (row >= 0 && row < M && col >= 0 && col < M) y[row * M + col] = xd[i];
-        }
-        return wrap(new RereDoubleTensor(y, new int[]{M, M}));
-    }
+	    @Override public IDiffTensor diagEmbed(int offset, int dim1, int dim2) {
+	        int[] s = shape();
+	        int rank = s.length;
+	        int D = s[rank - 1];
+	        int batchRank = rank - 1;
+
+	        int outRank = rank + 1;
+	        int fDim1 = (dim1 < 0) ? dim1 + outRank : dim1;
+	        int fDim2 = (dim2 < 0) ? dim2 + outRank : dim2;
+	        if (fDim1 < 0 || fDim1 >= outRank || fDim2 < 0 || fDim2 >= outRank || fDim1 == fDim2) {
+	            throw new IllegalArgumentException(
+	                "diagEmbed: dim1=" + dim1 + " dim2=" + dim2 + " invalid for input rank " + rank);
+	        }
+
+	        int[] outShape = new int[outRank];
+	        int[] prefixShape = new int[batchRank];
+	        System.arraycopy(s, 0, prefixShape, 0, batchRank);
+	        for (int i = 0, pi = 0; i < outRank; i++) {
+	            outShape[i] = (i == fDim1 || i == fDim2) ? D : prefixShape[pi++];
+	        }
+
+	        long outer = value.totalSize() / D;
+	        double[] xd = value.toDoubleArray();
+	        double[] y = new double[(int)(outer * D * D)];
+
+	        for (int o = 0; o < outer; o++) {
+	            int[] batchCoord = DiffTensorUtil.decomposeFlatIndex(o, prefixShape);
+	            for (int k = 0; k < D; k++) {
+	                int row = (offset >= 0) ? k : k - offset;
+	                int col = (offset >= 0) ? k + offset : k;
+	                if (row < 0 || row >= D || col < 0 || col >= D) continue;
+	                y[DiffTensorUtil.buildDiagEmbedOutputIndex(batchCoord, row, col, fDim1, fDim2, outShape)] = xd[o * D + k];
+	            }
+	        }
+	        return wrap(new RereDoubleTensor(y, outShape));
+	    }
+
     @Override public IDiffTensor dropout2d(double p) {
         if (p <= 0) return this;
         int[] s = shape();

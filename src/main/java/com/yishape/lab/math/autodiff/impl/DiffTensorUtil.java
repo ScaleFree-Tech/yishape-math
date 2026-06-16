@@ -392,4 +392,28 @@ public final class DiffTensorUtil {
             }
         };
     }
+    // ==================== diagEmbed helpers ====================
+
+    /** Decompose a flat row-major index into multi-dimensional coordinates. */
+    static int[] decomposeFlatIndex(long flat, int[] shape) {
+        int[] coord = new int[shape.length];
+        long rem = flat;
+        for (int i = shape.length - 1; i >= 0; i--) {
+            coord[i] = (int)(rem % shape[i]);
+            rem /= shape[i];
+        }
+        return coord;
+    }
+
+    /** Build flat output index for diagEmbed: batchCoords with (row,col) at dim1/dim2. */
+    static int buildDiagEmbedOutputIndex(int[] batchCoord, int row, int col,
+                                         int dim1, int dim2, int[] outShape) {
+        int[] coord = new int[outShape.length];
+        for (int i = 0, bi = 0; i < coord.length; i++) {
+            if (i == dim1) coord[i] = row;
+            else if (i == dim2) coord[i] = col;
+            else coord[i] = batchCoord[bi++];
+        }
+        return flatIndex(coord, outShape);
+    }
 }

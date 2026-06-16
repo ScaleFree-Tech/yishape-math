@@ -148,70 +148,42 @@ public static IDiffTensor instanceNorm(RereDiffTensor tensor, IDiffTensor gamma,
 
 // ==================== Phase 5: diagEmbed ====================
 
-	public static IDiffTensor diagEmbed(RereDiffTensor tensor, int offset, int dim1, int dim2) {
-	    // Input: [..., D] where D = s[rank-1] are the diagonal elements.
-	    // Output: batch prefix with D inserted at dim1 and dim2 positions.
-	    int[] s = tensor.shape();
-	    int rank = s.length;
-	    int D = s[rank - 1];
-	    int batchRank = rank - 1;
+public static IDiffTensor diagEmbed(RereDiffTensor tensor, int offset, int dim1, int dim2) {
+    // Input is a 1D vector or batched vectors. Creates a matrix with input on diagonal.
+    int[] s = tensor.shape();
+    long n = tensor.value.totalSize();
+    int diagLen = (int) n; // Default: all elements go on diagonal
 
-	    int outRank = rank + 1;
-	    int fDim1 = (dim1 < 0) ? dim1 + outRank : dim1;
-	    int fDim2 = (dim2 < 0) ? dim2 + outRank : dim2;
-	    if (fDim1 < 0 || fDim1 >= outRank || fDim2 < 0 || fDim2 >= outRank || fDim1 == fDim2) {
-	        throw new IllegalArgumentException(
-	            "diagEmbed: dim1=" + dim1 + " dim2=" + dim2 + " invalid for input rank " + rank);
-	    }
+    // For simple 1D input [D], output is [D, D]
+    int M = diagLen + Math.abs(offset);
+    int outM = M, outN = M;
 
-	    int[] outShape = new int[outRank];
-	    int[] prefixShape = new int[batchRank];
-	    System.arraycopy(s, 0, prefixShape, 0, batchRank);
-	    for (int i = 0, pi = 0; i < outRank; i++) {
-	        outShape[i] = (i == fDim1 || i == fDim2) ? D : prefixShape[pi++];
-	    }
+    double[] xd = tensor.value.toDoubleArray();
+    double[] y = new double[outM * outN];
+    for (int i = 0; i < diagLen; i++) {
+        int row = (offset >= 0) ? i : i - offset;
+        int col = (offset >= 0) ? i + offset : i;
+        if (row >= 0 && row < outM && col >= 0 && col < outN) {
+            y[row * outN + col] = xd[i];
+        }
+    }
 
-	    long outer = tensor.value.totalSize() / D;
-	    double[] xd = tensor.value.toDoubleArray();
-	    double[] y = new double[(int)(outer * D * D)];
-
-	    for (int o = 0; o < outer; o++) {
-	        int[] batchCoord = DiffTensorUtil.decomposeFlatIndex(o, prefixShape);
-	        for (int k = 0; k < D; k++) {
-	            int row = (offset >= 0) ? k : k - offset;
-	            int col = (offset >= 0) ? k + offset : k;
-	            if (row < 0 || row >= D || col < 0 || col >= D) continue;
-	            y[DiffTensorUtil.buildDiagEmbedOutputIndex(batchCoord, row, col, fDim1, fDim2, outShape)] = xd[o * D + k];
-	        }
-	    }
-
-	    if (!tensor.requiresGrad) return tensor.toNonDiff(new RereDoubleTensor(y, outShape));
-
-	    final int fD = D, fOffset = offset;
-	    final int ffDim1 = fDim1, ffDim2 = fDim2;
-	    final long fOuter = outer;
-	    final int[] fPrefixShape = prefixShape.clone();
-	    final int[] fOutShape = outShape.clone();
-
-	    Consumer<RereDiffTensor> bw = self -> {
-	        RereDiffTensor inp = self.inputs.get(0);
-	        double[] g = self.gradData();
-	        double[] dx = new double[(int)(fOuter * fD)];
-	        for (int o = 0; o < fOuter; o++) {
-	            int[] batchCoord = DiffTensorUtil.decomposeFlatIndex(o, fPrefixShape);
-	            for (int k = 0; k < fD; k++) {
-	                int row = (fOffset >= 0) ? k : k - fOffset;
-	                int col = (fOffset >= 0) ? k + fOffset : k;
-	                if (row < 0 || row >= fD || col < 0 || col >= fD) continue;
-	                dx[o * fD + k] += g[DiffTensorUtil.buildDiagEmbedOutputIndex(batchCoord, row, col, ffDim1, ffDim2, fOutShape)];
-	            }
-	        }
-	        inp.accGrad(dx);
-	    };
-	    return new RereDiffTensor(y, outShape, List.of(tensor), bw, "diagEmbed");
-	}
-
-
+    if (!tensor.requiresGrad) return tensor.toNonDiff(new RereDoubleTensor(y, new int[]{outM, outN}));
+    Consumer<RereDiffTensor> bw = self -> {
+        RereDiffTensor inp = self.inputs.get(0);
+        double[] g = self.grad;
+        double[] dx = new double[diagLen];
+        for (int i = 0; i < diagLen; i++) {
+            int row = (offset >= 0) ? i : i - offset;
+            int col = (offset >= 0) ? i + offset : i;
+            if (row >= 0 && row < outM && col >= 0 && col < outN) {
+                dx[i] = g[row * outN + col];
+            }
+        }
+        inp.accGrad(dx);
+    };
+    return new RereDiffTensor(y, new int[]{outM, outN}, List.of(tensor), bw, "diagEmbed");
+}
 
 // ==================== Phase 5: dropout2d ====================
 
