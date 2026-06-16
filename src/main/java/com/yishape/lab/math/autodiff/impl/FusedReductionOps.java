@@ -416,7 +416,7 @@ public class FusedReductionOps {
             case SIGMOID -> { double s = 1.0/(1.0+Math.exp(-input)); yield grad * s * (1.0 - s); }
             case TANH    -> { double t = Math.tanh(input); yield grad * (1.0 - t * t); }
             case RELU    -> input > 0 ? grad : 0;
-            case ABS     -> grad * Math.signum(input);
+            case ABS     -> input >= 0 ? grad : -grad;  // subgradient=1 at x=0, consistent with DiffTensorUnary/TensorFusedOps
             case NEG     -> -grad;
             case SIN     -> grad * Math.cos(input);
             case COS     -> -grad * Math.sin(input);

@@ -79,7 +79,7 @@ public class GradientAccumulator {
         currentStep++;
         if (doStep || currentStep >= accumulationSteps) {
             // Scale accumulated gradients by 1/N to compute the mean
-            double scale = 1.0 / accumulationSteps;
+            double scale = 1.0 / currentStep;  // use actual steps, not target (fix: doStep=true with partial accumulation)
             for (IDiffTensor p : params) {
                 if (!(p instanceof RereDiffTensor rp)) continue;
                 double[] g = rp.gradData();

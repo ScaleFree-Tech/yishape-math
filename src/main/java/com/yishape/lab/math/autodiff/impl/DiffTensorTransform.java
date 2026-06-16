@@ -174,8 +174,8 @@ public static IDiffTensor groupNorm(RereDiffTensor tensor, int numGroups, IDiffT
     // Compute outer dims product (batch or batch*spatial prefix) and spatial dims product
     int outer = 1;
     for (int i = 0; i < rank - 2; i++) outer *= s[i];
-    int spatialPerSample = 1;
-    for (int i = rank - 1; i < rank; i++) spatialPerSample *= s[i];
+    // spatialPerSample = product of all dims after C; use division for arbitrary-rank correctness
+    int spatialPerSample = (int) tensor.value.totalSize() / (outer * C);
     int N = outer;
 
     double[] xd = tensor.value.toDoubleArray();

@@ -65,7 +65,10 @@ public static IDiffTensor rdiv(RereDiffTensor tensor, double scalar) {
     int n = (int) tensor.value.totalSize();
     double[] out = new double[n];
     double[] xd = tensor.value.toDoubleArray();
-    for (int i = 0; i < n; i++) out[i] = scalar / Math.max(Math.abs(xd[i]), DIV_EPS);
+    for (int i = 0; i < n; i++) {
+        double denom = Math.max(xd[i], DIV_EPS);  // clamp denominator only, preserve sign (fix: removed abs)
+        out[i] = scalar / denom;
+    }
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
@@ -93,7 +96,7 @@ public static IDiffTensor reciprocal(RereDiffTensor tensor) {
     int n = (int) tensor.value.totalSize();
     double[] out = new double[n];
     double[] xd = tensor.value.toDoubleArray();
-    for (int i = 0; i < n; i++) out[i] = 1.0 / Math.max(Math.abs(xd[i]), DIV_EPS);
+    for (int i = 0; i < n; i++) out[i] = 1.0 / Math.max(xd[i], DIV_EPS);  // fix: removed Math.abs to preserve sign
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();

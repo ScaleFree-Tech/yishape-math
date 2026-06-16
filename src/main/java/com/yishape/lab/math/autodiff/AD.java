@@ -233,7 +233,7 @@ public class AD {
     }
 
     public static IDiffTensor eye(int n) {
-        double[] data = new double[n * n];
+        double[] data = new double[(int)((long) n * n)];  // cast to long to avoid int overflow for n > 46340
         for (int i = 0; i < n; i++) data[i * n + i] = 1.0;
         return tensor(data, n, n);
     }

@@ -257,4 +257,42 @@ public class HpcContractTest {
             });
         assertMatch("gather", cpu, hpc);
     }
+
+    @Test void testNormalize() {
+        double[] d = rand(24); // shape [4, 6]
+        CpuResult cpu = cpuRef(new double[][]{d}, new int[][]{{4, 6}},
+            leaves -> leaves[0].normalize(2.0, -1).sum());
+        HpcResult hpc = hpcExec(new double[][]{d}, new int[][]{{4, 6}},
+            leaves -> leaves[0].normalize(2.0, -1).sum());
+        assertMatch("normalize", cpu, hpc);
+    }
+
+    @Test void testBatchNorm() {
+        int N = 4, C = 6;
+        double[] d = rand(N * C);
+        double[] gamma = rand(C);
+        double[] beta = rand(C);
+        CpuResult cpu = cpuRef(new double[][]{d, gamma, beta},
+            new int[][]{{N, C}, {C}, {C}},
+            leaves -> leaves[0].batchNorm(leaves[1], leaves[2], 1e-5).sum());
+        HpcResult hpc = hpcExec(new double[][]{d, gamma, beta},
+            new int[][]{{N, C}, {C}, {C}},
+            leaves -> leaves[0].batchNorm(leaves[1], leaves[2], 1e-5).sum());
+        assertMatch("batchNorm", cpu, hpc);
+    }
+
+    @Test void testGroupNorm() {
+        // groupNorm expects channels at shape[rank-2]; use [N, C, L] format
+        int N = 2, C = 4, L = 6;
+        double[] d = rand(N * C * L);
+        double[] gamma = rand(C);
+        double[] beta = rand(C);
+        CpuResult cpu = cpuRef(new double[][]{d, gamma, beta},
+            new int[][]{{N, C, L}, {C}, {C}},
+            leaves -> leaves[0].groupNorm(2, leaves[1], leaves[2], 1e-5).sum());
+        HpcResult hpc = hpcExec(new double[][]{d, gamma, beta},
+            new int[][]{{N, C, L}, {C}, {C}},
+            leaves -> leaves[0].groupNorm(2, leaves[1], leaves[2], 1e-5).sum());
+        assertMatch("groupNorm", cpu, hpc);
+    }
 }

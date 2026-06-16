@@ -572,8 +572,10 @@ public final class ConstantDiffTensor implements IDiffTensor {
         return wrap(new RereDoubleTensor(y, shape()));
     }
     private IDiffTensor computeNorm(IDiffTensor gamma, IDiffTensor beta, double eps, boolean overLastDim) {
-        int features = overLastDim ? value.dim(value.rank() - 1) : value.dim(value.rank() - 1);
         long totalSize = value.totalSize();
+        // overLastDim=true: layerNorm-style, normalize over last dim
+        // overLastDim=false: batchNorm-style, normalize over all dims EXCEPT last
+        int features = overLastDim ? value.dim(value.rank() - 1) : (int)(totalSize / value.dim(value.rank() - 1));
         int batch = (int) (totalSize / features);
         double[] xd = value.toDoubleArray();
         double[] gd = gamma.toDoubleArray();
@@ -642,8 +644,8 @@ public final class ConstantDiffTensor implements IDiffTensor {
         int N = 1;
         for (int i = 0; i < rank - 2; i++) N *= s[i];
         int C = s[rank - 2];
-        int spatial = 1;
-        for (int i = rank - 1; i < rank; i++) spatial *= s[i];
+        // Use division for spatial (matches groupNorm pattern), handles arbitrary-rank tensors
+        int spatial = (int) value.totalSize() / (N * C);
         double[] xd = value.toDoubleArray();
         double[] gd = gamma.toDoubleArray();
         double[] bd = (beta != null) ? beta.toDoubleArray() : null;

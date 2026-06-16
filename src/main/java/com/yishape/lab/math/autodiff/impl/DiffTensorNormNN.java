@@ -314,9 +314,13 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
     int rank = tensor.rank();
     long totalSize = tensor.value.totalSize();
     int headDim = sh[rank - 1];
-    if (headDim != dim * 2) {
-        // If dim doesn't match half of last dim, use dim as-is
-        headDim = dim * 2;
+    // dim controls how many pairs to rotate (half the feature dim).
+    // headDim is the actual last dimension — never overwrite it, as it's used for stride.
+    // If the user passes dim != headDim/2, we rotate only dim pairs within headDim elements,
+    // leaving the remaining headDim - 2*dim elements unchanged.
+    if (2 * dim > headDim) {
+        throw new IllegalArgumentException(
+            "rope dim=" + dim + " requires headDim >= " + (2 * dim) + ", but headDim=" + headDim);
     }
 
     // Compute seqLen from shape, not total/lastDim (which absorbs batch for rank > 2)

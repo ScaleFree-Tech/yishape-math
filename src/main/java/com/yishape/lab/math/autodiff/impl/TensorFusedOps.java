@@ -134,6 +134,9 @@ public final class TensorFusedOps {
         };
         RereDiffTensor result = new RereDiffTensor(out, root.shape(), List.of(root), bw, chainTag);
         result.setExportShape(root.shape());
+        // Release intermediate array references — backward closure has its own savedInputs copy.
+        opInputs.clear();
+        cur = null;
         return result;
     }
 }

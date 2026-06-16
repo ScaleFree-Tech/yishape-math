@@ -397,6 +397,9 @@ public final class TensorFusedReductionOps {
             node.setScalarParam(reduceDim);
             node.setScalarParam2(keepdim ? 1.0 : 0.0);
         }
+        // Release intermediate array references — backward closure has its own savedInputs copy.
+        opInputs.clear();
+        cur = null;
         return node;
     }
 

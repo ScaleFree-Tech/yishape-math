@@ -41,7 +41,7 @@ final class AutodiffBufferPool {
     private static final int POW2_BUCKETS = 22; // 2^13 (=8192, first pow2 bucket) .. 2^27 (=128M)
     private static final int TOTAL_BUCKETS = SLAB_BUCKETS + POW2_BUCKETS; // 32 + 22 = 54
 
-    private static final int MAX_PER_BUCKET = 4;
+    private static final int MAX_PER_BUCKET = 16;  // raised from 4 to reduce fresh alloc fallback under parallel backward
 
     private static final ThreadLocal<Deque<double[]>[]> POOLS = ThreadLocal.withInitial(() -> {
         @SuppressWarnings("unchecked")

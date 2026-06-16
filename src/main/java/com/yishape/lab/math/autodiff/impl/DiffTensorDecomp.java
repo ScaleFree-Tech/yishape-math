@@ -49,10 +49,11 @@ public static IDiffTensor logDet(RereDiffTensor tensor) {
     double[] xd = tensor.value.toDoubleArray();
     IMatrix<Double> A = Linalg.fromArray(xd, n, n);
     double logDet;
+    com.yishape.lab.math.linalg.decomposition.ILUDecomposition cachedLU = null;
     try {
-        var luDecomp = com.yishape.lab.math.linalg.decomposition.Decomps.createLU();
-        luDecomp.decompose(A);
-        double det = luDecomp.getDeterminant();
+        cachedLU = com.yishape.lab.math.linalg.decomposition.Decomps.createLU();
+        cachedLU.decompose(A);
+        double det = cachedLU.getDeterminant();
         logDet = Math.log(Math.abs(det));
     } catch (Exception e) {
         // Singular matrix: log|det| = -inf
@@ -61,16 +62,22 @@ public static IDiffTensor logDet(RereDiffTensor tensor) {
     double[] result = {logDet};
     final int fN = n;
     final double fLogDet = logDet;
+    final var fLU = cachedLU;
 
     Consumer<RereDiffTensor> bw = self -> {
         if (Double.isInfinite(fLogDet)) return; // no gradient for singular matrix
         RereDiffTensor inp = self.inputs.get(0);
         double gradOut = self.grad[0];
-        // ∂log|det(A)|/∂A = A^{-T}
-        double[] inpData = inp.value.toDoubleArray();
-        IMatrix<Double> Amat = Linalg.fromArray(inpData, fN, fN);
+        // ∂log|det(A)|/∂A = A^{-T} — reuse cached LU from forward pass
         IMatrix<Double> I = Linalg.eye(fN);
-        IMatrix<Double> Ainv = Amat.solve(I);
+        IMatrix<Double> Ainv;
+        if (fLU != null) {
+            Ainv = fLU.getSolver().solve(I);
+        } else {
+            double[] inpData = inp.value.toDoubleArray();
+            IMatrix<Double> Amat = Linalg.fromArray(inpData, fN, fN);
+            Ainv = Amat.solve(I);
+        }
         IMatrix<Double> AinvT = Ainv.transpose();
         double[] gradA = AinvT.flatten().toDoubleArray();
         for (int i = 0; i < gradA.length; i++) gradA[i] *= gradOut;
@@ -97,6 +104,7 @@ public static IDiffTensor[] slogDet(RereDiffTensor tensor) {
     double[] signArr = {signVal};
     double[] logDetArr = {logDet};
     final int fN = n;
+    final var fLU = luDecomp;
 
     // sign tensor — no gradient flow (constant)
     RereDiffTensor signTensor = new RereDiffTensor(signArr, new int[]{1});
@@ -106,10 +114,8 @@ public static IDiffTensor[] slogDet(RereDiffTensor tensor) {
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor inp = self.inputs.get(0);
         double gradOut = self.grad[0];
-        double[] inpData = inp.value.toDoubleArray();
-        IMatrix<Double> Amat = Linalg.fromArray(inpData, fN, fN);
         IMatrix<Double> I = Linalg.eye(fN);
-        IMatrix<Double> Ainv = Amat.solve(I);
+        IMatrix<Double> Ainv = fLU.getSolver().solve(I);
         IMatrix<Double> AinvT = Ainv.transpose();
         double[] gradA = AinvT.flatten().toDoubleArray();
         for (int i = 0; i < gradA.length; i++) gradA[i] *= gradOut;

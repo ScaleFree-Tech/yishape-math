@@ -180,7 +180,7 @@ public class VMap implements IVMap, Serializable {
 
     @Override
     public double[] batchMatmul(double[] a, double[] b, int batch, int m, int k, int n) {
-        long total = (long) batch * m * k + (long) batch * k * n;
+        long total = (long) batch * m * n;  // fix: use output size, not sum of input sizes
         return fetchVMap(total).batchMatmul(a, b, batch, m, k, n);
     }
 

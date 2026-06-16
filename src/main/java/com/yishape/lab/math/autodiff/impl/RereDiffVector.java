@@ -14,6 +14,7 @@ import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.linalg.IMatrix;
 import com.yishape.lab.math.linalg.IVector;
 import com.yishape.lab.math.linalg.RereDoubleVector;
+import com.yishape.lab.math.linalg.tensor.RereDoubleTensor;
 import com.yishape.lab.util.YishapeLogger;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffMatrix;
@@ -151,8 +152,10 @@ public class RereDiffVector implements IDiffVector, Serializable {
         if (!tensor.isLeaf()) {
             throw new IllegalStateException("updateData() is only allowed on leaf nodes");
         }
-        double[] dest = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] dest = val.toDoubleArray();
         System.arraycopy(newData, 0, dest, 0, Math.min(newData.length, dest.length));
+        tensor.setValue(new RereDoubleTensor(dest, val.shape()));
         tensor.setGradData(null);
     }
 
@@ -890,10 +893,12 @@ public class RereDiffVector implements IDiffVector, Serializable {
         if (!tensor.isLeaf()) {
             throw new IllegalStateException("mulInPlace only allowed on leaf variables");
         }
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) {
             data[i] *= scalar;
         }
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         tensor.setGradData(null);
         return this;
     }
@@ -944,54 +949,68 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public IDiffVector addScalarInPlace(double p) {
         if (p == 0.0) return this;
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] += p;
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector subScalarInPlace(double p) {
         if (p == 0.0) return this;
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] -= p;
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector multiplyByScalarInPlace(double p) {
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] *= p;
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector addInPlace(IVector<Double> vec) {
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] += other[i];
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector subInPlace(IVector<Double> vec) {
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] -= other[i];
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector multiplyInPlace(IVector<Double> vec) {
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] *= other[i];
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 
     @Override
     public IDiffVector negInPlace() {
-        double[] data = tensor.value().toDoubleArray();
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] = -data[i];
+        tensor.setValue(new RereDoubleTensor(data, val.shape()));
         return this;
     }
 

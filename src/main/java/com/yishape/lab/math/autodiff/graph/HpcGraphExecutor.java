@@ -123,9 +123,11 @@ public final class HpcGraphExecutor {
         }
 
         // Try binary path first (use cached graph when topology unchanged)
+        // Capture cached graph in local var to prevent TOCTOU race with concurrent null assignment
         double binaryResult;
-        if (hpcCachedGraph != null && structureHash == hpcCachedGraph.structureHash()) {
-            binaryResult = tryExecuteTensorBinaryIncremental(order, leaves);
+        var cached = hpcCachedGraph;
+        if (cached != null && structureHash == cached.structureHash()) {
+            binaryResult = tryExecuteTensorBinaryIncremental(order, leaves, cached);
         } else {
             binaryResult = tryExecuteTensorBinaryFull(root, order, leaves, structureHash);
         }
@@ -252,9 +254,10 @@ public final class HpcGraphExecutor {
 
     /** Incremental: clone cached skeleton, overwrite leaf data, send. */
     private static double tryExecuteTensorBinaryIncremental(
-            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves) {
+            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
+            com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph cached) {
         try {
-            byte[] data = hpcCachedGraph.updateLeafData(order);
+            byte[] data = cached.updateLeafData(order);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
                 log.debug("HPC binary incremental execution returned null/empty for {} nodes", order.size());
