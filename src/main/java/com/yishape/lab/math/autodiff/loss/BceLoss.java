@@ -46,13 +46,17 @@ public final class BceLoss {
         }
 
         // Vectorized forward: lossPerElem = -y*log(p) - (1-y)*log(1-p)
-        double[] logP = GpuActivation.tryLog(clamped);
-        if (logP == null) logP = vc.universalOperate(clamped, UniversalOperation.LOG, 0);
+        final double[] logP;
+        double[] logPTemp = GpuActivation.tryLog(clamped);
+        if (logPTemp == null) logPTemp = vc.universalOperate(clamped, UniversalOperation.LOG, 0);
+        logP = logPTemp;
 
         double[] pMinus1 = vc.binaryOperate(clamped, 1.0, BinaryOperation.SUBTRACT);
         double[] oneMinusP = vc.binaryOperate(pMinus1, -1.0, BinaryOperation.MULTIPLY);
-        double[] logOneMinusP = GpuActivation.tryLog(oneMinusP);
-        if (logOneMinusP == null) logOneMinusP = vc.universalOperate(oneMinusP, UniversalOperation.LOG, 0);
+        final double[] logOneMinusP;
+        double[] logOneMinusPTemp = GpuActivation.tryLog(oneMinusP);
+        if (logOneMinusPTemp == null) logOneMinusPTemp = vc.universalOperate(oneMinusP, UniversalOperation.LOG, 0);
+        logOneMinusP = logOneMinusPTemp;
 
         double[] yTimesLogP = vc.binaryOperate(td, logP, BinaryOperation.MULTIPLY);
         double[] negTerm1 = vc.binaryOperate(yTimesLogP, -1.0, BinaryOperation.MULTIPLY);
