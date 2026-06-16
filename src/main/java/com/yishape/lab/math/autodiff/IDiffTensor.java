@@ -57,6 +57,12 @@ public interface IDiffTensor extends IDoubleTensor {
     IDiffTensor elu(double alpha);
     IDiffTensor leakyRelu(double alpha);
     IDiffTensor selu();
+
+    @Override IDiffTensor erf();
+    @Override IDiffTensor round();
+    @Override IDiffTensor floor();
+    @Override IDiffTensor ceil();
+    @Override IDiffTensor sign();
     IDiffTensor hardtanh(double minVal, double maxVal);
     IDiffTensor dropout(double p);
 

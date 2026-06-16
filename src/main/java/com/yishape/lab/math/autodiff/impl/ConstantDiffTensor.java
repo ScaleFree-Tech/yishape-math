@@ -25,7 +25,7 @@ public final class ConstantDiffTensor implements IDiffTensor {
     public ConstantDiffTensor(RereDoubleTensor value) { this.value = value; }
 
     // Shape delegation
-    @Override public int rank() { return value.rank(); }
+        @Override public int rank() { return value.rank(); }
     @Override public int[] shape() { return value.shape(); }
     @Override public int dim(int axis) { return value.dim(axis); }
     @Override public long totalSize() { return value.totalSize(); }
@@ -54,6 +54,11 @@ public final class ConstantDiffTensor implements IDiffTensor {
     @Override public IDiffTensor div(double scalar) { return wrap(value.div(scalar)); }
     @Override public IDiffTensor neg() { return wrap(value.neg()); }
     @Override public IDiffTensor abs() { return wrap(value.abs()); }
+    @Override public IDiffTensor sign() { return wrap(value.sign()); }
+    @Override public IDiffTensor ceil() { return wrap(value.ceil()); }
+    @Override public IDiffTensor floor() { return wrap(value.floor()); }
+    @Override public IDiffTensor round() { return wrap(value.round()); }
+    @Override public IDiffTensor erf() { return wrap(value.erf()); }
     @Override public IDiffTensor sqrt() { return wrap(value.sqrt()); }
     @Override public IDiffTensor exp() { return wrap(value.exp()); }
     @Override public IDiffTensor log() { return wrap(value.log()); }

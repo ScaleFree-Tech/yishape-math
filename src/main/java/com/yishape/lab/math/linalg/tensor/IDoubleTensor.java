@@ -102,6 +102,18 @@ public interface IDoubleTensor extends ITensor {
     IDoubleTensor selu();
     IDoubleTensor silu();
     IDoubleTensor mish();
+
+    /** Error function (erf), element-wise. */
+    IDoubleTensor erf();
+
+    /** Round to nearest integer (half-up), element-wise. */
+    IDoubleTensor round();
+    /** Floor, element-wise. */
+    IDoubleTensor floor();
+    /** Ceil, element-wise. */
+    IDoubleTensor ceil();
+    /** Sign function, element-wise: -1, 0, or 1. */
+    IDoubleTensor sign();
     IDoubleTensor softplus(double beta);
     IDoubleTensor hardtanh(double minVal, double maxVal);
     IDoubleTensor square();

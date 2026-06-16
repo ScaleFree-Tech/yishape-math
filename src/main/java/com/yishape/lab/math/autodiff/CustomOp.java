@@ -2,6 +2,7 @@ package com.yishape.lab.math.autodiff;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -9,6 +10,7 @@ import java.util.function.Consumer;
 import com.yishape.lab.math.linalg.IDoubleVector;
 import com.yishape.lab.math.autodiff.IDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
+import com.yishape.lab.util.YishapeLogger;
 
 /**
  * Self-contained custom differentiable operation.
@@ -48,6 +50,8 @@ import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
  */
 public abstract class CustomOp {
 
+    private static final YishapeLogger log = YishapeLogger.getLogger(CustomOp.class);
+
     static final AtomicLong GLOBAL_COUNTER = new AtomicLong(0);
 
     final AtomicLong fwdCounter = new AtomicLong(0);
@@ -55,6 +59,9 @@ public abstract class CustomOp {
     // Forward-data cache: maps forward pass ID to opaque context for backward.
     // Uses ConcurrentHashMap to avoid the 256-slot overflow bug and synchronized bottleneck.
     private final ConcurrentHashMap<Long, Object> fwdCache = new ConcurrentHashMap<>();
+
+    /** IDs whose backward has already consumed the cached context — safe to evict. */
+    private final Set<Long> consumedIds = ConcurrentHashMap.newKeySet();
 
     /** Maximum number of uncollected backward contexts before forced cleanup. */
     private static final int MAX_FWD_CACHE = 10_000;
@@ -82,9 +89,30 @@ public abstract class CustomOp {
 
     void putCache(long id, Object ctx) {
         if (ctx != null) {
-            // Prevent unbounded growth when backward is never called (e.g. inference)
+            // Prevent unbounded growth when backward is never called (e.g. inference).
+            // Evict ONLY already-consumed entries — never in-flight ones that
+            // a pending backwardFn still depends on.
             if (fwdCache.size() >= MAX_FWD_CACHE) {
-                fwdCache.clear();
+                if (!consumedIds.isEmpty()) {
+                    // Remove only entries whose backward has already consumed them.
+                    consumedIds.forEach(fwdCache::remove);
+                    consumedIds.clear();
+                }
+                // If no consumed entries exist (all 10K are in-flight), evict the
+                // oldest consumed entries would be the right move, but we can't
+                // know which are oldest. As a safety valve, log a warning and
+                // allow one more entry — the next putCache will retry.
+                if (fwdCache.size() >= MAX_FWD_CACHE) {
+                    // Fallback: clear and log — this is a pathological case
+                    // where >10K CustomOp forward passes run without any backward.
+                    fwdCache.clear();
+                    consumedIds.clear();
+                    if (log.isWarnEnabled()) {
+                        log.warn("CustomOp forward cache exceeded {} entries with no consumed entries "
+                            + "to evict — cache cleared. This may cause NPE in pending backward() calls "
+                            + "if any CustomOp back-propagations are in-flight.", MAX_FWD_CACHE);
+                    }
+                }
             }
             fwdCache.put(id, ctx);
         }
@@ -97,6 +125,13 @@ public abstract class CustomOp {
     /** Remove the cached forward context after backward to prevent unbounded growth. */
     void removeCache(long id) {
         fwdCache.remove(id);
+        // Track as consumed so future evictions can safely remove it.
+        consumedIds.add(id);
+        // Prevent consumedIds from growing unboundedly — prune old entries
+        // when they exceed 2x the cache limit (they'll be cleaned up on next putCache anyway).
+        if (consumedIds.size() > MAX_FWD_CACHE * 2) {
+            consumedIds.clear();
+        }
     }
 
     /**

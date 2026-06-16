@@ -2,6 +2,7 @@ package com.yishape.lab.math.autodiff.impl;
 
 import com.yishape.lab.math.autodiff.AD;
 import com.yishape.lab.math.autodiff.IDiffTensor;
+import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.linalg.tensor.IDoubleTensor;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -272,5 +273,99 @@ public class Phase0OpsTest {
         IDiffTensor x = AD.constantTensor(new double[]{1, 2, 3, 4, 5, 6}, 2, 3);
         IDiffTensor[] slices = x.unbind(0);
         assertEquals(2, slices.length);
+    }
+
+    // ==================== cumprod backward ====================
+
+    /**
+     * Verify cumprod backward with zero in the middle: cumprod([2,0,3]) with sum loss.
+     * Numerical gradient (central diff): [1, 8, 0].
+     * dx[1]=8: dy[1]/dx[1]=x[0]=2, dy[2]/dx[1]=x[0]*x[2]=6, sum=8.
+     * dx[2]=0: y[2]=0, so no contribution from y[2] to x[2].
+     */
+    @Test
+    public void testCumprodBackwardWithZero() {
+        IDiffVector x = AD.vector(2.0, 0.0, 3.0);
+        IDiffVector y = x.cumprod();
+        assertArrayEquals(new double[]{2, 0, 0}, y.toDoubleArray(), 1e-12);
+
+        y.backward();
+        assertArrayEquals(new double[]{1, 8, 0}, x.grad().toDoubleArray(), 1e-10);
+    }
+
+    /**
+     * Verify cumprod backward without zeros: cumprod([2,3,4]) with sum loss.
+     * totalFrom[j] = y[j]+...+y[n-1]; dx[j] = totalFrom[j]/x[j]
+     * totalFrom = [32, 30, 24]: dx = [16, 10, 6].
+     */
+    @Test
+    public void testCumprodBackwardNoZero() {
+        IDiffVector x = AD.vector(2.0, 3.0, 4.0);
+        IDiffVector y = x.cumprod();
+        assertArrayEquals(new double[]{2, 6, 24}, y.toDoubleArray(), 1e-12);
+
+        y.backward();
+        assertArrayEquals(new double[]{16, 10, 6}, x.grad().toDoubleArray(), 1e-10);
+    }
+
+    /**
+     * Verify cumprod backward with zero at the start: cumprod([0,2,3]).
+     * Numerical: dL/dx=[9, 0, 0].
+     * x[0]=0: dx[0] = 1 + x[1] + x[1]*x[2] = 1 + 2 + 6 = 9.
+     */
+    @Test
+    public void testCumprodBackwardZeroAtStart() {
+        IDiffVector x = AD.vector(0.0, 2.0, 3.0);
+        IDiffVector y = x.cumprod();
+        assertArrayEquals(new double[]{0, 0, 0}, y.toDoubleArray(), 1e-12);
+
+        y.backward();
+        assertArrayEquals(new double[]{9, 0, 0}, x.grad().toDoubleArray(), 1e-10);
+    }
+
+    /**
+     * Verify cumprod backward with zero at the end: cumprod([2,3,0]).
+     * Numerical: dL/dx=[4, 2, 6].
+     * x[2]=0: ∂y[2]/∂x[2]=x[0]*x[1]=6, dx[2]=6.
+     */
+    @Test
+    public void testCumprodBackwardZeroAtEnd() {
+        IDiffVector x = AD.vector(2.0, 3.0, 0.0);
+        IDiffVector y = x.cumprod();
+        assertArrayEquals(new double[]{2, 6, 0}, y.toDoubleArray(), 1e-12);
+
+        y.backward();
+        assertArrayEquals(new double[]{4, 2, 6}, x.grad().toDoubleArray(), 1e-10);
+    }
+
+    /**
+     * Verify cumprod backward passes AD.checkGradient() against finite differences.
+     * This catches regressions in the gradient formula for any input pattern.
+     */
+    @Test
+    public void testCumprodCheckGradient() {
+        java.util.function.Function<IDiffVector, IDiffVector> lossFn = x -> {
+            return x.cumprod().sum();
+        };
+
+        // Test with zeros (zero in middle)
+        IDiffVector x1 = AD.vector(2.0, 0.0, 3.0);
+        assertTrue(AD.checkGradient(lossFn, x1, 1e-4),
+            "cumprod gradient should pass finite diff check with zero in middle");
+
+        // Test with zero at start
+        IDiffVector x2 = AD.vector(0.0, 2.0, 3.0);
+        assertTrue(AD.checkGradient(lossFn, x2, 1e-4),
+            "cumprod gradient should pass finite diff check with zero at start");
+
+        // Test with zero at end
+        IDiffVector x3 = AD.vector(2.0, 3.0, 0.0);
+        assertTrue(AD.checkGradient(lossFn, x3, 1e-4),
+            "cumprod gradient should pass finite diff check with zero at end");
+
+        // Test without zeros
+        IDiffVector x4 = AD.vector(2.0, 3.0, 4.0);
+        assertTrue(AD.checkGradient(lossFn, x4, 1e-4),
+            "cumprod gradient should pass finite diff check without zeros");
     }
 }

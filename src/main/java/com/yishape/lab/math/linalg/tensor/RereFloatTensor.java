@@ -590,7 +590,24 @@ public class RereFloatTensor implements IFloatTensor {
     @Override public IFloatTensor hardtanh(float minVal, float maxVal) {
         return applyUnary(x -> (float) Math.min(Math.max(x, minVal), maxVal));
     }
+    @Override public IFloatTensor erf() {
+        return applyUnary(x -> (float) RereFloatTensor.erfApprox(x));
+    }
+    private static float erfApprox(float x) {
+        float a1 = 0.254829592f, a2 = -0.284496736f, a3 = 1.421413741f;
+        float a4 = -1.453152027f, a5 = 1.061405429f, p = 0.3275911f;
+        int sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+        float t = 1.0f / (1.0f + p * x);
+        float y = 1.0f - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (float) Math.exp(-x * x);
+        return sign * y;
+    }
     @Override public IFloatTensor pow(float n) { return applyUnary(v -> (float) Math.pow(v, n)); }
+
+    @Override public IFloatTensor round() { return applyUnary(v -> (float) Math.round(v)); }
+    @Override public IFloatTensor floor() { return applyUnary(v -> (float) Math.floor(v)); }
+    @Override public IFloatTensor ceil() { return applyUnary(v -> (float) Math.ceil(v)); }
+    @Override public IFloatTensor sign() { return applyUnary(v -> v > 0 ? 1f : v < 0 ? -1f : 0f); }
 
     @Override
     public IFloatTensor clamp(float min, float max) {
@@ -1241,13 +1258,41 @@ public class RereFloatTensor implements IFloatTensor {
             return mul(others[0]);
         }
 
-        // Compositional: permute → reshape → bmm → reshape
-        IFloatTensor aP = permute(spec.permuteA());
-        IFloatTensor bP = others[0].permute(spec.permuteB());
-        IFloatTensor aR = aP.reshape(spec.reshapeTo3D(0, aP.shape()));
-        IFloatTensor bR = bP.reshape(spec.reshapeTo3D(1, bP.shape()));
-        IFloatTensor result = aR.bmm(bR);
-        return result.reshape(spec.outputShape(shape(), others[0].shape()));
+        // Per-slice batch loop using FloatFlatGemm for forward.
+        // bmm with reshape3D [batch,contract,kept] fails because contract must match
+        // between inputs but kept dims differ (e.g. 2 vs 4 for "ij,jk->ik").
+        int B = 1, keptA = 1, K = 1;
+        for (char c : spec.inputLabels[0].toCharArray()) {
+            if (spec.batchAxes.contains(c)) B *= spec.axisSizes.get(c);
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else keptA *= spec.axisSizes.get(c);
+        }
+        for (char c : spec.inputLabels[1].toCharArray()) {
+            if (spec.batchAxes.contains(c)) { /* already counted */ }
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else K *= spec.axisSizes.get(c);
+        }
+        int contractSize = 1;
+        for (char c : spec.contractAxes) {
+            contractSize *= spec.axisSizes.get(c);
+        }
+
+        float[] aData = toFloatArray();
+        float[] bData = others[0].toFloatArray();
+
+        int outTotal = B * keptA * K;
+        float[] outData = new float[outTotal];
+
+        for (int bi = 0; bi < B * keptA; bi++) {
+            int bj = B > 1 ? bi / keptA : 0;
+            float[] aSlice = java.util.Arrays.copyOfRange(aData, bi * contractSize, (bi + 1) * contractSize);
+            float[] bSlice = java.util.Arrays.copyOfRange(bData, bj * contractSize * K, (bj + 1) * contractSize * K);
+            float[] cSlice = com.yishape.lab.math.compute.FloatFlatGemm.flatMmul(
+                aSlice, 0, 1, contractSize, bSlice, 0, K);
+            System.arraycopy(cSlice, 0, outData, bi * K, K);
+        }
+
+        return new RereFloatTensor(outData, spec.outputShape(shape(), others[0].shape()));
     }
 
     private IFloatTensor einsumSingle(EinsumParser.EinsumSpec spec) {

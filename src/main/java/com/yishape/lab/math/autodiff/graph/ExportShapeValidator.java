@@ -133,7 +133,17 @@ public final class ExportShapeValidator {
     private static void validateMaxPool2d(RereDiffTensor node, List<RereDiffTensor> order,
                                           int nodeIdx, Result result) {
         int[] shape = node.serializationShape();
-        long bits = Double.doubleToRawLongBits(node.scalarParam());
+        double sp = node.scalarParam();
+        double sp2 = node.scalarParam2();
+        // Guard against NaN scalarParam (default for nodes without setScalarParam())
+        if (Double.isNaN(sp) || Double.isNaN(sp2)) {
+            result.addError(String.format(
+                "node#%d maxpool2d: scalarParam is NaN (scalarParam=%s, scalarParam2=%s) — "
+                + "kernel/stride/pad not set. Was setScalarParam() called?",
+                nodeIdx, sp, sp2));
+            return;
+        }
+        long bits = Double.doubleToRawLongBits(sp);
         int kh = (int) ((bits >> 16) & 0xFF);
         int kw = (int) ((bits >> 8) & 0xFF);
         int stride = (int) (bits & 0xFF);

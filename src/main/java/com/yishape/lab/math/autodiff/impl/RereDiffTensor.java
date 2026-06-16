@@ -430,6 +430,22 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     /**
+     * Zero this tensor's own gradient value ONLY, preserving the computation graph.
+     *
+     * <p>Unlike {@link #zeroGradient()}, this does <em>not</em> release graph references
+     * ({@code inputs}, {@code backwardFn}, {@code symbolicBackwardFn}). Use this when you
+     * need to clear gradients between accumulation steps but intend to call
+     * {@link #backward()} again on the same graph.</p>
+     *
+     * <p>Note: {@link #backwardImpl()} already destroys graph edges on non-leaf nodes
+     * after each backward pass (lines 298-305). This method only zeroes the gradient
+     * data without touching graph structure.</p>
+     */
+    public void zeroGradValue() {
+        this.grad = null;
+    }
+
+    /**
      * Detach this tensor and all reachable non-leaf nodes from the computation graph.
      *
      * <p>After calling this method, {@link #backward()} will have no effect because all
@@ -1381,6 +1397,11 @@ public class RereDiffTensor implements IDiffTensor {
     @Override public IDiffTensor elu(double alpha) { return DiffTensorUnary.elu(this, alpha); }
     @Override public IDiffTensor leakyRelu(double alpha) { return DiffTensorUnary.leakyRelu(this, alpha); }
     @Override public IDiffTensor selu() { return DiffTensorUnary.selu(this); }
+    @Override public IDiffTensor erf() { return DiffTensorUnary.erf(this); }
+    @Override public IDiffTensor round() { return DiffTensorUnary.round(this); }
+    @Override public IDiffTensor floor() { return DiffTensorUnary.floor(this); }
+    @Override public IDiffTensor ceil() { return DiffTensorUnary.ceil(this); }
+    @Override public IDiffTensor sign() { return DiffTensorUnary.sign(this); }
     @Override public IDiffTensor hardtanh(double minVal, double maxVal) { return DiffTensorUnary.hardtanh(this, minVal, maxVal); }
     @Override public IDiffTensor dropout(double p) { return DiffTensorUnary.dropout(this, p); }
 
@@ -1486,17 +1507,79 @@ public class RereDiffTensor implements IDiffTensor {
             return mul(other);
         }
 
-        // Compositional approach: permute → reshape → bmm → reshape
-        IDiffTensor aP = permute(spec.permuteA());
-        IDiffTensor bP = other.permute(spec.permuteB());
+        // Per-slice batch loop using DoubleFlatGemm for forward, custom backward for autodiff.
+        // bmm([B*keptA,1,J]@[B,J,K]) doesn't work because bmm M=1 (not keptA).
+        int B = 1, keptA = 1, K = 1;
+        for (char c : spec.inputLabels[0].toCharArray()) {
+            if (spec.batchAxes.contains(c)) B *= spec.axisSizes.get(c);
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else keptA *= spec.axisSizes.get(c);
+        }
+        for (char c : spec.inputLabels[1].toCharArray()) {
+            if (spec.batchAxes.contains(c)) { /* already counted */ }
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else K *= spec.axisSizes.get(c);
+        }
+        int contractSize = 1;
+        for (char c : spec.contractAxes) {
+            contractSize *= spec.axisSizes.get(c);
+        }
 
-        IDiffTensor aR = aP.reshape(spec.reshapeTo3D(0, aP.shape()));
-        IDiffTensor bR = bP.reshape(spec.reshapeTo3D(1, bP.shape()));
+        double[] aData = value.toDoubleArray();
+        IDoubleTensor bVal = (other instanceof RereDiffTensor rt) ? rt.value
+            : (other instanceof IDiffTensor dt) ? dt.detach() : other;
+        double[] bData = bVal.toDoubleArray();
 
-        IDiffTensor result = aR.bmm(bR);
+        int outTotal = B * keptA * K;
+        double[] outData = new double[outTotal];
+
+        for (int bi = 0; bi < B * keptA; bi++) {
+            int bj = B > 1 ? bi / keptA : 0;
+            double[] aSlice = java.util.Arrays.copyOfRange(aData, bi * contractSize, (bi + 1) * contractSize);
+            double[] bSlice = java.util.Arrays.copyOfRange(bData, bj * contractSize * K, (bj + 1) * contractSize * K);
+            double[] cSlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(
+                aSlice, 0, 1, contractSize, bSlice, 0, K);
+            System.arraycopy(cSlice, 0, outData, bi * K, K);
+        }
 
         int[] outShape = spec.outputShape(shape(), other.shape());
-        return result.reshape(outShape);
+
+        // Build custom backward — capture final copies for lambda
+        final int fB = B, fKeptA = keptA, fK = K, fContractSize = contractSize;
+        java.util.List<RereDiffTensor> inputs = new java.util.ArrayList<>();
+        inputs.add(this);
+        final RereDiffTensor fOtherNode = (other instanceof RereDiffTensor && ((RereDiffTensor) other).requiresGrad)
+            ? (RereDiffTensor) other : null;
+        if (fOtherNode != null) inputs.add(fOtherNode);
+
+        java.util.function.Consumer<RereDiffTensor> bw = self -> {
+            double[] dC = self.grad;
+            double[] dA = new double[aData.length];
+            double[] dB = new double[bData.length];
+
+            for (int bi = 0; bi < fB * fKeptA; bi++) {
+                int bj = fB > 1 ? bi / fKeptA : 0;
+                double[] dCSlice = java.util.Arrays.copyOfRange(dC, bi * fK, (bi + 1) * fK);
+                double[] bSlice = java.util.Arrays.copyOfRange(bData, bj * fContractSize * fK, (bj + 1) * fContractSize * fK);
+
+                double[] bT = com.yishape.lab.math.compute.DoubleFlatGemm.flatTranspose(bSlice, fContractSize, fK);
+                double[] dASlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(dCSlice, 0, fK, bT, fContractSize);
+                System.arraycopy(dASlice, 0, dA, bi * fContractSize, fContractSize);
+
+                double[] aSlice = java.util.Arrays.copyOfRange(aData, bi * fContractSize, (bi + 1) * fContractSize);
+                double[] aT = com.yishape.lab.math.compute.DoubleFlatGemm.flatTranspose(aSlice, 1, fContractSize);
+                double[] dBSlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(aT, fContractSize, 1, dCSlice, fK);
+                int dBOff = bj * fContractSize * fK;
+                for (int i = 0; i < fContractSize * fK; i++) {
+                    dB[dBOff + i] += dBSlice[i];
+                }
+            }
+
+            if (requiresGrad) accGrad(dA);
+            if (fOtherNode != null && fOtherNode.requiresGrad) fOtherNode.accGrad(dB);
+        };
+
+        return new RereDiffTensor(outData, outShape, inputs, bw, "einsum");
     }
 
     private IDiffTensor einsumSingle(String subscript) {

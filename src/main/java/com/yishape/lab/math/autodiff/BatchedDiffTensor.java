@@ -179,7 +179,11 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public IDiffTensor div(double scalar) { return wrap(data.div(scalar)); }
 
     // ==================== element-wise unary ====================
-
+    @Override public IDiffTensor round() { return wrap(data.round()); }
+    @Override public IDiffTensor erf() { return wrap(data.erf()); }
+    @Override public IDiffTensor floor() { return wrap(data.floor()); }
+    @Override public IDiffTensor ceil() { return wrap(data.ceil()); }
+    @Override public IDiffTensor sign() { return wrap(data.sign()); }
     @Override public IDiffTensor neg() { return wrap(data.neg()); }
     @Override public IDiffTensor abs() { return wrap(data.abs()); }
     @Override public IDiffTensor sqrt() { return wrap(data.sqrt()); }

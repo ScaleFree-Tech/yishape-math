@@ -18,11 +18,17 @@ import static org.junit.jupiter.api.Assertions.*;
 public class HpcGraphExecutorTest {
 
     @Test
-    void testReciprocalReturnsNaN() {
+    void testReciprocalReturnsValidResult() {
+        // reciprocal was added to HPC SUPPORTED_OPS (2026-06-16) — verify it executes correctly
         IDiffVector x = AD.vector(new double[]{1, 2, 3});
-        RereDiffVector loss = (RereDiffVector) x.reciprocal().sum();
-        double result = HpcGraphExecutor.tryExecute(loss);
-        assertTrue(Double.isNaN(result), "Unsupported op should return NaN for graceful CPU fallback");
+        IDiffVector loss = x.reciprocal().sum();
+        double cpuResult = loss.getData()[0]; // 1/1 + 1/2 + 1/3 = 1.8333...
+        RereDiffVector rv = (RereDiffVector) loss;
+        double hpcResult = HpcGraphExecutor.tryExecute(rv);
+        // HPC may be unavailable on this machine; if available, result should be valid
+        if (!Double.isNaN(hpcResult)) {
+            assertEquals(cpuResult, hpcResult, 1e-8, "HPC reciprocal+sum should match CPU");
+        }
     }
 
     @Test

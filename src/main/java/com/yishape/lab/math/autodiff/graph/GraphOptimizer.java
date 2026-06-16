@@ -12,6 +12,7 @@ import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
+import com.yishape.lab.math.compute.gpu.GpuActivation;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
 import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
@@ -34,8 +35,10 @@ public class GraphOptimizer {
     private static final Set<String> FOLDABLE_OPS = Set.of(
         "add", "sub", "mul", "div",
         "addScalar", "subScalar", "mulScalar", "divScalar",
+        "rsubScalar", "rdivScalar", "reciprocal",
         "neg", "exp", "log", "sqrt", "abs", "sin", "cos", "tan",
-        "sigmoid", "tanh", "relu", "gelu", "square",
+        "sigmoid", "tanh", "relu", "gelu", "square", "sign",
+        "silu", "mish", "softplus", "elu", "leakyRelu", "selu",
         "pow", "sum", "mean"
     );
 
@@ -62,31 +65,73 @@ public class GraphOptimizer {
 
     /**
      * Constant folding for tensor graph: evaluate ops whose inputs are all leaf/constant.
-     * Forward scan allows newly-folded constants to propagate to consumers in the same pass.
+     * Uses a replacements-map approach (same pattern as {@link #foldConstants(RereDiffVector)})
+     * instead of in-place mutation, so consumer rewiring is handled correctly.
+     *
+     * <p>Forward scan allows newly-folded constants to propagate to consumers in the same pass:
+     * a node whose inputs were just folded earlier in this pass will resolve through the
+     * replacements map and be folded too.</p>
      */
-    private static void foldConstantsInOrder(List<RereDiffTensor> order) {
+    static void foldConstantsInOrder(List<RereDiffTensor> order) {
+        Map<RereDiffTensor, RereDiffTensor> replacements = new HashMap<>();
+
         for (int i = 0; i < order.size(); i++) {
             RereDiffTensor node = order.get(i);
             if (node.isLeaf() || node.opTag() == null || node.inputs() == null || node.inputs().isEmpty())
                 continue;
             if (!FOLDABLE_OPS.contains(node.opTag())) continue;
 
+            // Check: all inputs must be constant leaves. Only leaves with
+            // opTag="constant" (AD.constant() or previously-folded) are safe.
+            // Leaves with null opTag COULD be trainable variables — conservatively
+            // skip folding since requiresGrad defaults to true for both variables
+            // and AD.constant() (the latter needs requiresGrad for tape-of-tape).
             boolean allConst = true;
             for (RereDiffTensor inp : node.inputs()) {
-                if (!inp.isLeaf() && !"constant".equals(inp.opTag())) { allConst = false; break; }
+                RereDiffTensor resolved = replacements.getOrDefault(inp, inp);
+                if (!resolved.isLeaf()) {
+                    allConst = false;
+                    break;
+                }
+                String tag = resolved.opTag();
+                if (!"constant".equals(tag)) {
+                    allConst = false;
+                    break;
+                }
             }
             if (!allConst) continue;
 
-            double[] result = evaluateConstantOp(node);
+            double[] result = evaluateConstantOp(node, replacements);
             if (result == null) continue;
 
-            node.setValue(new RereDoubleTensor(result, node.shape()));
-            node.setIsLeaf(true);
-            node.setOpTag("constant");
-            node.setInputs(List.of());
-            node.setBackwardFn(null);
-            node.setRequiresGrad(false);
-            node.setGradData(null);
+            // Create new constant node — scalarParam/scalarParam2 default to NaN
+            RereDiffTensor constant = new RereDiffTensor(result, node.shape());
+            constant.setOpTag("constant");
+            constant.setIsLeaf(true);
+            constant.setRequiresGrad(false);
+            replacements.put(node, constant);
+        }
+
+        // Rewire consumers and remove folded nodes
+        if (!replacements.isEmpty()) {
+            for (RereDiffTensor node : order) {
+                List<RereDiffTensor> inList = node.inputs();
+                if (inList != null && !inList.isEmpty()) {
+                    boolean changed = false;
+                    for (int j = 0; j < inList.size(); j++) {
+                        RereDiffTensor rep = replacements.get(inList.get(j));
+                        if (rep != null) {
+                            if (!changed) {
+                                inList = new ArrayList<>(inList);
+                                changed = true;
+                            }
+                            inList.set(j, rep);
+                        }
+                    }
+                    if (changed) node.setInputs(inList);
+                }
+            }
+            order.removeIf(replacements::containsKey);
         }
     }
 
@@ -140,24 +185,54 @@ public class GraphOptimizer {
         return h;
     }
 
-    private static double[] evaluateConstantOp(RereDiffTensor node) {
+    /**
+     * Evaluate a constant graph node by resolving all inputs through the replacements map.
+     * Uses {@link RereDoubleTensor#toDoubleArray()} (not {@code getStorageData()}) to
+     * correctly handle non-contiguous tensor views (slice, permute, narrow, etc.).
+     */
+    private static double[] evaluateConstantOp(RereDiffTensor node,
+            Map<RereDiffTensor, RereDiffTensor> replacements) {
         String tag = node.opTag();
         if (node.inputs().size() == 1) {
-            double[] a = node.inputs().get(0).value().getStorageData();
+            RereDiffTensor inp = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+            double[] a = inp.value().toDoubleArray();
             return evalUnary(tag, a, a.length, node.scalarParam());
         }
         if (node.inputs().size() == 2) {
-            double[] a = node.inputs().get(0).value().getStorageData();
-            double[] b = node.inputs().get(1).value().getStorageData();
+            RereDiffTensor inp0 = replacements.getOrDefault(node.inputs().get(0), node.inputs().get(0));
+            RereDiffTensor inp1 = replacements.getOrDefault(node.inputs().get(1), node.inputs().get(1));
+            double[] a = inp0.value().toDoubleArray();
+            double[] b = inp1.value().toDoubleArray();
             if (a.length != b.length) return null;
             return evalBinary(tag, a, b, a.length);
         }
         return null;
     }
 
-    /** Evaluate a unary constant op via the GPU→HPC→SIMD→SISD fallback chain. */
+    /** Evaluate a unary/scalar constant op via the GPU→HPC→SIMD→SISD fallback chain. */
     private static double[] evalUnary(String tag, double[] a, int n, double p) {
         switch (tag) {
+            // Scalar broadcast ops
+            case "addScalar":   return COMPUTER.binaryOperate(a, p, BinaryOperation.ADD);
+            case "subScalar":   return COMPUTER.binaryOperate(a, p, BinaryOperation.SUBTRACT);
+            case "mulScalar":   return COMPUTER.binaryOperate(a, p, BinaryOperation.MULTIPLY);
+            case "divScalar":   return COMPUTER.binaryOperate(a, p, BinaryOperation.DIVIDE);
+            // rsubScalar: p - a[i] = -a[i] + p
+            case "rsubScalar": {
+                double[] neg = COMPUTER.negate(a);
+                return COMPUTER.binaryOperate(neg, p, BinaryOperation.ADD);
+            }
+            // rdivScalar: p / a[i] = p * (1/a[i])
+            case "rdivScalar": {
+                double[] recip = COMPUTER.binaryOperate(
+                    COMPUTER.fill(n, 1.0), a, BinaryOperation.DIVIDE);
+                return COMPUTER.binaryOperate(recip, p, BinaryOperation.MULTIPLY);
+            }
+            // reciprocal: 1.0 / a[i]
+            case "reciprocal":
+                return COMPUTER.binaryOperate(
+                    COMPUTER.fill(n, 1.0), a, BinaryOperation.DIVIDE);
+            // Unary ops
             case "neg":     return COMPUTER.negate(a);
             case "exp":     return COMPUTER.universalOperate(a, UniversalOperation.EXP, 0);
             case "log":     return COMPUTER.universalOperate(a, UniversalOperation.LOG, 0);
@@ -171,6 +246,77 @@ public class GraphOptimizer {
             case "relu":    return COMPUTER.universalOperate(a, UniversalOperation.RELU, 0);
             case "gelu":    return COMPUTER.universalOperate(a, UniversalOperation.GELU, 0);
             case "square":  return COMPUTER.binaryOperate(a, a, BinaryOperation.MULTIPLY);
+            case "sign":    return COMPUTER.sign(a);
+            case "silu": {
+                // GPU→SISD: GpuActivation dispatches to WGSL shader when GPU is available
+                double[] r = GpuActivation.trySilu(a);
+                if (r != null) return r;
+                // SISD fallback: constant folding is a one-time optimization pass
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++) out[i] = a[i] / (1.0 + Math.exp(-a[i]));
+                return out;
+            }
+            case "mish": {
+                // SISD only: mish has no WGSL shader (GpuActivation op index 4 is skipped)
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++) {
+                    double sp = Math.log(1.0 + Math.exp(a[i]));
+                    out[i] = a[i] * Math.tanh(sp);
+                }
+                return out;
+            }
+            case "softplus": {
+                // beta from scalarParam; GPU shader uses default beta=1.0
+                double beta = Double.isNaN(p) ? 1.0 : p;
+                if (beta == 1.0) {
+                    double[] r = GpuActivation.trySoftplus(a);
+                    if (r != null) return r;
+                }
+                // SISD fallback (or non-default beta)
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++) {
+                    double bx = beta * a[i];
+                    out[i] = bx > 20 ? a[i] : Math.log(1.0 + Math.exp(bx)) / beta;
+                }
+                return out;
+            }
+            case "elu": {
+                // alpha from scalarParam; GPU shader uses default alpha=1.0
+                double alpha = Double.isNaN(p) ? 1.0 : p;
+                if (alpha == 1.0) {
+                    double[] r = GpuActivation.tryElu(a);
+                    if (r != null) return r;
+                }
+                // SISD fallback (or non-default alpha)
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++)
+                    out[i] = a[i] >= 0 ? a[i] : alpha * (Math.exp(a[i]) - 1);
+                return out;
+            }
+            case "leakyRelu": {
+                // alpha from scalarParam; GPU shader uses default alpha=0.01
+                double alpha = Double.isNaN(p) ? 0.01 : p;
+                if (alpha == 0.01) {
+                    double[] r = GpuActivation.tryLeakyRelu(a);
+                    if (r != null) return r;
+                }
+                // SISD fallback (or non-default alpha)
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++)
+                    out[i] = a[i] >= 0 ? a[i] : alpha * a[i];
+                return out;
+            }
+            case "selu": {
+                // GPU→SISD: selu has fixed alpha=1.673..., scale=1.050... (WGSL shader matches)
+                double[] r = GpuActivation.trySelu(a);
+                if (r != null) return r;
+                // SISD fallback
+                double alpha = 1.6732632423543772, scale = 1.0507009873554804;
+                double[] out = new double[n];
+                for (int i = 0; i < n; i++)
+                    out[i] = scale * (a[i] >= 0 ? a[i] : alpha * (Math.exp(a[i]) - 1));
+                return out;
+            }
             case "pow":     if (Double.isNaN(p)) return null;
                             return COMPUTER.universalOperate(a, UniversalOperation.POW, p);
             case "sum":     // Only fold flat sum (scalarParam NaN). Axis-specific sum has non-NaN stride → skip.
@@ -205,6 +351,11 @@ public class GraphOptimizer {
         List<RereDiffTensor> order = new ArrayList<>();
         HashSet<RereDiffTensor> visited = new HashSet<>();
         root.tensor.buildTopo(order, visited);
+
+        // Phase 0: Constant subgraph folding — evaluate all-constant ops eagerly.
+        // This runs before identity elimination to simplify the graph first
+        // (e.g., pow(sum(x), 2) where x is constant becomes a single constant node).
+        foldConstantsInOrder(order);
 
         Map<RereDiffTensor, RereDiffTensor> replacements = new HashMap<>();
 

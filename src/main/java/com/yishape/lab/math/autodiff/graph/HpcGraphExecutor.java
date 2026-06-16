@@ -133,6 +133,7 @@ public final class HpcGraphExecutor {
         }
         if (!Double.isNaN(binaryResult)) {
             hpcConsecutiveFailures.set(0);
+            detachGraphAfterNativeExecution(order);
             return binaryResult;
         }
         // In strict mode, binary path failure is a bug — surface it immediately
@@ -196,7 +197,25 @@ public final class HpcGraphExecutor {
             leaves.get(i).accGrad(result[i + 1]);
         }
         hpcConsecutiveFailures.set(0); // reset cooldown on success
+        detachGraphAfterNativeExecution(order);
         return loss;
+    }
+
+    /**
+     * Detach graph references after successful native execution.
+     * Clears backwardFn and inputs on non-leaf nodes to prevent
+     * double gradient accumulation if {@code backward()} is called again.
+     * Mirrors the cleanup in {@code RereDiffTensor.backwardImpl()} (lines 298-305).
+     */
+    private static void detachGraphAfterNativeExecution(ArrayList<RereDiffTensor> order) {
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (!v.isLeaf()) {
+                v.inputs = null;
+                v.backwardFn = null;
+                v.symbolicBackwardFn = null;
+            }
+        }
     }
 
     /** Track HPC failure for cooldown. */
@@ -241,6 +260,14 @@ public final class HpcGraphExecutor {
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
+                long leafSize = leaves.get(i).totalSize();
+                if (g.length != leafSize) {
+                    log.warn("HPC binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                        i, g.length, leafSize);
+                    trackHpcFailure();
+                    hpcCachedGraph = null;
+                    return Double.NaN;
+                }
                 leaves.get(i).accGrad(g);
             }
             return loss;
@@ -284,6 +311,14 @@ public final class HpcGraphExecutor {
 
             for (int i = 0; i < grads.size(); i++) {
                 double[] g = grads.get(i);
+                long leafSize = leaves.get(i).totalSize();
+                if (g.length != leafSize) {
+                    log.warn("HPC binary incremental gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                        i, g.length, leafSize);
+                    trackHpcFailure();
+                    hpcCachedGraph = null;
+                    return Double.NaN;
+                }
                 leaves.get(i).accGrad(g);
             }
             return loss;

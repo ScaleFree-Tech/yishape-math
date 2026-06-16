@@ -312,11 +312,17 @@ public class AD {
         // This is correct for tape-of-tape higher-order AD where constants carry
         // forward values through symbolic backward functions without introducing
         // spurious gradient paths to original variables.
-        return new RereDiffVector(copy.getData());
+        // opTag="constant" is set so GraphOptimizer can distinguish true constants
+        // from trainable variables (both have requiresGrad=true and isLeaf=true).
+        RereDiffVector v = new RereDiffVector(copy.getData());
+        v.tensor.setOpTag("constant");
+        return v;
     }
 
     public static IDiffVector constant(double scalar) {
-        return new RereDiffVector(new double[]{scalar});
+        RereDiffVector v = new RereDiffVector(new double[]{scalar});
+        v.tensor.setOpTag("constant");
+        return v;
     }
 
     // ---- tape-of-tape higher-order differentiation ----

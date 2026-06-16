@@ -1469,12 +1469,32 @@ public class RereDiffVector implements IDiffVector, Serializable {
         Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
             double[] go = gradOut.gradData();
             double[] dx = new double[n];
-            // SISD: cumprod backward is a reverse-scan (running suffix sum), inherently sequential.
+            // SISD: cumprod backward needs element-by-element computation with zero handling.
             // No accelerated scan primitive exists in the current chain (§7a structural-loop exception).
-            double running = 0;
-            for (int i = n - 1; i >= 0; i--) {
-                running += go[i] * y[i];
-                dx[i] = (Math.abs(fwd[i]) > 1e-15) ? running / fwd[i] : 0;
+            // Correct formula for L = sum(y) where y = cumprod(x), go[i]=1 for all i:
+            // If x[j]!=0: dx[j] = (y[j]+...+y[n-1]) / x[j]
+            // If x[j]=0:   dx[j] = x[0]*...*x[j-1] * (1 + x[j+1] + x[j+1]*x[j+2] + ...)
+            //   = prefix * (1 + sum of suffix products for all subsequent non-zero x[k])
+            // totalFrom: backward cumulative sum of y (structural DP, inherently sequential).
+            double[] totalFrom = new double[n];
+            totalFrom[n - 1] = y[n - 1];
+            for (int j = n - 2; j >= 0; j--) totalFrom[j] = y[j] + totalFrom[j + 1];
+            double prefix = 1; // x[0]*...*x[j-1] as we iterate forward (empty product = 1 for j=0)
+            for (int j = 0; j < n; j++) {
+                if (Math.abs(fwd[j]) > 1e-15) {
+                    dx[j] = totalFrom[j] / fwd[j];
+                } else {
+                    // x[j]=0: dx[j] = prefix * (1 + sum_{k>j, x[k]!=0} x[j+1]*...*x[k])
+                    dx[j] = prefix; // k=j term: x[0]*...*x[j-1] * 1
+                    double suffix = 1;
+                    for (int k = j + 1; k < n; k++) {
+                        if (Math.abs(fwd[k]) > 1e-15) {
+                            suffix *= fwd[k]; // suffix = x[j+1]*...*x[k]
+                            dx[j] += prefix * suffix;
+                        }
+                    }
+                }
+                prefix *= fwd[j];
             }
             self.accGrad(dx);
         };

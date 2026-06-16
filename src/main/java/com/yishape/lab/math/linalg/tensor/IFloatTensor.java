@@ -282,6 +282,17 @@ public interface IFloatTensor {
     IFloatTensor mish();
     IFloatTensor softplus(float beta);
     IFloatTensor hardtanh(float minVal, float maxVal);
+
+    /** Error function (erf), element-wise. */
+    IFloatTensor erf();
+    /** Round to nearest integer, element-wise. */
+    IFloatTensor round();
+    /** Floor, element-wise. */
+    IFloatTensor floor();
+    /** Ceil, element-wise. */
+    IFloatTensor ceil();
+    /** Sign function, element-wise: -1, 0, or 1. */
+    IFloatTensor sign();
     IFloatTensor square();
     IFloatTensor pow(float n);
     IFloatTensor clamp(float min, float max);

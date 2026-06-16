@@ -214,7 +214,8 @@ public final class EinsumParser {
                 else if (keptAxes.contains(c)) keptProd *= sz;
                 else if (contractAxes.contains(c)) contractProd *= sz;
             }
-            return new int[]{batchProd, keptProd, contractProd};
+            // Return [batch, contract, kept] — the order bmm expects: [B, K, N]
+            return new int[]{batchProd, contractProd, keptProd};
         }
 
         /**

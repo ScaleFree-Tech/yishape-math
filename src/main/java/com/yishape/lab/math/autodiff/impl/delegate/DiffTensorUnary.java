@@ -98,6 +98,35 @@ public final class DiffTensorUnary {
             (g, x) -> x >= 0 ? g * scale : g * scale * alpha * Math.exp(x), "selu");
     }
 
+    private static final double ERF_SQRT_PI = Math.sqrt(Math.PI);
+    private static final double ERF_TWO_OVER_SQRT_PI = 2.0 / ERF_SQRT_PI;
+    public static IDiffTensor erf(RereDiffTensor tensor) {
+        return unaryOp(tensor, DiffTensorUnary::erfApprox,
+            (g, x) -> g * ERF_TWO_OVER_SQRT_PI * Math.exp(-x * x), "erf");
+    }
+    private static double erfApprox(double x) {
+        double a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+        double a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+        int sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+        double t = 1.0 / (1.0 + p * x);
+        double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return sign * y;
+    }
+
+    public static IDiffTensor round(RereDiffTensor tensor) {
+        return unaryOp(tensor, x -> (double) Math.round(x), (g, x) -> 0.0, "round");
+    }
+    public static IDiffTensor floor(RereDiffTensor tensor) {
+        return unaryOp(tensor, Math::floor, (g, x) -> 0.0, "floor");
+    }
+    public static IDiffTensor ceil(RereDiffTensor tensor) {
+        return unaryOp(tensor, Math::ceil, (g, x) -> 0.0, "ceil");
+    }
+    public static IDiffTensor sign(RereDiffTensor tensor) {
+        return unaryOp(tensor, x -> x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0, (g, x) -> 0.0, "sign");
+    }
+
     public static IDiffTensor hardtanh(RereDiffTensor tensor, double minVal, double maxVal) {
         return unaryOp(tensor, x -> Math.min(Math.max(x, minVal), maxVal),
             (g, x) -> (x > minVal && x < maxVal) ? g : 0, "hardtanh", minVal, maxVal);

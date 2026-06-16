@@ -295,4 +295,66 @@ public class HpcContractTest {
             leaves -> leaves[0].groupNorm(2, leaves[1], leaves[2], 1e-5).sum());
         assertMatch("groupNorm", cpu, hpc);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Matmul (mmul) — direct mmul tests for HPC matmul backward
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test void testMmul2D() {
+        // A[M,K] @ B[K,N] = C[M,N].sum() with M=4, K=3, N=5
+        int M = 4, K = 3, N = 5;
+        double[] a = rand(M * K);
+        double[] b = rand(K * N);
+        CpuResult cpu = cpuRef(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        HpcResult hpc = hpcExec(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        assertMatch("mmul2D", cpu, hpc);
+    }
+
+    @Test void testMmulTallSkinny() {
+        // M=1, K=8, N=3 — single-row output [1,3]
+        int M = 1, K = 8, N = 3;
+        double[] a = rand(M * K);
+        double[] b = rand(K * N);
+        CpuResult cpu = cpuRef(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        HpcResult hpc = hpcExec(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        if (!hpcPresent || Double.isNaN(hpc.loss)) return;
+        assertMatch("mmulTallSkinny", cpu, hpc);
+    }
+
+    @Test void testMmulWideShort() {
+        // M=5, K=3, N=1 — single-column output [5,1]
+        int M = 5, K = 3, N = 1;
+        double[] a = rand(M * K);
+        double[] b = rand(K * N);
+        CpuResult cpu = cpuRef(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        HpcResult hpc = hpcExec(new double[][]{a, b},
+            new int[][]{{M, K}, {K, N}},
+            leaves -> leaves[0].mmul(leaves[1]).sum());
+        if (!hpcPresent || Double.isNaN(hpc.loss)) return;
+        assertMatch("mmulWideShort", cpu, hpc);
+    }
+
+    @Test void testBmm3D() {
+        // A[B,M,K] @ B[B,K,N] = C[B,M,N].sum() with B=2, M=3, K=4, N=5
+        int B = 2, M = 3, K = 4, N = 5;
+        double[] a = rand(B * M * K);
+        double[] b = rand(B * K * N);
+        CpuResult cpu = cpuRef(new double[][]{a, b},
+            new int[][]{{B, M, K}, {B, K, N}},
+            leaves -> leaves[0].bmm(leaves[1]).sum());
+        HpcResult hpc = hpcExec(new double[][]{a, b},
+            new int[][]{{B, M, K}, {B, K, N}},
+            leaves -> leaves[0].bmm(leaves[1]).sum());
+        assertMatch("bmm3D", cpu, hpc);
+    }
 }

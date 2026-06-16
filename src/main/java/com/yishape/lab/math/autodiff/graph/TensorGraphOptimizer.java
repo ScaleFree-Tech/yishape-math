@@ -21,19 +21,31 @@ public class TensorGraphOptimizer {
 
     private TensorGraphOptimizer() {}
 
-    /** Graph-level constant folding: eliminates identity operations (addScalar(0), mulScalar(1), etc.). */
+    /** Graph-level optimization: constant folding + identity elimination. */
     public static IDiffTensor optimize(IDiffTensor root) {
         if (!(root instanceof RereDiffTensor r)) {
             return root;
         }
-        return foldConstants(r);
-    }
-
-    private static RereDiffTensor foldConstants(RereDiffTensor root) {
         List<RereDiffTensor> order = new ArrayList<>();
         HashSet<RereDiffTensor> visited = new HashSet<>();
-        root.buildTopo(order, visited);
+        r.buildTopo(order, visited);
 
+        // Phase 1: Constant subgraph folding — evaluate all-constant ops eagerly
+        GraphOptimizer.foldConstantsInOrder(order);
+
+        // Phase 2: Identity elimination — addScalar(0), mulScalar(1), etc.
+        RereDiffTensor result = foldConstantsFromOrder(order);
+
+        return result;
+    }
+
+    /**
+     * Identity elimination over a pre-built topological order.
+     * Eliminates addScalar(0), mulScalar(1), divScalar(1), pow(1), mulScalar(0).
+     * Returns the replacement for the original root (which should be the last node in order).
+     */
+    private static RereDiffTensor foldConstantsFromOrder(List<RereDiffTensor> order) {
+        RereDiffTensor root = order.get(order.size() - 1);
         Map<RereDiffTensor, RereDiffTensor> replacements = new HashMap<>();
 
         for (RereDiffTensor node : order) {

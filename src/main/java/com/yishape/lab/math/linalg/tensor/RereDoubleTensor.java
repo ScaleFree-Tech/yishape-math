@@ -611,9 +611,25 @@ public class RereDoubleTensor implements IDoubleTensor {
         double alpha = 1.6732632423543772, scale = 1.0507009873554804;
         return applyUnary(x -> scale * (x >= 0 ? x : alpha * (Math.exp(x) - 1)));
     }
+    @Override public IDoubleTensor erf() {
+        return applyUnary(RereDoubleTensor::erfApprox);
+    }
+    private static double erfApprox(double x) {
+        double a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+        double a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+        int sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+        double t = 1.0 / (1.0 + p * x);
+        double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return sign * y;
+    }
     @Override public IDoubleTensor silu() {
         return applyUnary(x -> x / (1.0 + Math.exp(-x)));
     }
+    @Override public IDoubleTensor round() { return applyUnary(x -> (double) Math.round(x)); }
+    @Override public IDoubleTensor floor() { return applyUnary(Math::floor); }
+    @Override public IDoubleTensor ceil() { return applyUnary(Math::ceil); }
+    @Override public IDoubleTensor sign() { return applyUnary(x -> x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0); }
     @Override public IDoubleTensor mish() {
         return applyUnary(x -> x * Math.tanh(Math.log(1.0 + Math.exp(x))));
     }
@@ -1271,13 +1287,41 @@ public class RereDoubleTensor implements IDoubleTensor {
             return mul(others[0]);
         }
 
-        // Compositional: permute → reshape → bmm → reshape
-        IDoubleTensor aP = permute(spec.permuteA());
-        IDoubleTensor bP = others[0].permute(spec.permuteB());
-        IDoubleTensor aR = aP.reshape(spec.reshapeTo3D(0, aP.shape()));
-        IDoubleTensor bR = bP.reshape(spec.reshapeTo3D(1, bP.shape()));
-        IDoubleTensor result = aR.bmm(bR);
-        return result.reshape(spec.outputShape(shape(), others[0].shape()));
+        // Per-slice batch loop using DoubleFlatGemm for forward.
+        // bmm with reshape3D [batch,contract,kept] fails because contract dims must
+        // align between inputs but kept dims differ (e.g. 2 vs 4 for "ij,jk->ik").
+        int B = 1, keptA = 1, K = 1;
+        for (char c : spec.inputLabels[0].toCharArray()) {
+            if (spec.batchAxes.contains(c)) B *= spec.axisSizes.get(c);
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else keptA *= spec.axisSizes.get(c);
+        }
+        for (char c : spec.inputLabels[1].toCharArray()) {
+            if (spec.batchAxes.contains(c)) { /* already counted */ }
+            else if (spec.contractAxes.contains(c)) { /* skip */ }
+            else K *= spec.axisSizes.get(c);
+        }
+        int contractSize = 1;
+        for (char c : spec.contractAxes) {
+            contractSize *= spec.axisSizes.get(c);
+        }
+
+        double[] aData = toDoubleArray();
+        double[] bData = others[0].toDoubleArray();
+
+        int outTotal = B * keptA * K;
+        double[] outData = new double[outTotal];
+
+        for (int bi = 0; bi < B * keptA; bi++) {
+            int bj = B > 1 ? bi / keptA : 0;
+            double[] aSlice = java.util.Arrays.copyOfRange(aData, bi * contractSize, (bi + 1) * contractSize);
+            double[] bSlice = java.util.Arrays.copyOfRange(bData, bj * contractSize * K, (bj + 1) * contractSize * K);
+            double[] cSlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(
+                aSlice, 0, 1, contractSize, bSlice, 0, K);
+            System.arraycopy(cSlice, 0, outData, bi * K, K);
+        }
+
+        return new RereDoubleTensor(outData, spec.outputShape(shape(), others[0].shape()));
     }
 
     private IDoubleTensor einsumSingle(EinsumParser.EinsumSpec spec) {

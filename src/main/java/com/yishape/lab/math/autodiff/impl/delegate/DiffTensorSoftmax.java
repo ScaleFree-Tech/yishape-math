@@ -364,30 +364,41 @@ public static IDiffTensor cumprod(RereDiffTensor tensor, int dim) {
     }
     int fOuter = outer, fReduce = reduce, fInner = inner;
     double[] savedVals = vals;
+    double[] savedResult = result;
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
         double[] inGrad = AutodiffBufferPool.acquire(total);
-        // C11: pre-allocate reusable buffers outside loops to avoid per-(outer,inner) allocation
-        double[] cp = new double[fReduce];
-        double[] q = new double[fReduce];
         for (int o = 0; o < fOuter; o++) {
             for (int i = 0; i < fInner; i++) {
-                double p = 1;
+                // Correct formula for cumprod backward (handles zeros):
+                // If fwd[r]!=0: dx[r] = totalFrom[r]/fwd[r]
+                // If fwd[r]=0:   dx[r] = prefix + sum_{k>r, fwd[k]!=0} prefix * suffix(k)
+                // totalFrom: backward cumulative sum of y (structural DP, sequential).
+                double[] totalFrom = new double[fReduce];
+                totalFrom[fReduce - 1] = savedResult[(o * fReduce + fReduce - 1) * fInner + i];
+                for (int r = fReduce - 2; r >= 0; r--) {
+                    totalFrom[r] = savedResult[(o * fReduce + r) * fInner + i] + totalFrom[r + 1];
+                }
+                double prefix = 1.0;
                 for (int r = 0; r < fReduce; r++) {
                     int idx = (o * fReduce + r) * fInner + i;
-                    p *= savedVals[idx];
-                    cp[r] = p;
-                }
-                for (int r = 0; r < fReduce; r++) {
-                    int idx = (o * fReduce + r) * fInner + i;
-                    double xi = savedVals[idx];
-                    q[r] = (xi != 0.0) ? self.grad[idx] * cp[r] / xi : 0.0;
-                }
-                double cum = 0;
-                for (int r = fReduce - 1; r >= 0; r--) {
-                    cum += q[r];
-                    inGrad[(o * fReduce + r) * fInner + i] = cum;
+                    if (Math.abs(savedVals[idx]) > 1e-15) {
+                        inGrad[idx] = totalFrom[r] / savedVals[idx];
+                    } else {
+                        // fwd[r]=0: dx[r] = prefix * (1 + sum_{k>r} x[r+1]*...*x[k])
+                        //   = x[0]*...*x[r-1] + sum_{k>r, x[k]!=0} x[0]*...*x[k-1]
+                        inGrad[idx] = prefix; // k=r term
+                        double suffix = 1.0;
+                        for (int k = r + 1; k < fReduce; k++) {
+                            int kidx = (o * fReduce + k) * fInner + i;
+                            if (Math.abs(savedVals[kidx]) > 1e-15) {
+                                suffix *= savedVals[kidx]; // suffix = x[r+1]*...*x[k] (inclusive)
+                                inGrad[idx] += prefix * suffix;
+                            }
+                        }
+                    }
+                    prefix *= savedVals[idx];
                 }
             }
         }

@@ -76,7 +76,7 @@ public static IDiffTensor rdiv(RereDiffTensor tensor, double scalar) {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = xAbs < DIV_EPS ? 0 : -self.grad[i] * scalar / (xAbs * xAbs); }
+        for (int i = 0; i < m; i++) { inGrad[i] = xd[i] < DIV_EPS ? 0 : -self.grad[i] * scalar / (xd[i] * xd[i]); }
         input.accGradFromPooled(inGrad, m);
     };
     RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "rdivScalar", scalar);
@@ -104,7 +104,7 @@ public static IDiffTensor reciprocal(RereDiffTensor tensor) {
         RereDiffTensor input = self.inputs.get(0);
         int m = (int) input.value.totalSize();
         double[] inGrad = AutodiffBufferPool.acquire(m);
-        for (int i = 0; i < m; i++) { double xAbs = Math.abs(xd[i]); inGrad[i] = xAbs < DIV_EPS ? 0 : -self.grad[i] / (xAbs * xAbs); }
+        for (int i = 0; i < m; i++) { inGrad[i] = xd[i] < DIV_EPS ? 0 : -self.grad[i] / (xd[i] * xd[i]); }
         input.accGradFromPooled(inGrad, m);
     };
     RereDiffTensor r = new RereDiffTensor(out, tensor.shape(), List.of(tensor), bw, "reciprocal");

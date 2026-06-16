@@ -203,6 +203,7 @@ public final class GpuGraphExecutor {
         double binaryResult = tryExecuteTensorBinary(root, order);
         if (!Double.isNaN(binaryResult)) {
             gpuConsecutiveFailures.set(0); // reset on success
+            detachGraphAfterNativeExecution(order);
             return binaryResult;
         }
         // In strict mode, binary path failure is a bug — surface it immediately
@@ -275,9 +276,11 @@ public final class GpuGraphExecutor {
             double loss = applyTensorGradientsFromJson(root, leaves, resultJson);
             if (!Double.isNaN(loss)) {
                 gpuConsecutiveFailures.set(0); // reset cooldown on success
+                detachGraphAfterNativeExecution(order);
             }
             return loss;
         } catch (Exception e) {
+            trackGpuFailure();
             log.debug("GPU graph execution failed", e);
             return NativeStrictMode.failOrNaN("GPU",
                 "JSON result parsing failed: %s", e.getMessage());
@@ -323,8 +326,7 @@ public final class GpuGraphExecutor {
                 gradData[idx++] = Double.parseDouble(trimmed);
             }
 
-            leaves.get(leafIdx).accGrad(gradData);
-            // C23: verify gradient length matches leaf tensor size
+            // C23: verify gradient length matches leaf tensor size BEFORE accGrad
             long leafSize = leaves.get(leafIdx).totalSize();
             if (gradData.length != leafSize) {
                 log.warn("GPU tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
@@ -332,14 +334,35 @@ public final class GpuGraphExecutor {
                 trackGpuFailure();
                 return Double.NaN;
             }
+            leaves.get(leafIdx).accGrad(gradData);
             leafIdx++;
             pos = innerEnd + 1;
         }
 
         if (leafIdx < leaves.size()) {
-            log.warn("GPU tensor returned fewer gradients ({}) than leaves ({})", leafIdx, leaves.size());
+            log.warn("GPU tensor returned fewer gradients ({}) than leaves ({}) — falling back to CPU",
+                leafIdx, leaves.size());
+            trackGpuFailure();
+            return Double.NaN;
         }
         return loss;
+    }
+
+    /**
+     * Detach graph references after successful native execution.
+     * Clears backwardFn and inputs on intermediate nodes to prevent
+     * double gradient accumulation if {@code backward()} is called again.
+     * Mirrors the cleanup in {@code RereDiffTensor.backwardImpl()} (lines 298-305).
+     */
+    private static void detachGraphAfterNativeExecution(ArrayList<RereDiffTensor> order) {
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (!v.isLeaf()) {
+                v.inputs = null;
+                v.backwardFn = null;
+                v.symbolicBackwardFn = null;
+            }
+        }
     }
 
     /** Track a GPU failure: increment counter, enter cooldown if threshold reached. */
@@ -411,6 +434,7 @@ public final class GpuGraphExecutor {
             }
             return loss;
         } catch (Exception e) {
+            trackGpuFailure();
             log.debug("GPU graph execution failed", e);
             return NativeStrictMode.failOrNaN("GPU",
                 "JSON result parsing failed: %s", e.getMessage());

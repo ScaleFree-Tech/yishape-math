@@ -83,7 +83,7 @@ public final class GraphExporter {
             Map<RereDiffTensor, Integer> indexMap) {
         sb.append("{\"id\":").append(id);
         sb.append(",\"shape\":[");
-        int[] s = t.shape();
+        int[] s = t.serializationShape();
         for (int i = 0; i < s.length; i++) {
             if (i > 0) sb.append(',');
             sb.append(s[i]);
