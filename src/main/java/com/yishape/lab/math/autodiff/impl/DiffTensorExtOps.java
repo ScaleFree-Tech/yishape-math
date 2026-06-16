@@ -346,126 +346,144 @@ public static IDiffTensor depthwiseConv1d(RereDiffTensor tensor, IDiffTensor wei
 
 // ==================== Phase 5: interpolate ====================
 
-public static IDiffTensor interpolate(RereDiffTensor tensor, double scaleFactor, String mode) {
-    int[] s = tensor.shape();
-    if (s.length < 3) throw new IllegalArgumentException("interpolate requires rank >= 3, got " + s.length);
-    int N, C, H, W;
-    if (s.length == 3) { N = 1; C = s[0]; H = s[1]; W = s[2]; }
-    else if (s.length == 4) { N = s[0]; C = s[1]; H = s[2]; W = s[3]; }
-    else { N = 1; for (int i = 0; i < s.length - 3; i++) N *= s[i]; C = s[s.length - 3]; H = s[s.length - 2]; W = s[s.length - 1]; }
+	public static IDiffTensor interpolate(RereDiffTensor tensor, double scaleFactor, String mode) {
+	    int[] s = tensor.shape();
+	    if (s.length < 3) throw new IllegalArgumentException("interpolate requires rank >= 3, got " + s.length);
+	    int N, C, H, W;
+	    if (s.length == 3) { N = 1; C = s[0]; H = s[1]; W = s[2]; }
+	    else if (s.length == 4) { N = s[0]; C = s[1]; H = s[2]; W = s[3]; }
+	    else { N = 1; for (int i = 0; i < s.length - 3; i++) N *= s[i]; C = s[s.length - 3]; H = s[s.length - 2]; W = s[s.length - 1]; }
 
-    int outH = (int) Math.floor(H * scaleFactor);
-    int outW = (int) Math.floor(W * scaleFactor);
-    boolean bilinear = "bilinear".equals(mode);
+	    int outH = (int) Math.floor(H * scaleFactor);
+	    int outW = (int) Math.floor(W * scaleFactor);
+	    boolean bilinear = "bilinear".equals(mode);
+	    int totalOut = N * C * outH * outW;
 
-    double[] xd = tensor.value.toDoubleArray();
-    double[] y = new double[N * C * outH * outW];
+	    double[] xd = tensor.value.toDoubleArray();
+	    double[] y = new double[totalOut];
 
-    // Save interpolation weights for backward (SISD fallback)
-    double[][] savedWeights = bilinear ? new double[N * C * outH * outW][4] : null;
-    int[][] savedIndices = bilinear ? new int[N * C * outH * outW][4] : new int[N * C * outH * outW][1];
+	    // Flat arrays for backward SISD fallback — allocated only when HPC fails
+	    final double[] savedWeightsFlat;
+	    final int[] savedIndicesFlat;
+	    final int savedStride; // 4 for bilinear, 1 for nearest
 
-    // Try HPC forward first
-    boolean hpcFwdOk = false;
-    if (bilinear) {
-        hpcFwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryBilinearForward(
-                xd, N, C, H, W, outH, outW, y);
-    } else {
-        hpcFwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryNearestForward(
-                xd, N, C, H, W, outH, outW, y);
-    }
+	    // Try HPC forward first
+	    boolean hpcFwdOk = false;
+	    if (bilinear) {
+	        hpcFwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryBilinearForward(
+	                xd, N, C, H, W, outH, outW, y);
+	    } else {
+	        hpcFwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryNearestForward(
+	                xd, N, C, H, W, outH, outW, y);
+	    }
 
-    if (!hpcFwdOk) {
-        // SISD fallback
-        for (int n = 0; n < N; n++) {
-            for (int c = 0; c < C; c++) {
-                for (int oh = 0; oh < outH; oh++) {
-                    double srcH = (oh + 0.5) / scaleFactor - 0.5;
-                    int h0 = (int) Math.floor(srcH);
-                    int h1 = Math.min(h0 + 1, H - 1);
-                    h0 = Math.max(h0, 0);
-                    double dh = srcH - h0;
-                    for (int ow = 0; ow < outW; ow++) {
-                        double srcW = (ow + 0.5) / scaleFactor - 0.5;
-                        int w0 = (int) Math.floor(srcW);
-                        int w1 = Math.min(w0 + 1, W - 1);
-                        w0 = Math.max(w0, 0);
-                        double dw = srcW - w0;
-                        int outIdx = ((n * C + c) * outH + oh) * outW + ow;
+	    if (!hpcFwdOk) {
+	        // SISD fallback — allocate flat arrays (single allocation, no per-pixel objects)
+	        savedStride = bilinear ? 4 : 1;
+	        savedWeightsFlat = bilinear ? new double[totalOut * 4] : null;
+	        savedIndicesFlat = new int[totalOut * savedStride];
 
-                        if (bilinear) {
-                            double v00 = xd[((n * C + c) * H + h0) * W + w0];
-                            double v01 = xd[((n * C + c) * H + h0) * W + w1];
-                            double v10 = xd[((n * C + c) * H + h1) * W + w0];
-                            double v11 = xd[((n * C + c) * H + h1) * W + w1];
-                            double out = (1 - dh) * (1 - dw) * v00 + (1 - dh) * dw * v01
-                                       + dh * (1 - dw) * v10 + dh * dw * v11;
-                            y[outIdx] = out;
-                            savedWeights[outIdx] = new double[]{(1 - dh) * (1 - dw), (1 - dh) * dw, dh * (1 - dw), dh * dw};
-                            savedIndices[outIdx] = new int[]{h0 * W + w0, h0 * W + w1, h1 * W + w0, h1 * W + w1};
-                        } else {
-                            int hNear = (int) Math.round(srcH);
-                            int wNear = (int) Math.round(srcW);
-                            hNear = Math.max(0, Math.min(H - 1, hNear));
-                            wNear = Math.max(0, Math.min(W - 1, wNear));
-                            y[outIdx] = xd[((n * C + c) * H + hNear) * W + wNear];
-                            savedIndices[outIdx] = new int[]{hNear * W + wNear};
-                        }
-                    }
-                }
-            }
-        }
-    }
+	        // Structural loops: per-pixel coordinate transform + index computation — not element-wise arithmetic
+	        for (int n = 0; n < N; n++) {
+	            for (int c = 0; c < C; c++) {
+	                for (int oh = 0; oh < outH; oh++) {
+	                    double srcH = (oh + 0.5) / scaleFactor - 0.5;
+	                    int h0 = (int) Math.floor(srcH);
+	                    int h1 = Math.min(h0 + 1, H - 1);
+	                    h0 = Math.max(h0, 0);
+	                    double dh = srcH - h0;
+	                    for (int ow = 0; ow < outW; ow++) {
+	                        double srcW = (ow + 0.5) / scaleFactor - 0.5;
+	                        int w0 = (int) Math.floor(srcW);
+	                        int w1 = Math.min(w0 + 1, W - 1);
+	                        w0 = Math.max(w0, 0);
+	                        double dw = srcW - w0;
+	                        int outIdx = ((n * C + c) * outH + oh) * outW + ow;
 
-    int[] outShape = (s.length == 4) ? new int[]{N, C, outH, outW}
-        : (s.length == 3) ? new int[]{C, outH, outW} : RereDiffTensor.buildOutShape(s, N, C, outH, outW);
-    final int fH = H, fW = W, fOutH = outH, fOutW = outW, fN = N, fC = C;
-    final boolean fBilinear = bilinear;
-    Consumer<RereDiffTensor> bw = self -> {
-        RereDiffTensor inp = self.inputs.get(0);
-        double[] g = self.grad;
-        double[] dx = new double[(int) inp.value.totalSize()];
+	                        if (bilinear) {
+	                            double v00 = xd[((n * C + c) * H + h0) * W + w0];
+	                            double v01 = xd[((n * C + c) * H + h0) * W + w1];
+	                            double v10 = xd[((n * C + c) * H + h1) * W + w0];
+	                            double v11 = xd[((n * C + c) * H + h1) * W + w1];
+	                            y[outIdx] = (1 - dh) * (1 - dw) * v00 + (1 - dh) * dw * v01
+	                                       + dh * (1 - dw) * v10 + dh * dw * v11;
+	                            int base = outIdx * 4;
+	                            savedWeightsFlat[base]     = (1 - dh) * (1 - dw);
+	                            savedWeightsFlat[base + 1] = (1 - dh) * dw;
+	                            savedWeightsFlat[base + 2] = dh * (1 - dw);
+	                            savedWeightsFlat[base + 3] = dh * dw;
+	                            savedIndicesFlat[base]     = h0 * W + w0;
+	                            savedIndicesFlat[base + 1] = h0 * W + w1;
+	                            savedIndicesFlat[base + 2] = h1 * W + w0;
+	                            savedIndicesFlat[base + 3] = h1 * W + w1;
+	                        } else {
+	                            int hNear = (int) Math.round(srcH);
+	                            int wNear = (int) Math.round(srcW);
+	                            hNear = Math.max(0, Math.min(H - 1, hNear));
+	                            wNear = Math.max(0, Math.min(W - 1, wNear));
+	                            y[outIdx] = xd[((n * C + c) * H + hNear) * W + wNear];
+	                            savedIndicesFlat[outIdx] = hNear * W + wNear;
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    } else {
+	        savedWeightsFlat = null;
+	        savedIndicesFlat = null;
+	        savedStride = 0;
+	    }
 
-        // Try HPC backward first
-        boolean hpcBwdOk = false;
-        if (fBilinear) {
-            hpcBwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryBilinearBackward(
-                    g, fN, fC, fH, fW, fOutH, fOutW, dx);
-        } else {
-            hpcBwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryNearestBackward(
-                    g, fN, fC, fH, fW, fOutH, fOutW, dx);
-        }
+	    int[] outShape = (s.length == 4) ? new int[]{N, C, outH, outW}
+	        : (s.length == 3) ? new int[]{C, outH, outW} : RereDiffTensor.buildOutShape(s, N, C, outH, outW);
+	    final int fH = H, fW = W, fOutH = outH, fOutW = outW, fN = N, fC = C;
+	    final boolean fBilinear = bilinear;
+	    Consumer<RereDiffTensor> bw = self -> {
+	        RereDiffTensor inp = self.inputs.get(0);
+	        double[] g = self.grad;
+	        double[] dx = new double[(int) inp.value.totalSize()];
 
-        if (!hpcBwdOk) {
-            // SISD fallback
-            for (int n2 = 0; n2 < fN; n2++) {
-                for (int c2 = 0; c2 < fC; c2++) {
-                    for (int oh2 = 0; oh2 < fOutH; oh2++) {
-                        for (int ow2 = 0; ow2 < fOutW; ow2++) {
-                            int outIdx2 = ((n2 * fC + c2) * fOutH + oh2) * fOutW + ow2;
-                            double gradVal = g[outIdx2];
-                            int baseIn = ((n2 * fC + c2) * fH);
-                            if (fBilinear && savedWeights != null) {
-                                double[] wts = savedWeights[outIdx2];
-                                int[] idxs = savedIndices[outIdx2];
-                                for (int k = 0; k < 4; k++) {
-                                    dx[baseIn * fW + idxs[k]] += gradVal * wts[k];
-                                }
-                            } else {
-                                int[] idxs = savedIndices[outIdx2];
-                                dx[baseIn * fW + idxs[0]] += gradVal;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        inp.accGrad(dx);
-    };
-    RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "interpolate");
-    result.scalarParam = Double.longBitsToDouble(((long) H << 32) | ((long) W & 0xFFFF_FFFFL));
-    result.scalarParam2 = bilinear ? 0.0 : 1.0;
-    return result;
-}
+	        // Try HPC backward first
+	        boolean hpcBwdOk = false;
+	        if (fBilinear) {
+	            hpcBwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryBilinearBackward(
+	                    g, fN, fC, fH, fW, fOutH, fOutW, dx);
+	        } else {
+	            hpcBwdOk = com.yishape.lab.math.compute.hpc.HpcInterpolate.tryNearestBackward(
+	                    g, fN, fC, fH, fW, fOutH, fOutW, dx);
+	        }
+
+	        if (!hpcBwdOk) {
+	            // SISD fallback — structural loops reading from flat arrays
+	            final double[] swf = savedWeightsFlat;
+	            final int[] sif = savedIndicesFlat;
+	            for (int n2 = 0; n2 < fN; n2++) {
+	                for (int c2 = 0; c2 < fC; c2++) {
+	                    for (int oh2 = 0; oh2 < fOutH; oh2++) {
+	                        for (int ow2 = 0; ow2 < fOutW; ow2++) {
+	                            int outIdx2 = ((n2 * fC + c2) * fOutH + oh2) * fOutW + ow2;
+	                            double gradVal = g[outIdx2];
+	                            int baseIn = ((n2 * fC + c2) * fH);
+	                            if (fBilinear && swf != null) {
+	                                int base = outIdx2 * 4;
+	                                dx[baseIn * fW + sif[base]]     += gradVal * swf[base];
+	                                dx[baseIn * fW + sif[base + 1]] += gradVal * swf[base + 1];
+	                                dx[baseIn * fW + sif[base + 2]] += gradVal * swf[base + 2];
+	                                dx[baseIn * fW + sif[base + 3]] += gradVal * swf[base + 3];
+	                            } else {
+	                                dx[baseIn * fW + sif[outIdx2]] += gradVal;
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	        inp.accGrad(dx);
+	    };
+	    RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "interpolate");
+	    result.scalarParam = Double.longBitsToDouble(((long) H << 32) | ((long) W & 0xFFFF_FFFFL));
+	    result.scalarParam2 = bilinear ? 0.0 : 1.0;
+	    return result;
+	}
 
 }

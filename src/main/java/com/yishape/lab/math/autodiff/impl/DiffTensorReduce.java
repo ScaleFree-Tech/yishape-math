@@ -50,6 +50,14 @@ static IDiffTensor sumDimImpl(RereDiffTensor tensor, int d, boolean keepdim) {
         }
     }
     int fOuter = outer, fReduce = reduce, fInner = inner;
+    // SISD backward with buffer pooling: broadcasts grad to all reduced positions.
+    // Data is strided by inner: elements for a given (o,i) are at offset
+    // (o*reduce+r)*inner+i, which is non-contiguous when inner > 1.
+    // DoubleVectorComputer.binaryOperate() requires contiguous arrays; gathering
+    // strided elements + processing + scattering back costs more than the raw loop.
+    // When inner==1 (last-dim reduction), Arrays.fill would suffice; the general
+    // inner>1 case is also cheap (pure copy, no arithmetic). Pooling amortizes
+    // buffer allocation across backward calls.
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
@@ -174,6 +182,10 @@ public static IDiffTensor logSumExp(RereDiffTensor tensor, int dim, boolean keep
     int fOuter = outer, fReduce = reduce, fInner = inner;
     double[] fMaxVals = maxVals;
     double[] fSumExpVals = sumExpVals;
+    // SISD backward with buffer pooling: softmax-weighted gradient distribution.
+    // The exp/sumExp computation is per-element and strided (same as sumDimImpl).
+    // When inner>1, elements are non-contiguous; gathering for vc processing costs
+    // more than the raw loop. Pooling amortizes buffer allocation.
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
@@ -229,6 +241,10 @@ static IDiffTensor minMax(RereDiffTensor tensor, int dim, boolean keepdim, boole
     }
     int fOuter = outer, fReduce = reduce, fInner = inner;
     int[] fArg = argIdx;
+    // SISD backward with buffer pooling: routes grad only to the arg position
+    // (sparse pattern, typically 1 element per reduce group). Cannot be
+    // vectorized — the argIdx indirection is inherently scalar. Pooling
+    // amortizes buffer allocation; most elements remain at 0 (pooled default).
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
@@ -267,6 +283,10 @@ public static IDiffTensor prod(RereDiffTensor tensor, int dim, boolean keepdim) 
     int fOuter = outer, fReduce = reduce, fInner = inner;
     double[] savedVals = vals;
     double[] savedResult = result;
+    // SISD backward with buffer pooling: grad_i = grad * prod / x_i for each i.
+    // Requires per-element division by savedVals[idx] which varies per position;
+    // the strided access pattern (same as sumDimImpl) prevents contiguous-slice
+    // vectorization. Pooling amortizes buffer allocation.
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;
@@ -324,6 +344,12 @@ public static IDiffTensor var(RereDiffTensor tensor, int dim, boolean keepdim) {
     }
     int fOuter = outer, fReduce = reduce, fInner = inner;
     double[] fMeans = means;
+    // SISD backward with buffer pooling: grad_i = 2*grad/n * (x_i - mean).
+    // Linear per-element computation with strided access (same as sumDimImpl).
+    // When inner==1 (last-dim reduction), the slice is contiguous and could use
+    // vc.binaryOperate() with copy-in/copy-out, but the allocation overhead of
+    // fresh arrays per (o,i) pair exceeds the per-element loop cost for typical
+    // reduce sizes. Pooling amortizes buffer allocation.
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor input = self.inputs.get(0);
         int total = fOuter * fReduce * fInner;

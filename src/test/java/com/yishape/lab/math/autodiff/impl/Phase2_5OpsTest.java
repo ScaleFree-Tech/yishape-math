@@ -735,18 +735,126 @@ public class Phase2_5OpsTest {
         assertEquals(4.0, nn.toDoubleArray()[0], 1e-6);
     }
 
-    // ==================== CTC Loss (HPC-dependent) ====================
+    // ==================== CTC Loss ====================
 
-    @Test public void testCtcLossShapeCheck() {
-        // CTC requires 3D input; skip actual computation if HPC unavailable
-        IDiffTensor logProbs = AD.leafTensor(new double[]{
-            // T=2, N=1, C=3
-            0.5, 0.3, 0.2,  // t=0, n=0
-            0.1, 0.8, 0.1   // t=1, n=0
-        }, 2, 1, 3);
-        // Just verify we can create the required tensors without exception
-        // Actual CTC loss requires HPC native runtime
-        assertArrayEquals(new int[]{2, 1, 3}, logProbs.shape());
+    @Test public void testCtcLossJavaForward() {
+        // Simple CTC: T=3, N=1, C=3. Label [1] at t=1 has highest prob.
+        // logProbs[t][c] — high prob for correct path
+        double[] logProbs = new double[]{
+            -0.5, -2.0, -2.0,  // t=0: blank is most likely
+            -2.0, -0.3, -2.0,  // t=1: class 1 is most likely
+            -0.4, -2.0, -2.0,  // t=2: blank is most likely
+        };
+        int T = 3, C = 3;
+        int[] labels = new int[]{1};
+        double[] loss = new double[1];
+        double[] grad = new double[T * C];
+
+        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                logProbs, labels, 1, T, C, loss, grad);
+        assertTrue(ok, "CTC Java forward-backward should succeed");
+        assertTrue(loss[0] > 0, "CTC loss should be > 0, got " + loss[0]);
+        assertTrue(loss[0] < 10, "CTC loss should be < 10 for reasonable input, got " + loss[0]);
+    }
+
+    @Test public void testCtcLossJavaPerfectPrediction() {
+        // If one path has probability 1, loss ≈ 0
+        int T = 2, C = 2, labelLen = 1;
+        double[] logProbs = new double[T * C];
+        // Make blank→label→blank the only path: blank(t=0)→label(t=1)
+        // logProb[t=0,blank]=0 (prob=1), logProb[t=1,label]=0 (prob=1)
+        logProbs[0 * C + 0] = 0.0;    // t=0, blank: 100% prob
+        logProbs[0 * C + 1] = -1e10;  // t=0, label: ~0 prob
+        logProbs[1 * C + 0] = -1e10;  // t=1, blank: ~0 prob
+        logProbs[1 * C + 1] = 0.0;    // t=1, label: 100% prob
+
+        double[] loss = new double[1];
+        double[] grad = new double[T * C];
+        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                logProbs, new int[]{1}, labelLen, T, C, loss, grad);
+        assertTrue(ok);
+        // With perfect prediction, loss ≈ -ln(1*1) = 0
+        assertTrue(loss[0] < 0.01, "Perfect prediction should give near-zero loss, got " + loss[0]);
+    }
+
+    @Test public void testCtcLossJavaEmptyTarget() {
+        // Edge case: labelLen=0 — but CTC requires at least 1 label
+        double[] logProbs = new double[]{-0.5, -0.5};
+        double[] loss = new double[1];
+        double[] grad = new double[2];
+        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                logProbs, new int[0], 0, 1, 2, loss, grad);
+        assertFalse(ok, "CTC with empty target should return false");
+    }
+
+    @Test public void testCtcLossJavaBackwardGradientCheck() {
+        // Small random CTC instance, verify gradient via finite differences
+        int T = 4, C = 3, labelLen = 2;
+        java.util.Random rng = new java.util.Random(42);
+        double[] logProbs = new double[T * C];
+        for (int i = 0; i < T * C; i++) {
+            logProbs[i] = -rng.nextDouble() * 2.0; // log-probs in [-2, 0]
+        }
+        int[] labels = new int[]{1, 2};
+
+        double[] loss = new double[1];
+        double[] grad = new double[T * C];
+        boolean ok = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                logProbs, labels, labelLen, T, C, loss, grad);
+        assertTrue(ok);
+
+        // Finite difference check at a few positions
+        double eps = 1e-5;
+        for (int idx : new int[]{0, 4, 8}) {
+            double[] lpPlus = logProbs.clone();
+            lpPlus[idx] += eps;
+            double[] lossPlus = new double[1];
+            com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                    lpPlus, labels, labelLen, T, C, lossPlus, new double[T * C]);
+
+            double[] lpMinus = logProbs.clone();
+            lpMinus[idx] -= eps;
+            double[] lossMinus = new double[1];
+            com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                    lpMinus, labels, labelLen, T, C, lossMinus, new double[T * C]);
+
+            double numericGrad = (lossPlus[0] - lossMinus[0]) / (2 * eps);
+            assertEquals(numericGrad, grad[idx], 1e-3,
+                "Gradient mismatch at index " + idx);
+        }
+    }
+
+    @Test public void testCtcLossJavaVsHpc() {
+        // If HPC is available, compare Java and HPC results
+        int T = 5, C = 4, labelLen = 3;
+        java.util.Random rng = new java.util.Random(123);
+        double[] logProbs = new double[T * C];
+        for (int i = 0; i < T * C; i++) {
+            logProbs[i] = -rng.nextDouble() * 2.0;
+        }
+        int[] labels = new int[]{1, 3, 2};
+
+        double[] javaLoss = new double[1];
+        double[] javaGrad = new double[T * C];
+        boolean javaOk = com.yishape.lab.math.autodiff.support.CtcLossJava.tryForwardBackward(
+                logProbs, labels, labelLen, T, C, javaLoss, javaGrad);
+        assertTrue(javaOk, "Java CTC should always succeed");
+
+        // Also try through HpcLoss (may use HPC if available, or Java fallback)
+        double[] hpcLoss = new double[1];
+        double[] hpcGrad = new double[T * C];
+        boolean hpcOk = com.yishape.lab.math.compute.hpc.HpcLoss.tryCtcForwardBackward(
+                logProbs, labels, labelLen, T, C, hpcLoss, hpcGrad);
+        if (hpcOk) {
+            // HPC may have run via HPC native or Java fallback; compare
+            assertEquals(javaLoss[0], hpcLoss[0], 1e-6,
+                "Java and HPC CTC loss should match");
+            for (int i = 0; i < T * C; i++) {
+                assertEquals(javaGrad[i], hpcGrad[i], 1e-6,
+                    "Java and HPC CTC gradient mismatch at index " + i);
+            }
+        }
+        // If hpcOk is false, HpcLoss refused to run (config/attempts), which is fine
     }
 
     // ==================== cross (3D vector cross product) ====================

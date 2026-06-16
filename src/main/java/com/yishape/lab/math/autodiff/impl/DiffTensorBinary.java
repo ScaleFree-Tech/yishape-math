@@ -165,20 +165,33 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
 
     if (Arrays.equals(tensor.shape(), other.shape())) {
         // Same shape
+        double[] aData = tensor.value.toDoubleArray();
+        double[] bData = detOther.toDoubleArray();
+        // Forward via DoubleVectorComputer for SIMD/GPU acceleration
+        DoubleVectorComputer vc = new DoubleVectorComputer();
+        BinaryOperation sameFwdOp = switch (tag) {
+            case "add" -> BinaryOperation.ADD;
+            case "sub" -> BinaryOperation.SUBTRACT;
+            case "mul" -> BinaryOperation.MULTIPLY;
+            case "div" -> BinaryOperation.DIVIDE;
+            default   -> null;
+        };
         if (!tensor.requiresGrad && !otherDiff) {
-            double[] aData = tensor.value.toDoubleArray();
-            double[] bData = detOther.toDoubleArray();
-            double[] out = new double[aData.length];
-            for (int i = 0; i < out.length; i++) out[i] = forward.applyAsDouble(aData[i], bData[i]);
+            double[] out = (sameFwdOp != null) ? vc.binaryOperate(aData, bData, sameFwdOp) : null;
+            if (out == null) {
+                out = new double[aData.length];
+                for (int i = 0; i < out.length; i++) out[i] = forward.applyAsDouble(aData[i], bData[i]);
+            }
             return tensor.toNonDiff(new RereDoubleTensor(out, tensor.shape()));
         }
         int n = (int) tensor.value.totalSize();
-        double[] out = new double[n];
-        double[] aData = tensor.value.toDoubleArray();
-        double[] bData = detOther.toDoubleArray();
+        double[] out = (sameFwdOp != null) ? vc.binaryOperate(aData, bData, sameFwdOp) : null;
+        if (out == null) {
+            out = new double[n];
+            for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(aData[i], bData[i]);
+        }
         double[] savedA = tensor.requiresGrad ? aData.clone() : null;
         double[] savedB = (tensor.requiresGrad || otherDiff) ? bData.clone() : null;
-        for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(aData[i], bData[i]);
 
         List<RereDiffTensor> inputs = new ArrayList<>();
         if (tensor.requiresGrad) inputs.add(tensor);
@@ -188,6 +201,11 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
         // propagates to inputs that require grad (controlled by otherNode flag).
         if (other instanceof RereDiffTensor) inputs.add((RereDiffTensor) other);
 
+        // SISD backward: AutodiffBufferPool.acquire() reuses thread-local buffers,
+        // which avoids allocation pressure across many backward passes. Migrating
+        // to vc.binaryOperate() would create fresh arrays on every backward call,
+        // negating the pool's benefit. The per-element fill is cheap for simple
+        // arithmetic (add/sub/mul/div) and the pool amortizes the allocation cost.
         Consumer<RereDiffTensor> bw = self -> {
             int idx = 0;
             if (tensor.requiresGrad) {

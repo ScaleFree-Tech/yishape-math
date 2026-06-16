@@ -115,96 +115,120 @@ public static IDiffTensor maxPool2d(RereDiffTensor tensor, int kH, int kW, int s
     return result;
 }
 
-public static IDiffTensor avgPool2d(RereDiffTensor tensor, int kH, int kW, int stride, int padding) {
-    int[] s = tensor.shape();
-    if (s.length != 4) throw new IllegalArgumentException("avgPool2d requires 4D input [N,C,H,W], got rank " + s.length);
-    int N = s[0], C = s[1], H = s[2], W = s[3];
-    int effStride = (stride <= 0) ? kH : stride;
-    int outH = (H + 2 * padding - kH) / effStride + 1;
-    int outW = (W + 2 * padding - kW) / effStride + 1;
-    long outElements = (long) N * C * outH * outW;
-    int inElements = (int) tensor.value.totalSize();
+	public static IDiffTensor avgPool2d(RereDiffTensor tensor, int kH, int kW, int stride, int padding) {
+	    int[] s = tensor.shape();
+	    if (s.length != 4) throw new IllegalArgumentException("avgPool2d requires 4D input [N,C,H,W], got rank " + s.length);
+	    int N = s[0], C = s[1], H = s[2], W = s[3];
+	    int effStride = (stride <= 0) ? kH : stride;
+	    int outH = (H + 2 * padding - kH) / effStride + 1;
+	    int outW = (W + 2 * padding - kW) / effStride + 1;
+	    long outElements = (long) N * C * outH * outW;
+	    int inElements = (int) tensor.value.totalSize();
+	    int outLen = (int) outElements;
 
-    double[] xd = tensor.value.toDoubleArray();
-    double[] y = new double[(int) outElements];
-    // Save counts for backward SISD fallback (HPC backward recomputes internally)
-    int[] counts = new int[(int) outElements];
+	    double[] xd = tensor.value.toDoubleArray();
+	    double[] y = new double[outLen];
 
-    // Try HPC accelerated path first
-    boolean hpcOk = com.yishape.lab.math.compute.hpc.HpcPool.tryAvgPool2dForward(
-            xd, N, C, H, W, kH, kW, effStride, padding, y);
+	    // Saved for backward SISD fallback — allocated only when HPC fails
+	    final int[] savedCounts;
+	    final int[] savedHStarts, savedHEnds, savedWStarts, savedWEnds;
 
-    if (!hpcOk) {
-        // SISD fallback
-        for (int n = 0; n < N; n++) {
-            for (int c = 0; c < C; c++) {
-                for (int oh = 0; oh < outH; oh++) {
-                    for (int ow = 0; ow < outW; ow++) {
-                        int outIdx = ((n * C + c) * outH + oh) * outW + ow;
-                        double sum = 0;
-                        int count = 0;
-                        for (int kh = 0; kh < kH; kh++) {
-                            int hIdx = oh * effStride + kh - padding;
-                            if (hIdx < 0 || hIdx >= H) continue;
-                            for (int kw = 0; kw < kW; kw++) {
-                                int wIdx = ow * effStride + kw - padding;
-                                if (wIdx < 0 || wIdx >= W) continue;
-                                sum += xd[((n * C + c) * H + hIdx) * W + wIdx];
-                                count++;
-                            }
-                        }
-                        y[outIdx] = (count > 0) ? sum / count : 0;
-                        counts[outIdx] = count;
-                    }
-                }
-            }
-        }
-    }
+	    // Try HPC accelerated path first
+	    boolean hpcOk = com.yishape.lab.math.compute.hpc.HpcPool.tryAvgPool2dForward(
+	            xd, N, C, H, W, kH, kW, effStride, padding, y);
 
-    int[] outShape = new int[]{N, C, outH, outW};
-    int[] savedCounts = counts;
-    Consumer<RereDiffTensor> bw = self -> {
-        RereDiffTensor inp = self.inputs.get(0);
-        double[] g = self.grad;
-        double[] dx = new double[inElements];
-        if (!com.yishape.lab.math.compute.hpc.HpcPool.tryAvgPool2dBackward(
-                g, N, C, H, W, kH, kW, effStride, padding, outH, outW, dx)) {
-            // SISD fallback
-            int outLen = (int) outElements;
-            for (int n2 = 0; n2 < N; n2++) {
-                for (int c2 = 0; c2 < C; c2++) {
-                    for (int oh2 = 0; oh2 < outH; oh2++) {
-                        for (int ow2 = 0; ow2 < outW; ow2++) {
-                            int outIdx2 = ((n2 * C + c2) * outH + oh2) * outW + ow2;
-                            int cnt = savedCounts[outIdx2];
-                            if (cnt == 0) continue;
-                            double gradPer = g[outIdx2] / cnt;
-                            for (int kh2 = 0; kh2 < kH; kh2++) {
-                                int hIdx2 = oh2 * effStride + kh2 - padding;
-                                if (hIdx2 < 0 || hIdx2 >= H) continue;
-                                for (int kw2 = 0; kw2 < kW; kw2++) {
-                                    int wIdx2 = ow2 * effStride + kw2 - padding;
-                                    if (wIdx2 < 0 || wIdx2 >= W) continue;
-                                    dx[((n2 * C + c2) * H + hIdx2) * W + wIdx2] += gradPer;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        inp.accGrad(dx);
-    };
-    RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "avgpool2d");
-    // D8: Bit layout — scalarParam[23:16]=kH [15:8]=kW [7:0]=stride (each 8-bit);
-    //     scalarParam2[31:16]=padding (C from shape, not param2)
-    result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
-    result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
-    // 6D exportShape lets HPC/GPU backends use actual input dims directly,
-    // avoiding incorrect derivation when stride does not divide evenly.
-    result.exportShape = new int[]{N, C, H, W, outH, outW};
-    return result;
-}
+	    if (!hpcOk) {
+	        // SISD fallback — save coordinate ranges for O(count) backward
+	        savedCounts = new int[outLen];
+	        savedHStarts = new int[outLen];
+	        savedHEnds = new int[outLen];
+	        savedWStarts = new int[outLen];
+	        savedWEnds = new int[outLen];
+
+	        for (int n = 0; n < N; n++) {
+	            for (int c = 0; c < C; c++) {
+	                for (int oh = 0; oh < outH; oh++) {
+	                    for (int ow = 0; ow < outW; ow++) {
+	                        int outIdx = ((n * C + c) * outH + oh) * outW + ow;
+	                        // Compute valid input coordinate ranges (avoids per-element bounds checks)
+	                        int hStart = Math.max(oh * effStride - padding, 0);
+	                        int hEnd = Math.min(oh * effStride + kH - padding, H);
+	                        int wStart = Math.max(ow * effStride - padding, 0);
+	                        int wEnd = Math.min(ow * effStride + kW - padding, W);
+	                        savedHStarts[outIdx] = hStart;
+	                        savedHEnds[outIdx] = hEnd;
+	                        savedWStarts[outIdx] = wStart;
+	                        savedWEnds[outIdx] = wEnd;
+	                        int count = (hEnd - hStart) * (wEnd - wStart);
+	                        savedCounts[outIdx] = count;
+
+	                        if (count == 0) { y[outIdx] = 0; continue; }
+	                        double sum = 0;
+	                        int base = ((n * C + c) * H);
+	                        for (int hi = hStart; hi < hEnd; hi++) {
+	                            int rowOff = (base + hi) * W;
+	                            for (int wi = wStart; wi < wEnd; wi++) {
+	                                sum += xd[rowOff + wi];
+	                            }
+	                        }
+	                        y[outIdx] = sum / count;
+	                    }
+	                }
+	            }
+	        }
+	    } else {
+	        savedCounts = null;
+	        savedHStarts = null;
+	        savedHEnds = null;
+	        savedWStarts = null;
+	        savedWEnds = null;
+	    }
+
+	    int[] outShape = new int[]{N, C, outH, outW};
+	    Consumer<RereDiffTensor> bw = self -> {
+	        RereDiffTensor inp = self.inputs.get(0);
+	        double[] g = self.grad;
+	        double[] dx = new double[inElements];
+	        if (!com.yishape.lab.math.compute.hpc.HpcPool.tryAvgPool2dBackward(
+	                g, N, C, H, W, kH, kW, effStride, padding, outH, outW, dx)) {
+	            // SISD fallback — use saved coordinate ranges, no per-element bounds checks
+	            final int[] cnts = savedCounts;
+	            final int[] hSt = savedHStarts, hEd = savedHEnds;
+	            final int[] wSt = savedWStarts, wEd = savedWEnds;
+	            for (int n2 = 0; n2 < N; n2++) {
+	                for (int c2 = 0; c2 < C; c2++) {
+	                    int base = ((n2 * C + c2) * H) * W;
+	                    for (int oh2 = 0; oh2 < outH; oh2++) {
+	                        for (int ow2 = 0; ow2 < outW; ow2++) {
+	                            int outIdx2 = ((n2 * C + c2) * outH + oh2) * outW + ow2;
+	                            int cnt = cnts[outIdx2];
+	                            if (cnt == 0) continue;
+	                            double gradPer = g[outIdx2] / cnt;
+	                            int hi0 = hSt[outIdx2], hiE = hEd[outIdx2];
+	                            int wi0 = wSt[outIdx2], wiE = wEd[outIdx2];
+	                            for (int hi = hi0; hi < hiE; hi++) {
+	                                int rowOff = base + hi * W;
+	                                for (int wi = wi0; wi < wiE; wi++) {
+	                                    dx[rowOff + wi] += gradPer;
+	                                }
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	        inp.accGrad(dx);
+	    };
+	    RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "avgpool2d");
+	    // D8: Bit layout — scalarParam[23:16]=kH [15:8]=kW [7:0]=stride (each 8-bit);
+	    //     scalarParam2[31:16]=padding (C from shape, not param2)
+	    result.scalarParam = Double.longBitsToDouble(((long) kH << 16) | ((long) kW << 8) | (long) stride);
+	    result.scalarParam2 = Double.longBitsToDouble(((long) padding << 16));
+	    // 6D exportShape lets HPC/GPU backends use actual input dims directly,
+	    // avoiding incorrect derivation when stride does not divide evenly.
+	    result.exportShape = new int[]{N, C, H, W, outH, outW};
+	    return result;
+	}
 
 public static IDiffTensor adaptiveAvgPool2d(RereDiffTensor tensor, int outH, int outW) {
     int[] s = tensor.shape();

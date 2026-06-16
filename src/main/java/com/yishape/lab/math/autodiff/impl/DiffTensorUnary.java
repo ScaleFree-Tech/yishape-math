@@ -103,13 +103,29 @@ public final class DiffTensorUnary {
 
     public static IDiffTensor pow(RereDiffTensor tensor, double n) {
         if (!tensor.requiresGrad) {
-            double[] data = tensor.value.toDoubleArray();
-            for (int i = 0; i < data.length; i++) data[i] = Math.pow(data[i], n);
-            return tensor.toNonDiff(new RereDoubleTensor(data, tensor.shape()));
+            double[] out = (tensor.value instanceof RereDoubleTensor rdt)
+                ? rdt.universalOp(UniversalOperation.POW, n)
+                : null;
+            if (out == null) {
+                double[] data = tensor.value.toDoubleArray();
+                out = new double[data.length];
+                for (int i = 0; i < data.length; i++) out[i] = Math.pow(data[i], n);
+            }
+            return tensor.toNonDiff(new RereDoubleTensor(out, tensor.shape()));
         }
         int total = (int) tensor.value.totalSize();
-        double[] out = new double[total];
-        for (int i = 0; i < total; i++) out[i] = Math.pow(tensor.value.linearGet(i), n);
+        double[] out = (tensor.value instanceof RereDoubleTensor rdt)
+            ? rdt.universalOp(UniversalOperation.POW, n)
+            : null;
+        if (out == null) {
+            out = new double[total];
+            for (int i = 0; i < total; i++) out[i] = Math.pow(tensor.value.linearGet(i), n);
+        }
+        // SISD backward with buffer pooling: AutodiffBufferPool.acquire() reuses
+        // thread-local buffers across backward calls, amortizing allocation cost.
+        // The per-element formula g * n * x^(n-1) is simple arithmetic; migrating
+        // to vc.binaryOperate() would create fresh arrays on each backward call,
+        // negating the pool's benefit. Forward already uses UniversalOperation.POW.
         java.util.function.Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             int m = (int) input.value.totalSize();
@@ -151,6 +167,10 @@ public final class DiffTensorUnary {
             double x = tensor.value.linearGet(i);
             out[i] = x < min ? min : x > max ? max : x;
         }
+        // SISD backward with buffer pooling: the conditional (x > min && x < max)
+        // cannot be cleanly vectorized via DoubleVectorComputer. Pooling amortizes
+        // allocation cost across backward calls. Forward already delegates to
+        // tensor.value.clamp() which uses applyUnary().
         java.util.function.Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             int m = (int) input.value.totalSize();
@@ -178,6 +198,11 @@ public final class DiffTensorUnary {
             mask[i] = rng.nextDouble() > p ? scale : 0.0;
             out[i] = tensor.value.linearGet(i) * mask[i];
         }
+        // SISD backward with buffer pooling: dropout applies a mask to gradients.
+        // The mask is pre-computed (random, per-sample) and cannot be vectorized
+        // via DoubleVectorComputer. Pooling amortizes allocation cost.
+        // SISD forward: mask[i] = (rng.nextDouble() > p) ? scale : 0.0 (random per
+        // element, no parallel equivalent).
         java.util.function.Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             int m = (int) input.value.totalSize();
@@ -215,6 +240,11 @@ public final class DiffTensorUnary {
             out = new double[n];
             for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(tensor.value.linearGet(i));
         }
+        // SISD backward with buffer pooling: the backward lambda formulas vary widely
+        // per op (neg→-g, abs→±g, sin→g*cos(x), etc.) and are routed through a common
+        // DoubleBinaryOperator interface. Forward already uses UniversalOperation where
+        // tagToUniversalOp maps the tag (exp, log, sqrt, relu, sigmoid, tanh, abs, sin,
+        // cos, gelu, tan). Pooling amortizes allocation cost across diverse backward calls.
         java.util.function.Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             double[] inGrad = AutodiffBufferPool.acquire(n);
@@ -254,6 +284,10 @@ public final class DiffTensorUnary {
             out = new double[n];
             for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(tensor.value.linearGet(i));
         }
+        // SISD backward with buffer pooling: same rationale as unaryOp above.
+        // unaryOpSelf backends (exp, sigmoid, tanh) use g * y (output-based gradient)
+        // where y = forward(x). Forward already uses UniversalOperation. Pooling
+        // amortizes allocation cost across backward calls.
         java.util.function.Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             double[] inGrad = AutodiffBufferPool.acquire(n);
