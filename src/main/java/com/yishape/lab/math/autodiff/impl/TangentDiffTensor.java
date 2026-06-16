@@ -1299,9 +1299,26 @@ public class TangentDiffTensor implements IDiffTensor {
 
     @Override public IDiffTensor dropout2d(double p) {
         RereDiffTensor pt = (RereDiffTensor) primal.dropout2d(p);
-        // JVP for dropout2d should apply the same mask: JVP = mask * tangent.
-        // The dropout mask is generated internally during primal forward and not exposed.
-        // TODO: Save mask from primal forward and apply here.
+        // JVP for dropout2d: apply the same channel-wise mask to the tangent.
+        // The mask is stored on the primal output node by DiffTensorExtOps.dropout2d.
+        double[] mask = pt.dropoutMask;
+        if (mask != null) {
+            double[] td = this.tangent.toDoubleArray();
+            int[] s = pt.shape();
+            int rankLocal = s.length;
+            int nn = 1;
+            for (int i = 0; i < rankLocal - 2; i++) nn *= s[i];
+            int numChannels = nn * s[rankLocal - 2];
+            int spatial = td.length / numChannels;
+            // Expand channel mask to full spatial size (structural loop over channels, not element-wise math)
+            double[] expandedMask = new double[td.length];
+            for (int nc = 0; nc < numChannels; nc++) {
+                java.util.Arrays.fill(expandedMask, nc * spatial, (nc + 1) * spatial, mask[nc]);
+            }
+            double[] jvp = COMPUTER.binaryOperate(td, expandedMask, com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+            return new TangentDiffTensor(pt, new RereDoubleTensor(jvp, s), List.of(this), pt);
+        }
+        // Mask unavailable (should not happen for standard dropout2d path) — fall back to zero
         return new TangentDiffTensor(pt, new RereDoubleTensor(new double[(int)pt.totalSize()], pt.shape()).fill_(0),
             List.of(this), pt);
     }

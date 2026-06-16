@@ -30,6 +30,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
 import com.yishape.lab.math.compute.gpu.GpuGroupNorm;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.autodiff.AD;
+import com.yishape.lab.math.autodiff.graph.ScalarParamEncoding;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
 /**
@@ -259,7 +260,9 @@ public static IDiffTensor dropout2d(RereDiffTensor tensor, double p) {
         }
         inp.accGrad(dx);
     };
-    return new RereDiffTensor(y, s, List.of(tensor), bw, "dropout2d");
+    RereDiffTensor out = new RereDiffTensor(y, s, List.of(tensor), bw, "dropout2d");
+    out.dropoutMask = chMask; // expose mask for TangentDiffTensor JVP
+    return out;
 }
 
 // ==================== Phase 5: depthwiseConv1d ====================
@@ -341,7 +344,7 @@ public static IDiffTensor depthwiseConv1d(RereDiffTensor tensor, IDiffTensor wei
         inpW.accGrad(dw);
     };
     RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor, w), bw, "depthwiseConv1d");
-    result.scalarParam = Double.longBitsToDouble(((long) L << 16) | (long) kSize);
+    result.scalarParam = ScalarParamEncoding.DepthwiseConv1d.packScalarParam(L, kSize);
     result.scalarParam2 = C;
     return result;
 }
@@ -483,8 +486,8 @@ public static IDiffTensor depthwiseConv1d(RereDiffTensor tensor, IDiffTensor wei
 	        inp.accGrad(dx);
 	    };
 	    RereDiffTensor result = new RereDiffTensor(y, outShape, List.of(tensor), bw, "interpolate");
-	    result.scalarParam = Double.longBitsToDouble(((long) H << 32) | ((long) W & 0xFFFF_FFFFL));
-	    result.scalarParam2 = bilinear ? 0.0 : 1.0;
+	    result.scalarParam = ScalarParamEncoding.Interpolate.packScalarParam(H, W);
+	    result.scalarParam2 = ScalarParamEncoding.Interpolate.packScalarParam2(bilinear);
 	    return result;
 	}
 

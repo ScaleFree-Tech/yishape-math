@@ -30,6 +30,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
 import com.yishape.lab.math.compute.gpu.GpuGroupNorm;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.autodiff.AD;
+import com.yishape.lab.math.autodiff.graph.ScalarParamEncoding;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 
 /**
@@ -250,8 +251,8 @@ public static IDiffTensor gridSample(RereDiffTensor tensor, IDiffTensor grid, St
 
         RereDiffTensor result = new RereDiffTensor(y, new int[]{N, C, outH, outW},
             List.of(tensor, (RereDiffTensor) grid), bw, "gridSample");
-        result.scalarParam = Double.longBitsToDouble(((long) H << 16) | (long) W);
-        result.scalarParam2 = Double.longBitsToDouble(((long) padModeIdx << 8) | (long) modeIdx);
+        result.scalarParam = ScalarParamEncoding.GridSample.packScalarParam(H, W);
+        result.scalarParam2 = ScalarParamEncoding.GridSample.packScalarParam2(padModeIdx, modeIdx);
         return result;
     }
 
@@ -276,8 +277,8 @@ public static IDiffTensor gridSample(RereDiffTensor tensor, IDiffTensor grid, St
 
     RereDiffTensor result = new RereDiffTensor(y, new int[]{N, C, outH, outW},
         List.of(tensor, (RereDiffTensor) grid), bw, "gridSample");
-    result.scalarParam = Double.longBitsToDouble(((long) H << 16) | (long) W);
-    result.scalarParam2 = Double.longBitsToDouble(((long) padModeIdx << 8) | (long) modeIdx);
+    result.scalarParam = ScalarParamEncoding.GridSample.packScalarParam(H, W);
+    result.scalarParam2 = ScalarParamEncoding.GridSample.packScalarParam2(padModeIdx, modeIdx);
     return result;
 }
 
@@ -474,7 +475,7 @@ public static IDiffTensor trapezoidalScan(RereDiffTensor tensor, IDiffTensor del
     RereDiffTensor result = new RereDiffTensor(y, s, List.of(tensor, (RereDiffTensor) delta,
         (RereDiffTensor) A, (RereDiffTensor) B, (RereDiffTensor) C, (RereDiffTensor) D),
         bw, "trapezoidalScan");
-    result.scalarParam = Double.longBitsToDouble(((long) fAIsVec << 2) | ((long) fDIsScalar << 1) | (long) fDeltaBroadcast);
+    result.scalarParam = ScalarParamEncoding.TrapezoidalScan.packScalarParam(fAIsVec != 0, fDIsScalar != 0, fDeltaBroadcast != 0);
     return result;
 }
 

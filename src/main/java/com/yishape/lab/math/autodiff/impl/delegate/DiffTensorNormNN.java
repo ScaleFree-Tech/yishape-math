@@ -29,6 +29,7 @@ import com.yishape.lab.math.linalg.tensor.TensorShape;
 import com.yishape.lab.math.compute.gpu.GpuGroupNorm;
 import com.yishape.lab.math.linalg.Linalg;
 import com.yishape.lab.math.autodiff.AD;
+import com.yishape.lab.math.autodiff.graph.ScalarParamEncoding;
 import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
 import com.yishape.lab.math.autodiff.impl.RereDiffTensor;
 import com.yishape.lab.math.autodiff.impl.RereDiffVector;
@@ -633,12 +634,11 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
     };
 
     RereDiffTensor result = new RereDiffTensor(y, outShape, inputs, bw, "conv2d");
-    // B13: 6D exportShape provides actual H/W to HPC/GPU backends, avoiding stride-divisibility bugs
+    // 6D exportShape provides actual H/W to HPC/GPU backends, avoiding stride-divisibility bugs
     result.exportShape = new int[]{N, C, H, W_in, outH, outW};
-    result.scalarParam = Double.longBitsToDouble(
-        ((long) stride << 32) | ((long) padding & 0xFFFFFFFFL));
-    result.scalarParam2 = Double.longBitsToDouble(
-        ((long) dilation << 32));
+    // scalarParam / scalarParam2 layout → ScalarParamEncoding.Conv2d
+    result.scalarParam = ScalarParamEncoding.Conv2d.packScalarParam(fDil, fKH, fKW, (int)fStride);
+    result.scalarParam2 = ScalarParamEncoding.Conv2d.packScalarParam2(fPad, fOutC);
     return result;
 }
 

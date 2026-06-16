@@ -593,7 +593,7 @@ public final class GraphOpSchema {
             "mmul",
             "leaf", "constant",
             "linear", "conv2d", "convTranspose2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
-            "batchNorm2d", "batchNorm", "embedding", "mha", "lstmStep",
+            "batchNorm2d", "embedding", "mha", "lstmStep",
             "selectiveScan", "selectiveScan2", "depthwiseConv1d",
             "scaledDotProductAttention",
             "rmsNorm", "groupNorm", "instanceNorm",

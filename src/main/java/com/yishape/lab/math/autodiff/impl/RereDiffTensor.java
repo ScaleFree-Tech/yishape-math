@@ -103,6 +103,14 @@ public class RereDiffTensor implements IDiffTensor {
     public int[] backwardIndices;
 
     /**
+     * Dropout channel mask for TangentDiffTensor JVP.
+     * Set by primal {@code dropout2d} forward, read by tangent forward to apply
+     * the same mask to tangent data. Null for non-dropout nodes.
+     * Layout: [N*C] channel-wise mask values (same mask applied across all spatial positions).
+     */
+    public double[] dropoutMask;
+
+    /**
      * Symbolic backward function for higher-order AD.
      * Takes the output gradient (IDiffTensor) and returns gradients for each input.
      * When non-null, enables {@code AD.grad(output, inputs)} to build a new
@@ -535,10 +543,15 @@ public class RereDiffTensor implements IDiffTensor {
         return new RereDoubleTensor(grad, shape());
     }
 
-    /** Accumulate gradient into this node. Takes ownership of the array on first call. */
+    /**
+     * Accumulate gradient into this node.
+     * On first call, clones the incoming array to prevent caller-side mutation
+     * from silently corrupting the stored gradient (alias protection).
+     * On subsequent calls, accumulates in-place via binary ADD.
+     */
     public void accGrad(double[] incoming) {
         if (grad == null) {
-            grad = incoming;
+            grad = incoming.clone();
         } else {
             grad = COMPUTER.binaryOperate(grad, incoming, BinaryOperation.ADD);
         }

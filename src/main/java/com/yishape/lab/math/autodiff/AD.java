@@ -785,6 +785,41 @@ public class AD {
         return !Double.isNaN(GpuGraphExecutor.tryExecute(rdt));
     }
 
+    /**
+     * Unified backward pass with GPU → HPC → CPU fallback chain.
+     *
+     * <p>This is the <strong>recommended API for yishape-dl and all training loops</strong>.
+     * Unlike {@link IDiffVector#backward()} which always runs on CPU, this method
+     * attempts GPU execution first, falls back to HPC, and finally to CPU.</p>
+     *
+     * <p>On success, leaf gradients are populated via the native execution path
+     * and the graph is detached (subsequent CPU backward returns zero gradients).
+     * On CPU fallback, a standard {@link IDiffVector#backward()} is performed.</p>
+     *
+     * @param root the computation graph root (loss scalar)
+     * @return the backend that executed the backward pass
+     */
+    public static Backend backwardWithNativeFallback(IDiffVector root) {
+        if (tryGpuExecute(root)) return Backend.GPU;
+        if (tryHpcExecute(root)) return Backend.HPC;
+        root.backward();
+        return Backend.CPU;
+    }
+
+    /**
+     * Unified backward pass for tensor-based computation graphs.
+     * @see #backwardWithNativeFallback(IDiffVector)
+     */
+    public static Backend backwardWithNativeFallback(IDiffTensor root) {
+        if (tryGpuExecute(root)) return Backend.GPU;
+        if (tryHpcExecute(root)) return Backend.HPC;
+        root.backward();
+        return Backend.CPU;
+    }
+
+    /** Backend that executed the backward pass. */
+    public enum Backend { GPU, HPC, CPU }
+
     // ---- infrastructure ----
 
     /**
@@ -1032,12 +1067,7 @@ public class AD {
         IGradientFunction grdFun = x -> {
             IDiffVector var = new RereDiffVector((IDoubleVector) x);
             IDiffVector loss = lossBuilder.apply(var);
-            // GPU → HPC → CPU fallback chain
-            if (!tryGpuExecute(loss)) {
-                if (!tryHpcExecute(loss)) {
-                    loss.backward();
-                }
-            }
+            backwardWithNativeFallback(loss);
             return var.getGradient();
         };
 

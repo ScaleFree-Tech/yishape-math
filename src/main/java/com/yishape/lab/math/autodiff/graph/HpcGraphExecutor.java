@@ -32,18 +32,31 @@ public final class HpcGraphExecutor {
      */
     private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(GraphOpSchema.Hpc.SUPPORTED);
 
-    // --- HPC failure cooldown ---
+    // --- HPC failure cooldown (per-thread, to prevent cross-thread pollution) ---
     private static final int COOLDOWN_THRESHOLD = 3;
     private static final int COOLDOWN_STEPS = 100;
-    private static final java.util.concurrent.atomic.AtomicInteger hpcConsecutiveFailures = new java.util.concurrent.atomic.AtomicInteger(0);
-    private static final java.util.concurrent.atomic.AtomicInteger hpcCooldownRemaining = new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final ThreadLocal<int[]> HPC_COOLDOWN =
+        ThreadLocal.withInitial(() -> new int[]{0, 0}); // [0]=failures, [1]=remaining
 
     /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
     private static final java.util.Set<String> REPORTED_UNSUPPORTED_OPS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    // --- Graph structure hash cache (volatile for cross-thread visibility) ---
-    private static volatile int hpcLastStructureHash = 0;
-    private static volatile com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph hpcCachedGraph = null;
+    // --- Graph structure hash cache (per-thread to prevent cross-thread races) ---
+    // Previously static volatile — thread A could overwrite thread B's cached skeleton
+    // mid-execution, causing NaN gradients or incorrect results.
+    private static final ThreadLocal<HpcCacheEntry> HPC_CACHE =
+        ThreadLocal.withInitial(HpcCacheEntry::new);
+
+    /** Per-thread cache entry: structure hash + serialized graph skeleton. */
+    static final class HpcCacheEntry {
+        int structureHash = 0;
+        com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph cachedGraph = null;
+
+        void invalidate() {
+            structureHash = 0;
+            cachedGraph = null;
+        }
+    }
 
     // Tensor thread locals
     private static final ThreadLocal<ArrayList<RereDiffTensor>> HPC_TENSOR_TOPO =
@@ -72,10 +85,10 @@ public final class HpcGraphExecutor {
     public static double tryExecute(RereDiffTensor root) {
         if (!com.yishape.lab.math.compute.hpc.HpcConfig.allowAttempts()) return Double.NaN;
 
-        // HPC cooldown: skip after repeated consecutive failures
-        int cooldown = hpcCooldownRemaining.get();
-        if (cooldown > 0) {
-            hpcCooldownRemaining.decrementAndGet();
+        // HPC cooldown: skip after repeated consecutive failures (per-thread)
+        int[] cd = HPC_COOLDOWN.get();
+        if (cd[1] > 0) {
+            cd[1]--;
             return Double.NaN;
         }
 
@@ -85,15 +98,16 @@ public final class HpcGraphExecutor {
         visited.clear();
         root.buildTopo(order, visited);
 
-        // Validate graph structure (cached: skip when topology unchanged).
+        // Validate graph structure (per-thread cached: skip when topology unchanged).
+        HpcCacheEntry cacheEntry = HPC_CACHE.get();
         int structureHash = ExportShapeValidator.computeStructureHash(order);
-        if (structureHash != hpcLastStructureHash) {
+        if (structureHash != cacheEntry.structureHash) {
             ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
             if (validation.hasErrors()) {
                 log.warn("HPC graph validation failed — falling back to CPU:\n{}", validation);
                 return Double.NaN;
             }
-            hpcLastStructureHash = structureHash; // only cache on success
+            cacheEntry.structureHash = structureHash; // only cache on success
         }
 
         // Check unsupported ops
@@ -123,16 +137,15 @@ public final class HpcGraphExecutor {
         }
 
         // Try binary path first (use cached graph when topology unchanged)
-        // Capture cached graph in local var to prevent TOCTOU race with concurrent null assignment
         double binaryResult;
-        var cached = hpcCachedGraph;
+        var cached = cacheEntry.cachedGraph;
         if (cached != null && structureHash == cached.structureHash()) {
-            binaryResult = tryExecuteTensorBinaryIncremental(order, leaves, cached);
+            binaryResult = tryExecuteTensorBinaryIncremental(order, leaves, cached, cacheEntry);
         } else {
-            binaryResult = tryExecuteTensorBinaryFull(root, order, leaves, structureHash);
+            binaryResult = tryExecuteTensorBinaryFull(root, order, leaves, structureHash, cacheEntry);
         }
         if (!Double.isNaN(binaryResult)) {
-            hpcConsecutiveFailures.set(0);
+            HPC_COOLDOWN.get()[0] = 0;
             detachGraphAfterNativeExecution(order);
             return binaryResult;
         }
@@ -196,7 +209,7 @@ public final class HpcGraphExecutor {
             }
             leaves.get(i).accGrad(result[i + 1]);
         }
-        hpcConsecutiveFailures.set(0); // reset cooldown on success
+        HPC_COOLDOWN.get()[0] = 0; // reset cooldown on success
         detachGraphAfterNativeExecution(order);
         return loss;
     }
@@ -218,27 +231,28 @@ public final class HpcGraphExecutor {
         }
     }
 
-    /** Track HPC failure for cooldown. */
+    /** Track HPC failure for cooldown (per-thread). */
     private static void trackHpcFailure() {
-        int failures = hpcConsecutiveFailures.incrementAndGet();
+        int[] cd = HPC_COOLDOWN.get();
+        int failures = ++cd[0];
         if (failures >= COOLDOWN_THRESHOLD) {
-            hpcCooldownRemaining.set(COOLDOWN_STEPS);
+            cd[1] = COOLDOWN_STEPS;
         }
     }
 
     /** Full serialization + cache skeleton for subsequent incremental updates. */
     private static double tryExecuteTensorBinaryFull(RereDiffTensor root,
             ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
-            int structureHash) {
+            int structureHash, HpcCacheEntry cacheEntry) {
         try {
             // Cache skeleton + full data for first step
-            hpcCachedGraph = TensorBinaryProtocol.serializeGraphCached(root, order, structureHash);
-            byte[] data = hpcCachedGraph.updateLeafData(order);
+            cacheEntry.cachedGraph = TensorBinaryProtocol.serializeGraphCached(root, order, structureHash);
+            byte[] data = cacheEntry.cachedGraph.updateLeafData(order);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
                 log.debug("HPC binary full execution returned null/empty for {} nodes", order.size());
                 trackHpcFailure();
-                hpcCachedGraph = null; // invalidate cached skeleton on failure
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
@@ -247,14 +261,14 @@ public final class HpcGraphExecutor {
             double loss = parsed.loss();
             if (Double.isNaN(loss)) {
                 trackHpcFailure();
-                hpcCachedGraph = null;
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
             List<double[]> grads = parsed.grads();
             if (grads.size() != leaves.size()) {
                 trackHpcFailure();
-                hpcCachedGraph = null;
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
@@ -265,7 +279,7 @@ public final class HpcGraphExecutor {
                     log.warn("HPC binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
                         i, g.length, leafSize);
                     trackHpcFailure();
-                    hpcCachedGraph = null;
+                    cacheEntry.invalidate();
                     return Double.NaN;
                 }
                 leaves.get(i).accGrad(g);
@@ -274,7 +288,7 @@ public final class HpcGraphExecutor {
         } catch (Exception e) {
             if (log.isDebugEnabled()) log.debug("HPC graph execution failed", e);
             trackHpcFailure();
-            hpcCachedGraph = null; // invalidate cached skeleton on failure
+            cacheEntry.invalidate();
             return Double.NaN;
         }
     }
@@ -282,14 +296,15 @@ public final class HpcGraphExecutor {
     /** Incremental: clone cached skeleton, overwrite leaf data, send. */
     private static double tryExecuteTensorBinaryIncremental(
             ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
-            com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph cached) {
+            com.yishape.lab.math.autodiff.graph.binary.TensorBinaryProtocol.CachedGraph cached,
+            HpcCacheEntry cacheEntry) {
         try {
             byte[] data = cached.updateLeafData(order);
             byte[] resultBytes = HpcOptionalRuntime.tryExecuteGraphBinary(data);
             if (resultBytes == null || resultBytes.length == 0) {
                 log.debug("HPC binary incremental execution returned null/empty for {} nodes", order.size());
                 trackHpcFailure();
-                hpcCachedGraph = null; // invalidate cached skeleton on failure
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
@@ -298,14 +313,14 @@ public final class HpcGraphExecutor {
             double loss = parsed.loss();
             if (Double.isNaN(loss)) {
                 trackHpcFailure();
-                hpcCachedGraph = null;
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
             List<double[]> grads = parsed.grads();
             if (grads.size() != leaves.size()) {
                 trackHpcFailure();
-                hpcCachedGraph = null;
+                cacheEntry.invalidate();
                 return Double.NaN;
             }
 
@@ -316,7 +331,7 @@ public final class HpcGraphExecutor {
                     log.warn("HPC binary incremental gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
                         i, g.length, leafSize);
                     trackHpcFailure();
-                    hpcCachedGraph = null;
+                    cacheEntry.invalidate();
                     return Double.NaN;
                 }
                 leaves.get(i).accGrad(g);
@@ -325,7 +340,7 @@ public final class HpcGraphExecutor {
         } catch (Exception e) {
             if (log.isDebugEnabled()) log.debug("HPC incremental graph execution failed", e);
             trackHpcFailure();
-            hpcCachedGraph = null; // invalidate cached skeleton on failure
+            cacheEntry.invalidate();
             return Double.NaN;
         }
     }

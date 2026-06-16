@@ -144,11 +144,11 @@ public final class ExportShapeValidator {
             return;
         }
         long bits = Double.doubleToRawLongBits(sp);
-        int kh = (int) ((bits >> 16) & 0xFF);
-        int kw = (int) ((bits >> 8) & 0xFF);
-        int stride = (int) (bits & 0xFF);
+        int kh = ScalarParamEncoding.Pooling.unpackKH(bits);
+        int kw = ScalarParamEncoding.Pooling.unpackKW(bits);
+        int stride = ScalarParamEncoding.Pooling.unpackStride(bits);
         long bits2 = Double.doubleToRawLongBits(node.scalarParam2());
-        int pad = (int) ((bits2 >> 16) & 0xFFFF);
+        int pad = ScalarParamEncoding.Pooling.unpackPad(bits2);
 
         if (shape.length >= 6) {
             // 6D: [B, C, inH, inW, outH, outW] — fully specified, verify consistency
@@ -299,10 +299,21 @@ public final class ExportShapeValidator {
     /**
      * Hash graph structure (op tags, shapes, connectivity) excluding data values.
      * Used to skip redundant ExportShapeValidator validation when topology is unchanged.
+     *
+     * <p>Uses index positions within the topological order for input edge hashing,
+     * NOT {@link System#identityHashCode}. Object-identity-based hashing produces
+     * different hashes for the same topology when new tensor objects are allocated
+     * each forward pass, making incremental caches nearly never hit.</p>
      */
     public static int computeStructureHash(java.util.List<RereDiffTensor> order) {
+        // Build index map for deterministic input-edge hashing.
+        // Inputs always appear before their consumers in topological order.
+        java.util.Map<RereDiffTensor, Integer> indexMap = new java.util.HashMap<>(
+            Math.min(order.size() * 2, 256), 0.75f);
         int h = 0;
-        for (RereDiffTensor v : order) {
+        for (int i = 0; i < order.size(); i++) {
+            RereDiffTensor v = order.get(i);
+            indexMap.put(v, i);
             String tag = v.opTag();
             h = h * 31 + (tag != null ? tag.hashCode() : 0);
             int[] shape = v.serializationShape();
@@ -312,7 +323,7 @@ public final class ExportShapeValidator {
             java.util.List<RereDiffTensor> inputs = v.inputs();
             if (inputs != null) {
                 for (RereDiffTensor inp : inputs) {
-                    h = h * 31 + System.identityHashCode(inp);
+                    h = h * 31 + indexMap.getOrDefault(inp, -1);
                 }
             }
             h = h * 31 + (v.isLeaf() ? 1 : 0);
