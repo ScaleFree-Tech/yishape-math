@@ -55,7 +55,7 @@ public class RereDiffSparseMatrix implements IDiffSparseMatrix {
 
     @Override
     public void backward() {
-        backward(ISparseMatrix.eye(value.rows(), value.cols()));
+        backward(ISparseMatrix.ones(value.rows(), value.cols()));
     }
 
     @Override

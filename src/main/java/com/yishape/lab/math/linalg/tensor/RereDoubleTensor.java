@@ -1,5 +1,6 @@
 package com.yishape.lab.math.linalg.tensor;
 
+import com.yishape.lab.math.autodiff.support.ToDoubleArrayProfiler;
 import com.yishape.lab.math.compute.DoubleVectorComputer;
 import com.yishape.lab.math.compute.DoubleFlatGemm;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
@@ -145,6 +146,9 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     @Override
     public double[] toDoubleArray() {
+        // Phase 3.1.1: low-overhead profiling hook for identifying hotspot callers.
+        // Single volatile read guards the entire StackWalker path.
+        if (ToDoubleArrayProfiler.ENABLED) ToDoubleArrayProfiler.record();
         // If this tensor owns its data (backing array length == total elements and was
         // allocated for this tensor's shape), we can safely clone the full array.
         // Views (created by reshape/permute/slice) share a parent's backing array which
@@ -433,16 +437,27 @@ public class RereDoubleTensor implements IDoubleTensor {
         }
         int n = (int) totalSize();
         double[] pooled = ContiguousPool.acquire(n);
-        for (int i = 0; i < n; i++) {
-            pooled[i] = linearGet(i);
+        // MED-4: ContiguousPool has no LEASED tracking, so release pooled ourselves on
+        // any failure between acquire and the ownership-transfer / explicit release.
+        boolean ownershipTransferred = false;
+        try {
+            for (int i = 0; i < n; i++) {
+                pooled[i] = linearGet(i);
+            }
+            if (pooled.length == n) {
+                ownershipTransferred = true;
+                return new RereDoubleTensor(pooled, shape());
+            }
+            double[] newData = new double[n];
+            System.arraycopy(pooled, 0, newData, 0, n);
+            ContiguousPool.release(pooled);
+            return new RereDoubleTensor(newData, shape());
+        } catch (RuntimeException | Error e) {
+            if (!ownershipTransferred) {
+                ContiguousPool.release(pooled);
+            }
+            throw e;
         }
-        if (pooled.length == n) {
-            return new RereDoubleTensor(pooled, shape());
-        }
-        double[] newData = new double[n];
-        System.arraycopy(pooled, 0, newData, 0, n);
-        ContiguousPool.release(pooled);
-        return new RereDoubleTensor(newData, shape());
     }
 
     @Override
@@ -725,23 +740,26 @@ public class RereDoubleTensor implements IDoubleTensor {
         long total = 1;
         for (int d : resultShape) total *= d;
         double[] result = new double[Math.toIntExact(total)];
-        int rank = resultShape.length;
 
-        // 对齐两个输入到结果秩
-        RereDoubleTensor aAligned = (RereDoubleTensor) broadcastTo(resultShape);
-        RereDoubleTensor bAligned = (RereDoubleTensor) other.broadcastTo(resultShape);
-
-        for (long i = 0; i < total; i++) {
-            long remaining = i;
-            long aOff = aAligned.offset;
-            long bOff = bAligned.offset;
-            for (int j = rank - 1; j >= 0; j--) {
-                int idx = (int) (remaining % resultShape[j]);
-                remaining /= resultShape[j];
-                aOff += idx * (long) aAligned.strides[j];
-                bOff += idx * (long) bAligned.strides[j];
+        // Fast path: both are contiguous RereDoubleTensor with same shape — use SIMD/GPU
+        if (other instanceof RereDoubleTensor rt && isContiguous() && offset == 0
+                && rt.isContiguous() && rt.offset == 0
+                && data.length == rt.data.length
+                && java.util.Arrays.equals(shape(), rt.shape())) {
+            // Handled in mul/div callers above; this is the fallback for general ops
+            double[] aFlat = broadcastTo(resultShape).toDoubleArray();
+            double[] bFlat = other.broadcastTo(resultShape).toDoubleArray();
+            for (long i = 0; i < total; i++) {
+                result[(int) i] = op.applyAsDouble(aFlat[(int) i], bFlat[(int) i]);
             }
-            result[(int) i] = op.applyAsDouble(aAligned.data[(int) aOff], bAligned.data[(int) bOff]);
+            return new RereDoubleTensor(result, resultShape);
+        }
+
+        // Materialize both to flat arrays via broadcast (safe for any IDoubleTensor impl)
+        double[] aFlat = broadcastTo(resultShape).toDoubleArray();
+        double[] bFlat = other.broadcastTo(resultShape).toDoubleArray();
+        for (long i = 0; i < total; i++) {
+            result[(int) i] = op.applyAsDouble(aFlat[(int) i], bFlat[(int) i]);
         }
         return new RereDoubleTensor(result, resultShape);
     }
@@ -1683,6 +1701,9 @@ public class RereDoubleTensor implements IDoubleTensor {
 
     private void copyInto(double[] target, IDoubleTensor src, int[] targetShape,
                            int dimOffset, int dim) {
+        // Fast path: RereDoubleTensor has O(1) linearGet
+        // Fallback: extract data once to avoid per-element toDoubleArray() copies
+        double[] srcData = (src instanceof RereDoubleTensor rt) ? null : src.toDoubleArray();
         for (long i = 0; i < src.totalSize(); i++) {
             int[] srcIdx = unlinearize((int) i, src.shape());
             int[] tgtIdx = new int[targetShape.length];
@@ -1690,7 +1711,8 @@ public class RereDoubleTensor implements IDoubleTensor {
                 tgtIdx[j] = j == dim ? srcIdx[j] + dimOffset : srcIdx[j];
             }
             long linear = linearIndex(tgtIdx, targetShape);
-            target[(int) linear] = ((RereDoubleTensor) src).linearGet(i);
+            target[(int) linear] = (srcData != null) ? srcData[(int) i]
+                : ((RereDoubleTensor) src).linearGet(i);
         }
     }
 

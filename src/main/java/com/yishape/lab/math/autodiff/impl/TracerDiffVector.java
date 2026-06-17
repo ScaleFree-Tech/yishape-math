@@ -152,6 +152,8 @@ public class TracerDiffVector implements IDiffVector {
         c.fusible = this.fusible;
         return c;
     }
+
+    @Override public IDiffVector detach() { return original.detach(); }
     @Override public IDiffVector divideInPlace(double alpha) { bail(); return null; }
     @Override public IDiffVector addScalarInPlace(double p) { bail(); return null; }
     @Override public IDiffVector subScalarInPlace(double p) { bail(); return null; }

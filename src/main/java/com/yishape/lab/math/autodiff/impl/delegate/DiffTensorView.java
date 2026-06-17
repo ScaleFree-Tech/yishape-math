@@ -119,6 +119,9 @@ public static IDiffTensor permute(RereDiffTensor tensor, int... dims) {
     };
     RereDiffTensor result = new RereDiffTensor(view, List.of(tensor), bw, "permute");
     result.backwardIndices = dims;  // axis permutation for HPC/GPU backend
+    // Symbolic backward: inverse permutation (tape-of-tape)
+    final int[] invDimsSym = invDims.clone();
+    result.symbolicBackwardFn = g -> new IDiffTensor[]{ g.permute(invDimsSym) };
     return result;
 }
 
@@ -194,7 +197,11 @@ public static IDiffTensor unsqueeze(RereDiffTensor tensor, int dim) {
         for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
         parent.accGradFromPooled(pGrad, pt);
     };
-    return new RereDiffTensor(view, List.of(tensor), bw, "unsqueeze");
+    RereDiffTensor unsqzResult = new RereDiffTensor(view, List.of(tensor), bw, "unsqueeze");
+    // Symbolic backward: squeeze the unsqueezed dim (tape-of-tape)
+    final int unsqzDim = d;
+    unsqzResult.symbolicBackwardFn = g -> new IDiffTensor[]{ g.squeeze(unsqzDim) };
+    return unsqzResult;
 }
 
 public static IDiffTensor flatten(RereDiffTensor tensor, int startDim, int endDim) {
@@ -230,7 +237,11 @@ public static IDiffTensor flatten(RereDiffTensor tensor, int startDim, int endDi
         for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
         parent.accGradFromPooled(pGrad, pt);
     };
-    return new RereDiffTensor(view, List.of(tensor), bw, "flatten");
+    RereDiffTensor flatResult = new RereDiffTensor(view, List.of(tensor), bw, "flatten");
+    // Symbolic backward: reshape back to parent shape (tape-of-tape)
+    final int[] flatParentShape = tensor.shape().clone();
+    flatResult.symbolicBackwardFn = g -> new IDiffTensor[]{ g.reshape(flatParentShape) };
+    return flatResult;
 }
 
 public static IDiffTensor expand(RereDiffTensor tensor, int... targetShape) {
@@ -306,7 +317,11 @@ public static IDiffTensor reshape(RereDiffTensor tensor, int... newShape) {
             RereDiffTensor input = self.inputs.get(0);
             input.accGrad(self.grad.clone());
         };
-        return new RereDiffTensor(view, List.of(tensor), bw, "reshape");
+        RereDiffTensor reshapeResult = new RereDiffTensor(view, List.of(tensor), bw, "reshape");
+        // Symbolic backward: reshape back to parent shape (tape-of-tape)
+        final int[] parentShapeSym = tensor.shape().clone();
+        reshapeResult.symbolicBackwardFn = g -> new IDiffTensor[]{ g.reshape(parentShapeSym) };
+        return reshapeResult;
     }
     return tensor.contiguous().reshape(newShape);
 }

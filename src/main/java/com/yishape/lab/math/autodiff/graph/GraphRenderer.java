@@ -10,7 +10,7 @@ import java.util.Set;
 
 /**
  * Renders autodiff DAGs as Graphviz DOT for debugging.
- * Operates on the tensor graph via {@link RereDiffVector#tensor}.
+ * Operates on the tensor graph via {@link RereDiffVector#tensor} or {@link RereDiffMatrix#tensor}.
  */
 public class GraphRenderer {
 
@@ -47,10 +47,14 @@ public class GraphRenderer {
         return sb.toString();
     }
 
+    /**
+     * Renders a matrix-based computation graph as DOT.
+     * Delegates to the tensor graph (RereDiffMatrix is now a thin proxy over RereDiffTensor).
+     */
     public static String renderMatrix(RereDiffMatrix root) {
-        List<RereDiffMatrix> order = new ArrayList<>();
-        Set<RereDiffMatrix> visited = new HashSet<>();
-        root.buildTopo(order, visited);
+        List<RereDiffTensor> order = new ArrayList<>();
+        HashSet<RereDiffTensor> visited = new HashSet<>();
+        root.tensor.buildTopo(order, visited);
 
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AutodiffMatrix {\n");
@@ -58,15 +62,16 @@ public class GraphRenderer {
         sb.append("  node [shape=box, style=filled, fontname=\"Courier\"];\n");
 
         for (int idx = 0; idx < order.size(); idx++) {
-            RereDiffMatrix v = order.get(idx);
-            String id = "m" + System.identityHashCode(v);
-            String label = matrixNodeLabel(v, idx);
-            String color = v.isLeaf ? "lightblue" : "lightyellow";
+            RereDiffTensor t = order.get(idx);
+            String id = "m" + Integer.toUnsignedString(System.identityHashCode(t));
+            int[] shape = t.shape();
+            String label = "node" + idx + "\\n" + (t.isLeaf() ? "leaf" : "op") + " " + java.util.Arrays.toString(shape);
+            String color = t.isLeaf() ? "lightblue" : "lightyellow";
             sb.append("  ").append(id).append(" [label=\"").append(label)
                     .append("\", fillcolor=").append(color).append("];\n");
 
-            if (v.inputs != null) {
-                for (RereDiffMatrix in : v.inputs) {
+            if (t.inputs() != null) {
+                for (RereDiffTensor in : t.inputs()) {
                     String inId = "m" + Integer.toUnsignedString(System.identityHashCode(in));
                     sb.append("  ").append(id).append(" -> ").append(inId).append(";\n");
                 }
@@ -75,11 +80,5 @@ public class GraphRenderer {
 
         sb.append("}\n");
         return sb.toString();
-    }
-
-    private static String matrixNodeLabel(RereDiffMatrix v, int idx) {
-        String shape = "[" + v.value.rows() + "x" + v.value.cols() + "]";
-        String kind = v.isLeaf ? "leaf" : "op";
-        return "node" + idx + "\\n" + kind + " " + shape;
     }
 }

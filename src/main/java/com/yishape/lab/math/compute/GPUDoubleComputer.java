@@ -97,6 +97,49 @@ final class GPUDoubleComputer implements IDoubleVectorComputer {
         return delegate.reduceOperate(x, operation);
     }
 
+    // ==================== In-place operations (Phase 3.2) ====================
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double[] source, BinaryOperation operation) {
+        // Try GPU path: allocates result → copy back into target
+        if (target.length >= GpuConfig.elementwiseMinElements()) {
+            double[] gpuResult = tryGpuBinaryOp(target, source, operation);
+            if (gpuResult != null) {
+                System.arraycopy(gpuResult, 0, target, 0, target.length);
+                return;
+            }
+        }
+        if (target.length >= HpcConfig.activationMinElements()) {
+            double[] hpcResult = tryHpcBinaryOp(target, source, operation);
+            if (hpcResult != null) {
+                System.arraycopy(hpcResult, 0, target, 0, target.length);
+                return;
+            }
+        }
+        // Fallback: delegate does true in-place (SIMD or SISD)
+        delegate.binaryOperateInPlace(target, source, operation);
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double scalar, BinaryOperation operation) {
+        // Scalar in-place doesn't benefit from GPU (kernel launch overhead > compute)
+        delegate.binaryOperateInPlace(target, scalar, operation);
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, int targetOffset,
+                                     double[] source, int sourceOffset, int length,
+                                     BinaryOperation operation) {
+        // Sub-range in-place: no GPU path (launch overhead dominates); CPU does true in-place.
+        delegate.binaryOperateInPlace(target, targetOffset, source, sourceOffset, length, operation);
+    }
+
+    @Override
+    public void clampInPlace(double[] data, double min, double max) {
+        // No dedicated GPU clamp kernel; delegate to SIMD/SISD in-place clamp.
+        delegate.clampInPlace(data, min, max);
+    }
+
     // ==================== Delegated operations (no GPU path) ====================
 
     @Override

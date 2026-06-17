@@ -200,13 +200,13 @@ public class AD {
     public static IDiffTensor zerosTensor(int... shape) {
         long total = 1;
         for (int s : shape) total *= s;
-        return IDiffTensor.fromDiffVector(zeros((int) total), shape);
+        return IDiffTensor.fromDiffVector(zeros(Math.toIntExact(total)), shape);
     }
 
     public static IDiffTensor onesTensor(int... shape) {
         long total = 1;
         for (int s : shape) total *= s;
-        return IDiffTensor.fromDiffVector(ones((int) total), shape);
+        return IDiffTensor.fromDiffVector(ones(Math.toIntExact(total)), shape);
     }
 
     public static IDiffTensor fullTensor(double value, int... shape) {

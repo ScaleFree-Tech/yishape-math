@@ -98,6 +98,10 @@ public final class HpcGraphExecutor {
         visited.clear();
         root.buildTopo(order, visited);
 
+        // Phase 3.4: Auto-sync FloatDiffTensor FP32 master weights → FP64 value
+        // before HPC serialization, so native execution reads the latest weights.
+        com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncFloatLeaves(order);
+
         // Validate graph structure (per-thread cached: skip when topology unchanged).
         HpcCacheEntry cacheEntry = HPC_CACHE.get();
         int structureHash = ExportShapeValidator.computeStructureHash(order);
@@ -147,6 +151,7 @@ public final class HpcGraphExecutor {
         if (!Double.isNaN(binaryResult)) {
             HPC_COOLDOWN.get()[0] = 0;
             detachGraphAfterNativeExecution(order);
+            com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncDoubleLeaves(order);
             return binaryResult;
         }
         // In strict mode, binary path failure is a bug — surface it immediately
@@ -211,6 +216,7 @@ public final class HpcGraphExecutor {
         }
         HPC_COOLDOWN.get()[0] = 0; // reset cooldown on success
         detachGraphAfterNativeExecution(order);
+        com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncDoubleLeaves(order);
         return loss;
     }
 
@@ -238,6 +244,17 @@ public final class HpcGraphExecutor {
         if (failures >= COOLDOWN_THRESHOLD) {
             cd[1] = COOLDOWN_STEPS;
         }
+    }
+
+    /**
+     * Reset the HPC cooldown for the current thread.
+     * Call this before test suites to ensure HPC failures from a prior test
+     * class don't poison subsequent HPC tests. Idempotent and safe to call
+     * when HPC is not in use.
+     */
+    public static void resetCooldown() {
+        HPC_COOLDOWN.get()[0] = 0;
+        HPC_COOLDOWN.get()[1] = 0;
     }
 
     /** Full serialization + cache skeleton for subsequent incremental updates. */

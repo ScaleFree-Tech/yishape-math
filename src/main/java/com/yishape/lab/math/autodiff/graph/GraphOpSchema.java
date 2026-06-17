@@ -406,23 +406,97 @@ public final class GraphOpSchema {
     /** Returns a human-readable name for a graphOpTag, or the tag itself if unknown. */
     public static String describeTag(String graphOpTag) {
         return switch (graphOpTag) {
-            case "mha"               -> "Multi-Head Attention";
-            case "linear"            -> "Linear (Fully Connected)";
-            case "conv2d"            -> "2D Convolution";
-            case "convTranspose2d"   -> "2D Transposed Convolution";
-            case "batchNorm2d"       -> "Batch Normalization 2D";
-            case "layerNorm"         -> "Layer Normalization";
-            case "rmsNorm"           -> "RMS Normalization";
-            case "lstmStep"          -> "LSTM Timestep";
-            case "embedding"         -> "Embedding Lookup";
-            case "maxpool2d"         -> "Max Pooling 2D";
-            case "depthwiseConv1d"   -> "Depthwise 1D Convolution";
-            case "selectiveScan"     -> "Selective Scan (Mamba SSM)";
-            case "selectiveScan2"    -> "Selective Scan 2 (Chunked)";
-            case "trapezoidalScan"   -> "Trapezoidal Scan (Mamba SSM)";
-            case "bceLoss"           -> "Binary Cross Entropy Loss";
-            case "focalLoss"         -> "Focal Loss";
-            case "diceLoss"          -> "Dice Loss";
+            // BEGIN GENERATED:describeTag
+            case "add" -> "Element-wise Addition";
+            case "sub" -> "Element-wise Subtraction";
+            case "mul" -> "Element-wise Multiplication";
+            case "div" -> "Element-wise Division";
+            case "addScalar" -> "Add Scalar";
+            case "subScalar" -> "Subtract Scalar";
+            case "mulScalar" -> "Multiply by Scalar";
+            case "divScalar" -> "Divide by Scalar";
+            case "rsubScalar" -> "Reverse Subtract Scalar";
+            case "rdivScalar" -> "Reverse Divide Scalar";
+            case "neg" -> "Negate";
+            case "abs" -> "Absolute Value";
+            case "sqrt" -> "Square Root";
+            case "square" -> "Square";
+            case "pow" -> "Power";
+            case "reciprocal" -> "Reciprocal (1/x)";
+            case "exp" -> "Exponential";
+            case "log" -> "Natural Logarithm";
+            case "relu" -> "ReLU Activation";
+            case "sigmoid" -> "Sigmoid Activation";
+            case "tanh" -> "Tanh Activation";
+            case "gelu" -> "GELU Activation";
+            case "silu" -> "SiLU/Swish Activation";
+            case "mish" -> "Mish Activation";
+            case "leakyRelu" -> "Leaky ReLU Activation";
+            case "elu" -> "ELU Activation";
+            case "selu" -> "SELU Activation";
+            case "softplus" -> "Softplus Activation";
+            case "hardtanh" -> "HardTanh Activation";
+            case "clamp" -> "Clamp";
+            case "sin" -> "Sine";
+            case "cos" -> "Cosine";
+            case "tan" -> "Tangent";
+            case "normalize" -> "L2 Normalize";
+            case "sum" -> "Sum Reduction";
+            case "mean" -> "Mean Reduction";
+            case "matmul" -> "Matrix Multiplication";
+            case "mmul" -> "Matrix Multiply (alias)";
+            case "dot" -> "Dot Product";
+            case "bmm" -> "Batch Matrix Multiply";
+            case "cross" -> "Cross Product";
+            case "broadcast" -> "Broadcast";
+            case "expand" -> "Expand";
+            case "transpose" -> "Transpose";
+            case "reshape" -> "Reshape";
+            case "flatten" -> "Flatten";
+            case "squeeze" -> "Squeeze";
+            case "unsqueeze" -> "Unsqueeze";
+            case "permute" -> "Permute";
+            case "cat" -> "Concatenate";
+            case "gather" -> "Gather";
+            case "scatter" -> "Scatter";
+            case "select" -> "Select";
+            case "slice" -> "Slice";
+            case "contiguous" -> "Contiguous";
+            case "interpolate" -> "Interpolate";
+            case "gridSample" -> "Grid Sample";
+            case "dropout" -> "Dropout";
+            case "layerNorm" -> "Layer Normalization";
+            case "batchNorm" -> "Batch Normalization 1D";
+            case "batchNorm2d" -> "Batch Normalization 2D";
+            case "rmsNorm" -> "RMS Normalization";
+            case "groupNorm" -> "Group Normalization";
+            case "instanceNorm" -> "Instance Normalization";
+            case "conv2d" -> "2D Convolution";
+            case "convTranspose2d" -> "2D Transposed Convolution";
+            case "maxpool2d" -> "Max Pooling 2D";
+            case "avgpool2d" -> "Average Pooling 2D";
+            case "adaptiveAvgPool2d" -> "Adaptive Average Pooling 2D";
+            case "depthwiseConv1d" -> "Depthwise 1D Convolution";
+            case "mha" -> "Multi-Head Attention";
+            case "scaledDotProductAttention" -> "Scaled Dot-Product Attention";
+            case "selectiveScan" -> "Selective Scan (Mamba SSM)";
+            case "selectiveScan2" -> "Selective Scan 2 (Chunked)";
+            case "trapezoidalScan" -> "Trapezoidal Scan (Mamba SSM)";
+            case "embedding" -> "Embedding Lookup";
+            case "lstmStep" -> "LSTM Timestep";
+            case "softmax" -> "Softmax";
+            case "logSoftmax" -> "Log Softmax";
+            case "logSumExp" -> "Log-Sum-Exp";
+            case "softmaxCrossEntropy" -> "Softmax Cross-Entropy Loss";
+            case "softmaxCrossEntropySparse" -> "Sparse Softmax Cross-Entropy Loss";
+            case "bceLoss" -> "Binary Cross Entropy Loss";
+            case "focalLoss" -> "Focal Loss";
+            case "diceLoss" -> "Dice Loss";
+            case "leaf" -> "Leaf Variable";
+            case "constant" -> "Constant";
+            case "linear" -> "Linear (Fully Connected)";
+
+            // END GENERATED:describeTag
             default                  -> graphOpTag;
         };
     }
@@ -431,223 +505,403 @@ public final class GraphOpSchema {
     // Fused Tag Naming — single authority for fused op tag convention
     // ========================================================================
 
-    /**
-     * Canonical naming convention for fused operation tags.
-     *
-     * <h2>Pattern</h2>
-     * Simple fused: {@code {unaryTag}{ReduceTag}} in camelCase, e.g.
-     * "square" + "mean" → "squareMean".
-     *
-     * <h2>Multi-step chains</h2>
-     * Arbitrary element-wise chain + reduction terminator, e.g.
-     * ["square","addScalar","sqrt"] + "mean" → "squareAddScalarSqrtMean".
-     * Use {@link #ofChain(List, String)} for chains, {@link #of(String, String)} for single unary.
-     *
-     * <h2>Usage</h2>
-     * All fused tag generation MUST use these methods — never hand-concatenate.
-     */
-    public static final class FusedTag {
+    // BEGIN GENERATED:fusedTag
+/** Fused tag naming convention. All fused tags MUST use these methods. */
+public static final class FusedTag {
 
-        /** Builds a simple fused tag: of("square", "mean") → "squareMean". */
-        public static String of(String unaryTag, String reduceTag) {
-            return unaryTag + Character.toUpperCase(reduceTag.charAt(0))
-                   + reduceTag.substring(1);
+    /** Builds a simple fused tag: of("square", "mean") → "squareMean". */
+    public static String of(String unaryTag, String reduceTag) {
+        return unaryTag + Character.toUpperCase(reduceTag.charAt(0))
+               + reduceTag.substring(1);
+    }
+
+    /** Builds a multi-step chain tag: ofChain(["square","addScalar","sqrt"], "mean") → "squareAddScalarSqrtMean". */
+    public static String ofChain(List<String> opTags, String reduceTag) {
+        if (opTags.isEmpty()) return reduceTag;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < opTags.size(); i++) {
+            String tag = opTags.get(i);
+            if (i == 0) sb.append(tag);
+            else sb.append(Character.toUpperCase(tag.charAt(0)))
+                   .append(tag, 1, tag.length());
         }
+        sb.append(Character.toUpperCase(reduceTag.charAt(0)));
+        if (reduceTag.length() > 1) sb.append(reduceTag, 1, reduceTag.length());
+        return sb.toString();
+    }
 
-        /** Builds a multi-step chain tag: ofChain(["square","addScalar","sqrt"], "mean") → "squareAddScalarSqrtMean". */
-        public static String ofChain(List<String> opTags, String reduceTag) {
-            if (opTags.isEmpty()) return reduceTag;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < opTags.size(); i++) {
-                String tag = opTags.get(i);
-                if (i == 0) sb.append(tag);
-                else sb.append(Character.toUpperCase(tag.charAt(0))).append(tag, 1, tag.length());
-            }
-            sb.append(Character.toUpperCase(reduceTag.charAt(0)));
-            if (reduceTag.length() > 1) sb.append(reduceTag, 1, reduceTag.length());
-            return sb.toString();
-        }
-
-        // ---- Component sets ----
-
-        /** 19 unary ops that participate in {unary}{Reduce} fusion. */
+        /** 19 unary ops for {unary}{Reduce} fusion. */
         public static final Set<String> UNARY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "square", "relu", "exp", "abs", "log", "sigmoid", "tanh",
-            "silu", "pow", "gelu", "mish", "sin", "cos",
-            "leakyRelu", "elu", "selu", "softplus", "hardtanh", "mul"
+            "mul",
+            "abs",
+            "square",
+            "pow",
+            "exp",
+            "log",
+            "relu",
+            "sigmoid",
+            "tanh",
+            "gelu",
+            "silu",
+            "mish",
+            "leakyRelu",
+            "elu",
+            "selu",
+            "softplus",
+            "hardtanh",
+            "sin",
+            "cos"
         )));
 
-        /** Reduction terminators for {unary}{Reduce} fusion. */
+        /** Reduction terminators. */
         public static final Set<String> REDUCE_TAGS = Set.of("sum", "mean");
 
-        /** Compound special fused tags (non-{unary}{Reduce} patterned). */
+        /** Compound specials (non-{unary}{Reduce} patterned). */
         public static final Set<String> COMPOUND_SPECIALS = Set.of(
-            "logSumExp", "softmaxCrossEntropy", "softmaxCrossEntropySparse",
-            "bceLoss", "focalLoss", "diceLoss"
+            "logSumExp",
+            "softmaxCrossEntropy",
+            "softmaxCrossEntropySparse",
+            "bceLoss",
+            "focalLoss",
+            "diceLoss"
         );
     }
 
-    // ========================================================================
-    // Fused Tag Registry — which combinations are implemented per backend
-    // ========================================================================
+    // END GENERATED:fusedTag
 
-    /**
-     * Registry of which fused op tags have native implementations in each backend.
-     *
-     * <p>All pattern-generated tags derive from {@link FusedTag#UNARY_TAGS} ×
-     * {@link FusedTag#REDUCE_TAGS}. Backend-specific subsets ({@link #GPU_PATTERN},
-     * {@link #HPC_PATTERN}) record which combinations are actually implemented.
-     * Compound specials are tracked separately.
-     *
-     * <p>When adding a new fused op:
-     * <ol>
-     *   <li>Ensure the unary tag is in {@link FusedTag#UNARY_TAGS}</li>
-     *   <li>Implement in Rust backend</li>
-     *   <li>Add the tag string to {@link #GPU_PATTERN} and/or {@link #HPC_PATTERN}</li>
-     * </ol>
-     */
-    public static final class FusedTagRegistry {
+    // BEGIN GENERATED:fusedTagRegistry
+/** Registry of which fused op tags have native implementations per backend. */
+public static final class FusedTagRegistry {
 
-        /** All {unary}{Reduce} pattern tags (cartesian product: 19×2 = 38). */
-        public static final Set<String> ALL_PATTERN;
-        static {
-            Set<String> all = new HashSet<>();
-            for (String u : FusedTag.UNARY_TAGS)
-                for (String r : FusedTag.REDUCE_TAGS)
-                    all.add(FusedTag.of(u, r));
-            ALL_PATTERN = Collections.unmodifiableSet(all);
-        }
+    /** All {unary}{Reduce} pattern tags (cartesian product). */
+    public static final Set<String> ALL_PATTERN;
+    static {
+        Set<String> all = new HashSet<>();
+        for (String u : FusedTag.UNARY_TAGS)
+            for (String r : FusedTag.REDUCE_TAGS)
+                all.add(FusedTag.of(u, r));
+        ALL_PATTERN = Collections.unmodifiableSet(all);
+    }
 
-        // ---- GPU-supported fused subsets ----
+    // ---- GPU ----
 
-        /** {unary}{Reduce} tags with GPU WGSL implementations. */
-        public static final Set<String> GPU_PATTERN = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "squareSum", "squareMean", "reluSum", "reluMean", "expSum", "expMean",
-            "absSum", "absMean", "logSum", "logMean", "sigmoidSum", "sigmoidMean",
-            "tanhSum", "tanhMean", "siluSum", "siluMean", "mishSum", "mishMean",
-            "geluSum", "geluMean", "sinSum", "sinMean", "cosSum", "cosMean",
-            "leakyReluSum", "leakyReluMean", "eluSum", "eluMean", "seluSum", "seluMean",
-            "softplusSum", "softplusMean", "hardtanhSum", "hardtanhMean",
-            "mulSum", "mulMean", "powSum", "powMean"
+    /** {unary}{Reduce} tags with GPU WGSL implementations. */
+    public static final Set<String> GPU_PATTERN = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "mulSum",
+            "mulMean",
+            "absSum",
+            "absMean",
+            "squareSum",
+            "squareMean",
+            "powSum",
+            "powMean",
+            "expSum",
+            "expMean",
+            "logSum",
+            "logMean",
+            "reluSum",
+            "reluMean",
+            "sigmoidSum",
+            "sigmoidMean",
+            "tanhSum",
+            "tanhMean",
+            "geluSum",
+            "geluMean",
+            "siluSum",
+            "siluMean",
+            "mishSum",
+            "mishMean",
+            "leakyReluSum",
+            "leakyReluMean",
+            "eluSum",
+            "eluMean",
+            "seluSum",
+            "seluMean",
+            "softplusSum",
+            "softplusMean",
+            "hardtanhSum",
+            "hardtanhMean",
+            "sinSum",
+            "sinMean",
+            "cosSum",
+            "cosMean"
         )));
 
         /** Compound specials with GPU implementations. */
-        public static final Set<String> GPU_COMPOUND = Set.of(
-            "logSumExp", "softmaxCrossEntropy", "softmaxCrossEntropySparse", "bceLoss"
-        );
+        public static final Set<String> GPU_COMPOUND = Set.of("logSumExp", "softmaxCrossEntropy", "softmaxCrossEntropySparse", "bceLoss");
 
-        /** All GPU-supported fused tags (pattern + compound). */
-        public static final Set<String> GPU_ALL;
-        static {
-            Set<String> s = new HashSet<>(GPU_PATTERN);
-            s.addAll(GPU_COMPOUND);
-            GPU_ALL = Collections.unmodifiableSet(s);
-        }
+    /** All GPU-supported fused tags. */
+    public static final Set<String> GPU_ALL;
+    static {
+        Set<String> s = new HashSet<>(GPU_PATTERN);
+        s.addAll(GPU_COMPOUND);
+        GPU_ALL = Collections.unmodifiableSet(s);
+    }
 
-        // ---- HPC-supported fused subsets ----
+    // ---- HPC ----
 
-        /** {unary}{Reduce} tags with HPC faer implementations. */
-        public static final Set<String> HPC_PATTERN = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "squareSum", "squareMean", "reluSum", "reluMean", "expSum", "expMean",
-            "absSum", "absMean", "logSum", "logMean", "sigmoidSum", "sigmoidMean",
-            "tanhSum", "tanhMean", "siluSum", "siluMean", "mishSum", "mishMean",
-            "mulSum", "mulMean", "powSum", "powMean",
-            "geluSum", "geluMean", "sinSum", "sinMean", "cosSum", "cosMean",
-            "leakyReluSum", "leakyReluMean", "eluSum", "eluMean",
-            "seluSum", "seluMean", "softplusSum", "softplusMean",
-            "hardtanhSum", "hardtanhMean"
+    /** {unary}{Reduce} tags with HPC faer implementations. */
+    public static final Set<String> HPC_PATTERN = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "mulSum",
+            "mulMean",
+            "absSum",
+            "absMean",
+            "squareSum",
+            "squareMean",
+            "powSum",
+            "powMean",
+            "expSum",
+            "expMean",
+            "logSum",
+            "logMean",
+            "reluSum",
+            "reluMean",
+            "sigmoidSum",
+            "sigmoidMean",
+            "tanhSum",
+            "tanhMean",
+            "geluSum",
+            "geluMean",
+            "siluSum",
+            "siluMean",
+            "mishSum",
+            "mishMean",
+            "leakyReluSum",
+            "leakyReluMean",
+            "eluSum",
+            "eluMean",
+            "seluSum",
+            "seluMean",
+            "softplusSum",
+            "softplusMean",
+            "hardtanhSum",
+            "hardtanhMean",
+            "sinSum",
+            "sinMean",
+            "cosSum",
+            "cosMean"
         )));
 
         /** Compound specials with HPC implementations. */
-        public static final Set<String> HPC_COMPOUND = Set.of(
-            "logSumExp", "softmaxCrossEntropy", "softmaxCrossEntropySparse",
-            "bceLoss", "focalLoss", "diceLoss"
-        );
+        public static final Set<String> HPC_COMPOUND = Set.of("logSumExp", "softmaxCrossEntropy", "softmaxCrossEntropySparse", "bceLoss", "focalLoss", "diceLoss");
 
-        /** All HPC-supported fused tags (pattern + compound). */
-        public static final Set<String> HPC_ALL;
-        static {
-            Set<String> s = new HashSet<>(HPC_PATTERN);
-            s.addAll(HPC_COMPOUND);
-            HPC_ALL = Collections.unmodifiableSet(s);
-        }
+    /** All HPC-supported fused tags. */
+    public static final Set<String> HPC_ALL;
+    static {
+        Set<String> s = new HashSet<>(HPC_PATTERN);
+        s.addAll(HPC_COMPOUND);
+        HPC_ALL = Collections.unmodifiableSet(s);
     }
+}
+
+
+    // END GENERATED:fusedTagRegistry
 
     // ========================================================================
     // Supported operation sets — single source of truth
     // ========================================================================
 
-    /** All ops that have GPU WGSL shader implementations (tensor-native path). */
+    // BEGIN GENERATED:gpuOps
+    /** All ops with GPU WGSL shader implementations. */
     public static final class Gpu {
         static final Set<String> BASE = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "add", "sub", "mul", "div",
-            "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
-            "neg", "pow", "exp", "log", "sin", "cos", "tan",
-            "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
-            "sum", "mean", "dot", "matmul",
-            "gelu", "softmax", "logSoftmax", "silu", "mish",
-            "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
-            "normalize", "layerNorm",
-            "broadcast", "expand", "transpose", "reshape", "flatten",
-            "squeeze", "unsqueeze",
+            "abs",
+            "adaptiveAvgPool2d",
+            "add",
+            "addScalar",
+            "avgpool2d",
+            "batchNorm2d",
+            "broadcast",
+            "cat",
+            "clamp",
+            "constant",
+            "contiguous",
+            "conv2d",
+            "convTranspose2d",
+            "cos",
+            "cross",
+            "depthwiseConv1d",
+            "div",
+            "divScalar",
+            "dot",
+            "dropout",
+            "elu",
+            "embedding",
+            "exp",
+            "expand",
+            "flatten",
+            "gather",
+            "gelu",
+            "gridSample",
+            "groupNorm",
+            "hardtanh",
+            "instanceNorm",
+            "interpolate",
+            "layerNorm",
+            "leaf",
+            "leakyRelu",
+            "linear",
+            "log",
+            "logSoftmax",
+            "lstmStep",
+            "matmul",
+            "maxpool2d",
+            "mean",
+            "mha",
+            "mish",
             "mmul",
-            "leaf", "constant",
-            "linear", "conv2d", "convTranspose2d", "maxpool2d", "avgpool2d", "adaptiveAvgPool2d",
-            "batchNorm2d", "embedding", "mha", "lstmStep",
-            "selectiveScan", "selectiveScan2", "depthwiseConv1d",
+            "mul",
+            "mulScalar",
+            "neg",
+            "normalize",
+            "permute",
+            "pow",
+            "rdivScalar",
+            "relu",
+            "reshape",
+            "rmsNorm",
+            "rsubScalar",
             "scaledDotProductAttention",
-            "rmsNorm", "groupNorm", "instanceNorm",
-            "interpolate", "gridSample",
-            "cross", "trapezoidalScan", "cat",
-            "gather", "select", "slice", "contiguous",
-            "permute"
+            "select",
+            "selectiveScan",
+            "selectiveScan2",
+            "selu",
+            "sigmoid",
+            "silu",
+            "sin",
+            "slice",
+            "softmax",
+            "softplus",
+            "sqrt",
+            "square",
+            "squeeze",
+            "sub",
+            "subScalar",
+            "sum",
+            "tan",
+            "tanh",
+            "transpose",
+            "trapezoidalScan",
+            "unsqueeze"
         )));
 
         public static final Set<String> SUPPORTED;
         static {
             Set<String> s = new HashSet<>(BASE);
-            s.addAll(FusedTagRegistry.GPU_ALL);
+            s.addAll(FusedTagRegistry.GPU_PATTERN);
+            s.add("logSumExp");
+            s.add("softmaxCrossEntropy");
+            s.add("softmaxCrossEntropySparse");
+            s.add("bceLoss");
             SUPPORTED = Collections.unmodifiableSet(s);
         }
     }
 
-    /** All ops that have HPC faer-based implementations (tensor-native path). */
+    // END GENERATED:gpuOps
+
+    // BEGIN GENERATED:hpcOps
+    /** All ops with HPC faer-based implementations. */
     public static final class Hpc {
         static final Set<String> BASE = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "add", "sub", "mul", "div",
-            "addScalar", "subScalar", "mulScalar", "divScalar", "rsubScalar", "rdivScalar",
-            "neg", "pow", "exp", "log", "sin", "cos", "tan",
-            "sigmoid", "tanh", "relu", "abs", "sqrt", "square", "dropout",
-            "sum", "mean", "dot", "matmul",
-            "gelu", "softmax", "logSoftmax", "silu", "mish",
-            "leakyRelu", "elu", "selu", "softplus", "hardtanh", "clamp",
-            "layerNorm",
-            "broadcast", "transpose", "reshape", "flatten",
-            "squeeze", "unsqueeze",
-            "mmul",
+            "abs",
+            "adaptiveAvgPool2d",
+            "add",
+            "addScalar",
+            "avgpool2d",
+            "batchNorm",
+            "batchNorm2d",
             "bmm",
-            "leaf", "constant",
-            "linear", "conv2d", "convTranspose2d", "maxpool2d", "avgpool2d", "batchNorm2d",
-            "embedding", "mha", "lstmStep",
-            "selectiveScan", "selectiveScan2", "depthwiseConv1d",
-            "permute", "expand", "reciprocal",
-            "gather", "scatter", "select", "slice",
-            "cat", "contiguous",
-            "batchNorm", "groupNorm",
-            "normalize", "adaptiveAvgPool2d",
+            "broadcast",
+            "cat",
+            "clamp",
+            "constant",
+            "contiguous",
+            "conv2d",
+            "convTranspose2d",
+            "cos",
+            "cross",
+            "depthwiseConv1d",
+            "div",
+            "divScalar",
+            "dot",
+            "dropout",
+            "elu",
+            "embedding",
+            "exp",
+            "expand",
+            "flatten",
+            "gather",
+            "gelu",
+            "gridSample",
+            "groupNorm",
+            "hardtanh",
+            "instanceNorm",
+            "interpolate",
+            "layerNorm",
+            "leaf",
+            "leakyRelu",
+            "linear",
+            "log",
+            "logSoftmax",
+            "lstmStep",
+            "matmul",
+            "maxpool2d",
+            "mean",
+            "mha",
+            "mish",
+            "mmul",
+            "mul",
+            "mulScalar",
+            "neg",
+            "normalize",
+            "permute",
+            "pow",
+            "rdivScalar",
+            "reciprocal",
+            "relu",
+            "reshape",
+            "rmsNorm",
+            "rsubScalar",
             "scaledDotProductAttention",
-            "rmsNorm", "instanceNorm",
-            "interpolate", "gridSample",
-            "cross", "trapezoidalScan"
+            "scatter",
+            "select",
+            "selectiveScan",
+            "selectiveScan2",
+            "selu",
+            "sigmoid",
+            "silu",
+            "sin",
+            "slice",
+            "softmax",
+            "softplus",
+            "sqrt",
+            "square",
+            "squeeze",
+            "sub",
+            "subScalar",
+            "sum",
+            "tan",
+            "tanh",
+            "transpose",
+            "trapezoidalScan",
+            "unsqueeze"
         )));
 
         public static final Set<String> SUPPORTED;
         static {
             Set<String> s = new HashSet<>(BASE);
-            s.addAll(FusedTagRegistry.HPC_ALL);
+            s.addAll(FusedTagRegistry.HPC_PATTERN);
+            s.add("logSumExp");
+            s.add("softmaxCrossEntropy");
+            s.add("softmaxCrossEntropySparse");
+            s.add("bceLoss");
+            s.add("focalLoss");
+            s.add("diceLoss");
             SUPPORTED = Collections.unmodifiableSet(s);
         }
     }
+
+    // END GENERATED:hpcOps
 
     /**
      * Union of GPU + HPC tensor-supported ops.

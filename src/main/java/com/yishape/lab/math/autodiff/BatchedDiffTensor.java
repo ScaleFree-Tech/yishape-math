@@ -64,6 +64,24 @@ public final class BatchedDiffTensor implements IDiffTensor {
         return nestingDepth;
     }
 
+    /**
+     * Wrap an IDoubleTensor as a non-differentiable IDiffTensor, avoiding
+     * unnecessary copies. When {@code other} is already an IDiffTensor without
+     * gradient requirement, it is returned directly (zero-copy). When it is a
+     * {@link RereDoubleTensor}, it's wrapped via {@link ConstantDiffTensor}
+     * (zero-copy). Only falls back to {@link IDiffTensor#constantTensor} copy
+     * for other implementations.
+     */
+    private static IDiffTensor asConstant(IDoubleTensor other) {
+        if (other instanceof IDiffTensor dt && !dt.requiresGrad()) {
+            return dt;
+        }
+        if (other instanceof com.yishape.lab.math.linalg.tensor.RereDoubleTensor rt) {
+            return new com.yishape.lab.math.autodiff.impl.ConstantDiffTensor(rt);
+        }
+        return IDiffTensor.constantTensor(other.toDoubleArray(), other.shape());
+    }
+
     private IDiffTensor wrap(IDiffTensor result) {
         if (result == data) return this;
         // Flat model: unwrap any BatchedDiffTensor to preserve single-layer delegation
@@ -469,7 +487,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
                 // Expand to [B, K, N] by unsqueezing and broadcasting
                 expandedOther = od.unsqueeze(0).expand(B, K, N);
             } else {
-                expandedOther = IDiffTensor.constantTensor(otherData.toDoubleArray(), otherData.shape())
+                expandedOther = asConstant(otherData)
                     .unsqueeze(0).expand(B, K, N);
             }
             IDiffTensor result = unwrappedThis.bmm(expandedOther);
@@ -484,7 +502,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
             if (otherData instanceof IDiffTensor od) {
                 other3d = od.reshape(1, otherData.dim(0), 1).expand(B, otherData.dim(0), 1); // [B, K, 1]
             } else {
-                other3d = IDiffTensor.constantTensor(otherData.toDoubleArray(), otherData.shape())
+                other3d = asConstant(otherData)
                     .reshape(1, otherData.dim(0), 1).expand(B, otherData.dim(0), 1);
             }
             IDiffTensor result3d = this3d.bmm(other3d); // [B, 1, 1]
@@ -500,7 +518,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
                 if (otherData instanceof IDiffTensor od) {
                     otherExpanded = od.unsqueeze(0).expand(B, M, N);
                 } else {
-                    otherExpanded = IDiffTensor.constantTensor(otherData.toDoubleArray(), otherData.shape())
+                    otherExpanded = asConstant(otherData)
                         .unsqueeze(0).expand(B, M, N);
                 }
                 IDiffTensor this3d = unwrappedThis.unsqueeze(1); // [B, 1, M]
@@ -517,7 +535,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
             if (otherData instanceof IDiffTensor od) {
                 otherT = od.transpose(0, 1).unsqueeze(0).expand(B, K2, M);
             } else {
-                otherT = IDiffTensor.constantTensor(otherData.toDoubleArray(), otherData.shape())
+                otherT = asConstant(otherData)
                     .transpose(0, 1).unsqueeze(0).expand(B, K2, M);
             }
             IDiffTensor result = this3d.bmm(otherT); // [B, 1, M]
@@ -530,15 +548,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor bmm(IDoubleTensor other) {
-        IDiffTensor otherData;
-        if (other instanceof BatchedDiffTensor bo) {
-            otherData = bo.data;
-        } else {
-            otherData = (other instanceof IDiffTensor dt) ? dt : null;
-            if (otherData == null) {
-                otherData = IDiffTensor.constantTensor(other.toDoubleArray(), other.shape());
-            }
-        }
+        IDiffTensor otherData = other instanceof BatchedDiffTensor bo ? bo.data : asConstant(other);
         return wrap(data.bmm(otherData));
     }
 
@@ -727,7 +737,7 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public List<IDoubleTensor> unstack(int dim) { return data.unstack(shift(dim)); }
     @Override public IDiffVector flattenValue() { return data.flattenValue(); }
     @Override public IDiffVector flattenGrad() { return data.flattenGrad(); }
-    @Override public IDoubleTensor detach() { return data.detach(); }
+    @Override public IDiffTensor detach() { return data.detach(); }
     @Override public boolean requiresGrad() { return data.requiresGrad(); }
     @Override public IDiffTensor setRequiresGrad(boolean requiresGrad) { return wrap(data.setRequiresGrad(requiresGrad)); }
     @Override public IDoubleTensor grad() { return data.grad(); }

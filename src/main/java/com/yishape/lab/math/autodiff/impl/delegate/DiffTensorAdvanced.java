@@ -425,7 +425,8 @@ public static IDiffTensor tril(RereDiffTensor tensor, int diagonal) {
     int[] s = tensor.shape();
     int M = s[r - 2];
     int N = s[r - 1];
-    double[] resultData = tensor.value.toDoubleArray().clone();
+    // Perf: toDoubleArray() already returns a new array (clone for contiguous, new alloc for views)
+    double[] resultData = tensor.value.toDoubleArray();
     int batchStride = M * N;
     int batchCount = resultData.length / batchStride;
 
@@ -468,8 +469,8 @@ public static IDiffTensor triu(RereDiffTensor tensor, int diagonal) {
     int r = tensor.rank();
     if (r < 2) return tensor; // scalar/vector: no-op
     if (!tensor.requiresGrad) {
-        // Manual triu: clone and zero lower triangle
-        double[] d = tensor.value.toDoubleArray().clone();
+        // Perf: toDoubleArray() already returns a new array, clone() is redundant
+        double[] d = tensor.value.toDoubleArray();
         int M = tensor.value.dim(r - 2);
         int N = tensor.value.dim(r - 1);
         int batchStride = M * N;
@@ -490,7 +491,8 @@ public static IDiffTensor triu(RereDiffTensor tensor, int diagonal) {
     int[] s = tensor.shape();
     int M = s[r - 2];
     int N = s[r - 1];
-    double[] resultData = tensor.value.toDoubleArray().clone();
+    // Perf: toDoubleArray() already returns a new array, clone() is redundant
+    double[] resultData = tensor.value.toDoubleArray();
     int batchStride = M * N;
     int batchCount = resultData.length / batchStride;
 
@@ -894,6 +896,28 @@ public static IDiffTensor cat(RereDiffTensor tensor, int dim, IDoubleTensor... o
     // GPU cat forward uses scalar to perform block-interleaved concatenation;
     // dim=0 is equivalent to flat concatenation (the legacy GPU path).
     result.setScalarParam((double) d);
+    // Symbolic backward: split g along concatenation dim into per-input pieces (tape-of-tape)
+    final int catDim = d;
+    final int[] catSizes = sizes.clone();
+    final List<RereDiffTensor> catInputs = new ArrayList<>(allInputs);
+    result.symbolicBackwardFn = g -> {
+        IDiffTensor[] grads = new IDiffTensor[catInputs.size()];
+        long offset = 0;
+        int gradIdx = 0;
+        grads[gradIdx++] = g.narrow(catDim, 0, catSizes[0]); // self's piece
+        offset = catSizes[0];
+        // Other inputs' pieces (only those in catInputs after self)
+        int sizeIdx = 1;
+        for (int i = 0; i < others.length; i++) {
+            int sz = catSizes[sizeIdx];
+            if (others[i] instanceof RereDiffTensor rdt && rdt.requiresGrad) {
+                grads[gradIdx++] = g.narrow(catDim, offset, sz);
+            }
+            offset += sz;
+            sizeIdx++;
+        }
+        return grads;
+    };
     return result;
 }
 

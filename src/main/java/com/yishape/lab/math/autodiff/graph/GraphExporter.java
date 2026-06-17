@@ -57,26 +57,10 @@ public final class GraphExporter {
 
     /**
      * Exports a matrix-based computation graph to JSON.
+     * Delegates to the tensor graph (RereDiffMatrix is now a thin proxy over RereDiffTensor).
      */
     public static String toJson(RereDiffMatrix root) {
-        List<RereDiffMatrix> order = new ArrayList<>();
-        Set<RereDiffMatrix> visited = new HashSet<>();
-        root.buildTopo(order, visited);
-
-        Map<RereDiffMatrix, Integer> indexMap = new HashMap<>();
-        for (int i = 0; i < order.size(); i++) {
-            indexMap.put(order.get(i), i);
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"nodes\":[");
-        for (int i = 0; i < order.size(); i++) {
-            RereDiffMatrix v = order.get(i);
-            if (i > 0) sb.append(',');
-            appendMatrixNode(sb, v, i, indexMap);
-        }
-        sb.append("]}");
-        return sb.toString();
+        return TensorGraphExporter.toJson(root.tensor);
     }
 
     private static void appendTensorNode(StringBuilder sb, RereDiffTensor t, int id,
@@ -117,53 +101,6 @@ public final class GraphExporter {
                 } else if (log.isDebugEnabled()) {
                     log.debug("Dropping input not in index map: node={} op={} inputIdx={}",
                         id, t.opTag(), j);
-                }
-            }
-            if (!validInputs.isEmpty()) {
-                sb.append(",\"inputs\":[");
-                for (int j = 0; j < validInputs.size(); j++) {
-                    if (j > 0) sb.append(',');
-                    sb.append(indexMap.get(validInputs.get(j)));
-                }
-                sb.append(']');
-            }
-        }
-        sb.append('}');
-    }
-
-    private static void appendMatrixNode(StringBuilder sb, RereDiffMatrix v, int id,
-            Map<RereDiffMatrix, Integer> indexMap) {
-        sb.append("{\"id\":").append(id);
-        sb.append(",\"shape\":[").append(v.value.rows()).append(',').append(v.value.cols()).append(']');
-        sb.append(",\"op\":\"");
-        sb.append(v.opTag != null ? v.opTag : (v.isLeaf ? "leaf" : "unknown"));
-        sb.append('"');
-        if (v.isLeaf) {
-            double[][] d = v.value.getData();
-            sb.append(",\"data\":[");
-            for (int i = 0; i < d.length; i++) {
-                if (i > 0) sb.append(',');
-                sb.append('[');
-                double[] row = d[i];
-                for (int j = 0; j < row.length; j++) {
-                    if (j > 0) sb.append(',');
-                    sb.append(row[j]);
-                }
-                sb.append(']');
-            }
-            sb.append(']');
-        }
-        appendScalarParam(sb, v.scalarParam);
-        appendScalarParam2(sb, v.scalarParam2);
-        if (v.inputs != null && !v.inputs.isEmpty()) {
-            List<RereDiffMatrix> validInputs = new ArrayList<>();
-            for (int j = 0; j < v.inputs.size(); j++) {
-                RereDiffMatrix inp = v.inputs.get(j);
-                if (inp != null && indexMap.containsKey(inp)) {
-                    validInputs.add(inp);
-                } else if (log.isDebugEnabled()) {
-                    log.debug("Dropping matrix input not in index map: node={} op={} inputIdx={}",
-                        id, v.opTag, j);
                 }
             }
             if (!validInputs.isEmpty()) {

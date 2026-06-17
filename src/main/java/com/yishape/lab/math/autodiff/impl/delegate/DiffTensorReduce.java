@@ -74,6 +74,18 @@ static IDiffTensor sumDimImpl(RereDiffTensor tensor, int d, boolean keepdim) {
         input.accGradFromPooled(inGrad, total);
     };
     RereDiffTensor rd = new RereDiffTensor(result, resultShape, List.of(tensor), bw, "sum");
+    // Symbolic backward: unsqueeze g at dim d then broadcast to input shape (tape-of-tape)
+    final boolean symKeepdim = keepdim;
+    final int symD = d;
+    final int symTotal = outer * reduce * inner;
+    final int[] symInputShape = s.clone();
+    rd.symbolicBackwardFn = g -> {
+        IDiffTensor expanded = symKeepdim ? g : g.unsqueeze(symD);
+        double[] ones = new double[symTotal];
+        java.util.Arrays.fill(ones, 1.0);
+        IDiffTensor factorTensor = tensor.mul(0.0).add(IDiffTensor.constantTensor(ones, symInputShape));
+        return new IDiffTensor[]{ expanded.mul(factorTensor) };
+    };
     // ╔══════════════════════════════════════════════════════════════════════════╗
     // ║  ☠️ STRIDE ENCODING PITFALL — ROOT CAUSE                              ║
     // ║                                                                         ║

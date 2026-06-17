@@ -367,4 +367,32 @@ public class DoubleVectorComputer implements IDoubleVectorComputer,Serializable 
         return computer.logicalOperate(x1, x2, operation);
     }
 
+    // ---- In-place binary operations (Phase 3.2) ----
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double[] source, BinaryOperation operation) {
+        var computer = this.fetchComputer(target.length);
+        computer.binaryOperateInPlace(target, source, operation);
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double scalar, BinaryOperation operation) {
+        var computer = this.fetchComputer(target.length);
+        computer.binaryOperateInPlace(target, scalar, operation);
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, int targetOffset,
+                                     double[] source, int sourceOffset, int length,
+                                     BinaryOperation operation) {
+        var computer = this.fetchComputer(length);
+        computer.binaryOperateInPlace(target, targetOffset, source, sourceOffset, length, operation);
+    }
+
+    @Override
+    public void clampInPlace(double[] data, double min, double max) {
+        var computer = this.fetchComputer(data.length);
+        computer.clampInPlace(data, min, max);
+    }
+
 }

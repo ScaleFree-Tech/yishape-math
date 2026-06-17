@@ -58,7 +58,7 @@ public class TangentDiffTensor implements IDiffTensor {
     @Override public void clipGradValue(double maxValue) { primal.clipGradValue(maxValue); }
     @Override public IDiffVector flattenGrad() { return primal.flattenGrad(); }
     @Override public IDiffVector flattenValue() { return primal.flattenValue(); }
-    @Override public IDoubleTensor detach() { return primal.detach(); }
+    @Override public IDiffTensor detach() { return primal.detach(); }
 
     // ---- delegate IDoubleTensor value/shape methods ----
     @Override public int[] shape() { return primal.shape(); }
@@ -100,46 +100,70 @@ public class TangentDiffTensor implements IDiffTensor {
 
     // ---- arithmetic with variables ----
     @Override public IDiffTensor add(IDoubleTensor other) {
-        TangentDiffTensor o = (TangentDiffTensor) other;
-        RereDiffTensor p = (RereDiffTensor) primal.add(o.primal);
-        double[] aT = this.tangent.toDoubleArray();
-        double[] bT = o.tangent.toDoubleArray();
-        IDoubleTensor t = new RereDoubleTensor(COMPUTER.binaryOperate(aT, bT, BinaryOperation.ADD), p.shape());
-        return new TangentDiffTensor(p, t, List.of(this, o), p);
+        RereDiffTensor p = (RereDiffTensor) primal.add(other);
+        if (other instanceof TangentDiffTensor o) {
+            double[] aT = this.tangent.toDoubleArray();
+            double[] bT = o.tangent.toDoubleArray();
+            IDoubleTensor t = new RereDoubleTensor(COMPUTER.binaryOperate(aT, bT, BinaryOperation.ADD), p.shape());
+            return new TangentDiffTensor(p, t, List.of(this, o), p);
+        }
+        // other is a constant: ∂other = 0, JVP = tangent
+        return new TangentDiffTensor(p, this.tangent.clone(), List.of(this), p);
     }
 
     @Override public IDiffTensor sub(IDoubleTensor other) {
-        TangentDiffTensor o = (TangentDiffTensor) other;
-        RereDiffTensor p = (RereDiffTensor) primal.sub(o.primal);
-        double[] aT = this.tangent.toDoubleArray();
-        double[] bT = o.tangent.toDoubleArray();
-        double[] negBT = COMPUTER.binaryOperate(bT, -1.0, BinaryOperation.MULTIPLY);
-        IDoubleTensor t = new RereDiffTensor(COMPUTER.binaryOperate(aT, negBT, BinaryOperation.ADD), p.shape());
-        return new TangentDiffTensor(p, t, List.of(this, o), p);
+        RereDiffTensor p = (RereDiffTensor) primal.sub(other);
+        if (other instanceof TangentDiffTensor o) {
+            double[] aT = this.tangent.toDoubleArray();
+            double[] bT = o.tangent.toDoubleArray();
+            double[] negBT = COMPUTER.binaryOperate(bT, -1.0, BinaryOperation.MULTIPLY);
+            double[] sumT = COMPUTER.binaryOperate(aT, negBT, BinaryOperation.ADD);
+            return new TangentDiffTensor(p, new RereDoubleTensor(sumT, p.shape()), List.of(this, o), p);
+        }
+        // other is constant: ∂other = 0, JVP = tangent
+        return new TangentDiffTensor(p, this.tangent.clone(), List.of(this), p);
     }
 
     @Override public IDiffTensor mul(IDoubleTensor other) {
-        TangentDiffTensor o = (TangentDiffTensor) other;
-        RereDiffTensor p = (RereDiffTensor) primal.mul(o.primal);
-        double[] aV = this.primal.value().toDoubleArray();
-        double[] bV = o.primal.value().toDoubleArray();
+        RereDiffTensor p = (RereDiffTensor) primal.mul(other);
+        if (other instanceof TangentDiffTensor o) {
+            double[] aV = this.primal.value().toDoubleArray();
+            double[] bV = o.primal.value().toDoubleArray();
+            double[] aT = this.tangent.toDoubleArray();
+            double[] bT = o.tangent.toDoubleArray();
+            // JVP(a*b) = a'*b + a*b'
+            double[] term1 = COMPUTER.binaryOperate(aT, bV, BinaryOperation.MULTIPLY);
+            double[] term2 = COMPUTER.binaryOperate(aV, bT, BinaryOperation.MULTIPLY);
+            double[] t = COMPUTER.binaryOperate(term1, term2, BinaryOperation.ADD);
+            return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        }
+        // other is constant: JVP = tangent * other_value
         double[] aT = this.tangent.toDoubleArray();
-        double[] bT = o.tangent.toDoubleArray();
-        double[] t = new double[aT.length];
-        for (int i = 0; i < t.length; i++) t[i] = aT[i] * bV[i] + aV[i] * bT[i];
-        return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        double[] bV = other.toDoubleArray();
+        double[] t = COMPUTER.binaryOperate(aT, bV, BinaryOperation.MULTIPLY);
+        return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this), p);
     }
 
     @Override public IDiffTensor div(IDoubleTensor other) {
-        TangentDiffTensor o = (TangentDiffTensor) other;
-        RereDiffTensor p = (RereDiffTensor) primal.div(o.primal);
-        double[] aV = this.primal.value().toDoubleArray();
-        double[] bV = o.primal.value().toDoubleArray();
+        RereDiffTensor p = (RereDiffTensor) primal.div(other);
+        if (other instanceof TangentDiffTensor o) {
+            double[] aV = this.primal.value().toDoubleArray();
+            double[] bV = o.primal.value().toDoubleArray();
+            double[] aT = this.tangent.toDoubleArray();
+            double[] bT = o.tangent.toDoubleArray();
+            // JVP(a/b) = (a'*b - a*b') / b²
+            double[] term1 = COMPUTER.binaryOperate(aT, bV, BinaryOperation.MULTIPLY);
+            double[] term2 = COMPUTER.binaryOperate(aV, bT, BinaryOperation.MULTIPLY);
+            double[] numer = COMPUTER.binaryOperate(term1, term2, BinaryOperation.SUBTRACT);
+            double[] denom = COMPUTER.binaryOperate(bV, bV, BinaryOperation.MULTIPLY);
+            double[] t = COMPUTER.binaryOperate(numer, denom, BinaryOperation.DIVIDE);
+            return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        }
+        // other is constant: JVP = tangent / other_value
         double[] aT = this.tangent.toDoubleArray();
-        double[] bT = o.tangent.toDoubleArray();
-        double[] t = new double[aT.length];
-        for (int i = 0; i < t.length; i++) t[i] = (aT[i] * bV[i] - aV[i] * bT[i]) / (bV[i] * bV[i]);
-        return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        double[] bV = other.toDoubleArray();
+        double[] t = COMPUTER.binaryOperate(aT, bV, BinaryOperation.DIVIDE);
+        return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this), p);
     }
 
     // ---- scalar arithmetic ----
@@ -628,21 +652,53 @@ public class TangentDiffTensor implements IDiffTensor {
 
     // ---- matrix ops ----
     @Override public IDiffTensor mmul(IDoubleTensor other) {
-        TangentDiffTensor o = (TangentDiffTensor) other;
-        RereDiffTensor p = (RereDiffTensor) primal.mmul(o.primal);
-        // d(A*B)/dx = dA*B + A*dB
-        IDoubleTensor dB = this.tangent.mmul(o.primal.value());
-        IDoubleTensor adB = this.primal.value().mmul(o.tangent);
-        double[] dta = dB.toDoubleArray();
-        double[] adta = adB.toDoubleArray();
-        double[] t = new double[dta.length];
-        for (int i = 0; i < t.length; i++) t[i] = dta[i] + adta[i];
-        return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        if (other instanceof TangentDiffTensor o) {
+            RereDiffTensor p = (RereDiffTensor) primal.mmul(o.primal);
+            // d(A*B) = dA*B + A*dB
+            IDoubleTensor dB = this.tangent.mmul(o.primal.value());
+            IDoubleTensor adB = this.primal.value().mmul(o.tangent);
+            double[] dta = dB.toDoubleArray();
+            double[] adta = adB.toDoubleArray();
+            double[] t = COMPUTER.binaryOperate(dta, adta, BinaryOperation.ADD);
+            return new TangentDiffTensor(p, new RereDoubleTensor(t, p.shape()), List.of(this, o), p);
+        }
+        // other is constant: JVP = dA * B (∂other = 0)
+        RereDiffTensor p = (RereDiffTensor) primal.mmul(other);
+        IDoubleTensor t = this.tangent.mmul(other);
+        return new TangentDiffTensor(p, (RereDoubleTensor) (t instanceof RereDoubleTensor rt ? rt : new RereDoubleTensor(t.toDoubleArray(), t.shape())), List.of(this), p);
     }
     @Override public IDiffTensor bmm(IDoubleTensor other) { return mmul(other); }
 
     @Override public IDiffTensor einsum(String subscript, IDoubleTensor... others) {
-        throw new UnsupportedOperationException("TangentDiffTensor.einsum not yet implemented");
+        // Primal: einsum(this.primal, primal_others, subscript)
+        IDoubleTensor[] primalOthers = new IDoubleTensor[others.length];
+        for (int i = 0; i < others.length; i++) {
+            primalOthers[i] = others[i] instanceof TangentDiffTensor tt ? tt.primal : others[i];
+        }
+        RereDiffTensor p = (RereDiffTensor) primal.einsum(subscript, primalOthers);
+
+        // Tangent: einsum is multi-linear, so JVP = Σ einsum(..., tangent_i, ...)
+        // Work with IDoubleTensor to handle mixed IDiffTensor/IDoubleTensor return types
+        IDoubleTensor t = this.tangent.einsum(subscript, primalOthers); // term 0
+
+        // Terms 1..n: einsum(primal, primal_others_with_tangent_i, subscript)
+        for (int i = 0; i < others.length; i++) {
+            if (others[i] instanceof TangentDiffTensor oi) {
+                IDoubleTensor[] termInputs = new IDoubleTensor[others.length];
+                System.arraycopy(primalOthers, 0, termInputs, 0, others.length);
+                termInputs[i] = oi.tangent;
+                t = t.add(this.primal.value().einsum(subscript, termInputs));
+            }
+        }
+        java.util.ArrayList<TangentDiffTensor> inputs = new java.util.ArrayList<>(others.length + 1);
+        inputs.add(this);
+        for (IDoubleTensor o : others) {
+            if (o instanceof TangentDiffTensor td) inputs.add(td);
+        }
+        // Ensure tangent is RereDoubleTensor (t.add() may return other IDoubleTensor impl)
+        RereDoubleTensor rt = t instanceof RereDoubleTensor r ? r
+            : new RereDoubleTensor(t.toDoubleArray(), t.shape());
+        return new TangentDiffTensor(p, rt, inputs, p);
     }
 
     // ---- index ops (linear → same tangent transformation) ----
@@ -789,7 +845,15 @@ public class TangentDiffTensor implements IDiffTensor {
         IDoubleTensor t = this.tangent.cumsum(dim);
         return new TangentDiffTensor(p, t, List.of(this), p);
     }
-    @Override public IDiffTensor cumprod(int dim) { throw new UnsupportedOperationException("TangentDiffTensor.cumprod"); }
+    @Override public IDiffTensor cumprod(int dim) {
+        RereDiffTensor p = (RereDiffTensor) primal.cumprod(dim);
+        // JVP: d(cumprod(x))[k] = cumprod(x)[k] * Σ_{j=0}^{k} dx[j]/x[j]
+        //     = p * cumsum(tangent / primal, dim)
+        IDoubleTensor ratio = this.tangent.div(primal.value());
+        IDoubleTensor cumsumRatio = ratio.cumsum(dim);
+        RereDoubleTensor t = (RereDoubleTensor) p.value().mul(cumsumRatio);
+        return new TangentDiffTensor(p, t, List.of(this), p);
+    }
     @Override public IDiffTensor argmax(int dim) { return (IDiffTensor) primal.argmax(dim); }
     @Override public IDiffTensor argmin(int dim) { return (IDiffTensor) primal.argmin(dim); }
     @Override public IDiffTensor std(int dim, boolean keepdim) {

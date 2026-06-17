@@ -651,8 +651,30 @@ public interface IDiffTensor extends IDoubleTensor {
     /** 执行反向传播 */
     void backward();
 
+    /**
+     * 执行反向传播，可选择是否保留计算图。
+     *
+     * @param retainGraph if true, backward functions and graph edges are preserved,
+     *                    allowing subsequent {@code backward()} calls for higher-order AD.
+     *                    if false (default), graph edges are released for GC.
+     */
+    default void backward(boolean retainGraph) {
+        if (!retainGraph) { backward(); return; }
+        throw new UnsupportedOperationException(
+            "backward(retainGraph=true) not supported on " + this.getClass().getSimpleName());
+    }
+
     /** 使用指定梯度执行反向传播 */
     void backward(IDoubleTensor gradient);
+
+    /**
+     * 使用指定梯度执行反向传播，可选择是否保留计算图。
+     */
+    default void backward(IDoubleTensor gradient, boolean retainGraph) {
+        if (!retainGraph) { backward(gradient); return; }
+        throw new UnsupportedOperationException(
+            "backward(gradient, retainGraph=true) not supported on " + this.getClass().getSimpleName());
+    }
 
     /** 清零梯度 */
     void zeroGradient();
@@ -673,8 +695,15 @@ public interface IDiffTensor extends IDoubleTensor {
      */
     IDiffVector flattenValue();
 
-    /** 切断梯度追踪，返回普通 IDoubleTensor */
-    IDoubleTensor detach();
+    /**
+     * Returns a new tensor that shares data with this one but is detached from the
+     * computation graph. Equivalent to PyTorch's {@code tensor.detach()}.
+     * The result is an {@code IDiffTensor} with {@code requiresGrad=false},
+     * meaning {@code backward()} will not propagate gradients to this tensor's ancestors.
+     *
+     * @return a detached copy sharing the same data
+     */
+    IDiffTensor detach();
 
     /** 是否追踪梯度 */
     boolean requiresGrad();

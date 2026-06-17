@@ -46,6 +46,7 @@ public class ProtocolContractTest {
     static void detect() {
         System.setProperty("yishape.gpu.minElements", "0");
         gpuPresent = GpuOptionalRuntime.isGpuAvailable();
+        GpuGraphExecutor.resetCooldown();
         System.out.println("[Protocol] GPU " + (gpuPresent ? "present" : "absent"));
     }
 

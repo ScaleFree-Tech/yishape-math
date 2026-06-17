@@ -39,8 +39,30 @@ public interface IDiffMatrix extends IDoubleMatrix {
     /** Reverse-mode AD with unit initial gradient (for scalar outputs). / 以单位初始梯度做反向传播。 */
     void backward();
 
+    /**
+     * Reverse-mode AD with control over graph retention.
+     * When {@code retainGraph = true}, the computation graph edges (inputs, backwardFn)
+     * are preserved after backward, enabling tape-of-tape higher-order differentiation.
+     * Default throws if retainGraph=true; implementations that support it override this method.
+     */
+    default void backward(boolean retainGraph) {
+        if (!retainGraph) { backward(); return; }
+        throw new UnsupportedOperationException(
+            "backward(retainGraph=true) not supported on " + this.getClass().getSimpleName());
+    }
+
     /** Reverse-mode AD with a custom upstream gradient. / 以自定义上游梯度做反向传播。 */
     void backward(IDoubleMatrix initialGradient);
+
+    /**
+     * Reverse-mode AD with custom gradient and graph retention control.
+     * Default throws if retainGraph=true; implementations that support it override this method.
+     */
+    default void backward(IDoubleMatrix initialGradient, boolean retainGraph) {
+        if (!retainGraph) { backward(initialGradient); return; }
+        throw new UnsupportedOperationException(
+            "backward(initialGradient, retainGraph=true) not supported on " + this.getClass().getSimpleName());
+    }
 
     /** Clears accumulated gradients on this node. / 清除本节点累积梯度。 */
     void zeroGradient();
@@ -229,6 +251,14 @@ public interface IDiffMatrix extends IDoubleMatrix {
         throw new UnsupportedOperationException(
             "copy not supported on " + this.getClass().getSimpleName());
     }
+
+    /**
+     * Returns a new matrix that shares data with this one but is detached from the
+     * computation graph (requiresGrad=false). Equivalent to PyTorch's {@code tensor.detach()}.
+     *
+     * @return a detached copy sharing the same data
+     */
+    IDiffMatrix detach();
 
     // ---- IDoubleMatrix binary operations (overloads for IMatrix<Double> parameter) ----
 

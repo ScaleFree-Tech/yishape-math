@@ -111,10 +111,20 @@ public class RereDiffVector implements IDiffVector, Serializable {
     }
 
     @Override
+    public void backward(boolean retainGraph) {
+        tensor.backward(retainGraph);
+    }
+
+    @Override
     public void backward(IDoubleVector initialGradient) {
+        backward(initialGradient, false);
+    }
+
+    @Override
+    public void backward(IDoubleVector initialGradient, boolean retainGraph) {
         if (!tensor.requiresGrad()) return;
         tensor.setGradData(initialGradient.getData().clone());
-        tensor.backwardImpl();
+        tensor.backwardImpl(retainGraph);
     }
 
     @Override
@@ -910,6 +920,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
         return wrap((RereDiffTensor) tensor.clone());
     }
 
+    @Override
+    public IDiffVector detach() {
+        return wrap((RereDiffTensor) tensor.detach());
+    }
+
     // ==================== IDiffMatrix reshape ====================
 
     @Override
@@ -919,23 +934,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
             throw new IllegalArgumentException(
                 "reshape dimensions " + rows + "x" + cols + " must match size " + origSize);
         }
-        IDoubleMatrix resultVal = IDoubleMatrix.fromArray(tensor.value().toDoubleArray(), rows, cols);
-        RereDiffTensor self = this.tensor;
-        // B2: create a source matrix node so the matrix-level graph has proper "inputs" edges.
-        // The tensor-level graph remains the canonical gradient propagation path via propagateGrad().
-        RereDiffMatrix sourceMat = new RereDiffMatrix(
-            IDoubleMatrix.fromArray(tensor.value().toDoubleArray(), origSize, 1));
-        Consumer<IDoubleMatrix> backwardFn = (matrixGrad) -> {
-            double[] flatGrad = ((IDoubleVector) matrixGrad.flatten()).getData();
-            self.accGrad(flatGrad);
-            self.propagateGrad(); // continue gradient propagation through tensor subgraph
-        };
-        Function<IDiffVector, IDiffVector[]> symbolicBackwardFn = (matrixGrad) ->
-            new IDiffVector[] { matrixGrad };
-        RereDiffMatrix node = new RereDiffMatrix(resultVal, List.of(sourceMat), backwardFn);
-        node.opTag = "reshape";
-        node.symbolicBackwardFn = symbolicBackwardFn;
-        return node;
+        // Delegate to tensor graph — reshape returns a tensor with new shape.
+        // Wrap as RereDiffMatrix for IDiffMatrix API compatibility.
+        return new RereDiffMatrix((RereDiffTensor) tensor.reshape(rows, cols));
     }
 
     // ==================== Covariant overrides from IDoubleVector / IVector ====================

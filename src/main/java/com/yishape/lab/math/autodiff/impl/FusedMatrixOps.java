@@ -12,7 +12,7 @@ import jdk.incubator.vector.VectorSpecies;
 
 /**
  * Fused element-wise operator chain on a matrix (same idea as {@link FusedOps}).
- * 矩阵版融合逐元素算子链，语义同 {@link FusedOps}。
+ * Now delegates to the tensor graph for gradient propagation.
  * Includes SIMD acceleration for forward pass on SIMD-friendly op chains.
  */
 public class FusedMatrixOps {
@@ -65,10 +65,12 @@ public class FusedMatrixOps {
             return x;
         }
 
-        int rows = x.value.rows();
-        int cols = x.value.cols();
+        int rows = x.tensor.shape()[0];
+        int cols = x.tensor.shape()[1];
         int n = rows * cols;
-        double[][] xData = x.value.getData();
+        // Use tensor's flat data for SIMD efficiency; wrap as 2D view for backward
+        double[] xFlat = x.tensor.value().toDoubleArray();
+
         double[][] result = new double[rows][cols];
 
         // Check if all ops are SIMD-friendly for forward pass
@@ -101,11 +103,14 @@ public class FusedMatrixOps {
         }
         double[][][] otherGrads = binaryCount > 0 ? new double[opCount][rows][cols] : null;
 
+        // Get 2D data for binary ops (via getValue which creates a copy — acceptable for compute())
+        double[][] xData2D = x.getValue().getData();
+
         if (allSimdFriendly) {
             // SIMD forward pass — row by row, SIMD within each row
             int vl = SPECIES.length();
             for (int i = 0; i < rows; i++) {
-                double[] row = xData[i];
+                double[] row = xData2D[i];
                 int rowBase = i * cols;
                 int j = 0;
                 for (; j + vl <= cols; j += vl) {
@@ -114,7 +119,7 @@ public class FusedMatrixOps {
                         FusedOps.FusedOp op = ops.get(k);
                         v.intoArray(saved[k], rowBase + j);
                         if (op.isBinary()) {
-                            double[] otherRow = ((RereDiffMatrix) op.other).value.getData()[i];
+                            double[] otherRow = ((RereDiffMatrix) op.other).getValue().getData()[i];
                             DoubleVector ov = DoubleVector.fromArray(SPECIES, otherRow, j);
                             v = FusedOps.applySimdBinary(op.type, v, ov);
                         } else {
@@ -131,7 +136,7 @@ public class FusedMatrixOps {
                         FusedOps.FusedOp op = ops.get(k);
                         saved[k][idx] = v;
                         if (op.isBinary()) {
-                            double otherV = ((RereDiffMatrix) op.other).value.getData()[i][j];
+                            double otherV = ((RereDiffMatrix) op.other).getValue().getData()[i][j];
                             v = applyForwardBinary(op, v, otherV);
                         } else {
                             v = applyForwardUnary(op, v);
@@ -145,13 +150,13 @@ public class FusedMatrixOps {
             for (int i = 0; i < rows; i++) {
                 int rowBase = i * cols;
                 for (int j = 0; j < cols; j++) {
-                    double v = xData[i][j];
+                    double v = xData2D[i][j];
                     int idx = rowBase + j;
                     for (int k = 0; k < opCount; k++) {
                         FusedOps.FusedOp op = ops.get(k);
                         saved[k][idx] = v;
                         if (op.isBinary()) {
-                            double otherV = ((RereDiffMatrix) op.other).value.getData()[i][j];
+                            double otherV = ((RereDiffMatrix) op.other).getValue().getData()[i][j];
                             v = applyForwardBinary(op, v, otherV);
                         } else {
                             v = applyForwardUnary(op, v);
@@ -162,10 +167,10 @@ public class FusedMatrixOps {
             }
         }
 
-        IDoubleMatrix resultVal = IDoubleMatrix.of(result);
         RereDiffMatrix self = this.x;
 
-        Consumer<IDoubleMatrix> backwardFn = (gradOut) -> {
+        // Build the matrix-level backward function (uses 2D arrays for compatibility)
+        Consumer<IDoubleMatrix> matrixBackwardFn = (gradOut) -> {
             double[][] gradData = gradOut.getData();
             double[][] dx = new double[rows][cols];
             for (int i = 0; i < rows; i++) {
@@ -178,7 +183,7 @@ public class FusedMatrixOps {
                         double inputV = saved[k][idx];
                         double outputV = (k == opCount - 1) ? result[i][j] : saved[k + 1][idx];
                         if (op.isBinary()) {
-                            double otherV = ((RereDiffMatrix) op.other).value.getData()[i][j];
+                            double otherV = ((RereDiffMatrix) op.other).getValue().getData()[i][j];
                             otherGrads[k][i][j] = applyGradientOther(op, g, inputV, otherV, outputV);
                             g = applyGradientSelf(op, g, inputV, otherV, outputV);
                         } else {
@@ -201,17 +206,36 @@ public class FusedMatrixOps {
             }
         };
 
-        List<RereDiffMatrix> inputs = new ArrayList<>();
-        inputs.add(this.x);
+        // Build tensor inputs and bridge to tensor backward function
+        List<RereDiffTensor> tensorInputs = new ArrayList<>();
+        tensorInputs.add(this.x.tensor);
         for (FusedOps.FusedOp op : ops) {
             if (op.isBinary()) {
-                RereDiffMatrix otherMat = (RereDiffMatrix) op.other;
-                if (!inputs.contains(otherMat)) {
-                    inputs.add(otherMat);
+                RereDiffTensor otherT = ((RereDiffMatrix) op.other).tensor;
+                if (!tensorInputs.contains(otherT)) {
+                    tensorInputs.add(otherT);
                 }
             }
         }
-        return new RereDiffMatrix(resultVal, inputs, backwardFn);
+
+        // Bridge: Consumer<IDoubleMatrix> → Consumer<RereDiffTensor>
+        Consumer<RereDiffTensor> tensorBackwardFn = selfTensor -> {
+            double[] flatGrad = selfTensor.gradData();
+            double[][] grad2D = new double[rows][cols];
+            for (int i = 0; i < rows; i++) {
+                System.arraycopy(flatGrad, i * cols, grad2D[i], 0, cols);
+            }
+            matrixBackwardFn.accept(IDoubleMatrix.of(grad2D));
+        };
+
+        // Flatten result for tensor node
+        double[] flatResult = new double[rows * cols];
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(result[i], 0, flatResult, i * cols, cols);
+        }
+
+        RereDiffTensor resultTensor = new RereDiffTensor(flatResult, new int[]{rows, cols}, tensorInputs, tensorBackwardFn, "fused");
+        return new RereDiffMatrix(resultTensor);
     }
 
     // ---- forward/backward kernels (scalar) ----

@@ -88,7 +88,8 @@ public static IDiffTensor layerNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
         RereDiffTensor inpG = self.inputs.get(1);
         RereDiffTensor inpB = self.inputs.get(2);
         double[] g = self.grad;
-        double[] cg = gr.value.toDoubleArray();
+        // Perf: reuse gd captured from forward instead of re-extracting via gr.value.toDoubleArray()
+        double[] cg = gd;
         int m = (int) inpX.value.totalSize();
         double[] dx = AutodiffBufferPool.acquire(m);
         double[] dGamma = AutodiffBufferPool.acquire(features);
@@ -167,7 +168,8 @@ public static IDiffTensor batchNorm(RereDiffTensor tensor, IDiffTensor gamma, ID
         RereDiffTensor inpG = self.inputs.get(1);
         RereDiffTensor inpB = self.inputs.get(2);
         double[] g = self.grad;
-        double[] cg = gr.value.toDoubleArray();
+        // Perf: reuse gd captured from forward instead of re-extracting via gr.value.toDoubleArray()
+        double[] cg = gd;
         int m = (int) inpX.value.totalSize();
         double[] dx = AutodiffBufferPool.acquire(m);
         double[] dGamma = AutodiffBufferPool.acquire(features);
@@ -384,7 +386,8 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor inpX = self.inputs.get(0);
         double[] g = self.grad;
-        double[] dx = new double[g.length];
+        int dxRopeSize = g.length;
+        double[] dx = AutodiffBufferPool.acquire(dxRopeSize);
         for (int b = 0; b < fBatchSize; b++) {
             int batchOff = b * fBatchStride;
             for (int pos = 0; pos < fSeqLen; pos++) {
@@ -404,7 +407,7 @@ public static IDiffTensor rope(RereDiffTensor tensor, int dim, int maxLen, doubl
                 }
             }
         }
-        inpX.accGrad(dx);
+        inpX.accGradFromPooled(dx, dxRopeSize);
     };
     RereDiffTensor result = new RereDiffTensor(y, tensor.shape(), List.of(tensor), bw, "rope");
     result.scalarParam = dim;
@@ -518,13 +521,13 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
     double[] wT = DoubleFlatGemm.flatTranspose(wd, outC, Kcol);
     double[] outCol = DoubleFlatGemm.flatMmul(col, mM, Kcol, wT, outC);
 
-    // Add bias via acceleration chain (tile bias vector across rows)
+    // Add bias per-row in place via the acceleration chain (§7a, BUG-5): outCol is
+    // [mM, outC] row-major; broadcast-add the outC-length bias to each row without
+    // allocating a full mM×outC tiled buffer or a second full-length ADD pass.
     if (bd != null) {
-        double[] biasTiled = new double[mM * outC];
         for (int i = 0; i < mM; i++) {
-            System.arraycopy(bd, 0, biasTiled, i * outC, outC);
+            COMPUTER.binaryOperateInPlace(outCol, i * outC, bd, 0, outC, BinaryOperation.ADD);
         }
-        outCol = COMPUTER.binaryOperate(outCol, biasTiled, BinaryOperation.ADD);
     }
 
     int[] outShape = {N, outC, outH, outW};
@@ -601,7 +604,7 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
         // d_input: dOutCol @ w → [N*outH*outW, C*kH*kW] → col2im, HPC→SISD fallback
         double[] dCol = DoubleFlatGemm.flatMmul(dOutCol, fM, fOutC, savedWd, fKcol);
         int dXsize = fN * fC * fH * fW;
-        double[] dX = new double[dXsize];
+        double[] dX = AutodiffBufferPool.acquire(dXsize);
         if (HpcIm2col.tryBatchCol2im(dCol, fN, fC, fH, fW, fKH, fKW, fStride, fPad, fDil, dX)) {
             // HPC succeeded
         } else {
@@ -630,7 +633,7 @@ public static IDiffTensor conv2d(RereDiffTensor tensor, IDiffTensor weight, IDif
                 }
             }
         }
-        inpX.accGrad(dX);
+        inpX.accGradFromPooled(dX, dXsize);
     };
 
     RereDiffTensor result = new RereDiffTensor(y, outShape, inputs, bw, "conv2d");
@@ -834,9 +837,9 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
         int dQsize = fBatch * fQStride;
         int dKsize = fBatch * fKStride;
         int dVsize = fBatch * fVStride;
-        double[] dQ = new double[dQsize];
-        double[] dK = new double[dKsize];
-        double[] dV = new double[dVsize];
+        double[] dQ = AutodiffBufferPool.acquire(dQsize);
+        double[] dK = AutodiffBufferPool.acquire(dKsize);
+        double[] dV = AutodiffBufferPool.acquire(dVsize);
 
         for (int b = 0; b < fBatch; b++) {
             int gOff = b * fOutStride;
@@ -891,9 +894,9 @@ public static IDiffTensor scaledDotProductAttention(RereDiffTensor tensor, IDiff
             System.arraycopy(dKB, 0, dK, b * fKStride, fKStride);
         }
 
-        inpQ.accGrad(dQ);
-        inpK.accGrad(dK);
-        inpV.accGrad(dV);
+        inpQ.accGradFromPooled(dQ, dQsize);
+        inpK.accGradFromPooled(dK, dKsize);
+        inpV.accGradFromPooled(dV, dVsize);
     };
 
     RereDiffTensor result = new RereDiffTensor(y, new int[]{batch, seqQ, dv}, inputs, bw,

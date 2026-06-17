@@ -71,6 +71,23 @@ public interface ISparseMatrix {
         return matrix;
     }
 
+    /** Create sparse matrix with all entries set to 1.0 (COO dense-sparse). */
+    static ISparseMatrix ones(int rows, int cols) {
+        int total = rows * cols;
+        int[] rowIdx = new int[total];
+        int[] colIdx = new int[total];
+        double[] vals = new double[total];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                int idx = i * cols + j;
+                rowIdx[idx] = i;
+                colIdx[idx] = j;
+                vals[idx] = 1.0;
+            }
+        }
+        return new RereSparseDoubleMatrix(rows, cols, rowIdx, colIdx, vals, SparseFormat.COO);
+    }
+
     static ISparseMatrix diag(double[] values) {
         return diag(values, values.length);
     }

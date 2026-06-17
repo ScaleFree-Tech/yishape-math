@@ -38,11 +38,11 @@ public final class GpuGraphExecutor {
      */
     private static final boolean VERBOSE = Boolean.getBoolean("yishape.gpu.verbose");
 
-    // --- GPU failure cooldown ---
+    // --- GPU failure cooldown (per-thread, prevents cross-thread pollution) ---
     private static final int COOLDOWN_THRESHOLD = 3;
     private static final int COOLDOWN_STEPS = 100;
-    private static final java.util.concurrent.atomic.AtomicInteger gpuConsecutiveFailures = new java.util.concurrent.atomic.AtomicInteger(0);
-    private static final java.util.concurrent.atomic.AtomicInteger gpuCooldownRemaining = new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final ThreadLocal<int[]> GPU_COOLDOWN =
+        ThreadLocal.withInitial(() -> new int[]{0, 0}); // [0]=failures, [1]=remaining
 
     /** Tracks which unsupported ops have already been reported to stderr, to suppress duplicates. */
     private static final java.util.Set<String> REPORTED_UNSUPPORTED_OPS = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -50,13 +50,29 @@ public final class GpuGraphExecutor {
     /**
      * Ops supported in tensor-native GPU execution.
      * Reference: GraphOpSchema.Gpu.SUPPORTED.
-     * NOTE: Ops NOT yet implemented in Rust GPU: reciprocal, rsub, rdiv,
-     * scatter, narrow. Adding them here before Rust supports them causes
-     * "unsupported forward op: <op>" worker errors and NaN GPU results.
-     * expand, permute and slice were recently added (2026-06-16) — see Rust gpu_worker
-     * graph.rs forward_dispatch/backward_dispatch for implementations.
+     * NOTE: Ops NOT yet implemented in Rust GPU: reciprocal, scatter, narrow,
+     * batchNorm (1D; only batchNorm2d is supported). Adding them here before
+     * Rust supports them causes "unsupported forward op: <op>" worker errors
+     * and NaN GPU results.
+     * rsubScalar and rdivScalar were added to Rust GPU (2026-06).
+     * expand, permute and slice were recently added (2026-06-16) — see Rust
+     * gpu_worker graph.rs forward_dispatch/backward_dispatch for implementations.
      */
     private static final HashSet<String> TENSOR_SUPPORTED_OPS = new HashSet<>(GraphOpSchema.Gpu.SUPPORTED);
+
+    // --- GPU binary skeleton cache (per-thread, same pattern as HpcGraphExecutor) ---
+    private static final ThreadLocal<GpuCacheEntry> GPU_CACHE =
+        ThreadLocal.withInitial(GpuCacheEntry::new);
+
+    static final class GpuCacheEntry {
+        int structureHash = 0;
+        TensorBinaryProtocol.CachedGraph cachedGraph = null;
+
+        void invalidate() {
+            structureHash = 0;
+            cachedGraph = null;
+        }
+    }
 
     // Tensor thread locals
     private static final ThreadLocal<ArrayList<RereDiffTensor>> TENSOR_TOPO =
@@ -88,10 +104,10 @@ public final class GpuGraphExecutor {
         if (!GpuConfig.allowAttempts()) { return Double.NaN; }
         if (!GpuOptionalRuntime.isGpuAvailable()) { return Double.NaN; }
 
-        // GPU cooldown: skip after repeated consecutive failures
-        int cooldown = gpuCooldownRemaining.get();
-        if (cooldown > 0) {
-            gpuCooldownRemaining.decrementAndGet();
+        // GPU cooldown: skip after repeated consecutive failures (per-thread)
+        int[] cd = GPU_COOLDOWN.get();
+        if (cd[1] > 0) {
+            cd[1]--;
             return Double.NaN;
         }
 
@@ -100,6 +116,10 @@ public final class GpuGraphExecutor {
         HashSet<RereDiffTensor> visited = TENSOR_VISITED.get();
         visited.clear();
         root.buildTopo(order, visited);
+
+        // Phase 3.4: Auto-sync FloatDiffTensor FP32 master weights → FP64 value
+        // before GPU serialization, so native execution reads the latest weights.
+        com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncFloatLeaves(order);
 
         // Smart threshold: skip GPU for tiny graphs where kernel launch overhead
         // would dominate compute time. Controlled by -Dyishape.gpu.minElements.
@@ -115,16 +135,19 @@ public final class GpuGraphExecutor {
             return Double.NaN;
         }
 
-        // Shape validation: verify that serialization shapes carry sufficient metadata
-        // for HPC/GPU backends to correctly resolve input dimensions. Blocks export
-        // when a mismatched shape would produce silently wrong results.
-        ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
-        if (validation.hasErrors()) {
-            log.error("GPU graph export BLOCKED: shape validation failed:\n{}", validation);
-            return Double.NaN;
-        }
-        if (validation.hasWarnings() && VERBOSE) {
-            log.debug("GPU shape validation warning: {}", validation);
+        // Shape validation (per-thread cached: skip when topology unchanged).
+        GpuCacheEntry cacheEntry = GPU_CACHE.get();
+        int structureHash = ExportShapeValidator.computeStructureHash(order);
+        if (structureHash != cacheEntry.structureHash) {
+            ExportShapeValidator.Result validation = ExportShapeValidator.validate(order);
+            if (validation.hasErrors()) {
+                log.error("GPU graph export BLOCKED: shape validation failed:\n{}", validation);
+                return Double.NaN;
+            }
+            if (validation.hasWarnings() && VERBOSE) {
+                log.debug("GPU shape validation warning: {}", validation);
+            }
+            cacheEntry.structureHash = structureHash;
         }
         if (VERBOSE && log.isDebugEnabled()) {
             java.util.LinkedHashSet<String> seenOps = new java.util.LinkedHashSet<>();
@@ -199,11 +222,34 @@ public final class GpuGraphExecutor {
             }
         }
 
-        // Try binary path first (production default — no JSON precision issues)
-        double binaryResult = tryExecuteTensorBinary(root, order);
+        // Collect leaves (needed for both binary cache dispatch and JSON fallback)
+        ArrayList<RereDiffTensor> leaves = new ArrayList<>();
+        for (RereDiffTensor v : order) {
+            if (v.isLeaf()) leaves.add(v);
+        }
+
+        // Try binary path first (use cached graph when topology unchanged)
+        TensorBinaryProtocol.CachedGraph cached = cacheEntry.cachedGraph;
+        double binaryResult;
+        if (cached != null && cacheEntry.structureHash == cached.structureHash()) {
+            binaryResult = tryExecuteTensorBinaryIncremental(order, leaves, cached, cacheEntry);
+        } else {
+            binaryResult = tryExecuteTensorBinaryFull(root, order, leaves, cacheEntry);
+        }
         if (!Double.isNaN(binaryResult)) {
-            gpuConsecutiveFailures.set(0); // reset on success
+            GPU_COOLDOWN.get()[0] = 0; // reset on success
+            // Build cache skeleton AFTER successful execution but BEFORE detach,
+            // so the graph structure is still intact for serialization.
+            if (cacheEntry.cachedGraph == null) {
+                try {
+                    cacheEntry.cachedGraph = TensorBinaryProtocol.serializeGraphCached(
+                        root, order, cacheEntry.structureHash);
+                } catch (Exception e) {
+                    if (log.isDebugEnabled()) log.debug("GPU cache build failed (non-fatal)", e);
+                }
+            }
             detachGraphAfterNativeExecution(order);
+            com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncDoubleLeaves(order);
             return binaryResult;
         }
         // In strict mode, binary path failure is a bug — surface it immediately
@@ -234,15 +280,7 @@ public final class GpuGraphExecutor {
             log.debug("GPU binary path returned NaN for op={}, trying JSON fallback", root.opTag());
         }
 
-        // Collect leaves
-        ArrayList<RereDiffTensor> leaves = new ArrayList<>();
-        for (RereDiffTensor v : order) {
-            if (v.isLeaf()) {
-                leaves.add(v);
-            }
-        }
-
-        // Export and execute
+        // Export and execute (JSON fallback, leaves already collected above)
         String json = TensorGraphExporter.toJson(root);
         if (VERBOSE && log.isDebugEnabled()) {
             log.debug("GPU toJson returned {} chars", json != null ? json.length() : 0);
@@ -275,8 +313,9 @@ public final class GpuGraphExecutor {
             // with scalarParam=2 gives halved results). Each GPU op must be self-contained.
             double loss = applyTensorGradientsFromJson(root, leaves, resultJson);
             if (!Double.isNaN(loss)) {
-                gpuConsecutiveFailures.set(0); // reset cooldown on success
+                GPU_COOLDOWN.get()[0] = 0; // reset cooldown on success
                 detachGraphAfterNativeExecution(order);
+                com.yishape.lab.math.autodiff.impl.FloatDiffTensor.syncDoubleLeaves(order);
             }
             return loss;
         } catch (Exception e) {
@@ -367,9 +406,10 @@ public final class GpuGraphExecutor {
 
     /** Track a GPU failure: increment counter, enter cooldown if threshold reached. */
     private static void trackGpuFailure() {
-        int failures = gpuConsecutiveFailures.incrementAndGet();
+        int[] cd = GPU_COOLDOWN.get();
+        int failures = ++cd[0];
         if (failures >= COOLDOWN_THRESHOLD) {
-            gpuCooldownRemaining.set(COOLDOWN_STEPS);
+            cd[1] = COOLDOWN_STEPS;
             if (log.isDebugEnabled()) {
                 log.debug("GPU cooldown: {} consecutive failures, cooling for {} steps",
                     failures, COOLDOWN_STEPS);
@@ -377,68 +417,113 @@ public final class GpuGraphExecutor {
         }
     }
 
-    /** Binary graph execution for tensors using YSGP protocol. */
-    private static double tryExecuteTensorBinary(RereDiffTensor root,
-            ArrayList<RereDiffTensor> order) {
+    /**
+     * Reset the GPU cooldown for the current thread.
+     * Call this before test suites to ensure GPU failures from a prior test
+     * class don't poison subsequent GPU tests. Idempotent and safe to call
+     * when GPU is not in use.
+     */
+    public static void resetCooldown() {
+        GPU_COOLDOWN.get()[0] = 0;
+        GPU_COOLDOWN.get()[1] = 0;
+    }
+
+    // ── Binary execution with skeleton cache (same pattern as HpcGraphExecutor) ──
+
+    /**
+     * Full serialization: serialize fresh via {@link TensorBinaryProtocol#serializeGraph}.
+     * Cache skeleton is built AFTER successful GPU execution (not here) to avoid
+     * side-effects from {@code serializeGraphCached} during the critical path.
+     */
+    private static double tryExecuteTensorBinaryFull(RereDiffTensor root,
+            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
+            GpuCacheEntry cacheEntry) {
         try {
             java.nio.ByteBuffer buf = TensorBinaryProtocol.serializeGraph(root, order);
             byte[] data = new byte[buf.remaining()];
             buf.get(data);
-            if (log.isDebugEnabled()) {
-                log.debug("GPU binary serialized {} nodes, {} bytes", order.size(), data.length);
-            }
-
-            byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
-            if (resultBytes == null || resultBytes.length == 0) {
-                log.debug("GPU binary execution returned null/empty result");
-                return Double.NaN;
-            }
-            if (log.isDebugEnabled()) {
-                log.debug("GPU binary execution returned {} bytes", resultBytes.length);
-            }
-
-            java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
-
-            var parsed = com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol.deserializeResult(resultBuf);
-            double loss = parsed.loss();
-            if (Double.isNaN(loss)) return Double.NaN;
-
-            // Collect leaves — NOTE: no batchSize normalization.
-            // root.scalarParam stores op-specific parameters (exponent, divisor, alpha),
-            // NOT batch size. Each GPU op must produce correct loss/grads independently.
-            java.util.ArrayList<RereDiffTensor> leaves = new java.util.ArrayList<>();
-            for (RereDiffTensor v : order) { if (v.isLeaf()) leaves.add(v); }
-            java.util.List<double[]> grads = parsed.grads();
-            if (grads.size() != leaves.size()) {
-                log.warn("GPU binary grad count mismatch: got {} leaves, expected {}",
-                    grads.size(), leaves.size());
-                return Double.NaN;
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("GPU binary result: loss={} numGrads={} orderSize={}",
-                    loss, grads.size(), order.size());
-            }
-
-            for (int i = 0; i < grads.size(); i++) {
-                double[] g = grads.get(i);
-                // C23: verify gradient length matches leaf tensor size
-                long leafSize = leaves.get(i).totalSize();
-                if (g.length != leafSize) {
-                    log.warn("GPU binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
-                        i, g.length, leafSize);
-                    trackGpuFailure();
-                    return Double.NaN;
-                }
-                leaves.get(i).accGrad(g);
-            }
-            return loss;
+            return executeBinaryAndApplyGrads(order, leaves, data, cacheEntry);
         } catch (Exception e) {
+            if (log.isDebugEnabled()) log.debug("GPU full binary execution failed", e);
             trackGpuFailure();
-            log.debug("GPU graph execution failed", e);
-            return NativeStrictMode.failOrNaN("GPU",
-                "JSON result parsing failed: %s", e.getMessage());
+            cacheEntry.invalidate();
+            return Double.NaN;
         }
+    }
+
+    /** Incremental: clone cached skeleton, overwrite leaf data, execute. */
+    private static double tryExecuteTensorBinaryIncremental(
+            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
+            TensorBinaryProtocol.CachedGraph cached, GpuCacheEntry cacheEntry) {
+        try {
+            byte[] data = cached.updateLeafData(order);
+            return executeBinaryAndApplyGrads(order, leaves, data, cacheEntry);
+        } catch (Exception e) {
+            if (log.isDebugEnabled()) log.debug("GPU incremental binary execution failed", e);
+            trackGpuFailure();
+            cacheEntry.invalidate();
+            return Double.NaN;
+        }
+    }
+
+    /** Send binary data to GPU, parse result, apply gradients to leaves. */
+    private static double executeBinaryAndApplyGrads(
+            ArrayList<RereDiffTensor> order, ArrayList<RereDiffTensor> leaves,
+            byte[] data, GpuCacheEntry cacheEntry) {
+        if (log.isDebugEnabled()) {
+            log.debug("GPU binary serialized {} nodes, {} bytes", order.size(), data.length);
+        }
+
+        byte[] resultBytes = GpuOptionalRuntime.tryExecuteGraphBinary(data);
+        if (resultBytes == null || resultBytes.length == 0) {
+            log.debug("GPU binary execution returned null/empty result");
+            cacheEntry.invalidate();
+            return Double.NaN;
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("GPU binary execution returned {} bytes", resultBytes.length);
+        }
+
+        java.nio.ByteBuffer resultBuf = java.nio.ByteBuffer.wrap(resultBytes)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
+
+        var parsed = com.yishape.lab.math.autodiff.graph.binary.BinaryProtocol.deserializeResult(resultBuf);
+        double loss = parsed.loss();
+        if (Double.isNaN(loss)) {
+            cacheEntry.invalidate();
+            return Double.NaN;
+        }
+
+        // NOTE: no batchSize normalization. root.scalarParam stores op-specific
+        // parameters (exponent, divisor, alpha), NOT batch size. Each GPU op must
+        // produce correct loss/grads independently.
+        java.util.List<double[]> grads = parsed.grads();
+        if (grads.size() != leaves.size()) {
+            log.warn("GPU binary grad count mismatch: got {} leaves, expected {}",
+                grads.size(), leaves.size());
+            cacheEntry.invalidate();
+            return Double.NaN;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("GPU binary result: loss={} numGrads={} orderSize={}",
+                loss, grads.size(), order.size());
+        }
+
+        for (int i = 0; i < grads.size(); i++) {
+            double[] g = grads.get(i);
+            // C23: verify gradient length matches leaf tensor size
+            long leafSize = leaves.get(i).totalSize();
+            if (g.length != leafSize) {
+                log.warn("GPU binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                    i, g.length, leafSize);
+                trackGpuFailure();
+                cacheEntry.invalidate();
+                return Double.NaN;
+            }
+            leaves.get(i).accGrad(g);
+        }
+        return loss;
     }
 
     private static double extractDoubleField(String json, String field) {
@@ -457,6 +542,11 @@ public final class GpuGraphExecutor {
             log.debug("GPU graph result JSON number parse failed", e);
             return Double.NaN;
         }
+    }
+
+    /** Public test-access wrapper for {@link #findMatchingBracket}. */
+    static int findMatchingBracketPublic(String s, int openPos) {
+        return findMatchingBracket(s, openPos);
     }
 
     private static int findMatchingBracket(String s, int openPos) {

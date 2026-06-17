@@ -31,6 +31,7 @@ public class GpuGraphExecutorTest {
     static void detect() {
         System.setProperty("yishape.gpu.minElements", "0");
         gpuPresent = GpuOptionalRuntime.isGpuAvailable();
+        GpuGraphExecutor.resetCooldown();
     }
 
     @AfterEach

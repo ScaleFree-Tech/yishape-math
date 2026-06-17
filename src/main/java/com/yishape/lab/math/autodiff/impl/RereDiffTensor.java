@@ -39,6 +39,7 @@ import com.yishape.lab.math.compute.hpc.HpcIm2col;
 import com.yishape.lab.math.compute.hpc.HpcLoss;
 import com.yishape.lab.math.compute.hpc.HpcTrapezoidalScan;
 import com.yishape.lab.math.compute.ops.BinaryOperation;
+import com.yishape.lab.math.compute.ops.BinaryReduceOperation;
 import com.yishape.lab.math.compute.ops.ReduceOperation;
 import com.yishape.lab.math.compute.ops.UniversalOperation;
 import com.yishape.lab.math.linalg.IDoubleVector;
@@ -263,24 +264,38 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public void backward() {
+        backward(false);
+    }
+
+    @Override
+    public void backward(boolean retainGraph) {
         if (!requiresGrad) return;
         int n = (int) value.totalSize();
         double[] ones = new double[n];
         Arrays.fill(ones, 1.0);
         this.grad = ones;
-        backwardImpl();
+        backwardImpl(retainGraph);
     }
 
     @Override
     public void backward(IDoubleTensor gradient) {
+        backward(gradient, false);
+    }
+
+    @Override
+    public void backward(IDoubleTensor gradient, boolean retainGraph) {
         if (!requiresGrad) return;
         this.grad = gradient.toDoubleArray();
-        backwardImpl();
+        backwardImpl(retainGraph);
     }
 
     void backwardImpl() {
+        backwardImpl(false);
+    }
+
+    void backwardImpl(boolean retainGraph) {
         if (IN_BACKWARD_IMPL.get()) {
-            backwardImplLocal();
+            backwardImplLocal(retainGraph);
             return;
         }
         IN_BACKWARD_IMPL.set(true);
@@ -301,14 +316,16 @@ public class RereDiffTensor implements IDiffTensor {
                     v.backwardFn.accept(v);
                 }
             }
-            // Release graph references so GC can reclaim intermediate nodes immediately.
-            // After backward, only gradient values matter — graph edges are stale.
-            for (int i = order.size() - 1; i >= 0; i--) {
-                RereDiffTensor v = order.get(i);
-                if (v != this && !v.isLeaf) {
-                    v.inputs = null;
-                    v.backwardFn = null;
-                    v.symbolicBackwardFn = null;
+            if (!retainGraph) {
+                // Release graph references so GC can reclaim intermediate nodes immediately.
+                // After backward, only gradient values matter — graph edges are stale.
+                for (int i = order.size() - 1; i >= 0; i--) {
+                    RereDiffTensor v = order.get(i);
+                    if (v != this && !v.isLeaf) {
+                        v.inputs = null;
+                        v.backwardFn = null;
+                        v.symbolicBackwardFn = null;
+                    }
                 }
             }
         } finally {
@@ -321,7 +338,7 @@ public class RereDiffTensor implements IDiffTensor {
 
     /** Reentrant-safe backward using local collections — avoids corrupting the outer
      *  backwardImpl()'s ThreadLocal TOPO_LIST/TOPO_SET during nested backward(). */
-    private void backwardImplLocal() {
+    private void backwardImplLocal(boolean retainGraph) {
         try {
             ArrayList<RereDiffTensor> order = new ArrayList<>();
             HashSet<RereDiffTensor> visited = new HashSet<>();
@@ -336,13 +353,15 @@ public class RereDiffTensor implements IDiffTensor {
                     v.backwardFn.accept(v);
                 }
             }
-            // Release graph references to prevent cross-iteration memory accumulation.
-            for (int i = order.size() - 1; i >= 0; i--) {
-                RereDiffTensor v = order.get(i);
-                if (v != this && !v.isLeaf) {
-                    v.inputs = null;
-                    v.backwardFn = null;
-                    v.symbolicBackwardFn = null;
+            if (!retainGraph) {
+                // Release graph references to prevent cross-iteration memory accumulation.
+                for (int i = order.size() - 1; i >= 0; i--) {
+                    RereDiffTensor v = order.get(i);
+                    if (v != this && !v.isLeaf) {
+                        v.inputs = null;
+                        v.backwardFn = null;
+                        v.symbolicBackwardFn = null;
+                    }
                 }
             }
         } finally {
@@ -382,6 +401,25 @@ public class RereDiffTensor implements IDiffTensor {
                 v.inputs = null;
                 v.backwardFn = null;
                 v.symbolicBackwardFn = null;
+            }
+        }
+    }
+
+    /**
+     * Runs backward propagation on a pre-built topological order without destroying the graph.
+     * Used by {@link com.yishape.lab.math.autodiff.vjp.VjpFunctionImpl} for reentrant backward
+     * calls where the computation graph must survive across multiple {@code apply()} invocations.
+     *
+     * <p>Unlike {@link #backwardImpl()}, this method does NOT nullify intermediate node
+     * {@code inputs} and {@code backwardFn}, preserving the graph for reuse.</p>
+     *
+     * @param order pre-built topological order (leaves first, root last)
+     */
+    public static void runBackwardOnOrder(List<RereDiffTensor> order) {
+        for (int i = order.size() - 1; i >= 0; i--) {
+            RereDiffTensor v = order.get(i);
+            if (v.grad != null && v.backwardFn != null) {
+                v.backwardFn.accept(v);
             }
         }
     }
@@ -482,24 +520,19 @@ public class RereDiffTensor implements IDiffTensor {
     public void clipGradNorm(double maxNorm) {
         if (grad == null || !requiresGrad || maxNorm <= 0) return;
         double[] g = grad;
-        // Compute L2 norm: sum of squares → sqrt
-        double[] sq = COMPUTER.binaryOperate(g, g, BinaryOperation.MULTIPLY);
-        double norm = Math.sqrt(COMPUTER.reduceOperate(sq, ReduceOperation.SUM));
+        // L2 norm via DOT(g, g) = Σ g[i]² — no temporary square array allocated.
+        double norm = Math.sqrt(COMPUTER.binaryReduceOperate(g, g, BinaryReduceOperation.DOT));
         if (norm > maxNorm) {
             double scale = maxNorm / norm;
-            double[] scaled = COMPUTER.binaryOperate(g, scale, BinaryOperation.MULTIPLY);
-            System.arraycopy(scaled, 0, g, 0, g.length);
+            // In-place scalar multiply: no temp array, no copy-back.
+            COMPUTER.binaryOperateInPlace(g, scale, BinaryOperation.MULTIPLY);
         }
     }
 
     @Override
     public void clipGradValue(double maxValue) {
         if (grad == null || !requiresGrad || maxValue <= 0) return;
-        double[] g = grad;
-        for (int i = 0; i < g.length; i++) {
-            if (g[i] > maxValue) g[i] = maxValue;
-            else if (g[i] < -maxValue) g[i] = -maxValue;
-        }
+        COMPUTER.clampInPlace(grad, -maxValue, maxValue);
     }
 
     private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
@@ -517,7 +550,12 @@ public class RereDiffTensor implements IDiffTensor {
     }
 
     @Override
-    public IDoubleTensor detach() { return new RereDoubleTensor(value.toDoubleArray(), shape()); }
+    public IDiffTensor detach() {
+        RereDiffTensor detached = new RereDiffTensor(value.toDoubleArray(), shape());
+        detached.setRequiresGrad(false);
+        detached.opTag = "detach";
+        return detached;
+    }
 
     @Override
     public IDiffTensor clone() {
@@ -547,13 +585,14 @@ public class RereDiffTensor implements IDiffTensor {
      * Accumulate gradient into this node.
      * On first call, clones the incoming array to prevent caller-side mutation
      * from silently corrupting the stored gradient (alias protection).
-     * On subsequent calls, accumulates in-place via binary ADD.
+     * On subsequent calls, accumulates via in-place ADD (zero-allocation:
+     * SIMD Vector API or SISD parallel loop writes directly into grad).
      */
     public void accGrad(double[] incoming) {
         if (grad == null) {
             grad = incoming.clone();
         } else {
-            grad = COMPUTER.binaryOperate(grad, incoming, BinaryOperation.ADD);
+            COMPUTER.binaryOperateInPlace(grad, incoming, BinaryOperation.ADD);
         }
     }
 
@@ -713,22 +752,22 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // abs().sum()
         if ("abs".equals(opTag)) {
+            // sign(x): +1 for x>0, -1 for x<0, 0 for x=0 (subgradient at 0).
+            // Computed ONCE at forward and reused by both backward and symbolic backward
+            // (BUG-6: previously recomputed per backward pass and again for absFactor).
+            double[] signArr = COMPUTER.universalOperate(xData, UniversalOperation.SIGN, 0);
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                // sign(x): +1 for x>0, -1 for x<0, 0 for x=0 (subgradient at 0).
-                // Use UniversalOperation.SIGN routed through GPU→SIMD→SISD.
-                double[] s = COMPUTER.universalOperate(xData, UniversalOperation.SIGN, 0);
-                double[] grad = COMPUTER.binaryOperate(s, g, BinaryOperation.MULTIPLY);
+                double[] grad = COMPUTER.binaryOperate(signArr, g, BinaryOperation.MULTIPLY);
                 x.accGradFromPooled(grad, m);
             };
             RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("abs", "sum"));
             r.exportShape = x.shape();
             // d²abs/dx² = 0 (Dirac delta at x=0, zero everywhere else).
             // Zeroed via mul(0); factor values are irrelevant except x=0 convention.
-            double[] absFactor = COMPUTER.universalOperate(xData, UniversalOperation.SIGN, 0);
             // tape-of-tape: d²abs/dx² = 0. Connect factor to x via mul(0).
-            double[] afCopy = absFactor;
+            double[] afCopy = signArr;
             int[] afShape = x.shape().clone();
             RereDiffTensor xRefAbs = x;
             r.symbolicBackwardFn = g -> new IDiffTensor[]{
@@ -758,14 +797,18 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // silu().sum()
         if ("silu".equals(opTag)) {
+            // d(silu)/dx = σ(x) + x·σ(x)·(1-σ(x)); compute the factor ONCE at forward
+            // and reuse in backward (PERF-5: previously recomputed Math.exp per backward).
+            double[] siluFactor = new double[m];
+            for (int i = 0; i < m; i++) {
+                double xi = xData[i];
+                double sig = 1.0 / (1.0 + Math.exp(-xi));
+                siluFactor[i] = sig + xi * sig * (1.0 - sig);
+            }
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                for (int i = 0; i < m; i++) {
-                    double xi = xData[i];
-                    double sig = 1.0 / (1.0 + Math.exp(-xi));
-                    dxBuf[i] = g * (sig + xi * sig * (1.0 - sig));
-                }
+                for (int i = 0; i < m; i++) dxBuf[i] = g * siluFactor[i];
                 x.accGradFromPooled(dxBuf, m);
             };
             RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("silu", "sum"));
@@ -825,53 +868,35 @@ public class RereDiffTensor implements IDiffTensor {
         }
         // -- gelu().sum() --
         if ("gelu".equals(opTag)) {
-            double[] dxBuf = AutodiffBufferPool.acquire(m);
-            Consumer<RereDiffTensor> bw = self -> {
-                double g = self.grad[0];
-                for (int i = 0; i < m; i++) {
-                    double xi = xData[i];
-                    double c = 0.7978845608028654; // sqrt(2/PI)
-                    double arg = c * (xi + 0.044715 * xi * xi * xi);
-                    double t = Math.tanh(arg);
-                    double dt = 1.0 - t * t;
-                    double darg = c * (1.0 + 3.0 * 0.044715 * xi * xi);
-                    dxBuf[i] = g * (0.5 * (1.0 + t) + 0.5 * xi * dt * darg);
-                }
-                x.accGradFromPooled(dxBuf, m);
-            };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("gelu", "sum"));
-            r.exportShape = x.shape();
+            // d(gelu)/dx factor computed ONCE at forward and reused in backward
+            // (PERF-5: previously Math.tanh recomputed per backward pass).
             int[] geluShape = x.shape().clone();
             double[] geluFactor = new double[m];
             for (int i = 0; i < m; i++) {
                 double xi = xData[i];
-                double c = 0.7978845608028654;
+                double c = 0.7978845608028654; // sqrt(2/PI)
                 double arg = c * (xi + 0.044715 * xi * xi * xi);
                 double t = Math.tanh(arg);
                 double dt = 1.0 - t * t;
                 double darg = c * (1.0 + 3.0 * 0.044715 * xi * xi);
                 geluFactor[i] = 0.5 * (1.0 + t) + 0.5 * xi * dt * darg;
             }
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = g * geluFactor[i];
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("gelu", "sum"));
+            r.exportShape = x.shape();
             RereDiffTensor xRefGelu = x;
             r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefGelu.mul(0.0).add(IDiffTensor.constantTensor(geluFactor, geluShape)))};
             return r;
         }
         // -- mish().sum() --
         if ("mish".equals(opTag)) {
-            double[] dxBuf = AutodiffBufferPool.acquire(m);
-            Consumer<RereDiffTensor> bw = self -> {
-                double g = self.grad[0];
-                for (int i = 0; i < m; i++) {
-                    double xi = xData[i];
-                    double sp = Math.log1p(Math.exp(xi));
-                    double t = Math.tanh(sp);
-                    double sig = 1.0 / (1.0 + Math.exp(-xi));
-                    dxBuf[i] = g * (t + xi * (1.0 - t * t) * sig);
-                }
-                x.accGradFromPooled(dxBuf, m);
-            };
-            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("mish", "sum"));
-            r.exportShape = x.shape();
+            // d(mish)/dx factor computed ONCE at forward and reused in backward
+            // (PERF-5: previously log1p/exp/tanh recomputed per backward pass).
             int[] mishShape = x.shape().clone();
             double[] mishFactor = new double[m];
             for (int i = 0; i < m; i++) {
@@ -881,6 +906,14 @@ public class RereDiffTensor implements IDiffTensor {
                 double sig = 1.0 / (1.0 + Math.exp(-xi));
                 mishFactor[i] = t + xi * (1.0 - t * t) * sig;
             }
+            double[] dxBuf = AutodiffBufferPool.acquire(m);
+            Consumer<RereDiffTensor> bw = self -> {
+                double g = self.grad[0];
+                for (int i = 0; i < m; i++) dxBuf[i] = g * mishFactor[i];
+                x.accGradFromPooled(dxBuf, m);
+            };
+            RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("mish", "sum"));
+            r.exportShape = x.shape();
             RereDiffTensor xRefMish = x;
             r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefMish.mul(0.0).add(IDiffTensor.constantTensor(mishFactor, mishShape)))};
             return r;
@@ -1809,35 +1842,44 @@ public class RereDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor add_(IDoubleTensor other) {
-        return inPlaceBinaryOp(other, (a, b) -> a + b);
+        return inPlaceBinaryOp(other, BinaryOperation.ADD);
     }
 
     @Override
     public IDiffTensor sub_(IDoubleTensor other) {
-        return inPlaceBinaryOp(other, (a, b) -> a - b);
+        return inPlaceBinaryOp(other, BinaryOperation.SUBTRACT);
     }
 
     @Override
     public IDiffTensor mul_(IDoubleTensor other) {
-        return inPlaceBinaryOp(other, (a, b) -> a * b);
+        return inPlaceBinaryOp(other, BinaryOperation.MULTIPLY);
     }
 
     @Override
     public IDiffTensor div_(IDoubleTensor other) {
-        return inPlaceBinaryOp(other, (a, b) -> a / b);
+        return inPlaceBinaryOp(other, BinaryOperation.DIVIDE);
     }
 
-    private IDiffTensor inPlaceBinaryOp(IDoubleTensor other, DoubleBinaryOperator op) {
+    private IDiffTensor inPlaceBinaryOp(IDoubleTensor other, BinaryOperation op) {
         if (!isLeaf) throw new IllegalStateException("In-place ops only allowed on leaf tensors");
         IDoubleTensor detOther = (other instanceof IDiffTensor dt) ? dt.detach() : other;
         if (Arrays.equals(shape(), other.shape())) {
-            long n = value.totalSize();
+            int n = (int) value.totalSize();
             double[] oData = detOther.toDoubleArray();
-            for (long i = 0; i < n; i++) {
-                value.linearSet(i, op.applyAsDouble(value.linearGet(i), oData[(int) i]));
+            // Fast path: contiguous leaf with exact-length backing — operate in place
+            // through the GPU→SIMD→SISD acceleration chain (§7a). getStorageData()
+            // returns the live backing array, so in-place writes mutate value directly.
+            double[] backing = value.getStorageData();
+            if (value.isContiguous() && value.offset() == 0 && backing.length == n) {
+                COMPUTER.binaryOperateInPlace(backing, oData, op);
+            } else {
+                // Non-contiguous/strided view fallback: index-mapped, no vectorizable primitive.
+                for (int i = 0; i < n; i++) {
+                    value.linearSet(i, applyInPlaceOp(op, value.linearGet(i), oData[i]));
+                }
             }
         } else {
-            // Broadcast in-place
+            // Broadcast in-place: index-mapped scatter — no vectorizable primitive (§7a exception).
             int[] bc = TensorShape.broadcastShape(shape(), other.shape());
             long n = 1;
             for (int d : bc) n *= d;
@@ -1850,11 +1892,21 @@ public class RereDiffTensor implements IDiffTensor {
                 int[] bcIdx = DiffTensorUtil.unlinearizeInt((int) i, bc);
                 int flatSelf = DiffTensorUtil.flatIndexFromBroadcast(bcIdx, shape(), bc);
                 int flatOther = DiffTensorUtil.flatIndexFromBroadcast(bcIdx, other.shape(), bc);
-                value.linearSet(flatSelf, op.applyAsDouble(value.linearGet(flatSelf), oData[flatOther]));
+                value.linearSet(flatSelf, applyInPlaceOp(op, value.linearGet(flatSelf), oData[flatOther]));
             }
         }
         this.grad = null;
         return this;
+    }
+
+    private static double applyInPlaceOp(BinaryOperation op, double a, double b) {
+        return switch (op) {
+            case ADD -> a + b;
+            case SUBTRACT -> a - b;
+            case MULTIPLY -> a * b;
+            case DIVIDE -> a / b;
+            default -> throw new IllegalArgumentException("In-place op unsupported: " + op);
+        };
     }
 
     @Override

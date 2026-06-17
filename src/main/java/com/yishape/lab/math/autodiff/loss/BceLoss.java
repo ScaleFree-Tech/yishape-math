@@ -65,7 +65,7 @@ public final class BceLoss {
         double[] oneMinusY = vc.binaryOperate(yMinus1, -1.0, BinaryOperation.MULTIPLY);
         double[] oneMinusYTimesLogOneMinusP = vc.binaryOperate(oneMinusY, logOneMinusP, BinaryOperation.MULTIPLY);
 
-        double[] lossPerElem = vc.binaryOperate(negTerm1, oneMinusYTimesLogOneMinusP, BinaryOperation.ADD);
+        double[] lossPerElem = vc.binaryOperate(negTerm1, oneMinusYTimesLogOneMinusP, BinaryOperation.SUBTRACT);
         loss[0] = vc.reduceOperate(lossPerElem, ReduceOperation.SUM) / n;
 
         if (!tensor.requiresGrad) {

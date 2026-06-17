@@ -902,7 +902,7 @@ public final class ConstantDiffTensor implements IDiffTensor {
         double[] arr = value.toDoubleArray();
         return new RereDiffVector(arr);
     }
-    @Override public IDoubleTensor detach() { return new RereDoubleTensor(value.toDoubleArray(), shape()); }
+    @Override public IDiffTensor detach() { return this; } // already detached: requiresGrad=false, no graph
     @Override public boolean requiresGrad() { return false; }
     @Override public IDiffTensor setRequiresGrad(boolean rg) { return this; }
     @Override public IDoubleTensor grad() { return null; }
@@ -918,6 +918,12 @@ public final class ConstantDiffTensor implements IDiffTensor {
         return new ConstantDiffTensor(new RereDoubleTensor(t.toDoubleArray(), t.shape()));
     }
     private static IDoubleTensor detachOther(IDoubleTensor t) {
-        return (t instanceof IDiffTensor dt) ? dt.detach() : t;
+        if (!(t instanceof IDiffTensor dt)) return t;
+        IDiffTensor detached = dt.detach();
+        // Extract underlying RereDoubleTensor for delegation to value.xxx() methods
+        // which internally cast to RereDoubleTensor for performance
+        if (detached instanceof RereDiffTensor rt) return rt.value();
+        if (detached instanceof ConstantDiffTensor ct) return ct.value;
+        return new RereDoubleTensor(detached.toDoubleArray(), detached.shape());
     }
 }

@@ -38,6 +38,7 @@ public class HpcContractTest {
     static void detect() {
         System.setProperty("yishape.hpc.minElements", "0");
         hpcPresent = HpcOptionalRuntime.isNativeRuntimeAvailable();
+        HpcGraphExecutor.resetCooldown();
         System.out.println("[HpcContract] HPC " + (hpcPresent ? "present" : "absent"));
     }
 

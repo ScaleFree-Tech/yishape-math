@@ -1831,4 +1831,94 @@ public class SISDDoubleComputer implements IDoubleVectorComputer,Serializable {
         return result;
     }
 
+    // ---- In-place binary operations (Phase 3.2) ----
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double[] source, BinaryOperation operation) {
+        if (target == null || source == null) {
+            throw new IllegalArgumentException("Input arrays must not be null");
+        }
+        if (target.length != source.length) {
+            throw new IllegalArgumentException(
+                "Array lengths must match: target=" + target.length + " source=" + source.length);
+        }
+        int n = target.length;
+        parallelForEach(n, (start, end) -> {
+            for (int i = start; i < end; i++) {
+                switch (operation) {
+                    case ADD -> target[i] += source[i];
+                    case SUBTRACT -> target[i] -= source[i];
+                    case MULTIPLY -> target[i] *= source[i];
+                    case DIVIDE -> target[i] /= source[i];
+                    default -> throw new IllegalArgumentException(
+                        "In-place binary op unsupported: " + operation);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, int targetOffset,
+                                     double[] source, int sourceOffset, int length,
+                                     BinaryOperation operation) {
+        if (target == null || source == null) {
+            throw new IllegalArgumentException("Input arrays must not be null");
+        }
+        if (targetOffset < 0 || sourceOffset < 0 || length < 0
+                || targetOffset + length > target.length
+                || sourceOffset + length > source.length) {
+            throw new IndexOutOfBoundsException(
+                "Invalid range: targetOffset=" + targetOffset + " sourceOffset=" + sourceOffset
+                + " length=" + length + " (target=" + target.length + ", source=" + source.length + ")");
+        }
+        parallelForEach(length, (start, end) -> {
+            for (int i = start; i < end; i++) {
+                int t = targetOffset + i;
+                int s = sourceOffset + i;
+                switch (operation) {
+                    case ADD -> target[t] += source[s];
+                    case SUBTRACT -> target[t] -= source[s];
+                    case MULTIPLY -> target[t] *= source[s];
+                    case DIVIDE -> target[t] /= source[s];
+                    default -> throw new IllegalArgumentException(
+                        "In-place binary op unsupported: " + operation);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void clampInPlace(double[] data, double min, double max) {
+        if (data == null) {
+            throw new IllegalArgumentException("Input array must not be null");
+        }
+        parallelForEach(data.length, (start, end) -> {
+            for (int i = start; i < end; i++) {
+                double v = data[i];
+                if (v > max) data[i] = max;
+                else if (v < min) data[i] = min;
+            }
+        });
+    }
+
+    @Override
+    public void binaryOperateInPlace(double[] target, double scalar, BinaryOperation operation) {
+        if (target == null) {
+            throw new IllegalArgumentException("Input array must not be null");
+        }
+        int n = target.length;
+        parallelForEach(n, (start, end) -> {
+            for (int i = start; i < end; i++) {
+                switch (operation) {
+                    case ADD -> target[i] += scalar;
+                    case SUBTRACT -> target[i] -= scalar;
+                    case MULTIPLY -> target[i] *= scalar;
+                    case DIVIDE -> target[i] /= scalar;
+                    default -> throw new IllegalArgumentException(
+                        "In-place scalar op unsupported: " + operation);
+                }
+            }
+        });
+    }
+
 }

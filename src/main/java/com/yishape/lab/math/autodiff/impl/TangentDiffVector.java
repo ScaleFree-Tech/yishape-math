@@ -540,6 +540,7 @@ public class TangentDiffVector implements IDiffVector {
         return new TangentDiffVector((RereDiffVector) primal.copy(), tangent.copy(), List.of(), null);
     }
 
+    @Override public IDiffVector detach() { return primal.detach(); }
     @Override public IDiffVector divideInPlace(double alpha) { throw new UnsupportedOperationException(); }
     @Override public IDiffVector addScalarInPlace(double p) { throw new UnsupportedOperationException(); }
     @Override public IDiffVector subScalarInPlace(double p) { throw new UnsupportedOperationException(); }

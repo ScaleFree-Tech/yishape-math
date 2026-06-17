@@ -1,5 +1,6 @@
 package com.yishape.lab.math.autodiff.impl.delegate;
 
+import com.yishape.lab.math.autodiff.impl.AutodiffBufferPool;
 import com.yishape.lab.math.autodiff.impl.DiffTensorUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,25 +92,32 @@ public static IDiffTensor cross(RereDiffTensor tensor, IDiffTensor other) {
         RereDiffTensor inpA = self.inputs.get(0);
         RereDiffTensor inpB = self.inputs.get(1);
         double[] g = self.grad;
-        double[] da = new double[(int) inpA.value.totalSize()];
-        double[] db = new double[(int) inpB.value.totalSize()];
+        int daSize = (int) inpA.value.totalSize();
+        int dbSize = (int) inpB.value.totalSize();
+        double[] da = AutodiffBufferPool.acquire(daSize);
+        double[] db = AutodiffBufferPool.acquire(dbSize);
 
         if (fHpcUsed) {
             // HPC backward on broadcasted shapes, then un-broadcast
-            double[] daBC = new double[(int) fOutSize];
-            double[] dbBC = new double[(int) fOutSize];
+            double[] daBC = AutodiffBufferPool.acquire((int) fOutSize);
+            double[] dbBC = AutodiffBufferPool.acquire((int) fOutSize);
             if (HpcCross.tryCrossBackward(g, fABC, fBBC, (int) fNumTriplets, daBC, dbBC)) {
                 DiffTensorUtil.unbroadcastSum(daBC, fBcShape, da, fSA);
                 DiffTensorUtil.unbroadcastSum(dbBC, fBcShape, db, fSB);
-                inpA.accGrad(da);
-                inpB.accGrad(db);
+                AutodiffBufferPool.release(dbBC);
+                AutodiffBufferPool.release(daBC);
+                inpA.accGradFromPooled(da, daSize);
+                inpB.accGradFromPooled(db, dbSize);
                 return;
             }
+            AutodiffBufferPool.release(dbBC);
+            AutodiffBufferPool.release(daBC);
             // If HPC backward fails, fall through to SISD
         }
 
-        double[] bd = inpB.value.toDoubleArray();
-        double[] ad = inpA.value.toDoubleArray();
+        // Perf: reuse data extracted during forward instead of re-extracting via toDoubleArray()
+        double[] bd = bData;
+        double[] ad = aData;
         for (long t = 0; t < fNumTriplets; t++) {
             long flatIdx = t * 3;
             int[] bcIdx = DiffTensorUtil.unlinearizeInt((int) flatIdx, fBcShape);
@@ -128,8 +136,8 @@ public static IDiffTensor cross(RereDiffTensor tensor, IDiffTensor other) {
             db[bBase + 1] += g2 * a0v - g0 * a2v;
             db[bBase + 2] += g0 * a1v - g1 * a0v;
         }
-        inpA.accGrad(da);
-        inpB.accGrad(db);
+        inpA.accGradFromPooled(da, daSize);
+        inpB.accGradFromPooled(db, dbSize);
     };
 
     int[] outShape = bcShape.clone();
@@ -220,7 +228,8 @@ public static IDiffTensor gridSample(RereDiffTensor tensor, IDiffTensor grid, St
         Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor inp = self.inputs.get(0);
             double[] g = self.grad;
-            double[] dx = new double[(int) inp.value.totalSize()];
+            int dxSize = (int) inp.value.totalSize();
+            double[] dx = AutodiffBufferPool.acquire(dxSize);
             for (int n2 = 0; n2 < fN2; n2++) {
                 for (int c2 = 0; c2 < fC2; c2++) {
                     for (int oh2 = 0; oh2 < fOutH2; oh2++) {
@@ -246,7 +255,7 @@ public static IDiffTensor gridSample(RereDiffTensor tensor, IDiffTensor grid, St
                     }
                 }
             }
-            inp.accGrad(dx);
+            inp.accGradFromPooled(dx, dxSize);
         };
 
         RereDiffTensor result = new RereDiffTensor(y, new int[]{N, C, outH, outW},
@@ -265,14 +274,16 @@ public static IDiffTensor gridSample(RereDiffTensor tensor, IDiffTensor grid, St
     Consumer<RereDiffTensor> bw = self -> {
         RereDiffTensor inp = self.inputs.get(0);
         double[] g = self.grad;
-        double[] dx = new double[(int) inp.value.totalSize()];
+        int dxSizeHpc = (int) inp.value.totalSize();
+        double[] dx = AutodiffBufferPool.acquire(dxSizeHpc);
         if (HpcGridSample.tryGridSampleBackward(g, fInputData, fGridData,
                 fN, fC, fH, fW, fOutH, fOutW, fModeIdx, fPadModeIdx, dx)) {
-            inp.accGrad(dx);
+            inp.accGradFromPooled(dx, dxSizeHpc);
             return;
         }
         // Should not happen: if HPC forward succeeded, HPC backward should too.
-        // Fallback: leave gradient zero (rare edge case).
+        // Fallback: release unused buffer (rare edge case).
+        AutodiffBufferPool.release(dx);
     };
 
     RereDiffTensor result = new RereDiffTensor(y, new int[]{N, C, outH, outW},
@@ -375,12 +386,18 @@ public static IDiffTensor trapezoidalScan(RereDiffTensor tensor, IDiffTensor del
             RereDiffTensor inpD = self.inputs.get(5);
             double[] gy = self.grad;
 
-            double[] dU = new double[(int) inpU.value.totalSize()];
-            double[] dDelta = new double[(int) inpDelta.value.totalSize()];
-            double[] dA = new double[(int) inpA.value.totalSize()];
-            double[] dB = new double[(int) inpB.value.totalSize()];
-            double[] dC = new double[(int) inpC.value.totalSize()];
-            double[] dD = new double[(int) inpD.value.totalSize()];
+            int dUSize = (int) inpU.value.totalSize();
+            int dDeltaSize = (int) inpDelta.value.totalSize();
+            int dASize = (int) inpA.value.totalSize();
+            int dBSize = (int) inpB.value.totalSize();
+            int dCSize = (int) inpC.value.totalSize();
+            int dDSize = (int) inpD.value.totalSize();
+            double[] dU = AutodiffBufferPool.acquire(dUSize);
+            double[] dDelta = AutodiffBufferPool.acquire(dDeltaSize);
+            double[] dA = AutodiffBufferPool.acquire(dASize);
+            double[] dB = AutodiffBufferPool.acquire(dBSize);
+            double[] dC = AutodiffBufferPool.acquire(dCSize);
+            double[] dD = AutodiffBufferPool.acquire(dDSize);
 
             for (int b = 0; b < fB2; b++) {
                 double[] dh = new double[fD2];
@@ -420,12 +437,12 @@ public static IDiffTensor trapezoidalScan(RereDiffTensor tensor, IDiffTensor del
                     }
                 }
             }
-            inpU.accGrad(dU);
-            inpDelta.accGrad(dDelta);
-            inpA.accGrad(dA);
-            inpB.accGrad(dB);
-            inpC.accGrad(dC);
-            inpD.accGrad(dD);
+            inpU.accGradFromPooled(dU, dUSize);
+            inpDelta.accGradFromPooled(dDelta, dDeltaSize);
+            inpA.accGradFromPooled(dA, dASize);
+            inpB.accGradFromPooled(dB, dBSize);
+            inpC.accGradFromPooled(dC, dCSize);
+            inpD.accGradFromPooled(dD, dDSize);
         };
 
         return new RereDiffTensor(y, s, List.of(tensor, (RereDiffTensor) delta,
@@ -448,28 +465,40 @@ public static IDiffTensor trapezoidalScan(RereDiffTensor tensor, IDiffTensor del
         RereDiffTensor inpD = self.inputs.get(5);
         double[] gy = self.grad;
 
-        double[] dU = new double[(int) inpU.value.totalSize()];
-        double[] dDelta = new double[(int) inpDelta.value.totalSize()];
-        double[] dA = new double[(int) inpA.value.totalSize()];
-        double[] dB = new double[(int) inpB.value.totalSize()];
-        double[] dC = new double[(int) inpC.value.totalSize()];
-        double[] dD = new double[(int) inpD.value.totalSize()];
+        int dUSizeHpc = (int) inpU.value.totalSize();
+        int dDeltaSizeHpc = (int) inpDelta.value.totalSize();
+        int dASizeHpc = (int) inpA.value.totalSize();
+        int dBSizeHpc = (int) inpB.value.totalSize();
+        int dCSizeHpc = (int) inpC.value.totalSize();
+        int dDSizeHpc = (int) inpD.value.totalSize();
+        double[] dU = AutodiffBufferPool.acquire(dUSizeHpc);
+        double[] dDelta = AutodiffBufferPool.acquire(dDeltaSizeHpc);
+        double[] dA = AutodiffBufferPool.acquire(dASizeHpc);
+        double[] dB = AutodiffBufferPool.acquire(dBSizeHpc);
+        double[] dC = AutodiffBufferPool.acquire(dCSizeHpc);
+        double[] dD = AutodiffBufferPool.acquire(dDSizeHpc);
 
         if (HpcTrapezoidalScan.tryTrapezoidalScanBackward(
                 gy, fUData, fDeltaData, fAData, fBData, fCData, fDData,
                 savedH, savedABar, savedBBarU,
                 fB, fL, fD, fAIsVecI, fDIsScalarI, fDeltaBroadcastI,
                 dU, dDelta, dA, dB, dC, dD)) {
-            inpU.accGrad(dU);
-            inpDelta.accGrad(dDelta);
-            inpA.accGrad(dA);
-            inpB.accGrad(dB);
-            inpC.accGrad(dC);
-            inpD.accGrad(dD);
+            inpU.accGradFromPooled(dU, dUSizeHpc);
+            inpDelta.accGradFromPooled(dDelta, dDeltaSizeHpc);
+            inpA.accGradFromPooled(dA, dASizeHpc);
+            inpB.accGradFromPooled(dB, dBSizeHpc);
+            inpC.accGradFromPooled(dC, dCSizeHpc);
+            inpD.accGradFromPooled(dD, dDSizeHpc);
             return;
         }
         // Should not happen: if HPC forward succeeded, HPC backward should too.
-        // Fallback: leave gradients zero.
+        // Fallback: release unused buffers.
+        AutodiffBufferPool.release(dD);
+        AutodiffBufferPool.release(dC);
+        AutodiffBufferPool.release(dB);
+        AutodiffBufferPool.release(dA);
+        AutodiffBufferPool.release(dDelta);
+        AutodiffBufferPool.release(dU);
     };
 
     RereDiffTensor result = new RereDiffTensor(y, s, List.of(tensor, (RereDiffTensor) delta,

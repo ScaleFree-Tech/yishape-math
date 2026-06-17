@@ -1,0 +1,998 @@
+# ops.yaml — Single Source of Truth for all compute ops
+# ═══════════════════════════════════════════════════════════════
+# This file is the ONE authoritative registry of every operation
+# available across CPU, GPU (wgpu), and HPC (faer) backends.
+#
+# Generated code (Java GraphOpSchema, Rust dispatch match arms,
+# op_schema.md) MUST be regenerated whenever this file changes.
+#
+# CI enforces: git diff --exit-code after codegen
+# ═══════════════════════════════════════════════════════════════
+
+version: 1
+generated: "2026-06-17"
+
+# ── Backend capability flags ──
+backends:
+  gpu:
+    name: "GPU (wgpu)"
+    precision: f32
+    max_dims: 6
+  hpc:
+    name: "HPC (faer)"
+    precision: f64
+    max_dims: 6
+
+# ── Op category enum ──
+# Used by generate: OpCategory enum, describeTag(), doc tables
+categories:
+  binary:         "Element-wise Binary"
+  binary_scalar:  "Scalar Broadcast"
+  unary:          "Element-wise Unary"
+  activation:     "Activation Function"
+  reduce:         "Reduction"
+  linalg:         "Linear Algebra"
+  normalization:  "Normalization"
+  shape:          "Shape Operation"
+  indexing:       "Indexing / Gather"
+  dl:             "Deep Learning Ops"
+  loss:           "Loss Function"
+  meta:           "Meta / Graph"
+
+# ── Scalar parameter metadata ──
+scalar_params:
+  - tag: exponent
+    type: f64
+    ops: [pow, powSum, powMean]
+  - tag: alpha
+    type: f64
+    ops: [leakyRelu, elu, softplus]
+  - tag: beta
+    type: f64
+    ops: [selu]
+  - tag: maxVal
+    type: f64
+    ops: [hardtanh, clamp]
+  - tag: minVal
+    type: f64
+    ops: [hardtanh, clamp]
+  - tag: epsilon
+    type: f64
+    ops: [layerNorm, batchNorm, batchNorm2d, rmsNorm, groupNorm, instanceNorm]
+  - tag: dropoutRate
+    type: f64
+    ops: [dropout, scaledDotProductAttention]
+
+# ── Fusion pattern registry ──
+# {unaryTag}{ReduceTag} pattern: e.g. "square" + "mean" → "squareMean"
+fusion:
+  # Unary ops that participate in {unary}{Reduce} fusion (19 tags)
+  unary_tags: [square, relu, exp, abs, log, sigmoid, tanh, silu, pow, gelu,
+               mish, sin, cos, leakyRelu, elu, selu, softplus, hardtanh, mul]
+
+  # Reduction terminators
+  reduce_tags: [sum, mean]
+
+  # Compound specials (non-{unary}{Reduce} pattern)
+  compound_specials:
+    - tag: logSumExp
+      gpu: true
+      hpc: true
+    - tag: softmaxCrossEntropy
+      gpu: true
+      hpc: true
+    - tag: softmaxCrossEntropySparse
+      gpu: true
+      hpc: true
+    - tag: bceLoss
+      gpu: true
+      hpc: true
+    - tag: focalLoss
+      gpu: false
+      hpc: true
+    - tag: diceLoss
+      gpu: false
+      hpc: true
+
+# ── Backend-specific fused pattern subsets ──
+# If omitted, the backend supports ALL {unary}×{reduce} patterns.
+# Listed here to track which are actually implemented in WGSL/faer.
+backend_fused:
+  gpu:
+    pattern: [squareSum, squareMean, reluSum, reluMean, expSum, expMean,
+              absSum, absMean, logSum, logMean, sigmoidSum, sigmoidMean,
+              tanhSum, tanhMean, siluSum, siluMean, mishSum, mishMean,
+              geluSum, geluMean, sinSum, sinMean, cosSum, cosMean,
+              leakyReluSum, leakyReluMean, eluSum, eluMean, seluSum, seluMean,
+              softplusSum, softplusMean, hardtanhSum, hardtanhMean,
+              mulSum, mulMean, powSum, powMean]
+  hpc:
+    pattern: [squareSum, squareMean, reluSum, reluMean, expSum, expMean,
+              absSum, absMean, logSum, logMean, sigmoidSum, sigmoidMean,
+              tanhSum, tanhMean, siluSum, siluMean, mishSum, mishMean,
+              mulSum, mulMean, powSum, powMean,
+              geluSum, geluMean, sinSum, sinMean, cosSum, cosMean,
+              leakyReluSum, leakyReluMean, eluSum, eluMean,
+              seluSum, seluMean, softplusSum, softplusMean,
+              hardtanhSum, hardtanhMean]
+
+# ═══════════════════════════════════════════════════════════════
+# Op definitions — the authoritative registry
+# ═══════════════════════════════════════════════════════════════
+ops:
+
+  # ─── Binary element-wise ───
+  - tag: add
+    category: binary
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Element-wise addition"
+
+  - tag: sub
+    category: binary
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Element-wise subtraction"
+
+  - tag: mul
+    category: binary
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Element-wise multiplication"
+
+  - tag: div
+    category: binary
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Element-wise division"
+
+  # ─── Scalar arithmetic ───
+  - tag: addScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Add scalar to each element"
+
+  - tag: subScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Subtract scalar from each element"
+
+  - tag: mulScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Multiply each element by scalar"
+
+  - tag: divScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Divide each element by scalar"
+
+  - tag: rsubScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Scalar minus each element (reverse subtract)"
+
+  - tag: rdivScalar
+    category: binary_scalar
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Scalar divided by each element (reverse divide)"
+
+  # ─── Unary element-wise ───
+  - tag: neg
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Negation"
+
+  - tag: abs
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Absolute value"
+
+  - tag: exp
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Exponential (e^x)"
+
+  - tag: log
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Natural logarithm"
+
+  - tag: sqrt
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Square root"
+
+  - tag: square
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Element-wise square (x²)"
+
+  - tag: sin
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Sine"
+
+  - tag: cos
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Cosine"
+
+  - tag: tan
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Tangent"
+
+  - tag: pow
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Power (x^n, n from scalar param)"
+
+  - tag: dropout
+    category: unary
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Dropout regularization"
+
+  - tag: reciprocal
+    category: unary
+    arity: 1
+    gpu: false
+    hpc: true
+    description: "Reciprocal (1/x) — HPC only"
+
+  # ─── Activation functions ───
+  - tag: relu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "ReLU (max(0, x))"
+
+  - tag: gelu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "GELU (Gaussian Error Linear Unit)"
+
+  - tag: sigmoid
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Sigmoid (1/(1+e^(-x)))"
+
+  - tag: tanh
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Hyperbolic tangent"
+
+  - tag: leakyRelu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Leaky ReLU (alpha from scalar)"
+
+  - tag: elu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "ELU (alpha from scalar)"
+
+  - tag: selu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "SELU (Scaled ELU)"
+
+  - tag: silu
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "SiLU / Swish (x·sigmoid(x))"
+
+  - tag: mish
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Mish (x·tanh(softplus(x)))"
+
+  - tag: softplus
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Softplus (log(1+e^x), beta from scalar)"
+
+  - tag: hardtanh
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Hard Tanh (clamp to [minVal, maxVal])"
+
+  - tag: clamp
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Clamp to [minVal, maxVal]"
+
+  - tag: softmax
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Softmax along last dimension"
+
+  - tag: logSoftmax
+    category: activation
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Log-Softmax along last dimension"
+
+  # ─── Reductions ───
+  - tag: sum
+    category: reduce
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Sum all elements or along dimension"
+
+  - tag: mean
+    category: reduce
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Mean of all elements or along dimension"
+
+  # ─── Linear algebra ───
+  - tag: dot
+    category: linalg
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Dot product"
+
+  - tag: matmul
+    category: linalg
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Matrix multiplication (2D)"
+
+  - tag: mmul
+    category: linalg
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Matrix multiply (alias for matmul)"
+
+  - tag: bmm
+    category: linalg
+    arity: 2
+    gpu: false
+    hpc: true
+    description: "Batch matrix multiply (3D) — HPC only"
+
+  # ─── Normalization ───
+  - tag: normalize
+    category: normalization
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "L2 normalization along dimension"
+
+  - tag: layerNorm
+    category: normalization
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Layer Normalization"
+
+  - tag: batchNorm
+    category: normalization
+    arity: 3
+    gpu: false
+    hpc: true
+    description: "Batch Normalization 1D — HPC only"
+
+  - tag: batchNorm2d
+    category: normalization
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Batch Normalization 2D"
+
+  - tag: rmsNorm
+    category: normalization
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "RMS Normalization (no re-centering)"
+
+  - tag: groupNorm
+    category: normalization
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Group Normalization"
+
+  - tag: instanceNorm
+    category: normalization
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Instance Normalization"
+
+  # ─── Shape operations ───
+  - tag: broadcast
+    category: shape
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Broadcast to target shape"
+
+  - tag: transpose
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Transpose last two dimensions"
+
+  - tag: reshape
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Reshape to new dimensions"
+
+  - tag: flatten
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Flatten to 1D"
+
+  - tag: squeeze
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Remove dimensions of size 1"
+
+  - tag: unsqueeze
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Insert dimension of size 1"
+
+  - tag: expand
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Expand to larger shape (broadcast)"
+
+  - tag: permute
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Permute dimensions"
+
+  - tag: contiguous
+    category: shape
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Make storage contiguous"
+
+  # ─── Indexing ───
+  - tag: select
+    category: indexing
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Select elements by index"
+
+  - tag: slice
+    category: indexing
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Slice a narrow range"
+
+  - tag: gather
+    category: indexing
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Gather elements by index tensor"
+
+  - tag: scatter
+    category: indexing
+    arity: 2
+    gpu: false
+    hpc: true
+    description: "Scatter elements by index tensor — HPC only"
+
+  - tag: cat
+    category: indexing
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Concatenate along dimension"
+
+  # ─── Deep learning ops ───
+  - tag: linear
+    category: dl
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Linear (Fully Connected) layer"
+
+  - tag: conv2d
+    category: dl
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "2D Convolution"
+
+  - tag: convTranspose2d
+    category: dl
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "2D Transposed Convolution"
+
+  - tag: maxpool2d
+    category: dl
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Max Pooling 2D"
+
+  - tag: avgpool2d
+    category: dl
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Average Pooling 2D"
+
+  - tag: adaptiveAvgPool2d
+    category: dl
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Adaptive Average Pooling 2D"
+
+  - tag: embedding
+    category: dl
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Embedding Lookup"
+
+  - tag: mha
+    category: dl
+    arity: 5
+    gpu: true
+    hpc: true
+    description: "Multi-Head Attention"
+
+  - tag: lstmStep
+    category: dl
+    arity: 7
+    gpu: true
+    hpc: true
+    description: "LSTM Timestep"
+
+  - tag: scaledDotProductAttention
+    category: dl
+    arity: 3
+    gpu: true
+    hpc: true
+    description: "Scaled Dot-Product Attention (Q·K^T + softmax + V)"
+
+  - tag: selectiveScan
+    category: dl
+    arity: 6
+    gpu: true
+    hpc: true
+    description: "Selective Scan (Mamba SSM)"
+
+  - tag: selectiveScan2
+    category: dl
+    arity: 6
+    gpu: true
+    hpc: true
+    description: "Selective Scan 2 (Chunked)"
+
+  - tag: depthwiseConv1d
+    category: dl
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Depthwise 1D Convolution (Mamba SSM)"
+
+  - tag: interpolate
+    category: dl
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Interpolate (resize) spatial dimensions"
+
+  - tag: gridSample
+    category: dl
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Grid sample (spatial transformer)"
+
+  - tag: cross
+    category: dl
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Cross product"
+
+  - tag: trapezoidalScan
+    category: dl
+    arity: 1
+    gpu: true
+    hpc: true
+    description: "Trapezoidal Scan (Mamba SSM)"
+
+  # ─── Loss functions ───
+  - tag: softmaxCrossEntropy
+    category: loss
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Softmax + Cross Entropy (fused)"
+
+  - tag: softmaxCrossEntropySparse
+    category: loss
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Softmax + Sparse Cross Entropy (fused)"
+
+  - tag: bceLoss
+    category: loss
+    arity: 2
+    gpu: true
+    hpc: true
+    description: "Binary Cross Entropy Loss"
+
+  - tag: focalLoss
+    category: loss
+    arity: 2
+    gpu: false
+    hpc: true
+    description: "Focal Loss — HPC only"
+
+  - tag: diceLoss
+    category: loss
+    arity: 2
+    gpu: false
+    hpc: true
+    description: "Dice Loss — HPC only"
+
+  # ─── Meta ───
+  - tag: leaf
+    category: meta
+    arity: 0
+    gpu: true
+    hpc: true
+    description: "Leaf variable (no operation)"
+
+  - tag: constant
+    category: meta
+    arity: 0
+    gpu: true
+    hpc: true
+    description: "Constant value (no gradient)"
+
+# ═══════════════════════════════════════════════════════════════
+# Complex DL op schemas — for input/output contract generation
+# Used by GraphOpSchemaValidator and CustomOp implementations
+# ═══════════════════════════════════════════════════════════════
+
+complex_ops:
+  mha:
+    description: "Multi-Head Self/Cross Attention with combined QKV projection"
+    inputs:
+      - { name: x, index: 0, shape: "[seqLen * dModel]", description: "Input sequence (flat)" }
+      - { name: wqkv, index: 1, shape: "[qkvWidth * dModel]", description: "Combined QKV weight (row-major)" }
+      - { name: qkvBias, index: 2, shape: "[qkvWidth]", description: "QKV bias", optional: hasBias }
+      - { name: wo, index: 3, shape: "[dModel * dModel]", description: "Output projection weight (row-major)" }
+      - { name: outBias, index: 4, shape: "[dModel]", description: "Output bias", optional: hasBias }
+    len_no_bias: 3
+    len_with_bias: 5
+    scalar_fields:
+      - { name: numHeads, shift: 32, mask: "0xFFFF", description: "Number of attention heads" }
+      - { name: numKVHeads, shift: 16, mask: "0xFFFF", description: "Number of KV heads (GQA)" }
+      - { name: dModel, shift: 0, mask: "0xFFFF", description: "Model dimension" }
+    scalar2_fields:
+      - { name: seqLen, shift: 32, mask: "0xFFFF", description: "Sequence length" }
+      - { name: causal, shift: 1, mask: "0x1", description: "Causal mask flag (bit)" }
+      - { name: hasBias, shift: 0, mask: "0x1", description: "Has bias flag (bit)" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_wqkv, index: 1, condition: always }
+      - { name: d_qkvBias, index: 2, condition: hasBias }
+      - { name: d_wo, index: 3, condition: always }
+      - { name: d_outBias, index: 4, condition: hasBias }
+
+  linear:
+    description: "Fully Connected (Linear) layer"
+    inputs:
+      - { name: x, index: 0, shape: "[batch * inFeatures]", description: "Input (flat)" }
+      - { name: weight, index: 1, shape: "[outFeatures * inFeatures]", description: "Weight matrix (row-major)" }
+      - { name: bias, index: 2, shape: "[outFeatures]", description: "Bias vector", optional: hasBias }
+    len_no_bias: 2
+    len_with_bias: 3
+    scalar_fields:
+      - { name: batchSize, shift: 32, mask: "0xFFFF", description: "Batch size" }
+      - { name: outFeatures, shift: 16, mask: "0xFFFF", description: "Output features" }
+      - { name: inFeatures, shift: 0, mask: "0xFFFF", description: "Input features" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_weight, index: 1, condition: always }
+      - { name: d_bias, index: 2, condition: hasBias }
+
+  conv2d:
+    description: "2D Convolution"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * H * W]", description: "Input (NCHW flat)" }
+      - { name: weight, index: 1, shape: "[outCh * C * kH * kW]", description: "Weight (row-major)" }
+      - { name: bias, index: 2, shape: "[outCh]", description: "Bias vector", optional: hasBias }
+    len_no_bias: 2
+    len_with_bias: 3
+    scalar_fields:
+      - { name: packedShape, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "B,C,H,W,outCh,kH,kW,stride,pad" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_weight, index: 1, condition: always }
+      - { name: d_bias, index: 2, condition: hasBias }
+
+  batchNorm2d:
+    description: "Batch Normalization 2D (training mode)"
+    inputs:
+      - { name: x, index: 0, shape: "[N * C * H * W]", description: "Input (flat)" }
+      - { name: gamma, index: 1, shape: "[C]", description: "Scale parameter" }
+      - { name: beta, index: 2, shape: "[C]", description: "Shift parameter" }
+    len_no_bias: 3
+    len_with_bias: 3
+    scalar_fields:
+      - { name: N, shift: 32, mask: "0xFFFF", description: "Batch size" }
+      - { name: C, shift: 16, mask: "0xFFFF", description: "Channels" }
+      - { name: HW, shift: 0, mask: "0xFFFF", description: "Spatial size (H*W)" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_gamma, index: 1, condition: always }
+      - { name: d_beta, index: 2, condition: always }
+
+  layerNorm:
+    description: "Layer Normalization"
+    inputs:
+      - { name: x, index: 0, shape: "[batch * features]", description: "Input (flat)" }
+      - { name: gamma, index: 1, shape: "[features]", description: "Scale parameter" }
+      - { name: beta, index: 2, shape: "[features]", description: "Shift parameter" }
+    len_no_bias: 3
+    len_with_bias: 3
+    scalar_fields:
+      - { name: batchSize, shift: 32, mask: "0xFFFF", description: "Batch size" }
+      - { name: features, shift: 16, mask: "0xFFFF", description: "Feature dimension" }
+      - { name: eps_bits, shift: 0, mask: "0xFFFF", description: "Epsilon bits" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_gamma, index: 1, condition: always }
+      - { name: d_beta, index: 2, condition: always }
+
+  rmsNorm:
+    description: "RMS Normalization (no re-centering)"
+    inputs:
+      - { name: x, index: 0, shape: "[batch * features]", description: "Input (flat)" }
+      - { name: gamma, index: 1, shape: "[features]", description: "Scale parameter" }
+    len_no_bias: 2
+    len_with_bias: 2
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_gamma, index: 1, condition: always }
+
+  lstmStep:
+    description: "LSTM Single Timestep with fused gates"
+    inputs:
+      - { name: x, index: 0, shape: "[inputSize]", description: "Input at current timestep" }
+      - { name: h_prev, index: 1, shape: "[hiddenSize]", description: "Previous hidden state" }
+      - { name: c_prev, index: 2, shape: "[hiddenSize]", description: "Previous cell state" }
+      - { name: wI, index: 3, shape: "[4H * inputSize]", description: "Input-to-hidden weight" }
+      - { name: wH, index: 4, shape: "[4H * hiddenSize]", description: "Hidden-to-hidden weight" }
+      - { name: biasI, index: 5, shape: "[4H]", description: "Input bias", optional: hasBias }
+      - { name: biasH, index: 6, shape: "[4H]", description: "Hidden bias", optional: hasBias }
+    len_no_bias: 5
+    len_with_bias: 7
+    scalar_fields:
+      - { name: hiddenSize, shift: 0, mask: "0xFFFFFFFF", description: "Hidden size (as plain double)" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_hPrev, index: 1, condition: always }
+      - { name: d_cPrev, index: 2, condition: always }
+      - { name: d_wI, index: 3, condition: always }
+      - { name: d_wH, index: 4, condition: always }
+      - { name: d_biasI, index: 5, condition: hasBias }
+      - { name: d_biasH, index: 6, condition: hasBias }
+
+  embedding:
+    description: "Embedding Lookup (row-wise)"
+    inputs:
+      - { name: weight, index: 0, shape: "[vocabSize * embeddingDim]", description: "Embedding table (row-major)" }
+      - { name: indices, index: 1, shape: "[numIndices]", description: "Token indices (as f64)" }
+    len_no_bias: 2
+    len_with_bias: 2
+    backward_grads:
+      - { name: d_weight, index: 0, condition: always }
+
+  maxpool2d:
+    description: "Max Pooling 2D"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * H * W]", description: "Input (flat)" }
+    len_no_bias: 1
+    len_with_bias: 1
+    scalar_fields:
+      - { name: packed, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "kernelH, kernelW, stride, padding" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+
+  avgpool2d:
+    description: "Average Pooling 2D"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * H * W]", description: "Input (flat)" }
+    len_no_bias: 1
+    len_with_bias: 1
+    scalar_fields:
+      - { name: kH_kW_stride, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "kH<<16 | kW<<8 | stride" }
+    scalar2_fields:
+      - { name: padding, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "padding<<16" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+
+  adaptiveAvgPool2d:
+    description: "Adaptive Average Pooling 2D"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * H * W]", description: "Input (flat)" }
+    len_no_bias: 1
+    len_with_bias: 1
+    scalar_fields:
+      - { name: outH_outW, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "outH<<16 | outW" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+
+  scaledDotProductAttention:
+    description: "Scaled Dot-Product Attention (Q·K^T + softmax + V)"
+    inputs:
+      - { name: q, index: 0, shape: "[batch * seqQ * dk]", description: "Query (flat)" }
+      - { name: k, index: 1, shape: "[batch * seqK * dk]", description: "Key (flat)" }
+      - { name: v, index: 2, shape: "[batch * seqK * dv]", description: "Value (flat)" }
+    len_no_bias: 3
+    len_with_bias: 3
+    scalar_fields:
+      - { name: dropout, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "Dropout rate (as f64)" }
+    backward_grads:
+      - { name: d_q, index: 0, condition: always }
+      - { name: d_k, index: 1, condition: always }
+      - { name: d_v, index: 2, condition: always }
+
+  groupNorm:
+    description: "Group Normalization"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * H * W]", description: "Input (flat)" }
+      - { name: gamma, index: 1, shape: "[C]", description: "Scale per channel" }
+      - { name: beta, index: 2, shape: "[C]", description: "Shift per channel" }
+    len_no_bias: 3
+    len_with_bias: 3
+    scalar_fields:
+      - { name: numGroups, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "Number of groups" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_gamma, index: 1, condition: always }
+      - { name: d_beta, index: 2, condition: always }
+
+  instanceNorm:
+    description: "Instance Normalization (per-sample, per-channel)"
+    inputs:
+      - { name: x, index: 0, shape: "[N * C * H * W]", description: "Input (flat)" }
+      - { name: gamma, index: 1, shape: "[C]", description: "Scale per channel (optional)" }
+      - { name: beta, index: 2, shape: "[C]", description: "Shift per channel (optional)" }
+    len_no_bias: 3
+    len_with_bias: 3
+    scalar_fields:
+      - { name: features, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "Number of features (C)" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_gamma, index: 1, condition: always }
+      - { name: d_beta, index: 2, condition: always }
+
+  depthwiseConv1d:
+    description: "Depthwise 1D Convolution (Mamba SSM)"
+    inputs:
+      - { name: x, index: 0, shape: "[B * C * L]", description: "Input (BLC flat)" }
+      - { name: weight, index: 1, shape: "[C * kernelSize]", description: "Per-channel conv weight" }
+    len_no_bias: 2
+    len_with_bias: 2
+    scalar_fields:
+      - { name: packed, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "B, C, L, kernelSize, padding" }
+    backward_grads:
+      - { name: d_x, index: 0, condition: always }
+      - { name: d_weight, index: 1, condition: always }
+
+  selectiveScan:
+    description: "Selective Scan (Mamba SSM)"
+    inputs:
+      - { name: u, index: 0, shape: "[seqLen * dim]", description: "Input sequence (flat)" }
+      - { name: delta, index: 1, shape: "[seqLen * dim]", description: "Delta (time step)" }
+      - { name: A, index: 2, shape: "[dim * stateSize]", description: "State matrix A" }
+      - { name: B, index: 3, shape: "[seqLen * stateSize]", description: "Input projection B" }
+      - { name: C, index: 4, shape: "[seqLen * stateSize]", description: "Output projection C" }
+      - { name: D, index: 5, shape: "[dim]", description: "Skip connection D (optional)", optional: hasD }
+    len_no_bias: 5
+    len_with_bias: 6
+    scalar_fields:
+      - { name: packed, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "seqLen, dim, stateSize" }
+    backward_grads:
+      - { name: d_u, index: 0, condition: always }
+      - { name: d_delta, index: 1, condition: always }
+      - { name: d_A, index: 2, condition: always }
+      - { name: d_B, index: 3, condition: always }
+      - { name: d_C, index: 4, condition: always }
+      - { name: d_D, index: 5, condition: hasD }

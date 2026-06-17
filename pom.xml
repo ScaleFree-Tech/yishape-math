@@ -104,6 +104,12 @@
             <artifactId>commons-csv</artifactId>
             <version>1.10.0</version>
         </dependency>
+        <!-- YAML parsing for schema codegen -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
+        </dependency>
         <!-- Support for ECharts.js plotting -->
         <dependency>
             <groupId>org.icepear.echarts</groupId>

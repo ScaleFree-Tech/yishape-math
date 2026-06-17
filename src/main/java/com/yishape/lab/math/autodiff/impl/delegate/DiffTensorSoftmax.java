@@ -95,7 +95,18 @@ public static IDiffTensor softmax(RereDiffTensor tensor, int dim) {
         }
         input.accGradFromPooled(inGrad, total);
     };
-    return new RereDiffTensor(out, s, List.of(tensor), bw, "softmax");
+    RereDiffTensor softmaxResult = new RereDiffTensor(out, s, List.of(tensor), bw, "softmax");
+    // Symbolic backward: dx = y * (g - broadcast_sum_over_dim(y * g, dim)) (tape-of-tape)
+    final double[] smSym = sm.clone();
+    final int[] symShape = s.clone();
+    final int symDim = d;
+    softmaxResult.symbolicBackwardFn = g -> {
+        IDiffTensor yRef = tensor.mul(0.0).add(IDiffTensor.constantTensor(smSym, symShape));
+        IDiffTensor weighted = yRef.mul(g);
+        IDiffTensor weightedSum = weighted.sum(symDim, true);  // keepdim=true for broadcast
+        return new IDiffTensor[]{ yRef.mul(g.sub(weightedSum)) };
+    };
+    return softmaxResult;
 }
 
 public static IDiffTensor logSoftmax(RereDiffTensor tensor, int dim) {
@@ -137,7 +148,17 @@ public static IDiffTensor logSoftmax(RereDiffTensor tensor, int dim) {
         }
         input.accGradFromPooled(inGrad, total);
     };
-    return new RereDiffTensor(logData, s, List.of(tensor), bw, "logSoftmax");
+    RereDiffTensor logSmResult = new RereDiffTensor(logData, s, List.of(tensor), bw, "logSoftmax");
+    // Symbolic backward: dx = g - sm * broadcast_sum(g, dim) (tape-of-tape)
+    final double[] lsSmData = fSmData.clone();
+    final int[] lsShape = s.clone();
+    final int lsDim = d;
+    logSmResult.symbolicBackwardFn = g -> {
+        IDiffTensor smRef = tensor.mul(0.0).add(IDiffTensor.constantTensor(lsSmData, lsShape));
+        IDiffTensor gSum = g.sum(lsDim, true);
+        return new IDiffTensor[]{ g.sub(smRef.mul(gSum)) };
+    };
+    return logSmResult;
 }
 
 public static IDiffTensor softmaxCrossEntropy(RereDiffTensor tensor, IDoubleTensor labels, int dim) {

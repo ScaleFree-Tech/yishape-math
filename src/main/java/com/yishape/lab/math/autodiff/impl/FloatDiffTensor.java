@@ -98,4 +98,40 @@ public class FloatDiffTensor extends RereDiffTensor {
         }
         this.floatValue = data.clone();
     }
+
+    /**
+     * Auto-sync all {@link FloatDiffTensor} instances in a topo-ordered node list
+     * from FP32 master weights to FP64 value buffers. Called by GPU/HPC executors
+     * before serialization to ensure native execution reads the latest FP32 master
+     * weights.
+     *
+     * @param topoOrder topologically sorted computation graph nodes
+     */
+    public static void syncFloatLeaves(Iterable<? extends RereDiffTensor> topoOrder) {
+        for (RereDiffTensor node : topoOrder) {
+            if (node instanceof FloatDiffTensor fdt) {
+                fdt.syncFloatToDouble();
+            }
+        }
+    }
+
+    /**
+     * Auto-sync all {@link FloatDiffTensor} instances in a topo-ordered node list
+     * from FP64 value buffers back to FP32 master weights. Called by GPU/HPC
+     * executors after native execution completes, ensuring the FP32 master
+     * weights reflect any value updates made during the native computation.
+     *
+     * <p>This is the counterpart to {@link #syncFloatLeaves(Iterable)}.
+     * After the optimizer updates FP64 values, call this to persist the changes
+     * back to FP32 master storage.
+     *
+     * @param topoOrder topologically sorted computation graph nodes
+     */
+    public static void syncDoubleLeaves(Iterable<? extends RereDiffTensor> topoOrder) {
+        for (RereDiffTensor node : topoOrder) {
+            if (node instanceof FloatDiffTensor fdt) {
+                fdt.syncDoubleToFloat();
+            }
+        }
+    }
 }

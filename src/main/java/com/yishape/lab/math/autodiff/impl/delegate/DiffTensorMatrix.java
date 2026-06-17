@@ -61,11 +61,15 @@ public static IDiffTensor mmul(RereDiffTensor tensor, IDoubleTensor other) {
     double[] resultData = DoubleFlatGemm.flatMmul(aData, M, K, bData, N);
     int[] resultShape = {M, N};
 
-    // Lazy transpose: only allocate when the corresponding operand needs gradients
+    // Defer both transposes to the backward closure (PERF-2): precomputing bT and aT
+    // in the forward pass holds up to two full transposes (each ~8MB for 1024×1024)
+    // simultaneously through to backward. Computing them lazily inside backward — one
+    // at a time, released after each operand's gradient — halves peak memory, matching
+    // the bmm strategy. Correctness is unchanged (the closure already had a lazy fallback).
     boolean aNeedsGrad = tensor.requiresGrad;
     boolean bNeedsGrad = other instanceof IDiffTensor od && od.requiresGrad();
-    double[] bT = aNeedsGrad ? DoubleFlatGemm.flatTranspose(bData, K, N) : null;
-    double[] aT = bNeedsGrad ? DoubleFlatGemm.flatTranspose(aData, M, K) : null;
+    double[] bT = null;
+    double[] aT = null;
 
     // Dynamic inputs list: only include tensors that require gradients
     List<RereDiffTensor> inputs = new ArrayList<>();
@@ -91,7 +95,20 @@ public static IDiffTensor mmul(RereDiffTensor tensor, IDoubleTensor other) {
             inpB.accGrad(dB);
         }
     };
-    return new RereDiffTensor(resultData, resultShape, inputs, bw, "mmul");
+    RereDiffTensor resultMmul = new RereDiffTensor(resultData, resultShape, inputs, bw, "mmul");
+    // Symbolic backward: dA = g @ B^T, dB = A^T @ g (tape-of-tape)
+    // Always capture the other operand even if it doesn't need grad,
+    // so the tape-of-tape graph can reference it.
+    final IDiffTensor aRefSym = tensor;
+    final IDiffTensor bRefSym = (other instanceof IDiffTensor dt) ? dt
+        : IDiffTensor.constantTensor(bData, new int[]{fK, fN});
+    resultMmul.symbolicBackwardFn = g -> {
+        java.util.List<IDiffTensor> grads = new java.util.ArrayList<>(2);
+        if (aNeedsGrad) grads.add(g.mmul(bRefSym.transpose()));
+        if (bNeedsGrad) grads.add(aRefSym.transpose().mmul(g));
+        return grads.toArray(new IDiffTensor[0]);
+    };
+    return resultMmul;
 }
 
 public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
@@ -159,7 +176,18 @@ public static IDiffTensor bmm(RereDiffTensor tensor, IDoubleTensor other) {
             inpB.accGrad(dB);
         }
     };
-    return new RereDiffTensor(resultData, resultShape, inputs, bw, "bmm");
+    RereDiffTensor resultBmm = new RereDiffTensor(resultData, resultShape, inputs, bw, "bmm");
+    // Symbolic backward: dA[b]=g[b]@B[b]^T, dB[b]=A[b]^T@g[b] (tape-of-tape)
+    final IDiffTensor aRefSymB = tensor;
+    final IDiffTensor bRefSym2 = (other instanceof IDiffTensor dt) ? dt
+        : IDiffTensor.constantTensor(bData, new int[]{fB, fK, fN});
+    resultBmm.symbolicBackwardFn = g -> {
+        java.util.List<IDiffTensor> grads = new java.util.ArrayList<>(2);
+        if (aNeedsGrad) grads.add(g.bmm(bRefSym2.transpose(1, 2)));
+        if (bNeedsGrad) grads.add(aRefSymB.transpose(1, 2).bmm(g));
+        return grads.toArray(new IDiffTensor[0]);
+    };
+    return resultBmm;
 }
 
 public static IDiffTensor einsum(RereDiffTensor tensor, String subscript, IDoubleTensor... others) {
@@ -175,7 +203,13 @@ public static IDiffTensor einsum(RereDiffTensor tensor, String subscript, IDoubl
         }
         return tensor.toNonDiff(tensor.value.einsum(subscript, detOthers));
     }
-    IDiffTensor other = (IDiffTensor) others[0];
+    IDiffTensor other;
+    if (others[0] instanceof IDiffTensor od) {
+        other = od;
+    } else {
+        // Plain IDoubleTensor — wrap as constant (no gradient flows to it)
+        other = tensor.toNonDiff(others[0]);
+    }
     if (others.length > 1) {
         throw new UnsupportedOperationException(
             "einsum with >2 inputs not yet supported: " + subscript);

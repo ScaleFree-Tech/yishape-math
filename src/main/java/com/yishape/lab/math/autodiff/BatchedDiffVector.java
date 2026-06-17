@@ -125,6 +125,9 @@ public final class BatchedDiffVector implements IDiffVector {
     }
 
     @Override
+    public IDiffVector detach() { return data.detach(); }
+
+    @Override
     public IDiffVector divideInPlace(double alpha) {
         return wrap(data.divideInPlace(alpha));
     }

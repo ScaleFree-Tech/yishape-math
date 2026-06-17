@@ -383,4 +383,52 @@ public interface IDoubleVectorComputer {
      */
     public double[][] where(boolean[][] mask, double[][] a, double[][] b);
 
+    /**
+     * In-place binary operation: {@code target[i] = target[i] OP source[i]}.
+     * Modifies {@code target} directly without allocating a new array.
+     * Supports ADD, SUBTRACT, MULTIPLY and DIVIDE.
+     *
+     * @param target    first operand AND output array (modified in-place)
+     * @param source    second operand array (read-only)
+     * @param operation the binary operation (ADD, SUBTRACT, MULTIPLY, DIVIDE)
+     */
+    void binaryOperateInPlace(double[] target, double[] source, BinaryOperation operation);
+
+    /**
+     * In-place binary operation over a sub-range:
+     * {@code target[targetOffset + i] = target[targetOffset + i] OP source[sourceOffset + i]}
+     * for {@code 0 <= i < length}. Enables strided/row-wise accumulation (e.g. bias broadcast)
+     * without allocating tiled buffers.
+     *
+     * @param target        first operand AND output array (modified in-place)
+     * @param targetOffset  start index in {@code target}
+     * @param source        second operand array (read-only)
+     * @param sourceOffset  start index in {@code source}
+     * @param length        number of elements to process
+     * @param operation     the binary operation (ADD, SUBTRACT, MULTIPLY, DIVIDE)
+     */
+    void binaryOperateInPlace(double[] target, int targetOffset,
+                              double[] source, int sourceOffset, int length,
+                              BinaryOperation operation);
+
+    /**
+     * In-place clamp: {@code data[i] = min(max(data[i], min), max)}.
+     * Modifies {@code data} directly without allocating a new array.
+     *
+     * @param data operand AND output array (modified in-place)
+     * @param min  lower bound
+     * @param max  upper bound
+     */
+    void clampInPlace(double[] data, double min, double max);
+
+    /**
+     * In-place binary operation with scalar: {@code target[i] = target[i] OP scalar}.
+     * Modifies {@code target} directly without allocating a new array.
+     *
+     * @param target    operand AND output array (modified in-place)
+     * @param scalar    scalar operand (read-only)
+     * @param operation the binary operation (ADD, SUBTRACT, MULTIPLY, DIVIDE)
+     */
+    void binaryOperateInPlace(double[] target, double scalar, BinaryOperation operation);
+
 }

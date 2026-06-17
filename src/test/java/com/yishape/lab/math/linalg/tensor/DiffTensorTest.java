@@ -307,10 +307,33 @@ class DiffTensorTest {
 
     @Test
     void testDetach() {
-        IDiffTensor x = IDiffTensor.fromDiffVector(AD.vector(2.0), 1);
-        IDoubleTensor d = x.detach();
-        assertTrue(d instanceof IDoubleTensor);
-        assertFalse(d instanceof IDiffTensor);
+        // detach() 采用 PyTorch 语义：返回一个脱离计算图的 IDiffTensor（requiresGrad=false），
+        // 而非降级为纯 IDoubleTensor。这样 detached 张量仍可参与后续可微运算，
+        // 只是其梯度不再向原张量的祖先回流。
+        IDiffTensor x = IDiffTensor.fromDiffVector(AD.vector(2.0, 4.0), 2);
+        IDiffTensor y = x.mul(3.0); // y = [6, 12], 与 x 连图
+        IDiffTensor d = y.detach();
+
+        assertTrue(d instanceof IDiffTensor);
+        assertFalse(d.requiresGrad());
+        assertArrayEquals(new double[]{6.0, 12.0}, d.flattenValue().toDoubleArray(), 1e-12);
+
+        // 关键：detach 截断梯度流。对 d 求导不应回流到 x（NN 训练中 stop-gradient 的语义保证）。
+        d.sum().backward();
+        IDoubleTensor gStopped = x.grad();
+        assertTrue(gStopped == null || allZero(gStopped.toDoubleArray()));
+
+        // 对照组：不 detach 时梯度正常回流，证明上面截断确实由 detach 引起。
+        IDiffTensor x2 = IDiffTensor.fromDiffVector(AD.vector(2.0, 4.0), 2);
+        x2.mul(3.0).sum().backward();
+        IDoubleTensor gFlow = x2.grad();
+        assertNotNull(gFlow);
+        assertArrayEquals(new double[]{3.0, 3.0}, gFlow.toDoubleArray(), 1e-12);
+    }
+
+    private static boolean allZero(double[] a) {
+        for (double v : a) if (v != 0.0) return false;
+        return true;
     }
 
     @Test

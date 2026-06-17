@@ -52,8 +52,12 @@ public class VjpFunctionImpl implements VjpFunction {
             node.setGradData(null);
         }
 
-        // Execute backward pass with the given upstream gradient
-        root.backward(ug.getValue());
+        // Set upstream gradient on the root and run backward pass manually
+        // using the pre-built topological order. This bypasses backwardImpl()
+        // which would destroy intermediate graph nodes (inputs/backwardFn nullified),
+        // making subsequent apply() calls impossible.
+        root.tensor.setGradData(ug.tensor.value().toDoubleArray().clone());
+        RereDiffTensor.runBackwardOnOrder(order);
 
         // Read and deep-copy the gradient from the input leaf
         IDoubleVector grad = input.getGradient();
