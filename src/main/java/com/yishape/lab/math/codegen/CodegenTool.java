@@ -39,6 +39,7 @@ public final class CodegenTool {
 
         processGraphOpSchema();
         RustDispatchGenerator.generate();
+        DocGenerator.generate();
         System.out.println("Done.");
     }
 

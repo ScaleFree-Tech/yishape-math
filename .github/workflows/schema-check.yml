@@ -38,14 +38,23 @@ jobs:
 
       - name: Check for uncommitted generated changes
         run: |
-          if ! git diff --exit-code -- 'src/main/java/com/yishape/lab/math/autodiff/graph/GraphOpSchema.java'; then
+          STATUS=0
+          for f in \
+            'src/main/java/com/yishape/lab/math/autodiff/graph/GraphOpSchema.java' \
+            'docs/op_schema.md'; do
+            if ! git diff --exit-code -- "$f"; then
+              echo ""
+              echo "❌ FAIL: $f is out of sync with OpRegistry."
+              STATUS=1
+            fi
+          done
+          if [ "$STATUS" -ne 0 ]; then
             echo ""
-            echo "❌ FAIL: Generated code is out of sync with OpRegistry."
             echo "   Run: mvn exec:java -Dexec.mainClass=\"com.yishape.lab.math.codegen.CodegenTool\""
-            echo "   Then commit the updated GraphOpSchema.java."
+            echo "   Then commit the updated generated files."
             exit 1
           fi
-          echo "✅ Generated code matches OpRegistry."
+          echo "✅ Generated code and docs match OpRegistry."
 
   # ── Optional: Rust dispatch check (when Rust toolchain available) ──
   rust-dispatch-check:

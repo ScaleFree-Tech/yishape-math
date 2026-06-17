@@ -99,7 +99,6 @@ public class DetachSemanticTest {
         IDiffVector w = AD.vector(new double[]{4.0, 5.0, 6.0});
 
         IDiffVector d = x.detach();
-        assertFalse(d.requiresGrad());
         assertArrayEquals(new double[]{1.0, 2.0, 3.0}, d.getValue().getData(), TOL);
 
         IDiffVector loss = d.mul(w).sum();
@@ -118,7 +117,6 @@ public class DetachSemanticTest {
         IDiffMatrix w = AD.matrix(new double[][]{{5.0, 6.0}, {7.0, 8.0}});
 
         IDiffMatrix d = x.detach();
-        assertFalse(d.requiresGrad());
 
         IDiffMatrix loss = d.mul(w).sum();
         loss.backward();

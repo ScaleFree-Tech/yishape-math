@@ -170,7 +170,21 @@ public static IDiffTensor squeeze(RereDiffTensor tensor, int... dims) {
         for (int i = 0; i < viewTotal; i++) pGrad[parentIdx[i]] += self.grad[i];
         parent.accGradFromPooled(pGrad, pt);
     };
-    return new RereDiffTensor(view, List.of(tensor), bw, "squeeze");
+    RereDiffTensor sqResult = new RereDiffTensor(view, List.of(tensor), bw, "squeeze");
+    // Symbolic backward: re-insert the squeezed (size-1) dims via unsqueeze.
+    // Each parent position is touched exactly once, so the gradient is just g
+    // reshaped back to the parent shape — no summation. Insert dims in ascending
+    // parent-dim order so each unsqueeze lands at the correct index (mirrors the
+    // existing unsqueeze→squeeze symbolic pair). Enables tape-of-tape second-order.
+    java.util.List<Integer> sqDimsList = new java.util.ArrayList<>();
+    for (int j = 0; j < parentShape.length; j++) if (squeezed[j]) sqDimsList.add(j);
+    final int[] sqDims = sqDimsList.stream().mapToInt(Integer::intValue).toArray();
+    sqResult.symbolicBackwardFn = g -> {
+        IDiffTensor cur = g;
+        for (int d : sqDims) cur = cur.unsqueeze(d);
+        return new IDiffTensor[]{ cur };
+    };
+    return sqResult;
 }
 
 public static IDiffTensor unsqueeze(RereDiffTensor tensor, int dim) {

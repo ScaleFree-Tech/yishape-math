@@ -193,7 +193,12 @@ static IDiffTensor binaryTensorOp(RereDiffTensor tensor, IDoubleTensor other,
             out = new double[n];
             for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(aData[i], bData[i]);
         }
-        double[] savedA = tensor.requiresGrad ? aData.clone() : null;
+        // savedA must be retained whenever the OTHER operand needs grad too:
+        // mul/div gradB = g·a (needs the receiver's value a). Symmetric to savedB.
+        // Fixes NPE when the receiver is requiresGrad=false (e.g. a detached
+        // tensor used as a stop-gradient branch) but the other operand does
+        // require grad — gradB then dereferenced a null savedA.
+        double[] savedA = (tensor.requiresGrad || otherDiff) ? aData.clone() : null;
         double[] savedB = (tensor.requiresGrad || otherDiff) ? bData.clone() : null;
 
         List<RereDiffTensor> inputs = new ArrayList<>();
