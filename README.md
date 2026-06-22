@@ -98,26 +98,15 @@
 - Java 25 或更高版本 / Java 25 or higher
 - Maven 3.6+ / Maven 3.6+
 
-### 安装依赖 / Installation
+### 安装 / Installation
 
-**Jar:**
+#### 方式一：GitHub Packages（推荐 / Recommended）
 
-直接从右侧的Releases中下载最新的[Jar包](https://github.com/ScaleFree-Tech/yishape-math/releases)。Directly download the latest [Jar package](https://github.com/ScaleFree-Tech/yishape-math/releases) from the Releases on the right.
+在 `~/.m2/settings.xml` 中配置 GitHub Personal Access Token（需 `read:packages` 权限），`server` 的 `id` 须与仓库 `id` 一致。示例见 [`.github/maven-settings.example.xml`](.github/maven-settings.example.xml)。
 
+Configure a GitHub Personal Access Token (PAT) with `read:packages` scope in `~/.m2/settings.xml`. The `server` `id` must match the repository `id`. See [`.github/maven-settings.example.xml`](.github/maven-settings.example.xml) for an example.
 
-**Maven（Maven Central，发布后可用）:**
-
-```xml
-<dependency>
-    <groupId>com.yishape.lab</groupId>
-    <artifactId>yishape-math</artifactId>
-    <version>0.5.x</version>
-</dependency>
-```
-
-**Maven（GitHub Packages）:**
-
-在 `~/.m2/settings.xml` 中配置 PAT（`read:packages`），`server` 的 `id` 须与下方 `repository` 一致。示例见 [`.github/maven-settings.example.xml`](.github/maven-settings.example.xml)。
+**核心库 / Core Library（必选 / Required）：**
 
 ```xml
 <repositories>
@@ -134,13 +123,95 @@
 </dependency>
 ```
 
-**维护者发布到 GitHub Packages：** 先在 [yishape-math-hpc](https://github.com/ScaleFree-Tech/yishape-math-hpc) 仓库创建 Release 发布 HPC，再在本仓库创建同版本 Release；workflow 见 `.github/workflows/maven-publish.yml`。
+**HPC 加速扩展 / HPC Acceleration（可选 / Optional）：**
 
-**JVM 运行参数（可选 SIMD / Vector API） / Optional JVM options for SIMD**
+添加 Rust 原生加速层，为线性代数、线性规划等提供 3–12× 加速：
 
-本库编译与测试依赖 **JDK 25**。**不加** `--add-modules jdk.incubator.vector` 时，本库仍可正常使用，向量运算走标量（SISD）实现；**加上**该参数后，运行时会探测并成功加载 Vector API，即可使用 SIMD 路径（默认尝试 SIMD，可用 `-Dyishape.math.use.simd=false` 强制始终使用标量）。
+Add the Rust native acceleration layer for 3–12× speedup on linear algebra, LP, and more:
 
-The library is built and tested with **JDK 25**. **Without** `--add-modules jdk.incubator.vector`, it still runs normally and vector ops use scalar (SISD) paths. **With** that flag, the runtime can load the Vector API and use SIMD (SIMD is tried by default; use `-Dyishape.math.use.simd=false` to force scalar).
+```xml
+<repositories>
+  <repository>
+    <id>github-hpc</id>
+    <url>https://maven.pkg.github.com/ScaleFree-Tech/yishape-math-hpc</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.yishape.lab</groupId>
+  <artifactId>yishape-math-hpc</artifactId>
+  <version>0.5.0</version>
+</dependency>
+```
+
+**GPU 加速扩展 / GPU Acceleration（可选 / Optional）：**
+
+添加 wgpu 着色器加速，为 autodiff 计算图提供 GPU 执行：
+
+Add wgpu shader acceleration for GPU execution of autodiff compute graphs:
+
+```xml
+<repositories>
+  <repository>
+    <id>github-gpu</id>
+    <url>https://maven.pkg.github.com/ScaleFree-Tech/yishape-math-gpu</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.yishape.lab</groupId>
+  <artifactId>yishape-math-gpu</artifactId>
+  <version>0.5.0</version>
+</dependency>
+```
+
+#### 方式二：源码构建 / Build from Source
+
+无需 GitHub 账号，只需 JDK 25：
+
+No GitHub account required — just JDK 25:
+
+```bash
+git clone https://github.com/ScaleFree-Tech/yishape-math.git
+cd yishape-math
+./mvnw install -DskipTests
+```
+
+HPC 和 GPU 扩展同样支持源码构建：
+
+The HPC and GPU extensions can also be built from source:
+
+```bash
+# HPC（需预编译原生库放入 libs/ 目录 / requires prebuilt native libs in libs/）
+git clone https://github.com/ScaleFree-Tech/yishape-math-hpc.git
+cd yishape-math-hpc
+./mvnw install -DskipTests -DskipNativeBuild=true
+
+# GPU（需预编译原生库放入 libs/ 目录 / requires prebuilt native libs in libs/）
+git clone https://github.com/ScaleFree-Tech/yishape-math-gpu.git
+cd yishape-math-gpu
+./mvnw install -DskipTests -DskipNativeBuild=true
+```
+
+#### JAR 下载 / JAR Download
+
+也可以直接从 [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases) 下载最新 Jar 包。
+
+You can also download the latest JAR directly from [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases).
+
+### JVM 运行参数 / JVM Runtime Options
+
+**SIMD / Vector API（可选 / Optional）：**
+
+**不加** `--add-modules jdk.incubator.vector` 时，本库仍可正常使用，向量运算走标量（SISD）实现；**加上**该参数后，运行时会探测并成功加载 Vector API，即可使用 SIMD 路径（默认尝试 SIMD，可用 `-Dyishape.math.use.simd=false` 强制始终使用标量）。
+
+**Without** `--add-modules jdk.incubator.vector`, it still runs normally and vector ops use scalar (SISD) paths. **With** that flag, the runtime can load the Vector API and use SIMD (SIMD is tried by default; use `-Dyishape.math.use.simd=false` to force scalar).
+
+**HPC / GPU 原生访问（使用 HPC/GPU 扩展时必需 / Required for HPC/GPU）：**
+
+```
+--enable-native-access=ALL-UNNAMED
+```
 
 
 ### API设计哲学
