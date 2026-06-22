@@ -1,0 +1,16 @@
+jdk:
+  - openjdk25
+
+# JitPack build configuration for yishape-math
+# Requires JDK 25 (Java FFM API)
+# JVM args needed for tests: --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector
+
+before_install:
+  - echo "Building yishape-math with JDK 25"
+
+install:
+  - mvn install -DskipTests -Dmaven.javadoc.skip=true
+
+# Optional: run tests (uncomment if JitPack supports the required JVM args)
+# test:
+#   - mvn test -DargLine="--enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector"

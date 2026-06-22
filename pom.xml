@@ -10,15 +10,15 @@
     <description>
         Java library for numerical computation, statistics, linear algebra, optimization, plotting (JavaFX/ECharts), and related utilities.
         Requires Java 25+; compile/runtime uses the incubator Vector API module (jdk.incubator.vector).
-        Optional native acceleration: enable Maven profile with-hpc (after installing com.yishape.lab:yishape-math-hpc locally or from your repository); applications add that artifact explicitly for native acceleration—it is not transitive. Core APIs use reflection and fall back to pure Java when the extension JAR or native library is absent. RereDoubleMatrix#svd uses EJML for large dense matrices (≥ about 400×400 elements) when HPC is unavailable, otherwise Commons Math3. Tuning: yishape.hpc.gemm.minFlops (~1e6), yishape.hpc.cholesky.minDim (768), yishape.hpc.svd.minTotalElements (10001), yishape.hpc.solve.minDim (512, dense Ax=b via solveSquare); yishape.hpc.decomp.minDim aliases Cholesky when cholesky.minDim is unset.
+        Optional native acceleration: enable Maven profile with-hpc (after installing com.yishape.lab:yishape-math-hpc locally or from your repository); applications add that artifact explicitly for native acceleration—it is not transitive. Core APIs use reflection and fall back to pure Java when the extension JAR or native library is absent. Tuning: yishape.hpc.gemm.minFlops (~1e6), yishape.hpc.cholesky.minDim (768), yishape.hpc.svd.minTotalElements (10001), yishape.hpc.solve.minDim (512, dense Ax=b via solveSquare); yishape.hpc.decomp.minDim aliases Cholesky when cholesky.minDim is unset.
     </description>
-    <url>https://github.com/scalefree-tech/yishape-math</url>
+    <url>https://github.com/ScaleFree-Tech/yishape-math</url>
     <inceptionYear>2014</inceptionYear>
 
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -36,15 +36,15 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/scalefree-tech/yishape-math.git</connection>
+        <connection>scm:git:https://github.com/ScaleFree-Tech/yishape-math.git</connection>
         <developerConnection>scm:git:ssh://git@github.com:ScaleFree-Tech/yishape-math.git</developerConnection>
-        <url>https://github.com/scalefree-tech/yishape-math</url>
+        <url>https://github.com/ScaleFree-Tech/yishape-math</url>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/scalefree-tech/yishape-math/issues</url>
+        <url>https://github.com/ScaleFree-Tech/yishape-math/issues</url>
     </issueManagement>
 
     <!-- 部署地址以 Sonatype / Maven Central 注册邮箱中的说明为准（可能是 ossrh 或 s01.oss.sonatype.org） -->
@@ -66,7 +66,7 @@
         <!-- JaCoCo 与 Surefire 共用：prepare-agent 会注入 agent 前缀 -->
         <argLine>${maven.surefire.argLine}</argLine>
         <!-- GitHub Packages：仓库 URL 中的 owner/repo 须与发布目标一致 -->
-        <github.owner>scalefree-tech</github.owner>
+        <github.owner>ScaleFree-Tech</github.owner>
         <github.repo.math>yishape-math</github.repo.math>
         <github.repo.hpc>yishape-math-hpc</github.repo.hpc>
     </properties>
@@ -74,17 +74,6 @@
     <!-- 发布到 Maven Central 的 POM 不应声明额外仓库；依赖须可从 Maven Central 解析 -->
     
     <dependencies>
-        <!-- Support for OpenCL GPUs -->
-        <!--
-        <dependency>
-            <groupId>com.aparapi</groupId>
-            <artifactId>aparapi</artifactId>
-            <version>3.0.2</version>
-            <optional>true</optional>
-        </dependency>
-        -->
-        <!--Support for high performance computing-->
-        
         <dependency>
             <groupId>com.yishape.lab</groupId>
             <artifactId>yishape-math-hpc</artifactId>
@@ -145,8 +134,6 @@
             <artifactId>pdfbox</artifactId>
             <version>3.0.4</version>
         </dependency>
-        
-        <!-- yishape-math-hpc 见 profile with-hpc：未发布到 Central，默认 POM 不声明以免 CI/中央仓库解析失败 -->
 
         <!-- SLF4J API：库内记录日志，由应用提供绑定实现 -->
         <dependency>
@@ -178,24 +165,6 @@
             <version>4.0-beta1</version>
             <scope>test</scope>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.40</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
-        </dependency>
-        -->
-
         <!-- JMH benchmarks -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

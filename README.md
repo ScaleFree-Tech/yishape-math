@@ -1,7 +1,7 @@
 ﻿# YiShape-Math 易形数学
 
 [![Java](https://img.shields.io/badge/Java-25+-blue.svg)](https://www.oracle.com/java/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
 [![Version](https://img.shields.io/badge/Version-0.5.0-blue.svg)]()
 
 ## 项目简介 / Project Introduction
@@ -123,7 +123,7 @@
 <repositories>
   <repository>
     <id>github-math</id>
-    <url>https://maven.pkg.github.com/scalefree-tech/yishape-math</url>
+    <url>https://maven.pkg.github.com/ScaleFree-Tech/yishape-math</url>
   </repository>
 </repositories>
 
@@ -752,7 +752,7 @@ The HPC library is optional. To use the HPC extention, you need to include the f
 <repositories>
   <repository>
     <id>github-hpc</id>
-    <url>https://maven.pkg.github.com/scalefree-tech/yishape-math-hpc</url>
+    <url>https://maven.pkg.github.com/ScaleFree-Tech/yishape-math-hpc</url>
   </repository>
 </repositories>
 
@@ -883,15 +883,15 @@ We welcome community contributions! Please follow these steps:
 
 ## 许可证 / License
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE.txt) 文件了解详情。
+本项目采用 Apache License 2.0 - 查看 [LICENSE](LICENSE.txt) 文件了解详情。
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE.txt) file for details.
 
-### MIT 许可证条款 / MIT License Terms
+### Apache 2.0 许可证条款 / Apache 2.0 License Terms
 
-MIT 许可证是一个宽松的开源许可证，允许您自由使用、修改、分发和销售软件，只要您保留版权声明和许可证文本。
+Apache 2.0 是一个宽松的开源许可证，允许您自由使用、修改、分发和销售软件，同时提供专利授权保护。
 
-The MIT License is a permissive open-source license that allows you to freely use, modify, distribute, and sell the software, as long as you retain the copyright notice and license text.
+The Apache 2.0 License is a permissive open-source license that allows you to freely use, modify, distribute, and sell the software, with explicit patent grant protection.
 
 ## 联系方式 / Contact
 

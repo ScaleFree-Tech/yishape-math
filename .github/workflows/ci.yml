@@ -34,7 +34,7 @@ jobs:
       - name: Checkout yishape-dl
         uses: actions/checkout@v4
         with:
-          repository: scalefree-tech/yishape-dl
+          repository: ScaleFree-Tech/yishape-dl
           path: ../yishape-dl
       - name: Compile yishape-dl against installed yishape-math
         run: mvn -B compile -f ../yishape-dl/pom.xml
