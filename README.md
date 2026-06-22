@@ -195,9 +195,9 @@ cd yishape-math-gpu
 
 #### JAR 下载 / JAR Download
 
-也可以直接从 [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases) 下载最新 Jar 包。
+无需 Maven：仓库 `libs/` 目录已包含 `yishape-math`、`yishape-math-hpc`、`yishape-math-gpu` 的预编译 JAR 及全部依赖（batik、javafx、pdfbox、echarts-java 等），直接下载加入 classpath 即可使用。也可从 [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases) 下载。
 
-You can also download the latest JAR directly from [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases).
+No Maven needed: the `libs/` directory in this repo contains prebuilt JARs for `yishape-math`, `yishape-math-hpc`, `yishape-math-gpu`, and all dependencies (batik, javafx, pdfbox, echarts-java, etc.). Download and add to your classpath directly. You can also get them from [Releases](https://github.com/ScaleFree-Tech/yishape-math/releases).
 
 ### JVM 运行参数 / JVM Runtime Options
 
