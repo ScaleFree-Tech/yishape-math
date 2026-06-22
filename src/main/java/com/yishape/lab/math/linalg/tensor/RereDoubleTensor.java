@@ -1305,21 +1305,35 @@ public class RereDoubleTensor implements IDoubleTensor {
             return mul(others[0]);
         }
 
-        // Empty (scalar) 2-input output (e.g. "ij,jk->"): compute a non-empty
-        // output that keeps every non-contract label, then sum all elements. When
-        // ALL labels are contracted (pure scalar reduction), keep input0's labels
-        // so the matmul still executes; summing that full product gives the scalar.
+        // Empty (scalar) 2-input output (e.g. "ij,jk->"). The per-slice matmul loop
+        // below needs a non-empty output and a contract axis shared by BOTH inputs.
+        // Rewrite to keep the non-shared (per-input) labels as output, letting the
+        // shared label contract via matmul, then sum the result. E.g. "ij,jk->" →
+        // "ij,jk->ik" (= A@B) then sum all. If no axis is shared between inputs
+        // (e.g. "ij,kl->"), there is no matmul to perform — reject explicitly.
         if (spec.outputLabels.isEmpty()) {
+            java.util.Set<Character> shared = new java.util.HashSet<>(spec.perInputAxes.get(0));
+            shared.retainAll(spec.perInputAxes.get(1));
+            if (shared.isEmpty()) {
+                throw new UnsupportedOperationException(
+                    "einsum with 2 inputs, empty output, and no shared contract axis is not supported: "
+                    + subscript);
+            }
             StringBuilder kept = new StringBuilder();
             for (char c : spec.inputLabels[0].toCharArray()) {
                 if (spec.batchAxes.contains(c)) kept.append(c);
             }
             for (char c : spec.inputLabels[0].toCharArray()) {
-                if (!spec.batchAxes.contains(c) && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+                if (!spec.batchAxes.contains(c) && !shared.contains(c)
+                        && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
             }
             for (char c : spec.inputLabels[1].toCharArray()) {
-                if (!spec.batchAxes.contains(c) && !spec.contractAxes.contains(c)
+                if (!spec.batchAxes.contains(c) && !shared.contains(c)
                         && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+            }
+            if (kept.length() == 0) {
+                throw new UnsupportedOperationException(
+                    "einsum 2-input scalar reduction has no non-shared labels to keep: " + subscript);
             }
             String fullSub = spec.inputLabels[0] + "," + spec.inputLabels[1] + "->" + kept;
             IDoubleTensor full = einsum(fullSub, others[0]);
@@ -1427,7 +1441,7 @@ public class RereDoubleTensor implements IDoubleTensor {
             // trace
             double tr = 0;
             for (int k = 0; k < n; k++) tr += get(k, k);
-            return new RereDoubleTensor(new double[]{tr}); // rank-0 scalar
+            return new RereDoubleTensor(new double[]{tr}, new int[]{1});
         }
         // diagonal → [N]
         double[] diag = new double[n];

@@ -55,7 +55,7 @@ public class EinsumEmptyAndDiagonalTest {
         // "ij,jk->" = sum of all entries of A@B
         IDoubleTensor a = new RereDoubleTensor(new double[]{1, 2, 3, 4}, 2, 2);
         IDoubleTensor b = new RereDoubleTensor(new double[]{1, 0, 0, 1}, 2, 2); // identity
-        IDoubleTensor s = a.einsum("ij,jk->");
+        IDoubleTensor s = a.einsum("ij,jk->", b);
         // A@I = A, sum = 1+2+3+4 = 10
         assertEquals(1, s.totalSize());
         assertEquals(10.0, s.toDoubleArray()[0], 1e-12);
@@ -65,15 +65,15 @@ public class EinsumEmptyAndDiagonalTest {
     void testDiffTwoInputEmptyOutputGradient() {
         IDiffTensor a = AD.tensor(new double[]{1, 2, 3, 4}, 2, 2);
         IDiffTensor b = AD.tensor(new double[]{1, 1, 1, 1}, 2, 2);
-        IDiffTensor s = a.einsum("ij,jk->");
-        // A@B with B all-ones: C[i,j] = sum_k A[i,k]*1 = row sum; total = sum A = 10
-        assertEquals(10.0, s.toDoubleArray()[0], 1e-12);
+        IDiffTensor s = a.einsum("ij,jk->", b);
+        // A@B with B all-ones: C[i,j] = Σ_k A[i,k]·1 = row sum of A = [3,3;7,7]; total = 20
+        assertEquals(20.0, s.toDoubleArray()[0], 1e-12);
         s.backward();
-        // d/dA[i,j] (sum_ij sum_k A[i,k] B[k,j]) = sum_j B[j,j]... = sum over j of B[j,?].
-        // Actually d(total)/dA[i,k] = sum_j B[k,j] = row sum of B = 2 for each (i,k).
+        // d(total)/dA[i,k] = Σ_j B[k,j] = row sum of B = 2 for each (i,k).
         assertArrayEquals(new double[]{2, 2, 2, 2}, a.grad().toDoubleArray(), 1e-12);
-        // d/dB[k,j] = sum_i A[i,k] = column sum of A = [4,6]
-        assertArrayEquals(new double[]{4, 6, 4, 6}, b.grad().toDoubleArray(), 1e-12);
+        // d(total)/dB[j,k] = Σ_i A[i,j] = column sum of A per j: j=0→4, j=1→6.
+        // B is [j,k] row-major so dB = [[4,4],[6,6]] = [4,4,6,6].
+        assertArrayEquals(new double[]{4, 4, 6, 6}, b.grad().toDoubleArray(), 1e-12);
     }
 
     // ==================== diagonal: "ii->i" ====================

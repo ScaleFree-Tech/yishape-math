@@ -1258,20 +1258,32 @@ public class RereFloatTensor implements IFloatTensor {
             return mul(others[0]);
         }
 
-        // Empty (scalar) 2-input output (e.g. "ij,jk->"): compute a non-empty
-        // output keeping every non-contract label, then sum all elements. When ALL
-        // labels are contracted, keep input0's labels so the matmul still executes.
+        // Empty (scalar) 2-input output (e.g. "ij,jk->"): rewrite to keep non-shared
+        // labels as output (shared label contracts via matmul), then sum. Reject if
+        // no axis is shared between the two inputs.
         if (spec.outputLabels.isEmpty()) {
+            java.util.Set<Character> shared = new java.util.HashSet<>(spec.perInputAxes.get(0));
+            shared.retainAll(spec.perInputAxes.get(1));
+            if (shared.isEmpty()) {
+                throw new UnsupportedOperationException(
+                    "einsum with 2 inputs, empty output, and no shared contract axis is not supported: "
+                    + subscript);
+            }
             StringBuilder kept = new StringBuilder();
             for (char c : spec.inputLabels[0].toCharArray()) {
                 if (spec.batchAxes.contains(c)) kept.append(c);
             }
             for (char c : spec.inputLabels[0].toCharArray()) {
-                if (!spec.batchAxes.contains(c) && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+                if (!spec.batchAxes.contains(c) && !shared.contains(c)
+                        && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
             }
             for (char c : spec.inputLabels[1].toCharArray()) {
-                if (!spec.batchAxes.contains(c) && !spec.contractAxes.contains(c)
+                if (!spec.batchAxes.contains(c) && !shared.contains(c)
                         && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+            }
+            if (kept.length() == 0) {
+                throw new UnsupportedOperationException(
+                    "einsum 2-input scalar reduction has no non-shared labels to keep: " + subscript);
             }
             String fullSub = spec.inputLabels[0] + "," + spec.inputLabels[1] + "->" + kept;
             IFloatTensor full = einsum(fullSub, others[0]);
@@ -1373,7 +1385,7 @@ public class RereFloatTensor implements IFloatTensor {
         if (spec.outputLabels.isEmpty()) {
             float tr = 0;
             for (int k = 0; k < n; k++) tr += get(k, k);
-            return new RereFloatTensor(new float[]{tr});
+            return new RereFloatTensor(new float[]{tr}, new int[]{1});
         }
         float[] diag = new float[n];
         for (int k = 0; k < n; k++) diag[k] = get(k, k);

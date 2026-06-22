@@ -225,22 +225,32 @@ static IDiffTensor einsumPair(RereDiffTensor tensor, String subscript, IDiffTens
         return tensor.mul(other);
     }
 
-    // Empty (scalar) output on a 2-input einsum (e.g. "ij,jk->") is a full reduction
-    // of the matmul. The per-slice loop below assumes a non-empty [B,keptA,K] output,
-    // so compute a non-empty output that keeps every non-contract label (and, when ALL
-    // labels are contracted, keeps input0's labels so the matmul still executes), then
-    // sum it — both forward and backward stay correct via the differentiable sum().
+    // Empty (scalar) 2-input output (e.g. "ij,jk->"): rewrite to keep non-shared
+    // labels as output (shared label contracts via matmul), then sum — forward and
+    // backward stay correct via the differentiable sum(). Reject if no axis is shared.
     if (spec.outputLabels.isEmpty()) {
+        java.util.Set<Character> shared = new java.util.HashSet<>(spec.perInputAxes.get(0));
+        shared.retainAll(spec.perInputAxes.get(1));
+        if (shared.isEmpty()) {
+            throw new UnsupportedOperationException(
+                "einsum with 2 inputs, empty output, and no shared contract axis is not supported: "
+                + subscript);
+        }
         StringBuilder kept = new StringBuilder();
         for (char c : spec.inputLabels[0].toCharArray()) {
             if (spec.batchAxes.contains(c)) kept.append(c);
         }
         for (char c : spec.inputLabels[0].toCharArray()) {
-            if (!spec.batchAxes.contains(c) && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+            if (!spec.batchAxes.contains(c) && !shared.contains(c)
+                    && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
         }
         for (char c : spec.inputLabels[1].toCharArray()) {
-            if (!spec.batchAxes.contains(c) && !spec.contractAxes.contains(c)
+            if (!spec.batchAxes.contains(c) && !shared.contains(c)
                     && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+        }
+        if (kept.length() == 0) {
+            throw new UnsupportedOperationException(
+                "einsum 2-input scalar reduction has no non-shared labels to keep: " + subscript);
         }
         String fullSub = spec.inputLabels[0] + "," + spec.inputLabels[1] + "->" + kept;
         return einsumPair(tensor, fullSub, other).sum();
