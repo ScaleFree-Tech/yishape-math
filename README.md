@@ -982,6 +982,14 @@ If you encounter any issues while using the library, you can get help through th
 
 ## 更新日志 / Changelog
 
+### v0.5.0 (2026-06)
+- 自动微分 / Automatic Differentiation
+- 多目标决策 / Multi-Criteria Decision Making
+- 距离度量学习 / Distance Metric Learning
+- Rust端HPC支持 / Rust Native Support
+- WGPU支持 / WGPU Support
+- 由于依赖于Java FFM API与RUST端交互，JDK切换为25 / JDK switch to version 25 because Java FFM API is need
+
 ### v0.3.8 (2026-05)
 - **Bug Fixes** / **Bug Fixes**: 修复了矩阵分解、降维等方面的错误 / Bug fixes concerning matrix decomposition and dimension reduction
 - **绘图系统增加JavaFx和SVG两种新的实现 / Two new implementations of the plotting system: JavaFx and SVG**:  增加JavaFx和SVG两种新的绘图实现，增强了kde曲线、回归线、配对图、联合图等 / Added two new plotting implementations, JavaFx and SVG, which enhanced KDE curves, regression lines, scatter plots, joint plots, etc.
