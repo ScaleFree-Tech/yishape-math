@@ -30,7 +30,9 @@ public final class EinsumParser {
      * @throws UnsupportedOperationException if >2 inputs
      */
     public static EinsumSpec parse(String subscript, int[]... inputShapes) {
-        String[] parts = subscript.split("->");
+        // split("->") drops a trailing empty output ("ij->"); use -1 to preserve it
+        // so scalar-output einsum (full reduction / trace) is accepted.
+        String[] parts = subscript.split("->", -1);
         if (parts.length != 2) {
             throw new IllegalArgumentException("einsum requires explicit output arrow (->): " + subscript);
         }
@@ -123,6 +125,31 @@ public final class EinsumParser {
         Set<Character> set = new LinkedHashSet<>();
         for (char c : s.toCharArray()) set.add(c);
         return set;
+    }
+
+    /**
+     * Detect repeated labels within a single input subscript, e.g. {@code "ii"}
+     * (diagonal) or {@code "iji"} (partial diagonal). Returns the list of
+     * {@code (firstPos, secondPos)} axis-position pairs whose labels repeat, in
+     * firstPos order. Empty if no label repeats within {@code inputSub}.
+     *
+     * <p>Repeated labels denote diagonal/trace einsum: the output is taken along
+     * the positions where the repeated axes are equal. Only the 2D diagonal case
+     * ({@code "ii->i"}, {@code "ii->"}) is executed; higher-rank repeats are
+     * detected here so callers can reject them with a clear message rather than
+     * silently misclassifying axes.</p>
+     */
+    public static java.util.List<int[]> repeatedLabelPairs(String inputSub) {
+        java.util.List<int[]> pairs = new java.util.ArrayList<>();
+        java.util.Map<Character, Integer> firstSeen = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < inputSub.length(); i++) {
+            char c = inputSub.charAt(i);
+            Integer prev = firstSeen.putIfAbsent(c, i);
+            if (prev != null) {
+                pairs.add(new int[]{prev, i});
+            }
+        }
+        return pairs;
     }
 
     // ==================== Spec ====================

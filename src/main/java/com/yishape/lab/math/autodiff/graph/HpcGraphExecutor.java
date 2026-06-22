@@ -198,20 +198,26 @@ public final class HpcGraphExecutor {
                 "gradient count mismatch: got %d gradients for %d leaves",
                 result.length - 1, leaves.size());
         }
+        // Two-pass: validate null + length for EVERY leaf BEFORE any accGrad.
+        // A mid-loop mismatch must not leave partial grads on earlier leaves —
+        // the caller's CPU-fallback backward() would accumulate on top, silently
+        // doubling them. (Phase 4.3 §7f root cause: accGrad-in-loop.)
         for (int i = 0; i < leaves.size(); i++) {
             if (result[i + 1] == null) {
-                log.warn("HPC tensor gradient[{}] is null — falling back to CPU", i);
+                log.warn("HPC tensor gradient[{}] is null — falling back to CPU (no grads written)", i);
                 trackHpcFailure();
                 return Double.NaN;
             }
             int gradLen = result[i + 1].length;
             int leafLen = Math.toIntExact(leaves.get(i).totalSize());
             if (gradLen != leafLen) {
-                log.warn("HPC tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                log.warn("HPC tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU (no grads written)",
                         i, gradLen, leafLen);
                 trackHpcFailure();
                 return Double.NaN;
             }
+        }
+        for (int i = 0; i < leaves.size(); i++) {
             leaves.get(i).accGrad(result[i + 1]);
         }
         HPC_COOLDOWN.get()[0] = 0; // reset cooldown on success
@@ -293,13 +299,15 @@ public final class HpcGraphExecutor {
                 double[] g = grads.get(i);
                 long leafSize = leaves.get(i).totalSize();
                 if (g.length != leafSize) {
-                    log.warn("HPC binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                    log.warn("HPC binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU (no grads written)",
                         i, g.length, leafSize);
                     trackHpcFailure();
                     cacheEntry.invalidate();
                     return Double.NaN;
                 }
-                leaves.get(i).accGrad(g);
+            }
+            for (int i = 0; i < grads.size(); i++) {
+                leaves.get(i).accGrad(grads.get(i));
             }
             return loss;
         } catch (Exception e) {
@@ -345,13 +353,15 @@ public final class HpcGraphExecutor {
                 double[] g = grads.get(i);
                 long leafSize = leaves.get(i).totalSize();
                 if (g.length != leafSize) {
-                    log.warn("HPC binary incremental gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
+                    log.warn("HPC binary incremental gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU (no grads written)",
                         i, g.length, leafSize);
                     trackHpcFailure();
                     cacheEntry.invalidate();
                     return Double.NaN;
                 }
-                leaves.get(i).accGrad(g);
+            }
+            for (int i = 0; i < grads.size(); i++) {
+                leaves.get(i).accGrad(grads.get(i));
             }
             return loss;
         } catch (Exception e) {

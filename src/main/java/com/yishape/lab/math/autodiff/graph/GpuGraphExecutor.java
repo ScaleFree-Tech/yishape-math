@@ -340,9 +340,14 @@ public final class GpuGraphExecutor {
         int arrEnd = findMatchingBracket(resultJson, arrStart);
         if (arrEnd < 0) return Double.NaN;
 
+        // Two-pass: parse + validate ALL gradients first, then accGrad. A failure
+        // (count or length mismatch) must return NaN WITHOUT having written any
+        // leaf gradient — otherwise the caller's CPU-fallback backward() would
+        // accumulate on top of the partial GPU grads, silently doubling them.
+        // (Phase 4.3 §7f root cause: accGrad-in-loop before full validation.)
         int pos = arrStart + 1;
-        int leafIdx = 0;
-        while (pos < arrEnd && leafIdx < leaves.size()) {
+        java.util.List<double[]> parsed = new java.util.ArrayList<>();
+        while (pos < arrEnd) {
             while (pos < arrEnd && (resultJson.charAt(pos) == ',' || Character.isWhitespace(resultJson.charAt(pos)))) {
                 pos++;
             }
@@ -364,25 +369,29 @@ public final class GpuGraphExecutor {
                 if (trimmed.isEmpty()) continue;
                 gradData[idx++] = Double.parseDouble(trimmed);
             }
-
-            // C23: verify gradient length matches leaf tensor size BEFORE accGrad
-            long leafSize = leaves.get(leafIdx).totalSize();
-            if (gradData.length != leafSize) {
-                log.warn("GPU tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
-                    leafIdx, gradData.length, leafSize);
-                trackGpuFailure();
-                return Double.NaN;
-            }
-            leaves.get(leafIdx).accGrad(gradData);
-            leafIdx++;
+            parsed.add(gradData);
             pos = innerEnd + 1;
         }
 
-        if (leafIdx < leaves.size()) {
-            log.warn("GPU tensor returned fewer gradients ({}) than leaves ({}) — falling back to CPU",
-                leafIdx, leaves.size());
+        if (parsed.size() != leaves.size()) {
+            log.warn("GPU tensor returned {} gradients, expected {} leaves — falling back to CPU (no grads written)",
+                parsed.size(), leaves.size());
             trackGpuFailure();
             return Double.NaN;
+        }
+        // C23: verify every gradient length matches its leaf BEFORE any accGrad.
+        for (int i = 0; i < parsed.size(); i++) {
+            long leafSize = leaves.get(i).totalSize();
+            if (parsed.get(i).length != leafSize) {
+                log.warn("GPU tensor gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU (no grads written)",
+                    i, parsed.get(i).length, leafSize);
+                trackGpuFailure();
+                return Double.NaN;
+            }
+        }
+        // All validated — safe to accumulate.
+        for (int i = 0; i < parsed.size(); i++) {
+            leaves.get(i).accGrad(parsed.get(i));
         }
         return loss;
     }
@@ -510,18 +519,21 @@ public final class GpuGraphExecutor {
                 loss, grads.size(), order.size());
         }
 
+        // Two-pass: validate every gradient length BEFORE any accGrad. A mid-loop
+        // mismatch must not leave partial grads on earlier leaves — the caller's
+        // CPU-fallback backward() would accumulate on top, silently doubling them.
         for (int i = 0; i < grads.size(); i++) {
-            double[] g = grads.get(i);
-            // C23: verify gradient length matches leaf tensor size
             long leafSize = leaves.get(i).totalSize();
-            if (g.length != leafSize) {
-                log.warn("GPU binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU",
-                    i, g.length, leafSize);
+            if (grads.get(i).length != leafSize) {
+                log.warn("GPU binary gradient length mismatch at leaf {}: got {} expected {} — falling back to CPU (no grads written)",
+                    i, grads.get(i).length, leafSize);
                 trackGpuFailure();
                 cacheEntry.invalidate();
                 return Double.NaN;
             }
-            leaves.get(i).accGrad(g);
+        }
+        for (int i = 0; i < grads.size(); i++) {
+            leaves.get(i).accGrad(grads.get(i));
         }
         return loss;
     }

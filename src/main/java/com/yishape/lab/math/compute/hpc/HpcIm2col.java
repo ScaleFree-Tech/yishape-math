@@ -354,4 +354,143 @@ public final class HpcIm2col {
     public static boolean isFusedGemmSiluAvailable() {
         return com.yishape.lab.math.hpc.YishapeHpc.isFusedGemmSiluAvailable();
     }
+
+    // ==================== Batched ConvTranspose2d (B folded into column axis) ====================
+
+    /**
+     * Attempt HPC batched transpose-im2col: scatter B samples' inputs into a
+     * shared column matrix {@code col[inCh*Kh*Kw, B*outH*outW]} (B interleaved
+     * along columns, row-major). Input is [B, inCh, H, W] (B-major).
+     *
+     * @return true if HPC succeeded, false to fall back to Java
+     */
+    public static boolean tryBatchTransposeIm2col(double[] input, int B, int inCh, int H, int W,
+            int Kh, int Kw, int stride, int pad, int outH, int outW, double[] col) {
+        if (input == null || col == null) {
+            return false;
+        }
+        long total = (long) B * inCh * H * W;
+        if (total < HpcConfig.convMinElements()) {
+            return false;
+        }
+        if (!HpcConfig.allowAttempts()) {
+            return false;
+        }
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+            return false;
+        }
+        try {
+            try {
+                int rc = com.yishape.lab.math.hpc.YishapeHpc.transposeIm2colBatch(
+                        input, B, inCh, H, W, Kh, Kw, stride, pad, outH, outW, col);
+                return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            } catch (Throwable t) {
+                return false;
+            }
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Attempt HPC fused batched ConvTranspose2d forward (transposeIm2col + GEMM + bias).
+     * Output layout is [outCh, B*outH*outW] (outCh-major); caller permutes to
+     * [B, outCh, outH, outW]. Input is [B, inCh, H, W] (B-major).
+     *
+     * @return true if HPC succeeded, false to fall back to Java
+     */
+    public static boolean tryConvTranspose2dForwardBatch(double[] input, double[] weight, double[] bias,
+            int B, int inCh, int H, int W, int outCh,
+            int Kh, int Kw, int stride, int pad, int outH, int outW, double[] output) {
+        if (input == null || weight == null || output == null) {
+            return false;
+        }
+        long total = (long) B * inCh * H * W;
+        if (total < HpcConfig.convMinElements()) {
+            return false;
+        }
+        if (!HpcConfig.allowAttempts()) {
+            return false;
+        }
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+            return false;
+        }
+        try {
+            try {
+                int rc = com.yishape.lab.math.hpc.YishapeHpc.convTranspose2dForwardBatch(
+                        input, weight, bias, B, inCh, H, W, outCh, Kh, Kw, stride, pad, outH, outW, output);
+                return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            } catch (Throwable t) {
+                return false;
+            }
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Attempt HPC batched ConvTranspose2d weight gradient (sums over B).
+     * Input [B,inCh,H,W], gradOutput [B,outCh,oH,oW] (B-major).
+     */
+    public static boolean tryConvTranspose2dDWeightBatch(double[] input, double[] gradOutput, int B,
+            int inCh, int outCh, int H, int W,
+            int Kh, int Kw, int stride, int pad, int oH, int oW, double[] dWeight) {
+        if (input == null || gradOutput == null || dWeight == null) {
+            return false;
+        }
+        long total = (long) B * inCh * H * W;
+        if (total < HpcConfig.convMinElements()) {
+            return false;
+        }
+        if (!HpcConfig.allowAttempts()) {
+            return false;
+        }
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+            return false;
+        }
+        try {
+            try {
+                int rc = com.yishape.lab.math.hpc.YishapeHpc.convTranspose2dDWeightBatch(
+                        input, gradOutput, B, inCh, outCh, H, W, Kh, Kw, stride, pad, oH, oW, dWeight);
+                return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            } catch (Throwable t) {
+                return false;
+            }
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Attempt HPC batched ConvTranspose2d input gradient.
+     * weight [outCh,inCh,Kh,Kw], gradOutput [B,outCh,oH,oW] (B-major), dInput [B,inCh,H,W] (B-major).
+     */
+    public static boolean tryConvTranspose2dDInputBatch(double[] weight, double[] gradOutput, int B,
+            int inCh, int outCh, int H, int W,
+            int Kh, int Kw, int stride, int pad, int oH, int oW, double[] dInput) {
+        if (weight == null || gradOutput == null || dInput == null) {
+            return false;
+        }
+        long total = (long) B * inCh * H * W;
+        if (total < HpcConfig.convMinElements()) {
+            return false;
+        }
+        if (!HpcConfig.allowAttempts()) {
+            return false;
+        }
+        if (!HpcOptionalRuntime.isNativeRuntimeAvailable()) {
+            return false;
+        }
+        try {
+            try {
+                int rc = com.yishape.lab.math.hpc.YishapeHpc.convTranspose2dDInputBatch(
+                        weight, gradOutput, B, inCh, outCh, H, W, Kh, Kw, stride, pad, oH, oW, dInput);
+                return rc == com.yishape.lab.math.hpc.YishapeHpcStatus.OK;
+            } catch (Throwable t) {
+                return false;
+            }
+        } catch (LinkageError | RuntimeException e) {
+            return false;
+        }
+    }
 }

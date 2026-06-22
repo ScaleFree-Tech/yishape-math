@@ -1,5 +1,6 @@
 package com.yishape.lab.math.autodiff;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.yishape.lab.math.linalg.IDoubleVector;
@@ -89,6 +90,28 @@ public final class BatchedDiffTensor implements IDiffTensor {
         return new BatchedDiffTensor(raw, nestingDepth);
     }
 
+    /** Re-wrap every element of a split/chunk/unbind result so batch context flows through. */
+    private IDiffTensor[] wrapAll(IDiffTensor[] arr) {
+        IDiffTensor[] out = new IDiffTensor[arr.length];
+        for (int i = 0; i < arr.length; i++) out[i] = wrap(arr[i]);
+        return out;
+    }
+
+    /** Re-wrap every element of an unstack result (parent-typed list) preserving batch context. */
+    private List<IDoubleTensor> wrapAllList(List<IDoubleTensor> list) {
+        List<IDoubleTensor> out = new java.util.ArrayList<>(list.size());
+        for (IDoubleTensor t : list) {
+            if (t instanceof IDiffTensor dt) {
+                out.add(wrap(dt));
+            } else {
+                // Non-diff view (e.g. RereDoubleTensor from the parent unstack): wrap as a
+                // batched constant so batch context (shape + dim-shift) is preserved.
+                out.add(new BatchedDiffTensor(asConstant(t), nestingDepth));
+            }
+        }
+        return out;
+    }
+
     // ---- helpers ----
 
     private int shift(int dim) {
@@ -129,6 +152,19 @@ public final class BatchedDiffTensor implements IDiffTensor {
         int[] sizes = new int[nestingDepth];
         for (int i = 0; i < nestingDepth; i++) sizes[i] = data.shape()[i];
         return sizes;
+    }
+
+    /**
+     * True iff {@code shape} is long enough to contain the batch dimensions and
+     * its leading {@code nestingDepth} entries exactly match the current batch
+     * sizes — i.e. the caller already passed a full (batch-inclusive) shape.
+     */
+    private boolean startsWithBatchPrefix(int[] shape, int[] batchSizes) {
+        if (shape.length < nestingDepth) return false;
+        for (int i = 0; i < nestingDepth; i++) {
+            if (shape[i] != batchSizes[i]) return false;
+        }
+        return true;
     }
 
     private static UnsupportedOperationException unsupported(String op) {
@@ -215,6 +251,12 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public IDiffTensor sin() { return wrap(data.sin()); }
     @Override public IDiffTensor cos() { return wrap(data.cos()); }
     @Override public IDiffTensor tan() { return wrap(data.tan()); }
+    @Override public IDiffTensor arcsin() { return wrap(data.arcsin()); }
+    @Override public IDiffTensor arccos() { return wrap(data.arccos()); }
+    @Override public IDiffTensor arctan() { return wrap(data.arctan()); }
+    @Override public IDiffTensor sinh() { return wrap(data.sinh()); }
+    @Override public IDiffTensor cosh() { return wrap(data.cosh()); }
+    @Override public IDiffTensor remainder(double value) { return wrap(data.remainder(value)); }
     @Override public IDiffTensor tanh() { return wrap(data.tanh()); }
     @Override public IDiffTensor silu() { return wrap(data.silu()); }
     @Override public IDiffTensor gelu() { return wrap(data.gelu()); }
@@ -367,8 +409,17 @@ public final class BatchedDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor reshape(int... newShape) {
-        // User provides shape without batch dims; prepend all nesting batch dims
+        // User provides shape without batch dims; prepend all nesting batch dims.
+        // However, some Module.forward() implementations (e.g. Linear) read
+        // input.shape() — which already includes the batch dim(s) — and feed that
+        // shape straight back into reshape(). When the caller's newShape already
+        // starts with the batch sizes, treat it as a full shape and use it verbatim
+        // instead of prepending another copy of the batch dims (which would double-
+        // count them and overflow: e.g. [3,1] → [3,3,1] = "Cannot reshape 3 to 9").
         int[] batchSizes = batchSizes();
+        if (startsWithBatchPrefix(newShape, batchSizes)) {
+            return wrap(data.reshape(newShape));
+        }
         int[] fullShape = new int[newShape.length + nestingDepth];
         System.arraycopy(batchSizes, 0, fullShape, 0, nestingDepth);
         System.arraycopy(newShape, 0, fullShape, nestingDepth, newShape.length);
@@ -554,9 +605,61 @@ public final class BatchedDiffTensor implements IDiffTensor {
 
     @Override
     public IDiffTensor einsum(String subscript, IDoubleTensor... others) {
-        // For simple cases inside vmap, delegate to data.einsum with proper
-        // batch handling. The underlying tensor already has the batch dim.
-        // Complex subscripts that need dim shifting are rare in vmap contexts.
+        // JAX-style vmap: the user writes subscripts in user space (no batch dim),
+        // but `data` and batched operands physically carry nestingDepth leading
+        // batch dims. Rewrite the subscript by prepending `nestingDepth` fresh
+        // batch labels to every input and the output, broadcast shared (non-batched)
+        // operands up to the batch shape, then delegate to the underlying einsum
+        // which already handles explicit batch labels (batch axis = label present
+        // in all inputs + output).
+        //
+        // Example (nestingDepth=1): x=[B,M,K] (batched), w=[K,N] (shared weight),
+        // user "mk,kn->mn" → physical "bmk,bkn->bmn" with w broadcast to [B,K,N].
+        if (nestingDepth == 0) {
+            return wrap(data.einsum(subscript, unwrapOthers(others)));
+        }
+
+        // Split "in0,in1,...->out"
+        String[] arrow = subscript.split("->");
+        if (arrow.length != 2) {
+            throw new IllegalArgumentException(
+                "einsum requires explicit output arrow (->): " + subscript);
+        }
+        String[] inputStrs = arrow[0].split(",");
+        if (inputStrs.length != others.length + 1) {
+            throw new IllegalArgumentException(
+                "einsum input count mismatch: " + inputStrs.length
+                + " subscripts, " + (others.length + 1) + " tensors (including receiver)");
+        }
+        String outputStr = arrow[1];
+
+        String batchLabels = pickBatchLabels(subscript, nestingDepth);
+
+        // Build physical operands: input 0 is `this` (always batched); each other
+        // is either batched (unwrap) or shared (broadcast to batch shape).
+        IDiffTensor[] operands = new IDiffTensor[others.length];
+        for (int i = 0; i < others.length; i++) {
+            if (others[i] instanceof BatchedDiffTensor bo) {
+                operands[i] = bo.data;
+            } else {
+                operands[i] = broadcastShared(others[i]);
+            }
+        }
+
+        // Rewrite subscript: prepend batch labels to every input and the output.
+        StringBuilder sb = new StringBuilder();
+        sb.append(batchLabels).append(inputStrs[0]);
+        for (int i = 0; i < others.length; i++) {
+            sb.append(',').append(batchLabels).append(inputStrs[i + 1]);
+        }
+        sb.append("->").append(batchLabels).append(outputStr);
+        String physSubscript = sb.toString();
+
+        return wrap(data.einsum(physSubscript, operands));
+    }
+
+    /** Unwrap BatchedDiffTensor operands to their data tensors (no broadcasting). */
+    private IDiffTensor[] unwrapOthers(IDoubleTensor[] others) {
         IDiffTensor[] unwrapped = new IDiffTensor[others.length];
         for (int i = 0; i < others.length; i++) {
             if (others[i] instanceof BatchedDiffTensor bo) {
@@ -568,7 +671,52 @@ public final class BatchedDiffTensor implements IDiffTensor {
                     others[i].toDoubleArray(), others[i].shape());
             }
         }
-        return wrap(data.einsum(subscript, unwrapped));
+        return unwrapped;
+    }
+
+    /**
+     * Pick {@code n} lowercase axis labels not used anywhere in {@code subscript}.
+     * EinsumParser restricts labels to a-z; batch labels must not collide with the
+     * user's labels.
+     */
+    private static String pickBatchLabels(String subscript, int n) {
+        boolean[] used = new boolean[26];
+        for (int i = 0; i < subscript.length(); i++) {
+            char c = subscript.charAt(i);
+            if (c >= 'a' && c <= 'z') used[c - 'a'] = true;
+        }
+        StringBuilder labels = new StringBuilder(n);
+        for (char c = 'a'; c <= 'z' && labels.length() < n; c++) {
+            if (!used[c - 'a']) labels.append(c);
+        }
+        if (labels.length() < n) {
+            throw new UnsupportedOperationException(
+                "einsum batch-shift needs " + n + " free axis labels (a-z) but the "
+                + "subscript already uses too many: \"" + subscript + "\"");
+        }
+        return labels.toString();
+    }
+
+    /**
+     * Broadcast a shared (non-batched) operand up to the batch shape by prepending
+     * {@code nestingDepth} size-1 dims (unsqueeze) then expanding them to the batch
+     * sizes. Preserves differentiability: an {@link IDiffTensor} operand keeps its
+     * graph so gradients flow back to shared weights (expand's backward sum-reduces
+     * over the broadcast dims); a plain {@link IDoubleTensor} is wrapped as a
+     * constant first.
+     */
+    private IDiffTensor broadcastShared(IDoubleTensor t) {
+        int[] bs = batchSizes();
+        int[] origShape = t.shape();
+        IDiffTensor base = (t instanceof IDiffTensor dt) ? dt : asConstant(t);
+        IDiffTensor expanded = base;
+        for (int i = 0; i < nestingDepth; i++) {
+            expanded = expanded.unsqueeze(0);
+        }
+        int[] target = new int[nestingDepth + origShape.length];
+        System.arraycopy(bs, 0, target, 0, nestingDepth);
+        System.arraycopy(origShape, 0, target, nestingDepth, origShape.length);
+        return expanded.expand(target);
     }
 
     // ==================== advanced ops ====================
@@ -710,12 +858,15 @@ public final class BatchedDiffTensor implements IDiffTensor {
     }
     @Override public IDiffTensor trace() { return wrap(data.trace()); }
     @Override public IDiffTensor logSumExp(int dim, boolean keepdim) { return wrap(data.logSumExp(shift(dim), keepdim)); }
-    @Override public IDiffTensor[] split(int splitSize, int dim) { return data.split(splitSize, shift(dim)); }
-    @Override public IDiffTensor[] split(int[] splitSizes, int dim) { return data.split(splitSizes, shift(dim)); }
-    @Override public IDiffTensor[] chunk(int chunks, int dim) { return data.chunk(chunks, shift(dim)); }
-    @Override public IDiffTensor[] unbind(int dim) { return data.unbind(shift(dim)); }
+    @Override public IDiffTensor[] split(int splitSize, int dim) { return wrapAll(data.split(splitSize, shift(dim))); }
+    @Override public IDiffTensor[] split(int[] splitSizes, int dim) { return wrapAll(data.split(splitSizes, shift(dim))); }
+    @Override public IDiffTensor[] chunk(int chunks, int dim) { return wrapAll(data.chunk(chunks, shift(dim))); }
+    @Override public IDiffTensor[] unbind(int dim) { return wrapAll(data.unbind(shift(dim))); }
 
     // ==================== accessors ====================
+
+    @Override public boolean isBatched() { return true; }
+    @Override public int batchDimCount() { return nestingDepth; }
 
     @Override public int[] shape() { return data.shape(); }
     @Override public int rank() { return data.rank(); }
@@ -734,10 +885,10 @@ public final class BatchedDiffTensor implements IDiffTensor {
     @Override public IMatrix toMatrix() { return data.toMatrix(); }
     @Override public IDoubleVector toVector() { return data.toVector(); }
     @Override public IDoubleVector toVectorCopy() { return data.toVectorCopy(); }
-    @Override public List<IDoubleTensor> unstack(int dim) { return data.unstack(shift(dim)); }
+    @Override public List<IDoubleTensor> unstack(int dim) { return wrapAllList(data.unstack(shift(dim))); }
     @Override public IDiffVector flattenValue() { return data.flattenValue(); }
     @Override public IDiffVector flattenGrad() { return data.flattenGrad(); }
-    @Override public IDiffTensor detach() { return data.detach(); }
+    @Override public IDiffTensor detach() { return wrap(data.detach()); }
     @Override public boolean requiresGrad() { return data.requiresGrad(); }
     @Override public IDiffTensor setRequiresGrad(boolean requiresGrad) { return wrap(data.setRequiresGrad(requiresGrad)); }
     @Override public IDoubleTensor grad() { return data.grad(); }

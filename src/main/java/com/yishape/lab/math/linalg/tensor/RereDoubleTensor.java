@@ -1305,6 +1305,27 @@ public class RereDoubleTensor implements IDoubleTensor {
             return mul(others[0]);
         }
 
+        // Empty (scalar) 2-input output (e.g. "ij,jk->"): compute a non-empty
+        // output that keeps every non-contract label, then sum all elements. When
+        // ALL labels are contracted (pure scalar reduction), keep input0's labels
+        // so the matmul still executes; summing that full product gives the scalar.
+        if (spec.outputLabels.isEmpty()) {
+            StringBuilder kept = new StringBuilder();
+            for (char c : spec.inputLabels[0].toCharArray()) {
+                if (spec.batchAxes.contains(c)) kept.append(c);
+            }
+            for (char c : spec.inputLabels[0].toCharArray()) {
+                if (!spec.batchAxes.contains(c) && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+            }
+            for (char c : spec.inputLabels[1].toCharArray()) {
+                if (!spec.batchAxes.contains(c) && !spec.contractAxes.contains(c)
+                        && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+            }
+            String fullSub = spec.inputLabels[0] + "," + spec.inputLabels[1] + "->" + kept;
+            IDoubleTensor full = einsum(fullSub, others[0]);
+            return new RereDoubleTensor(new double[]{full.sumAll()}, new int[]{1});
+        }
+
         // Per-slice batch loop using DoubleFlatGemm for forward.
         // bmm with reshape3D [batch,contract,kept] fails because contract dims must
         // align between inputs but kept dims differ (e.g. 2 vs 4 for "ij,jk->ik").
@@ -1343,7 +1364,19 @@ public class RereDoubleTensor implements IDoubleTensor {
     }
 
     private IDoubleTensor einsumSingle(EinsumParser.EinsumSpec spec) {
+        // Repeated labels within one input → diagonal/trace (e.g. "ii->i", "ii->").
+        // The general multi-repetition case is not supported; handle the common 2D
+        // square diagonal and leave anything more complex to the caller as an error.
+        java.util.List<int[]> reps = EinsumParser.repeatedLabelPairs(spec.inputLabels[0]);
+        if (!reps.isEmpty()) {
+            return einsumDiagonal(spec, reps);
+        }
         if (!spec.contractAxes.isEmpty()) {
+            // Empty (scalar) output: sum ALL elements → rank-1 [1] (rank-0 tensors
+            // are not representable in TensorShape). Covers full reductions like "ij->".
+            if (spec.outputLabels.isEmpty()) {
+                return new RereDoubleTensor(new double[]{sumAll()}, new int[]{1});
+            }
             IDoubleTensor result = this;
             int[] sortedDims = spec.contractAxes.stream()
                 .mapToInt(c -> spec.inputLabels[0].indexOf(c))
@@ -1361,6 +1394,45 @@ public class RereDoubleTensor implements IDoubleTensor {
             perm[i] = spec.inputLabels[0].indexOf(c);
         }
         return permute(perm);
+    }
+
+    /**
+     * Diagonal/trace einsum for a single input with a repeated label. Supports the
+     * common 2D square case {@code "ii->i"} (extract main diagonal → [N]) and
+     * {@code "ii->"} (trace → scalar). The output may only reference the repeated
+     * label (diagonal) or be empty (trace); any other output label is rejected.
+     */
+    private IDoubleTensor einsumDiagonal(EinsumParser.EinsumSpec spec, java.util.List<int[]> reps) {
+        if (reps.size() != 1 || spec.inputLabels[0].length() != 2) {
+            throw new UnsupportedOperationException(
+                "einsum repeated-label case only supports 2D diagonal/trace (\"ii->i\" / \"ii->\"), got: \""
+                + spec.inputLabels[0] + "->" + spec.outputLabels + "\"");
+        }
+        char rep = spec.inputLabels[0].charAt(reps.get(0)[0]);
+        int[] shape = shape();
+        if (shape[0] != shape[1]) {
+            throw new IllegalArgumentException(
+                "einsum diagonal requires a square matrix, got [" + shape[0] + "," + shape[1] + "]");
+        }
+        int n = shape[0];
+        // Validate output: only the repeated label (→ diagonal [N]) or empty (→ trace).
+        for (char c : spec.outputLabels.toCharArray()) {
+            if (c != rep) {
+                throw new UnsupportedOperationException(
+                    "einsum diagonal output must be empty (trace) or the repeated label only, got: \""
+                    + spec.outputLabels + "\"");
+            }
+        }
+        if (spec.outputLabels.isEmpty()) {
+            // trace
+            double tr = 0;
+            for (int k = 0; k < n; k++) tr += get(k, k);
+            return new RereDoubleTensor(new double[]{tr}); // rank-0 scalar
+        }
+        // diagonal → [N]
+        double[] diag = new double[n];
+        for (int k = 0; k < n; k++) diag[k] = get(k, k);
+        return new RereDoubleTensor(diag, n);
     }
 
     // ==================== 高级操作 ====================

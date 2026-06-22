@@ -49,6 +49,25 @@ public interface IDiffTensor extends IDoubleTensor {
     @Override IDiffTensor cos();
     @Override IDiffTensor tan();
 
+    default IDiffTensor arcsin() {
+        throw new UnsupportedOperationException("arcsin not supported on " + getClass().getSimpleName());
+    }
+    default IDiffTensor arccos() {
+        throw new UnsupportedOperationException("arccos not supported on " + getClass().getSimpleName());
+    }
+    default IDiffTensor arctan() {
+        throw new UnsupportedOperationException("arctan not supported on " + getClass().getSimpleName());
+    }
+    default IDiffTensor sinh() {
+        throw new UnsupportedOperationException("sinh not supported on " + getClass().getSimpleName());
+    }
+    default IDiffTensor cosh() {
+        throw new UnsupportedOperationException("cosh not supported on " + getClass().getSimpleName());
+    }
+    default IDiffTensor remainder(double value) {
+        throw new UnsupportedOperationException("remainder not supported on " + getClass().getSimpleName());
+    }
+
     IDiffTensor tanh();
     IDiffTensor silu();
     IDiffTensor gelu();
@@ -77,6 +96,18 @@ public interface IDiffTensor extends IDoubleTensor {
         IDiffVector flat = this.flattenValue();
         IDiffVector sumVec = flat.sum();
         return IDiffTensor.fromDiffVector(sumVec, 1);
+    }
+
+    /**
+     * Mean of all elements. Returns a differentiable scalar tensor (shape [1]).
+     * Implemented as {@code sum().div(totalSize())} so it inherits {@code sum()}'s
+     * unary+reduce fusion (squareSum/expSum …) — the canonical graph definition
+     * lives in {@code sum()}, with no duplicated fusion logic. Vector/matrix
+     * facades delegate here rather than reimplementing mean.
+     * 所有元素均值，返回可微标量张量（shape [1]）。
+     */
+    default IDiffTensor mean() {
+        return sum().div(totalSize());
     }
 
     @Override IDiffTensor mean(int dim, boolean keepdim);
@@ -714,6 +745,32 @@ public interface IDiffTensor extends IDoubleTensor {
     /** 当前累积梯度 */
     IDoubleTensor grad();
 
+    // ==================== Batch 契约查询 ====================
+
+    /**
+     * Whether this tensor carries one or more leading batch dimensions whose
+     * presence is transparent to dimension-indexed operations (i.e. dim params
+     * are interpreted relative to the non-batch dims and automatically shifted).
+     *
+     * <p>Only {@link BatchedDiffTensor} (and nested wrappers) return {@code true}.
+     * Plain implementations ({@code RereDiffTensor}, {@code ConstantDiffTensor},
+     * {@code TangentDiffTensor}) return {@code false} — their dims are physical
+     * and need no shifting. This lets downstream code query batch state through
+     * the interface instead of {@code instanceof} checks.</p>
+     */
+    default boolean isBatched() {
+        return false;
+    }
+
+    /**
+     * Number of leading batch dimensions. {@code 0} for non-batched tensors,
+     * {@code ≥1} for {@link BatchedDiffTensor} (equals its nesting depth).
+     * Dim parameters passed to this tensor are shifted by this count.
+     */
+    default int batchDimCount() {
+        return 0;
+    }
+
     // ==================== 工厂 ====================
 
     /**
@@ -745,6 +802,32 @@ public interface IDiffTensor extends IDoubleTensor {
                 return rv.tensor;
             }
             return rv.tensor.reshape(shape);
+        }
+        if (vec instanceof com.yishape.lab.math.autodiff.BatchedDiffVector bdv) {
+            // Vmap context: the vector is a flat N*D sample-major batch. Reshape the
+            // underlying RereDiffVector into [N, D] (preserving the AD graph), then wrap
+            // as a BatchedDiffTensor so the batch dimension flows transparently through
+            // Module.forward()'s structural/matrix ops.
+            //
+            // The caller-supplied `shape` is NOT used: in the vmap vector path, the only
+            // caller is Module.forward(IDiffVector), which passes either inputShape(N*D)
+            // or the full flat length [N*D] — neither is a per-sample shape. The
+            // BatchedDiffVector already carries its own per-sample dim (sampleDim()), so
+            // we trust that and ignore the (full-length) caller shape. Using the caller
+            // shape here would prepend N to [N*D] → [N, N*D], over-counting by factor N
+            // (e.g. "Cannot reshape 4 to 8" for N=2, D=2).
+            IDiffVector inner = bdv.unwrap();
+            int n = bdv.batchSize();
+            int d = bdv.sampleDim();
+            int[] fullShape = new int[]{n, d};
+            if (inner instanceof com.yishape.lab.math.autodiff.impl.RereDiffVector rvInner) {
+                IDiffTensor reshaped = rvInner.tensor.reshape(fullShape);
+                return new com.yishape.lab.math.autodiff.BatchedDiffTensor(reshaped, 1);
+            }
+            // Fallback: detach to a constant tensor (loses AD graph, but avoids throwing)
+            double[] data = bdv.getValue().getData();
+            return new com.yishape.lab.math.autodiff.BatchedDiffTensor(
+                constantTensor(data, fullShape), 1);
         }
         IDoubleVector val = vec.getValue();
         if (val == null) {

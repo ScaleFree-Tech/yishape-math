@@ -921,13 +921,15 @@ complex_ops:
   scaledDotProductAttention:
     description: "Scaled Dot-Product Attention (Q·K^T + softmax + V)"
     inputs:
-      - { name: q, index: 0, shape: "[batch * seqQ * dk]", description: "Query (flat)" }
-      - { name: k, index: 1, shape: "[batch * seqK * dk]", description: "Key (flat)" }
-      - { name: v, index: 2, shape: "[batch * seqK * dv]", description: "Value (flat)" }
+      - { name: q, index: 0, shape: "[batch * seqQ * dModel]", description: "Query (head-interleaved; numHeads in scalar2, headDim=dModel/numHeads)" }
+      - { name: k, index: 1, shape: "[batch * seqK * dModel]", description: "Key (head-interleaved, flat)" }
+      - { name: v, index: 2, shape: "[batch * seqK * dModel]", description: "Value (head-interleaved, flat)" }
     len_no_bias: 3
     len_with_bias: 3
     scalar_fields:
       - { name: dropout, shift: 0, mask: "0xFFFFFFFFFFFFFFFF", description: "Dropout rate (as f64)" }
+    scalar2_fields:
+      - { name: numHeads, shift: 0, mask: "0xFFFF", description: "Number of heads (0 => single-head, dk=dv=dModel)" }
     backward_grads:
       - { name: d_q, index: 0, condition: always }
       - { name: d_k, index: 1, condition: always }

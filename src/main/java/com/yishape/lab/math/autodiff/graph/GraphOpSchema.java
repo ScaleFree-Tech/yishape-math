@@ -129,6 +129,65 @@ public final class GraphOpSchema {
     }
 
     // ========================================================================
+    // 1b. Scaled Dot-Product Attention (separate Q/K/V, multi-head)
+    // ========================================================================
+
+    /**
+     * Scaled Dot-Product Attention with <b>separate</b> Q/K/V inputs (cross-attention
+     * friendly: Q derives from the target, K/V from the memory; {@code seqQ} may differ
+     * from {@code seqK}). Unlike {@link MHA} (combined QKV projection), this op performs
+     * <b>attention only</b> — projections are separate AD nodes in the caller.
+     *
+     * <p>The op accepts {@code numHeads} (packed in {@code scalarParam2}) and splits each
+     * of Q/K/V (shape {@code [batch * seq * dModel]}, head-interleaved layout) into
+     * {@code numHeads} heads of {@code headDim = dModel / numHeads} internally, so the
+     * caller never emits AD head-split nodes. {@code numHeads == 0} ⇒ single-head
+     * backward-compat (the original behaviour: dk = dv = dModel, no head split).
+     *
+     * <p>Output shape is read by the graph executor from {@code node.shape}:
+     * {@code [batch, seqQ, dModel]} (3D) or {@code [seqQ, dModel]} (2D ⇒ batch=1).
+     *
+     * @implNote Input indices are fixed (no conditional shift). The graph executors read
+     *           {@code numHeads} from the low 16 bits of {@code scalarParam2}; a mismatch
+     *           across the 3 mirrors causes silent wrong results (single-head fallback).
+     */
+    public static final class SDPA {
+        public static final String TAG = "scaledDotProductAttention";
+
+        // --- Forward inputs (always len=3) ---
+        /** Query, shape [batch * seqQ * dModel] (head-interleaved) */
+        public static final int Q = 0;
+        /** Key, shape [batch * seqK * dModel] (head-interleaved) */
+        public static final int K = 1;
+        /** Value, shape [batch * seqK * dModel] (head-interleaved) */
+        public static final int V = 2;
+
+        // --- Scalar bit packing ---
+        /** scalarParam: dropout rate as a raw f64 (full 64 bits). DL passes 0.0. */
+        public static final int SCALAR_DROPOUT_SHIFT = 0;
+        public static final long SCALAR_DROPOUT_MASK = 0xFFFFFFFFFFFFFFFFL;
+
+        /** scalarParam2 bit ranges: [63-16 reserved] [15-0 numHeads].
+         *  Raw numHeads (no v-1 encoding — 16-bit field covers 0..65535). 0 ⇒ single-head. */
+        public static final int SCALAR2_NUMHEADS_SHIFT = 0;
+        public static final long SCALAR2_NUMHEADS_MASK = 0xFFFFL;
+
+        /** Pack numHeads into the scalarParam2 f64 value (low 16 bits). */
+        public static double packNumHeads(int numHeads) {
+            long bits = ((long) numHeads) & SCALAR2_NUMHEADS_MASK;
+            return Double.longBitsToDouble(bits);
+        }
+
+        // --- Backward grad return indices (always 3, in Q/K/V order) ---
+        /** d_q gradient (always returned) */
+        public static final int GRAD_DQ = 0;
+        /** d_k gradient (always returned) */
+        public static final int GRAD_DK = 1;
+        /** d_v gradient (always returned) */
+        public static final int GRAD_DV = 2;
+    }
+
+    // ========================================================================
     // 2. Fully Connected (Linear)
     // ========================================================================
 

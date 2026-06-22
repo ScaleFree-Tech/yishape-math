@@ -36,14 +36,73 @@ public final class MixedMode {
      * @return H @ v as double[]
      */
     public static double[] hvp(Function<IDiffVector, IDiffVector> fn, IDiffVector x, IDoubleVector v) {
+        return hvp(fn, x, v, AD.Backend.CPU);
+    }
+
+    /**
+     * Hessian-vector product with a preferred native backend for the second-order
+     * backward pass (Phase 4.3 Step 4).
+     *
+     * <p><b>Why only the second backward is native.</b> The first step —
+     * {@link AD#grad} — builds the gradient graph by traversing each node's
+     * {@code symbolicBackwardFn}. That is a CPU tape-of-tape construction with
+     * no native execution, so the primal symbolic tape stays intact. Only the
+     * final {@code g.backward()} (a first-order backward through the freshly
+     * built gradient graph) is routed to the preferred backend:
+     * <ol>
+     *   <li>try the preferred native backend (GPU or HPC); on success its leaf
+     *       gradients are populated directly,</li>
+     *   <li>fall back to CPU {@code g.backward()} if native is unavailable or
+     *       the gradient graph is not exportable (returns {@code false}).</li>
+     * </ol>
+     * Correctness is guaranteed by the CPU fallback; native is purely an
+     * optimization. The default {@link #hvp} overload keeps {@code CPU} so
+     * existing callers are unaffected.
+     *
+     * @param prefer  backend to try first for the second-order backward
+     */
+    public static double[] hvp(Function<IDiffVector, IDiffVector> fn, IDiffVector x,
+                               IDoubleVector v, AD.Backend prefer) {
         IDiffVector y = fn.apply(x);
         IDiffVector[] grads = AD.grad(y, x);
         IDiffVector gradVec = grads[0];
         IDiffVector vConst = AD.constant(v);
         IDiffVector g = gradVec.dot(vConst);
         x.zeroGradient();
-        g.backward();
+        backwardPrefer(g, prefer);
         return x.getGradient().getData();
+    }
+
+    /**
+     * Runs a scalar root's backward through the preferred native backend,
+     * falling back to CPU. Mirrors {@link AD#backwardWithNativeFallback} but
+     * honours a {@code prefer} order and is safe for the gradient graphs built
+     * by {@link AD#grad}: a native backend that cannot execute the graph
+     * (unsupported op, or a grad-count/length mismatch on the tape-of-tape
+     * gradient graph) returns {@code false} via {@link AD#tryGpuExecute} /
+     * {@link AD#tryHpcExecute}, and we retry on the next tier — never a silent
+     * wrong result. Correctness is guaranteed by the CPU fallback; native is
+     * purely an optimization.
+     *
+     * <p><b>Observed behaviour for second-order graphs.</b> On the tape-of-tape
+     * gradient graphs built by {@link AD#grad}, the GPU executor currently
+     * reports a leaf-gradient count mismatch and returns {@code false}
+     * (→ HPC → CPU), so the second-order backward in practice runs on HPC or
+     * CPU. The result is therefore correct regardless of the {@code prefer}
+     * hint. Backend-agnostic correctness (the result matches a numerical HVP
+     * no matter which tier executed) is guarded by {@code MixedModeGpuTest}.
+     */
+    private static void backwardPrefer(IDiffVector g, AD.Backend prefer) {
+        // CPU (default): plain CPU backward — preserves the historical hvp
+        // contract; existing callers (HvpCorrectnessTest, MixedModeTest) are
+        // unaffected and never touch the native path.
+        if (prefer == AD.Backend.CPU) { g.backward(); return; }
+        // GPU-prefer: GPU → HPC → CPU. HPC-prefer: HPC → CPU. Each native tier
+        // returns false (and leaves grads untouched) when it cannot execute,
+        // so a wrong native result can never reach the caller.
+        if (prefer == AD.Backend.GPU && AD.tryGpuExecute(g)) return;
+        if (AD.tryHpcExecute(g)) return;
+        g.backward();
     }
 
     /**
@@ -70,12 +129,22 @@ public final class MixedMode {
      * Only practical for small n (e.g., n &lt; 100).
      */
     public static IDoubleMatrix hessian(Function<IDiffVector, IDiffVector> fn, IDiffVector x) {
+        return hessian(fn, x, AD.Backend.CPU);
+    }
+
+    /**
+     * Full Hessian with a preferred native backend for each column's HVP.
+     *
+     * @see #hvp(Function, IDiffVector, IDoubleVector, AD.Backend)
+     */
+    public static IDoubleMatrix hessian(Function<IDiffVector, IDiffVector> fn, IDiffVector x,
+                                        AD.Backend prefer) {
         int n = x.getValue().length();
         double[][] H = new double[n][n];
         for (int i = 0; i < n; i++) {
             double[] ei = new double[n];
             ei[i] = 1.0;
-            double[] col = hvp(fn, x, IDoubleVector.of(ei));
+            double[] col = hvp(fn, x, IDoubleVector.of(ei), prefer);
             for (int j = 0; j < n; j++) {
                 H[j][i] = col[j];
             }

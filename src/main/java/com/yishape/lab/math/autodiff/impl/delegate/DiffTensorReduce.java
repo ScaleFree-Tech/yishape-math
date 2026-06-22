@@ -346,6 +346,10 @@ public static IDiffTensor var(RereDiffTensor tensor, int dim, boolean keepdim) {
         }
     }
     double[] varData = new double[outer * inner];
+    // Unbiased sample variance (÷(n-1)) — MUST match RereDoubleTensor.var() so
+    // AD.checkGradient()'s finite-difference reference (non-diff path) agrees with
+    // the diff path. d(var)/dx_i = 2(x_i-mean)/(n-1); the mean-dependence cancels
+    // because Σ(x_j-mean)=0, so this formula is exact.
     for (int o = 0; o < outer; o++) {
         for (int i = 0; i < inner; i++) {
             double sumSq = 0;
@@ -353,7 +357,7 @@ public static IDiffTensor var(RereDiffTensor tensor, int dim, boolean keepdim) {
                 double diff = vals[(o * reduce + r) * inner + i] - means[o * inner + i];
                 sumSq += diff * diff;
             }
-            varData[o * inner + i] = sumSq / reduce;
+            varData[o * inner + i] = sumSq / (reduce - 1);
         }
     }
     int fOuter = outer, fReduce = reduce, fInner = inner;
@@ -371,7 +375,7 @@ public static IDiffTensor var(RereDiffTensor tensor, int dim, boolean keepdim) {
         for (int o = 0; o < fOuter; o++) {
             for (int i = 0; i < fInner; i++) {
                 double m = fMeans[o * fInner + i];
-                double scale = 2.0 * self.grad[o * fInner + i] / fReduce;
+                double scale = 2.0 * self.grad[o * fInner + i] / (fReduce - 1);
                 for (int r = 0; r < fReduce; r++) {
                     inGrad[(o * fReduce + r) * fInner + i] = scale * (vals[(o * fReduce + r) * fInner + i] - m);
                 }
@@ -380,6 +384,47 @@ public static IDiffTensor var(RereDiffTensor tensor, int dim, boolean keepdim) {
         input.accGradFromPooled(inGrad, total);
     };
     return new RereDiffTensor(varData, tensor.reducedShape(d, keepdim), List.of(tensor), bw, "var");
+}
+
+// ==================== dot — fused inner product (2 inputs) ====================
+
+/**
+ * Fused dot product: sum(a*b) as a single 2-input node. Must NOT be decomposed
+ * into mul()+sum() — the GPU/HPC "dot" dispatch expects exactly 2 inputs to
+ * compute both ∂a and ∂b. The tape-of-tape symbolic backward uses the actual
+ * tensor references (not constant copies) so MixedMode.hvp() stays connected.
+ */
+public static IDiffTensor dot(RereDiffTensor a, IDiffTensor other) {
+    RereDiffTensor b = (RereDiffTensor) other;
+    int m = (int) a.value.totalSize();
+    double[] aData = a.value.toDoubleArray();
+    double[] bData = b.value.toDoubleArray();
+    com.yishape.lab.math.compute.DoubleVectorComputer vc =
+        new com.yishape.lab.math.compute.DoubleVectorComputer();
+    double[] prod = vc.binaryOperate(aData, bData,
+        com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+    double total = vc.reduceOperate(prod,
+        com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
+
+    double[] bCopy = bData.clone();
+    double[] aCopy = aData.clone();
+    Consumer<RereDiffTensor> bw = self -> {
+        double g = self.grad[0];
+        double[] daBuf = AutodiffBufferPool.acquire(m);
+        double[] dbBuf = AutodiffBufferPool.acquire(m);
+        double[] gb = vc.binaryOperate(bCopy, g,
+            com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+        double[] ga = vc.binaryOperate(aCopy, g,
+            com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
+        System.arraycopy(gb, 0, daBuf, 0, m);
+        System.arraycopy(ga, 0, dbBuf, 0, m);
+        a.accGradFromPooled(daBuf, m);
+        b.accGradFromPooled(dbBuf, m);
+    };
+    RereDiffTensor rt = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(a, b), bw, "dot");
+    rt.setExportShape(a.shape());
+    rt.setSymbolicBackwardFn(g -> new IDiffTensor[]{ g.mul(b), g.mul(a) });
+    return rt;
 }
 
 }

@@ -35,6 +35,11 @@ public final class DiffTensorUnary {
     public static IDiffTensor exp(RereDiffTensor tensor) { return unaryOpSelf(tensor, Math::exp, (g, y) -> g * y, "exp"); }
     private static final double LOG_EPS = 1e-15;
     public static IDiffTensor log(RereDiffTensor tensor) {
+        // Forward runs via UniversalOperation.LOG (Math.log, unclamped) when the
+        // value is a RereDoubleTensor; the clamp in the lambda is only a fallback.
+        // Backward divides by max(|x|, LOG_EPS): for |x| > LOG_EPS this is the exact
+        // 1/x derivative (sign-correct since |x|==x for x>0, the valid domain); for
+        // tiny |x| it clamps the gradient magnitude to 1/LOG_EPS to avoid explosion.
         return unaryOp(tensor,
             x -> Math.log(Math.max(x, LOG_EPS)),
             (g, x) -> g / Math.max(Math.abs(x), LOG_EPS),
@@ -43,6 +48,37 @@ public final class DiffTensorUnary {
     public static IDiffTensor sin(RereDiffTensor tensor) { return unaryOp(tensor, Math::sin, (g, x) -> g * Math.cos(x), "sin"); }
     public static IDiffTensor cos(RereDiffTensor tensor) { return unaryOp(tensor, Math::cos, (g, x) -> -g * Math.sin(x), "cos"); }
     public static IDiffTensor tan(RereDiffTensor tensor) { return unaryOp(tensor, Math::tan, (g, x) -> { double c = Math.cos(x); return g / (c * c); }, "tan"); }
+
+    // Math.sinh(710) overflows to Infinity — clamp the forward to stay finite.
+    // Backward uses the unclamped input (matches the prior vector implementation).
+    private static final double SINH_COSH_MAX = 709.0;
+
+    public static IDiffTensor arcsin(RereDiffTensor tensor) {
+        return unaryOp(tensor, x -> { if (x < -1.0 || x > 1.0) throw new ArithmeticException("arcsin domain: |x| <= 1, got " + x); return Math.asin(x); },
+            (g, x) -> g / Math.sqrt(Math.max(1.0 - x * x, 1e-15)), "arcsin");
+    }
+    public static IDiffTensor arccos(RereDiffTensor tensor) {
+        return unaryOp(tensor, x -> { if (x < -1.0 || x > 1.0) throw new ArithmeticException("arccos domain: |x| <= 1, got " + x); return Math.acos(x); },
+            (g, x) -> -g / Math.sqrt(Math.max(1.0 - x * x, 1e-15)), "arccos");
+    }
+    public static IDiffTensor arctan(RereDiffTensor tensor) {
+        return unaryOp(tensor, Math::atan, (g, x) -> g / (1.0 + x * x), "arctan");
+    }
+    public static IDiffTensor sinh(RereDiffTensor tensor) {
+        // Forward clamps x to [-709,709] to stay finite. Backward must use the SAME
+        // clamped value — cosh(800)=Infinity would explode the gradient otherwise.
+        return unaryOp(tensor, x -> Math.sinh(Math.max(-SINH_COSH_MAX, Math.min(x, SINH_COSH_MAX))),
+            (g, x) -> g * Math.cosh(Math.max(-SINH_COSH_MAX, Math.min(x, SINH_COSH_MAX))), "sinh");
+    }
+    public static IDiffTensor cosh(RereDiffTensor tensor) {
+        return unaryOp(tensor, x -> Math.cosh(Math.max(-SINH_COSH_MAX, Math.min(x, SINH_COSH_MAX))),
+            (g, x) -> g * Math.sinh(Math.max(-SINH_COSH_MAX, Math.min(x, SINH_COSH_MAX))), "cosh");
+    }
+    public static IDiffTensor remainder(RereDiffTensor tensor, double value) {
+        // Straight-through estimator: remainder is piecewise-flat, so the analytic
+        // derivative w.r.t. the dividend is 0 almost everywhere; pass gradient through.
+        return unaryOp(tensor, x -> x % value, (g, x) -> g, "remainder", value);
+    }
     public static IDiffTensor sigmoid(RereDiffTensor tensor) { return unaryOpSelf(tensor, x -> 1.0 / (1.0 + Math.exp(-x)), (g, y) -> g * y * (1.0 - y), "sigmoid"); }
     public static IDiffTensor relu(RereDiffTensor tensor) { return unaryOp(tensor, x -> x > 0 ? x : 0, (g, x) -> x > 0 ? g : 0, "relu"); }
     public static IDiffTensor square(RereDiffTensor tensor) { return unaryOp(tensor, x -> x * x, (g, x) -> g * 2.0 * x, "square"); }
@@ -126,10 +162,16 @@ public final class DiffTensorUnary {
     public static IDiffTensor sign(RereDiffTensor tensor) {
         return unaryOp(tensor, x -> x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0, (g, x) -> 0.0, "sign");
     }
+    public static IDiffTensor trunc(RereDiffTensor tensor) {
+        // truncate toward zero: (double)(long)x; flat function, zero gradient.
+        return unaryOp(tensor, x -> (double) (long) x, (g, x) -> 0.0, "trunc");
+    }
 
     public static IDiffTensor hardtanh(RereDiffTensor tensor, double minVal, double maxVal) {
+        // Forward passes x through at x==minVal/x==maxVal (Math.max/Math.min are
+        // inclusive), so backward must too — use >= / <=, not strict > / <.
         return unaryOp(tensor, x -> Math.min(Math.max(x, minVal), maxVal),
-            (g, x) -> (x > minVal && x < maxVal) ? g : 0, "hardtanh", minVal, maxVal);
+            (g, x) -> (x >= minVal && x <= maxVal) ? g : 0, "hardtanh", minVal, maxVal);
     }
 
     // ==================== pow ====================
@@ -210,7 +252,7 @@ public final class DiffTensorUnary {
             double[] inGrad = AutodiffBufferPool.acquire(m);
             for (int i = 0; i < total; i++) {
                 double x = input.value.linearGet(i);
-                inGrad[i] = (x > min && x < max) ? self.grad[i] : 0;
+                inGrad[i] = (x >= min && x <= max) ? self.grad[i] : 0;
             }
             input.accGradFromPooled(inGrad, m);
         };

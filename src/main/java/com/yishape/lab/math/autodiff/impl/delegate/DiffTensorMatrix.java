@@ -225,6 +225,27 @@ static IDiffTensor einsumPair(RereDiffTensor tensor, String subscript, IDiffTens
         return tensor.mul(other);
     }
 
+    // Empty (scalar) output on a 2-input einsum (e.g. "ij,jk->") is a full reduction
+    // of the matmul. The per-slice loop below assumes a non-empty [B,keptA,K] output,
+    // so compute a non-empty output that keeps every non-contract label (and, when ALL
+    // labels are contracted, keeps input0's labels so the matmul still executes), then
+    // sum it — both forward and backward stay correct via the differentiable sum().
+    if (spec.outputLabels.isEmpty()) {
+        StringBuilder kept = new StringBuilder();
+        for (char c : spec.inputLabels[0].toCharArray()) {
+            if (spec.batchAxes.contains(c)) kept.append(c);
+        }
+        for (char c : spec.inputLabels[0].toCharArray()) {
+            if (!spec.batchAxes.contains(c) && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+        }
+        for (char c : spec.inputLabels[1].toCharArray()) {
+            if (!spec.batchAxes.contains(c) && !spec.contractAxes.contains(c)
+                    && kept.indexOf(String.valueOf(c)) < 0) kept.append(c);
+        }
+        String fullSub = spec.inputLabels[0] + "," + spec.inputLabels[1] + "->" + kept;
+        return einsumPair(tensor, fullSub, other).sum();
+    }
+
     // Per-slice batch loop using DoubleFlatGemm for forward, custom backward for autodiff.
     // bmm([B*keptA,1,J]@[B,J,K]) doesn't work because bmm M=1 (not keptA) and batch dims may not broadcast.
     int B = 1, keptA = 1, K = 1;
@@ -281,7 +302,11 @@ static IDiffTensor einsumPair(RereDiffTensor tensor, String subscript, IDiffTens
             double[] bSlice = java.util.Arrays.copyOfRange(bData, bj * fContractSize * fK, (bj + 1) * fContractSize * fK);
 
             double[] bT = com.yishape.lab.math.compute.DoubleFlatGemm.flatTranspose(bSlice, fContractSize, fK);
-            double[] dASlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(dCSlice, 0, fK, bT, fContractSize);
+            // dCSlice is [1, fK]; bT is [fK, fContractSize]; dA slice = [1, fContractSize].
+            // flatMmul(a, m, k, b, n): m MUST be 1 (one row), not 0 — m=0 yields an empty
+            // product and ArrayIndexOutOfBounds in the arraycopy below. (Pre-existing bug
+            // exposed once a differentiable operand routes backward through einsumPair.)
+            double[] dASlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(dCSlice, 1, fK, bT, fContractSize);
             System.arraycopy(dASlice, 0, dA, bi * fContractSize, fContractSize);
 
             double[] aSlice = java.util.Arrays.copyOfRange(aData, bi * fContractSize, (bi + 1) * fContractSize);
@@ -302,6 +327,12 @@ static IDiffTensor einsumPair(RereDiffTensor tensor, String subscript, IDiffTens
 
 static IDiffTensor einsumSingle(RereDiffTensor tensor, String subscript) {
     EinsumParser.EinsumSpec spec = EinsumParser.parse(subscript, tensor.shape());
+
+    // Repeated labels within one input → diagonal/trace ("ii->i", "ii->").
+    java.util.List<int[]> reps = EinsumParser.repeatedLabelPairs(spec.inputLabels[0]);
+    if (!reps.isEmpty()) {
+        return einsumDiagonal(tensor, spec, reps);
+    }
 
     if (!spec.contractAxes.isEmpty()) {
         // Summation or trace: sum over contract dims
@@ -327,6 +358,56 @@ static IDiffTensor einsumSingle(RereDiffTensor tensor, String subscript) {
         perm[i] = spec.inputLabels[0].indexOf(c);
     }
     return tensor.permute(perm);
+}
+
+/**
+ * Differentiable diagonal/trace einsum for a single input with a repeated label.
+ * Supports {@code "ii->i"} (extract main diagonal → [N]) and {@code "ii->"} (trace
+ * → scalar). Trace is implemented as diagonal-then-sum so gradient flows correctly
+ * (each diagonal element receives the summed-out gradient).
+ */
+public static IDiffTensor einsumDiagonal(RereDiffTensor tensor,
+                                         EinsumParser.EinsumSpec spec,
+                                         java.util.List<int[]> reps) {
+    if (reps.size() != 1 || spec.inputLabels[0].length() != 2) {
+        throw new UnsupportedOperationException(
+            "einsum repeated-label case only supports 2D diagonal/trace (\"ii->i\" / \"ii->\"), got: \""
+            + spec.inputLabels[0] + "->" + spec.outputLabels + "\"");
+    }
+    char rep = spec.inputLabels[0].charAt(reps.get(0)[0]);
+    int[] shape = tensor.shape();
+    if (shape[0] != shape[1]) {
+        throw new IllegalArgumentException(
+            "einsum diagonal requires a square matrix, got [" + shape[0] + "," + shape[1] + "]");
+    }
+    for (char c : spec.outputLabels.toCharArray()) {
+        if (c != rep) {
+            throw new UnsupportedOperationException(
+                "einsum diagonal output must be empty (trace) or the repeated label only, got: \""
+                + spec.outputLabels + "\"");
+        }
+    }
+    int n = shape[0];
+    double[] inData = tensor.value.toDoubleArray();
+    // Forward: diag[k] = in[k*n + k]
+    double[] diag = new double[n];
+    for (int k = 0; k < n; k++) diag[k] = inData[k * n + k];
+
+    // Differentiable diagonal node: backward scatters g[k] to dA[k*n+k].
+    java.util.function.Consumer<RereDiffTensor> bw = self -> {
+        double[] dA = new double[inData.length];
+        double[] g = self.grad;
+        for (int k = 0; k < n; k++) dA[k * n + k] = g[k];
+        tensor.accGrad(dA);
+    };
+    RereDiffTensor diagNode = new RereDiffTensor(diag, new int[]{n},
+            java.util.List.of(tensor), bw, "einsumDiag");
+
+    if (spec.outputLabels.isEmpty()) {
+        // trace = sum of diagonal
+        return diagNode.sum();
+    }
+    return diagNode;
 }
 
 }

@@ -210,37 +210,37 @@ public class RereDiffTensor implements IDiffTensor {
 
     /** Intermediate computation node. */
     public RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
-                          Consumer<RereDiffTensor> backwardFn, String opTag) {
+                          Consumer<RereDiffTensor> bwdFn, String opTag) {
         this.value = new RereDoubleTensor(data, shape);
         this.isLeaf = false;
         this.inputs = inputs;
-        this.backwardFn = backwardFn;
+        this.backwardFn = bwdFn;
         this.opTag = opTag;
     }
 
     /** Intermediate node with scalar param. */
     public RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
-                   Consumer<RereDiffTensor> backwardFn, String opTag, double scalarParam) {
-        this(data, shape, inputs, backwardFn, opTag);
-        this.scalarParam = scalarParam;
+                   Consumer<RereDiffTensor> bwdFn, String opTag, double sParam) {
+        this(data, shape, inputs, bwdFn, opTag);
+        this.scalarParam = sParam;
     }
 
     /** Intermediate node with two scalar params. */
     public RereDiffTensor(double[] data, int[] shape, List<RereDiffTensor> inputs,
-                   Consumer<RereDiffTensor> backwardFn, String opTag,
-                   double scalarParam, double scalarParam2) {
-        this(data, shape, inputs, backwardFn, opTag);
-        this.scalarParam = scalarParam;
-        this.scalarParam2 = scalarParam2;
+                   Consumer<RereDiffTensor> bwdFn, String opTag,
+                   double sParam, double sParam2) {
+        this(data, shape, inputs, bwdFn, opTag);
+        this.scalarParam = sParam;
+        this.scalarParam2 = sParam2;
     }
 
     /** View node — value is a pre-built RereDoubleTensor view sharing parent storage. */
-    public RereDiffTensor(RereDoubleTensor value, List<RereDiffTensor> inputs,
-                   Consumer<RereDiffTensor> backwardFn, String opTag) {
-        this.value = value;
+    public RereDiffTensor(RereDoubleTensor val, List<RereDiffTensor> inputs,
+                   Consumer<RereDiffTensor> bwdFn, String opTag) {
+        this.value = val;
         this.isLeaf = false;
         this.inputs = inputs;
-        this.backwardFn = backwardFn;
+        this.backwardFn = bwdFn;
         this.opTag = opTag;
     }
 
@@ -285,6 +285,18 @@ public class RereDiffTensor implements IDiffTensor {
     @Override
     public void backward(IDoubleTensor gradient, boolean retainGraph) {
         if (!requiresGrad) return;
+        // Validate gradient shape against this tensor's value — a mismatch would
+        // otherwise cause out-of-bounds reads or uninitialized-memory access inside
+        // downstream backwardFn closures.
+        long expect = value.totalSize();
+        long got = gradient.totalSize();
+        if (got != expect) {
+            throw new IllegalArgumentException(
+                "Gradient size mismatch: backward expects " + expect
+                + " elements (shape " + java.util.Arrays.toString(shape())
+                + ") but got " + got + " (shape "
+                + java.util.Arrays.toString(gradient.shape()) + ")");
+        }
         this.grad = gradient.toDoubleArray();
         backwardImpl(retainGraph);
     }
@@ -639,9 +651,7 @@ public class RereDiffTensor implements IDiffTensor {
         IDiffTensor fused = tryFuseSum();
         if (fused != null) return fused;
 
-        long n = value.totalSize();
-        double total = 0;
-        for (long i = 0; i < n; i++) total += value.linearGet(i);
+        double total = value.sumAll();
         Consumer<RereDiffTensor> bw = self -> {
             RereDiffTensor input = self.inputs.get(0);
             int m = (int) input.value.totalSize();
@@ -662,6 +672,54 @@ public class RereDiffTensor implements IDiffTensor {
             };
         };
         return result;
+    }
+
+    // ==================== mean() — full-reduce mean, reuses sum/mean fusion ====================
+
+    /**
+     * Mean of all elements → scalar tensor (shape [1]). The canonical graph
+     * definition lives here so vector/matrix facades delegate instead of
+     * reimplementing fusion. For rank-1 (the vector case) it reuses
+     * {@link #tryFuseMeanDim(int, boolean)} which produces the same fused
+     * single nodes the old vector-level mean() did (squareMean/expMean/…) and
+     * the native "mean" op for the non-fused case — identical graph structure,
+     * GPU/HPC dispatch unchanged.
+     */
+    @Override
+    public IDiffTensor mean() {
+        long n = value.totalSize();
+        if (!requiresGrad) {
+            return toNonDiff(new RereDoubleTensor(new double[]{value.sumAll() / n}, new int[]{1}));
+        }
+        // Rank-1: reuse canonical unary+mean fusion (squareMean/expMean/…).
+        if (rank() == 1) {
+            IDiffTensor fused = tryFuseMeanDim(0, false);
+            if (fused != null) return fused;
+            // Non-fused rank-1: single "mean" node (native GPU/HPC mean op),
+            // NOT sum()+div(n) — backends expect "mean" to receive the raw tensor.
+            int m = (int) n;
+            double meanVal = value.sumAll() / n;
+            double invN = 1.0 / n;
+            Consumer<RereDiffTensor> bw = self -> {
+                RereDiffTensor input = self.inputs.get(0);
+                int mm = (int) input.value.totalSize();
+                double[] inGrad = AutodiffBufferPool.acquire(mm);
+                Arrays.fill(inGrad, 0, mm, self.grad[0] * invN);
+                input.accGradFromPooled(inGrad, mm);
+            };
+            RereDiffTensor rt = new RereDiffTensor(new double[]{meanVal}, new int[]{1}, List.of(this), bw, "mean");
+            rt.exportShape = new int[]{1};
+            // tape-of-tape: d(mean)/dx = 1/n broadcast; required for AD.grad().
+            double[] symFactor = new double[m];
+            Arrays.fill(symFactor, invN);
+            int[] shapeCopy = shape().clone();
+            rt.symbolicBackwardFn = g -> new IDiffTensor[]{
+                g.mul(IDiffTensor.constantTensor(symFactor, shapeCopy))
+            };
+            return rt;
+        }
+        // rank > 1 full-reduce: general fallback, still fused via sum().
+        return sum().div(n);
     }
 
     /** Try to fuse unaryOp + sum into a single node. Returns null if no fusion pattern matches. */
@@ -1036,14 +1094,14 @@ public class RereDiffTensor implements IDiffTensor {
             double[] dxBuf = AutodiffBufferPool.acquire(m);
             Consumer<RereDiffTensor> bw = self -> {
                 double g = self.grad[0];
-                for (int i = 0; i < m; i++) dxBuf[i] = (xData[i] > mn && xData[i] < mx) ? g : 0;
+                for (int i = 0; i < m; i++) dxBuf[i] = (xData[i] >= mn && xData[i] <= mx) ? g : 0;
                 x.accGradFromPooled(dxBuf, m);
             };
             RereDiffTensor r = new RereDiffTensor(new double[]{total}, new int[]{1}, List.of(x), bw, GraphOpSchema.FusedTag.of("hardtanh", "sum"));
             r.exportShape = x.shape();
             int[] htShape = x.shape().clone();
             double[] htFactor = new double[m];
-            for (int i = 0; i < m; i++) htFactor[i] = (xData[i] > mn && xData[i] < mx) ? 1.0 : 0.0;
+            for (int i = 0; i < m; i++) htFactor[i] = (xData[i] >= mn && xData[i] <= mx) ? 1.0 : 0.0;
             RereDiffTensor xRefHT = x;
             r.symbolicBackwardFn = g -> new IDiffTensor[]{g.mul(xRefHT.mul(0.0).add(IDiffTensor.constantTensor(htFactor, htShape)))};
             return r;
@@ -1219,7 +1277,7 @@ public class RereDiffTensor implements IDiffTensor {
             double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
             double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
             RereDiffTensor r = buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("hardtanh", "sum"),
-                (g, xv) -> (xv > hmin && xv < hmax) ? g : 0, xData, fOuter, fReduce, fInner, total);
+                (g, xv) -> (xv >= hmin && xv <= hmax) ? g : 0, xData, fOuter, fReduce, fInner, total);
             return r;
         }
         return null;
@@ -1415,7 +1473,7 @@ public class RereDiffTensor implements IDiffTensor {
             double hmin = Double.isNaN(scalarParam) ? -1.0 : scalarParam;
             double hmax = Double.isNaN(scalarParam2) ? 1.0 : scalarParam2;
             return buildFusedSumDim(x, result, resultShape, dim, keepdim, GraphOpSchema.FusedTag.of("hardtanh", "mean"),
-                (g, xv) -> (xv > hmin && xv < hmax) ? g * invR : 0, xData, outer, reduce, inner, total);
+                (g, xv) -> (xv >= hmin && xv <= hmax) ? g * invR : 0, xData, outer, reduce, inner, total);
         }
         return null;
     }
@@ -1430,6 +1488,12 @@ public class RereDiffTensor implements IDiffTensor {
     @Override public IDiffTensor sin() { return DiffTensorUnary.sin(this); }
     @Override public IDiffTensor cos() { return DiffTensorUnary.cos(this); }
     @Override public IDiffTensor tan() { return DiffTensorUnary.tan(this); }
+    @Override public IDiffTensor arcsin() { return DiffTensorUnary.arcsin(this); }
+    @Override public IDiffTensor arccos() { return DiffTensorUnary.arccos(this); }
+    @Override public IDiffTensor arctan() { return DiffTensorUnary.arctan(this); }
+    @Override public IDiffTensor sinh() { return DiffTensorUnary.sinh(this); }
+    @Override public IDiffTensor cosh() { return DiffTensorUnary.cosh(this); }
+    @Override public IDiffTensor remainder(double divisor) { return DiffTensorUnary.remainder(this, divisor); }
     @Override public IDiffTensor sigmoid() { return DiffTensorUnary.sigmoid(this); }
     @Override public IDiffTensor relu() { return DiffTensorUnary.relu(this); }
     @Override public IDiffTensor square() { return DiffTensorUnary.square(this); }
@@ -1448,6 +1512,7 @@ public class RereDiffTensor implements IDiffTensor {
     @Override public IDiffTensor floor() { return DiffTensorUnary.floor(this); }
     @Override public IDiffTensor ceil() { return DiffTensorUnary.ceil(this); }
     @Override public IDiffTensor sign() { return DiffTensorUnary.sign(this); }
+    public IDiffTensor trunc() { return DiffTensorUnary.trunc(this); }
     @Override public IDiffTensor hardtanh(double minVal, double maxVal) { return DiffTensorUnary.hardtanh(this, minVal, maxVal); }
     @Override public IDiffTensor dropout(double p) { return DiffTensorUnary.dropout(this, p); }
 
@@ -1494,6 +1559,8 @@ public class RereDiffTensor implements IDiffTensor {
     @Override public IDiffTensor max(int dim, boolean keepdim) { return DiffTensorReduce.max(this, dim, keepdim); }
     @Override public IDiffTensor min(int dim, boolean keepdim) { return DiffTensorReduce.min(this, dim, keepdim); }
     @Override public IDiffTensor prod(int dim, boolean keepdim) { return DiffTensorReduce.prod(this, dim, keepdim); }
+    /** Fused 2-input inner product (single "dot" node for GPU/HPC dispatch + HVP). */
+    public IDiffTensor dot(IDiffTensor other) { return DiffTensorReduce.dot(this, other); }
     @Override public IDiffTensor std(int dim, boolean keepdim) { return DiffTensorReduce.std(this, dim, keepdim); }
     @Override public IDiffTensor var(int dim, boolean keepdim) { return DiffTensorReduce.var(this, dim, keepdim); }
 
@@ -1609,7 +1676,7 @@ public class RereDiffTensor implements IDiffTensor {
                 double[] bSlice = java.util.Arrays.copyOfRange(bData, bj * fContractSize * fK, (bj + 1) * fContractSize * fK);
 
                 double[] bT = com.yishape.lab.math.compute.DoubleFlatGemm.flatTranspose(bSlice, fContractSize, fK);
-                double[] dASlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(dCSlice, 0, fK, bT, fContractSize);
+                double[] dASlice = com.yishape.lab.math.compute.DoubleFlatGemm.flatMmul(dCSlice, 1, fK, bT, fContractSize);
                 System.arraycopy(dASlice, 0, dA, bi * fContractSize, fContractSize);
 
                 double[] aSlice = java.util.Arrays.copyOfRange(aData, bi * fContractSize, (bi + 1) * fContractSize);
@@ -1630,6 +1697,12 @@ public class RereDiffTensor implements IDiffTensor {
 
     private IDiffTensor einsumSingle(String subscript) {
         EinsumParser.EinsumSpec spec = EinsumParser.parse(subscript, shape());
+
+        // Repeated labels within one input → diagonal/trace ("ii->i", "ii->").
+        java.util.List<int[]> reps = EinsumParser.repeatedLabelPairs(spec.inputLabels[0]);
+        if (!reps.isEmpty()) {
+            return DiffTensorMatrix.einsumDiagonal(this, spec, reps);
+        }
 
         if (!spec.contractAxes.isEmpty()) {
             // Summation or trace: sum over contract dims

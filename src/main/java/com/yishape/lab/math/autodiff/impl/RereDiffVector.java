@@ -1,9 +1,7 @@
 package com.yishape.lab.math.autodiff.impl;
 
-import com.yishape.lab.math.autodiff.graph.GraphOpSchema;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -19,10 +17,6 @@ import com.yishape.lab.util.YishapeLogger;
 import com.yishape.lab.math.autodiff.IDiffVector;
 import com.yishape.lab.math.autodiff.IDiffMatrix;
 import com.yishape.lab.math.autodiff.IDiffTensor;
-import com.yishape.lab.math.compute.DoubleVectorComputer;
-import com.yishape.lab.math.compute.ops.BinaryOperation;
-import com.yishape.lab.math.compute.ops.LogicalCompare;
-import com.yishape.lab.math.compute.ops.UniversalOperation;
 
 /**
  * Default reverse-mode AD implementation for {@link IDiffVector}.
@@ -34,7 +28,6 @@ import com.yishape.lab.math.compute.ops.UniversalOperation;
  * entirely in the tensor domain.</p>
  */
 public class RereDiffVector implements IDiffVector, Serializable {
-    private static final DoubleVectorComputer COMPUTER = new DoubleVectorComputer();
 
     private static final long serialVersionUID = 5L;
     private static final YishapeLogger log = YishapeLogger.getLogger(RereDiffVector.class);
@@ -422,364 +415,14 @@ public class RereDiffVector implements IDiffVector, Serializable {
     }
 
     /**
-     * Single-node fused mean: creates one graph node that computes mean directly
-     * from the input tensor. Unlike the old sum()+div(n) two-node pattern, this
-     * produces a single node whose input is the raw data — essential for GPU/HPC
-     * backends which expect "mean" to receive the unreduced tensor, not a pre-summed scalar.
-     *
-     * <p>Fusion detection: if {@code tensor} wraps a pending unary op (relu, square, etc.),
-     * we fuse the unary derivative into the backward and produce tags like "reluMean".
-     * The fused node takes the ORIGINAL input (before the unary op) as its graph input,
-     * bypassing the intermediate unary node — consistent with {@code RereDiffTensor.tryFuseSum()}.</p>
-     *
-     * <p>Important: both {@code backwardFn} (first-order Consumer) and
-     * {@code symbolicBackwardFn} (second-order tape-of-tape) MUST be set.
-     * Omitting symbolicBackwardFn causes {@code AD.grad()} to return zero gradients.</p>
+     * Mean of all elements. Delegates to {@link RereDiffTensor#mean()} which
+     * holds the canonical full-reduce mean definition (fused squareMean/expMean
+     * via {@code tryFuseMeanDim}, native "mean" node otherwise). Phase A §7c:
+     * no vector-level graph construction.
      */
     @Override
     public IDiffVector mean() {
-        RereDiffTensor t = tensor;
-        int n = (int) t.value().totalSize();
-        double[] tData = t.value().toDoubleArray();
-
-        // Compute mean value via accelerated reduce (GPU→HPC→SIMD→SISD)
-        com.yishape.lab.math.compute.DoubleVectorComputer vc =
-            new com.yishape.lab.math.compute.DoubleVectorComputer();
-        double sum = vc.reduceOperate(tData, com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
-        double meanVal = sum / n;
-
-        // Detect pending fusable unary op for fused tags like "reluMean"
-        String fusedTag = null;
-        Consumer<RereDiffTensor> fusedBw = null;
-        double[] symFactor = null;
-        RereDiffTensor fusedInput = t;
-        if (t.inputs() != null && t.inputs().size() == 1 && t.opTag() != null) {
-            RereDiffTensor inp = t.inputs().get(0);
-            if (inp != null && inp.requiresGrad()) {
-                double[] xData = inp.value().toDoubleArray();
-                int m = n;
-                switch (t.opTag()) {
-                    case "square" -> {
-                        double[] sf = COMPUTER.binaryOperate(xData, 2.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("square", "mean");
-                        symFactor = sf;
-                    }
-                    case "relu" -> {
-                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, 0.0));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("relu", "mean");
-                        symFactor = sf;
-                    }
-                    case "exp" -> {
-                        double[] sf = COMPUTER.binaryOperate(tData, 1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("exp", "mean");
-                        symFactor = sf;
-                    }
-                    case "abs" -> {
-                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, -1.0 / m));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("abs", "mean");
-                        symFactor = sf;
-                    }
-                    case "log" -> {
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.fill(m, 1.0 / m), xData, BinaryOperation.DIVIDE);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("log", "mean");
-                        symFactor = sf;
-                    }
-                    case "sigmoid" -> {
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.binaryOperate(tData,
-                                COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), tData, BinaryOperation.SUBTRACT),
-                                BinaryOperation.MULTIPLY),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("sigmoid", "mean");
-                        symFactor = sf;
-                    }
-                    case "tanh" -> {
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
-                                COMPUTER.binaryOperate(tData, tData, BinaryOperation.MULTIPLY),
-                                BinaryOperation.SUBTRACT),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("tanh", "mean");
-                        symFactor = sf;
-                    }
-                    case "silu" -> {
-                        double[] negX = COMPUTER.binaryOperate(COMPUTER.fill(m, -1.0), xData, BinaryOperation.MULTIPLY);
-                        double[] sig = COMPUTER.universalOperate(negX, UniversalOperation.EXP, 0.0);
-                        sig = COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
-                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), sig, BinaryOperation.ADD),
-                            BinaryOperation.DIVIDE);
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.binaryOperate(sig,
-                                COMPUTER.binaryOperate(xData, sig, BinaryOperation.MULTIPLY),
-                                BinaryOperation.ADD),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("silu", "mean");
-                        symFactor = sf;
-                    }
-                    case "pow" -> {
-                        double scalarP = t.scalarParam();
-                        if (Double.isNaN(scalarP)) break;
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.universalOperate(xData, UniversalOperation.POW, scalarP),
-                            1.0 / m * scalarP, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("pow", "mean");
-                        symFactor = sf;
-                    }
-                    case "elu" -> {
-                        double alpha = Double.isNaN(t.scalarParam()) ? 1.0 : t.scalarParam();
-                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
-                        double[] negX = COMPUTER.binaryOperate(COMPUTER.fill(m, -1.0), xData, BinaryOperation.MULTIPLY);
-                        double[] expNeg = COMPUTER.universalOperate(negX, UniversalOperation.EXP, 0.0);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, 1.0 / m),
-                            COMPUTER.binaryOperate(
-                                COMPUTER.binaryOperate(COMPUTER.fill(m, alpha), expNeg, BinaryOperation.MULTIPLY),
-                                1.0 / m, BinaryOperation.MULTIPLY));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("elu", "mean");
-                        symFactor = sf;
-                    }
-                    case "leakyRelu" -> {
-                        double alpha = Double.isNaN(t.scalarParam()) ? 0.01 : t.scalarParam();
-                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, 1.0 / m),
-                            COMPUTER.fill(m, alpha / m));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("leakyRelu", "mean");
-                        symFactor = sf;
-                    }
-                    case "softplus" -> {
-                        double beta = Double.isNaN(t.scalarParam()) ? 1.0 : t.scalarParam();
-                        double[] negBetaX = COMPUTER.binaryOperate(xData,
-                            COMPUTER.fill(m, -beta), BinaryOperation.MULTIPLY);
-                        double[] expNegBetaX = COMPUTER.universalOperate(negBetaX, UniversalOperation.EXP, 0.0);
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), expNegBetaX, BinaryOperation.ADD),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("softplus", "mean");
-                        symFactor = sf;
-                    }
-                    case "gelu" -> {
-                        double c = 0.7978845608028654;
-                        double c3 = 0.044715 * c;
-                        double[] arg = COMPUTER.binaryOperate(
-                            COMPUTER.fill(m, c),
-                            COMPUTER.binaryOperate(xData,
-                                COMPUTER.binaryOperate(
-                                    COMPUTER.binaryOperate(xData, xData, BinaryOperation.MULTIPLY),
-                                    COMPUTER.fill(m, 3.0 * 0.044715), BinaryOperation.MULTIPLY),
-                                BinaryOperation.ADD),
-                            BinaryOperation.MULTIPLY);
-                        double[] tanhVal = COMPUTER.universalOperate(arg, UniversalOperation.TANH, 0.0);
-                        double[] dt = COMPUTER.binaryOperate(
-                            COMPUTER.fill(m, 1.0),
-                            COMPUTER.binaryOperate(tanhVal, tanhVal, BinaryOperation.MULTIPLY),
-                            BinaryOperation.SUBTRACT);
-                        double[] dArg = COMPUTER.binaryOperate(
-                            COMPUTER.fill(m, c),
-                            COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0),
-                                COMPUTER.binaryOperate(xData, xData, BinaryOperation.MULTIPLY),
-                                BinaryOperation.MULTIPLY),
-                            BinaryOperation.MULTIPLY);
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.binaryOperate(
-                                COMPUTER.binaryOperate(COMPUTER.fill(m, 0.5),
-                                    COMPUTER.binaryOperate(COMPUTER.fill(m, 1.0), tanhVal, BinaryOperation.ADD),
-                                    BinaryOperation.MULTIPLY),
-                                COMPUTER.binaryOperate(xData,
-                                    COMPUTER.binaryOperate(dt, dArg, BinaryOperation.MULTIPLY),
-                                    BinaryOperation.MULTIPLY),
-                                BinaryOperation.ADD),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("gelu", "mean");
-                        symFactor = sf;
-                    }
-                    case "sin" -> {
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.universalOperate(xData, UniversalOperation.COS, 0.0),
-                            1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("sin", "mean");
-                        symFactor = sf;
-                    }
-                    case "cos" -> {
-                        double[] sf = COMPUTER.binaryOperate(
-                            COMPUTER.universalOperate(xData, UniversalOperation.SIN, 0.0),
-                            -1.0 / m, BinaryOperation.MULTIPLY);
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("cos", "mean");
-                        symFactor = sf;
-                    }
-                    case "selu" -> {
-                        final double seluL = 1.0507009873554804;
-                        final double seluA = 1.6732632423543772;
-                        boolean[] mask = COMPUTER.logicalCompare(xData, 0.0, LogicalCompare.GREATER_THAN_OR_EQUALS);
-                        double[] expX = COMPUTER.universalOperate(xData, UniversalOperation.EXP, 0.0);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, seluL / m),
-                            COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, seluL * seluA / m), expX, BinaryOperation.MULTIPLY));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("selu", "mean");
-                        symFactor = sf;
-                    }
-                    case "hardtanh" -> {
-                        double hmin = Double.isNaN(t.scalarParam()) ? -1.0 : t.scalarParam();
-                        double hmax = Double.isNaN(t.scalarParam2()) ? 1.0 : t.scalarParam2();
-                        boolean[] mask = COMPUTER.logicalOperate(xData, x -> x > hmin && x < hmax);
-                        double[] sf = COMPUTER.where(mask,
-                            COMPUTER.fill(m, 1.0 / m), COMPUTER.fill(m, 0.0));
-                        fusedBw = self -> {
-                            double g = self.gradData()[0];
-                            inp.accGrad(COMPUTER.binaryOperate(
-                                COMPUTER.fill(m, g), sf, BinaryOperation.MULTIPLY));
-                        };
-                        fusedInput = inp;
-                        fusedTag = GraphOpSchema.FusedTag.of("hardtanh", "mean");
-                        symFactor = sf;
-                    }
-                }
-            }
-        }
-
-        if (fusedTag != null && fusedBw != null && symFactor != null) {
-            RereDiffTensor rt = new RereDiffTensor(new double[]{meanVal}, new int[]{1},
-                List.of(fusedInput), fusedBw, fusedTag);
-            rt.setExportShape(new int[]{1});
-            if ("powMean".equals(fusedTag)) {
-                rt.setScalarParam(t.scalarParam());
-            }
-            double[] sfCopy = symFactor;
-            int[] shapeCopy = fusedInput.shape().clone();
-            // tape-of-tape: g is a scalar tensor, multiply by factor to broadcast to input shape.
-            // Without this, AD.grad() returns zero for paths through fused mean nodes.
-            rt.setSymbolicBackwardFn(g -> new IDiffTensor[]{
-                g.mul(IDiffTensor.constantTensor(sfCopy, shapeCopy))
-            });
-            return wrap(rt);
-        }
-
-        // Simple mean: single fused node avoiding the old sum()+div(n) two-node pattern.
-        // GPU "mean" op expects raw input data, not a pre-summed scalar.
-        // Uses Arrays.fill() for broadcast (SIMD-friendly via JDK intrinsic, matches sum() pattern).
-        double gDivN = 1.0 / n;
-        double[] gradBuf = AutodiffBufferPool.acquire(n);
-        Consumer<RereDiffTensor> bw = self -> {
-            double g = self.gradData()[0];
-            double gVal = g * gDivN;
-            Arrays.fill(gradBuf, 0, n, gVal);
-            t.accGradFromPooled(gradBuf, n);
-        };
-
-        RereDiffTensor rt = new RereDiffTensor(new double[]{meanVal}, new int[]{1},
-            List.of(t), bw, "mean");
-        // exportShape = [1] for scalar mean (HPC backends need scalar output shape).
-        rt.setExportShape(new int[]{1});
-        // tape-of-tape symbolic backward: g * (ones/n) broadcast → required for AD.grad().
-        double[] meanSymFactor = new double[n];
-        Arrays.fill(meanSymFactor, gDivN);
-        int[] meanShapeCopy = t.shape().clone();
-        rt.setSymbolicBackwardFn(g -> new IDiffTensor[]{
-            g.mul(IDiffTensor.constantTensor(meanSymFactor, meanShapeCopy))
-        });
-        return wrap(rt);
+        return wrapSafe(tensor.mean());
     }
 
     // ==================== Vector operations ====================
@@ -795,50 +438,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     public IDiffVector dot(IDiffVector other) {
         RereDiffVector o = resolveToRere(other);
-        // Fused "dot" node: mul + sum in one kernel on GPU, 2 inputs → 2 output grads.
-        RereDiffTensor a = tensor;
-        RereDiffTensor b = o.tensor;
-        int m = (int) a.value().totalSize();
-        double[] aData = a.value().toDoubleArray();
-        double[] bData = b.value().toDoubleArray();
-        // Dot product: sum(a*b) via accelerated multiply + reduce
-        com.yishape.lab.math.compute.DoubleVectorComputer vc =
-            new com.yishape.lab.math.compute.DoubleVectorComputer();
-        double[] prod = vc.binaryOperate(aData, bData,
-            com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
-        double total = vc.reduceOperate(prod,
-            com.yishape.lab.math.compute.ops.ReduceOperation.SUM);
-
-        double[] bCopy = bData.clone();
-        double[] aCopy = aData.clone();
-        Consumer<RereDiffTensor> bw = self -> {
-            double g = self.gradData()[0];
-            double[] daBuf = AutodiffBufferPool.acquire(m);
-            double[] dbBuf = AutodiffBufferPool.acquire(m);
-            // Accelerated: d/da = g*b, d/db = g*a
-            double[] gb = vc.binaryOperate(bCopy, g,
-                com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
-            double[] ga = vc.binaryOperate(aCopy, g,
-                com.yishape.lab.math.compute.ops.BinaryOperation.MULTIPLY);
-            System.arraycopy(gb, 0, daBuf, 0, m);
-            System.arraycopy(ga, 0, dbBuf, 0, m);
-            a.accGradFromPooled(daBuf, m);
-            b.accGradFromPooled(dbBuf, m);
-        };
-        RereDiffTensor rt = new RereDiffTensor(new double[]{total}, new int[]{1},
-            List.of(a, b), bw, "dot");
-        rt.setExportShape(a.shape());
-        // tape-of-tape: d/da = g * b, d/db = g * a.
-        // MUST use actual tensor references (a,b) — not constantTensor copies.
-        // constantTensor creates dead-end nodes that break the gradient chain
-        // for MixedMode.hvp() (Hessian-vector product via tape-of-tape AD).
-        RereDiffTensor aRef = a;
-        RereDiffTensor bRef = b;
-        rt.setSymbolicBackwardFn(g -> new IDiffTensor[]{
-            g.mul(bRef),
-            g.mul(aRef)
-        });
-        return wrap(rt);
+        // Fused 2-input "dot" node built at the tensor layer (GPU/HPC dispatch +
+        // tape-of-tape symbolic backward for MixedMode.hvp). See DiffTensorReduce.dot.
+        return wrap((RereDiffTensor) tensor.dot(o.tensor));
     }
 
     @Override
@@ -895,7 +497,17 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector addInPlace(IDiffVector other) {
-        return this.add(other);
+        if (!tensor.isLeaf()) {
+            throw new IllegalStateException("addInPlace only allowed on leaf variables");
+        }
+        RereDoubleTensor val = tensor.value();
+        double[] data = val.toDoubleArray();
+        double[] otherData = other.toDoubleArray();
+        double[] result = new com.yishape.lab.math.compute.DoubleVectorComputer()
+            .binaryOperate(data, otherData, com.yishape.lab.math.compute.ops.BinaryOperation.ADD);
+        tensor.setValue(new RereDoubleTensor(result, val.shape()));
+        tensor.setGradData(null);
+        return this;
     }
 
     @Override
@@ -954,6 +566,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] += p;
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
@@ -964,6 +577,7 @@ public class RereDiffVector implements IDiffVector, Serializable {
         double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] -= p;
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
@@ -973,45 +587,62 @@ public class RereDiffVector implements IDiffVector, Serializable {
         double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] *= p;
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
     @Override
     public IDiffVector addInPlace(IVector<Double> vec) {
+        if (!tensor.isLeaf()) {
+            throw new IllegalStateException("addInPlace only allowed on leaf variables");
+        }
         RereDoubleTensor val = tensor.value();
         double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] += other[i];
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
     @Override
     public IDiffVector subInPlace(IVector<Double> vec) {
+        if (!tensor.isLeaf()) {
+            throw new IllegalStateException("subInPlace only allowed on leaf variables");
+        }
         RereDoubleTensor val = tensor.value();
         double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] -= other[i];
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
     @Override
     public IDiffVector multiplyInPlace(IVector<Double> vec) {
+        if (!tensor.isLeaf()) {
+            throw new IllegalStateException("multiplyInPlace only allowed on leaf variables");
+        }
         RereDoubleTensor val = tensor.value();
         double[] data = val.toDoubleArray();
         double[] other = (vec instanceof RereDoubleVector rdv) ? rdv.getData() : vec.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] *= other[i];
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
     @Override
     public IDiffVector negInPlace() {
+        if (!tensor.isLeaf()) {
+            throw new IllegalStateException("negInPlace only allowed on leaf variables");
+        }
         RereDoubleTensor val = tensor.value();
         double[] data = val.toDoubleArray();
         for (int i = 0; i < data.length; i++) data[i] = -data[i];
         tensor.setValue(new RereDoubleTensor(data, val.shape()));
+        tensor.setGradData(null);
         return this;
     }
 
@@ -1055,27 +686,11 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     // ==================== IDoubleVector bridge methods ====================
 
-    @Override public IDiffVector round() { return zeroGradUnaryOp(v -> Math.round(v), "round"); }
-    @Override public IDiffVector floor() { return zeroGradUnaryOp(Math::floor, "floor"); }
-    @Override public IDiffVector ceil() { return zeroGradUnaryOp(Math::ceil, "ceil"); }
-    @Override public IDiffVector trunc() { return zeroGradUnaryOp(v -> (double)(long)v, "trunc"); }
-    @Override public IDiffVector sign() { return zeroGradUnaryOp(Math::signum, "sign"); }
-
-    /** Build a unary graph node whose gradient is zero everywhere (flat function). */
-    private IDiffVector zeroGradUnaryOp(java.util.function.DoubleUnaryOperator forward, String tag) {
-        double[] xd = tensor.value().toDoubleArray();
-        int n = xd.length;
-        double[] out = new double[n];
-        for (int i = 0; i < n; i++) out[i] = forward.applyAsDouble(xd[i]);
-        // D6: pre-allocate zero array once, reuse across backward calls
-        final double[] zeroGrad = new double[n];
-        Consumer<RereDiffTensor> bw = self -> {
-            RereDiffTensor input = self.inputs().get(0);
-            input.accGrad(zeroGrad);
-        };
-        RereDiffTensor node = new RereDiffTensor(out, new int[]{n}, List.of(tensor), bw, tag);
-        return wrap(node);
-    }
+    @Override public IDiffVector round() { return wrap((RereDiffTensor) tensor.round()); }
+    @Override public IDiffVector floor() { return wrap((RereDiffTensor) tensor.floor()); }
+    @Override public IDiffVector ceil() { return wrap((RereDiffTensor) tensor.ceil()); }
+    @Override public IDiffVector trunc() { return wrap((RereDiffTensor) tensor.trunc()); }
+    @Override public IDiffVector sign() { return wrap((RereDiffTensor) tensor.sign()); }
 
     @Override
     public IDiffVector log10() {
@@ -1090,181 +705,66 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector arcsin() {
-        // arcsin'(x) = 1/sqrt(1-x^2)
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) {
-            double v = fwd[i];
-            if (v < -1.0 || v > 1.0) throw new ArithmeticException("arcsin domain: |x| <= 1, got " + v);
-            y[i] = Math.asin(v);
-        }
-        // Create a fused node: forward is arcsin, backward is 1/sqrt(1-x^2) * gradOut
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) {
-                double denom = 1.0 - fwd[i] * fwd[i];
-                dx[i] = gd[i] / Math.sqrt(Math.max(denom, 1e-15));
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "arcsin"));
+        return wrap((RereDiffTensor) tensor.arcsin());
     }
 
     @Override
     public IDiffVector arccos() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) {
-            double v = fwd[i];
-            if (v < -1.0 || v > 1.0) throw new ArithmeticException("arccos domain: |x| <= 1, got " + v);
-            y[i] = Math.acos(v);
-        }
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) {
-                double denom = 1.0 - fwd[i] * fwd[i];
-                dx[i] = -gd[i] / Math.sqrt(Math.max(denom, 1e-15));
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "arccos"));
+        return wrap((RereDiffTensor) tensor.arccos());
     }
 
     @Override
     public IDiffVector arctan() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = Math.atan(fwd[i]);
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) {
-                dx[i] = gd[i] / (1.0 + fwd[i] * fwd[i]);
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "arctan"));
+        return wrap((RereDiffTensor) tensor.arctan());
     }
-
-    private static final double SINH_COSH_MAX = 709.0; // Math.sinh(710) overflows to Infinity
 
     @Override
     public IDiffVector sinh() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = Math.sinh(Math.max(-SINH_COSH_MAX, Math.min(fwd[i], SINH_COSH_MAX)));
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) dx[i] = gd[i] * Math.cosh(fwd[i]);
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "sinh"));
+        return wrap((RereDiffTensor) tensor.sinh());
     }
 
     @Override
     public IDiffVector cosh() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = Math.cosh(Math.max(-SINH_COSH_MAX, Math.min(fwd[i], SINH_COSH_MAX)));
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) dx[i] = gd[i] * Math.sinh(fwd[i]);
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "cosh"));
+        return wrap((RereDiffTensor) tensor.cosh());
     }
 
     @Override
     public IDiffVector remainder(Double value) {
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[fwd.length];
-        for (int i = 0; i < fwd.length; i++) y[i] = fwd[i] % value;
-        // straight-through estimator for remainder
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> self.accGrad(gradOut.gradData());
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "remainder"));
+        return wrap((RereDiffTensor) tensor.remainder(value));
     }
 
     // ==================== Reverse ====================
 
     @Override
     public IDiffVector reverse() {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n];
-        for (int i = 0; i < n; i++) y[n - 1 - i] = fwd[i];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) dx[n - 1 - i] = go[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{n}, List.of(self), backwardFn, "reverse"));
+        return wrap((RereDiffTensor) tensor.flip(0));
     }
 
     // ==================== Tile / repeat ====================
 
     @Override
     public IDiffVector tile(int reps) {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n * reps];
-        for (int i = 0; i < y.length; i++) y[i] = fwd[i % n];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < go.length; i++) dx[i % n] += go[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "tile"));
+        return wrap((RereDiffTensor) tensor.tile(reps));
     }
 
     @Override
     public IDiffVector repeat(int repeats) {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n * repeats];
-        for (int i = 0; i < y.length; i++) y[i] = fwd[i / repeats];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < go.length; i++) dx[i / repeats] += go[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "repeat"));
+        // repeatInterleave(repeats, 0) tiles each element `repeats` times: [a,b]→[a,a,b,b],
+        // matching y[i] = fwd[i/repeats]; its scatter-add backward sums repeated grads.
+        return wrap((RereDiffTensor) tensor.repeatInterleave(repeats, 0));
     }
 
     // ==================== Slice variants ====================
 
     @Override
     public IDiffVector slice(int start, int end, int step) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int fullLen = fwd.length;
-        int lenTemp = 0;
-        for (int pos = start; pos < end; pos += step) lenTemp++;
-        final int len = lenTemp;
-        double[] y = new double[len];
-        for (int i = 0, pos = start; pos < end && i < len; i++, pos += step) y[i] = fwd[pos];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[fullLen];
-            for (int i = 0, pos = start; pos < end && i < len; i++, pos += step) dx[pos] = gd[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{len}, List.of(self), backwardFn, "slice"));
+        // Step-slice has no direct tensor op; gather over a stride-index tensor.
+        // Index construction (not data computation) — structural loop, §7a-exempt.
+        int len = 0;
+        for (int pos = start; pos < end; pos += step) len++;
+        double[] idx = new double[len];
+        for (int i = 0, pos = start; pos < end; i++, pos += step) idx[i] = pos;
+        return wrap((RereDiffTensor) tensor.gather(0, IDiffTensor.constantTensor(idx, len)));
     }
 
     @Override
@@ -1289,66 +789,39 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector fancyGet(int[] positions) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int selfLen = fwd.length;
-        double[] y = new double[positions.length];
-        for (int i = 0; i < positions.length; i++) y[i] = fwd[positions[i]];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[selfLen];
-            for (int i = 0; i < positions.length; i++) dx[positions[i]] += gd[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "fancyGet"));
+        double[] idx = new double[positions.length];
+        for (int i = 0; i < positions.length; i++) idx[i] = positions[i];
+        return wrap((RereDiffTensor) tensor.gather(0, IDiffTensor.constantTensor(idx, positions.length)));
     }
 
     @Override
     public IDiffVector booleanGet(boolean[] booleanIndex) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int selfLen = fwd.length;
+        // Gather over the indices where the mask is true.
         int count = 0;
         for (boolean b : booleanIndex) if (b) count++;
-        double[] y = new double[count];
-        int outIdx = 0;
-        for (int i = 0; i < selfLen; i++) if (booleanIndex[i]) y[outIdx++] = fwd[i];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[selfLen];
-            int oi = 0;
-            for (int i = 0; i < selfLen; i++) if (booleanIndex[i]) dx[i] += gd[oi++];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{count}, List.of(self), backwardFn, "booleanGet"));
+        double[] idx = new double[count];
+        int k = 0;
+        for (int i = 0; i < booleanIndex.length; i++) if (booleanIndex[i]) idx[k++] = i;
+        return wrap((RereDiffTensor) tensor.gather(0, IDiffTensor.constantTensor(idx, count)));
     }
 
     // ==================== Matrix operations ====================
 
     @Override
     public IDiffVector mmul(IMatrix<Double> other) {
-        double[] fwd = tensor.value().toDoubleArray();
         int rows = other.rows();
         int cols = other.cols();
         double[][] mat = other.toDoubleArray();
-        double[] y = new double[rows];
-        for (int r = 0; r < rows; r++) {
-            double sum = 0;
-            for (int c = 0; c < cols; c++) sum += fwd[c] * mat[r][c];
-            y[r] = sum;
-        }
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[cols];
-            for (int c = 0; c < cols; c++) {
-                double sum = 0;
-                for (int r = 0; r < rows; r++) sum += go[r] * mat[r][c];
-                dx[c] = sum;
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{rows}, List.of(self), backwardFn, "mmul"));
+        double[] flat = new double[rows * cols];
+        for (int r = 0; r < rows; r++) System.arraycopy(mat[r], 0, flat, r * cols, cols);
+        // y = mat @ fwd, where mat is a non-diff constant [rows,cols] and fwd the
+        // vector reshaped to [cols,1]. mmul routes grad to the reshaped vector
+        // (matT.requiresGrad=false but vecCol.requiresGrad=true ⇒ diff path),
+        // then reshape-back propagates to this tensor.
+        IDiffTensor matT = IDiffTensor.constantTensor(flat, rows, cols);
+        IDiffTensor vecCol = tensor.reshape(cols, 1);
+        IDiffTensor y = matT.mmul(vecCol);
+        return wrap((RereDiffTensor) y.reshape(rows));
     }
 
     @Override
@@ -1358,43 +831,24 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector cross(IVector<Double> other) {
-        double[] fwd = tensor.value().toDoubleArray();
         double[] oData = other.toDoubleArray();
-        double[] y = new double[]{
-            fwd[1] * oData[2] - fwd[2] * oData[1],
-            fwd[2] * oData[0] - fwd[0] * oData[2],
-            fwd[0] * oData[1] - fwd[1] * oData[0]
-        };
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            // dL/da = -(g × b), dL/db = -(g × a) — cross product gradient has negative sign
-            double[] dx = new double[]{
-                go[2] * oData[1] - go[1] * oData[2],
-                go[0] * oData[2] - go[2] * oData[0],
-                go[1] * oData[0] - go[0] * oData[1]
-            };
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{3}, List.of(self), backwardFn, "cross"));
+        IDiffTensor oConst = IDiffTensor.constantTensor(oData, oData.length);
+        return wrap((RereDiffTensor) tensor.cross(oConst));
     }
 
     // ==================== Where ====================
 
     @Override
     public IDiffVector where(boolean[] condition, Double x, Double y) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        double[] result = new double[n];
-        for (int i = 0; i < n; i++) result[i] = condition[i] ? fwd[i] : (x != null ? x : y);
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) if (condition[i]) dx[i] += gd[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(result, new int[]{n}, List.of(self), backwardFn, "where"));
+        // result[i] = condition[i] ? self[i] : fill, where fill = x (or y if x null).
+        // tensor.where(cond, other) = cond ? self : other; routes grad to self where true.
+        int n = (int) tensor.totalSize();
+        double[] cond = new double[n];
+        for (int i = 0; i < n; i++) cond[i] = condition[i] ? 1.0 : 0.0;
+        double fill = (x != null) ? x : y;
+        IDiffTensor condT = IDiffTensor.constantTensor(cond, n);
+        IDiffTensor fillT = IDiffTensor.constantTensor(new double[]{fill}, 1);
+        return wrap((RereDiffTensor) tensor.where(condT, fillT));
     }
 
     @Override
@@ -1408,116 +862,35 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector where(boolean[] condition, IDiffVector x, IDiffVector y) {
+        // result = condition ? x : y (uses x/y values, not self). Build as
+        // x.where(cond, y): routes grad to x where true, to y where false.
         RereDiffVector xv = resolveToRere(x);
         RereDiffVector yv = resolveToRere(y);
-        RereDiffTensor xt = xv.tensor;
-        RereDiffTensor yt = yv.tensor;
-        double[] xd = xv.tensor.value().toDoubleArray();
-        double[] yd = yv.tensor.value().toDoubleArray();
-        int n = xd.length;
-        // Build condition masks via Arrays.setAll (functional, no raw loop)
-        double[] condTrue = java.util.Arrays.copyOf(xd, n); // allocate
-        double[] condFalse = java.util.Arrays.copyOf(yd, n); // allocate
-        java.util.Arrays.setAll(condTrue, i -> condition[i] ? 1.0 : 0.0);
-        java.util.Arrays.setAll(condFalse, i -> condition[i] ? 0.0 : 1.0);
-        DoubleVectorComputer vc = COMPUTER;
-        double[] xTerm = vc.binaryOperate(xd, condTrue, BinaryOperation.MULTIPLY);
-        double[] yTerm = vc.binaryOperate(yd, condFalse, BinaryOperation.MULTIPLY);
-        double[] result = vc.binaryOperate(xTerm, yTerm, BinaryOperation.ADD);
-        // B3: forward uses x and y values, NOT self's value. Wire both as graph inputs.
-        // Backward: condition[i]=true → gradient to x; false → gradient to y.
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dxGrad = vc.binaryOperate(gd, condTrue, BinaryOperation.MULTIPLY);
-            double[] dyGrad = vc.binaryOperate(gd, condFalse, BinaryOperation.MULTIPLY);
-            xt.accGrad(dxGrad);
-            yt.accGrad(dyGrad);
-        };
-        return wrap(new RereDiffTensor(result, new int[]{n}, List.of(xt, yt), backwardFn, "where"));
+        int n = (int) xv.tensor.totalSize();
+        double[] cond = new double[n];
+        for (int i = 0; i < n; i++) cond[i] = condition[i] ? 1.0 : 0.0;
+        IDiffTensor condT = IDiffTensor.constantTensor(cond, n);
+        return wrap((RereDiffTensor) xv.tensor.where(condT, yv.tensor));
     }
 
     // ==================== Cumulative operations ====================
 
     @Override
     public IDiffVector cumsum() {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n];
-        y[0] = fwd[0];
-        for (int i = 1; i < n; i++) y[i] = y[i - 1] + fwd[i];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            double running = 0;
-            for (int i = n - 1; i >= 0; i--) {
-                running += go[i];
-                dx[i] = running;
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{n}, List.of(self), backwardFn, "cumsum"));
+        return wrap((RereDiffTensor) tensor.cumsum(0));
     }
 
     @Override
     public IDiffVector cumprod() {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n];
-        y[0] = fwd[0];
-        for (int i = 1; i < n; i++) y[i] = y[i - 1] * fwd[i];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            // SISD: cumprod backward needs element-by-element computation with zero handling.
-            // No accelerated scan primitive exists in the current chain (§7a structural-loop exception).
-            // Correct formula for L = sum(y) where y = cumprod(x), go[i]=1 for all i:
-            // If x[j]!=0: dx[j] = (y[j]+...+y[n-1]) / x[j]
-            // If x[j]=0:   dx[j] = x[0]*...*x[j-1] * (1 + x[j+1] + x[j+1]*x[j+2] + ...)
-            //   = prefix * (1 + sum of suffix products for all subsequent non-zero x[k])
-            // totalFrom: backward cumulative sum of y (structural DP, inherently sequential).
-            double[] totalFrom = new double[n];
-            totalFrom[n - 1] = y[n - 1];
-            for (int j = n - 2; j >= 0; j--) totalFrom[j] = y[j] + totalFrom[j + 1];
-            double prefix = 1; // x[0]*...*x[j-1] as we iterate forward (empty product = 1 for j=0)
-            for (int j = 0; j < n; j++) {
-                if (Math.abs(fwd[j]) > 1e-15) {
-                    dx[j] = totalFrom[j] / fwd[j];
-                } else {
-                    // x[j]=0: dx[j] = prefix * (1 + sum_{k>j, x[k]!=0} x[j+1]*...*x[k])
-                    dx[j] = prefix; // k=j term: x[0]*...*x[j-1] * 1
-                    double suffix = 1;
-                    for (int k = j + 1; k < n; k++) {
-                        if (Math.abs(fwd[k]) > 1e-15) {
-                            suffix *= fwd[k]; // suffix = x[j+1]*...*x[k]
-                            dx[j] += prefix * suffix;
-                        }
-                    }
-                }
-                prefix *= fwd[j];
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{n}, List.of(self), backwardFn, "cumprod"));
+        return wrap((RereDiffTensor) tensor.cumprod(0));
     }
 
     @Override
     public IDiffVector diff() {
-        int n = (int) tensor.value().totalSize();
-        double[] fwd = tensor.value().toDoubleArray();
-        double[] y = new double[n - 1];
-        for (int i = 0; i < n - 1; i++) y[i] = fwd[i + 1] - fwd[i];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            dx[0] = -go[0];
-            for (int i = 1; i < n - 1; i++) dx[i] = go[i - 1] - go[i];
-            dx[n - 1] = go[n - 2];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "diff"));
+        // y[i] = x[i+1] - x[i] = slice(1,n) - slice(0,n-1); chain rule handles the
+        // shared-dependence backward (dx[0]=-g0, dx[i]=g[i-1]-g[i], dx[n-1]=g[n-2]).
+        int n = (int) tensor.totalSize();
+        return wrap((RereDiffTensor) tensor.slice(0, 1, n).sub(tensor.slice(0, 0, n - 1)));
     }
 
     @Override
@@ -1532,23 +905,9 @@ public class RereDiffVector implements IDiffVector, Serializable {
 
     @Override
     public IDiffVector sort() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        Integer[] indices = new Integer[n];
-        for (int i = 0; i < n; i++) indices[i] = i;
-        Arrays.sort(indices, (a, b) -> Double.compare(fwd[a], fwd[b]));
-        int[] perm = new int[n];
-        for (int i = 0; i < n; i++) perm[i] = indices[i];
-        double[] y = new double[n];
-        for (int i = 0; i < n; i++) y[i] = fwd[perm[i]];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) dx[perm[i]] = go[i];
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{n}, List.of(self), backwardFn, "sort"));
+        // gather along the ascending argsort permutation; scatter-add backward
+        // routes each output grad back to its source position.
+        return wrap((RereDiffTensor) tensor.gather(0, tensor.argsort(0, false)));
     }
 
     // ==================== Concat (deprecated) ====================
@@ -1556,208 +915,77 @@ public class RereDiffVector implements IDiffVector, Serializable {
     @Override
     @Deprecated
     public IDiffVector concat(IVector<Double> other) {
-        double[] fwd = tensor.value().toDoubleArray();
         double[] od = other.toDoubleArray();
-        int selfLen = fwd.length;
-        double[] y = new double[selfLen + od.length];
-        System.arraycopy(fwd, 0, y, 0, selfLen);
-        System.arraycopy(od, 0, y, selfLen, od.length);
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] gd = gradOut.gradData();
-            double[] dx = new double[selfLen];
-            System.arraycopy(gd, 0, dx, 0, selfLen);
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{y.length}, List.of(self), backwardFn, "concat"));
+        return wrap((RereDiffTensor) tensor.cat(0, IDiffTensor.constantTensor(od, od.length)));
     }
 
     // ==================== Statistics ====================
 
     @Override
     public IDiffVector min() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        int minIdx = 0;
-        for (int i = 1; i < n; i++) if (fwd[i] < fwd[minIdx]) minIdx = i;
-        final int mi = minIdx;
-        double minVal = fwd[mi];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            dx[mi] = g;
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{minVal}, new int[]{1}, List.of(self), backwardFn, "min"));
+        return wrap((RereDiffTensor) tensor.min(0, false));
     }
 
     @Override
     public IDiffVector max() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        int maxIdx = 0;
-        for (int i = 1; i < n; i++) if (fwd[i] > fwd[maxIdx]) maxIdx = i;
-        final int mi = maxIdx;
-        double maxVal = fwd[mi];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            dx[mi] = g;
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{maxVal}, new int[]{1}, List.of(self), backwardFn, "max"));
+        return wrap((RereDiffTensor) tensor.max(0, false));
     }
 
     @Override
     public IDiffVector prod() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        double totalProd = 1.0;
-        for (int i = 0; i < n; i++) totalProd *= fwd[i];
-        final double tp = totalProd;
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) {
-                if (Math.abs(fwd[i]) > 1e-15) dx[i] = g * tp / fwd[i];
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{tp}, new int[]{1}, List.of(self), backwardFn, "prod"));
+        return wrap((RereDiffTensor) tensor.prod(0, false));
     }
 
     @Override
     public IDiffVector norm2() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double normSq = 0;
-        for (double v : fwd) normSq += v * v;
-        double norm = Math.sqrt(normSq);
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[fwd.length];
-            if (norm > 1e-15) {
-                for (int i = 0; i < fwd.length; i++) dx[i] = g * fwd[i] / norm;
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{norm}, new int[]{1}, List.of(self), backwardFn, "norm2"));
+        // ||x||_2 = sqrt(sum(x^2)); gradient via chain rule (square→sum→sqrt).
+        return wrap((RereDiffTensor) tensor.square().sum().sqrt());
     }
 
     @Override
     public IDiffVector norm1() {
-        double[] fwd = tensor.value().toDoubleArray();
-        double norm = 0;
-        for (double v : fwd) norm += Math.abs(v);
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[fwd.length];
-            for (int i = 0; i < fwd.length; i++) dx[i] = g * Math.signum(fwd[i]);
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{norm}, new int[]{1}, List.of(self), backwardFn, "norm1"));
+        // ||x||_1 = sum(|x|); gradient via chain rule (abs→sum).
+        return wrap((RereDiffTensor) tensor.abs().sum());
     }
 
     @Override
     public IDiffVector ptp() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        int maxIdx = 0, minIdx = 0;
-        for (int i = 1; i < n; i++) {
-            if (fwd[i] > fwd[maxIdx]) maxIdx = i;
-            if (fwd[i] < fwd[minIdx]) minIdx = i;
-        }
-        final int mi = maxIdx;
-        final int ni = minIdx;
-        double range = fwd[mi] - fwd[ni];
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            dx[mi] = g;
-            dx[ni] = -g;
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{range}, new int[]{1}, List.of(self), backwardFn, "ptp"));
+        // range = max - min; sub routes +g to argmax and -g to argmin.
+        return wrap((RereDiffTensor) tensor.max(0, false).sub(tensor.min(0, false)));
     }
 
     @Override
     public IDiffVector normalize() {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        double normSq = 0;
-        for (double v : fwd) normSq += v * v;
-        double norm = Math.sqrt(normSq);
-        double invNorm = norm > 1e-15 ? 1.0 / norm : 0;
-        double invNorm3 = invNorm * invNorm * invNorm;
-        double[] y = new double[n];
-        for (int i = 0; i < n; i++) y[i] = fwd[i] * invNorm;
-        RereDiffTensor self = this.tensor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double[] go = gradOut.gradData();
-            double[] dx = new double[n];
-            double dot = 0;
-            for (int i = 0; i < n; i++) dot += go[i] * fwd[i];
-            for (int i = 0; i < n; i++) dx[i] = go[i] * invNorm - dot * fwd[i] * invNorm3;
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(y, new int[]{n}, List.of(self), backwardFn, "normalize"));
+        return wrap((RereDiffTensor) tensor.normalize(2.0, 0));
     }
 
     @Override
-    public IDiffVector std() { return std(0); }
+    public IDiffVector std() {
+        return wrap((RereDiffTensor) tensor.std(0, false));
+    }
 
     @Override
     public IDiffVector std(int ddof) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        double mean = 0;
-        for (double v : fwd) mean += v;
-        mean /= n;
-        double var = 0;
-        for (double v : fwd) var += (v - mean) * (v - mean);
-        double divisor = n - ddof;
-        double stdev = Math.sqrt(var / divisor);
-        RereDiffTensor self = this.tensor;
-        double m = mean, s = stdev, d = divisor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            if (s > 1e-15) {
-                for (int i = 0; i < n; i++) dx[i] = g * (fwd[i] - m) / (d * s);
-            }
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{stdev}, new int[]{1}, List.of(self), backwardFn, "std"));
+        // sqrt(var(ddof)); composition handles arbitrary ddof (mean-dependence term
+        // cancels in the full Jacobian, matching the closed-form 2(x-mean)/(n-ddof)).
+        return wrap((RereDiffTensor) varTensor(ddof).sqrt());
     }
 
     @Override
-    public IDiffVector var() { return var(0); }
+    public IDiffVector var() {
+        return wrap((RereDiffTensor) tensor.var(0, false));
+    }
 
     @Override
     public IDiffVector var(int ddof) {
-        double[] fwd = tensor.value().toDoubleArray();
-        int n = fwd.length;
-        double mean = 0;
-        for (double v : fwd) mean += v;
-        mean /= n;
-        double var = 0;
-        for (double v : fwd) var += (v - mean) * (v - mean);
-        double divisor = n - ddof;
-        double variance = var / divisor;
-        RereDiffTensor self = this.tensor;
-        double m = mean, d = divisor;
-        Consumer<RereDiffTensor> backwardFn = (gradOut) -> {
-            double g = gradOut.gradData()[0];
-            double[] dx = new double[n];
-            for (int i = 0; i < n; i++) dx[i] = 2.0 * g * (fwd[i] - m) / d;
-            self.accGrad(dx);
-        };
-        return wrap(new RereDiffTensor(new double[]{variance}, new int[]{1}, List.of(self), backwardFn, "var"));
+        return wrap(varTensor(ddof));
+    }
+
+    /** var = sum((x - mean)^2) / (n - ddof), built from existing tensor ops. */
+    private RereDiffTensor varTensor(int ddof) {
+        int n = tensor.shape()[0];
+        IDiffTensor mean = tensor.mean(0, true);
+        return (RereDiffTensor) tensor.sub(mean).square().sum().div((double) (n - ddof));
     }
 
     // ==================== Non-differentiable ====================
