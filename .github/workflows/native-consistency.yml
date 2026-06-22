@@ -1,22 +1,20 @@
-name: Native Consistency (Layer 3)
+# End-to-end consistency test: Java CPU vs native backends.
+# Runs weekly (Monday 03:00 UTC) and on manual trigger.
+# GPU job commented out — pending GPU repo setup.
+
+name: Native Consistency
 
 on:
   workflow_dispatch:
-    inputs:
-      rust-ref:
-        description: 'Git ref for yishape-math-hpc Rust'
-        default: 'main'
   schedule:
-    # Weekly: Monday 03:00 UTC
     - cron: '17 3 * * 1'
 
 jobs:
-  # ── Job 0: CPU-only baseline (always runs) ──────────────────────────
   cpu-baseline:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -28,51 +26,26 @@ jobs:
             -DfailIfNoTests=false \
             -Dyishape.gpu.minElements=0 \
             -Dyishape.hpc.minElements=0
-        # HPC/GPU tests gracefully skip when native libs absent.
-        # This baseline ensures the test framework itself is healthy.
 
-  # ── Job 1: HPC consistency (build Rust → install bridge → test) ────
   hpc-consistency:
     runs-on: ubuntu-latest
     needs: cpu-baseline
     steps:
-      - name: Checkout yishape-math (main)
+      - name: Checkout yishape-math
         uses: actions/checkout@v4
 
-      - name: Checkout yishape-math-hpc (bridge)
+      - name: Checkout yishape-math-hpc
         uses: actions/checkout@v4
         with:
           repository: ScaleFree-Tech/yishape-math-hpc
           path: ../yishape-math-hpc
 
-      - name: Checkout yishape_math_rust (Rust HPC)
-        uses: actions/checkout@v4
-        with:
-          repository: ScaleFree-Tech/yishape_math_rust
-          path: ../yishape_math_rust
-          ref: ${{ inputs.rust-ref || 'main' }}
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
-
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
-
-      - name: Build Rust HPC library
-        working-directory: ../yishape_math_rust
-        run: cargo build --release
-
-      - name: Copy HPC .so to bridge libs
-        run: |
-          mkdir -p ../yishape-math-hpc/libs/linux-x86_64/
-          cp ../yishape_math_rust/target/release/libyishape_math_rust.so \
-             ../yishape-math-hpc/libs/linux-x86_64/
 
       - name: Install HPC bridge (mvn install)
         working-directory: ../yishape-math-hpc
@@ -94,59 +67,3 @@ jobs:
           name: hpc-consistency-diffs
           path: target/surefire-reports/
           retention-days: 14
-
-  # ── Job 2: GPU consistency (TODO — repo not on GitHub yet) ─────────
-  # gpu-consistency:
-  #   runs-on: ubuntu-latest
-  #   needs: cpu-baseline
-  #   steps:
-  #     - name: Checkout yishape-math (main)
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Checkout yishape-math-gpu (bridge)
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: ScaleFree-Tech/yishape-math-gpu
-  #         path: ../yishape-math-gpu
-  #
-  #     - name: Checkout yishape_math_gpu (Rust GPU)
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: ScaleFree-Tech/yishape_math_gpu
-  #         path: ../yishape_math_gpu
-  #         ref: ${{ inputs.rust-ref || 'main' }}
-  #
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: x86_64-unknown-linux-gnu
-  #
-  #     - name: Build Rust GPU library
-  #       working-directory: ../yishape_math_gpu
-  #       run: cargo build --release
-  #
-  #     - name: Copy GPU .so to bridge libs
-  #       run: |
-  #         mkdir -p ../yishape-math-gpu/libs/linux-x86_64/
-  #         cp ../yishape_math_gpu/target/release/libyishape_math_gpu.so \
-  #            ../yishape-math-gpu/libs/linux-x86_64/
-  #
-  #     - name: Install GPU bridge (mvn install)
-  #       working-directory: ../yishape-math-gpu
-  #       run: mvn -B install -DskipTests
-  #
-  #     - name: Run CrossBackendConsistencyTest (with GPU)
-  #       run: |
-  #         mvn -B test \
-  #           -Dtest="com.yishape.lab.math.autodiff.graph.CrossBackendConsistencyTest" \
-  #           -DfailIfNoTests=false \
-  #           -Dyishape.gpu.minElements=0
-  #       continue-on-error: true
-  #
-  #     - name: Upload GPU diff reports
-  #       if: failure()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: gpu-consistency-diffs
-  #         path: target/surefire-reports/
-  #         retention-days: 14

@@ -1,5 +1,4 @@
-# 在 GitHub 创建 Release 时发布 com.yishape.lab:yishape-math 到 GitHub Packages。
-# 须先发布同版本的 yishape-math-hpc（见 yishape-math-hpc 仓库 workflow）。
+# Publish com.yishape.lab:yishape-math to GitHub Packages on Release or manual dispatch.
 
 name: Publish to GitHub Packages
 
@@ -9,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Deploy POM version as-is (must match pom.xml); use Release for tagged builds'
+        description: 'Deploy POM version as-is (must match pom.xml)'
         required: false
         default: ''
 
@@ -24,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
