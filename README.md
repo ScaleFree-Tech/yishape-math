@@ -177,9 +177,9 @@ cd yishape-math
 ./mvnw install -DskipTests
 ```
 
-HPC 和 GPU 扩展同样支持源码构建：
+HPC 和 GPU 扩展同样支持源码构建（`libs/` 目录已包含各平台预编译原生库，无需 Rust 工具链）：
 
-The HPC and GPU extensions can also be built from source:
+The HPC and GPU extensions can also be built from source (`libs/` contains prebuilt native libraries for each platform — no Rust toolchain required):
 
 ```bash
 # HPC（需预编译原生库放入 libs/ 目录 / requires prebuilt native libs in libs/）
